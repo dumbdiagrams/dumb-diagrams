@@ -4,6 +4,7 @@ import manifest from "./generated/manifest.json" with { type: "json" };
 export type UserCloudProvider = "aws" | "azure" | "gcp" | "cloud-agnostic";
 /** Legacy provider names remain accepted for document compatibility only. */
 export type CloudProvider = UserCloudProvider | "neutral" | "generic";
+export type CatalogProviderFilter = CloudProvider | "all";
 export type AssetKind = "resource" | "group" | "service" | "category";
 export type IconSpecificity = "unique" | "shared-category" | "semantic-neutral";
 export type ColumnRole =
@@ -137,37 +138,40 @@ export function listProviders(): UserCloudProvider[] {
 }
 
 export function listCategories(
-  provider: CloudProvider,
+  provider: CatalogProviderFilter,
   mode: "resources" | "groups" = "resources",
 ): string[] {
   const assetKind = mode === "groups" ? "group" : "resource";
   const cats = new Set<string>();
   for (const entry of Object.values(CATALOG)) {
     if (!entry.canonical || !entry.browsable) continue;
-    if (entry.provider !== normalizeProvider(provider) || entry.assetKind !== assetKind) continue;
+    if (
+      (provider !== "all" && entry.provider !== normalizeProvider(provider)) ||
+      entry.assetKind !== assetKind
+    ) continue;
     for (const category of entry.categories) cats.add(category);
   }
   return [...cats].sort((a, b) => a.localeCompare(b));
 }
 
 export function listAssets(
-  provider: CloudProvider,
+  provider: CatalogProviderFilter,
   options: { category?: string; assetKind?: AssetKind; includeAliases?: boolean } = {},
 ): CatalogEntry[] {
-  const normalized = normalizeProvider(provider);
+  const normalized = provider === "all" ? undefined : normalizeProvider(provider);
   const kind = options.assetKind === "service" ? "resource" : options.assetKind === "category" ? "resource" : options.assetKind;
   return Object.values(CATALOG).filter((entry) => {
     if (!options.includeAliases && (!entry.canonical || !entry.browsable)) return false;
-    if (entry.provider !== normalized) return false;
+    if (normalized && entry.provider !== normalized) return false;
     if (kind && entry.assetKind !== kind) return false;
     if (options.category && !entry.categories.includes(options.category)) return false;
     return true;
   });
 }
 
-export function searchAssets(query: string, provider?: CloudProvider): CatalogEntry[] {
+export function searchAssets(query: string, provider?: CatalogProviderFilter): CatalogEntry[] {
   const needle = query.trim().toLowerCase();
-  const normalized = provider ? normalizeProvider(provider) : undefined;
+  const normalized = provider && provider !== "all" ? normalizeProvider(provider) : undefined;
   return Object.values(CATALOG).filter((entry) => {
     if (!entry.canonical || !entry.browsable) return false;
     if (normalized && entry.provider !== normalized) return false;
@@ -184,7 +188,7 @@ export function searchAssets(query: string, provider?: CloudProvider): CatalogEn
   });
 }
 
-export function getGroupCatalogEntries(provider: CloudProvider): CatalogEntry[] {
+export function getGroupCatalogEntries(provider: CatalogProviderFilter): CatalogEntry[] {
   return listAssets(provider, { assetKind: "group" });
 }
 
@@ -212,7 +216,7 @@ export function groupAssetsByCategory(entries: CatalogEntry[]): Array<{
 }
 
 export function listBrowsableAssets(
-  provider: CloudProvider,
+  provider: CatalogProviderFilter,
   mode: "resources" | "groups",
 ): CatalogEntry[] {
   return listAssets(provider, { assetKind: mode === "groups" ? "group" : "resource" }).sort((a, b) =>

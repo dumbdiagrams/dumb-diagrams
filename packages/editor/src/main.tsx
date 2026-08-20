@@ -77,12 +77,12 @@ import { LayersPanel } from "./panels/LayersPanel";
 import { SourceDrawer } from "./panels/SourceDrawer";
 import { clearDraft, loadDraft, saveDraft } from "./state/autosave";
 import { FloatingPanel } from "./ui/FloatingPanel";
-import { IconFit, IconOpen, IconRedo, IconUndo } from "./ui/icons";
-import { SegmentedControl } from "./ui/SegmentedControl";
+import { IconAuto, IconFit, IconFolderOpen, IconGrid, IconRedo, IconUndo } from "./ui/icons";
 import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
 import { useSourceHistory } from "./useSourceHistory";
+import { GRID_SIZE, snapLayoutToGrid, snapPoint } from "./grid.js";
 import "./styles.css";
 
 initTheme();
@@ -103,7 +103,6 @@ const RECOVERY = (() => {
     return null;
   }
 })();
-type Mode = "auto" | "manual";
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side } | null;
 type ContextMenuState = { x: number; y: number; item: SelectionItem } | null;
@@ -121,11 +120,13 @@ function App() {
     canUndo,
     canRedo,
   } = useSourceHistory(RECOVERY?.source ?? DEFAULT_SOURCE);
-  const [mode, setMode] = useState<Mode>("auto");
   const [tool, setTool] = useState<Tool>("select");
   const [selection, setSelection] = useState<Selection>([]);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [viewport, setViewport] = useState({ panX: 40, panY: 40, zoom: 1 });
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
   const fitRef = useRef<(() => void) | null>(null);
   const [layersQuery, setLayersQuery] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
@@ -153,7 +154,7 @@ function App() {
           invariantFailures: [],
         };
       }
-      const placedLayout = layoutDocument(doc);
+      const placedLayout = snapLayoutToGrid(layoutDocument(doc), snapToGrid);
       const edges = routeEdges(doc, placedLayout);
       const layout = attachRoutes(placedLayout, edges);
       const svg = renderSvg(doc, layout, {
@@ -177,7 +178,7 @@ function App() {
         invariantFailures: [],
       };
     }
-  }, [source]);
+  }, [source, snapToGrid]);
 
   useEffect(() => {
     if (compiled.ok) lastGoodRef.current = compiled;
@@ -205,6 +206,7 @@ function App() {
 
   const selectItem = (item: SelectionItem, additive: boolean) => {
     setSelection((current) => toggleSelectionItem(current, item, additive));
+    if (tool === "layers") setTool("select");
   };
 
   const issues = useMemo(() => {
@@ -221,7 +223,7 @@ function App() {
 
   const previewMutate = (change: (doc: DiagramDocument) => DiagramDocument) => {
     try {
-      replaceSource(printArch(change(parseArch(source))));
+      replaceSource(printArch(change(parseArch(sourceRef.current))));
     } catch {
       // Keep the source editor authoritative while it contains parse errors.
     }
@@ -254,10 +256,10 @@ function App() {
     commitSource(source);
   };
 
-  const autoLayout = () => {
+  const autoFix = () => {
     mutateCurrent(clearView);
-    setMode("auto");
     setPendingPort(null);
+    setToast("Diagram auto-fixed");
   };
 
   const selectMarquee = (rect: { x: number; y: number; w: number; h: number }) => {
@@ -282,11 +284,10 @@ function App() {
       setToast(placement.reason ?? "Choose a compatible parent group first.");
       return;
     }
-    const at = insertionPoint(compiled.layout, parent);
+    const at = snapPoint(insertionPoint(compiled.layout, parent), snapToGrid);
     try {
       const result = addResource(compiled.doc, entry, parent, at);
       updateDocument(result.doc);
-      setMode("manual");
       setSelection([{ kind: "resource", id: result.id }]);
       setTool("select");
     } catch (error) {
@@ -296,17 +297,15 @@ function App() {
 
   const addNote = () => {
     if (!compiled.ok) return;
-    const at = insertionPoint(compiled.layout);
+    const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
     const result = addAnnotation(compiled.doc, "Note", at);
     updateDocument(result.doc);
-    setMode("manual");
     setSelection([{ kind: "annotation", id: result.id }]);
     setTool("select");
   };
 
   const choosePort = (nodeId: string, side: Side) => {
     if (!compiled.ok) return;
-    setMode("manual");
     if (!pendingPort || pendingPort.nodeId === nodeId) {
       setPendingPort({ nodeId, side });
       setSelection([{ kind: "resource", id: nodeId }]);
@@ -336,7 +335,7 @@ function App() {
     if (!compiled.ok) return;
     try {
       const payload = await navigator.clipboard.readText();
-      const at = insertionPoint(compiled.layout);
+      const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
       const result = pasteClipboard(compiled.doc, payload, at);
       updateDocument(result.doc);
       setSelection(result.selection);
@@ -406,7 +405,6 @@ function App() {
         const result = duplicateSelection(compiled.doc, selection);
         updateDocument(result.doc);
         setSelection(result.selection);
-        setMode("manual");
         return;
       }
       if (event.key.toLowerCase() === "v" && !mod) setTool("select");
@@ -416,12 +414,14 @@ function App() {
         const step = event.shiftKey ? 32 : 8;
         const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
         const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
-        mutateCurrent((doc) => nudgeSelection(doc, selection, dx, dy));
+        mutateCurrent((doc) =>
+          nudgeSelection(doc, selection, dx, dy, { snapToGrid }),
+        );
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selection, source, undo, redo, compiled]);
+  }, [selection, source, undo, redo, compiled, snapToGrid]);
 
   return (
     <div className="app">
@@ -446,9 +446,9 @@ function App() {
               {compiled.ok && <InteractionOverlay
                 doc={compiled.doc}
                 layout={compiled.layout}
-                mode={mode}
                 tool={tool}
                 zoom={viewport.zoom}
+                snapToGrid={snapToGrid}
                 selection={selection}
                 pendingPort={pendingPort}
                 ghostRoute={null}
@@ -473,7 +473,6 @@ function App() {
                 onGestureBegin={beginTransaction}
                 onGestureEnd={endTransaction}
                 onMove={(kind, id, x, y, dx, dy) => {
-                  if (mode !== "manual") setMode("manual");
                   previewMutate((doc) => {
                     const item = { kind, id } as SelectionItem;
                     const active = selection.some((candidate) => candidate.kind === kind && candidate.id === id)
@@ -483,7 +482,6 @@ function App() {
                   });
                 }}
                 onResize={(kind, id, w, h, unlockAspect) => {
-                  if (mode !== "manual") setMode("manual");
                   previewMutate((doc) =>
                     setSize(doc, id, w, h, { unlockAspect }),
                   );
@@ -529,18 +527,25 @@ function App() {
             <span className="file-name">.arch</span>
           </div>
           <div className="topbar-center">
-            <SegmentedControl
-              aria-label="Layout mode"
-              value={mode}
-              options={[
-                { value: "auto", label: "Auto" },
-                { value: "manual", label: "Manual" },
-              ]}
-              onChange={(next) => {
-                if (next === "auto") autoLayout();
-                else setMode("manual");
-              }}
-            />
+            <button
+              type="button"
+              className="auto-fix-button"
+              title="Reset positions and connector routes to the opinionated layout"
+              onClick={autoFix}
+            >
+              <IconAuto />
+              <span>Auto-fix</span>
+            </button>
+            <button
+              type="button"
+              className={`snap-toggle${snapToGrid ? " is-active" : ""}`}
+              aria-pressed={snapToGrid}
+              title={`Snap to grid (${GRID_SIZE}px)`}
+              onClick={() => setSnapToGrid((current) => !current)}
+            >
+              <IconGrid />
+              <span>Snap to grid</span>
+            </button>
           </div>
           <div className="topbar-right">
             <span className={`status-pill ${issues.length ? "has-errors" : ""}`}>
@@ -579,7 +584,7 @@ function App() {
                 title="Open .arch"
                 aria-label="Open .arch"
               >
-                <IconOpen />
+                <IconFolderOpen />
               </button>
             <input
               ref={fileInputRef}
@@ -636,8 +641,7 @@ function App() {
               return;
             }
             setTool(next);
-            if (next === "connector") setMode("manual");
-            else setPendingPort(null);
+            if (next !== "connector") setPendingPort(null);
           }}
         />
 
@@ -665,7 +669,7 @@ function App() {
                     primarySelection(selection)?.kind === "group"
                       ? primarySelection(selection)!.id
                       : undefined,
-                    insertionPoint(compiled.layout),
+                    snapPoint(insertionPoint(compiled.layout), snapToGrid),
                   );
                   updateDocument(placed.doc);
                   setSelection([{ kind: "resource", id: placed.id }]);
@@ -700,11 +704,10 @@ function App() {
                     kind,
                     entry.name,
                     parent,
-                    insertionPoint(compiled.layout, parent),
+                    snapPoint(insertionPoint(compiled.layout, parent), snapToGrid),
                     entry.type,
                   );
                   updateDocument(result.doc);
-                  setMode("manual");
                   setSelection([{ kind: "group", id: result.id }]);
                   setTool("select");
                 } catch (error) {
@@ -762,9 +765,11 @@ function App() {
                         (candidate) => candidate.id === edge.id,
                       );
                       if (!edgeGeom) return;
-                      setMode("manual");
+                      const routePoints = edgeGeom.points.map((point) =>
+                        snapPoint(point, snapToGrid),
+                      );
                       mutateCurrent((doc) =>
-                        setRoute(doc, edge.id, createOrthogonalRoute(edgeGeom.points)),
+                        setRoute(doc, edge.id, createOrthogonalRoute(routePoints)),
                       );
                     }}
                     onAutoRoute={() => mutateCurrent((doc) => clearRoute(doc, edge.id))}
@@ -808,7 +813,6 @@ function App() {
                 skipDraftSaveRef.current = true;
                 resetHistory(DEFAULT_SOURCE);
                 clearDraft();
-                setMode("auto");
                 setSelection([]);
                 setPendingPort(null);
                 setToast("Draft cleared");
@@ -895,7 +899,6 @@ function App() {
                 ? compiled.layout.edges.find((candidate) => candidate.id === edgeItem.id)
                 : undefined;
               if (edge) {
-                setMode("manual");
                 mutateCurrent((doc) =>
                   setRoute(doc, edge.id, createOrthogonalRoute(edge.points)),
                 );
@@ -930,7 +933,7 @@ function App() {
           <button type="button" onClick={() => setViewport((v) => ({ ...v, zoom: 1 }))}>100%</button>
           <button type="button" onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom + 0.1) }))}>+</button>
           <button type="button" onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom - 0.1) }))}>−</button>
-          <span>{mode === "manual" ? "Manual" : "Auto layout"}</span>
+          <span>Opinionated layout</span>
           <span>{Math.round(viewport.zoom * 100)}%</span>
         </div>
 
@@ -943,14 +946,12 @@ function App() {
             onClose={() => setContextMenu(null)}
             items={buildContextMenuItems(
               contextMenu.item,
-              mode,
               compiled.doc,
               (change) => mutateCurrent(change),
               () => {
                 const result = duplicateSelection(compiled.doc, [contextMenu.item]);
                 updateDocument(result.doc);
                 setSelection(result.selection);
-                setMode("manual");
               },
               () =>
                 setSelection((current) =>
@@ -1143,7 +1144,7 @@ function Inspector({
           <div className="property-section">
             <label>Route</label>
             <button className="wide-button" type="button" onClick={routePinned ? onAutoRoute : onPinRoute}>
-              {routePinned ? "Use auto route" : "Edit route manually"}
+              {routePinned ? "Use auto route" : "Pin current route"}
             </button>
           </div>
         </>
@@ -1189,7 +1190,6 @@ function snap(value: number): number {
 
 function buildContextMenuItems(
   item: SelectionItem,
-  mode: Mode,
   doc: DiagramDocument,
   mutate: (change: (doc: DiagramDocument) => DiagramDocument) => void,
   onDuplicate: () => void,
@@ -1201,8 +1201,6 @@ function buildContextMenuItems(
       ? view?.annotations?.[item.id]
       : view?.places[item.id];
   const locked = Boolean(place?.locked);
-  const manual = mode === "manual";
-  const canLayer = manual;
 
   const items = [];
 
@@ -1212,34 +1210,29 @@ function buildContextMenuItems(
     onSelect: onDuplicate,
   });
 
-  if (canLayer) {
-    items.push({
-      id: "front",
-      label: "Send to front",
-      onSelect: () => mutate((next) => sendToFront(next, item.id)),
-    });
-    items.push({
-      id: "back",
-      label: "Send to back",
-      onSelect: () => mutate((next) => sendToBack(next, item.id)),
-    });
-  }
-
-  if (manual) {
-    items.push({
-      id: "lock",
-      label: locked ? "Unlock" : "Lock position",
-      onSelect: () =>
-        mutate((next) =>
-          setLocked(
-            next,
-                    item.kind as "resource" | "group" | "edge" | "annotation",
-            item.id,
-            !locked,
-          ),
+  items.push({
+    id: "front",
+    label: "Send to front",
+    onSelect: () => mutate((next) => sendToFront(next, item.id)),
+  });
+  items.push({
+    id: "back",
+    label: "Send to back",
+    onSelect: () => mutate((next) => sendToBack(next, item.id)),
+  });
+  items.push({
+    id: "lock",
+    label: locked ? "Unlock" : "Lock position",
+    onSelect: () =>
+      mutate((next) =>
+        setLocked(
+          next,
+          item.kind as "resource" | "group" | "edge" | "annotation",
+          item.id,
+          !locked,
         ),
-    });
-  }
+      ),
+  });
 
   if (item.kind === "edge") {
     items.push({

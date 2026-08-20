@@ -64,7 +64,7 @@ export function EdgePanel({
           type="button"
           onClick={routePinned ? onAutoRoute : onPinRoute}
         >
-          {routePinned ? "Use auto route" : "Edit route manually"}
+          {routePinned ? "Use auto route" : "Pin current route"}
         </button>
       </div>
 

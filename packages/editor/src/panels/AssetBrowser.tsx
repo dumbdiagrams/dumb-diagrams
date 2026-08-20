@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  groupAssetsByCategory,
   listBrowsableAssets,
   listCategories,
   listProviders,
   searchAssets,
   type CatalogEntry,
-  type CloudProvider,
+  type CatalogProviderFilter,
+  type UserCloudProvider,
 } from "@dumb-diagrams/catalog";
 import type { GroupKind } from "@dumb-diagrams/core";
 
 import { CatalogAssetCard } from "./CatalogAssetCard";
 
-const PROVIDER_LABELS: Record<CloudProvider, string> = {
+const PROVIDER_LABELS: Record<"all" | UserCloudProvider, string> = {
+  all: "All",
   aws: "AWS",
   azure: "Azure",
   gcp: "GCP",
@@ -64,7 +65,7 @@ function AssetGrid({
   onToggleFavorite: (type: string) => void;
 }) {
   if (!entries.length) {
-    return <div className="palette-empty">No matching assets for this provider.</div>;
+    return <div className="palette-empty">No matching assets for this view.</div>;
   }
 
   return (
@@ -95,7 +96,7 @@ export function AssetBrowser({
   onAddGroup: (entry: CatalogEntry, kind: GroupKind) => void;
   onImportSvg: (file: File) => void;
 }) {
-  const [provider, setProvider] = useState<CloudProvider>("aws");
+  const [provider, setProvider] = useState<CatalogProviderFilter>("all");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("");
   const [filter, setFilter] = useState<"all" | "favorites" | "recent">("all");
@@ -135,13 +136,6 @@ export function AssetBrowser({
     return entries;
   }, [allEntries, category, filter, favorites, mode, provider, query, recents]);
 
-  const groupedEntries = useMemo(
-    () => groupAssetsByCategory(allEntries),
-    [allEntries],
-  );
-
-  const showBrowseSections = false;
-
   const activate = (entry: CatalogEntry) => {
     const next = [entry.type, ...recents.filter((id) => id !== entry.type)];
     setRecents(next);
@@ -160,7 +154,11 @@ export function AssetBrowser({
           className="drawer-search-input"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={mode === "groups" ? "Search groups" : "Search services"}
+          placeholder={
+            mode === "groups"
+              ? "Search groups across providers"
+              : "Search services across providers"
+          }
           aria-label="Search catalog"
         />
         {mode === "resources" && (
@@ -188,7 +186,7 @@ export function AssetBrowser({
 
       <div className="asset-browser-controls">
         <div className="provider-tabs" role="tablist">
-          {listProviders().map((item) => (
+          {(["all", ...listProviders()] as CatalogProviderFilter[]).map((item) => (
             <button
               key={item}
               type="button"
@@ -218,7 +216,7 @@ export function AssetBrowser({
               {categories.map((item) => (
                 <option key={item} value={item}>
                   {item} (
-                  {allEntries.filter((entry) => entry.category === item).length})
+                  {allEntries.filter((entry) => entry.categories.includes(item)).length})
                 </option>
               ))}
             </select>
@@ -240,57 +238,13 @@ export function AssetBrowser({
       </div>
 
       <div className="asset-browser-body">
-        {mode === "groups" ? (
-          <AssetGrid
-            entries={filteredEntries}
-            favorites={favorites}
-            variant="group"
-            onActivate={activate}
-            onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
-          />
-        ) : showBrowseSections ? (
-          <div className="asset-sections">
-            <p className="asset-browser-hint">
-              Browse all categories below, or pick one from the dropdown.
-            </p>
-            {groupedEntries.map((section) => {
-              const open = false;
-              return (
-                <section key={section.category} className="asset-section">
-                  <button
-                    type="button"
-                    className="asset-section-header"
-                    aria-expanded={open}
-                    onClick={() => undefined}
-                  >
-                    <span className="asset-section-title">{section.category}</span>
-                    <span className="asset-section-count">{section.entries.length}</span>
-                    <span className="asset-section-caret" aria-hidden>
-                      {open ? "▾" : "▸"}
-                    </span>
-                  </button>
-                  {open && (
-                    <AssetGrid
-                      entries={section.entries}
-                      favorites={favorites}
-                      variant="service"
-                      onActivate={activate}
-                      onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
-                    />
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        ) : (
-          <AssetGrid
-            entries={filteredEntries}
-            favorites={favorites}
-            variant="service"
-            onActivate={activate}
-            onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
-          />
-        )}
+        <AssetGrid
+          entries={filteredEntries}
+          favorites={favorites}
+          variant={mode === "groups" ? "group" : "service"}
+          onActivate={activate}
+          onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
+        />
       </div>
     </div>
   );

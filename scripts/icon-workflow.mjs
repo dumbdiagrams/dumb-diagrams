@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const LOCK_PATH = join(ROOT, "icon-sources.lock.json");
+const PUBLIC_ROOT = join(ROOT, "packages/editor/public");
 const lock = JSON.parse(readFileSync(LOCK_PATH, "utf8"));
 const provider = process.argv[2];
 
@@ -73,6 +74,25 @@ function validateTree(root, expected, maxFiles = 10000) {
   return files;
 }
 
+function validateBrowserPath(browserPath, label) {
+  if (typeof browserPath !== "string" || !browserPath || browserPath.startsWith("/")) {
+    throw new Error(`Invalid browser path for ${label}: ${browserPath}`);
+  }
+  const parts = browserPath.replaceAll("\\", "/").split("/");
+  if (parts.some((part) => !part || part === "." || part === "..")) {
+    throw new Error(`Unsafe browser path for ${label}: ${browserPath}`);
+  }
+  if (!browserPath.toLowerCase().endsWith(".svg")) {
+    throw new Error(`Browser icon is not an SVG for ${label}: ${browserPath}`);
+  }
+  const publicRoot = resolve(PUBLIC_ROOT);
+  const target = resolve(PUBLIC_ROOT, browserPath);
+  if (target !== publicRoot && !target.startsWith(`${publicRoot}${sep}`)) {
+    throw new Error(`Browser icon escapes public root for ${label}: ${browserPath}`);
+  }
+  return target;
+}
+
 function safeZipEntries(archive) {
   const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" })
     .split(/\r?\n/)
@@ -118,6 +138,8 @@ function replaceDirectory(target, prepared) {
 async function check() {
   const manifest = JSON.parse(readFileSync(join(ROOT, "packages/catalog/src/generated/manifest.json"), "utf8"));
   const counts = new Map();
+  const assetsBySourceId = new Map();
+  const browserPaths = new Map();
   for (const item of manifest.entries) {
     if (item.assetKind !== "resource") continue;
     counts.set(item.provider, (counts.get(item.provider) ?? 0) + 1);
@@ -144,6 +166,57 @@ async function check() {
     }
     if (sha256File(file) !== asset.sha256) {
       console.error(`hash drift: ${asset.sourcePath}`);
+      failed = true;
+    }
+    if (assetsBySourceId.has(asset.sourceId)) {
+      console.error(`duplicate asset source id: ${asset.sourceId}`);
+      failed = true;
+    }
+    assetsBySourceId.set(asset.sourceId, asset);
+    let staged;
+    try {
+      staged = validateBrowserPath(asset.browserPath, asset.sourceId);
+    } catch (error) {
+      console.error(error.message);
+      failed = true;
+      continue;
+    }
+    const existingOwner = browserPaths.get(asset.browserPath);
+    if (existingOwner) {
+      console.error(`duplicate browser icon path: ${asset.browserPath} (${existingOwner}, ${asset.sourceId})`);
+      failed = true;
+    }
+    browserPaths.set(asset.browserPath, asset.sourceId);
+    if (!existsSync(staged)) {
+      console.error(`missing staged browser asset: ${asset.browserPath}`);
+      failed = true;
+      continue;
+    }
+    try {
+      validateSvg(staged);
+    } catch (error) {
+      console.error(error.message);
+      failed = true;
+    }
+    if (sha256File(staged) !== asset.sha256) {
+      console.error(`staged hash drift: ${asset.browserPath}`);
+      failed = true;
+    }
+  }
+  for (const entry of manifest.entries) {
+    if (entry.canonical === false || entry.browsable === false) continue;
+    const asset = assetsBySourceId.get(entry.icon?.sourceId);
+    if (!asset) {
+      console.error(`entry has no staged asset record: ${entry.type}`);
+      failed = true;
+      continue;
+    }
+    if (!entry.browserPath || entry.browserPath !== asset.browserPath) {
+      console.error(`entry browser path mismatch: ${entry.type}`);
+      failed = true;
+    }
+    if (entry.icon?.sha256 !== asset.sha256 || entry.icon?.specificity !== asset.specificity) {
+      console.error(`entry icon metadata drift: ${entry.type}`);
       failed = true;
     }
   }

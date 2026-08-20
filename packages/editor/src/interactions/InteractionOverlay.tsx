@@ -15,16 +15,17 @@ import {
   type Selection,
   type SelectionItem,
 } from "../editor-model";
+import { snapCoordinate } from "../grid.js";
 
-type Mode = "auto" | "manual";
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note";
+type RewireTarget = { nodeId: string; side: Side };
 
 export function InteractionOverlay({
   doc,
   layout,
-  mode,
   tool,
   zoom,
+  snapToGrid,
   selection,
   pendingPort,
   ghostRoute,
@@ -42,9 +43,9 @@ export function InteractionOverlay({
 }: {
   doc: DiagramDocument;
   layout: LayoutResult;
-  mode: Mode;
   tool: Tool;
   zoom: number;
+  snapToGrid: boolean;
   selection: Selection;
   pendingPort: { nodeId: string; side: Side } | null;
   ghostRoute: Point[] | null;
@@ -89,6 +90,12 @@ export function InteractionOverlay({
     w: number;
     h: number;
   } | null>(null);
+  const [rewire, setRewire] = useState<{
+    edgeId: string;
+    endpoint: "source" | "target";
+  } | null>(null);
+  const [rewireTarget, setRewireTarget] = useState<RewireTarget | null>(null);
+  const [rewireCursor, setRewireCursor] = useState<Point | null>(null);
 
   const groups = useMemo(
     () => [...layout.groups].sort((a, b) => {
@@ -106,12 +113,14 @@ export function InteractionOverlay({
     () => [...layout.nodes].sort((a, b) => (view.places[a.id]?.zIndex ?? 0) - (view.places[b.id]?.zIndex ?? 0)),
     [layout.nodes, view.places],
   );
-  const showAllPorts = tool === "connector";
+  const showAllPorts = tool === "connector" || rewire !== null;
 
   const selectedEdge = selection.find((item) => item.kind === "edge");
   const edgeGeom = selectedEdge
     ? layout.edges.find((edge) => edge.id === selectedEdge.id)
     : undefined;
+  const showEdgeHandles = Boolean(edgeGeom && tool === "select");
+  const showBendHandles = showEdgeHandles;
 
   const predicted =
     ghostRoute ??
@@ -119,9 +128,63 @@ export function InteractionOverlay({
       ? routeEdgePreview(doc, layout, selectedEdge.id) ?? undefined
       : undefined);
 
+  const beginRewire = (
+    event: React.PointerEvent<SVGRectElement>,
+    edgeId: string,
+    endpoint: "source" | "target",
+  ) => {
+    const handle = event.currentTarget;
+    const svg = handle.ownerSVGElement;
+    const edge = doc.edges.find((candidate) => candidate.id === edgeId);
+    const currentTarget = edge
+      ? {
+          nodeId: endpoint === "source" ? edge.source : edge.target,
+          side: endpoint === "source" ? edge.sourcePort : edge.targetPort,
+        }
+      : null;
+    const pointerId = event.pointerId;
+
+    handle.setPointerCapture(pointerId);
+    onGestureBegin();
+    setRewire({ edgeId, endpoint });
+    setRewireTarget(null);
+    setRewireCursor(pointFromClient(svg, event.clientX, event.clientY, zoom));
+
+    const move = (next: PointerEvent) => {
+      setRewireCursor(pointFromClient(svg, next.clientX, next.clientY, zoom));
+      setRewireTarget(portAt(next.clientX, next.clientY));
+    };
+    const finish = (next?: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      const target = next ? portAt(next.clientX, next.clientY) : null;
+      if (
+        target &&
+        (!currentTarget || target.nodeId !== currentTarget.nodeId || target.side !== currentTarget.side)
+      ) {
+        onReconnect(edgeId, endpoint, target.nodeId, target.side);
+      }
+      setRewire(null);
+      setRewireTarget(null);
+      setRewireCursor(null);
+      onGestureEnd();
+      try {
+        handle.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already have been released by the browser.
+      }
+    };
+    const up = (next: PointerEvent) => finish(next);
+    const cancel = () => finish();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+  };
+
   return (
     <svg
-      className="interaction-overlay"
+      className={`interaction-overlay ${tool === "select" ? "is-select-tool" : ""}`}
       data-testid="canvas-interaction-overlay"
       width={layout.width}
       height={layout.height}
@@ -174,10 +237,11 @@ export function InteractionOverlay({
               onSelect({ kind: "group", id: group.id }, event.shiftKey);
               if (tool === "select" && !place?.locked) {
                 const origin = placeOrigin(view.places[group.id], group.bounds);
-                beginMove(
-                  event,
-                  zoom,
-                  origin,
+                  beginMove(
+                    event,
+                    zoom,
+                    snapToGrid,
+                    origin,
                   (x, y, dx, dy) => onMove("group", group.id, x, y, dx, dy),
                   onGestureBegin,
                   onGestureEnd,
@@ -227,6 +291,20 @@ export function InteractionOverlay({
         />
       )}
 
+      {rewire && rewireCursor && edgeGeom && rewire.edgeId === edgeGeom.id && (
+        <polyline
+          className="rewire-preview"
+          points={[
+            rewire.endpoint === "source"
+              ? edgeGeom.points[edgeGeom.points.length - 1]
+              : edgeGeom.points[0],
+            rewireCursor,
+          ]
+            .map((point) => `${point.x},${point.y}`)
+            .join(" ")}
+        />
+      )}
+
       {nodes.map((node) => {
         const place = view.places[node.id];
         if (!isEntityVisible(doc, view, node.id)) return null;
@@ -252,6 +330,7 @@ export function InteractionOverlay({
                 beginMove(
                   event,
                   zoom,
+                  snapToGrid,
                   origin,
                   (x, y, dx, dy) => onMove("resource", node.id, x, y, dx, dy),
                   onGestureBegin,
@@ -301,6 +380,7 @@ export function InteractionOverlay({
                 beginMove(
                   event,
                   zoom,
+                  snapToGrid,
                   rect,
                   (x, y, dx, dy) => onMove("annotation", annotation.id, x, y, dx, dy),
                   onGestureBegin,
@@ -318,6 +398,32 @@ export function InteractionOverlay({
               });
             }}
           />
+        );
+      })}
+
+      {selection.map((item) => {
+        const bounds = boundsFor(item, layout, doc);
+        if (!bounds || !isEntityVisible(doc, view, item.id)) return null;
+        const radius = item.kind === "group" ? 10 : 8;
+        return (
+          <g key={`selection-outline-${item.kind}-${item.id}`}>
+            <rect
+              className="selection-outline-halo"
+              x={bounds.x}
+              y={bounds.y}
+              width={bounds.w}
+              height={bounds.h}
+              rx={radius}
+            />
+            <rect
+              className={`selection-outline selection-${item.kind}`}
+              x={bounds.x}
+              y={bounds.y}
+              width={bounds.w}
+              height={bounds.h}
+              rx={radius}
+            />
+          </g>
         );
       })}
 
@@ -343,6 +449,7 @@ export function InteractionOverlay({
                   beginResize(
                     event,
                     zoom,
+                    snapToGrid,
                     bounds,
                     handle.name,
                     (w, h) =>
@@ -373,7 +480,7 @@ export function InteractionOverlay({
             data-node-id={node.id}
             data-port-side={side}
             aria-label={`${node.serviceLabel} ${side} port`}
-            className={`port-handle ${pendingPort?.nodeId === node.id && pendingPort.side === side ? "is-pending" : ""}`}
+            className={`port-handle ${pendingPort?.nodeId === node.id && pendingPort.side === side ? "is-pending" : ""} ${rewireTarget?.nodeId === node.id && rewireTarget.side === side ? "is-rewire-target" : ""}`}
             cx={point.x}
             cy={point.y}
             r={5}
@@ -385,66 +492,52 @@ export function InteractionOverlay({
         ));
       })}
 
-      {edgeGeom &&
+      {edgeGeom && showEdgeHandles &&
         edgeGeom.points.map((point, index) => (
-          view.places[edgeGeom.id]?.visible === false ? null :
-          <circle
-            key={`${edgeGeom.id}-bend-${index}`}
-            data-interactive
-            data-edge-id={edgeGeom.id}
-            data-bend-index={index}
-            data-endpoint={index === 0 ? "source" : index === edgeGeom.points.length - 1 ? "target" : undefined}
-            aria-label={index === 0 ? "Reconnect source endpoint" : index === edgeGeom.points.length - 1 ? "Reconnect target endpoint" : `Move bend ${index}`}
-            className="bend-handle"
-            cx={point.x}
-            cy={point.y}
-            r={index === 0 || index === edgeGeom.points.length - 1 ? 6 : 5}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              if (index === 0 || index === edgeGeom.points.length - 1) {
-                event.currentTarget.setPointerCapture(event.pointerId);
-                return;
-              }
-              if (mode !== "manual" || view.places[edgeGeom.id]?.locked) return;
-              beginPointMove(
-                event,
-                zoom,
-                edgeGeom.points,
-                index,
-                onRoute.bind(null, edgeGeom.id),
-                onGestureBegin,
-                onGestureEnd,
-              );
-            }}
-            onPointerUp={(event) => {
-              if (index !== 0 && index !== edgeGeom.points.length - 1) return;
-              const target = document.elementFromPoint(event.clientX, event.clientY);
-              const nodeId = target?.getAttribute("data-node-id");
-              const side = target?.getAttribute("data-port-side") as Side | null;
-              if (!nodeId || !side) {
-                try {
-                  event.currentTarget.releasePointerCapture(event.pointerId);
-                } catch {
-                  // Pointer capture may already have been released by the browser.
-                }
-                return;
-              }
-              onReconnect(
-                edgeGeom.id,
-                index === 0 ? "source" : "target",
-                nodeId,
-                side,
-              );
-              try {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-              } catch {
-                // Pointer capture may already have been released by the browser.
-              }
-            }}
-          />
+          view.places[edgeGeom.id]?.visible === false ? null : (() => {
+            const endpoint = index === 0 || index === edgeGeom.points.length - 1;
+            if (!endpoint && !showBendHandles) return null;
+            const endpointName = index === 0 ? "source" : index === edgeGeom.points.length - 1 ? "target" : undefined;
+            const size = endpoint ? 10 : 8;
+            return (
+              <rect
+                key={`${edgeGeom.id}-bend-${index}`}
+                data-interactive
+                data-edge-id={edgeGeom.id}
+                data-bend-index={index}
+                data-endpoint={endpointName}
+                aria-label={endpointName === "source" ? "Reconnect source endpoint" : endpointName === "target" ? "Reconnect target endpoint" : `Move bend ${index}`}
+                className={`bend-handle${endpoint ? " endpoint-handle" : ""}${rewire?.edgeId === edgeGeom.id && rewire.endpoint === endpointName ? " is-rewiring" : ""}`}
+                x={point.x - size / 2}
+                y={point.y - size / 2}
+                width={size}
+                height={size}
+                rx={endpoint ? 2 : 1.5}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  if (endpoint) {
+                    if (view.places[edgeGeom.id]?.locked) return;
+                    beginRewire(event, edgeGeom.id, endpointName!);
+                    return;
+                  }
+                  if (view.places[edgeGeom.id]?.locked) return;
+                  beginPointMove(
+                    event,
+                    zoom,
+                    snapToGrid,
+                    edgeGeom.points,
+                    index,
+                    onRoute.bind(null, edgeGeom.id),
+                    onGestureBegin,
+                    onGestureEnd,
+                  );
+                }}
+              />
+            );
+          })()
         ))}
 
-      {edgeGeom &&
+      {edgeGeom && showBendHandles &&
         edgeGeom.points.slice(0, -1).map((point, index) => {
           const next = edgeGeom.points[index + 1]!;
           const horizontal = point.y === next.y;
@@ -463,10 +556,11 @@ export function InteractionOverlay({
               rx={2}
               onPointerDown={(event) => {
                 event.stopPropagation();
-                if (mode !== "manual" || view.places[edgeGeom.id]?.locked) return;
+                if (view.places[edgeGeom.id]?.locked) return;
                 beginSegmentMove(
                   event,
                   zoom,
+                  snapToGrid,
                   edgeGeom.points,
                   index,
                   onRoute.bind(null, edgeGeom.id),
@@ -542,6 +636,7 @@ function resizeHandles(rect: { x: number; y: number; w: number; h: number }) {
 function beginMove(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
+  snapToGrid: boolean,
   rect: { x: number; y: number },
   onMove: (x: number, y: number, dx: number, dy: number) => void,
   onBegin?: () => void,
@@ -562,13 +657,15 @@ function beginMove(
       dragging = true;
       onBegin?.();
     }
-    const dx = snap(rawDx);
-    const dy = snap(rawDy);
+    const nextX = snapCoordinate(origin.x + rawDx, snapToGrid);
+    const nextY = snapCoordinate(origin.y + rawDy, snapToGrid);
+    const dx = nextX - origin.x;
+    const dy = nextY - origin.y;
     const incrementalDx = dx - previousDx;
     const incrementalDy = dy - previousDy;
     previousDx = dx;
     previousDy = dy;
-    onMove(snap(origin.x + dx), snap(origin.y + dy), incrementalDx, incrementalDy);
+    onMove(nextX, nextY, incrementalDx, incrementalDy);
   };
   const up = () => {
     window.removeEventListener("pointermove", move);
@@ -592,6 +689,7 @@ function placeOrigin(
 function beginResize(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
+  snapToGrid: boolean,
   rect: { x: number; y: number; w: number; h: number },
   handle: string,
   onResize: (w: number, h: number) => void,
@@ -604,8 +702,12 @@ function beginResize(
   const move = (next: PointerEvent) => {
     const dx = (next.clientX - start.x) / zoom;
     const dy = (next.clientY - start.y) / zoom;
-    const w = handle.includes("e") ? Math.max(32, snap(origin.w + dx)) : origin.w;
-    const h = handle.includes("s") ? Math.max(32, snap(origin.h + dy)) : origin.h;
+    const w = handle.includes("e")
+      ? Math.max(32, snapCoordinate(origin.w + dx, snapToGrid))
+      : origin.w;
+    const h = handle.includes("s")
+      ? Math.max(32, snapCoordinate(origin.h + dy, snapToGrid))
+      : origin.h;
     onResize(w, h);
   };
   const up = () => {
@@ -620,6 +722,7 @@ function beginResize(
 function beginSegmentMove(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
+  snapToGrid: boolean,
   points: Point[],
   index: number,
   onMove: (points: Point[]) => void,
@@ -633,11 +736,17 @@ function beginSegmentMove(
   const move = (next: PointerEvent) => {
     const updated = origin.map((point) => ({ ...point }));
     if (horizontal) {
-      const y = snap(origin[index]!.y + (next.clientY - start.y) / zoom);
+      const y = snapCoordinate(
+        origin[index]!.y + (next.clientY - start.y) / zoom,
+        snapToGrid,
+      );
       updated[index]!.y = y;
       updated[index + 1]!.y = y;
     } else {
-      const x = snap(origin[index]!.x + (next.clientX - start.x) / zoom);
+      const x = snapCoordinate(
+        origin[index]!.x + (next.clientX - start.x) / zoom,
+        snapToGrid,
+      );
       updated[index]!.x = x;
       updated[index + 1]!.x = x;
     }
@@ -655,6 +764,7 @@ function beginSegmentMove(
 function beginPointMove(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
+  snapToGrid: boolean,
   points: Point[],
   index: number,
   onMove: (points: Point[]) => void,
@@ -667,8 +777,14 @@ function beginPointMove(
   const move = (next: PointerEvent) => {
     const updated = origin.map((point) => ({ ...point }));
     updated[index] = {
-      x: snap(origin[index]!.x + (next.clientX - start.x) / zoom),
-      y: snap(origin[index]!.y + (next.clientY - start.y) / zoom),
+      x: snapCoordinate(
+        origin[index]!.x + (next.clientX - start.x) / zoom,
+        snapToGrid,
+      ),
+      y: snapCoordinate(
+        origin[index]!.y + (next.clientY - start.y) / zoom,
+        snapToGrid,
+      ),
     };
     onMove(updated);
   };
@@ -690,6 +806,29 @@ function portPoints(rect: { x: number; y: number; w: number; h: number }) {
   ];
 }
 
+function portAt(clientX: number, clientY: number): RewireTarget | null {
+  const target = document.elementFromPoint(clientX, clientY)?.closest<SVGElement>(
+    "[data-node-id][data-port-side]",
+  );
+  const nodeId = target?.getAttribute("data-node-id");
+  const side = target?.getAttribute("data-port-side") as Side | null;
+  return nodeId && side ? { nodeId, side } : null;
+}
+
+function pointFromClient(
+  svg: SVGSVGElement | null,
+  clientX: number,
+  clientY: number,
+  zoom: number,
+): Point {
+  const rect = svg?.getBoundingClientRect();
+  if (!rect) return { x: clientX, y: clientY };
+  return {
+    x: (clientX - rect.left) / zoom,
+    y: (clientY - rect.top) / zoom,
+  };
+}
+
 function rectFromPoints(a: Point, b: Point) {
   return {
     x: Math.min(a.x, b.x),
@@ -697,8 +836,4 @@ function rectFromPoints(a: Point, b: Point) {
     w: Math.abs(a.x - b.x),
     h: Math.abs(a.y - b.y),
   };
-}
-
-function snap(value: number): number {
-  return Math.round(value / 8) * 8;
 }

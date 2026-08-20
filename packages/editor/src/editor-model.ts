@@ -16,6 +16,8 @@ import { getDefaultView } from "@dumb-diagrams/core";
 import { getCatalogEntry, type CatalogEntry } from "@dumb-diagrams/catalog";
 import { sanitizeSvg } from "@dumb-diagrams/render";
 
+import { snapCoordinate } from "./grid.js";
+
 export type SelectionKind = "resource" | "group" | "edge" | "annotation";
 
 export interface SelectionItem {
@@ -327,6 +329,7 @@ export function nudgeSelection(
   selection: Selection,
   dx: number,
   dy: number,
+  options: { snapToGrid?: boolean } = {},
 ): DiagramDocument {
   let next = doc;
   for (const item of selection) {
@@ -334,11 +337,15 @@ export function nudgeSelection(
       const view = getDefaultView(next);
       const place = view.places[item.id];
       if (!place || place.locked) continue;
-      const x = (place.x ?? 0) + dx;
-      const y = (place.y ?? 0) + dy;
+      const previousX = place.x ?? 0;
+      const previousY = place.y ?? 0;
+      const x = Math.max(0, snapCoordinate(previousX + dx, Boolean(options.snapToGrid)));
+      const y = Math.max(0, snapCoordinate(previousY + dy, Boolean(options.snapToGrid)));
+      const actualDx = x - previousX;
+      const actualDy = y - previousY;
       next =
         item.kind === "group"
-          ? setGroupPlace(next, item.id, x, y, dx, dy)
+          ? setGroupPlace(next, item.id, x, y, actualDx, actualDy)
           : setPlace(next, item.id, x, y);
     }
     if (item.kind === "annotation") {
@@ -346,10 +353,18 @@ export function nudgeSelection(
       const place = view.annotations?.[item.id];
       if (!place || place.locked) continue;
       if (!view.annotations) view.annotations = {};
+      const x = Math.max(
+        0,
+        snapCoordinate((place.x ?? 0) + dx, Boolean(options.snapToGrid)),
+      );
+      const y = Math.max(
+        0,
+        snapCoordinate((place.y ?? 0) + dy, Boolean(options.snapToGrid)),
+      );
       view.annotations[item.id] = {
         ...place,
-        x: Math.max(0, Math.round((place.x ?? 0) + dx)),
-        y: Math.max(0, Math.round((place.y ?? 0) + dy)),
+        x: Math.round(x),
+        y: Math.round(y),
         pin: true,
       };
     }

@@ -7,9 +7,12 @@ import {
   alignSelection,
   deleteSelection,
   importSvgAsset,
+  moveSelection,
   nudgeSelection,
+  pasteClipboard,
   renameResource,
   resourceIconSize,
+  serializeClipboard,
   sendToBack,
   sendToFront,
   setGroupPlace,
@@ -40,6 +43,49 @@ describe("editor commands", () => {
     view.places.client = { x: 40, y: 40, pin: true };
     const next = nudgeSelection(doc, [{ kind: "resource", id: "client" }], 8, 8);
     expect(getDefaultView(next).places.client).toMatchObject({ x: 48, y: 48, pin: true });
+  });
+
+  it("nudges pinned places to the visible grid when enabled", () => {
+    const doc = createAsyncDocsFixture();
+    const view = getDefaultView(doc);
+    view.places.client = { x: 40, y: 40, pin: true };
+    const next = nudgeSelection(
+      doc,
+      [{ kind: "resource", id: "client" }],
+      1,
+      1,
+      { snapToGrid: true },
+    );
+    expect(getDefaultView(next).places.client).toMatchObject({ x: 48, y: 48, pin: true });
+  });
+
+  it("moves a selected group subtree once per gesture delta", () => {
+    const doc = createAsyncDocsFixture();
+    const view = getDefaultView(doc);
+    view.places.appA = { x: 200, y: 200, pin: true };
+    view.places.apiA = { x: 240, y: 240, pin: true };
+    view.places.workerA = { x: 280, y: 240, pin: true };
+    const next = moveSelection(
+      doc,
+      [{ kind: "group", id: "appA" }],
+      8,
+      16,
+      layoutDocument(doc),
+    );
+    expect(getDefaultView(next).places.appA).toMatchObject({ x: 208, y: 216 });
+    expect(getDefaultView(next).places.apiA).toMatchObject({ x: 248, y: 256 });
+    expect(getDefaultView(next).places.workerA).toMatchObject({ x: 288, y: 256 });
+  });
+
+  it("pastes nested groups without duplicating child ids", () => {
+    const doc = createAsyncDocsFixture();
+    const payload = serializeClipboard(doc, [{ kind: "group", id: "appA" }]);
+    const result = pasteClipboard(doc, payload, { x: 600, y: 600 });
+    const pastedGroupId = result.selection.find((item) => item.kind === "group")?.id;
+    const pastedGroup = result.doc.groups.find((group) => group.id === pastedGroupId);
+    expect(pastedGroup).toBeTruthy();
+    expect(new Set(pastedGroup?.children).size).toBe(pastedGroup?.children.length);
+    expect(pastedGroup?.children).toHaveLength(2);
   });
 
   it("deletes multiple selected items", () => {

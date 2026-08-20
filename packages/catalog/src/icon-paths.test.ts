@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -21,18 +22,50 @@ describe("catalog icon previews", () => {
     expect(missing).toEqual([]);
   });
 
-  it("resolves icons for every browsable service and group", () => {
-    const missing: string[] = [];
+  it("resolves every browser icon path to a staged public asset", () => {
+    const problems: string[] = [];
+    for (const asset of manifest.assetFiles) {
+      const staged = join(ROOT, "packages/editor/public", asset.browserPath);
+      if (!existsSync(staged)) {
+        problems.push(`${asset.sourceId} -> missing ${asset.browserPath}`);
+        continue;
+      }
+      const contents = readFileSync(staged);
+      if (!/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(contents.toString("utf8"))) {
+        problems.push(`${asset.sourceId} -> malformed staged SVG`);
+      }
+      const hash = createHash("sha256").update(contents).digest("hex");
+      if (hash !== asset.sha256) problems.push(`${asset.sourceId} -> staged hash drift`);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it("maps every browsable cloud entry to its exact staged icon", () => {
+    const assetsBySourceId = new Map(manifest.assetFiles.map((asset) => [asset.sourceId, asset]));
+    const browserPaths = new Set<string>();
+    const problems: string[] = [];
     for (const provider of listProviders()) {
       for (const mode of ["resources", "groups"] as const) {
         for (const entry of listBrowsableAssets(provider, mode)) {
-          if (!existsSync(join(ROOT, entry.iconPath))) {
-            missing.push(`${provider}/${mode}: ${entry.type} -> ${entry.iconPath}`);
+          const asset = assetsBySourceId.get(entry.icon.sourceId);
+          if (!asset) {
+            problems.push(`${provider}/${mode}: ${entry.type} -> missing asset record`);
+            continue;
+          }
+          if (!entry.browserPath || entry.browserPath !== asset.browserPath) {
+            problems.push(`${provider}/${mode}: ${entry.type} -> browser path mismatch`);
+          }
+          if (browserPaths.has(entry.browserPath)) {
+            problems.push(`${provider}/${mode}: ${entry.type} -> duplicate browser path`);
+          }
+          browserPaths.add(entry.browserPath);
+          if (!existsSync(join(ROOT, "packages/editor/public", entry.browserPath))) {
+            problems.push(`${provider}/${mode}: ${entry.type} -> missing staged icon`);
           }
         }
       }
     }
-    expect(missing).toEqual([]);
+    expect(problems).toEqual([]);
   });
 
   it("does not expose empty resource categories", () => {

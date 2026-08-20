@@ -24,8 +24,13 @@ function IconBase({ children, ...props }: IconProps & { children: ReactNode }) {
 export function IconSelect(props: IconProps) {
   return (
     <IconBase {...props}>
-      <path d="M4.5 3.5L4.5 14.5" />
-      <path d="M4.5 3.5L8.5 7.5L4.5 11.5" fill="currentColor" stroke="none" />
+      <path
+        d="M4 2.5L4.35 15.25L7.8 11.8L10.35 16L11.9 15.1L9.35 10.9H14.5L4 2.5Z"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth={0.8}
+        strokeLinejoin="round"
+      />
     </IconBase>
   );
 }
@@ -40,12 +45,21 @@ export function IconLayers(props: IconProps) {
   );
 }
 
-export function IconOpen(props: IconProps) {
+export function IconGrid(props: IconProps) {
   return (
     <IconBase {...props}>
-      <path d="M3 5.5H11.5" />
-      <path d="M7.5 5.5V3.5H14.5V14.5H3V8" />
-      <path d="M3 11.5H6.5V14.5H3V11.5Z" />
+      <path d="M3 3H15V15H3Z" />
+      <path d="M7 3V15M11 3V15M3 7H15M3 11H15" />
+    </IconBase>
+  );
+}
+
+export function IconFolderOpen(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M2.5 5.5H6.75L8.25 7.25H15.5V14.5H2.5V5.5Z" />
+      <path d="M9 8.25V11.75" />
+      <path d="M7.5 10.25L9 11.75L10.5 10.25" />
     </IconBase>
   );
 }

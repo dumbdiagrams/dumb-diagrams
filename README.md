@@ -15,8 +15,11 @@ node packages/cli/dist/index.js fixtures async-docs
 # Render from source
 node packages/cli/dist/index.js render examples/src/async-docs.arch output.svg
 
-# Live preview (code → canvas)
-node packages/cli/dist/index.js dev examples/src/async-docs.arch
+# Full browser editor (menus, tools, inspectors)
+pnpm dev
+
+# Minimal CLI preview (code → canvas)
+pnpm dev:cli -- examples/src/async-docs.arch
 
 # Validate examples
 node packages/cli/dist/index.js check examples/src
@@ -38,8 +41,11 @@ node packages/cli/dist/index.js check examples/src
 ## Editor
 
 ```bash
-cd packages/editor && pnpm dev
+pnpm dev
 ```
+
+The minimal source-and-canvas CLI preview remains available with
+`pnpm dev:cli -- examples/src/async-docs.arch`.
 
 ## MCP
 

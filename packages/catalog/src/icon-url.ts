@@ -6,7 +6,13 @@ export function catalogIconUrl(iconPath: string): string {
     .map((segment) => encodeURIComponent(segment))
     .join("/");
   if (typeof document !== "undefined") {
-    return new URL(encoded, document.baseURI).toString();
+    try {
+      return new URL(encoded, document.baseURI).toString();
+    } catch {
+      // A non-browser consumer may provide a partial document shim. Keep the
+      // resolver useful there instead of turning an unavailable base into a
+      // render-wide exception.
+    }
   }
   return `/${encoded}`;
 }

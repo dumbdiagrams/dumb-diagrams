@@ -12,7 +12,8 @@
     "test": "vitest run",
     "check": "node packages/cli/dist/index.js check examples/src",
     "render": "node packages/cli/dist/index.js render",
-    "dev": "node packages/cli/dist/index.js dev"
+    "dev": "pnpm --filter @dumb-diagrams/editor dev",
+    "dev:cli": "node packages/cli/dist/index.js dev"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

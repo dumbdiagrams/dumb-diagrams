@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getCatalogEntry,
+  listAssets,
   listCategories,
   listProviders,
   searchAssets,
@@ -25,6 +26,14 @@ describe("generated catalog", () => {
   it("searches across providers", () => {
     const results = searchAssets("sql database", "azure");
     expect(results.length).toBeGreaterThan(0);
+  });
+
+  it("supports the all-provider filter", () => {
+    const allResources = listAssets("all", { assetKind: "resource" });
+    const awsResources = listAssets("aws", { assetKind: "resource" });
+    expect(allResources.length).toBeGreaterThan(awsResources.length);
+    expect(searchAssets("database", "all").some((entry) => entry.provider !== "aws")).toBe(true);
+    expect(listCategories("all")).toContain("Databases");
   });
 
   it("includes key multi-cloud database services", () => {

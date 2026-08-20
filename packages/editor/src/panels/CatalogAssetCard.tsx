@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { catalogIconUrl, type CatalogEntry } from "@dumb-diagrams/catalog";
+
+const ICON_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000] as const;
 
 export function CatalogAssetCard({
   entry,
@@ -17,8 +19,35 @@ export function CatalogAssetCard({
   onActivate: () => void;
   onToggleFavorite: () => void;
 }) {
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "loaded" | "retrying" | "error">("loading");
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimer = useRef<number | undefined>(undefined);
   const iconSize = variant === "group" ? 52 : 40;
+  const iconUrl = catalogIconUrl(entry.browserPath);
+
+  useEffect(() => {
+    setStatus("loading");
+    setRetryCount(0);
+    return () => {
+      if (retryTimer.current !== undefined) window.clearTimeout(retryTimer.current);
+    };
+  }, [entry.browserPath]);
+
+  const iconSrc = retryCount
+    ? `${iconUrl}${iconUrl.includes("?") ? "&" : "?"}icon-retry=${retryCount}`
+    : iconUrl;
+
+  const handleIconError = () => {
+    if (retryCount >= ICON_RETRY_DELAYS_MS.length) {
+      setStatus("error");
+      return;
+    }
+    setStatus("retrying");
+    if (retryTimer.current !== undefined) window.clearTimeout(retryTimer.current);
+    retryTimer.current = window.setTimeout(() => {
+      setRetryCount((current) => current + 1);
+    }, ICON_RETRY_DELAYS_MS[retryCount] ?? ICON_RETRY_DELAYS_MS.at(-1)!);
+  };
 
   return (
     <div
@@ -27,6 +56,7 @@ export function CatalogAssetCard({
       data-provider={entry.provider}
       data-asset-kind={variant === "group" ? "group" : "resource"}
       data-icon-status={status}
+      data-icon-browser-path={entry.browserPath}
     >
       <button
         type="button"
@@ -37,16 +67,24 @@ export function CatalogAssetCard({
       >
         <span className="palette-thumb">
           {status === "error" ? (
-            <span className="palette-thumb-error" role="img" aria-label="Icon unavailable">!</span>
+            <span
+              className="palette-thumb-error"
+              role="img"
+              aria-label="Icon unavailable"
+              title={`Icon unavailable: ${entry.name}`}
+            >
+              !
+            </span>
           ) : (
             <img
-              src={catalogIconUrl(entry.browserPath)}
+              src={iconSrc}
               alt=""
               width={iconSize}
               height={iconSize}
+              loading="lazy"
               decoding="async"
               onLoad={() => setStatus("loaded")}
-              onError={() => setStatus("error")}
+              onError={handleIconError}
             />
           )}
         </span>
