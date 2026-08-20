@@ -19,8 +19,8 @@ const TOOLS: Array<{
   Icon: ComponentType;
 }> = [
   { id: "select", label: "Select", shortcut: "V", Icon: IconSelect },
-  { id: "resources", label: "Resources", Icon: IconResources },
   { id: "groups", label: "Groups", Icon: IconGroups },
+  { id: "resources", label: "Resources", Icon: IconResources },
   { id: "connector", label: "Connector", shortcut: "C", Icon: IconConnector },
   { id: "layers", label: "Layers", Icon: IconLayers },
   { id: "note", label: "Add note", Icon: IconNote },

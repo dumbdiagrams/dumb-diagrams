@@ -1,5 +1,7 @@
 import type {
   DiagramDocument,
+  EdgeKind,
+  EdgeStyle,
   GroupGeom,
   LayoutResult,
   NodeGeom,
@@ -9,7 +11,13 @@ import type {
   EdgeBadgeSide,
   Side,
 } from "@dumb-diagrams/core";
-import { getDefaultView } from "@dumb-diagrams/core";
+import {
+  getDefaultView,
+  nearestPortAnchor,
+  normalizePortOffset,
+  PORT_OFFSETS,
+  portPoint,
+} from "@dumb-diagrams/core";
 import { GRAMMAR, GROUP_STYLES, snap } from "@dumb-diagrams/grammar-aws";
 
 const CELL = GRAMMAR.grid;
@@ -18,7 +26,7 @@ const COLLISION_COST = 100_000;
 const HEADER_COST = 100_000;
 const OVERLAP_COST = 480;
 const PORT_FALLBACK_COST = 1_200;
-const PORT_LANE_OFFSET = 10;
+const PORT_ENDPOINT_COLLISION_COST = 40_000;
 const TURN_COST = 140;
 
 interface PortChoice {
@@ -75,6 +83,8 @@ export function routeEdges(
       isFailure,
       edge.sourcePort,
       edge.targetPort,
+      edge.sourcePortOffset,
+      edge.targetPortOffset,
     );
 
     let best: Point[] | null = null;
@@ -121,9 +131,11 @@ export function routeEdges(
     const routeOverride = view.routes[edge.id];
     if (routeOverride?.pin) {
       if (routeOverride.points?.length) {
-        points = normalizeOrthogonalRoute(routeOverride.points);
+        points = collapseOrthogonalRouteArtifacts(
+          snapRouteEndpoints(routeOverride.points, source, target),
+        );
       } else if (routeOverride.waypoints?.length) {
-        points = normalizeOrthogonalRoute([
+        points = collapseOrthogonalRouteArtifacts([
           points[0]!,
           ...routeOverride.waypoints.map((point) => ({ ...point })),
           points.at(-1)!,
@@ -245,19 +257,41 @@ function candidatePorts(
   isFailure: boolean,
   sourcePort?: Side,
   targetPort?: Side,
+  sourcePortOffset?: number,
+  targetPortOffset?: number,
 ): PortChoice[] {
-  const make = (a: Side, b: Side): PortChoice => ({
-    src: port(source, a, "source"),
-    tgt: port(target, b, "target"),
+  const make = (
+    a: Side,
+    b: Side,
+    ao = 0.5,
+    bo = 0.5,
+  ): PortChoice => ({
+    src: port(source, a, ao),
+    tgt: port(target, b, bo),
     srcSide: a,
     tgtSide: b,
   });
-  if (sourcePort || targetPort) {
+  if (
+    sourcePort ||
+    targetPort ||
+    sourcePortOffset !== undefined ||
+    targetPortOffset !== undefined
+  ) {
     const fallbackSource = isFailure ? "e" : iconCenter(target).x >= iconCenter(source).x ? "e" : "w";
     const fallbackTarget = isFailure ? "n" : fallbackSource === "e" ? "w" : "e";
-    return [make(sourcePort ?? fallbackSource, targetPort ?? fallbackTarget)];
+    return [
+      make(
+        sourcePort ?? fallbackSource,
+        targetPort ?? fallbackTarget,
+        normalizePortOffset(sourcePortOffset),
+        normalizePortOffset(targetPortOffset),
+      ),
+    ];
   }
-  if (isFailure) return [make("e", "n"), make("e", "e"), make("s", "n")];
+  const expand = (pairs: Array<[Side, Side]>): PortChoice[] =>
+    pairs.flatMap(([a, b]) => portOffsetVariants(a, b, make));
+
+  if (isFailure) return expand([["e", "n"], ["e", "e"], ["s", "n"]]);
 
   const sc = iconCenter(source);
   const tc = iconCenter(target);
@@ -268,10 +302,25 @@ function candidatePorts(
     target.obstacle.x < source.obstacle.x + source.obstacle.w;
 
   if (sameColumn && Math.abs(dy) > source.icon.h) {
-    return [make("e", "e"), make("w", "w"), make("e", "w")];
+    return expand([["e", "e"], ["w", "w"], ["e", "w"]]);
   }
-  if (dx >= 0) return [make("e", "w"), make("e", "n"), make("s", "w"), make("e", "e")];
-  return [make("w", "e"), make("e", "e"), make("n", "w")];
+  if (dx >= 0) return expand([["e", "w"], ["e", "n"], ["s", "w"], ["e", "e"]]);
+  return expand([["w", "e"], ["e", "e"], ["n", "w"]]);
+}
+
+function portOffsetVariants(
+  sourceSide: Side,
+  targetSide: Side,
+  make: (sourceSide: Side, targetSide: Side, sourceOffset?: number, targetOffset?: number) => PortChoice,
+): PortChoice[] {
+  const variants: PortChoice[] = [make(sourceSide, targetSide)];
+  for (const sourceOffset of PORT_OFFSETS) {
+    for (const targetOffset of PORT_OFFSETS) {
+      if (sourceOffset === 0.5 && targetOffset === 0.5) continue;
+      variants.push(make(sourceSide, targetSide, sourceOffset, targetOffset));
+    }
+  }
+  return variants;
 }
 
 function iconCenter(node: NodeGeom): Point {
@@ -296,20 +345,21 @@ function createRouteContext(
 function port(
   node: NodeGeom,
   side: Side,
-  endpoint: "source" | "target",
+  offset = 0.5,
 ): Point {
-  const i = node.icon;
-  const lane = endpoint === "source" ? PORT_LANE_OFFSET : -PORT_LANE_OFFSET;
-  switch (side) {
-    case "e":
-      return { x: i.x + i.w, y: snap(i.y + i.h / 2 + lane) };
-    case "w":
-      return { x: i.x, y: snap(i.y + i.h / 2 + lane) };
-    case "s":
-      return { x: snap(i.x + i.w / 2 + lane), y: i.y + i.h };
-    case "n":
-      return { x: snap(i.x + i.w / 2 + lane), y: i.y };
-  }
+  return portPoint(node.icon, side, normalizePortOffset(offset));
+}
+
+function snapRouteEndpoints(
+  points: Point[],
+  source: NodeGeom,
+  target: NodeGeom,
+): Point[] {
+  if (points.length < 2) return points.map((point) => ({ ...point }));
+  const next = points.map((point) => ({ ...point }));
+  next[0] = nearestPortAnchor(source.icon, next[0]!).point;
+  next[next.length - 1] = nearestPortAnchor(target.icon, next.at(-1)!).point;
+  return next;
 }
 
 function templates(
@@ -459,6 +509,16 @@ function scorePath(
     }
     for (const other of existing) {
       score += overlapLength(a, b, other) * OVERLAP_COST;
+    }
+  }
+  for (const other of existing) {
+    if (
+      samePoint(points[0]!, other[0]!) ||
+      samePoint(points[0]!, other.at(-1)!) ||
+      samePoint(points.at(-1)!, other[0]!) ||
+      samePoint(points.at(-1)!, other.at(-1)!)
+    ) {
+      score += PORT_ENDPOINT_COLLISION_COST;
     }
   }
   return score;
@@ -777,6 +837,48 @@ export function normalizeOrthogonalRoute(points: Point[]): Point[] {
   return out;
 }
 
+/**
+ * Return a canonical editable route with redundant straight-through points
+ * removed. `normalizeOrthogonalRoute` deliberately preserves authored
+ * breakpoints; interactive drags use this stricter form once geometry has
+ * collapsed so overlapping handles and zero-area hairpins do not survive.
+ */
+export function simplifyOrthogonalRoute(points: Point[]): Point[] {
+  return simplify(normalizeOrthogonalRoute(points)).map((point) => ({ ...point }));
+}
+
+/**
+ * Remove sub-pixel straight-through fragments created when a snapped manual
+ * leg meets a fractional icon port. Meaningful authored breakpoints are kept;
+ * only a redundant middle point touching a tiny segment is collapsed.
+ */
+export function collapseOrthogonalRouteArtifacts(
+  points: Point[],
+  minimumSegmentLength = 2,
+): Point[] {
+  const out = normalizeOrthogonalRoute(points).map((point) => ({ ...point }));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let index = 1; index < out.length - 1; index++) {
+      const previous = out[index - 1]!;
+      const current = out[index]!;
+      const next = out[index + 1]!;
+      const collinear =
+        (previous.x === current.x && current.x === next.x) ||
+        (previous.y === current.y && current.y === next.y);
+      const touchesTinySegment =
+        pathLength([previous, current]) <= minimumSegmentLength ||
+        pathLength([current, next]) <= minimumSegmentLength;
+      if (!collinear || !touchesTinySegment) continue;
+      out.splice(index, 1);
+      changed = true;
+      break;
+    }
+  }
+  return out;
+}
+
 export interface EdgeBadgePlacement {
   point: Point;
   anchor: Point;
@@ -969,7 +1071,11 @@ export interface RoutePreviewOptions {
   target?: string;
   sourcePort?: Side;
   targetPort?: Side;
+  sourcePortOffset?: number;
+  targetPortOffset?: number;
   waypoints?: Point[];
+  kind?: EdgeKind;
+  style?: EdgeStyle;
 }
 
 export function routeEdgePreview(
@@ -980,9 +1086,48 @@ export function routeEdgePreview(
 ): Point[] | null {
   const edge = doc.edges.find((candidate) => candidate.id === edgeId);
   if (!edge) return null;
+
+  // Preview through the same ordered, edge-aware routing pass used after the
+  // document mutation. A standalone connection route can choose a different
+  // corridor because it cannot see paths claimed by earlier edges, making the
+  // snapped preview jump somewhere else on pointerup.
+  const previewDoc = structuredClone(doc);
+  const previewEdge = previewDoc.edges.find((candidate) => candidate.id === edgeId)!;
+  if (options.source !== undefined) previewEdge.source = options.source;
+  if (options.target !== undefined) previewEdge.target = options.target;
+  if (options.sourcePort !== undefined) previewEdge.sourcePort = options.sourcePort;
+  if (options.targetPort !== undefined) previewEdge.targetPort = options.targetPort;
+  if (options.sourcePortOffset !== undefined) {
+    previewEdge.sourcePortOffset = normalizePortOffset(options.sourcePortOffset);
+  }
+  if (options.targetPortOffset !== undefined) {
+    previewEdge.targetPortOffset = normalizePortOffset(options.targetPortOffset);
+  }
+  if (options.kind !== undefined) previewEdge.kind = options.kind;
+  if (options.style !== undefined) previewEdge.style = options.style;
+
+  const previewView = getDefaultView(previewDoc);
+  if (options.waypoints?.length) {
+    previewView.routes[edgeId] = {
+      pin: true,
+      mode: "manual",
+      waypoints: options.waypoints.map((point) => ({ ...point })),
+    };
+  } else {
+    delete previewView.routes[edgeId];
+  }
+
+  return routeEdges(previewDoc, layout).find((candidate) => candidate.id === edgeId)?.points ?? null;
+}
+
+export function routeConnectionPreview(
+  doc: DiagramDocument,
+  layout: LayoutResult,
+  sourceId: string,
+  targetId: string,
+  options: RoutePreviewOptions = {},
+): Point[] | null {
   const nodeMap = new Map(layout.nodes.map((n) => [n.id, n]));
-  const sourceId = options.source ?? edge.source;
-  const targetId = options.target ?? edge.target;
   const source = nodeMap.get(sourceId);
   const target = nodeMap.get(targetId);
   if (!source || !target) return null;
@@ -991,13 +1136,15 @@ export function routeEdgePreview(
   const vGutters = verticalGutters(layout, obstacles);
   const hGutters = horizontalGutters(layout, obstacles);
   const grid = buildGrid(layout, obstacles);
-  const isFailure = edge.kind === "fail" || edge.style === "dashed";
+  const isFailure = options.kind === "fail" || options.style === "dashed";
   const ports = candidatePorts(
     source,
     target,
     isFailure,
-    options.sourcePort ?? edge.sourcePort,
-    options.targetPort ?? edge.targetPort,
+    options.sourcePort,
+    options.targetPort,
+    options.sourcePortOffset,
+    options.targetPortOffset,
   );
 
   let best: Point[] | null = null;

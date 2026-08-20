@@ -25,7 +25,7 @@ describe("parseArch / printArch round-trip", () => {
 
   annotation note1 "Callout" { anchor client }
 
-  client -> api { id e1 label "request" step 1 from e to w }
+  client -> api { id e1 label "request" step 1 from e offset 0.25 to w offset 0.75 }
 }
 
 view default {
@@ -46,6 +46,8 @@ view default {
       step: 1,
       sourcePort: "e",
       targetPort: "w",
+      sourcePortOffset: 0.25,
+      targetPortOffset: 0.75,
     });
     const view = getDefaultView(parsed);
     expect(view.places.client).toMatchObject({
@@ -76,5 +78,24 @@ view default {
     const roundTrip = printArch(parsed);
     const reparsed = parseArch(roundTrip);
     expect(reparsed).toEqual(parsed);
+  });
+
+  it("round-trips note style variants", () => {
+    const source = `diagram notes {
+  grammar aws
+  flow lr
+
+  annotation codeNote "const queue = await receive()" { style code }
+  annotation calloutNote "Keep the worker private" { style callout }
+  annotation checklistNote "Review IAM / Run smoke test" { style checklist }
+}`;
+
+    const parsed = parseArch(source);
+    expect(parsed.annotations.map((annotation) => annotation.style)).toEqual([
+      "code",
+      "callout",
+      "checklist",
+    ]);
+    expect(parseArch(printArch(parsed))).toEqual(parsed);
   });
 });

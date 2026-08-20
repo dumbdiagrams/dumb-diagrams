@@ -7,11 +7,17 @@ import type {
   Point,
   Side,
 } from "@dumb-diagrams/core";
-import { getDefaultView } from "@dumb-diagrams/core";
+import {
+  getDefaultView,
+  normalizePortOffset,
+  portPoint,
+  portAnchors,
+} from "@dumb-diagrams/core";
 import {
   getEdgeBadgePlacement,
   normalizeOrthogonalRoute,
   projectPointToPolyline,
+  routeConnectionPreview,
   routeEdgePreview,
 } from "@dumb-diagrams/route";
 import { useMemo, useState } from "react";
@@ -22,10 +28,14 @@ import {
   type SelectionItem,
 } from "../editor-model";
 import { snapCoordinate } from "../grid.js";
-import { nearestEdgeIdAt } from "./edge-targeting.js";
+import { nearestEdgeIdAt, nearestNodePortAt } from "./edge-targeting.js";
+import {
+  anchorOrthogonalRouteEndpoints,
+  moveOrthogonalBend,
+} from "./route-editing.js";
 
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note";
-type RewireTarget = { nodeId: string; side: Side };
+type RewireTarget = { nodeId: string; side: Side; offset: number };
 type BadgeDrag = {
   edgeId: string;
   t: number;
@@ -45,6 +55,7 @@ export function InteractionOverlay({
   onMarquee,
   onBackgroundClick,
   onChoosePort,
+  onConnectPorts,
   onReconnect,
   onGestureBegin,
   onGestureEnd,
@@ -60,17 +71,26 @@ export function InteractionOverlay({
   zoom: number;
   snapToGrid: boolean;
   selection: Selection;
-  pendingPort: { nodeId: string; side: Side } | null;
+  pendingPort: { nodeId: string; side: Side; offset: number } | null;
   ghostRoute: Point[] | null;
   onSelect: (item: SelectionItem, additive: boolean) => void;
   onMarquee: (rect: { x: number; y: number; w: number; h: number }) => void;
   onBackgroundClick: () => void;
-  onChoosePort: (nodeId: string, side: Side) => void;
+  onChoosePort: (nodeId: string, side: Side, offset: number) => void;
+  onConnectPorts: (
+    sourceNodeId: string,
+    sourceSide: Side,
+    sourceOffset: number,
+    targetNodeId: string,
+    targetSide: Side,
+    targetOffset: number,
+  ) => void;
   onReconnect: (
     edgeId: string,
     endpoint: "source" | "target",
     nodeId: string,
     side: Side,
+    offset: number,
   ) => void;
   onGestureBegin: () => void;
   onGestureEnd: () => void;
@@ -109,7 +129,13 @@ export function InteractionOverlay({
     endpoint: "source" | "target";
   } | null>(null);
   const [rewireTarget, setRewireTarget] = useState<RewireTarget | null>(null);
-  const [rewireCursor, setRewireCursor] = useState<Point | null>(null);
+  const [rewirePreview, setRewirePreview] = useState<Point[] | null>(null);
+  const [connectorDrag, setConnectorDrag] = useState<{
+    source: RewireTarget;
+    cursor: Point;
+    target: RewireTarget | null;
+    preview: Point[];
+  } | null>(null);
   const [hoveredItem, setHoveredItem] = useState<SelectionItem | null>(null);
   const [badgeDrag, setBadgeDrag] = useState<BadgeDrag>(null);
 
@@ -145,6 +171,16 @@ export function InteractionOverlay({
   const showEdgeHandles = Boolean(edgeGeom && tool === "select");
   const showBendHandles = showEdgeHandles;
 
+  const commitRoute = (edgeId: string, points: Point[]) => {
+    const edge = doc.edges.find((candidate) => candidate.id === edgeId);
+    const source = edge ? layout.nodes.find((node) => node.id === edge.source) : undefined;
+    const target = edge ? layout.nodes.find((node) => node.id === edge.target) : undefined;
+    const anchored = source && target
+      ? anchorOrthogonalRouteEndpoints(points, source.icon, target.icon)
+      : points;
+    onRoute(edgeId, normalizeOrthogonalRoute(anchored));
+  };
+
   const closestTargetAt = (clientX: number, clientY: number): SelectionItem | null => {
     const point = pointFromClient(
       document.querySelector<SVGSVGElement>('[data-testid="canvas-interaction-overlay"]'),
@@ -178,6 +214,21 @@ export function InteractionOverlay({
     (selectedEdge
       ? routeEdgePreview(doc, layout, selectedEdge.id) ?? undefined
       : undefined);
+  const activePortTarget = rewireTarget ?? connectorDrag?.target;
+
+  const portTargetAt = (
+    svg: SVGSVGElement | null,
+    clientX: number,
+    clientY: number,
+    preferred?: RewireTarget | null,
+  ): RewireTarget | null =>
+    portAt(clientX, clientY) ??
+    nearestNodePortAt(
+      pointFromClient(svg, clientX, clientY, zoom),
+      layout.nodes,
+      24,
+      preferred,
+    );
 
   const beginRewire = (
     event: React.PointerEvent<SVGRectElement>,
@@ -191,34 +242,79 @@ export function InteractionOverlay({
       ? {
           nodeId: endpoint === "source" ? edge.source : edge.target,
           side: endpoint === "source" ? edge.sourcePort : edge.targetPort,
+          offset: normalizePortOffset(
+            endpoint === "source" ? edge.sourcePortOffset : edge.targetPortOffset,
+          ),
         }
       : null;
     const pointerId = event.pointerId;
+    const dragStart = { x: event.clientX, y: event.clientY };
+    let didDrag = false;
+    let latestTarget: RewireTarget | null = null;
 
     handle.setPointerCapture(pointerId);
     onGestureBegin();
     setRewire({ edgeId, endpoint });
     setRewireTarget(null);
-    setRewireCursor(pointFromClient(svg, event.clientX, event.clientY, zoom));
+    setRewirePreview(
+      layout.edges.find((candidate) => candidate.id === edgeId)?.points ?? null,
+    );
+
+    const previewFor = (cursor: Point, target: RewireTarget | null): Point[] => {
+      if (!edge || !target) {
+        const fixed = endpoint === "source"
+          ? layout.edges.find((candidate) => candidate.id === edgeId)?.points.at(-1)
+          : layout.edges.find((candidate) => candidate.id === edgeId)?.points[0];
+        return fixed ? normalizeOrthogonalRoute([fixed, cursor]) : [cursor, cursor];
+      }
+      return routeEdgePreview(doc, layout, edgeId, endpoint === "source"
+        ? {
+            source: target.nodeId,
+            sourcePort: target.side,
+            sourcePortOffset: target.offset,
+          }
+        : {
+            target: target.nodeId,
+            targetPort: target.side,
+            targetPortOffset: target.offset,
+          }) ?? [cursor, cursor];
+    };
 
     const move = (next: PointerEvent) => {
-      setRewireCursor(pointFromClient(svg, next.clientX, next.clientY, zoom));
-      setRewireTarget(portAt(next.clientX, next.clientY));
+      if (Math.hypot(next.clientX - dragStart.x, next.clientY - dragStart.y) >= 3) {
+        didDrag = true;
+      }
+      const cursor = pointFromClient(svg, next.clientX, next.clientY, zoom);
+      const target = portTargetAt(
+        svg,
+        next.clientX,
+        next.clientY,
+        latestTarget,
+      );
+      latestTarget = target;
+      setRewireTarget(target);
+      setRewirePreview(previewFor(cursor, target));
     };
     const finish = (next?: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", cancel);
-      const target = next ? portAt(next.clientX, next.clientY) : null;
+      // Commit the exact mount represented by the last rendered preview.
+      // Re-resolving on pointerup can see a different DOM layer after React
+      // updates and used to make a highlighted port silently fail to attach.
+      const target = next && didDrag ? latestTarget : null;
       if (
         target &&
-        (!currentTarget || target.nodeId !== currentTarget.nodeId || target.side !== currentTarget.side)
+        (!currentTarget ||
+          target.nodeId !== currentTarget.nodeId ||
+          target.side !== currentTarget.side ||
+          target.offset !== currentTarget.offset)
       ) {
-        onReconnect(edgeId, endpoint, target.nodeId, target.side);
+        onReconnect(edgeId, endpoint, target.nodeId, target.side, target.offset);
       }
       setRewire(null);
       setRewireTarget(null);
-      setRewireCursor(null);
+      setRewirePreview(null);
       onGestureEnd();
       try {
         handle.releasePointerCapture(pointerId);
@@ -229,6 +325,84 @@ export function InteractionOverlay({
     const up = (next: PointerEvent) => finish(next);
     const cancel = () => finish();
     window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+  };
+
+  const beginConnectorDrag = (
+    event: React.PointerEvent<SVGCircleElement>,
+    source: RewireTarget,
+  ) => {
+    const handle = event.currentTarget;
+    const svg = handle.ownerSVGElement;
+    const sourceNode = layout.nodes.find((node) => node.id === source.nodeId);
+    const sourcePoint = sourceNode
+      ? portPoint(sourceNode.icon, source.side, source.offset)
+      : pointFromClient(svg, event.clientX, event.clientY, zoom);
+    const pointerId = event.pointerId;
+    let latestTarget: RewireTarget | null = null;
+
+    const previewFor = (cursor: Point, target: RewireTarget | null): Point[] => {
+      if (!target) return [sourcePoint, cursor];
+      return routeConnectionPreview(doc, layout, source.nodeId, target.nodeId, {
+        sourcePort: source.side,
+        targetPort: target.side,
+        sourcePortOffset: source.offset,
+        targetPortOffset: target.offset,
+        style: "solid",
+        kind: "flow",
+      }) ?? [sourcePoint, cursor];
+    };
+
+    const update = (next: PointerEvent) => {
+      const cursor = pointFromClient(svg, next.clientX, next.clientY, zoom);
+      const candidate = portTargetAt(
+        svg,
+        next.clientX,
+        next.clientY,
+        latestTarget,
+      );
+      const target = candidate?.nodeId === source.nodeId ? null : candidate;
+      latestTarget = target;
+      setConnectorDrag({
+        source,
+        cursor,
+        target,
+        preview: previewFor(cursor, target),
+      });
+    };
+    const finish = (next?: PointerEvent) => {
+      window.removeEventListener("pointermove", update);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      const target = next ? latestTarget : null;
+      if (target) {
+        onConnectPorts(
+          source.nodeId,
+          source.side,
+          source.offset,
+          target.nodeId,
+          target.side,
+          target.offset,
+        );
+      }
+      setConnectorDrag(null);
+      try {
+        handle.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already have been released by the browser.
+      }
+    };
+    const up = (next: PointerEvent) => finish(next);
+    const cancel = () => finish();
+
+    try {
+      handle.setPointerCapture(pointerId);
+    } catch {
+      // Some synthetic/browser pointer events do not support capture.
+    }
+    setConnectorDrag({ source, cursor: sourcePoint, target: null, preview: [sourcePoint, sourcePoint] });
+    window.addEventListener("pointermove", update);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", cancel);
   };
@@ -318,6 +492,20 @@ export function InteractionOverlay({
         onContextMenu(event.clientX, event.clientY, null);
       }}
     >
+      <defs>
+        <marker
+          id="connector-preview-arrow"
+          markerWidth="10"
+          markerHeight="10"
+          refX="9.5"
+          refY="5"
+          viewBox="0 0 10 10"
+          orient="auto"
+          markerUnits="userSpaceOnUse"
+        >
+          <path d="M0,0 L10,5 L0,10 Z" className="connector-preview-arrow" />
+        </marker>
+      </defs>
       {groups.map((group) => {
         const place = view.places[group.id];
         if (!isEntityVisible(doc, view, group.id)) return null;
@@ -407,6 +595,8 @@ export function InteractionOverlay({
               ...edge.points.slice(insertAt),
             ]);
             onSelect({ kind: "edge", id: edge.id }, false);
+            // A double-click intentionally authors a straight-through break.
+            // Keep it until the user later collapses it through a drag.
             onRoute(edge.id, next);
           }}
           onPointerEnter={updateHover}
@@ -447,19 +637,49 @@ export function InteractionOverlay({
         />
       )}
 
-      {rewire && rewireCursor && edgeGeom && rewire.edgeId === edgeGeom.id && (
-        <polyline
-          className="rewire-preview"
-          points={[
-            rewire.endpoint === "source"
-              ? edgeGeom.points[edgeGeom.points.length - 1]
-              : edgeGeom.points[0],
-            rewireCursor,
-          ]
-            .map((point) => `${point.x},${point.y}`)
-            .join(" ")}
-        />
+      {connectorDrag && (
+        <g data-connector-drag-preview>
+          <polyline
+            data-connector-drag-path
+            className={`connector-drag-preview${connectorDrag.target ? " is-snapped" : ""}`}
+            points={connectorDrag.preview
+              .map((point) => `${point.x},${point.y}`)
+              .join(" ")}
+            markerEnd="url(#connector-preview-arrow)"
+          />
+          <circle
+            data-connector-drag-cursor
+            className="connector-drag-cursor"
+            cx={connectorDrag.cursor.x}
+            cy={connectorDrag.cursor.y}
+            r={connectorDrag.target ? 7 : 5}
+          />
+        </g>
       )}
+
+      {rewire && rewirePreview && edgeGeom && rewire.edgeId === edgeGeom.id && (() => {
+        const activePoint = rewire.endpoint === "source"
+          ? rewirePreview[0]
+          : rewirePreview.at(-1);
+        return (
+          <g data-rewire-drag-preview>
+            <polyline
+              className={`rewire-preview${rewireTarget ? " is-snapped" : ""}`}
+              points={rewirePreview.map((point) => `${point.x},${point.y}`).join(" ")}
+              markerEnd="url(#connector-preview-arrow)"
+            />
+            {activePoint && (
+              <circle
+                data-rewire-preview-endpoint
+                className={`rewire-preview-endpoint${rewireTarget ? " is-snapped" : ""}`}
+                cx={activePoint.x}
+                cy={activePoint.y}
+                r={rewireTarget ? 5.5 : 4.5}
+              />
+            )}
+          </g>
+        );
+      })()}
 
       {nodes.map((node) => {
         const place = view.places[node.id];
@@ -691,25 +911,32 @@ export function InteractionOverlay({
                 rx={12}
               />
             )}
-            {portPoints(node.icon).map(({ side, point }) => (
+            {portPoints(node.icon).map(({ side, offset, point }) => (
               <g
-                key={`${node.id}-${side}`}
+                key={`${node.id}-${side}-${offset}`}
                 className="port-control"
               >
                 <circle
                   data-interactive
                   data-node-id={node.id}
                   data-port-side={side}
-                  aria-label={`${node.serviceLabel} ${side} port`}
-                  aria-pressed={pendingPort?.nodeId === node.id && pendingPort.side === side}
+                  data-port-offset={offset}
+                  aria-label={`${node.serviceLabel} ${side.toUpperCase()} port at ${Math.round(offset * 100)}%`}
+                  aria-pressed={pendingPort?.nodeId === node.id && pendingPort.side === side && pendingPort.offset === offset}
                   className="port-hit-area"
                   cx={point.x}
                   cy={point.y}
-                  r={compact ? 7 : 10}
+                  r={compact ? 6 : 8}
                   onPointerDown={(event) => {
                     event.stopPropagation();
-                    onChoosePort(node.id, side);
+                    if (pendingPort) {
+                      onChoosePort(node.id, side, offset);
+                      return;
+                    }
+                    onChoosePort(node.id, side, offset);
+                    beginConnectorDrag(event, { nodeId: node.id, side, offset });
                   }}
+                  onClick={(event) => event.stopPropagation()}
                 />
                 <circle
                   className="port-handle-halo"
@@ -719,7 +946,7 @@ export function InteractionOverlay({
                 />
                 <circle
                   data-port-visual
-                  className={`port-handle ${pendingPort?.nodeId === node.id && pendingPort.side === side ? "is-pending" : ""} ${rewireTarget?.nodeId === node.id && rewireTarget.side === side ? "is-rewire-target" : ""}`}
+                  className={`port-handle ${pendingPort?.nodeId === node.id && pendingPort.side === side && pendingPort.offset === offset ? "is-pending" : ""} ${activePortTarget?.nodeId === node.id && activePortTarget.side === side && activePortTarget.offset === offset ? "is-rewire-target" : ""}`}
                   cx={point.x}
                   cy={point.y}
                   r={compact ? 4.5 : 4}
@@ -803,7 +1030,7 @@ export function InteractionOverlay({
         <g
           data-route-editor={edgeGeom.id}
           aria-label="Connector route controls"
-          className="route-editor"
+          className={`route-editor${rewire?.edgeId === edgeGeom.id ? " is-rewiring" : ""}`}
           pointerEvents="all"
         >
           <polyline
@@ -862,7 +1089,7 @@ export function InteractionOverlay({
                     snapToGrid,
                     edgeGeom.points,
                     index,
-                    onRoute.bind(null, edgeGeom.id),
+                    commitRoute.bind(null, edgeGeom.id),
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -878,6 +1105,8 @@ export function InteractionOverlay({
           {showBendHandles && edgeGeom.points.slice(0, -1).map((point, index) => {
             const next = edgeGeom.points[index + 1]!;
             const horizontal = point.y === next.y;
+            const segmentLength = Math.abs(next.x - point.x) + Math.abs(next.y - point.y);
+            if (segmentLength < 32) return null;
             const centerX = (point.x + next.x) / 2;
             const centerY = (point.y + next.y) / 2;
             return (
@@ -899,7 +1128,7 @@ export function InteractionOverlay({
                     snapToGrid,
                     edgeGeom.points,
                     index,
-                    onRoute.bind(null, edgeGeom.id),
+                    commitRoute.bind(null, edgeGeom.id),
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -1255,8 +1484,7 @@ function beginPointMove(
   const start = { x: event.clientX, y: event.clientY };
   const origin = points.map((point) => ({ ...point }));
   const move = (next: PointerEvent) => {
-    const updated = origin.map((point) => ({ ...point }));
-    updated[index] = {
+    const target = {
       x: snapCoordinate(
         origin[index]!.x + (next.clientX - start.x) / zoom,
         snapToGrid,
@@ -1266,7 +1494,7 @@ function beginPointMove(
         snapToGrid,
       ),
     };
-    onMove(normalizeOrthogonalRoute(updated));
+    onMove(moveOrthogonalBend(origin, index, target));
   };
   const up = () => {
     window.removeEventListener("pointermove", move);
@@ -1278,21 +1506,23 @@ function beginPointMove(
 }
 
 function portPoints(rect: { x: number; y: number; w: number; h: number }) {
-  return [
-    { side: "n" as const, point: { x: rect.x + rect.w / 2, y: rect.y } },
-    { side: "e" as const, point: { x: rect.x + rect.w, y: rect.y + rect.h / 2 } },
-    { side: "s" as const, point: { x: rect.x + rect.w / 2, y: rect.y + rect.h } },
-    { side: "w" as const, point: { x: rect.x, y: rect.y + rect.h / 2 } },
-  ];
+  return portAnchors(rect);
 }
 
 function portAt(clientX: number, clientY: number): RewireTarget | null {
   const target = document.elementFromPoint(clientX, clientY)?.closest<SVGElement>(
-    "[data-node-id][data-port-side]",
+    "[data-node-id][data-port-side][data-port-offset]",
   );
-  const nodeId = target?.getAttribute("data-node-id");
-  const side = target?.getAttribute("data-port-side") as Side | null;
-  return nodeId && side ? { nodeId, side } : null;
+  return readPortTarget(target);
+}
+
+function readPortTarget(element: Element | null): RewireTarget | null {
+  const nodeId = element?.getAttribute("data-node-id");
+  const side = element?.getAttribute("data-port-side") as Side | null;
+  const offsetValue = Number(element?.getAttribute("data-port-offset"));
+  if (!nodeId || !side || !Number.isFinite(offsetValue)) return null;
+  if (side !== "n" && side !== "s" && side !== "e" && side !== "w") return null;
+  return { nodeId, side, offset: normalizePortOffset(offsetValue) };
 }
 
 function pointFromClient(

@@ -1,10 +1,20 @@
 import { getGroup, getResource } from "./document.js";
 import type { DiagramDocument, ValidationIssue, CatalogRule } from "./types.js";
 
+export interface ValidationOptions {
+  /**
+   * Keep catalog containment rules strict for authored/LLM diagrams. The
+   * interactive editor can disable this while a user freely arranges items.
+   */
+  enforceCatalogRules?: boolean;
+}
+
 export function validateDocument(
   doc: DiagramDocument,
   catalog: Map<string, CatalogRule>,
+  options: ValidationOptions = {},
 ): ValidationIssue[] {
+  const enforceCatalogRules = options.enforceCatalogRules ?? true;
   const issues: ValidationIssue[] = [];
   const ids = new Set<string>();
 
@@ -45,7 +55,7 @@ export function validateDocument(
     }
 
     if (!r.parent) {
-      if (!rule.allowRoot) {
+      if (enforceCatalogRules && !rule.allowRoot) {
         issues.push({
           level: "error",
           code: "missing-parent",
@@ -67,7 +77,7 @@ export function validateDocument(
       continue;
     }
 
-    if (!rule.allowedParents.includes(parent.kind)) {
+    if (enforceCatalogRules && !rule.allowedParents.includes(parent.kind)) {
       issues.push({
         level: "error",
         code: "invalid-containment",
@@ -115,7 +125,7 @@ export function validateDocument(
       });
     }
     const rule = g.type ? catalog.get(g.type) : undefined;
-    if (g.type && !g.parent && rule && !rule.allowRoot) {
+    if (enforceCatalogRules && g.type && !g.parent && rule && !rule.allowRoot) {
       issues.push({
         level: "error",
         code: "missing-parent",
@@ -123,7 +133,7 @@ export function validateDocument(
         id: g.id,
       });
     }
-    if (g.parent && rule) {
+    if (enforceCatalogRules && g.parent && rule) {
       const parent = getGroup(doc, g.parent);
       if (parent && !rule.allowedParents.includes(parent.kind)) {
         issues.push({

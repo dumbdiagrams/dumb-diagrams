@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture } from "@dumb-diagrams/core";
+import {
+  createAsyncDocsFixture,
+  nearestPortAnchor,
+  portPoint,
+} from "@dumb-diagrams/core";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import {
+  collapseOrthogonalRouteArtifacts,
   getEdgeBadgePlacement,
   normalizeOrthogonalRoute,
   projectPointToPolyline,
+  routeConnectionPreview,
   routeEdgePreview,
   routeEdges,
+  simplifyOrthogonalRoute,
 } from "./router.js";
 
 describe("routeEdgePreview", () => {
@@ -41,6 +48,41 @@ describe("routeEdgePreview", () => {
     );
     expect(edge?.badge).toBeDefined();
     expect(edge?.step).toBe(0);
+  });
+
+  it("routes explicit ports to their exact visible face offsets", () => {
+    const doc = createAsyncDocsFixture();
+    const edge = doc.edges.find((candidate) => candidate.id === "e3")!;
+    edge.sourcePort = "e";
+    edge.targetPort = "w";
+    edge.sourcePortOffset = 0.25;
+    edge.targetPortOffset = 0.75;
+
+    const layout = layoutDocument(doc);
+    const source = layout.nodes.find((node) => node.id === edge.source)!;
+    const target = layout.nodes.find((node) => node.id === edge.target)!;
+    const route = routeEdges(doc, layout).find((candidate) => candidate.id === edge.id);
+
+    expect(route?.points[0]).toEqual(portPoint(source.icon, "e", 0.25));
+    expect(route?.points.at(-1)).toEqual(portPoint(target.icon, "w", 0.75));
+  });
+
+  it("previews a new connection without adding it to the document", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const preview = routeConnectionPreview(doc, layout, "client", "api_alb", {
+      sourcePort: "e",
+      targetPort: "w",
+      sourcePortOffset: 0.5,
+      targetPortOffset: 0.5,
+    });
+
+    expect(preview).toBeTruthy();
+    expect(preview!.length).toBeGreaterThan(1);
+    expect(doc.edges.some((edge) => edge.source === "client" && edge.target === "api_alb")).toBe(true);
+    expect(preview![0]).toEqual(
+      portPoint(layout.nodes.find((node) => node.id === "client")!.icon, "e", 0.5),
+    );
   });
 
   it("keeps generated connectors outside resource cards before turning", () => {
@@ -118,6 +160,40 @@ describe("routeEdgePreview", () => {
     })).toBe(true);
   });
 
+  it("canonicalizes collapsed edit points without changing the route endpoints", () => {
+    expect(simplifyOrthogonalRoute([
+      { x: 0, y: 0 },
+      { x: 48, y: 0 },
+      { x: 96, y: 0 },
+      { x: 96, y: 64 },
+      { x: 96, y: 64 },
+      { x: 144, y: 64 },
+    ])).toEqual([
+      { x: 0, y: 0 },
+      { x: 96, y: 0 },
+      { x: 96, y: 64 },
+      { x: 144, y: 64 },
+    ]);
+  });
+
+  it("merges fractional port artifacts but keeps deliberate straight breaks", () => {
+    expect(collapseOrthogonalRouteArtifacts([
+      { x: 168, y: 312 },
+      { x: 381, y: 312 },
+      { x: 381.25, y: 312 },
+      { x: 381.25, y: 226 },
+    ])).toEqual([
+      { x: 168, y: 312 },
+      { x: 381.25, y: 312 },
+      { x: 381.25, y: 226 },
+    ]);
+    expect(collapseOrthogonalRouteArtifacts([
+      { x: 0, y: 0 },
+      { x: 48, y: 0 },
+      { x: 96, y: 0 },
+    ])).toHaveLength(3);
+  });
+
   it("normalizes pinned routes before rendering them", () => {
     const doc = createAsyncDocsFixture();
     const manual = [
@@ -128,7 +204,15 @@ describe("routeEdgePreview", () => {
     doc.views[0]!.routes.e3 = { pin: true, points: manual };
 
     const route = routeEdges(doc, layoutDocument(doc)).find((edge) => edge.id === "e3");
-    expect(route?.points).toEqual(normalizeOrthogonalRoute(manual));
+    const source = layoutDocument(doc).nodes.find((node) => node.id === "apiA")!;
+    const target = layoutDocument(doc).nodes.find((node) => node.id === "jobs")!;
+    const anchored = [
+      nearestPortAnchor(source.icon, manual[0]!).point,
+      manual[1]!,
+      manual[2]!,
+      nearestPortAnchor(target.icon, manual.at(-1)!).point,
+    ];
+    expect(route?.points).toEqual(normalizeOrthogonalRoute(anchored));
     expect(route?.points.slice(0, -1).every((point, index) => {
       const next = route.points[index + 1]!;
       return point.x === next.x || point.y === next.y;

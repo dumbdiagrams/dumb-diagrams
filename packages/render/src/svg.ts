@@ -1,5 +1,5 @@
 import { getCatalogEntry } from "@dumb-diagrams/catalog";
-import type { DiagramDocument, LayoutResult } from "@dumb-diagrams/core";
+import type { AnnotationStyle, DiagramDocument, LayoutResult } from "@dumb-diagrams/core";
 import { getDefaultView } from "@dumb-diagrams/core";
 import { GRAMMAR, GROUP_STYLES } from "@dumb-diagrams/grammar-aws";
 
@@ -179,11 +179,98 @@ function renderAnnotation(
   const y = place?.y ?? 48;
   const w = place?.w ?? 160;
   const h = place?.h ?? 48;
-  return `
-<g id="annotation-${annotation.id}">
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="#fff7d6" stroke="#d4a72c" stroke-width="1.5"/>
-  <text x="${x + 12}" y="${y + 24}" font-size="12" fill="#232F3E">${escapeXml(annotation.text)}</text>
+  const style: AnnotationStyle = annotation.style ?? "paper";
+  const groupStart = `<g id="annotation-${annotation.id}" data-annotation-style="${style}" class="annotation annotation-${style}">`;
+
+  if (style === "code") {
+    return `
+${groupStart}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#111827" stroke="#334155" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="${w}" height="28" rx="10" fill="#1f2937"/>
+  <rect x="${x}" y="${y + 18}" width="${w}" height="10" fill="#1f2937"/>
+  <circle cx="${x + 14}" cy="${y + 14}" r="4" fill="#fb7185"/>
+  <circle cx="${x + 28}" cy="${y + 14}" r="4" fill="#fbbf24"/>
+  <circle cx="${x + 42}" cy="${y + 14}" r="4" fill="#34d399"/>
+  ${renderAnnotationLines(annotation.text, x + 14, y + 50, Math.max(12, Math.floor((w - 28) / 8.1)), 17, 10, "#d1fae5", "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace")}
 </g>`;
+  }
+
+  if (style === "callout") {
+    return `
+${groupStart}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#eef4ff" stroke="#8aa7df" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="#3154d4"/>
+  <circle cx="${x + 28}" cy="${y + 28}" r="12" fill="#3154d4"/>
+  <text x="${x + 28}" y="${y + 33}" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">i</text>
+  ${renderAnnotationLines(annotation.text, x + 50, y + 27, Math.max(12, Math.floor((w - 64) / 7.1)), 18, 4, "#233f78")}
+</g>`;
+  }
+
+  if (style === "checklist") {
+    const lines = annotationLines(annotation.text, Math.max(10, Math.floor((w - 58) / 7.2)), 5);
+    const items = lines
+      .map((line, index) => {
+        const itemY = y + 28 + index * 24;
+        return `
+  <rect x="${x + 16}" y="${itemY - 12}" width="14" height="14" rx="3" fill="#ffffff" stroke="#4f9b69" stroke-width="1.4"/>
+  <path d="M ${x + 19} ${itemY - 5} l 3 3 l 6 -7" fill="none" stroke="#4f9b69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="${x + 40}" y="${itemY}" font-size="12" fill="#234b31">${escapeXml(line || " ")}</text>`;
+      })
+      .join("");
+    return `
+${groupStart}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#eff9f2" stroke="#71a987" stroke-width="1.5"/>
+  <text x="${x + 16}" y="${y + 18}" font-size="10" font-weight="700" letter-spacing="1.2" fill="#4f7658">CHECKLIST</text>${items}
+</g>`;
+  }
+
+  return `
+${groupStart}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#fff7d6" stroke="#d4a72c" stroke-width="1.5"/>
+  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="#f5df91"/>
+  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="#d4a72c" stroke-width="1"/>
+  ${renderAnnotationLines(annotation.text, x + 14, y + 25, Math.max(12, Math.floor((w - 28) / 7.1)), 18, 5, "#232F3E")}
+</g>`;
+}
+
+function annotationLines(text: string, maxChars: number, maxLines: number): string[] {
+  const lines: string[] = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    if (!rawLine) {
+      lines.push("");
+      continue;
+    }
+    let remaining = rawLine;
+    while (remaining.length > maxChars) {
+      const splitAt = remaining.lastIndexOf(" ", maxChars);
+      const take = splitAt > Math.floor(maxChars * 0.45) ? splitAt : maxChars;
+      lines.push(remaining.slice(0, take));
+      remaining = remaining.slice(take).trimStart();
+    }
+    lines.push(remaining);
+  }
+  if (lines.length <= maxLines) return lines;
+  const visible = lines.slice(0, maxLines);
+  const last = visible[maxLines - 1] ?? "";
+  visible[maxLines - 1] = `${last.slice(0, Math.max(0, maxChars - 1))}…`;
+  return visible;
+}
+
+function renderAnnotationLines(
+  text: string,
+  x: number,
+  firstY: number,
+  maxChars: number,
+  lineHeight: number,
+  maxLines: number,
+  fill: string,
+  fontFamily?: string,
+): string {
+  const lines = annotationLines(text, maxChars, maxLines);
+  const family = fontFamily ? ` font-family="${fontFamily}"` : "";
+  return `<text x="${x}" y="${firstY}" font-size="12" fill="${fill}"${family}>${lines
+    .map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line || " ")}</tspan>`)
+    .join("")}</text>`;
 }
 
 function groupIconPath(

@@ -20,6 +20,7 @@ export type GroupKind =
 export type Side = "n" | "s" | "e" | "w";
 export type RouteMode = "auto" | "manual";
 export type EdgeBadgeSide = "top" | "bottom";
+export type AnnotationStyle = "paper" | "code" | "callout" | "checklist";
 
 export interface PortAnchor {
   side: Side;
@@ -84,6 +85,10 @@ export interface Edge {
   target: ID;
   sourcePort?: Side;
   targetPort?: Side;
+  /** Fraction along the source face; normalized to one of the visible ports. */
+  sourcePortOffset?: number;
+  /** Fraction along the target face; normalized to one of the visible ports. */
+  targetPortOffset?: number;
   step?: number;
   label?: string;
   style: EdgeStyle;
@@ -94,6 +99,8 @@ export interface Annotation {
   id: ID;
   text: string;
   anchor?: ID;
+  /** Visual treatment used when the annotation is rendered on the canvas. */
+  style?: AnnotationStyle;
 }
 
 export interface RouteOverride {

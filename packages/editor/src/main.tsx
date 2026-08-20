@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
+  AnnotationStyle,
   DiagramDocument,
   EdgeKind,
   EdgeStyle,
@@ -28,6 +29,8 @@ import { routeEdges, attachRoutes } from "@dumb-diagrams/route";
 
 import {
   addAnnotation,
+  ANNOTATION_STYLES,
+  annotationStyle,
   addEdge,
   addGroup,
   addResource,
@@ -64,11 +67,16 @@ import {
   importSvgAsset,
   moveSelection,
   updateAnnotationText,
+  setAnnotationStyle,
   type Selection,
   type SelectionItem,
   type ResourceIconSize,
 } from "./editor-model";
-import { CanvasStage, clampZoom } from "./canvas/CanvasStage";
+import {
+  CanvasStage,
+  clampZoom,
+  defaultViewportForContent,
+} from "./canvas/CanvasStage";
 import { InteractionOverlay } from "./interactions/InteractionOverlay";
 import { AssetBrowser } from "./panels/AssetBrowser";
 import { ContextMenu, type ContextMenuItem } from "./panels/ContextMenu";
@@ -107,7 +115,7 @@ const RECOVERY = (() => {
   if (!draft) return null;
   try {
     const doc = parseArch(draft.source);
-    if (hasErrors(validateDocument(doc, getCatalogMap()))) {
+    if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) {
       clearDraft();
       return null;
     }
@@ -118,7 +126,7 @@ const RECOVERY = (() => {
   }
 })();
 type Tool = ToolId;
-type PendingPort = { nodeId: string; side: Side } | null;
+type PendingPort = { nodeId: string; side: Side; offset: number } | null;
 type ContextMenuState = { x: number; y: number; selection: Selection } | null;
 
 function documentNameForDisplay(doc: DiagramDocument): string {
@@ -147,7 +155,8 @@ function App() {
   const [tool, setTool] = useState<Tool>("select");
   const [selection, setSelection] = useState<Selection>([]);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
-  const [viewport, setViewport] = useState({ panX: 40, panY: 40, zoom: 1 });
+  const [viewport, setViewport] = useState(() => defaultViewportForContent(0, 0));
+  const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef(source);
@@ -155,7 +164,9 @@ function App() {
   const fitRef = useRef<(() => void) | null>(null);
   const [layersQuery, setLayersQuery] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
-  const [toast, setToast] = useState<string | null>(RECOVERY ? "Draft restored" : null);
+  const [noteComposerStyle, setNoteComposerStyle] = useState<AnnotationStyle>("paper");
+  const [toast, setToastMessage] = useState<string | null>(RECOVERY ? "Draft restored" : null);
+  const [toastNonce, setToastNonce] = useState(0);
   const skipDraftSaveRef = useRef(false);
   const lastGoodRef = useRef<{
     doc: DiagramDocument;
@@ -167,11 +178,16 @@ function App() {
   const sourceCommitTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const setToast = (message: string | null) => {
+    if (message !== null) setToastNonce((current) => current + 1);
+    setToastMessage(message);
+  };
+
   const compiled = useMemo(() => {
     try {
       const doc = parseArch(source);
       const catalog = getCatalogMap();
-      const issues = validateDocument(doc, catalog);
+      const issues = validateDocument(doc, catalog, { enforceCatalogRules: false });
       if (hasErrors(issues)) {
         return {
           ok: false as const,
@@ -224,7 +240,7 @@ function App() {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 2400);
     return () => window.clearTimeout(timer);
-  }, [toast]);
+  }, [toast, toastNonce]);
 
   useEffect(() => {
     if (compiled.ok) setTitleDraft(documentNameForDisplay(compiled.doc));
@@ -307,10 +323,15 @@ function App() {
       : undefined;
     const placement = canPlaceCatalogEntry(compiled.doc, entry, parent);
     if (!placement.ok) {
-      setToast(placement.reason ?? "Choose a compatible parent group first.");
+      setToast(placement.reason ?? "The selected parent group is no longer available.");
       return;
     }
-    const at = snapPoint(insertionPoint(compiled.layout, parent), snapToGrid);
+    const at = snapPoint(
+      parent
+        ? insertionPoint(compiled.layout, parent)
+        : outsideCanvasInsertionPoint(compiled.layout),
+      snapToGrid,
+    );
     try {
       const result = addResource(compiled.doc, entry, parent, at);
       updateDocument(result.doc);
@@ -321,33 +342,60 @@ function App() {
     }
   };
 
-  const addNote = () => {
+  const openNoteComposer = () => {
+    setNoteComposerStyle("paper");
+    setPendingPort(null);
+    setTool("note");
+  };
+
+  const createNote = (style: AnnotationStyle) => {
     if (!compiled.ok) return;
     const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
-    const result = addAnnotation(compiled.doc, "Note", at);
+    const result = addAnnotation(compiled.doc, "Note", at, undefined, style);
     updateDocument(result.doc);
     setSelection([{ kind: "annotation", id: result.id }]);
     setTool("select");
   };
 
-  const choosePort = (nodeId: string, side: Side) => {
-    if (!compiled.ok) return;
-    if (!pendingPort || pendingPort.nodeId === nodeId) {
-      setPendingPort({ nodeId, side });
-      setSelection([{ kind: "resource", id: nodeId }]);
-      return;
-    }
+  const connectPorts = (
+    sourceNodeId: string,
+    sourceSide: Side,
+    sourceOffset: number,
+    targetNodeId: string,
+    targetSide: Side,
+    targetOffset: number,
+  ) => {
+    if (!compiled.ok || sourceNodeId === targetNodeId) return;
     const result = addEdge(
       compiled.doc,
-      pendingPort.nodeId,
-      nodeId,
-      pendingPort.side,
-      side,
+      sourceNodeId,
+      targetNodeId,
+      sourceSide,
+      targetSide,
+      sourceOffset,
+      targetOffset,
     );
     updateDocument(result.doc);
     setPendingPort(null);
     setSelection([{ kind: "edge", id: result.id }]);
     setTool("select");
+  };
+
+  const choosePort = (nodeId: string, side: Side, offset: number) => {
+    if (!compiled.ok) return;
+    if (!pendingPort || pendingPort.nodeId === nodeId) {
+      setPendingPort({ nodeId, side, offset });
+      setSelection([{ kind: "resource", id: nodeId }]);
+      return;
+    }
+    connectPorts(
+      pendingPort.nodeId,
+      pendingPort.side,
+      pendingPort.offset,
+      nodeId,
+      side,
+      offset,
+    );
   };
 
   const copySelection = async (
@@ -522,6 +570,8 @@ function App() {
         <CanvasStage
           viewport={viewport}
           onViewportChange={setViewport}
+          contentSize={displayCompiled?.layout}
+          defaultFrameKey={defaultFrameKey}
           onFitRequest={(fit) => {
             fitRef.current = fit;
           }}
@@ -552,14 +602,15 @@ function App() {
                   if (tool !== "connector") setPendingPort(null);
                 }}
                 onChoosePort={choosePort}
-                onReconnect={(edgeId, endpoint, nodeId, side) => {
+                onConnectPorts={connectPorts}
+                onReconnect={(edgeId, endpoint, nodeId, side, offset) => {
                   mutateCurrent((doc) =>
                     reconnectEdge(
                       doc,
                       edgeId,
                       endpoint === "source"
-                        ? { source: nodeId, sourcePort: side }
-                        : { target: nodeId, targetPort: side },
+                        ? { source: nodeId, sourcePort: side, sourcePortOffset: offset }
+                        : { target: nodeId, targetPort: side, targetPortOffset: offset },
                     ),
                   );
                 }}
@@ -737,7 +788,7 @@ function App() {
                   clearDraft();
                   setSelection([]);
                   setPendingPort(null);
-                  setViewport({ panX: 40, panY: 40, zoom: 1 });
+                  setDefaultFrameKey((current) => current + 1);
                   setToast(`Opened ${file.name}`);
                 } catch (error) {
                   setToast(`Import rejected: ${(error as Error).message}`);
@@ -767,13 +818,29 @@ function App() {
           active={tool}
           onChange={(next) => {
             if (next === "note") {
-              addNote();
+              openNoteComposer();
               return;
             }
             setTool(next);
             if (next !== "connector") setPendingPort(null);
           }}
         />
+
+        {tool === "note" && (
+          <FloatingPanel
+            className="note-composer-sheet"
+            title="Choose note style"
+            subtitle="Pick a format before placing it on the canvas"
+            onClose={() => setTool("select")}
+            width={340}
+          >
+            <NoteComposer
+              style={noteComposerStyle}
+              onStyleChange={setNoteComposerStyle}
+              onCreate={() => createNote(noteComposerStyle)}
+            />
+          </FloatingPanel>
+        )}
 
         {tool === "resources" && (
           <FloatingPanel
@@ -792,14 +859,20 @@ function App() {
                 try {
                   const text = await file.text();
                   const imported = importSvgAsset(compiled.doc, text);
+                  const importParent = primarySelection(selection)?.kind === "group"
+                    ? primarySelection(selection)!.id
+                    : undefined;
                   const placed = addCustomResource(
                     imported.doc,
                     imported.assetId,
                     file.name.replace(/\.svg$/i, ""),
-                    primarySelection(selection)?.kind === "group"
-                      ? primarySelection(selection)!.id
-                      : undefined,
-                    snapPoint(insertionPoint(compiled.layout), snapToGrid),
+                    importParent,
+                    snapPoint(
+                      importParent
+                        ? insertionPoint(compiled.layout, importParent)
+                        : outsideCanvasInsertionPoint(compiled.layout),
+                      snapToGrid,
+                    ),
                   );
                   updateDocument(placed.doc);
                   setSelection([{ kind: "resource", id: placed.id }]);
@@ -954,6 +1027,7 @@ function App() {
                 clearDraft();
                 setSelection([]);
                 setPendingPort(null);
+                setDefaultFrameKey((current) => current + 1);
                 setToast("Draft cleared");
               }}
             />
@@ -1027,6 +1101,11 @@ function App() {
               if (!resource) return;
               mutateCurrent((doc) => setResourceIconSize(doc, resource.id, size));
             }}
+            onSetAnnotationStyle={(style) => {
+              const annotation = selection.find((item) => item.kind === "annotation");
+              if (!annotation) return;
+              mutateCurrent((doc) => setAnnotationStyle(doc, annotation.id, style));
+            }}
             onUpdateEdge={(style, kind) => {
               const edge = selection.find((item) => item.kind === "edge");
               if (!edge) return;
@@ -1061,22 +1140,51 @@ function App() {
             <button type="button" onClick={() => mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, "left"))}>Align left</button>
             <button type="button" onClick={() => mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, "center"))}>Center</button>
             <button type="button" onClick={() => mutateCurrent((doc) => distributeSelection(doc, selection, compiled.layout!, "horizontal"))}>Distribute</button>
-            <button type="button" onClick={addNote}>Add note</button>
+            <button type="button" onClick={openNoteComposer}>Add note</button>
           </div>
         )}
 
-        <div className="status-capsule">
-          <button type="button" onClick={() => fitRef.current?.()} title="Fit to screen">
+        <div className="status-capsule" role="toolbar" aria-label="Canvas view controls">
+          <button
+            type="button"
+            className="status-capsule-button status-capsule-fit"
+            onClick={() => fitRef.current?.()}
+            title="Fit to screen"
+            aria-label="Fit to screen"
+          >
             <IconFit />
           </button>
-          <button type="button" onClick={() => setViewport((v) => ({ ...v, zoom: 1 }))}>100%</button>
-          <button type="button" onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom + 0.1) }))}>+</button>
-          <button type="button" onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom - 0.1) }))}>−</button>
-          <span>Opinionated layout</span>
-          <span>{Math.round(viewport.zoom * 100)}%</span>
+          <button
+            type="button"
+            className="status-capsule-button status-capsule-reset"
+            onClick={() => setViewport((v) => ({ ...v, zoom: 1 }))}
+            aria-label="Reset zoom"
+          >
+            100%
+          </button>
+          <div className="status-capsule-zoom" role="group" aria-label="Zoom controls">
+            <button
+              type="button"
+              className="status-capsule-button status-capsule-step"
+              onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom - 0.1) }))}
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className="status-capsule-button status-capsule-step"
+              onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom + 0.1) }))}
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
+          <span className="status-capsule-mode">Opinionated layout</span>
+          <span className="status-capsule-readout">{Math.round(viewport.zoom * 100)}%</span>
         </div>
 
-        {toast && <div className="toast" role="status">{toast}</div>}
+        {toast && <div key={`${toast}-${toastNonce}`} className="toast" role="status">{toast}</div>}
 
         {contextMenu && compiled.ok && (
           <ContextMenu
@@ -1103,13 +1211,127 @@ function App() {
   );
 }
 
+function NoteComposer({
+  style,
+  onStyleChange,
+  onCreate,
+}: {
+  style: AnnotationStyle;
+  onStyleChange: (style: AnnotationStyle) => void;
+  onCreate: () => void;
+}) {
+  const selected = ANNOTATION_STYLES.find((candidate) => candidate.id === style) ?? ANNOTATION_STYLES[0]!;
+
+  return (
+    <div className="note-composer">
+      <div className="note-composer-intro">
+        <NoteStylePreview style={style} className="note-composer-preview" />
+        <div>
+          <strong>{selected.label}</strong>
+          <p>{selected.description}</p>
+        </div>
+      </div>
+
+      <div className="property-section note-composer-section">
+        <label>Choose a note type</label>
+        <NoteStyleOptions
+          selectedStyle={style}
+          onStyleChange={onStyleChange}
+          showPreviews
+        />
+      </div>
+
+      <div className="note-composer-footer">
+        <button type="button" className="primary-button note-create-button" onClick={onCreate}>
+          Create {selected.label}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NoteStyleOptions({
+  selectedStyle,
+  onStyleChange,
+  showPreviews = false,
+}: {
+  selectedStyle: AnnotationStyle;
+  onStyleChange: (style: AnnotationStyle) => void;
+  showPreviews?: boolean;
+}) {
+  return (
+    <div className={`note-style-grid${showPreviews ? " note-style-grid-with-previews" : ""}`}>
+      {ANNOTATION_STYLES.map((candidate) => (
+        <button
+          key={candidate.id}
+          type="button"
+          className={`note-style-button${selectedStyle === candidate.id ? " is-active" : ""}`}
+          aria-label={candidate.label}
+          aria-pressed={selectedStyle === candidate.id}
+          onClick={() => onStyleChange(candidate.id)}
+        >
+          {showPreviews && <NoteStylePreview style={candidate.id} />}
+          <strong>{candidate.label}</strong>
+          <span className="note-style-description">{candidate.description}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function NoteStylePreview({
+  style,
+  className = "",
+}: {
+  style: AnnotationStyle;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`note-style-preview note-style-preview-${style}${className ? ` ${className}` : ""}`}
+      data-note-style-preview={style}
+      aria-hidden="true"
+    >
+      {style === "paper" && (
+        <>
+          <span className="note-preview-fold" />
+          <span className="note-preview-line note-preview-line-long" />
+          <span className="note-preview-line note-preview-line-short" />
+          <span className="note-preview-line note-preview-line-medium" />
+        </>
+      )}
+      {style === "code" && (
+        <>
+          <span className="note-preview-code-line note-preview-code-line-long" />
+          <span className="note-preview-code-line note-preview-code-line-medium" />
+          <span className="note-preview-code-line note-preview-code-line-short" />
+        </>
+      )}
+      {style === "callout" && (
+        <>
+          <span className="note-preview-callout-mark">i</span>
+          <span className="note-preview-callout-line note-preview-callout-line-long" />
+          <span className="note-preview-callout-line note-preview-callout-line-short" />
+        </>
+      )}
+      {style === "checklist" && (
+        <>
+          <span className="note-preview-check-row"><i>✓</i><b /></span>
+          <span className="note-preview-check-row"><i /><b /></span>
+          <span className="note-preview-check-row"><i /><b /></span>
+        </>
+      )}
+    </span>
+  );
+}
+
 function ConnectorDrawer({ pendingPort }: { pendingPort: PendingPort }) {
   return (
     <div className="callout">
       {pendingPort ? (
         <>
           Starting at <strong>{pendingPort.nodeId}</strong> ·{" "}
-          {pendingPort.side.toUpperCase()}. Pick a target port.
+          {pendingPort.side.toUpperCase()} {Math.round(pendingPort.offset * 100)}%. Pick a target port.
         </>
       ) : (
         <>Select a source port, then a target port on another icon.</>
@@ -1133,6 +1355,7 @@ function Inspector({
   onAlign,
   onDistribute,
   onSetIconSize,
+  onSetAnnotationStyle,
   onUpdateEdge,
   onPinRoute,
   onAutoRoute,
@@ -1146,6 +1369,7 @@ function Inspector({
   onAlign: (axis: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
   onDistribute: (axis: "horizontal" | "vertical") => void;
   onSetIconSize: (size: ResourceIconSize) => void;
+  onSetAnnotationStyle: (style: AnnotationStyle) => void;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
   onPinRoute: () => void;
   onAutoRoute: () => void;
@@ -1213,15 +1437,34 @@ function Inspector({
       )}
       {(resource || group || edge || annotation) && (
         <div className="property-section">
-          <label htmlFor="inspector-label">Display label</label>
-          <input
-            id="inspector-label"
-            value={labelDraft}
-            onChange={(event) => setLabelDraft(event.target.value)}
-            onBlur={() => onRename(labelDraft)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-            }}
+          <label htmlFor="inspector-label">{annotation ? "Content" : "Display label"}</label>
+          {annotation ? (
+            <textarea
+              id="inspector-label"
+              value={labelDraft}
+              rows={5}
+              onChange={(event) => setLabelDraft(event.target.value)}
+              onBlur={() => onRename(labelDraft)}
+            />
+          ) : (
+            <input
+              id="inspector-label"
+              value={labelDraft}
+              onChange={(event) => setLabelDraft(event.target.value)}
+              onBlur={() => onRename(labelDraft)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+            />
+          )}
+        </div>
+      )}
+      {annotation && (
+        <div className="property-section">
+          <label>Note style</label>
+          <NoteStyleOptions
+            selectedStyle={annotationStyle(annotation)}
+            onStyleChange={onSetAnnotationStyle}
           />
         </div>
       )}

@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
+
+/** The first frame leaves the app chrome and some of the surrounding canvas visible. */
+export const DEFAULT_VIEWPORT_ZOOM = 0.9;
+export const DEFAULT_VIEWPORT_TOP_MARGIN = 96;
+export const DEFAULT_VIEWPORT_LEFT_MARGIN = 96;
+export const DEFAULT_VIEWPORT_RIGHT_MARGIN = 40;
 
 export interface Viewport {
   panX: number;
@@ -13,22 +19,46 @@ export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
+/**
+ * Place a diagram toward the upper-right without allowing it to disappear
+ * behind the left tool dock when the artboard is wider than the viewport.
+ */
+export function defaultViewportForContent(
+  stageWidth: number,
+  contentWidth: number,
+): Viewport {
+  const width = Math.max(0, contentWidth);
+  const rightAnchoredX = stageWidth - width * DEFAULT_VIEWPORT_ZOOM - DEFAULT_VIEWPORT_RIGHT_MARGIN;
+
+  return {
+    panX: Math.max(DEFAULT_VIEWPORT_LEFT_MARGIN, rightAnchoredX),
+    panY: DEFAULT_VIEWPORT_TOP_MARGIN,
+    zoom: DEFAULT_VIEWPORT_ZOOM,
+  };
+}
+
 export function CanvasStage({
   children,
   viewport,
   onViewportChange,
   onBackgroundClick,
   onFitRequest,
+  contentSize,
+  defaultFrameKey = 0,
 }: {
   children: ReactNode;
   viewport: Viewport;
   onViewportChange: (next: Viewport) => void;
   onBackgroundClick: () => void;
   onFitRequest?: (fit: () => void) => void;
+  contentSize?: { width: number; height: number };
+  defaultFrameKey?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [panning, setPanning] = useState(false);
   const spaceRef = useRef(false);
+  const interactivePointerRef = useRef(false);
+  const framedKeyRef = useRef<number | null>(null);
   const viewportRef = useRef(viewport);
   viewportRef.current = viewport;
 
@@ -62,6 +92,26 @@ export function CanvasStage({
       window.removeEventListener("keyup", onKeyUp);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !contentSize) return;
+
+    const frameIfNeeded = () => {
+      if (framedKeyRef.current === defaultFrameKey) return;
+      const width = el.getBoundingClientRect().width;
+      if (!width) return;
+
+      framedKeyRef.current = defaultFrameKey;
+      onViewportChange(defaultViewportForContent(width, contentSize.width));
+    };
+
+    frameIfNeeded();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(frameIfNeeded);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [contentSize, defaultFrameKey, onViewportChange]);
 
   useEffect(() => {
     onFitRequest?.(() => {
@@ -124,8 +174,22 @@ export function CanvasStage({
       className={`canvas-stage${panning ? " is-panning" : ""}`}
       data-testid="canvas-stage"
       onClick={(event) => {
+        if (interactivePointerRef.current) {
+          interactivePointerRef.current = false;
+          return;
+        }
         const target = event.target as Element;
         if (!target.closest("[data-interactive]")) onBackgroundClick();
+      }}
+      onPointerDownCapture={(event) => {
+        interactivePointerRef.current = Boolean(
+          (event.target as Element).closest("[data-interactive]"),
+        );
+      }}
+      onPointerUpCapture={() => {
+        window.setTimeout(() => {
+          interactivePointerRef.current = false;
+        }, 0);
       }}
       onPointerDown={(e) => {
         const shouldPan = e.button === 1 || (e.button === 0 && spaceRef.current);

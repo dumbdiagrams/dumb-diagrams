@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   createAsyncDocsFixture,
   createTransferHubFixture,
+  getDefaultView,
 } from "@dumb-diagrams/core";
-import { compileDiagram } from "@dumb-diagrams/render";
+import { compileDiagram, renderSvg } from "@dumb-diagrams/render";
 import { checkInvariants } from "@dumb-diagrams/render";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import { normalizeOrthogonalRoute, routeEdges, attachRoutes } from "@dumb-diagrams/route";
@@ -13,6 +14,30 @@ describe("async-docs fixture", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);
     expect(result.svg).toContain("<svg");
+  });
+
+  it("renders each note style as an explicit SVG variant", () => {
+    const doc = createAsyncDocsFixture();
+    doc.annotations = [
+      { id: "paper", text: "A paper note" },
+      { id: "code", text: "const ready = true", style: "code" },
+      { id: "callout", text: "Keep this private", style: "callout" },
+      { id: "checklist", text: "Review IAM", style: "checklist" },
+    ];
+    const view = getDefaultView(doc);
+    view.annotations = {
+      paper: { x: 40, y: 40, w: 220, h: 96 },
+      code: { x: 280, y: 40, w: 300, h: 160 },
+      callout: { x: 620, y: 40, w: 280, h: 104 },
+      checklist: { x: 40, y: 180, w: 260, h: 152 },
+    };
+
+    const svg = renderSvg(doc, layoutDocument(doc));
+    expect(svg.match(/data-annotation-style=/g)).toHaveLength(4);
+    expect(svg).toContain('data-annotation-style="paper"');
+    expect(svg).toContain('data-annotation-style="code"');
+    expect(svg).toContain('data-annotation-style="callout"');
+    expect(svg).toContain('data-annotation-style="checklist"');
   });
 
   it("has no connector collisions, detached ports, or reverse overlaps", () => {

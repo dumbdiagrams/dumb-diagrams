@@ -1,23 +1,30 @@
 import { describe, expect, it } from "vitest";
 
 import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/core";
+import { getCatalogEntry } from "@dumb-diagrams/catalog";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
 
 import {
+  addAnnotation,
+  addGroup,
+  addResource,
   alignSelection,
+  canPlaceCatalogEntry,
   clearView,
   deleteSelection,
   importSvgAsset,
   moveSelection,
   nudgeSelection,
   pasteClipboard,
+  reconnectEdge,
   renameResource,
   resourceIconSize,
   serializeClipboard,
   sendToBack,
   sendToFront,
   setEdgeBadgePosition,
+  setAnnotationStyle,
   setGroupPlace,
   setRoute,
   setSize,
@@ -27,6 +34,35 @@ import {
 } from "./editor-model.js";
 
 describe("editor commands", () => {
+  it("allows manual catalog items to be staged outside generated containment rules", () => {
+    const doc = createAsyncDocsFixture();
+    const service = getCatalogEntry("aws.elastic-container-service")!;
+    const boundary = getCatalogEntry("aws.vpc")!;
+
+    expect(service.allowedParents).not.toContain("region");
+    expect(canPlaceCatalogEntry(doc, service, "use1")).toEqual({ ok: true });
+    const placedService = addResource(doc, service, "use1", { x: 2_000, y: 48 });
+    expect(placedService.doc.resources.find((resource) => resource.id === placedService.id)).toMatchObject({
+      type: service.type,
+      parent: "use1",
+    });
+
+    expect(boundary.allowRoot).toBe(false);
+    expect(canPlaceCatalogEntry(doc, boundary)).toEqual({ ok: true });
+    const placedBoundary = addGroup(
+      doc,
+      "vpc",
+      boundary.name,
+      undefined,
+      { x: 2_000, y: 48 },
+      boundary.type,
+    );
+    expect(placedBoundary.doc.groups.find((group) => group.id === placedBoundary.id)).toMatchObject({
+      type: boundary.type,
+      parent: undefined,
+    });
+  });
+
   it("renames resources without changing ids", () => {
     const doc = createAsyncDocsFixture();
     const next = renameResource(doc, "client", "Browser");
@@ -40,6 +76,21 @@ describe("editor commands", () => {
     const next = setTitle(doc, "Async Docs");
     expect(next.title).toBe("Async Docs");
     expect(next.id).toBe("async-docs");
+  });
+
+  it("persists note styles and gives each style a useful default size", () => {
+    const doc = createAsyncDocsFixture();
+    getDefaultView(doc).places.client = { zIndex: 12 };
+    const added = addAnnotation(doc, "const worker = await run()", { x: 80, y: 80 });
+    const code = setAnnotationStyle(added.doc, added.id, "code");
+    const codeNote = code.annotations.find((annotation) => annotation.id === added.id);
+
+    expect(codeNote?.style).toBe("code");
+    expect(getDefaultView(code).annotations?.[added.id]).toMatchObject({ w: 300, h: 160, zIndex: 13 });
+
+    const paper = setAnnotationStyle(code, added.id, "paper");
+    expect(paper.annotations.find((annotation) => annotation.id === added.id)?.style).toBeUndefined();
+    expect(getDefaultView(paper).annotations?.[added.id]).toMatchObject({ w: 220, h: 96 });
   });
 
   it("nudges pinned places", () => {
@@ -239,13 +290,34 @@ describe("editor commands", () => {
     expect(edge).toBeTruthy();
     edge!.sourcePort = "e";
     edge!.targetPort = "w";
+    edge!.sourcePortOffset = 0.25;
+    edge!.targetPortOffset = 0.75;
     const next = swapEdgeDirection(doc, "e1");
     const swapped = next.edges.find((candidate) => candidate.id === "e1");
     expect(swapped?.source).toBe(edge!.target);
     expect(swapped?.target).toBe(edge!.source);
     expect(swapped?.sourcePort).toBe("w");
     expect(swapped?.targetPort).toBe("e");
+    expect(swapped?.sourcePortOffset).toBe(0.75);
+    expect(swapped?.targetPortOffset).toBe(0.25);
     expect(getDefaultView(next).routes.e1).toBeUndefined();
+  });
+
+  it("persists a reconnected endpoint on an explicit port anchor", () => {
+    const doc = createAsyncDocsFixture();
+    const next = reconnectEdge(doc, "e3", {
+      target: "jobs",
+      targetPort: "w",
+      targetPortOffset: 0.26,
+    });
+    const edge = next.edges.find((candidate) => candidate.id === "e3");
+
+    expect(edge).toMatchObject({
+      target: "jobs",
+      targetPort: "w",
+      targetPortOffset: 0.25,
+    });
+    expect(getDefaultView(next).routes.e3).toBeUndefined();
   });
 
   it("persists numbered badge placement without pinning the route", () => {

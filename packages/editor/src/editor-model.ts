@@ -5,6 +5,7 @@ import type {
   EdgeBadgeSide,
   EdgeKind,
   EdgeStyle,
+  AnnotationStyle,
   GroupKind,
   LayoutResult,
   PlaceOverride,
@@ -13,7 +14,7 @@ import type {
   ResourceRole,
   Side,
 } from "@dumb-diagrams/core";
-import { getDefaultView } from "@dumb-diagrams/core";
+import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/core";
 import { getCatalogEntry, type CatalogEntry } from "@dumb-diagrams/catalog";
 import { sanitizeSvg } from "@dumb-diagrams/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
@@ -29,6 +30,29 @@ export interface SelectionItem {
 
 export type Selection = SelectionItem[];
 
+export const ANNOTATION_STYLES: Array<{
+  id: AnnotationStyle;
+  label: string;
+  description: string;
+  w: number;
+  h: number;
+}> = [
+  { id: "paper", label: "Paper", description: "Warm pinned note", w: 220, h: 96 },
+  { id: "code", label: "Code snippet", description: "Monospace dark card", w: 300, h: 160 },
+  { id: "callout", label: "Callout", description: "Focused explanation", w: 280, h: 104 },
+  { id: "checklist", label: "Checklist", description: "Actionable items", w: 260, h: 152 },
+];
+
+export function annotationStyle(
+  annotation: { style?: AnnotationStyle },
+): AnnotationStyle {
+  return annotation.style ?? "paper";
+}
+
+export function annotationSize(style: AnnotationStyle): { w: number; h: number } {
+  return ANNOTATION_STYLES.find((candidate) => candidate.id === style) ?? ANNOTATION_STYLES[0]!;
+}
+
 export interface PlacementCheck {
   ok: boolean;
   reason?: string;
@@ -40,18 +64,13 @@ export function canPlaceCatalogEntry(
   parentId?: string,
 ): PlacementCheck {
   if (!parentId) {
-    return entry.allowRoot
-      ? { ok: true }
-      : { ok: false, reason: `${entry.name} must be placed inside a compatible group.` };
+    // Catalog containment rules guide generated diagrams. Manual placement is
+    // intentionally permissive so users can stage an item before deciding
+    // where it belongs; the core validator remains strict by default.
+    return { ok: true };
   }
   const parent = doc.groups.find((candidate) => candidate.id === parentId);
   if (!parent) return { ok: false, reason: "The selected parent group no longer exists." };
-  if (!entry.allowedParents.includes(parent.kind)) {
-    return {
-      ok: false,
-      reason: `${entry.name} cannot be placed inside a ${parent.kind} group.`,
-    };
-  }
   return { ok: true };
 }
 
@@ -438,12 +457,28 @@ export function clearRoute(
 export function reconnectEdge(
   doc: DiagramDocument,
   edgeId: string,
-  patch: Partial<Pick<Edge, "source" | "target" | "sourcePort" | "targetPort">>,
+  patch: Partial<
+    Pick<
+      Edge,
+      | "source"
+      | "target"
+      | "sourcePort"
+      | "targetPort"
+      | "sourcePortOffset"
+      | "targetPortOffset"
+    >
+  >,
 ): DiagramDocument {
   const next = cloneDocument(doc);
   const edge = next.edges.find((candidate) => candidate.id === edgeId);
   if (!edge) return doc;
   Object.assign(edge, patch);
+  if (patch.sourcePortOffset !== undefined) {
+    edge.sourcePortOffset = normalizePortOffset(patch.sourcePortOffset);
+  }
+  if (patch.targetPortOffset !== undefined) {
+    edge.targetPortOffset = normalizePortOffset(patch.targetPortOffset);
+  }
   delete getDefaultView(next).routes[edgeId];
   return next;
 }
@@ -459,10 +494,14 @@ export function swapEdgeDirection(
   const prevTarget = edge.target;
   const prevSourcePort = edge.sourcePort;
   const prevTargetPort = edge.targetPort;
+  const prevSourcePortOffset = edge.sourcePortOffset;
+  const prevTargetPortOffset = edge.targetPortOffset;
   edge.source = prevTarget;
   edge.target = prevSource;
   edge.sourcePort = prevTargetPort;
   edge.targetPort = prevSourcePort;
+  edge.sourcePortOffset = prevTargetPortOffset;
+  edge.targetPortOffset = prevSourcePortOffset;
   delete getDefaultView(next).routes[edgeId];
   return next;
 }
@@ -623,18 +662,32 @@ export function addAnnotation(
   text: string,
   at: Point,
   anchor?: string,
+  style: AnnotationStyle = "paper",
 ): { doc: DiagramDocument; id: string } {
   const next = cloneDocument(doc);
   const id = uniqueId(next, "note");
-  next.annotations.push({ id, text, anchor });
+  next.annotations.push({
+    id,
+    text,
+    anchor,
+    ...(style === "paper" ? {} : { style }),
+  });
+  const size = annotationSize(style);
   const view = getDefaultView(next);
   if (!view.annotations) view.annotations = {};
+  const maxZ = Math.max(
+    0,
+    ...placeableIds(next)
+      .filter((candidate) => candidate !== id)
+      .map((candidate) => zIndexFor(next, candidate)),
+  );
   view.annotations[id] = {
     x: Math.round(at.x),
     y: Math.round(at.y),
-    w: 160,
-    h: 48,
+    w: size.w,
+    h: size.h,
     pin: true,
+    zIndex: maxZ + 1,
   };
   return { doc: next, id };
 }
@@ -668,6 +721,35 @@ export function updateAnnotationText(
   const annotation = next.annotations.find((candidate) => candidate.id === id);
   if (!annotation) return doc;
   annotation.text = text;
+  return next;
+}
+
+export function setAnnotationStyle(
+  doc: DiagramDocument,
+  id: string,
+  style: AnnotationStyle,
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const annotation = next.annotations.find((candidate) => candidate.id === id);
+  if (!annotation) return doc;
+
+  const previousStyle = annotationStyle(annotation);
+  const view = getDefaultView(next);
+  const place = view.annotations?.[id];
+  const previousSize = annotationSize(previousStyle);
+  const shouldUseNewSize =
+    place &&
+    (place.w === previousSize.w || place.w === undefined) &&
+    (place.h === previousSize.h || place.h === undefined);
+
+  if (style === "paper") delete annotation.style;
+  else annotation.style = style;
+
+  if (place && shouldUseNewSize) {
+    const size = annotationSize(style);
+    if (!view.annotations) view.annotations = {};
+    view.annotations[id] = { ...place, w: size.w, h: size.h };
+  }
   return next;
 }
 
@@ -737,6 +819,8 @@ export function addEdge(
   target: string,
   sourcePort?: Side,
   targetPort?: Side,
+  sourcePortOffset?: number,
+  targetPortOffset?: number,
 ): { doc: DiagramDocument; id: string } {
   const next = cloneDocument(doc);
   const id = uniqueId(next, `${source}-${target}`);
@@ -746,6 +830,12 @@ export function addEdge(
     target,
     sourcePort,
     targetPort,
+    sourcePortOffset: sourcePortOffset === undefined
+      ? undefined
+      : normalizePortOffset(sourcePortOffset),
+    targetPortOffset: targetPortOffset === undefined
+      ? undefined
+      : normalizePortOffset(targetPortOffset),
     style: "solid",
     kind: "flow",
   });
@@ -756,12 +846,30 @@ export function updateEdge(
   doc: DiagramDocument,
   id: string,
   patch: Partial<
-    Pick<Edge, "sourcePort" | "targetPort" | "style" | "kind" | "label" | "step">
+    Pick<
+      Edge,
+      | "sourcePort"
+      | "targetPort"
+      | "sourcePortOffset"
+      | "targetPortOffset"
+      | "style"
+      | "kind"
+      | "label"
+      | "step"
+    >
   >,
 ): DiagramDocument {
   const next = cloneDocument(doc);
   const edge = next.edges.find((candidate) => candidate.id === id);
-  if (edge) Object.assign(edge, patch);
+  if (edge) {
+    Object.assign(edge, patch);
+    if (patch.sourcePortOffset !== undefined) {
+      edge.sourcePortOffset = normalizePortOffset(patch.sourcePortOffset);
+    }
+    if (patch.targetPortOffset !== undefined) {
+      edge.targetPortOffset = normalizePortOffset(patch.targetPortOffset);
+    }
+  }
   return next;
 }
 

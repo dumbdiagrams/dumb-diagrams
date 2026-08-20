@@ -1,5 +1,6 @@
-import type { Point, RoutedEdge } from "@dumb-diagrams/core";
+import type { NodeGeom, Point, RoutedEdge, Side } from "@dumb-diagrams/core";
 
+import { nearestPortAnchor, portPoint } from "@dumb-diagrams/core";
 import { projectPointToPolyline } from "@dumb-diagrams/route";
 
 const EDGE_HIT_RADIUS = 16;
@@ -27,4 +28,86 @@ export function nearestEdgeIdAt(
     }
   }
   return best?.id;
+}
+
+export interface NodePortTarget {
+  nodeId: string;
+  side: Side;
+  offset: number;
+}
+
+/**
+ * Infer connector intent from the icon itself, not only from a tiny port hit
+ * circle. This lets a user drop on the top/left/right/bottom region of an
+ * icon and still get the nearest legal port on that face.
+ */
+export function nearestNodePortAt(
+  point: Point,
+  nodes: Array<Pick<NodeGeom, "id" | "icon">>,
+  hitPadding = 24,
+  preferred?: NodePortTarget | null,
+  switchMargin = 3,
+): NodePortTarget | null {
+  let best:
+    | { target: NodePortTarget; rectDistance: number; anchorDistance: number }
+    | undefined;
+
+  for (const node of nodes) {
+    const rectDistance = distanceToRect(point, node.icon);
+    if (rectDistance > hitPadding) continue;
+
+    const anchor = nearestPortAnchor(node.icon, point);
+    const anchorDistance = Math.hypot(
+      point.x - anchor.point.x,
+      point.y - anchor.point.y,
+    );
+    if (
+      !best ||
+      rectDistance < best.rectDistance ||
+      (rectDistance === best.rectDistance && anchorDistance < best.anchorDistance)
+    ) {
+      best = {
+        target: { nodeId: node.id, side: anchor.side, offset: anchor.offset },
+        rectDistance,
+        anchorDistance,
+      };
+    }
+  }
+
+  if (!best || !preferred || preferred.nodeId !== best.target.nodeId) {
+    return best?.target ?? null;
+  }
+  if (
+    preferred.side === best.target.side &&
+    preferred.offset === best.target.offset
+  ) {
+    return preferred;
+  }
+
+  const node = nodes.find((candidate) => candidate.id === preferred.nodeId);
+  if (!node) return best.target;
+  const preferredAnchor = nearestAnchorForTarget(node.icon, preferred);
+  const preferredDistance = Math.hypot(
+    point.x - preferredAnchor.x,
+    point.y - preferredAnchor.y,
+  );
+  return preferredDistance <= best.anchorDistance + switchMargin
+    ? preferred
+    : best.target;
+}
+
+function nearestAnchorForTarget(
+  rect: NodeGeom["icon"],
+  target: NodePortTarget,
+): Point {
+  return portPoint(rect, target.side, target.offset);
+}
+
+function distanceToRect(
+  point: Point,
+  rect: { x: number; y: number; w: number; h: number },
+): number {
+  const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.w));
+  const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.h));
+  return Math.hypot(dx, dy);
 }

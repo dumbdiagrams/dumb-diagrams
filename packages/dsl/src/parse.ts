@@ -1,11 +1,12 @@
 import type {
+  AnnotationStyle,
   DiagramDocument,
   Edge,
   Group,
   Resource,
   View,
 } from "@dumb-diagrams/core";
-import { createEmptyDocument } from "@dumb-diagrams/core";
+import { createEmptyDocument, normalizePortOffset } from "@dumb-diagrams/core";
 
 type Token =
   | { type: "id"; value: string }
@@ -298,7 +299,7 @@ class Parser {
     if (this.peek()?.type === "string") {
       text = this.expect("string").value;
     }
-    const annotation: { id: string; text: string; anchor?: string } = {
+    const annotation: { id: string; text: string; anchor?: string; style?: AnnotationStyle } = {
       id: idTok.value,
       text,
     };
@@ -313,6 +314,10 @@ class Parser {
         if (t.type === "id" && t.value === "anchor") {
           this.pos++;
           annotation.anchor = this.expect("id").value;
+        } else if (t.type === "id" && t.value === "style") {
+          this.pos++;
+          const style = this.expect("id").value;
+          if (isAnnotationStyle(style)) annotation.style = style;
         } else {
           this.pos++;
         }
@@ -363,11 +368,21 @@ class Parser {
           const side = this.expect("id").value;
           if (side === "n" || side === "s" || side === "e" || side === "w")
             edge.sourcePort = side;
+          const sourceOffset = this.peek();
+          if (sourceOffset?.type === "id" && sourceOffset.value === "offset") {
+            this.pos++;
+            edge.sourcePortOffset = normalizePortOffset(this.expect("number").value);
+          }
         } else if (t.type === "id" && t.value === "to") {
           this.pos++;
           const side = this.expect("id").value;
           if (side === "n" || side === "s" || side === "e" || side === "w")
             edge.targetPort = side;
+          const targetOffset = this.peek();
+          if (targetOffset?.type === "id" && targetOffset.value === "offset") {
+            this.pos++;
+            edge.targetPortOffset = normalizePortOffset(this.expect("number").value);
+          }
         } else {
           this.pos++;
         }
@@ -603,7 +618,10 @@ export function printArch(doc: DiagramDocument): string {
 
   for (const annotation of doc.annotations) {
     let line = `  annotation ${annotation.id} "${escapeString(annotation.text)}"`;
-    if (annotation.anchor) line += ` { anchor ${annotation.anchor} }`;
+    const options: string[] = [];
+    if (annotation.anchor) options.push(`anchor ${annotation.anchor}`);
+    if (annotation.style && annotation.style !== "paper") options.push(`style ${annotation.style}`);
+    if (options.length) line += ` { ${options.join(" ")} }`;
     lines.push(line);
   }
 
@@ -618,8 +636,20 @@ export function printArch(doc: DiagramDocument): string {
     if (edge.step !== undefined) opts.push(`step ${edge.step}`);
     if (edge.style !== "solid") opts.push(`style ${edge.style}`);
     if (edge.kind) opts.push(`kind ${edge.kind}`);
-    if (edge.sourcePort) opts.push(`from ${edge.sourcePort}`);
-    if (edge.targetPort) opts.push(`to ${edge.targetPort}`);
+    if (edge.sourcePort) {
+      opts.push(
+        `from ${edge.sourcePort}${edge.sourcePortOffset !== undefined
+          ? ` offset ${normalizePortOffset(edge.sourcePortOffset)}`
+          : ""}`,
+      );
+    }
+    if (edge.targetPort) {
+      opts.push(
+        `to ${edge.targetPort}${edge.targetPortOffset !== undefined
+          ? ` offset ${normalizePortOffset(edge.targetPortOffset)}`
+          : ""}`,
+      );
+    }
     if (opts.length) line += ` { ${opts.join(" ")} }`;
     lines.push(line);
   }
@@ -666,6 +696,10 @@ export function printArch(doc: DiagramDocument): string {
   }
   lines.push("}");
   return lines.join("\n");
+}
+
+function isAnnotationStyle(value: string): value is AnnotationStyle {
+  return value === "paper" || value === "code" || value === "callout" || value === "checklist";
 }
 
 function formatPlace(

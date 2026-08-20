@@ -36,6 +36,15 @@ async function expectLoadedIcon(card: Locator) {
   await expect(card).toHaveAttribute("data-icon-status", "loaded");
 }
 
+test("keeps groups before resources in the left tool dock", async ({ page }) => {
+  await page.goto("/");
+  const labels = await page
+    .getByRole("navigation", { name: "Diagram tools" })
+    .getByRole("button")
+    .evaluateAll((buttons) => buttons.slice(0, 3).map((button) => button.getAttribute("aria-label")));
+  expect(labels).toEqual(["Select", "Groups", "Resources"]);
+});
+
 test("renders a real icon for every catalog entry in the all-provider view", async ({ page }) => {
   const failedIconResponses: string[] = [];
   page.on("response", (response) => {
@@ -104,6 +113,37 @@ test("searches across providers, favorites a service, and adds it to the canvas"
       '[data-entity-kind="resource"][aria-label="Resource Amazon Elastic Container Registry"]',
     ),
   ).toHaveCount(1);
+});
+
+test("places root resources in the open lane and allows manual compatibility overrides", async ({ page }) => {
+  await openResources(page);
+  const resources = page.locator('[data-entity-kind="resource"]');
+  const existingRight = await resources.evaluateAll((elements) =>
+    Math.max(...elements.map((element) =>
+      Number(element.getAttribute("x") ?? 0) + Number(element.getAttribute("width") ?? 0),
+    )),
+  );
+
+  const search = page.getByRole("textbox", { name: "Search catalog", exact: true });
+  await search.fill("Elastic Container Registry");
+  const rootCard = page.locator('[data-catalog-type="aws.elastic-container-registry"]');
+  await expect(rootCard).toHaveCount(1);
+  await rootCard.getByRole("button", { name: "Add Amazon Elastic Container Registry", exact: true }).click();
+
+  const rootResource = page.locator('[data-entity-kind="resource"][aria-selected="true"]');
+  await expect(rootResource).toHaveCount(1);
+  expect(Number(await rootResource.getAttribute("x"))).toBeGreaterThan(existingRight);
+
+  await openResources(page, "use1");
+  await page.getByRole("textbox", { name: "Search catalog", exact: true }).fill("Elastic Container Service");
+  const manuallyNestedCard = page.locator('[data-catalog-type="aws.elastic-container-service"]');
+  await expect(manuallyNestedCard).toHaveCount(1);
+  await manuallyNestedCard.getByRole("button", { name: "Add Amazon Elastic Container Service", exact: true }).click();
+
+  const inspector = page.getByRole("dialog", { name: "Amazon Elastic Container Service", exact: true });
+  await expect(inspector).toHaveCount(1);
+  await inspector.getByText("Advanced details", { exact: true }).click();
+  await expect(inspector.getByText("AWS Region (us-east-1)", { exact: true })).toBeVisible();
 });
 
 test("opens the group library and keeps provider group icons available", async ({ page }) => {
@@ -176,4 +216,43 @@ test("places a new root group outside the tiled canvas with resize controls", as
     }));
   }, handlePoint);
   await expect.poll(async () => Number(await newGroup.getAttribute("width"))).toBeGreaterThan(beforeWidth);
+});
+
+test("supports paper, code, callout, and checklist note styles", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Add note", exact: true }).click();
+
+  const stage = page.locator('[data-testid="canvas-stage"]');
+  const stageBox = await stage.boundingBox();
+  expect(stageBox).not.toBeNull();
+  const composer = page.getByRole("dialog", { name: "Choose note style", exact: true });
+  await expect(composer).toHaveCount(1);
+  const composerBox = await composer.boundingBox();
+  expect(composerBox).not.toBeNull();
+  expect(composerBox!.x).toBeLessThan(stageBox!.x + stageBox!.width / 2);
+  await expect(composer.locator(".note-style-grid-with-previews [data-note-style-preview]")).toHaveCount(4);
+  const selectedNote = page.locator('[data-entity-kind="annotation"][aria-selected="true"]');
+  await expect(selectedNote).toHaveCount(0);
+  await expect(composer.getByRole("button", { name: "Paper", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  for (const style of ["Code snippet", "Callout", "Checklist"]) {
+    await composer.getByRole("button", { name: style, exact: true }).click();
+    await expect(selectedNote).toHaveCount(0);
+  }
+
+  await composer.getByRole("button", { name: "Code snippet", exact: true }).click();
+  await composer.getByRole("button", { name: "Create Code snippet", exact: true }).click();
+  await expect(composer).toHaveCount(0);
+  await expect(selectedNote).toHaveCount(1);
+  await expect(page.locator('[data-annotation-style="code"]')).toHaveCount(1);
+
+  const inspector = page.getByRole("dialog", { name: "Note", exact: true });
+  await expect(inspector).toHaveCount(1);
+  const inspectorBox = await inspector.boundingBox();
+  expect(inspectorBox).not.toBeNull();
+  expect(inspectorBox!.x).toBeGreaterThan(stageBox!.x + stageBox!.width / 2);
+  await expect(inspector.getByText("Note style", { exact: true })).toBeVisible();
 });
