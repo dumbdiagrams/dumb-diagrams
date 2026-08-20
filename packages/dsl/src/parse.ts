@@ -461,6 +461,10 @@ class Parser {
           } else if (key === "mode") {
             const mode = this.expect("id").value;
             if (mode === "auto" || mode === "manual") route.mode = mode;
+          } else if (key === "badge") {
+            route.badgeT = Math.max(0, Math.min(1, this.expect("number").value));
+            const side = this.expect("id").value;
+            if (side === "top" || side === "bottom") route.badgeSide = side;
           }
         }
         this.expect("rbrace");
@@ -650,6 +654,9 @@ export function printArch(doc: DiagramDocument): string {
       }
       if (route.mode && route.mode !== "auto") parts.push(`mode ${route.mode}`);
       if (route.pin) parts.push("pin");
+      if (route.badgeT !== undefined || route.badgeSide !== undefined) {
+        parts.push(`badge ${route.badgeT ?? 0.5} ${route.badgeSide ?? "top"}`);
+      }
       parts.push("}");
       lines.push(`  ${parts.join(" ")}`);
     }

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +13,47 @@ import {
 } from "./catalog.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+function walkSvgFiles(root: string): string[] {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true }).flatMap((item) => {
+    const file = join(root, item.name);
+    if (item.isDirectory()) return walkSvgFiles(file);
+    return item.name.toLowerCase().endsWith(".svg") ? [file] : [];
+  });
+}
+
+const SOURCE_ICON_LIBRARIES = [
+  {
+    provider: "aws" as const,
+    root: "aws-icons/Architecture-Service-Icons_07312026",
+    include: (file: string) => file.endsWith("_64.svg"),
+    kinds: ["resource"],
+    excluded: [],
+  },
+  {
+    provider: "azure" as const,
+    root: "azure-icons/Icons",
+    include: () => true,
+    kinds: ["resource"],
+    excluded: [],
+  },
+  {
+    provider: "gcp" as const,
+    root: "gcp-icons/Unique Icons",
+    include: () => true,
+    kinds: ["resource"],
+    excluded: [],
+  },
+  {
+    provider: "cloud-agnostic" as const,
+    root: "neutral-icons",
+    include: () => true,
+    kinds: ["resource", "group"],
+    // The legacy custom glyph is intentionally not a browsable catalog entry.
+    excluded: ["neutral-icons/custom.svg"],
+  },
+] as const;
 
 describe("catalog icon previews", () => {
   it("resolves every manifest icon path to an existing file", () => {
@@ -64,6 +105,64 @@ describe("catalog icon previews", () => {
           }
         }
       }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it("does not expose Azure export prefixes in service labels", () => {
+    const azureResources = listBrowsableAssets("azure", "resources");
+    const malformed = azureResources.filter(
+      (entry) => /^\d+\s|icon service/i.test(entry.name),
+    );
+    expect(malformed.map((entry) => entry.name)).toEqual([]);
+    expect(
+      azureResources
+        .filter((entry) => entry.name === "Service Group Relationships")
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  it.each(SOURCE_ICON_LIBRARIES)(
+    "keeps the $provider catalog inventory in sync with its source library",
+    ({ provider, root, include, kinds, excluded }) => {
+      const excludedPaths = new Set<string>(excluded);
+      const catalogKinds = new Set<string>(kinds);
+      const sourcePaths = walkSvgFiles(join(ROOT, root))
+        .filter(include)
+        .map((file) => relative(ROOT, file).replaceAll("\\", "/"))
+        .filter((file) => !excludedPaths.has(file))
+        .sort();
+      const catalogPaths = manifest.entries
+        .filter(
+          (entry) =>
+            entry.provider === provider &&
+            catalogKinds.has(entry.assetKind) &&
+            entry.canonical !== false &&
+            entry.browsable !== false,
+        )
+        .map((entry) => entry.iconPath)
+        .sort();
+
+      expect(catalogPaths).toEqual(sourcePaths);
+    },
+  );
+
+  it("does not leave a canonical browsable entry without a real staged icon", () => {
+    const assetsBySourceId = new Map(manifest.assetFiles.map((asset) => [asset.sourceId, asset]));
+    const problems: string[] = [];
+    for (const entry of manifest.entries) {
+      if (entry.canonical === false || entry.browsable === false) continue;
+      const asset = assetsBySourceId.get(entry.icon.sourceId);
+      if (!asset) {
+        problems.push(`${entry.type} -> missing asset record`);
+        continue;
+      }
+      const staged = join(ROOT, "packages/editor/public", asset.browserPath);
+      if (!existsSync(staged)) {
+        problems.push(`${entry.type} -> missing ${asset.browserPath}`);
+        continue;
+      }
+      if (statSync(staged).size === 0) problems.push(`${entry.type} -> empty ${asset.browserPath}`);
     }
     expect(problems).toEqual([]);
   });

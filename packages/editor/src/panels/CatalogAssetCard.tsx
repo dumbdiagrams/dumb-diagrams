@@ -81,7 +81,11 @@ export function CatalogAssetCard({
               alt=""
               width={iconSize}
               height={iconSize}
-              loading="lazy"
+              // The catalog is already rendered inside its own scroll grid. Native lazy
+              // loading combined with content-visibility on the cards can leave visible
+              // cards in a permanent browser "broken image" state in Chromium.
+              loading="eager"
+              fetchPriority="low"
               decoding="async"
               onLoad={() => setStatus("loaded")}
               onError={handleIconError}

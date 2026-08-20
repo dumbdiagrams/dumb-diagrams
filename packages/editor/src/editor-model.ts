@@ -2,6 +2,7 @@ import type {
   DiagramDocument,
   DiagramAsset,
   Edge,
+  EdgeBadgeSide,
   EdgeKind,
   EdgeStyle,
   GroupKind,
@@ -15,6 +16,7 @@ import type {
 import { getDefaultView } from "@dumb-diagrams/core";
 import { getCatalogEntry, type CatalogEntry } from "@dumb-diagrams/catalog";
 import { sanitizeSvg } from "@dumb-diagrams/render";
+import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
 
 import { snapCoordinate } from "./grid.js";
 
@@ -379,12 +381,16 @@ export function setRoute(
   mode: "auto" | "manual" = "manual",
 ): DiagramDocument {
   const next = cloneDocument(doc);
-  getDefaultView(next).routes[edgeId] = {
-    waypoints: points.slice(1, -1).map((point) => ({
+  const view = getDefaultView(next);
+  const existing = view.routes[edgeId];
+  const normalized = normalizeOrthogonalRoute(points);
+  view.routes[edgeId] = {
+    ...existing,
+    waypoints: normalized.slice(1, -1).map((point) => ({
       x: Math.round(point.x),
       y: Math.round(point.y),
     })),
-    points: points.map((point) => ({
+    points: normalized.map((point) => ({
       x: Math.round(point.x),
       y: Math.round(point.y),
     })),
@@ -394,12 +400,38 @@ export function setRoute(
   return next;
 }
 
+export function setEdgeBadgePosition(
+  doc: DiagramDocument,
+  edgeId: string,
+  t: number,
+  side: EdgeBadgeSide,
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const view = getDefaultView(next);
+  const current = view.routes[edgeId] ?? {};
+  view.routes[edgeId] = {
+    ...current,
+    badgeT: Math.max(0, Math.min(1, t)),
+    badgeSide: side,
+  };
+  return next;
+}
+
 export function clearRoute(
   doc: DiagramDocument,
   edgeId: string,
 ): DiagramDocument {
   const next = cloneDocument(doc);
-  delete getDefaultView(next).routes[edgeId];
+  const view = getDefaultView(next);
+  const existing = view.routes[edgeId];
+  if (existing?.badgeT !== undefined || existing?.badgeSide !== undefined) {
+    view.routes[edgeId] = {
+      badgeT: existing.badgeT,
+      badgeSide: existing.badgeSide,
+    };
+  } else {
+    delete view.routes[edgeId];
+  }
   return next;
 }
 
@@ -893,8 +925,44 @@ export function serializeClipboard(doc: DiagramDocument, selection: Selection): 
       if (item.kind === "group") collectChildren(doc, item.id, included);
     }
   }
+  const groupById = new Map(doc.groups.map((group) => [group.id, group]));
+  const copiedGroupIds = new Set(
+    doc.groups.filter((group) => included.has(group.id)).map((group) => group.id),
+  );
+  const parentIds = [
+    ...doc.resources
+      .filter((resource) => included.has(resource.id))
+      .map((resource) => resource.parent),
+    ...doc.groups
+      .filter((group) => included.has(group.id))
+      .map((group) => group.parent),
+  ];
+  for (const parentId of parentIds) {
+    let currentId = parentId;
+    while (currentId) {
+      const parent = groupById.get(currentId);
+      if (!parent) break;
+      copiedGroupIds.add(parent.id);
+      currentId = parent.parent;
+    }
+  }
   const copiedResources = doc.resources.filter((resource) => included.has(resource.id));
-  const copiedGroups = doc.groups.filter((group) => included.has(group.id));
+  const copiedGroups = doc.groups
+    .filter((group) => copiedGroupIds.has(group.id))
+    .map((group) => ({
+      ...group,
+      // Ancestor groups are copied as minimal shells so nested resources and
+      // groups keep a valid hierarchy when pasted into the document.
+      children: group.children.filter(
+        (childId) => included.has(childId) || copiedGroupIds.has(childId),
+      ),
+      borderChildren: group.borderChildren?.filter(
+        (child) => included.has(child.id) || copiedGroupIds.has(child.id),
+      ),
+      overlayTargets: group.overlayTargets?.filter(
+        (targetId) => included.has(targetId) || copiedGroupIds.has(targetId),
+      ),
+    }));
   const copiedEdges = doc.edges.filter(
     (edge) => selectedEdges.has(edge.id) || (included.has(edge.source) && included.has(edge.target)),
   );
@@ -907,6 +975,7 @@ export function serializeClipboard(doc: DiagramDocument, selection: Selection): 
   const payload = {
     type: "dumb-diagrams/clipboard",
     groups: copiedGroups.map((group) => ({ group, place: getDefaultView(doc).places[group.id] })),
+    ancestorGroups: [...copiedGroupIds].filter((id) => !included.has(id)),
     resources: copiedResources.map((resource) => ({ resource, place: getDefaultView(doc).places[resource.id] })),
     edges: copiedEdges,
     annotations: copiedAnnotations.map((annotation) => ({
@@ -930,6 +999,7 @@ export function pasteClipboard(
     type: string;
     items?: Array<Record<string, unknown>>;
     groups?: Array<{ group: DiagramDocument["groups"][number]; place?: DiagramDocument["views"][number]["places"][string] }>;
+    ancestorGroups?: string[];
     resources?: Array<{ resource: DiagramDocument["resources"][number]; place?: DiagramDocument["views"][number]["places"][string] }>;
     edges?: DiagramDocument["edges"];
     annotations?: Array<{ annotation: DiagramDocument["annotations"][number]; place?: PlaceOverride }>;
@@ -941,6 +1011,7 @@ export function pasteClipboard(
   let next = cloneDocument(doc);
   const view = getDefaultView(next);
   const groups = data.groups ?? legacyClipboardGroups(data.items ?? []);
+  const ancestorGroups = new Set(data.ancestorGroups ?? []);
   const resources = data.resources ?? legacyClipboardResources(data.items ?? []);
   const edges = data.edges ?? legacyClipboardEdges(data.items ?? []);
   const annotations = data.annotations ?? legacyClipboardAnnotations(data.items ?? []);
@@ -978,7 +1049,7 @@ export function pasteClipboard(
     group.overlayTargets = group.overlayTargets?.map((target) => idMap.get(target)).filter((target): target is string => Boolean(target));
     next.groups.push(group);
     view.places[id] = shiftedPlace(item.place, dx, dy);
-    created.push({ kind: "group", id });
+    if (!ancestorGroups.has(item.group.id)) created.push({ kind: "group", id });
   }
   for (const item of resources) {
     const resource = structuredClone(item.resource);
@@ -1047,11 +1118,7 @@ function legacyClipboardAnnotations(items: Array<Record<string, unknown>>) {
 }
 
 export function createOrthogonalRoute(points: Point[]): Point[] {
-  const start = points[0];
-  const end = points.at(-1);
-  if (!start || !end) return points;
-  const middleX = Math.round((start.x + end.x) / 2);
-  return [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end];
+  return normalizeOrthogonalRoute(points);
 }
 
 function boundsFor(

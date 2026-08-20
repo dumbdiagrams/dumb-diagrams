@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/core";
 import { layoutDocument } from "@dumb-diagrams/layout";
+import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
 
 import {
   alignSelection,
+  clearView,
   deleteSelection,
   importSvgAsset,
   moveSelection,
@@ -15,7 +17,10 @@ import {
   serializeClipboard,
   sendToBack,
   sendToFront,
+  setEdgeBadgePosition,
   setGroupPlace,
+  setRoute,
+  setSize,
   setResourceIconSize,
   setTitle,
   swapEdgeDirection,
@@ -59,6 +64,38 @@ describe("editor commands", () => {
     expect(getDefaultView(next).places.client).toMatchObject({ x: 48, y: 48, pin: true });
   });
 
+  it("auto-fix clears manual placement and routes without changing hierarchy", () => {
+    const doc = createAsyncDocsFixture();
+    const view = getDefaultView(doc);
+    view.places.main = { x: 12, y: 18, pin: true };
+    view.places.api_alb = { x: 24, y: 30, pin: true };
+    view.routes.e1 = { pin: true, points: [{ x: 1, y: 1 }, { x: 2, y: 2 }] };
+
+    const fixed = clearView(doc);
+    const fixedView = getDefaultView(fixed);
+
+    expect(fixed.groups.find((group) => group.id === "use1")?.children).toEqual(
+      doc.groups.find((group) => group.id === "use1")?.children,
+    );
+    expect(fixed.groups.find((group) => group.id === "main")?.children).toEqual(
+      doc.groups.find((group) => group.id === "main")?.children,
+    );
+    expect(fixedView.places.main).not.toHaveProperty("x");
+    expect(fixedView.places.api_alb).not.toHaveProperty("y");
+    expect(fixedView.routes).toEqual({});
+
+    const layout = layoutDocument(fixed);
+    const region = layout.groups.find((group) => group.id === "use1")!;
+    const vpc = layout.groups.find((group) => group.id === "main")!;
+    const subnet = layout.groups.find((group) => group.id === "pubA")!;
+    const alb = layout.nodes.find((node) => node.id === "api_alb")!;
+
+    expect(vpc.bounds.x).toBeGreaterThanOrEqual(region.content.x);
+    expect(vpc.bounds.y).toBeGreaterThanOrEqual(region.content.y);
+    expect(alb.obstacle.x).toBeGreaterThanOrEqual(subnet.content.x);
+    expect(alb.obstacle.y).toBeGreaterThanOrEqual(subnet.content.y);
+  });
+
   it("moves a selected group subtree once per gesture delta", () => {
     const doc = createAsyncDocsFixture();
     const view = getDefaultView(doc);
@@ -86,6 +123,19 @@ describe("editor commands", () => {
     expect(pastedGroup).toBeTruthy();
     expect(new Set(pastedGroup?.children).size).toBe(pastedGroup?.children.length);
     expect(pastedGroup?.children).toHaveLength(2);
+  });
+
+  it("keeps a copied nested resource inside copied ancestor groups", () => {
+    const doc = createAsyncDocsFixture();
+    const payload = serializeClipboard(doc, [{ kind: "resource", id: "artifacts" }]);
+    const result = pasteClipboard(doc, payload, { x: 600, y: 600 });
+    const pastedResourceId = result.selection.find((item) => item.kind === "resource")?.id;
+    const pastedResource = result.doc.resources.find((resource) => resource.id === pastedResourceId);
+    const pastedParent = result.doc.groups.find((group) => group.id === pastedResource?.parent);
+
+    expect(pastedResource?.parent).toBeTruthy();
+    expect(pastedParent).toBeTruthy();
+    expect(pastedParent?.children).toContain(pastedResourceId);
   });
 
   it("deletes multiple selected items", () => {
@@ -165,6 +215,16 @@ describe("editor commands", () => {
     expect(getDefaultView(next).places.workerA).toMatchObject({ x: 120, y: 88 });
   });
 
+  it("persists explicit dimensions for a resized group", () => {
+    const doc = createAsyncDocsFixture();
+    const next = setSize(doc, "appA", 360, 240);
+    const place = getDefaultView(next).places.appA;
+
+    expect(place).toMatchObject({ w: 360, h: 240, pin: true });
+    const group = layoutDocument(next).groups.find((candidate) => candidate.id === "appA");
+    expect(group?.bounds).toMatchObject({ w: 360, h: 240 });
+  });
+
   it("reorders z-index for send to front and back", () => {
     const doc = createAsyncDocsFixture();
     const front = sendToFront(doc, "client");
@@ -186,6 +246,37 @@ describe("editor commands", () => {
     expect(swapped?.sourcePort).toBe("w");
     expect(swapped?.targetPort).toBe("e");
     expect(getDefaultView(next).routes.e1).toBeUndefined();
+  });
+
+  it("persists numbered badge placement without pinning the route", () => {
+    const doc = createAsyncDocsFixture();
+    const next = setEdgeBadgePosition(doc, "e1", 0.75, "bottom");
+    expect(getDefaultView(next).routes.e1).toMatchObject({
+      badgeT: 0.75,
+      badgeSide: "bottom",
+    });
+    expect(getDefaultView(next).routes.e1?.pin).toBeUndefined();
+  });
+
+  it("persists moved connector turn points as a pinned route", () => {
+    const doc = createAsyncDocsFixture();
+    const points = [
+      { x: 96, y: 144 },
+      { x: 240, y: 144 },
+      { x: 240, y: 288 },
+      { x: 432, y: 288 },
+    ];
+    const moved = points.map((point, index) =>
+      index === 1 ? { x: point.x + 32, y: point.y + 16 } : point,
+    );
+    const next = setRoute(doc, "e3", moved);
+    const normalized = normalizeOrthogonalRoute(moved);
+    expect(getDefaultView(next).routes.e3).toMatchObject({
+      pin: true,
+      mode: "manual",
+      points: normalized,
+      waypoints: normalized.slice(1, -1),
+    });
   });
 
   it("toggles resource icon size via role and clears manual dimensions", () => {

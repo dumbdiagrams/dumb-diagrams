@@ -19,6 +19,7 @@ export type GroupKind =
 
 export type Side = "n" | "s" | "e" | "w";
 export type RouteMode = "auto" | "manual";
+export type EdgeBadgeSide = "top" | "bottom";
 
 export interface PortAnchor {
   side: Side;
@@ -101,6 +102,10 @@ export interface RouteOverride {
   points?: Point[];
   pin?: boolean;
   mode?: RouteMode;
+  /** Normalized position along the connector path, from 0 to 1. */
+  badgeT?: number;
+  /** Which side of the connector should carry its numbered badge. */
+  badgeSide?: EdgeBadgeSide;
 }
 
 export interface PlaceOverride {
@@ -165,6 +170,8 @@ export interface RoutedEdge {
   style: EdgeStyle;
   kind?: EdgeKind;
   badge?: Point;
+  badgeT?: number;
+  badgeSide?: EdgeBadgeSide;
 }
 
 export interface LayoutResult {

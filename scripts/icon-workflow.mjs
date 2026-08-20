@@ -93,6 +93,38 @@ function validateBrowserPath(browserPath, label) {
   return target;
 }
 
+const SOURCE_ICON_LIBRARIES = [
+  {
+    provider: "aws",
+    root: "aws-icons/Architecture-Service-Icons_07312026",
+    include: (file) => file.endsWith("_64.svg"),
+    kinds: ["resource"],
+    excluded: new Set(),
+  },
+  {
+    provider: "azure",
+    root: "azure-icons/Icons",
+    include: () => true,
+    kinds: ["resource"],
+    excluded: new Set(),
+  },
+  {
+    provider: "gcp",
+    root: "gcp-icons/Unique Icons",
+    include: () => true,
+    kinds: ["resource"],
+    excluded: new Set(),
+  },
+  {
+    provider: "cloud-agnostic",
+    root: "neutral-icons",
+    include: () => true,
+    kinds: ["resource", "group"],
+    // Kept for legacy custom SVG imports; it is not a catalog item.
+    excluded: new Set(["neutral-icons/custom.svg"]),
+  },
+];
+
 function safeZipEntries(archive) {
   const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" })
     .split(/\r?\n/)
@@ -150,6 +182,38 @@ async function check() {
     const okCount = count >= source.minimumCanonicalCount;
     console.log(`${source.provider}: ${count} canonical resources (minimum ${source.minimumCanonicalCount}) ${okCount ? "ok" : "FAIL"}`);
     if (!okCount) failed = true;
+  }
+  for (const library of SOURCE_ICON_LIBRARIES) {
+    const sourcePaths = new Set(
+      walk(join(ROOT, library.root))
+        .filter((file) => file.toLowerCase().endsWith(".svg"))
+        .filter(library.include)
+        .map((file) => relative(ROOT, file).replaceAll("\\", "/"))
+        .filter((file) => !library.excluded.has(file)),
+    );
+    const catalogPaths = new Set(
+      manifest.entries
+        .filter(
+          (entry) =>
+            entry.provider === library.provider &&
+            library.kinds.includes(entry.assetKind) &&
+            entry.canonical !== false &&
+            entry.browsable !== false,
+        )
+        .map((entry) => entry.iconPath),
+    );
+    const missing = [...sourcePaths].filter((file) => !catalogPaths.has(file));
+    const extra = [...catalogPaths].filter((file) => !sourcePaths.has(file));
+    if (missing.length || extra.length) {
+      console.error(
+        `${library.provider}: source/catalog inventory drift (missing ${missing.length}, extra ${extra.length})`,
+      );
+      for (const file of missing.slice(0, 12)) console.error(`  missing catalog entry: ${file}`);
+      for (const file of extra.slice(0, 12)) console.error(`  extra catalog entry: ${file}`);
+      failed = true;
+    } else {
+      console.log(`${library.provider}: source/catalog inventory matches (${sourcePaths.size})`);
+    }
   }
   for (const asset of manifest.assetFiles) {
     const file = join(ROOT, asset.sourcePath);

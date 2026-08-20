@@ -54,6 +54,7 @@ import {
   setVisible,
   sendToFront,
   sendToBack,
+  setEdgeBadgePosition,
   swapEdgeDirection,
   toggleSelectionItem,
   updateEdge,
@@ -70,19 +71,32 @@ import {
 import { CanvasStage, clampZoom } from "./canvas/CanvasStage";
 import { InteractionOverlay } from "./interactions/InteractionOverlay";
 import { AssetBrowser } from "./panels/AssetBrowser";
-import { ContextMenu } from "./panels/ContextMenu";
+import { ContextMenu, type ContextMenuItem } from "./panels/ContextMenu";
 import { EdgePanel } from "./panels/EdgePanel";
 import { ExportMenu } from "./panels/ExportMenu";
 import { LayersPanel } from "./panels/LayersPanel";
 import { SourceDrawer } from "./panels/SourceDrawer";
 import { clearDraft, loadDraft, saveDraft } from "./state/autosave";
 import { FloatingPanel } from "./ui/FloatingPanel";
-import { IconAuto, IconFit, IconFolderOpen, IconGrid, IconRedo, IconUndo } from "./ui/icons";
+import {
+  IconEdit,
+  IconFit,
+  IconFolderOpen,
+  IconGrid,
+  IconMagicWand,
+  IconRedo,
+  IconUndo,
+} from "./ui/icons";
 import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
 import { useSourceHistory } from "./useSourceHistory";
-import { GRID_SIZE, snapLayoutToGrid, snapPoint } from "./grid.js";
+import {
+  GRID_SIZE,
+  outsideCanvasInsertionPoint,
+  snapLayoutToGrid,
+  snapPoint,
+} from "./grid.js";
 import "./styles.css";
 
 initTheme();
@@ -105,7 +119,17 @@ const RECOVERY = (() => {
 })();
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side } | null;
-type ContextMenuState = { x: number; y: number; item: SelectionItem } | null;
+type ContextMenuState = { x: number; y: number; selection: Selection } | null;
+
+function documentNameForDisplay(doc: DiagramDocument): string {
+  const authoredTitle = doc.title?.trim();
+  if (authoredTitle) return authoredTitle;
+  const readableId = doc.id
+    .replace(/[-_]+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+  return readableId || "Untitled diagram";
+}
 
 function App() {
   const {
@@ -125,6 +149,7 @@ function App() {
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [viewport, setViewport] = useState({ panX: 40, panY: 40, zoom: 1 });
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef(source);
   sourceRef.current = source;
   const fitRef = useRef<(() => void) | null>(null);
@@ -138,6 +163,7 @@ function App() {
     svg: string;
   } | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+  const internalClipboardRef = useRef<string | null>(null);
   const sourceCommitTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,7 +180,7 @@ function App() {
           invariantFailures: [],
         };
       }
-      const placedLayout = snapLayoutToGrid(layoutDocument(doc), snapToGrid);
+      const placedLayout = snapLayoutToGrid(layoutDocument(doc), snapToGrid, doc);
       const edges = routeEdges(doc, placedLayout);
       const layout = attachRoutes(placedLayout, edges);
       const svg = renderSvg(doc, layout, {
@@ -201,7 +227,7 @@ function App() {
   }, [toast]);
 
   useEffect(() => {
-    if (compiled.ok) setTitleDraft(compiled.doc.title ?? compiled.doc.id);
+    if (compiled.ok) setTitleDraft(documentNameForDisplay(compiled.doc));
   }, [compiled.ok, compiled.ok ? compiled.doc.title : "", compiled.ok ? compiled.doc.id : ""]);
 
   const selectItem = (item: SelectionItem, additive: boolean) => {
@@ -324,25 +350,87 @@ function App() {
     setTool("select");
   };
 
-  const copySelection = async () => {
-    if (!compiled.ok || selection.length === 0) return;
-    const payload = serializeClipboard(compiled.doc, selection);
-    await navigator.clipboard.writeText(payload);
-    setToast("Copied selection");
+  const copySelection = async (
+    items: Selection = selection,
+    showToast = true,
+  ): Promise<boolean> => {
+    if (!compiled.ok || items.length === 0) return false;
+    const payload = serializeClipboard(compiled.doc, items);
+    internalClipboardRef.current = payload;
+    try {
+      await navigator.clipboard?.writeText(payload);
+    } catch {
+      // The internal clipboard keeps copy/cut/duplicate reliable when the
+      // browser denies clipboard access (for example outside a secure origin).
+    }
+    if (showToast) setToast("Copied selection");
+    return true;
+  };
+
+  const cutSelection = async (items: Selection = selection) => {
+    if (!compiled.ok || items.length === 0) return;
+    if (!(await copySelection(items, false))) return;
+    mutateCurrent((doc) => deleteSelection(doc, items));
+    setSelection((current) =>
+      current.filter(
+        (candidate) =>
+          !items.some(
+            (item) => item.kind === candidate.kind && item.id === candidate.id,
+          ),
+      ),
+    );
+    setContextMenu(null);
+    setToast("Cut selection");
   };
 
   const pasteSelection = async () => {
     if (!compiled.ok) return;
+    let systemPayload: string | null = null;
     try {
-      const payload = await navigator.clipboard.readText();
-      const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
-      const result = pasteClipboard(compiled.doc, payload, at);
-      updateDocument(result.doc);
-      setSelection(result.selection);
-      setToast("Pasted selection");
+      systemPayload = (await navigator.clipboard?.readText()) ?? null;
     } catch {
-      setToast("Paste failed");
+      // Fall back to the app clipboard below.
     }
+    const payloads = [systemPayload, internalClipboardRef.current].filter(
+      (payload, index, all): payload is string => Boolean(payload) && all.indexOf(payload) === index,
+    );
+    const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
+    for (const payload of payloads) {
+      try {
+        const result = pasteClipboard(compiled.doc, payload, at);
+        updateDocument(result.doc);
+        setSelection(result.selection);
+        setToast("Pasted selection");
+        return;
+      } catch {
+        // A non-diagram system clipboard entry should not block the app copy.
+      }
+    }
+    setToast("Paste failed");
+  };
+
+  const duplicateCurrentSelection = (items: Selection = selection) => {
+    if (!compiled.ok || items.length === 0) return;
+    const result = duplicateSelection(compiled.doc, items);
+    updateDocument(result.doc);
+    setSelection(result.selection);
+    setContextMenu(null);
+    setToast("Duplicated selection");
+  };
+
+  const deleteCurrentSelection = (items: Selection = selection) => {
+    if (!compiled.ok || items.length === 0) return;
+    mutateCurrent((doc) => deleteSelection(doc, items));
+    setSelection((current) =>
+      current.filter(
+        (candidate) =>
+          !items.some(
+            (item) => item.kind === candidate.kind && item.id === candidate.id,
+          ),
+      ),
+    );
+    setContextMenu(null);
+    setToast("Deleted selection");
   };
 
   useEffect(() => {
@@ -351,13 +439,14 @@ function App() {
       if (target.matches("textarea, input, select, [contenteditable='true']") || target.closest(".cm-editor")) return;
 
       const mod = event.metaKey || event.ctrlKey;
-      if (mod && event.key.toLowerCase() === "z") {
+      const key = event.key.toLowerCase();
+      if (mod && key === "z") {
         event.preventDefault();
         if (event.shiftKey) redo();
         else undo();
         return;
       }
-      if (mod && event.key.toLowerCase() === "y") {
+      if (mod && key === "y") {
         event.preventDefault();
         redo();
         return;
@@ -370,10 +459,10 @@ function App() {
       }
       if ((event.key === "Backspace" || event.key === "Delete") && selection.length) {
         event.preventDefault();
-        mutateCurrent((doc) => deleteSelection(doc, selection));
-        setSelection([]);
+        deleteCurrentSelection();
+        return;
       }
-      if (mod && event.key.toLowerCase() === "a") {
+      if (mod && key === "a") {
         event.preventDefault();
         if (!compiled.ok) return;
         const all: Selection = [
@@ -389,26 +478,30 @@ function App() {
           ...compiled.doc.annotations.map((annotation) => ({ kind: "annotation" as const, id: annotation.id })),
         ];
         setSelection(all);
+        return;
       }
-      if (mod && event.key.toLowerCase() === "c") {
+      if (mod && key === "c") {
         event.preventDefault();
         void copySelection();
+        return;
       }
-      if (mod && event.key.toLowerCase() === "v") {
+      if (mod && key === "x") {
+        event.preventDefault();
+        void cutSelection();
+        return;
+      }
+      if (mod && key === "v") {
         event.preventDefault();
         void pasteSelection();
         return;
       }
-      if (mod && event.key.toLowerCase() === "d") {
+      if (mod && key === "d") {
         event.preventDefault();
-        if (!compiled.ok || !selection.length) return;
-        const result = duplicateSelection(compiled.doc, selection);
-        updateDocument(result.doc);
-        setSelection(result.selection);
+        duplicateCurrentSelection();
         return;
       }
-      if (event.key.toLowerCase() === "v" && !mod) setTool("select");
-      if (event.key.toLowerCase() === "c" && !mod) setTool("connector");
+      if (key === "v" && !mod) setTool("select");
+      if (key === "c" && !mod) setTool("connector");
       if (selection.length && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         event.preventDefault();
         const step = event.shiftKey ? 32 : 8;
@@ -489,8 +582,28 @@ function App() {
                 onRoute={(edgeId, points) =>
                   previewMutate((doc) => setRoute(doc, edgeId, points))
                 }
+                onBadgeMove={(edgeId, t, side) =>
+                  previewMutate((doc) => setEdgeBadgePosition(doc, edgeId, t, side))
+                }
                 onContextMenu={(clientX, clientY, item) => {
-                  setContextMenu({ x: clientX, y: clientY, item });
+                  const itemIsSelected = Boolean(
+                    item &&
+                      selection.some(
+                        (candidate) =>
+                          candidate.kind === item.kind && candidate.id === item.id,
+                      ),
+                  );
+                  const nextSelection = item
+                    ? itemIsSelected
+                      ? selection
+                      : [item]
+                    : selection;
+                  if (item && !itemIsSelected) setSelection([item]);
+                  setContextMenu({
+                    x: clientX,
+                    y: clientY,
+                    selection: nextSelection,
+                  });
                 }}
               />}
             </>
@@ -511,19 +624,36 @@ function App() {
           <div className="topbar-left">
             <span className="brand-mark">D</span>
             <span className="brand-name">DumbDiagrams</span>
-            <input
-              className="title-input"
-              value={titleDraft}
-              onChange={(event) => setTitleDraft(event.target.value)}
-              onBlur={() => {
-                if (!compiled.ok) return;
-                mutateCurrent((doc) => setTitle(doc, titleDraft));
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") event.currentTarget.blur();
-              }}
-              aria-label="Diagram title"
-            />
+            <div className="document-name-field">
+              <input
+                ref={titleInputRef}
+                className="title-input"
+                value={titleDraft}
+                placeholder="Untitled diagram"
+                title="Rename diagram"
+                onChange={(event) => setTitleDraft(event.target.value)}
+                onBlur={() => {
+                  if (!compiled.ok) return;
+                  mutateCurrent((doc) => setTitle(doc, titleDraft));
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.currentTarget.blur();
+                }}
+                aria-label="Diagram name"
+              />
+              <button
+                type="button"
+                className="document-name-edit"
+                aria-label="Edit diagram name"
+                title="Edit diagram name"
+                onClick={() => {
+                  titleInputRef.current?.focus();
+                  titleInputRef.current?.select();
+                }}
+              >
+                <IconEdit />
+              </button>
+            </div>
             <span className="file-name">.arch</span>
           </div>
           <div className="topbar-center">
@@ -533,14 +663,14 @@ function App() {
               title="Reset positions and connector routes to the opinionated layout"
               onClick={autoFix}
             >
-              <IconAuto />
+              <IconMagicWand />
               <span>Auto-fix</span>
             </button>
             <button
               type="button"
               className={`snap-toggle${snapToGrid ? " is-active" : ""}`}
               aria-pressed={snapToGrid}
-              title={`Snap to grid (${GRID_SIZE}px)`}
+              title={`Snap top-level objects to the ${GRID_SIZE}px grid without changing nested spacing`}
               onClick={() => setSnapToGrid((current) => !current)}
             >
               <IconGrid />
@@ -699,12 +829,18 @@ function App() {
                   ? primarySelection(selection)!.id
                   : undefined;
                 try {
+                  const at = snapPoint(
+                    parent
+                      ? insertionPoint(compiled.layout, parent)
+                      : outsideCanvasInsertionPoint(compiled.layout),
+                    snapToGrid,
+                  );
                   const result = addGroup(
                     compiled.doc,
                     kind,
                     entry.name,
                     parent,
-                    snapPoint(insertionPoint(compiled.layout, parent), snapToGrid),
+                    at,
                     entry.type,
                   );
                   updateDocument(result.doc);
@@ -759,6 +895,9 @@ function App() {
                     routePinned={routePinned}
                     onUpdateEdge={(style, kind) =>
                       mutateCurrent((doc) => updateEdge(doc, edge.id, { style, kind }))
+                    }
+                    onUpdateStep={(step) =>
+                      mutateCurrent((doc) => updateEdge(doc, edge.id, { step }))
                     }
                     onPinRoute={() => {
                       const edgeGeom = compiled.layout.edges.find(
@@ -945,22 +1084,16 @@ function App() {
             y={contextMenu.y}
             onClose={() => setContextMenu(null)}
             items={buildContextMenuItems(
-              contextMenu.item,
+              contextMenu.selection,
               compiled.doc,
-              (change) => mutateCurrent(change),
-              () => {
-                const result = duplicateSelection(compiled.doc, [contextMenu.item]);
-                updateDocument(result.doc);
-                setSelection(result.selection);
+              {
+                onCopy: () => void copySelection(contextMenu.selection),
+                onCut: () => void cutSelection(contextMenu.selection),
+                onPaste: () => void pasteSelection(),
+                onDuplicate: () => duplicateCurrentSelection(contextMenu.selection),
+                onDelete: () => deleteCurrentSelection(contextMenu.selection),
+                onMutate: (change) => mutateCurrent(change),
               },
-              () =>
-                setSelection((current) =>
-                  current.filter(
-                    (candidate) =>
-                      candidate.kind !== contextMenu.item.kind ||
-                      candidate.id !== contextMenu.item.id,
-                  ),
-                ),
             )}
           />
         )}
@@ -984,6 +1117,13 @@ function ConnectorDrawer({ pendingPort }: { pendingPort: PendingPort }) {
     </div>
   );
 }
+
+const INSPECTOR_KIND_LABELS: Record<SelectionItem["kind"], string> = {
+  resource: "Service",
+  group: "Boundary",
+  edge: "Connection",
+  annotation: "Note",
+};
 
 function Inspector({
   doc,
@@ -1044,7 +1184,13 @@ function Inspector({
     <FloatingPanel
       className="inspector-sheet"
       title={title}
-      subtitle={selection.length > 1 ? `${selection.length} items` : item?.kind ?? "selection"}
+      subtitle={
+        selection.length > 1
+          ? `${selection.length} selected`
+          : item
+            ? INSPECTOR_KIND_LABELS[item.kind]
+            : "Selection"
+      }
       onClose={onClose}
       width={280}
     >
@@ -1098,19 +1244,41 @@ function Inspector({
               Small ({GRAMMAR.iconSecondary}px)
             </button>
           </div>
-          <label>Resource type</label>
-          <div className="readonly-value">{resource.type}</div>
-          <label>Parent</label>
-          <div className="readonly-value">{resource.parent ?? "Canvas"}</div>
         </div>
       )}
       {group && (
-        <div className="property-section">
-          <label>Group kind</label>
-          <div className="readonly-value">{group.kind}</div>
-          <label>Children</label>
-          <div className="readonly-value">{group.children.length}</div>
-        </div>
+        <details className="inspector-advanced">
+          <summary>Advanced details</summary>
+          <div className="inspector-advanced-body">
+            <div className="inspector-detail">
+              <span className="inspector-detail-label">Group kind</span>
+              <div className="readonly-value">{group.kind}</div>
+            </div>
+            <div className="inspector-detail">
+              <span className="inspector-detail-label">Children</span>
+              <div className="readonly-value">{group.children.length}</div>
+            </div>
+          </div>
+        </details>
+      )}
+      {resource && (
+        <details className="inspector-advanced">
+          <summary>Advanced details</summary>
+          <div className="inspector-advanced-body">
+            <div className="inspector-detail">
+              <span className="inspector-detail-label">Resource type</span>
+              <code className="readonly-value">{resource.type}</code>
+            </div>
+            <div className="inspector-detail">
+              <span className="inspector-detail-label">Parent group</span>
+              <div className="readonly-value">
+                {resource.parent
+                  ? doc.groups.find((candidate) => candidate.id === resource.parent)?.label ?? resource.parent
+                  : "Canvas"}
+              </div>
+            </div>
+          </div>
+        </details>
       )}
       {edge && (
         <>
@@ -1189,70 +1357,101 @@ function snap(value: number): number {
 }
 
 function buildContextMenuItems(
-  item: SelectionItem,
+  selection: Selection,
   doc: DiagramDocument,
-  mutate: (change: (doc: DiagramDocument) => DiagramDocument) => void,
-  onDuplicate: () => void,
-  onDeleted: () => void,
-) {
-  const view = doc.views[0];
-  const place =
-    item.kind === "annotation"
-      ? view?.annotations?.[item.id]
-      : view?.places[item.id];
-  const locked = Boolean(place?.locked);
+  actions: {
+    onCopy: () => void;
+    onCut: () => void;
+    onPaste: () => void;
+    onDuplicate: () => void;
+    onDelete: () => void;
+    onMutate: (change: (doc: DiagramDocument) => DiagramDocument) => void;
+  },
+): ContextMenuItem[] {
+  const items: ContextMenuItem[] = [];
+  const hasSelection = selection.length > 0;
 
-  const items = [];
-
-  items.push({
-    id: "duplicate",
-    label: "Duplicate",
-    onSelect: onDuplicate,
-  });
-
-  items.push({
-    id: "front",
-    label: "Send to front",
-    onSelect: () => mutate((next) => sendToFront(next, item.id)),
-  });
-  items.push({
-    id: "back",
-    label: "Send to back",
-    onSelect: () => mutate((next) => sendToBack(next, item.id)),
-  });
-  items.push({
-    id: "lock",
-    label: locked ? "Unlock" : "Lock position",
-    onSelect: () =>
-      mutate((next) =>
-        setLocked(
-          next,
-          item.kind as "resource" | "group" | "edge" | "annotation",
-          item.id,
-          !locked,
-        ),
-      ),
-  });
-
-  if (item.kind === "edge") {
-    items.push({
-      id: "delete",
-      label: "Delete connector",
-      onSelect: () => {
-        mutate((next) => deleteSelection(next, [item]));
-        onDeleted();
+  if (hasSelection) {
+    items.push(
+      {
+        id: "copy",
+        label: "Copy",
+        shortcut: "⌘C / Ctrl+C",
+        onSelect: actions.onCopy,
       },
+      {
+        id: "cut",
+        label: "Cut",
+        shortcut: "⌘X / Ctrl+X",
+        onSelect: actions.onCut,
+      },
+      {
+        id: "duplicate",
+        label: "Duplicate",
+        shortcut: "⌘D / Ctrl+D",
+        onSelect: actions.onDuplicate,
+      },
+      { id: "selection-divider", label: "", separator: true },
+    );
+  }
+
+  items.push({
+    id: "paste",
+    label: "Paste",
+    shortcut: "⌘V / Ctrl+V",
+    onSelect: actions.onPaste,
+  });
+
+  if (!hasSelection) return items;
+
+  if (selection.length === 1) {
+    const item = selection[0]!;
+    const view = doc.views[0];
+    const place =
+      item.kind === "annotation"
+        ? view?.annotations?.[item.id]
+        : view?.places[item.id];
+    const locked = Boolean(place?.locked);
+
+    items.push({ id: "object-divider", label: "", separator: true });
+    items.push({
+      id: "front",
+      label: "Bring to front",
+      onSelect: () => actions.onMutate((next) => sendToFront(next, item.id)),
     });
-  } else {
     items.push({
-      id: "delete",
-      label: "Delete",
-      onSelect: () => {
-        mutate((next) => deleteSelection(next, [item]));
-        onDeleted();
-      },
+      id: "back",
+      label: "Send to back",
+      onSelect: () => actions.onMutate((next) => sendToBack(next, item.id)),
+    });
+    items.push({
+      id: "lock",
+      label: locked ? "Unlock position" : "Lock position",
+      onSelect: () =>
+        actions.onMutate((next) =>
+          setLocked(
+            next,
+            item.kind as "resource" | "group" | "edge" | "annotation",
+            item.id,
+            !locked,
+          ),
+        ),
     });
   }
+
+  items.push({ id: "delete-divider", label: "", separator: true });
+  items.push({
+    id: "delete",
+    label:
+      selection.length > 1
+        ? `Delete ${selection.length} items`
+        : selection[0]?.kind === "edge"
+          ? "Delete connector"
+          : "Delete",
+    shortcut: "⌫ / Delete",
+    danger: true,
+    onSelect: actions.onDelete,
+  });
 
   return items;
 }

@@ -2229,13 +2229,6 @@
       "specificity": "unique"
     },
     {
-      "sourceId": "azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8",
-      "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
-      "browserPath": "catalog-icons/azure/azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8.svg",
-      "sha256": "0a5c58469c13371d5489610b07b735448634944f88a9198a6b36a94eb44d9017",
-      "specificity": "unique"
-    },
-    {
       "sourceId": "azure-resource-abs-member-8743e6dc-a8a3cac6",
       "sourcePath": "azure-icons/Icons/blockchain/10374-icon-service-ABS-Member.svg",
       "browserPath": "catalog-icons/azure/azure-resource-abs-member-8743e6dc-a8a3cac6.svg",
@@ -6440,6 +6433,13 @@
       "sourcePath": "azure-icons/Icons/containers/10036-icon-service-Service-Fabric-Clusters.svg",
       "browserPath": "catalog-icons/azure/azure-resource-service-fabric-clusters-21428712-fbecca41.svg",
       "sha256": "2142871284eceb5dca35e9dc384b89c1a28f81afad6adf50f30177900117c376",
+      "specificity": "unique"
+    },
+    {
+      "sourceId": "azure-resource-service-group-relationships-0a5c5846-02d346a8",
+      "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
+      "browserPath": "catalog-icons/azure/azure-resource-service-group-relationships-0a5c5846-02d346a8.svg",
+      "sha256": "0a5c58469c13371d5489610b07b735448634944f88a9198a6b36a94eb44d9017",
       "specificity": "unique"
     },
     {

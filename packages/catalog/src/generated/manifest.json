@@ -13093,48 +13093,6 @@
       "browsable": true
     },
     {
-      "type": "azure.030777508-icon-service-service-group-relationships",
-      "provider": "azure",
-      "assetKind": "resource",
-      "name": "030777508  icon service Service Group Relationships",
-      "serviceName": "030777508  icon service Service Group Relationships",
-      "categories": [
-        "new icons"
-      ],
-      "category": "new icons",
-      "aliases": [
-        "030777508  icon service Service Group Relationships",
-        "azure.030777508-icon-service-service-group-relationships"
-      ],
-      "icon": {
-        "sourceId": "azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8",
-        "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
-        "browserPath": "catalog-icons/azure/azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8.svg",
-        "sha256": "0a5c58469c13371d5489610b07b735448634944f88a9198a6b36a94eb44d9017",
-        "specificity": "unique"
-      },
-      "iconPath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
-      "browserPath": "catalog-icons/azure/azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8.svg",
-      "specificity": "unique",
-      "allowedParents": [
-        "logical",
-        "region",
-        "account",
-        "cloud",
-        "subnet-public",
-        "subnet-private",
-        "subnet",
-        "az",
-        "vpc"
-      ],
-      "allowRoot": false,
-      "scope": "regional",
-      "column": "edge",
-      "sizeTier": "primary",
-      "canonical": true,
-      "browsable": true
-    },
-    {
       "type": "azure.abs-member",
       "provider": "azure",
       "assetKind": "resource",
@@ -15532,14 +15490,14 @@
       "type": "azure.arc-postgresql",
       "provider": "azure",
       "assetKind": "resource",
-      "name": "Arc PostgreSQL ",
-      "serviceName": "Arc PostgreSQL ",
+      "name": "Arc PostgreSQL",
+      "serviceName": "Arc PostgreSQL",
       "categories": [
         "other"
       ],
       "category": "other",
       "aliases": [
-        "Arc PostgreSQL ",
+        "Arc PostgreSQL",
         "azure.arc-postgresql"
       ],
       "icon": {
@@ -38539,6 +38497,48 @@
       "browsable": true
     },
     {
+      "type": "azure.service-group-relationships-02d346a8a8",
+      "provider": "azure",
+      "assetKind": "resource",
+      "name": "Service Group Relationships",
+      "serviceName": "Service Group Relationships",
+      "categories": [
+        "new icons"
+      ],
+      "category": "new icons",
+      "aliases": [
+        "azure.service-group-relationships",
+        "Service Group Relationships"
+      ],
+      "icon": {
+        "sourceId": "azure-resource-service-group-relationships-0a5c5846-02d346a8",
+        "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
+        "browserPath": "catalog-icons/azure/azure-resource-service-group-relationships-0a5c5846-02d346a8.svg",
+        "sha256": "0a5c58469c13371d5489610b07b735448634944f88a9198a6b36a94eb44d9017",
+        "specificity": "unique"
+      },
+      "iconPath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
+      "browserPath": "catalog-icons/azure/azure-resource-service-group-relationships-0a5c5846-02d346a8.svg",
+      "specificity": "unique",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc"
+      ],
+      "allowRoot": false,
+      "scope": "regional",
+      "column": "edge",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
       "type": "azure.service-groups",
       "provider": "azure",
       "assetKind": "resource",
@@ -46264,6 +46264,11 @@
       "sourcePath": "azure-icons/Icons/containers/10036-icon-service-Service-Fabric-Clusters.svg"
     },
     {
+      "baseType": "azure.service-group-relationships",
+      "resolvedType": "azure.service-group-relationships-02d346a8a8",
+      "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg"
+    },
+    {
       "baseType": "azure.sql-data-warehouses",
       "resolvedType": "azure.sql-data-warehouses-a1c4b2c0d8",
       "sourcePath": "azure-icons/Icons/integration/00036-icon-service-SQL-Data-Warehouses.svg"
@@ -48514,13 +48519,6 @@
       "sourcePath": "azure-icons/Icons/networking/10061-icon-service-Virtual-Networks.svg",
       "browserPath": "catalog-icons/azure/azure-group-virtual-network-64a5e75e-fe793ef1.svg",
       "sha256": "64a5e75ecef2f9f69067faa2eb131266cb8f2858706f8ab74bfea5ad0d98b14d",
-      "specificity": "unique"
-    },
-    {
-      "sourceId": "azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8",
-      "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
-      "browserPath": "catalog-icons/azure/azure-resource-030777508-icon-service-service-group-relationships-0a5c5846-02d346a8.svg",
-      "sha256": "0a5c58469c13371d5489610b07b735448634944f88a9198a6b36a94eb44d9017",
       "specificity": "unique"
     },
     {
@@ -52728,6 +52726,13 @@
       "sourcePath": "azure-icons/Icons/containers/10036-icon-service-Service-Fabric-Clusters.svg",
       "browserPath": "catalog-icons/azure/azure-resource-service-fabric-clusters-21428712-fbecca41.svg",
       "sha256": "2142871284eceb5dca35e9dc384b89c1a28f81afad6adf50f30177900117c376",
+      "specificity": "unique"
+    },
+    {
+      "sourceId": "azure-resource-service-group-relationships-0a5c5846-02d346a8",
+      "sourcePath": "azure-icons/Icons/new icons/030777508 -icon-service-Service-Group-Relationships.svg",
+      "browserPath": "catalog-icons/azure/azure-resource-service-group-relationships-0a5c5846-02d346a8.svg",
+      "sha256": "0a5c58469c13371d5489610b07b735448634944f88a9198a6b36a94eb44d9017",
       "specificity": "unique"
     },
     {

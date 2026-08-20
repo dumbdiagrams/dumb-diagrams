@@ -482,8 +482,12 @@ function scanAzure(used, collisionLog) {
     const rel = relative(base, file).replaceAll("\\", "/").split("/");
     const category = (rel[0] ?? "General").replace(/\+/g, " ");
     const display = basename(file, ".svg")
-      .replace(/^\d+-icon-service-/, "")
-      .replace(/-/g, " ");
+      // Azure has one legacy export with a space before `-icon-service-`.
+      // Accept both spellings so source-file bookkeeping never leaks into UI labels.
+      .replace(/^\d+\s*-?\s*icon-service-/i, "")
+      .replace(/-/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
     const baseType = `azure.${slug(display)}`;
     return entry({
       type: uniqueType(baseType, file, used, collisionLog),

@@ -2,6 +2,7 @@ import type { DiagramDocument } from "@dumb-diagrams/core";
 import { getDefaultView } from "@dumb-diagrams/core";
 
 import type { Selection, SelectionItem } from "../editor-model";
+import { IconEye, IconEyeOff } from "../ui/icons";
 
 export function LayersPanel({
   doc,
@@ -89,17 +90,25 @@ export function LayersPanel({
               <div className="layer-actions">
                 <button
                   type="button"
+                  className={`layer-visibility-toggle${place?.visible === false ? " is-hidden" : ""}`}
+                  data-layer-visibility={row.item.id}
+                  data-visible={place?.visible === false ? "false" : "true"}
                   aria-label={place?.visible === false ? "Show" : "Hide"}
+                  title={place?.visible === false ? "Show layer" : "Hide layer"}
                   onClick={() => onToggleVisible(row.item)}
                 >
-                  {place?.visible === false ? "◌" : "◉"}
+                  {place?.visible === false ? <IconEyeOff className="layer-visibility-icon" /> : <IconEye className="layer-visibility-icon" />}
                 </button>
                 <button
                   type="button"
+                  className={`layer-lock-toggle${place?.locked ? " is-locked" : ""}`}
+                  data-layer-lock={row.item.id}
+                  data-locked={place?.locked ? "true" : "false"}
                   aria-label={place?.locked ? "Unlock" : "Lock"}
+                  title={place?.locked ? "Unlock position" : "Lock position"}
                   onClick={() => onToggleLocked(row.item)}
                 >
-                  {place?.locked ? "🔒" : "🔓"}
+                  <LockIcon locked={place?.locked === true} />
                 </button>
               </div>
             </div>
@@ -107,6 +116,29 @@ export function LayersPanel({
         })}
       </div>
     </div>
+  );
+}
+
+function LockIcon({ locked }: { locked: boolean }) {
+  return (
+    <svg
+      className={`layer-lock-icon${locked ? " is-locked" : " is-unlocked"}`}
+      viewBox="0 0 24 24"
+      role="img"
+      aria-hidden="true"
+    >
+      <rect className="lock-body" x="5" y="10" width="14" height="10" rx="2" />
+      {locked ? (
+        <path className="lock-shackle" d="M8 10V7a4 4 0 0 1 8 0v3" />
+      ) : (
+        <>
+          <path className="lock-shackle" d="M8 10V7a4 4 0 0 1 7.5-2.6" />
+          <path className="lock-shackle lock-shackle-open" d="M17 10V8.5" />
+        </>
+      )}
+      <circle className="lock-keyhole" cx="12" cy="14" r="1.25" />
+      <path className="lock-keyhole-stem" d="M12 15.25v2" />
+    </svg>
   );
 }
 

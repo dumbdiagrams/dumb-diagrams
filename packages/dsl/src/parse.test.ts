@@ -30,7 +30,7 @@ describe("parseArch / printArch round-trip", () => {
 
 view default {
   place client { x 40 y 48 w 120 h 96 pin locked z 2 }
-  route e1 { point 100 120 point 200 120 pin mode manual }
+  route e1 { point 100 120 point 200 120 pin mode manual badge 0.75 bottom }
   annotation note1 { x 300 y 80 w 160 h 48 pin visible false }
 }`;
     const parsed = parseArch(source);
@@ -60,6 +60,8 @@ view default {
     expect(view.routes.e1).toMatchObject({
       pin: true,
       mode: "manual",
+      badgeT: 0.75,
+      badgeSide: "bottom",
     });
     expect(view.routes.e1?.points).toHaveLength(2);
     expect(view.annotations?.note1).toMatchObject({

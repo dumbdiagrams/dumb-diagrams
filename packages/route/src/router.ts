@@ -6,6 +6,7 @@ import type {
   Point,
   Rect,
   RoutedEdge,
+  EdgeBadgeSide,
   Side,
 } from "@dumb-diagrams/core";
 import { getDefaultView } from "@dumb-diagrams/core";
@@ -15,7 +16,7 @@ const CELL = GRAMMAR.grid;
 const BEND_COST = 320;
 const COLLISION_COST = 100_000;
 const HEADER_COST = 100_000;
-const OVERLAP_COST = 32;
+const OVERLAP_COST = 480;
 const PORT_FALLBACK_COST = 1_200;
 const PORT_LANE_OFFSET = 10;
 const TURN_COST = 140;
@@ -27,9 +28,18 @@ interface PortChoice {
   tgtSide: Side;
 }
 
+interface RouteContext {
+  sourceId: string;
+  targetId: string;
+  sourcePoint: Point;
+  targetPoint: Point;
+  sourceSide: Side;
+  targetSide: Side;
+}
+
 interface Obstacle extends Rect {
   id?: string;
-  kind: "node" | "label" | "header";
+  kind: "node" | "header";
 }
 
 interface Grid {
@@ -69,51 +79,63 @@ export function routeEdges(
 
     let best: Point[] | null = null;
     let bestScore = Infinity;
+    let bestPort = ports[0]!;
+    const routeVGutters = [...vGutters, ...corridorGutters(existing, "vertical")];
+    const routeHGutters = [...hGutters, ...corridorGutters(existing, "horizontal")];
 
     for (const [portIndex, port] of ports.entries()) {
-      for (const candidate of templates(port, vGutters, hGutters)) {
+      const context = createRouteContext(source, target, port);
+      for (const candidate of templates(port, routeVGutters, routeHGutters, source, target)) {
         const path = simplify(candidate);
         const s =
-          scorePath(path, obstacles, source.id, target.id, existing) +
+          scorePath(path, obstacles, context, existing) +
           portIndex * PORT_FALLBACK_COST;
         if (s < bestScore) {
           bestScore = s;
           best = path;
+          bestPort = port;
         }
       }
     }
 
     if (!best || bestScore >= COLLISION_COST) {
       for (const [portIndex, port] of ports.entries()) {
+        const context = createRouteContext(source, target, port);
         const astarPath = routeAStar(grid, port, source, target);
         if (!astarPath) continue;
-        const smoothed = shortcut(simplify(astarPath), obstacles, source.id, target.id);
+        const smoothed = shortcut(simplify(astarPath), obstacles, context);
         const s =
-          scorePath(smoothed, obstacles, source.id, target.id, existing) +
+          scorePath(smoothed, obstacles, context, existing) +
           portIndex * PORT_FALLBACK_COST;
         if (s < bestScore) {
           bestScore = s;
           best = smoothed;
+          bestPort = port;
         }
       }
     }
 
     let points = best ?? [ports[0]!.src, ports[0]!.tgt];
-    points = shortcut(points, obstacles, source.id, target.id);
+    points = shortcut(points, obstacles, createRouteContext(source, target, bestPort));
     points = simplify(points);
     const routeOverride = view.routes[edge.id];
     if (routeOverride?.pin) {
       if (routeOverride.points?.length) {
-        points = routeOverride.points.map((point) => ({ ...point }));
+        points = normalizeOrthogonalRoute(routeOverride.points);
       } else if (routeOverride.waypoints?.length) {
-        points = [
+        points = normalizeOrthogonalRoute([
           points[0]!,
           ...routeOverride.waypoints.map((point) => ({ ...point })),
           points.at(-1)!,
-        ];
+        ]);
       }
     }
+    points = normalizeOrthogonalRoute(points);
     existing.push(points);
+
+    const badge = edge.step !== undefined
+      ? getEdgeBadgePlacement(points, routeOverride?.badgeT, routeOverride?.badgeSide)
+      : undefined;
 
     routed.push({
       id: edge.id,
@@ -124,7 +146,9 @@ export function routeEdges(
       label: edge.label,
       style: edge.style,
       kind: edge.kind,
-      badge: edge.step ? placeBadge(points) : undefined,
+      badge: badge?.point,
+      badgeT: badge?.t,
+      badgeSide: badge?.side,
     });
   }
 
@@ -134,8 +158,12 @@ export function routeEdges(
 function buildObstacles(layout: LayoutResult): Obstacle[] {
   const out: Obstacle[] = [];
   for (const n of layout.nodes) {
-    out.push({ ...inflate(n.icon, 6), id: n.id, kind: "node" });
-    out.push({ ...inflate(n.label, 8), id: n.id, kind: "label" });
+    // Route around the complete resource card, not the icon and label as two
+    // independent rectangles. Treating them separately leaves narrow,
+    // accidental corridors beside an icon where a connector can turn and run
+    // alongside the resource, making both the visual result and hit testing
+    // ambiguous.
+    out.push({ ...inflate(n.obstacle, 8), id: n.id, kind: "node" });
   }
   for (const g of layout.groups) {
     out.push({ ...headerLabelRect(g), id: g.id, kind: "header" });
@@ -250,6 +278,21 @@ function iconCenter(node: NodeGeom): Point {
   return { x: node.icon.x + node.icon.w / 2, y: node.icon.y + node.icon.h / 2 };
 }
 
+function createRouteContext(
+  source: NodeGeom,
+  target: NodeGeom,
+  ports: PortChoice,
+): RouteContext {
+  return {
+    sourceId: source.id,
+    targetId: target.id,
+    sourcePoint: ports.src,
+    targetPoint: ports.tgt,
+    sourceSide: ports.srcSide,
+    targetSide: ports.tgtSide,
+  };
+}
+
 function port(
   node: NodeGeom,
   side: Side,
@@ -273,10 +316,14 @@ function templates(
   ports: PortChoice,
   vGutters: number[],
   hGutters: number[],
+  source: NodeGeom,
+  target: NodeGeom,
 ): Point[][] {
   const { src, tgt, srcSide, tgtSide } = ports;
-  const a = extend(src, srcSide, 24);
-  const b = extend(tgt, tgtSide, 24);
+  // Turn only after the connector has cleared the complete resource card.
+  // A fixed offset from the icon is not enough for cards with long labels.
+  const a = extendFromCard(source, src, srcSide);
+  const b = extendFromCard(target, tgt, tgtSide);
   const out: Point[][] = [];
 
   const push = (mid: Point[]) => {
@@ -332,16 +379,17 @@ function templates(
   return out;
 }
 
-function extend(p: Point, side: Side, dist: number): Point {
+function extendFromCard(node: NodeGeom, p: Point, side: Side): Point {
+  const card = inflate(node.obstacle, 16);
   switch (side) {
     case "e":
-      return { x: p.x + dist, y: p.y };
+      return { x: snap(Math.max(p.x + 24, card.x + card.w)), y: p.y };
     case "w":
-      return { x: p.x - dist, y: p.y };
+      return { x: snap(Math.min(p.x - 24, card.x)), y: p.y };
     case "s":
-      return { x: p.x, y: p.y + dist };
+      return { x: p.x, y: snap(Math.max(p.y + 24, card.y + card.h)) };
     case "n":
-      return { x: p.x, y: p.y - dist };
+      return { x: p.x, y: snap(Math.min(p.y - 24, card.y)) };
   }
 }
 
@@ -349,14 +397,38 @@ function uniqueNums(values: number[]): number[] {
   return [...new Set(values.map((v) => snap(v)))];
 }
 
+function corridorGutters(existing: Point[][], axis: "vertical" | "horizontal"): number[] {
+  const lanes: number[] = [];
+  for (const path of existing) {
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i]!;
+      const b = path[i + 1]!;
+      if (axis === "vertical" && a.x === b.x) {
+        lanes.push(a.x - CELL * 2, a.x + CELL * 2);
+      }
+      if (axis === "horizontal" && a.y === b.y) {
+        lanes.push(a.y - CELL * 2, a.y + CELL * 2);
+      }
+    }
+  }
+  return uniqueNums(lanes);
+}
+
 function scorePath(
   points: Point[],
   obstacles: Obstacle[],
-  sourceId: string,
-  targetId: string,
+  context: RouteContext,
   existing: Point[][],
 ): number {
   if (points.length < 2) return Infinity;
+  if (
+    samePoint(points[0]!, context.sourcePoint) &&
+    !followsAttachmentDirection(points[0]!, points[1]!, context.sourceSide)
+  ) return Infinity;
+  if (
+    samePoint(points.at(-1)!, context.targetPoint) &&
+    !followsAttachmentDirection(points.at(-1)!, points.at(-2)!, context.targetSide)
+  ) return Infinity;
   let score = (points.length - 2) * BEND_COST + pathLength(points);
   const manhattan =
     Math.abs(points[0]!.x - points[points.length - 1]!.x) +
@@ -369,10 +441,19 @@ function scorePath(
     const isFirst = i === 0;
     const isLast = i === points.length - 2;
     for (const obs of obstacles) {
-      // Only the short attachment segment may enter its own icon. Labels remain
-      // protected even when they belong to the source or target resource.
-      if (obs.kind === "node" && obs.id === sourceId && isFirst) continue;
-      if (obs.kind === "node" && obs.id === targetId && isLast) continue;
+      // Only the short attachment segment may enter its own complete card.
+      if (
+        obs.kind === "node" &&
+        obs.id === context.sourceId &&
+        isFirst &&
+        samePoint(a, context.sourcePoint)
+      ) continue;
+      if (
+        obs.kind === "node" &&
+        obs.id === context.targetId &&
+        isLast &&
+        samePoint(b, context.targetPoint)
+      ) continue;
       if (!segmentHits(a, b, obs)) continue;
       score += obs.kind === "header" ? HEADER_COST : COLLISION_COST;
     }
@@ -404,8 +485,7 @@ function overlapLength(a: Point, b: Point, path: Point[]): number {
 function shortcut(
   points: Point[],
   obstacles: Obstacle[],
-  sourceId: string,
-  targetId: string,
+  context: RouteContext,
 ): Point[] {
   let path = simplify(points);
   for (let iter = 0; iter < 12; iter++) {
@@ -430,7 +510,7 @@ function shortcut(
           ) {
             continue;
           }
-          if (!pathClear(next, obstacles, sourceId, targetId)) continue;
+          if (!pathClear(next, obstacles, context)) continue;
           path = simplify([...path.slice(0, i), ...next, ...path.slice(j + 1)]);
           changed = true;
           break outer;
@@ -445,10 +525,26 @@ function shortcut(
 function pathClear(
   points: Point[],
   obstacles: Obstacle[],
-  sourceId: string,
-  targetId: string,
+  context: RouteContext,
 ): boolean {
-  return scorePath(points, obstacles, sourceId, targetId, []) < HEADER_COST;
+  return scorePath(points, obstacles, context, []) < HEADER_COST;
+}
+
+function samePoint(a: Point, b: Point): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+function followsAttachmentDirection(
+  from: Point,
+  to: Point,
+  side: Side,
+): boolean {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (side === "e") return dx > 0 && dy === 0;
+  if (side === "w") return dx < 0 && dy === 0;
+  if (side === "s") return dy > 0 && dx === 0;
+  return dy < 0 && dx === 0;
 }
 
 function routeAStar(
@@ -641,18 +737,182 @@ function simplify(points: Point[]): Point[] {
   return out;
 }
 
-function placeBadge(points: Point[]): Point | undefined {
-  let best: { a: Point; b: Point; len: number } | null = null;
+/**
+ * Keep user-authored connector breakpoints orthogonal. Manual turn-point
+ * drags are intentionally permissive, but a diagonal segment would make the
+ * diagram inconsistent with the AWS-style connector language and impossible
+ * to edit with the segment handles. Preserve collinear authored points so a
+ * user can add a breakpoint without having it disappear during normalization.
+ */
+export function normalizeOrthogonalRoute(points: Point[]): Point[] {
+  const clean = points.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  if (clean.length <= 1) return clean.map((point) => ({ ...point }));
+
+  const out: Point[] = [{ ...clean[0]! }];
+  for (const target of clean.slice(1)) {
+    const previous = out.at(-1)!;
+    if (samePoint(previous, target)) continue;
+    if (previous.x === target.x || previous.y === target.y) {
+      out.push({ ...target });
+      continue;
+    }
+
+    const prior = out.length > 1 ? out.at(-2)! : undefined;
+    const previousDirection = prior
+      ? prior.x === previous.x
+        ? "vertical"
+        : prior.y === previous.y
+          ? "horizontal"
+          : undefined
+      : undefined;
+    const horizontalFirst = previousDirection
+      ? previousDirection === "horizontal"
+      : Math.abs(target.x - previous.x) >= Math.abs(target.y - previous.y);
+    const elbow = horizontalFirst
+      ? { x: target.x, y: previous.y }
+      : { x: previous.x, y: target.y };
+    if (!samePoint(previous, elbow) && !samePoint(elbow, target)) out.push(elbow);
+    out.push({ ...target });
+  }
+  return out;
+}
+
+export interface EdgeBadgePlacement {
+  point: Point;
+  anchor: Point;
+  t: number;
+  side: EdgeBadgeSide;
+  segmentIndex: number;
+}
+
+export interface PolylineProjection {
+  point: Point;
+  t: number;
+  segmentIndex: number;
+  distance: number;
+  tangent: Point;
+}
+
+/**
+ * Return the nearest point on an orthogonal connector and its normalized path
+ * position. The editor uses this for precise badge dragging and hit feedback.
+ */
+export function projectPointToPolyline(
+  point: Point,
+  points: Point[],
+): PolylineProjection | undefined {
+  const segments = pathSegments(points);
+  if (!segments.length) return undefined;
+  const total = segments.reduce((sum, segment) => sum + segment.len, 0);
+  if (!total) return undefined;
+
+  let best: PolylineProjection | undefined;
+  let travelled = 0;
+  for (const segment of segments) {
+    const dx = segment.b.x - segment.a.x;
+    const dy = segment.b.y - segment.a.y;
+    const u = Math.max(
+      0,
+      Math.min(1, ((point.x - segment.a.x) * dx + (point.y - segment.a.y) * dy) / (segment.len * segment.len)),
+    );
+    const projected = {
+      x: segment.a.x + dx * u,
+      y: segment.a.y + dy * u,
+    };
+    const distance = Math.hypot(point.x - projected.x, point.y - projected.y);
+    if (!best || distance < best.distance) {
+      best = {
+        point: projected,
+        t: (travelled + segment.len * u) / total,
+        segmentIndex: segment.index,
+        distance,
+        tangent: { x: dx / segment.len, y: dy / segment.len },
+      };
+    }
+    travelled += segment.len;
+  }
+  return best;
+}
+
+/**
+ * Place a numbered edge badge at a stable, fixed offset from an orthogonal
+ * path. With no explicit t, preserve the original behavior of using the
+ * longest horizontal run, falling back to the longest run for vertical edges.
+ */
+export function getEdgeBadgePlacement(
+  points: Point[],
+  requestedT?: number,
+  requestedSide: EdgeBadgeSide = "top",
+): EdgeBadgePlacement | undefined {
+  const segments = pathSegments(points);
+  if (!segments.length) return undefined;
+  const total = segments.reduce((sum, segment) => sum + segment.len, 0);
+  if (!total) return undefined;
+
+  const preferred = segments
+    .filter((segment) => segment.a.y === segment.b.y)
+    .sort((a, b) => b.len - a.len)[0]
+    ?? [...segments].sort((a, b) => b.len - a.len)[0];
+  const fallbackT = preferred
+    ? (preferred.start + preferred.len / 2) / total
+    : 0.5;
+  const t = clamp01(requestedT ?? fallbackT);
+  const projection = pointAtPath(segments, total, t);
+  if (!projection) return undefined;
+
+  const topNormal = Math.abs(projection.tangent.x) >= Math.abs(projection.tangent.y)
+    ? { x: 0, y: -1 }
+    : { x: -1, y: 0 };
+  const normal = requestedSide === "top"
+    ? topNormal
+    : { x: -topNormal.x, y: -topNormal.y };
+  const offset = GRAMMAR.badgeRadius + 8;
+  return {
+    point: {
+      x: projection.point.x + normal.x * offset,
+      y: projection.point.y + normal.y * offset,
+    },
+    anchor: projection.point,
+    t,
+    side: requestedSide,
+    segmentIndex: projection.segmentIndex,
+  };
+}
+
+function pathSegments(points: Point[]) {
+  const segments: Array<{ a: Point; b: Point; len: number; index: number; start: number }> = [];
+  let start = 0;
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i]!;
     const b = points[i + 1]!;
-    if (a.y === b.y) {
-      const len = Math.abs(b.x - a.x);
-      if (!best || len > best.len) best = { a, b, len };
-    }
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (len > 0) segments.push({ a, b, len, index: i, start });
+    start += len;
   }
-  if (!best || best.len < 40) return undefined;
-  return { x: (best.a.x + best.b.x) / 2, y: best.a.y };
+  return segments;
+}
+
+function pointAtPath(
+  segments: Array<{ a: Point; b: Point; len: number; index: number; start: number }>,
+  total: number,
+  t: number,
+): { point: Point; segmentIndex: number; tangent: Point } | undefined {
+  const distance = total * t;
+  const segment = segments.find((candidate) => distance <= candidate.start + candidate.len)
+    ?? segments.at(-1);
+  if (!segment) return undefined;
+  const u = Math.max(0, Math.min(1, (distance - segment.start) / segment.len));
+  const dx = segment.b.x - segment.a.x;
+  const dy = segment.b.y - segment.a.y;
+  return {
+    point: { x: segment.a.x + dx * u, y: segment.a.y + dy * u },
+    segmentIndex: segment.index,
+    tangent: { x: dx / segment.len, y: dy / segment.len },
+  };
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 class MinHeap {
@@ -742,35 +1002,41 @@ export function routeEdgePreview(
 
   let best: Point[] | null = null;
   let bestScore = Infinity;
+  let bestPort = ports[0]!;
   for (const [portIndex, port] of ports.entries()) {
-    for (const candidate of templates(port, vGutters, hGutters)) {
+    const context = createRouteContext(source, target, port);
+    for (const candidate of templates(port, vGutters, hGutters, source, target)) {
       const path = simplify(candidate);
-      const s = scorePath(path, obstacles, source.id, target.id, []) + portIndex * PORT_FALLBACK_COST;
+      const s = scorePath(path, obstacles, context, []) + portIndex * PORT_FALLBACK_COST;
       if (s < bestScore) {
         bestScore = s;
         best = path;
+        bestPort = port;
       }
     }
   }
   if (!best || bestScore >= COLLISION_COST) {
     for (const [portIndex, port] of ports.entries()) {
+      const context = createRouteContext(source, target, port);
       const astarPath = routeAStar(grid, port, source, target);
       if (!astarPath) continue;
-      const smoothed = shortcut(simplify(astarPath), obstacles, source.id, target.id);
-      const s = scorePath(smoothed, obstacles, source.id, target.id, []) + portIndex * PORT_FALLBACK_COST;
+      const smoothed = shortcut(simplify(astarPath), obstacles, context);
+      const s = scorePath(smoothed, obstacles, context, []) + portIndex * PORT_FALLBACK_COST;
       if (s < bestScore) {
         bestScore = s;
         best = smoothed;
+        bestPort = port;
       }
     }
   }
 
   let points = best ?? [ports[0]!.src, ports[0]!.tgt];
-  points = shortcut(points, obstacles, source.id, target.id);
+  points = shortcut(points, obstacles, createRouteContext(source, target, bestPort));
   points = simplify(points);
   if (options.waypoints?.length) {
-    points = [points[0]!, ...options.waypoints, points.at(-1)!];
+    points = normalizeOrthogonalRoute([points[0]!, ...options.waypoints, points.at(-1)!]);
   }
+  points = normalizeOrthogonalRoute(points);
   return points;
 }
 

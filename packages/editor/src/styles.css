@@ -32,6 +32,11 @@
   --focus: #3154d4;
   --artboard: #ffffff;
   --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.1);
+  --diagram-ink: #232f3e;
+  --diagram-edge: #232f3e;
+  --diagram-fallback: #eeeeee;
+  --annotation-ink: #232f3e;
+  --canvas-atmosphere: none;
 
   --text-primary: var(--ink);
   --panel-bg: var(--surface-elevated);
@@ -41,23 +46,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #f1eee7;
-    --muted: #a9aca5;
-    --line: #434640;
-    --line-strong: #5d625b;
-    --surface: #292b27;
-    --surface-solid: #292b27;
-    --surface-elevated: #292b27;
-    --canvas-bg: #1f211f;
-    --canvas-tint: #434640;
-    --accent: #7f9cff;
-    --accent-soft: #303b68;
-    --success: #73c28b;
-    --danger: #ff8e84;
-    --danger-soft: #4d2b29;
-    --focus: #7f9cff;
-    --artboard: #ffffff;
-    --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 16px 48px rgba(0, 0, 0, 0.4);
+    --ink: #f3f6fb;
+    --muted: #9aa8bc;
+    --line: #2b374b;
+    --line-strong: #43516a;
+    --surface: #141b28;
+    --surface-solid: #151e2d;
+    --surface-elevated: #1b2637;
+    --canvas-bg: #090f19;
+    --canvas-tint: #40516c;
+    --accent: #8da8ff;
+    --accent-soft: #23345d;
+    --success: #6cd19a;
+    --danger: #ff8d93;
+    --danger-soft: #4a2932;
+    --focus: #a6baff;
+    --artboard: #101824;
+    --diagram-ink: #d8e1ef;
+    --diagram-edge: #aebdd2;
+    --diagram-fallback: #263349;
+    --annotation-ink: #232f3e;
+    --canvas-atmosphere: radial-gradient(circle at 50% 8%, rgba(73, 101, 163, 0.16), transparent 42%);
+    --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.56);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -70,23 +80,28 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #f1eee7;
-  --muted: #a9aca5;
-  --line: #434640;
-  --line-strong: #5d625b;
-  --surface: #292b27;
-  --surface-solid: #292b27;
-  --surface-elevated: #292b27;
-  --canvas-bg: #1f211f;
-  --canvas-tint: #434640;
-  --accent: #7f9cff;
-  --accent-soft: #303b68;
-  --success: #73c28b;
-  --danger: #ff8e84;
-  --danger-soft: #4d2b29;
-  --focus: #7f9cff;
-  --artboard: #ffffff;
-  --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 16px 48px rgba(0, 0, 0, 0.4);
+  --ink: #f3f6fb;
+  --muted: #9aa8bc;
+  --line: #2b374b;
+  --line-strong: #43516a;
+  --surface: #141b28;
+  --surface-solid: #151e2d;
+  --surface-elevated: #1b2637;
+  --canvas-bg: #090f19;
+  --canvas-tint: #40516c;
+  --accent: #8da8ff;
+  --accent-soft: #23345d;
+  --success: #6cd19a;
+  --danger: #ff8d93;
+  --danger-soft: #4a2932;
+  --focus: #a6baff;
+  --artboard: #101824;
+  --diagram-ink: #d8e1ef;
+  --diagram-edge: #aebdd2;
+  --diagram-fallback: #263349;
+  --annotation-ink: #232f3e;
+  --canvas-atmosphere: radial-gradient(circle at 50% 8%, rgba(73, 101, 163, 0.16), transparent 42%);
+  --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.56);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -697,6 +712,76 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
+.inspector-advanced {
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-advanced > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.inspector-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.inspector-advanced > summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.inspector-advanced[open] > summary::after {
+  content: "−";
+}
+
+.inspector-advanced > summary:hover,
+.inspector-advanced > summary:focus-visible {
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.inspector-advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 14px;
+}
+
+.inspector-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.inspector-detail-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inspector-detail .readonly-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
 .button-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1008,6 +1093,13 @@ textarea:focus-visible {
   padding: 0;
 }
 
+.source-drawer .code-actions {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+}
+
 .asset-browser {
   gap: 12px;
   padding: 16px 18px 18px;
@@ -1241,14 +1333,63 @@ textarea:focus-visible {
   }
 }
 
+.document-name-field {
+  display: inline-flex;
+  min-width: 144px;
+  max-width: 260px;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.document-name-field:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: var(--surface-elevated);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 .title-input {
+  min-width: 0;
+  max-width: 220px;
+  flex: 1;
   border: none;
+  outline: none;
   background: transparent;
   color: var(--text-primary);
   font-size: 14px;
-  font-weight: 500;
-  min-width: 120px;
-  max-width: 220px;
+  font-weight: 600;
+  padding: 4px 2px 4px 8px;
+}
+
+.title-input::placeholder {
+  color: var(--muted);
+}
+
+.document-name-edit {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.document-name-edit svg {
+  width: 13px;
+  height: 13px;
+}
+
+.document-name-edit:hover,
+.document-name-edit:focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent);
+  outline: none;
 }
 
 .primary-button {
@@ -1552,17 +1693,21 @@ textarea:focus-visible {
 .context-menu {
   position: fixed;
   z-index: 40;
-  min-width: 168px;
-  padding: 4px;
+  min-width: 232px;
+  padding: 6px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   background: var(--surface-elevated);
   box-shadow: var(--shadow-lg);
 }
 
 .context-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   width: 100%;
+  min-height: 34px;
   border: none;
   background: transparent;
   color: var(--text-primary);
@@ -1580,6 +1725,28 @@ textarea:focus-visible {
 .context-menu-item:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+.context-menu-item kbd {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.context-menu-item.is-danger {
+  color: var(--danger);
+}
+
+.context-menu-item.is-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.context-menu-separator {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line);
 }
 
 .edge-panel {
@@ -1830,6 +1997,23 @@ textarea:focus-visible {
   stroke-width: 1.5;
 }
 
+.resize-handle {
+  pointer-events: all;
+  cursor: nwse-resize;
+}
+
+.group-resize-handle {
+  fill: var(--surface-solid);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--accent) 28%, transparent));
+}
+
+.group-resize-handle:hover,
+.group-resize-handle:focus-visible {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+}
+
 .hit-annotation.is-selected {
   fill: color-mix(in srgb, #d4a72c 18%, transparent);
   stroke: #d4a72c;
@@ -1903,8 +2087,6 @@ textarea:focus-visible {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface-solid);
-  content-visibility: auto;
-  contain-intrinsic-size: 136px;
 }
 
 .palette-card[data-icon-status="error"] {
@@ -2088,6 +2270,32 @@ textarea:focus-visible {
 
 .diagram-svg svg > rect:first-child {
   display: none;
+}
+
+/* ── Theme-aware diagram contrast ───────────────────────────────── */
+.canvas-stage {
+  background-image: var(--canvas-atmosphere);
+}
+
+.diagram-svg svg text {
+  fill: var(--diagram-ink);
+}
+
+.diagram-svg svg path[stroke="#232F3E"] {
+  stroke: var(--diagram-edge);
+}
+
+.diagram-svg svg path[fill="#232F3E"],
+.diagram-svg svg circle[fill="#232F3E"] {
+  fill: var(--diagram-edge);
+}
+
+.diagram-svg svg rect[fill="#eee"] {
+  fill: var(--diagram-fallback);
+}
+
+.diagram-svg svg g[id^="annotation-"] text {
+  fill: var(--annotation-ink);
 }
 
 .floating-panel.drawer-sheet {
@@ -2384,6 +2592,234 @@ textarea:focus-visible {
   stroke-width: 2;
 }
 
+.quick-connect-control {
+  pointer-events: all;
+}
+
+.port-control {
+  pointer-events: all;
+}
+
+.port-hit-area {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.port-handle-halo {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 28%, transparent);
+  stroke-width: 1;
+  opacity: 0.7;
+  pointer-events: none;
+  transition: r 0.14s ease, opacity 0.14s ease;
+}
+
+.port-handle {
+  pointer-events: none;
+  transition: r 0.14s ease, fill 0.14s ease, stroke-width 0.14s ease;
+}
+
+.port-hit-area:hover ~ .port-handle-halo,
+.port-hit-area:focus-visible ~ .port-handle-halo,
+.port-hit-area[aria-pressed="true"] ~ .port-handle-halo {
+  opacity: 1;
+  r: 9px;
+}
+
+.port-hit-area:hover ~ .port-handle,
+.port-hit-area:focus-visible ~ .port-handle,
+.port-hit-area[aria-pressed="true"] ~ .port-handle {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+  stroke-width: 2;
+  r: 5.5px;
+}
+
+.quick-connect-frame {
+  fill: color-mix(in srgb, var(--accent) 3%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 66%, white);
+  stroke-width: 1.25;
+  stroke-dasharray: 2 5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--accent) 18%, transparent));
+}
+
+.quick-connect-control.is-compact .port-handle {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 1.75;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--accent) 20%, transparent));
+}
+
+.quick-connect-control.is-compact .port-hit-area:hover ~ .port-handle,
+.quick-connect-control.is-compact .port-hit-area:focus-visible ~ .port-handle,
+.quick-connect-control.is-compact .port-hit-area[aria-pressed="true"] ~ .port-handle {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+  stroke-width: 2.5;
+}
+
+/* ── Unified canvas targeting ────────────────────────────────────── */
+.interaction-overlay .hit-group {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 18px;
+  pointer-events: all;
+}
+
+.interaction-overlay .hit-annotation {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: transparent;
+  stroke-width: 2;
+  pointer-events: all;
+  vector-effect: non-scaling-stroke;
+}
+
+.interaction-overlay .hit-group:hover,
+.interaction-overlay .hit-group.is-selected {
+  stroke: transparent;
+}
+
+.hover-outline,
+.hover-edge {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.hover-outline {
+  fill: color-mix(in srgb, var(--accent) 5%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 76%, white);
+  stroke-width: 2.5;
+  stroke-dasharray: 7 4;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 28%, transparent));
+  animation: hover-target-pulse 1.6s ease-in-out infinite;
+}
+
+.hover-group {
+  fill: color-mix(in srgb, var(--accent) 3%, transparent);
+  stroke-width: 3;
+  stroke-dasharray: 10 5;
+}
+
+.hover-resource {
+  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  stroke-dasharray: none;
+}
+
+.hover-annotation {
+  fill: color-mix(in srgb, #d4a72c 10%, transparent);
+  stroke: #d4a72c;
+  stroke-dasharray: 5 4;
+}
+
+.hover-edge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 42%, transparent);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 25%, transparent));
+  animation: hover-target-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes hover-target-pulse {
+  0%,
+  100% {
+    stroke-opacity: 0.7;
+  }
+
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
+.edge-badge-handle {
+  cursor: grab;
+  pointer-events: all;
+}
+
+.edge-badge-handle:active {
+  cursor: grabbing;
+}
+
+.edge-badge-handle-ring {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-solid));
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--accent) 30%, transparent));
+  transition: fill 0.14s ease, stroke-width 0.14s ease;
+}
+
+.edge-badge-handle-core {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.edge-badge-handle:hover .edge-badge-handle-ring,
+.edge-badge-handle:focus-visible .edge-badge-handle-ring {
+  fill: var(--accent-soft);
+  stroke-width: 2.5;
+}
+
+.edge-badge-handle-text {
+  fill: var(--accent);
+  font-size: 11px;
+  font-weight: 750;
+  pointer-events: none;
+  user-select: none;
+}
+
+.edge-badge-prediction {
+  fill: color-mix(in srgb, var(--accent) 6%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 58%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  animation: badge-prediction-pulse 0.95s ease-in-out infinite;
+}
+
+@keyframes badge-prediction-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.edge-badge-editor {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.property-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-outline,
+  .hover-edge,
+  .edge-badge-prediction {
+    animation: none;
+  }
+}
+
 .rewire-preview {
   fill: none;
   stroke: var(--accent);
@@ -2398,5 +2834,242 @@ textarea:focus-visible {
 @keyframes rewire-preview-flow {
   to {
     stroke-dashoffset: -24;
+  }
+}
+
+/* ── Draw.io-style connector route editor ────────────────────────── */
+.route-editor {
+  pointer-events: none;
+}
+
+.route-edit-rail {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.turn-handle,
+.segment-handle-group {
+  pointer-events: all;
+  outline: none;
+}
+
+.turn-handle {
+  cursor: move;
+}
+
+.turn-handle:active,
+.turn-handle.is-dragging {
+  cursor: grabbing;
+}
+
+.bend-handle-halo {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 50%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  opacity: 0.72;
+  transition: r 0.14s ease, opacity 0.14s ease;
+}
+
+.bend-handle {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+  transition: fill 0.14s ease, stroke 0.14s ease, r 0.14s ease;
+}
+
+.bend-handle-core {
+  fill: var(--accent);
+  pointer-events: none;
+}
+
+.turn-handle:hover .bend-handle-halo,
+.turn-handle:focus-visible .bend-handle-halo,
+.turn-handle:active .bend-handle-halo {
+  opacity: 1;
+  r: 12px;
+}
+
+.turn-handle:hover .bend-handle,
+.turn-handle:focus-visible .bend-handle,
+.turn-handle:active .bend-handle {
+  fill: var(--accent-soft);
+  stroke-width: 2.5;
+  r: 7px;
+}
+
+.segment-handle-group {
+  cursor: move;
+}
+
+.segment-handle-group.is-horizontal {
+  cursor: ns-resize;
+}
+
+.segment-handle-group.is-vertical {
+  cursor: ew-resize;
+}
+
+.segment-handle-group:active {
+  cursor: grabbing;
+}
+
+.segment-handle {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 1.75;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+  transition: fill 0.14s ease, stroke-width 0.14s ease, transform 0.14s ease;
+}
+
+.segment-handle-glyph {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.segment-handle-group:hover .segment-handle,
+.segment-handle-group:focus-visible .segment-handle,
+.segment-handle-group:active .segment-handle {
+  fill: var(--accent-soft);
+  stroke-width: 2.5;
+}
+
+.segment-handle-group:hover .segment-handle-glyph,
+.segment-handle-group:focus-visible .segment-handle-glyph,
+.segment-handle-group:active .segment-handle-glyph {
+  stroke: var(--accent-strong, var(--accent));
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bend-handle-halo,
+  .bend-handle,
+  .segment-handle {
+    transition: none;
+  }
+}
+
+/* ── High-contrast layer lock controls ───────────────────────────── */
+.layer-actions button.layer-lock-toggle {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  line-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-solid);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.layer-actions button.layer-lock-toggle:hover,
+.layer-actions button.layer-lock-toggle:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: none;
+}
+
+.layer-actions button.layer-lock-toggle.is-locked {
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--surface-solid));
+  color: var(--accent);
+}
+
+.layer-lock-icon {
+  width: 19px;
+  height: 19px;
+  overflow: visible;
+  color: currentColor;
+}
+
+.layer-lock-icon .lock-body {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.layer-lock-icon .lock-shackle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.layer-lock-icon .lock-shackle-open {
+  stroke-width: 2.4;
+}
+
+.layer-lock-icon .lock-keyhole,
+.layer-lock-icon .lock-keyhole-stem {
+  fill: var(--surface-solid);
+  stroke: var(--surface-solid);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.layer-actions {
+  align-items: center;
+  gap: 4px;
+}
+
+.layer-actions button.layer-visibility-toggle {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  line-height: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.layer-actions button.layer-visibility-toggle:hover,
+.layer-actions button.layer-visibility-toggle:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: none;
+}
+
+.layer-actions button.layer-visibility-toggle.is-hidden {
+  color: var(--muted);
+  opacity: 0.78;
+}
+
+.layer-visibility-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-actions button.layer-lock-toggle,
+  .layer-actions button.layer-visibility-toggle {
+    transition: none;
   }
 }

@@ -6,7 +6,7 @@ import {
 import { compileDiagram } from "@dumb-diagrams/render";
 import { checkInvariants } from "@dumb-diagrams/render";
 import { layoutDocument } from "@dumb-diagrams/layout";
-import { routeEdges, attachRoutes } from "@dumb-diagrams/route";
+import { normalizeOrthogonalRoute, routeEdges, attachRoutes } from "@dumb-diagrams/route";
 
 describe("async-docs fixture", () => {
   it("compiles without validation errors", () => {
@@ -131,7 +131,16 @@ describe("async-docs fixture", () => {
 
     const edges = routeEdges(doc, layout);
     const edge = edges.find((candidate) => candidate.id === "e2")!;
-    expect(edge.points.slice(1, -1)).toEqual(view.routes.e2!.waypoints);
+    expect(edge.points).toEqual(
+      normalizeOrthogonalRoute([
+        edge.points[0]!,
+        ...view.routes.e2!.waypoints!,
+        edge.points.at(-1)!,
+      ]),
+    );
+    for (const waypoint of view.routes.e2!.waypoints!) {
+      expect(edge.points).toContainEqual(waypoint);
+    }
   });
 });
 

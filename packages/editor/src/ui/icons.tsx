@@ -83,6 +83,16 @@ export function IconFit(props: IconProps) {
   );
 }
 
+export function IconEdit(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 13.75L4.5 10.5L12.25 2.75L15.25 5.75L7.5 13.5L4 13.75Z" />
+      <path d="M10.75 4.25L13.75 7.25" />
+      <path d="M4 13.75L7.5 13.5" />
+    </IconBase>
+  );
+}
+
 export function IconResources(props: IconProps) {
   return (
     <IconBase {...props}>
@@ -175,6 +185,25 @@ export function IconMonitor(props: IconProps) {
   );
 }
 
+export function IconEye(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M2.5 9S4.8 5 9 5s6.5 4 6.5 4S13.2 13 9 13 2.5 9 2.5 9Z" />
+      <circle cx="9" cy="9" r="1.8" />
+    </IconBase>
+  );
+}
+
+export function IconEyeOff(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M2.5 9S4.8 5 9 5c1.1 0 2.1.25 2.95.62" />
+      <path d="M15.5 9S13.2 13 9 13c-1.1 0-2.1-.25-2.95-.62" />
+      <path d="M2.5 2.5l13 13" />
+    </IconBase>
+  );
+}
+
 export function IconUndo(props: IconProps) {
   return (
     <IconBase {...props}>
@@ -193,14 +222,16 @@ export function IconRedo(props: IconProps) {
   );
 }
 
-export function IconAuto(props: IconProps) {
+export function IconMagicWand(props: IconProps) {
   return (
     <IconBase {...props}>
-      <path d="M9 3V5" />
-      <path d="M9 13V15" />
-      <path d="M3 9H5" />
-      <path d="M13 9H15" />
-      <circle cx="9" cy="9" r="3" />
+      <path d="M4 14L11.5 6.5" strokeWidth={2} />
+      <path
+        d="M13.25 2.5L14 4.75L16.25 5.5L14 6.25L13.25 8.5L12.5 6.25L10.25 5.5L12.5 4.75L13.25 2.5Z"
+        fill="currentColor"
+        stroke="none"
+      />
+      <path d="M6 3.5V5M5.25 4.25H6.75" />
     </IconBase>
   );
 }

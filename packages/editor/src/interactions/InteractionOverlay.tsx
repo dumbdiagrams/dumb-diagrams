@@ -1,5 +1,6 @@
 import type {
   DiagramDocument,
+  EdgeBadgeSide,
   EdgeKind,
   EdgeStyle,
   LayoutResult,
@@ -7,7 +8,12 @@ import type {
   Side,
 } from "@dumb-diagrams/core";
 import { getDefaultView } from "@dumb-diagrams/core";
-import { routeEdgePreview } from "@dumb-diagrams/route";
+import {
+  getEdgeBadgePlacement,
+  normalizeOrthogonalRoute,
+  projectPointToPolyline,
+  routeEdgePreview,
+} from "@dumb-diagrams/route";
 import { useMemo, useState } from "react";
 
 import {
@@ -16,9 +22,15 @@ import {
   type SelectionItem,
 } from "../editor-model";
 import { snapCoordinate } from "../grid.js";
+import { nearestEdgeIdAt } from "./edge-targeting.js";
 
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note";
 type RewireTarget = { nodeId: string; side: Side };
+type BadgeDrag = {
+  edgeId: string;
+  t: number;
+  side: EdgeBadgeSide;
+} | null;
 
 export function InteractionOverlay({
   doc,
@@ -39,6 +51,7 @@ export function InteractionOverlay({
   onMove,
   onResize,
   onRoute,
+  onBadgeMove,
   onContextMenu,
 }: {
   doc: DiagramDocument;
@@ -77,10 +90,11 @@ export function InteractionOverlay({
     unlockAspect?: boolean,
   ) => void;
   onRoute: (edgeId: string, points: Point[]) => void;
+  onBadgeMove: (edgeId: string, t: number, side: EdgeBadgeSide) => void;
   onContextMenu: (
     clientX: number,
     clientY: number,
-    item: SelectionItem,
+    item: SelectionItem | null,
   ) => void;
 }) {
   const view = getDefaultView(doc);
@@ -96,6 +110,8 @@ export function InteractionOverlay({
   } | null>(null);
   const [rewireTarget, setRewireTarget] = useState<RewireTarget | null>(null);
   const [rewireCursor, setRewireCursor] = useState<Point | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<SelectionItem | null>(null);
+  const [badgeDrag, setBadgeDrag] = useState<BadgeDrag>(null);
 
   const groups = useMemo(
     () => [...layout.groups].sort((a, b) => {
@@ -114,13 +130,48 @@ export function InteractionOverlay({
     [layout.nodes, view.places],
   );
   const showAllPorts = tool === "connector" || rewire !== null;
+  const quickConnectNodeIds = new Set([
+    ...selection.filter((item) => item.kind === "resource").map((item) => item.id),
+    ...(hoveredItem?.kind === "resource" ? [hoveredItem.id] : []),
+  ]);
 
   const selectedEdge = selection.find((item) => item.kind === "edge");
   const edgeGeom = selectedEdge
     ? layout.edges.find((edge) => edge.id === selectedEdge.id)
     : undefined;
+  const edgeModel = selectedEdge
+    ? doc.edges.find((edge) => edge.id === selectedEdge.id)
+    : undefined;
   const showEdgeHandles = Boolean(edgeGeom && tool === "select");
   const showBendHandles = showEdgeHandles;
+
+  const closestTargetAt = (clientX: number, clientY: number): SelectionItem | null => {
+    const point = pointFromClient(
+      document.querySelector<SVGSVGElement>('[data-testid="canvas-interaction-overlay"]'),
+      clientX,
+      clientY,
+      zoom,
+    );
+    return closestInteractiveTarget(point, layout, doc, view);
+  };
+
+  const updateHover = (event: React.PointerEvent<SVGElement>) => {
+    if (tool !== "select") return;
+    const closest = closestTargetAt(event.clientX, event.clientY);
+    if (closest) {
+      setHoveredItem(closest);
+      return;
+    }
+    const kind = event.currentTarget.getAttribute("data-entity-kind") as SelectionItem["kind"] | null;
+    const id = event.currentTarget.getAttribute("data-entity-id");
+    setHoveredItem(kind && id ? { kind, id } : null);
+  };
+
+  const clearHover = (kind: SelectionItem["kind"], id: string) => {
+    setHoveredItem((current) =>
+      current?.kind === kind && current.id === id ? null : current,
+    );
+  };
 
   const predicted =
     ghostRoute ??
@@ -182,6 +233,52 @@ export function InteractionOverlay({
     window.addEventListener("pointercancel", cancel);
   };
 
+  const beginBadgeMove = (
+    event: React.PointerEvent<SVGGElement>,
+    edgeId: string,
+    points: Point[],
+    initialT: number,
+    initialSide: EdgeBadgeSide,
+  ) => {
+    const handle = event.currentTarget;
+    const svg = handle.ownerSVGElement;
+    const pointerId = event.pointerId;
+    let lastT = initialT;
+    let lastSide = initialSide;
+
+    handle.setPointerCapture(pointerId);
+    onGestureBegin();
+    setBadgeDrag({ edgeId, t: initialT, side: initialSide });
+
+    const move = (next: PointerEvent) => {
+      const pointer = pointFromClient(svg, next.clientX, next.clientY, zoom);
+      const projection = projectPointToPolyline(pointer, points);
+      if (!projection) return;
+      lastT = projection.t;
+      lastSide = badgeSideAt(pointer, projection.point, projection.tangent);
+      setBadgeDrag({ edgeId, t: lastT, side: lastSide });
+      onBadgeMove(edgeId, lastT, lastSide);
+    };
+    const finish = (next?: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      if (next) move(next);
+      setBadgeDrag(null);
+      onGestureEnd();
+      try {
+        handle.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already have been released by the browser.
+      }
+    };
+    const up = (next: PointerEvent) => finish(next);
+    const cancel = () => finish();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+  };
+
   return (
     <svg
       className={`interaction-overlay ${tool === "select" ? "is-select-tool" : ""}`}
@@ -215,6 +312,11 @@ export function InteractionOverlay({
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", up);
       }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        if ((event.target as Element).closest("[data-interactive]")) return;
+        onContextMenu(event.clientX, event.clientY, null);
+      }}
     >
       {groups.map((group) => {
         const place = view.places[group.id];
@@ -232,27 +334,41 @@ export function InteractionOverlay({
             y={group.bounds.y}
             width={group.bounds.w}
             height={group.bounds.h}
+            pointerEvents="all"
+            strokeWidth={18}
+            onPointerEnter={updateHover}
+            onPointerMove={updateHover}
+            onPointerLeave={() => clearHover("group", group.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
-              onSelect({ kind: "group", id: group.id }, event.shiftKey);
-              if (tool === "select" && !place?.locked) {
-                const origin = placeOrigin(view.places[group.id], group.bounds);
+              const target = closestTargetAt(event.clientX, event.clientY)
+                ?? { kind: "group" as const, id: group.id };
+              onSelect(target, event.shiftKey);
+              if (tool === "select" && target.kind !== "edge") {
+                const targetGroup = layout.groups.find((candidate) => candidate.id === target.id);
+                const targetPlace = targetGroup ? view.places[targetGroup.id] : undefined;
+                if (target.kind === "group" && targetGroup && !targetPlace?.locked) {
+                  const origin = placeOrigin(targetPlace, targetGroup.bounds);
                   beginMove(
                     event,
                     zoom,
                     snapToGrid,
                     origin,
-                  (x, y, dx, dy) => onMove("group", group.id, x, y, dx, dy),
-                  onGestureBegin,
-                  onGestureEnd,
-                );
+                    (x, y, dx, dy) => onMove("group", target.id, x, y, dx, dy),
+                    onGestureBegin,
+                    onGestureEnd,
+                  );
+                }
               }
             }}
             onContextMenu={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              onSelect({ kind: "group", id: group.id }, false);
-              onContextMenu(event.clientX, event.clientY, { kind: "group", id: group.id });
+              onContextMenu(
+                event.clientX,
+                event.clientY,
+                closestTargetAt(event.clientX, event.clientY) ?? { kind: "group", id: group.id },
+              );
             }}
           />
         );
@@ -271,15 +387,55 @@ export function InteractionOverlay({
           aria-label={`Connector ${edge.id}`}
           className={`hit-edge ${isSelected(selection, "edge", edge.id) ? "is-selected" : ""}`}
           points={edge.points.map((point) => `${point.x},${point.y}`).join(" ")}
+          pointerEvents="stroke"
+          onDoubleClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (view.places[edge.id]?.locked) return;
+            const point = pointFromClient(
+              event.currentTarget.ownerSVGElement,
+              event.clientX,
+              event.clientY,
+              zoom,
+            );
+            const projection = projectPointToPolyline(point, edge.points);
+            if (!projection) return;
+            const insertAt = projection.segmentIndex + 1;
+            const next = normalizeOrthogonalRoute([
+              ...edge.points.slice(0, insertAt),
+              projection.point,
+              ...edge.points.slice(insertAt),
+            ]);
+            onSelect({ kind: "edge", id: edge.id }, false);
+            onRoute(edge.id, next);
+          }}
+          onPointerEnter={updateHover}
+          onPointerMove={updateHover}
+          onPointerLeave={() => clearHover("edge", edge.id)}
           onPointerDown={(event) => {
             event.stopPropagation();
-            onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
+            // Resolve the nearest connector at the pointer rather than using
+            // whichever widened SVG stroke happens to be on top. This keeps
+            // adjacent routes selectable independently.
+            const point = pointFromClient(
+              event.currentTarget.ownerSVGElement,
+              event.clientX,
+              event.clientY,
+              zoom,
+            );
+            onSelect(
+              nearestEdgeAt(point, layout, doc, view, edge.id) ?? { kind: "edge", id: edge.id },
+              event.shiftKey,
+            );
           }}
           onContextMenu={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            onSelect({ kind: "edge", id: edge.id }, false);
-            onContextMenu(event.clientX, event.clientY, { kind: "edge", id: edge.id });
+            onContextMenu(
+              event.clientX,
+              event.clientY,
+              { kind: "edge", id: edge.id },
+            );
           }}
         />;
       })}
@@ -322,17 +478,25 @@ export function InteractionOverlay({
             y={node.obstacle.y}
             width={node.obstacle.w}
             height={node.obstacle.h}
+            onPointerEnter={updateHover}
+            onPointerMove={updateHover}
+            onPointerLeave={() => clearHover("resource", node.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
-              onSelect({ kind: "resource", id: node.id }, event.shiftKey);
-              if (tool === "select" && !place?.locked) {
-                const origin = placeOrigin(view.places[node.id], node.obstacle);
+              const target = closestTargetAt(event.clientX, event.clientY)
+                ?? { kind: "resource" as const, id: node.id };
+              onSelect(target, event.shiftKey);
+              if (tool === "select" && target.kind === "resource") {
+                const targetNode = layout.nodes.find((candidate) => candidate.id === target.id);
+                const targetPlace = targetNode ? view.places[targetNode.id] : undefined;
+                if (!targetNode || targetPlace?.locked) return;
+                const origin = placeOrigin(targetPlace, targetNode.obstacle);
                 beginMove(
                   event,
                   zoom,
                   snapToGrid,
                   origin,
-                  (x, y, dx, dy) => onMove("resource", node.id, x, y, dx, dy),
+                  (x, y, dx, dy) => onMove("resource", target.id, x, y, dx, dy),
                   onGestureBegin,
                   onGestureEnd,
                 );
@@ -341,11 +505,11 @@ export function InteractionOverlay({
             onContextMenu={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              onSelect({ kind: "resource", id: node.id }, false);
-              onContextMenu(event.clientX, event.clientY, {
-                kind: "resource",
-                id: node.id,
-              });
+              onContextMenu(
+                event.clientX,
+                event.clientY,
+                closestTargetAt(event.clientX, event.clientY) ?? { kind: "resource", id: node.id },
+              );
             }}
           />
         );
@@ -373,16 +537,21 @@ export function InteractionOverlay({
             y={rect.y}
             width={rect.w}
             height={rect.h}
+            onPointerEnter={updateHover}
+            onPointerMove={updateHover}
+            onPointerLeave={() => clearHover("annotation", annotation.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
-              onSelect({ kind: "annotation", id: annotation.id }, event.shiftKey);
-              if (tool === "select" && !place?.locked) {
+              const target = closestTargetAt(event.clientX, event.clientY)
+                ?? { kind: "annotation" as const, id: annotation.id };
+              onSelect(target, event.shiftKey);
+              if (tool === "select" && target.kind === "annotation" && !place?.locked) {
                 beginMove(
                   event,
                   zoom,
                   snapToGrid,
                   rect,
-                  (x, y, dx, dy) => onMove("annotation", annotation.id, x, y, dx, dy),
+                  (x, y, dx, dy) => onMove("annotation", target.id, x, y, dx, dy),
                   onGestureBegin,
                   onGestureEnd,
                 );
@@ -391,15 +560,43 @@ export function InteractionOverlay({
             onContextMenu={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              onSelect({ kind: "annotation", id: annotation.id }, false);
-              onContextMenu(event.clientX, event.clientY, {
-                kind: "annotation",
-                id: annotation.id,
-              });
+              onContextMenu(
+                event.clientX,
+                event.clientY,
+                closestTargetAt(event.clientX, event.clientY) ?? { kind: "annotation", id: annotation.id },
+              );
             }}
           />
         );
       })}
+
+      {hoveredItem?.kind === "edge" && layout.edges.find((edge) => edge.id === hoveredItem.id) && (
+        <polyline
+          data-hover-kind="edge"
+          data-hover-id={hoveredItem.id}
+          className="hover-edge"
+          points={layout.edges
+            .find((edge) => edge.id === hoveredItem.id)!
+            .points.map((point) => `${point.x},${point.y}`)
+            .join(" ")}
+        />
+      )}
+      {hoveredItem && hoveredItem.kind !== "edge" && (() => {
+        const bounds = boundsFor(hoveredItem, layout, doc);
+        if (!bounds) return null;
+        return (
+          <rect
+            data-hover-kind={hoveredItem.kind}
+            data-hover-id={hoveredItem.id}
+            className={`hover-outline hover-${hoveredItem.kind}`}
+            x={bounds.x}
+            y={bounds.y}
+            width={bounds.w}
+            height={bounds.h}
+            rx={hoveredItem.kind === "group" ? 10 : 8}
+          />
+        );
+      })()}
 
       {selection.map((item) => {
         const bounds = boundsFor(item, layout, doc);
@@ -437,13 +634,14 @@ export function InteractionOverlay({
               <rect
                 key={handle.name}
                 data-interactive
+                data-resize-kind={item.kind}
                 data-resize-handle={handle.name}
-                aria-label={`Resize ${handle.name}`}
-                className="resize-handle"
-                x={handle.x - 4}
-                y={handle.y - 4}
-                width={8}
-                height={8}
+                aria-label={item.kind === "group" ? `Resize group ${handle.name}` : `Resize ${handle.name}`}
+                className={`resize-handle${item.kind === "group" ? " group-resize-handle" : ""}`}
+                x={handle.x - (item.kind === "group" ? 6 : 4)}
+                y={handle.y - (item.kind === "group" ? 6 : 4)}
+                width={item.kind === "group" ? 12 : 8}
+                height={item.kind === "group" ? 12 : 8}
                 onPointerDown={(event) => {
                   event.stopPropagation();
                   beginResize(
@@ -471,55 +669,192 @@ export function InteractionOverlay({
       })}
 
       {nodes.flatMap((node) => {
-        const selected = isSelected(selection, "resource", node.id);
-        if (!showAllPorts && !pendingPort) return [];
-        return portPoints(node.icon).map(({ side, point }) => (
-          <circle
-            key={`${node.id}-${side}`}
-            data-interactive
-            data-node-id={node.id}
-            data-port-side={side}
-            aria-label={`${node.serviceLabel} ${side} port`}
-            className={`port-handle ${pendingPort?.nodeId === node.id && pendingPort.side === side ? "is-pending" : ""} ${rewireTarget?.nodeId === node.id && rewireTarget.side === side ? "is-rewire-target" : ""}`}
-            cx={point.x}
-            cy={point.y}
-            r={5}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              onChoosePort(node.id, side);
-            }}
-          />
-        ));
+        const showQuickPorts = showAllPorts || Boolean(pendingPort) || quickConnectNodeIds.has(node.id);
+        if (!showQuickPorts) return [];
+        const compact = !showAllPorts && !pendingPort;
+        return (
+          <g
+            key={`${node.id}-ports`}
+            className={`quick-connect-control${compact ? " is-compact" : ""}`}
+            data-quick-connect={node.id}
+            aria-label={`Connect from ${node.serviceLabel}`}
+            onPointerEnter={() => setHoveredItem({ kind: "resource", id: node.id })}
+            onPointerLeave={() => clearHover("resource", node.id)}
+          >
+            {compact && (
+              <rect
+                className="quick-connect-frame"
+                x={node.icon.x - 10}
+                y={node.icon.y - 10}
+                width={node.icon.w + 20}
+                height={node.icon.h + 20}
+                rx={12}
+              />
+            )}
+            {portPoints(node.icon).map(({ side, point }) => (
+              <g
+                key={`${node.id}-${side}`}
+                className="port-control"
+              >
+                <circle
+                  data-interactive
+                  data-node-id={node.id}
+                  data-port-side={side}
+                  aria-label={`${node.serviceLabel} ${side} port`}
+                  aria-pressed={pendingPort?.nodeId === node.id && pendingPort.side === side}
+                  className="port-hit-area"
+                  cx={point.x}
+                  cy={point.y}
+                  r={compact ? 7 : 10}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    onChoosePort(node.id, side);
+                  }}
+                />
+                <circle
+                  className="port-handle-halo"
+                  cx={point.x}
+                  cy={point.y}
+                  r={compact ? 8 : 7}
+                />
+                <circle
+                  data-port-visual
+                  className={`port-handle ${pendingPort?.nodeId === node.id && pendingPort.side === side ? "is-pending" : ""} ${rewireTarget?.nodeId === node.id && rewireTarget.side === side ? "is-rewire-target" : ""}`}
+                  cx={point.x}
+                  cy={point.y}
+                  r={compact ? 4.5 : 4}
+                />
+              </g>
+            ))}
+          </g>
+        );
       })}
 
-      {edgeGeom && showEdgeHandles &&
-        edgeGeom.points.map((point, index) => (
-          view.places[edgeGeom.id]?.visible === false ? null : (() => {
+      {edgeGeom && edgeModel?.step !== undefined && edgeGeom.badge && (() => {
+        const dragging = badgeDrag?.edgeId === edgeGeom.id ? badgeDrag : null;
+        const current = dragging
+          ? getEdgeBadgePlacement(edgeGeom.points, dragging.t, dragging.side)
+          : {
+              point: edgeGeom.badge!,
+              t: edgeGeom.badgeT ?? 0.5,
+              side: edgeGeom.badgeSide ?? "top" as const,
+            };
+        if (!current) return null;
+        const oppositeSide: EdgeBadgeSide = current.side === "top" ? "bottom" : "top";
+        const predictedBadge = dragging
+          ? getEdgeBadgePlacement(edgeGeom.points, current.t, oppositeSide)
+          : undefined;
+        return (
+          <g key={`${edgeGeom.id}-badge`}>
+            {predictedBadge && (
+              <circle
+                data-edge-badge-preview
+                data-edge-id={edgeGeom.id}
+                className="edge-badge-prediction"
+                cx={predictedBadge.point.x}
+                cy={predictedBadge.point.y}
+                r={14}
+              />
+            )}
+            <g
+              data-interactive
+              data-edge-badge={edgeGeom.id}
+              data-edge-id={edgeGeom.id}
+              aria-label={`Move number ${edgeModel.step}`}
+              className="edge-badge-handle"
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                if (view.places[edgeGeom.id]?.locked) return;
+                beginBadgeMove(
+                  event,
+                  edgeGeom.id,
+                  edgeGeom.points,
+                  current.t,
+                  current.side,
+                );
+              }}
+            >
+              <circle
+                className="edge-badge-handle-ring"
+                cx={current.point.x}
+                cy={current.point.y}
+                r={15}
+              />
+              <circle
+                className="edge-badge-handle-core"
+                cx={current.point.x}
+                cy={current.point.y}
+                r={10}
+              />
+              <text
+                className="edge-badge-handle-text"
+                x={current.point.x}
+                y={current.point.y + 4}
+                textAnchor="middle"
+              >
+                {edgeModel.step}
+              </text>
+            </g>
+          </g>
+        );
+      })()}
+
+      {edgeGeom && showEdgeHandles && view.places[edgeGeom.id]?.visible !== false && (
+        <g
+          data-route-editor={edgeGeom.id}
+          aria-label="Connector route controls"
+          className="route-editor"
+          pointerEvents="all"
+        >
+          <polyline
+            className="route-edit-rail"
+            points={edgeGeom.points.map((point) => `${point.x},${point.y}`).join(" ")}
+          />
+
+          {edgeGeom.points.map((point, index) => {
             const endpoint = index === 0 || index === edgeGeom.points.length - 1;
-            if (!endpoint && !showBendHandles) return null;
-            const endpointName = index === 0 ? "source" : index === edgeGeom.points.length - 1 ? "target" : undefined;
-            const size = endpoint ? 10 : 8;
+            const endpointName = index === 0
+              ? "source"
+              : index === edgeGeom.points.length - 1
+                ? "target"
+                : undefined;
+            if (endpoint) {
+              return (
+                <rect
+                  key={`${edgeGeom.id}-endpoint-${index}`}
+                  data-interactive
+                  data-edge-id={edgeGeom.id}
+                  data-bend-index={index}
+                  data-endpoint={endpointName}
+                  data-endpoint-handle={`${edgeGeom.id}:${endpointName}`}
+                  aria-label={endpointName === "source" ? "Reconnect source endpoint" : "Reconnect target endpoint"}
+                  className={`bend-handle endpoint-handle${rewire?.edgeId === edgeGeom.id && rewire.endpoint === endpointName ? " is-rewiring" : ""}`}
+                  x={point.x - 5}
+                  y={point.y - 5}
+                  width={10}
+                  height={10}
+                  rx={2}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    if (view.places[edgeGeom.id]?.locked) return;
+                    beginRewire(event, edgeGeom.id, endpointName!);
+                  }}
+                />
+              );
+            }
+
             return (
-              <rect
+              <g
                 key={`${edgeGeom.id}-bend-${index}`}
                 data-interactive
                 data-edge-id={edgeGeom.id}
                 data-bend-index={index}
-                data-endpoint={endpointName}
-                aria-label={endpointName === "source" ? "Reconnect source endpoint" : endpointName === "target" ? "Reconnect target endpoint" : `Move bend ${index}`}
-                className={`bend-handle${endpoint ? " endpoint-handle" : ""}${rewire?.edgeId === edgeGeom.id && rewire.endpoint === endpointName ? " is-rewiring" : ""}`}
-                x={point.x - size / 2}
-                y={point.y - size / 2}
-                width={size}
-                height={size}
-                rx={endpoint ? 2 : 1.5}
+                data-bend-handle={`${edgeGeom.id}:${index}`}
+                aria-label={`Move turn point ${index}`}
+                className="turn-handle"
+                pointerEvents="all"
                 onPointerDown={(event) => {
                   event.stopPropagation();
-                  if (endpoint) {
-                    if (view.places[edgeGeom.id]?.locked) return;
-                    beginRewire(event, edgeGeom.id, endpointName!);
-                    return;
-                  }
                   if (view.places[edgeGeom.id]?.locked) return;
                   beginPointMove(
                     event,
@@ -532,45 +867,64 @@ export function InteractionOverlay({
                     onGestureEnd,
                   );
                 }}
-              />
+              >
+                <circle className="bend-handle-halo" cx={point.x} cy={point.y} r={10} />
+                <circle className="bend-handle" cx={point.x} cy={point.y} r={6} />
+                <circle className="bend-handle-core" cx={point.x} cy={point.y} r={2} />
+              </g>
             );
-          })()
-        ))}
+          })}
 
-      {edgeGeom && showBendHandles &&
-        edgeGeom.points.slice(0, -1).map((point, index) => {
-          const next = edgeGeom.points[index + 1]!;
-          const horizontal = point.y === next.y;
-          return (
-            <rect
-              key={`${edgeGeom.id}-segment-${index}`}
-              data-interactive
-              data-edge-id={edgeGeom.id}
-              data-segment-index={index}
-              aria-label={`Move connector segment ${index}`}
-              className={`segment-handle ${horizontal ? "is-horizontal" : "is-vertical"}`}
-              x={(point.x + next.x) / 2 - 5}
-              y={(point.y + next.y) / 2 - 5}
-              width={10}
-              height={10}
-              rx={2}
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                if (view.places[edgeGeom.id]?.locked) return;
-                beginSegmentMove(
-                  event,
-                  zoom,
-                  snapToGrid,
-                  edgeGeom.points,
-                  index,
-                  onRoute.bind(null, edgeGeom.id),
-                  onGestureBegin,
-                  onGestureEnd,
-                );
-              }}
-            />
-          );
-        })}
+          {showBendHandles && edgeGeom.points.slice(0, -1).map((point, index) => {
+            const next = edgeGeom.points[index + 1]!;
+            const horizontal = point.y === next.y;
+            const centerX = (point.x + next.x) / 2;
+            const centerY = (point.y + next.y) / 2;
+            return (
+              <g
+                key={`${edgeGeom.id}-segment-${index}`}
+                data-interactive
+                data-edge-id={edgeGeom.id}
+                data-segment-index={index}
+                data-segment-handle={`${edgeGeom.id}:${index}`}
+                aria-label={`Move connector segment ${index}`}
+                className={`segment-handle-group ${horizontal ? "is-horizontal" : "is-vertical"}`}
+                pointerEvents="all"
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  if (view.places[edgeGeom.id]?.locked) return;
+                  beginSegmentMove(
+                    event,
+                    zoom,
+                    snapToGrid,
+                    edgeGeom.points,
+                    index,
+                    onRoute.bind(null, edgeGeom.id),
+                    onGestureBegin,
+                    onGestureEnd,
+                  );
+                }}
+              >
+                <rect
+                  className="segment-handle"
+                  x={centerX - 8}
+                  y={centerY - 8}
+                  width={16}
+                  height={16}
+                  rx={5}
+                />
+                <line
+                  className="segment-handle-glyph"
+                  x1={horizontal ? centerX : centerX - 3}
+                  y1={horizontal ? centerY - 3 : centerY}
+                  x2={horizontal ? centerX : centerX + 3}
+                  y2={horizontal ? centerY + 3 : centerY}
+                />
+              </g>
+            );
+          })}
+        </g>
+      )}
 
       {marquee && (
         <rect
@@ -598,6 +952,132 @@ function isEntityVisible(
     parent = doc.groups.find((group) => group.id === parent)?.parent;
   }
   return true;
+}
+
+function nearestEdgeAt(
+  point: Point,
+  layout: LayoutResult,
+  doc: DiagramDocument,
+  view: ReturnType<typeof getDefaultView>,
+  preferredId?: string,
+): SelectionItem | null {
+  const visibleEdges = layout.edges.filter((edge) =>
+    view.places[edge.id]?.visible !== false &&
+    isEntityVisible(doc, view, edge.source) &&
+    isEntityVisible(doc, view, edge.target),
+  );
+  const id = nearestEdgeIdAt(point, visibleEdges, preferredId);
+  return id ? { kind: "edge", id } : null;
+}
+
+function closestInteractiveTarget(
+  point: Point,
+  layout: LayoutResult,
+  doc: DiagramDocument,
+  view: ReturnType<typeof getDefaultView>,
+): SelectionItem | null {
+  const candidates: Array<{
+    item: SelectionItem;
+    distance: number;
+    priority: number;
+  }> = [];
+
+  for (const node of layout.nodes) {
+    if (!isEntityVisible(doc, view, node.id)) continue;
+    const distance = distanceToRect(point, node.obstacle);
+    if (distance <= 16) {
+      candidates.push({
+        item: { kind: "resource", id: node.id },
+        distance,
+        priority: 0,
+      });
+    }
+  }
+
+  for (const annotation of doc.annotations) {
+    const place = view.annotations?.[annotation.id];
+    if (place?.visible === false) continue;
+    const rect = {
+      x: place?.x ?? 48,
+      y: place?.y ?? 48,
+      w: place?.w ?? 160,
+      h: place?.h ?? 48,
+    };
+    const distance = distanceToRect(point, rect);
+    if (distance <= 16) {
+      candidates.push({
+        item: { kind: "annotation", id: annotation.id },
+        distance,
+        priority: 0,
+      });
+    }
+  }
+
+  for (const edge of layout.edges) {
+    if (
+      view.places[edge.id]?.visible === false ||
+      !isEntityVisible(doc, view, edge.source) ||
+      !isEntityVisible(doc, view, edge.target)
+    ) continue;
+    const projection = projectPointToPolyline(point, edge.points);
+    if (projection && projection.distance <= 16) {
+      candidates.push({
+        item: { kind: "edge", id: edge.id },
+        distance: projection.distance,
+        // A connector is the most specific target when the pointer is on its
+        // visible stroke, even if the route crosses the source/target card.
+        // Without this, the card's zero interior distance always won and made
+        // arrows near icons feel impossible to select precisely.
+        priority: projection.distance <= 8 ? -1 : 1,
+      });
+    }
+  }
+
+  for (const group of layout.groups) {
+    if (!isEntityVisible(doc, view, group.id)) continue;
+    const distance = distanceToRectBorder(point, group.bounds);
+    if (distance <= 18) {
+      candidates.push({
+        item: { kind: "group", id: group.id },
+        distance,
+        priority: 2,
+      });
+    }
+  }
+
+  candidates.sort((a, b) => a.distance - b.distance || a.priority - b.priority);
+  return candidates[0]?.item ?? null;
+}
+
+function distanceToRect(point: Point, rect: { x: number; y: number; w: number; h: number }): number {
+  const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.w));
+  const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.h));
+  return Math.hypot(dx, dy);
+}
+
+function distanceToRectBorder(point: Point, rect: { x: number; y: number; w: number; h: number }): number {
+  const inside =
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h;
+  if (inside) {
+    return Math.min(
+      point.x - rect.x,
+      rect.x + rect.w - point.x,
+      point.y - rect.y,
+      rect.y + rect.h - point.y,
+    );
+  }
+  return distanceToRect(point, rect);
+}
+
+function badgeSideAt(point: Point, anchor: Point, tangent: Point): EdgeBadgeSide {
+  const normal = Math.abs(tangent.x) >= Math.abs(tangent.y)
+    ? { x: 0, y: -1 }
+    : { x: -1, y: 0 };
+  const dot = (point.x - anchor.x) * normal.x + (point.y - anchor.y) * normal.y;
+  return dot >= 0 ? "top" : "bottom";
 }
 
 function boundsFor(
@@ -750,7 +1230,7 @@ function beginSegmentMove(
       updated[index]!.x = x;
       updated[index + 1]!.x = x;
     }
-    onMove(updated);
+    onMove(normalizeOrthogonalRoute(updated));
   };
   const up = () => {
     window.removeEventListener("pointermove", move);
@@ -786,7 +1266,7 @@ function beginPointMove(
         snapToGrid,
       ),
     };
-    onMove(updated);
+    onMove(normalizeOrthogonalRoute(updated));
   };
   const up = () => {
     window.removeEventListener("pointermove", move);
@@ -823,9 +1303,12 @@ function pointFromClient(
 ): Point {
   const rect = svg?.getBoundingClientRect();
   if (!rect) return { x: clientX, y: clientY };
+  const viewBox = svg?.viewBox.baseVal;
+  const width = viewBox?.width || Number(svg?.getAttribute("width")) || rect.width / zoom;
+  const height = viewBox?.height || Number(svg?.getAttribute("height")) || rect.height / zoom;
   return {
-    x: (clientX - rect.left) / zoom,
-    y: (clientY - rect.top) / zoom,
+    x: ((clientX - rect.left) / rect.width) * width,
+    y: ((clientY - rect.top) / rect.height) * height,
   };
 }
 

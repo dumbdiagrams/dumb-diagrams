@@ -4,6 +4,7 @@ export function EdgePanel({
   edge,
   routePinned,
   onUpdateEdge,
+  onUpdateStep,
   onPinRoute,
   onAutoRoute,
   onSwapDirection,
@@ -12,6 +13,7 @@ export function EdgePanel({
   edge: Edge;
   routePinned: boolean;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
+  onUpdateStep: (step?: number) => void;
   onPinRoute: () => void;
   onAutoRoute: () => void;
   onSwapDirection: () => void;
@@ -55,6 +57,51 @@ export function EdgePanel({
           <option value="peer">Peer</option>
           <option value="fail">Failure</option>
         </select>
+      </div>
+
+      <div className="property-section">
+        <label htmlFor="edge-panel-step">Arrow number</label>
+        {edge.step === undefined ? (
+          <button
+            className="wide-button"
+            id="edge-panel-step"
+            type="button"
+            onClick={() => onUpdateStep(1)}
+          >
+            Add number badge
+          </button>
+        ) : (
+          <div className="edge-badge-editor">
+            <input
+              id="edge-panel-step"
+              aria-label="Arrow number"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={9999}
+              step={1}
+              value={edge.step}
+              onChange={(event) => {
+                const raw = event.target.value;
+                if (!raw) {
+                  onUpdateStep(undefined);
+                  return;
+                }
+                if (!/^\d+$/.test(raw)) return;
+                const value = Number(raw);
+                if (Number.isSafeInteger(value) && value <= 9999) onUpdateStep(value);
+              }}
+            />
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => onUpdateStep(undefined)}
+            >
+              Remove
+            </button>
+          </div>
+        )}
+        <p className="property-hint">Drag the badge along the connector to place it above or below the line.</p>
       </div>
 
       <div className="property-section">

@@ -4,7 +4,10 @@ export interface ContextMenuItem {
   id: string;
   label: string;
   disabled?: boolean;
-  onSelect: () => void;
+  shortcut?: string;
+  danger?: boolean;
+  separator?: boolean;
+  onSelect?: () => void;
 }
 
 export function ContextMenu({
@@ -36,29 +39,40 @@ export function ContextMenu({
     };
   }, [onClose]);
 
+  useEffect(() => {
+    ref.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+  }, []);
+
   return (
     <div
       ref={ref}
       className="context-menu"
       style={{ left: x, top: y }}
       role="menu"
+      aria-label="Canvas context menu"
       onContextMenu={(event) => event.preventDefault()}
     >
       {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          role="menuitem"
-          className="context-menu-item"
-          disabled={item.disabled}
-          onClick={() => {
-            if (item.disabled) return;
-            item.onSelect();
-            onClose();
-          }}
-        >
-          {item.label}
-        </button>
+        item.separator ? (
+          <div key={item.id} className="context-menu-separator" role="separator" />
+        ) : (
+          <button
+            key={item.id}
+            type="button"
+            role="menuitem"
+            className={`context-menu-item${item.danger ? " is-danger" : ""}`}
+            disabled={item.disabled}
+            aria-keyshortcuts={item.shortcut}
+            onClick={() => {
+              if (item.disabled) return;
+              item.onSelect?.();
+              onClose();
+            }}
+          >
+            <span>{item.label}</span>
+            {item.shortcut && <kbd>{item.shortcut}</kbd>}
+          </button>
+        )
       ))}
     </div>
   );
