@@ -26,6 +26,8 @@
   --canvas-tint: #d8d2c7;
   --accent: #3154d4;
   --accent-soft: #e5eaff;
+  --badge-fill: #232f3e;
+  --badge-text: #ffffff;
   --success: #2f7d4a;
   --danger: #b33b32;
   --danger-soft: #f8e4df;
@@ -57,6 +59,8 @@
     --canvas-tint: #40516c;
     --accent: #8da8ff;
     --accent-soft: #23345d;
+    --badge-fill: #f3f6fb;
+    --badge-text: #111827;
     --success: #6cd19a;
     --danger: #ff8d93;
     --danger-soft: #4a2932;
@@ -91,6 +95,8 @@
   --canvas-tint: #40516c;
   --accent: #8da8ff;
   --accent-soft: #23345d;
+  --badge-fill: #f3f6fb;
+  --badge-text: #111827;
   --success: #6cd19a;
   --danger: #ff8d93;
   --danger-soft: #4a2932;
@@ -2787,6 +2793,19 @@ textarea:focus-visible {
   fill: var(--diagram-edge);
 }
 
+/* Numbered connector badges need their own contrast pair. The broad diagram
+ * text/edge theme rules above would otherwise give the badge circle and its
+ * number the same color, making the number disappear in both themes. */
+.diagram-svg svg circle.edge-badge-circle {
+  fill: var(--badge-fill);
+}
+
+.diagram-svg svg text.edge-badge-text {
+  fill: var(--badge-text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .diagram-svg svg rect[fill="#eee"] {
   fill: var(--diagram-fallback);
 }
@@ -3279,7 +3298,7 @@ textarea:focus-visible {
 }
 
 .edge-badge-handle-core {
-  fill: var(--surface-solid);
+  fill: var(--badge-fill);
   stroke: var(--accent);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
@@ -3293,21 +3312,44 @@ textarea:focus-visible {
 }
 
 .edge-badge-handle-text {
-  fill: var(--accent);
-  font-size: 11px;
+  fill: var(--badge-text);
+  font-size: 12px;
   font-weight: 750;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  dominant-baseline: middle;
   pointer-events: none;
   user-select: none;
 }
 
 .edge-badge-prediction {
-  fill: color-mix(in srgb, var(--accent) 6%, transparent);
-  stroke: color-mix(in srgb, var(--accent) 58%, transparent);
+  pointer-events: none;
+  opacity: 0.48;
+  animation: badge-prediction-pulse 0.95s ease-in-out infinite;
+}
+
+.edge-badge-preview-ring {
+  fill: color-mix(in srgb, var(--badge-fill) 12%, var(--surface-solid));
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
   stroke-width: 2;
   stroke-dasharray: 4 3;
   vector-effect: non-scaling-stroke;
+}
+
+.edge-badge-preview-core {
+  fill: var(--badge-fill);
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.edge-badge-preview-text {
+  fill: var(--badge-text);
+  font-size: 12px;
+  font-weight: 750;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  dominant-baseline: middle;
   pointer-events: none;
-  animation: badge-prediction-pulse 0.95s ease-in-out infinite;
+  user-select: none;
 }
 
 @keyframes badge-prediction-pulse {

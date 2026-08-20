@@ -974,14 +974,18 @@ export function InteractionOverlay({
         return (
           <g key={`${edgeGeom.id}-badge`}>
             {predictedBadge && (
-              <circle
+              <g
                 data-edge-badge-preview
                 data-edge-id={edgeGeom.id}
                 className="edge-badge-prediction"
-                cx={predictedBadge.point.x}
-                cy={predictedBadge.point.y}
-                r={14}
-              />
+                transform={`translate(${predictedBadge.point.x} ${predictedBadge.point.y})`}
+              >
+                <circle className="edge-badge-preview-ring" r={15} />
+                <circle className="edge-badge-preview-core" r={10} />
+                <text className="edge-badge-preview-text" x={0} y={0} textAnchor="middle">
+                  {edgeModel.step}
+                </text>
+              </g>
             )}
             <g
               data-interactive
@@ -1001,6 +1005,7 @@ export function InteractionOverlay({
                 );
               }}
             >
+              <title>Arrow number {edgeModel.step}</title>
               <circle
                 className="edge-badge-handle-ring"
                 cx={current.point.x}
@@ -1016,7 +1021,7 @@ export function InteractionOverlay({
               <text
                 className="edge-badge-handle-text"
                 x={current.point.x}
-                y={current.point.y + 4}
+                y={current.point.y}
                 textAnchor="middle"
               >
                 {edgeModel.step}

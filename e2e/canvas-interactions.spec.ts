@@ -63,6 +63,28 @@ async function selectEdge(page: Page, edgeId: string) {
   return edge;
 }
 
+test("keeps rendered arrow numbers readable in light and dark themes", async ({ page }) => {
+  await page.goto("/");
+
+  const badgeText = page.locator(".diagram-svg .edge-badge-text").first();
+  await expect(badgeText).toHaveCount(1);
+  await expect(badgeText).not.toHaveText("");
+
+  for (const theme of ["light", "dark"] as const) {
+    await page.evaluate((nextTheme) => {
+      document.documentElement.setAttribute("data-theme", nextTheme);
+    }, theme);
+    const colors = await badgeText.evaluate((text) => {
+      const circle = text.parentElement?.querySelector(".edge-badge-circle");
+      return {
+        text: getComputedStyle(text).fill,
+        circle: circle ? getComputedStyle(circle).fill : "",
+      };
+    });
+    expect(colors.text).not.toBe(colors.circle);
+  }
+});
+
 test("highlights the nearest canvas target and edits a movable numbered edge badge", async ({ page }) => {
   await page.goto("/");
 
@@ -134,12 +156,23 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
   await page.mouse.move(centerX, centerY);
   await page.mouse.down();
   await page.mouse.move(centerX, centerY + 38, { steps: 8 });
-  await expect(page.locator('[data-edge-badge-preview]')).toHaveCount(1);
+  const preview = page.locator('[data-edge-badge-preview]');
+  await expect(preview).toHaveCount(1);
+  await expect(preview.locator("text")).toHaveText("7");
   await page.mouse.up();
 
   const after = await badge.boundingBox();
   expect(after).not.toBeNull();
   expect(after!.y).toBeGreaterThan(before!.y + 12);
+
+  await numberInput.focus();
+  await numberInput.press("End");
+  await numberInput.press("Backspace");
+  await expect(numberInput).toHaveValue("");
+  await expect(page.getByRole("dialog", { name: "Connector", exact: true })).toHaveCount(1);
+  await numberInput.press("Backspace");
+  await expect(edge).toHaveCount(1);
+  await expect(page.getByRole("dialog", { name: "Connector", exact: true })).toHaveCount(1);
 });
 
 test("exposes draggable turn points and moves a connector bend", async ({ page }) => {

@@ -152,8 +152,8 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   let badge = "";
   if (edge.badge && edge.step !== undefined) {
     badge = `
-  <circle cx="${edge.badge.x}" cy="${edge.badge.y}" r="${GRAMMAR.badgeRadius}" fill="${GRAMMAR.badgeFill}"/>
-  <text x="${edge.badge.x}" y="${edge.badge.y + 4}" text-anchor="middle" font-size="11" fill="${GRAMMAR.badgeText}" font-weight="600">${edge.step}</text>`;
+  <circle class="edge-badge-circle" cx="${edge.badge.x}" cy="${edge.badge.y}" r="${GRAMMAR.badgeRadius}" fill="${GRAMMAR.badgeFill}"/>
+  <text class="edge-badge-text" x="${edge.badge.x}" y="${edge.badge.y + 4}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${edge.step}</text>`;
   }
 
   let label = "";
