@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1368" height="708" viewBox="0 0 1368 708">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#232F3E"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#232F3E}</style>
+</defs>
+
+<g id="group-cloud">
+  <rect x="160" y="48" width="1159.3999999999999" height="612"
+    fill="rgba(35,47,62,0.03)" stroke="#232F3E" stroke-width="1.5"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/AWS-Cloud_32.svg" x="160" y="48" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="192" y="64.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Cloud</text>
+</g>
+
+<g id="group-customer">
+  <rect x="184" y="84" width="848.5999999999999" height="540"
+    fill="rgba(84,91,100,0.04)" stroke="#545B64" stroke-width="1.5"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/AWS-Account_32.svg" x="184" y="84" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="216" y="100.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Customer's AWS Account</text>
+</g>
+
+<g id="group-auth">
+  <rect x="376" y="120" width="152" height="168"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="384" y="135.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Authentication</text>
+</g>
+
+<g id="group-workflow">
+  <rect x="840" y="120" width="166.8" height="468"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="848" y="135.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">AWS Step Functions workflow</text>
+</g>
+
+<g id="group-managed">
+  <rect x="1064" y="84" width="230.8" height="186"
+    fill="rgba(84,91,100,0.04)" stroke="#545B64" stroke-width="1.5"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/AWS-Account_32.svg" x="1064" y="84" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="1096" y="100.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Managed Account</text>
+</g>
+
+<g id="res-user">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Corporate-data-center_32.svg" x="56" y="48" width="48" height="48"/>
+  <text x="80" y="112" text-anchor="middle" font-size="12" font-weight="500">User</text>
+  <text x="80" y="130" text-anchor="middle" font-size="11">User</text>
+</g>
+
+<g id="res-ui">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Corporate-data-center_32.svg" x="253" y="120" width="48" height="48"/>
+  <text x="276.5" y="184" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="276.5" y="202" text-anchor="middle" font-size="11">Data Transfer Hub UI</text>
+</g>
+
+<g id="res-cognito">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Security-Identity/64/Arch_Amazon-Cognito_64.svg" x="428" y="150" width="48" height="48"/>
+  <text x="452.2" y="214" text-anchor="middle" font-size="12" font-weight="500">Amazon Cognito</text>
+  <text x="452.2" y="232" text-anchor="middle" font-size="11">Amazon Cognito</text>
+</g>
+
+<g id="res-appsync">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_AWS-AppSync_64.svg" x="580" y="120" width="48" height="48"/>
+  <text x="604.3" y="184" text-anchor="middle" font-size="12" font-weight="500">AWS AppSync</text>
+  <text x="604.3" y="202" text-anchor="middle" font-size="11">AWS AppSync</text>
+</g>
+
+<g id="res-cloudfront">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Networking-Content-Delivery/64/Arch_Amazon-CloudFront_64.svg" x="720" y="120" width="48" height="48"/>
+  <text x="744.1" y="184" text-anchor="middle" font-size="12" font-weight="500">Amazon CloudFront</text>
+  <text x="744.1" y="202" text-anchor="middle" font-size="11">Amazon CloudFront</text>
+</g>
+
+<g id="res-sfn">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_AWS-Step-Functions_64.svg" x="899" y="150" width="48" height="48"/>
+  <text x="923.4" y="214" text-anchor="middle" font-size="12" font-weight="500">AWS Step Functions</text>
+  <text x="923.4" y="232" text-anchor="middle" font-size="11">AWS Step Functions</text>
+</g>
+
+<g id="res-lambda1">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Compute/64/Arch_AWS-Lambda_64.svg" x="899" y="302" width="48" height="48"/>
+  <text x="923.325" y="366" text-anchor="middle" font-size="12" font-weight="500">AWS Lambda</text>
+  <text x="923.325" y="384" text-anchor="middle" font-size="11">Workflow task</text>
+</g>
+
+<g id="res-cfn">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Management-Tools/64/Arch_AWS-CloudFormation_64.svg" x="899" y="454" width="48" height="48"/>
+  <text x="923.4" y="518" text-anchor="middle" font-size="12" font-weight="500">AWS CloudFormation</text>
+  <text x="923.4" y="536" text-anchor="middle" font-size="11">AWS CloudFormation</text>
+</g>
+
+<g id="res-s3_templates">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Storage/64/Arch_Amazon-Simple-Storage-Service_64.svg" x="1102" y="120" width="48" height="48"/>
+  <text x="1125.7" y="184" text-anchor="middle" font-size="12" font-weight="500">Amazon S3</text>
+  <text x="1125.7" y="202" text-anchor="middle" font-size="11">Templates</text>
+</g>
+
+<g id="res-s3_images">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Storage/64/Arch_Amazon-Simple-Storage-Service_64.svg" x="1206" y="120" width="48" height="48"/>
+  <text x="1229.7" y="184" text-anchor="middle" font-size="12" font-weight="500">Amazon S3</text>
+  <text x="1229.7" y="202" text-anchor="middle" font-size="11">Images</text>
+</g>
+
+<g id="edge-user-ui">
+  <path d="M 104 80 L 104 136 L 253 136" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="178.5" cy="136" r="10" fill="#232F3E"/>
+  <text x="178.5" y="140" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">1</text>
+</g>
+
+<g id="edge-ui-appsync">
+  <path d="M 301 152 L 325 152 L 325 136 L 580 136" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="452.5" cy="136" r="10" fill="#232F3E"/>
+  <text x="452.5" y="140" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">2</text>
+</g>
+
+<g id="edge-appsync-cloudfront">
+  <path d="M 628 152 L 696 152 L 696 136 L 720 136" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="662" cy="152" r="10" fill="#232F3E"/>
+  <text x="662" y="156" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">3</text>
+</g>
+
+<g id="edge-cloudfront-sfn">
+  <path d="M 768 152 L 832 152 L 832 168 L 899 168" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="865.5" cy="168" r="10" fill="#232F3E"/>
+  <text x="865.5" y="172" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">4</text>
+</g>
+
+<g id="edge-sfn-lambda1">
+  <path d="M 947 184 L 992 184 L 992 320 L 947 320" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="969.5" cy="184" r="10" fill="#232F3E"/>
+  <text x="969.5" y="188" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">5</text>
+</g>
+
+<g id="edge-lambda1-s3_templates">
+  <path d="M 947 336 L 1078 336 L 1078 136 L 1102 136" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="1012.5" cy="336" r="10" fill="#232F3E"/>
+  <text x="1012.5" y="340" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">6</text>
+</g>
+
+<g id="edge-cfn-s3_images">
+  <path d="M 947 488 L 1182 488 L 1182 136 L 1206 136" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="1064.5" cy="488" r="10" fill="#232F3E"/>
+  <text x="1064.5" y="492" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">7</text>
+</g>
+
+<g id="edge-ui-cognito">
+  <path d="M 301 152 L 360 152 L 360 264 L 520 264 L 520 168 L 476 168" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
+  <path d="M 301 152 L 360 152 L 360 264 L 520 264 L 520 168 L 476 168" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <circle cx="440" cy="264" r="10" fill="#232F3E"/>
+  <text x="440" y="268" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">8</text>
+</g>
+</svg>

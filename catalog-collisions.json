@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-08-20",
+  "policy": "duplicate canonical ids receive a deterministic source-hash suffix; no source file is discarded",
+  "allowHashSuffix": true,
+  "notes": [
+    "Azure service names are not globally unique across the V24 folder taxonomy.",
+    "Service and group namespaces are generated independently.",
+    "A collision must remain searchable by its canonical name and source-derived id."
+  ]
+}

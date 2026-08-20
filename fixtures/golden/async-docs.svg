@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1049" height="810" viewBox="0 0 1049 810">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#232F3E"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#232F3E}</style>
+</defs>
+
+<g id="group-use1">
+  <rect x="202.75" y="48" width="797.3500000000001" height="714"
+    fill="rgba(0,164,166,0.05)" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Region_32.svg" x="202.75" y="48" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="234.75" y="64.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Region (us-east-1)</text>
+</g>
+
+<g id="group-main">
+  <rect x="230.75" y="86" width="546.4000000000001" height="634"
+    fill="rgba(140,79,255,0.05)" stroke="#8C4FFF" stroke-width="1.5"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Virtual-private-cloud-VPC_32.svg" x="230.75" y="86" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="262.75" y="102.55"
+    font-size="13" font-weight="600" dominant-baseline="alphabetic">VPC</text>
+</g>
+
+<g id="group-azA">
+  <rect x="254.75" y="122" width="233.20000000000002" height="562"
+    fill="rgba(20,126,186,0.04)" stroke="#147EBA" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Region_32.svg" x="254.75" y="122" width="20" height="20" preserveAspectRatio="none"/>
+  <text x="282.75" y="136.2"
+    font-size="12" font-weight="600" dominant-baseline="alphabetic">Availability Zone A</text>
+</g>
+
+<g id="group-pubA">
+  <rect x="274.75" y="152" width="193.20000000000002" height="164"
+    fill="rgba(36,136,20,0.04)" stroke="#248814" stroke-width="1"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Public-subnet_32.svg" x="274.75" y="152" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="300.75" y="164.85"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Public Subnet A</text>
+</g>
+
+<g id="group-appA">
+  <rect x="274.75" y="336" width="193.20000000000002" height="314"
+    fill="rgba(20,126,186,0.04)" stroke="#147EBA" stroke-width="1"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Private-subnet_32.svg" x="274.75" y="336" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="300.75" y="348.85"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Private App Subnet A</text>
+</g>
+
+<g id="group-azB">
+  <rect x="511.95000000000005" y="122" width="233.20000000000002" height="562"
+    fill="rgba(20,126,186,0.04)" stroke="#147EBA" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Region_32.svg" x="511.95000000000005" y="122" width="20" height="20" preserveAspectRatio="none"/>
+  <text x="539.95" y="136.2"
+    font-size="12" font-weight="600" dominant-baseline="alphabetic">Availability Zone B</text>
+</g>
+
+<g id="group-pubB">
+  <rect x="531.95" y="152" width="193.20000000000002" height="164"
+    fill="rgba(36,136,20,0.04)" stroke="#248814" stroke-width="1"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Public-subnet_32.svg" x="531.95" y="152" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="557.95" y="164.85"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Public Subnet B</text>
+</g>
+
+<g id="group-appB">
+  <rect x="531.95" y="336" width="193.20000000000002" height="314"
+    fill="rgba(20,126,186,0.04)" stroke="#147EBA" stroke-width="1"  rx="0"/>
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Private-subnet_32.svg" x="531.95" y="336" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="557.95" y="348.85"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Private App Subnet B</text>
+</g>
+
+<g id="group-queues">
+  <rect x="825.1500000000001" y="86" width="152" height="306"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="833.1500000000001" y="101.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Async Queue Tier</text>
+</g>
+
+<g id="group-storage">
+  <rect x="825.1500000000001" y="416" width="162.95" height="168"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="833.1500000000001" y="431.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Storage Tier</text>
+</g>
+
+<g id="res-client">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Group-Icons_07312026/Corporate-data-center_32.svg" x="77" y="48" width="48" height="48"/>
+  <text x="101.375" y="112" text-anchor="middle" font-size="12" font-weight="500">User</text>
+  <text x="101.375" y="130" text-anchor="middle" font-size="11">External Client</text>
+</g>
+
+<g id="res-api_alb">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Networking-Content-Delivery/64/Arch_Elastic-Load-Balancing_64.svg" x="347" y="178" width="48" height="48"/>
+  <text x="370.6" y="242" text-anchor="middle" font-size="12" font-weight="500">Elastic Load Balancing</text>
+  <text x="370.6" y="260" text-anchor="middle" font-size="11">Document API ALB</text>
+</g>
+
+<g id="res-apiA">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Containers/64/Arch_Amazon-Elastic-Container-Service_64.svg" x="347" y="362" width="48" height="48"/>
+  <text x="371.3" y="426" text-anchor="middle" font-size="12" font-weight="500">Amazon ECS</text>
+  <text x="371.3" y="444" text-anchor="middle" font-size="11">Document API</text>
+</g>
+
+<g id="res-workerA">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Containers/64/Arch_Amazon-Elastic-Container-Service_64.svg" x="347" y="514" width="48" height="48"/>
+  <text x="371.375" y="578" text-anchor="middle" font-size="12" font-weight="500">Amazon ECS</text>
+  <text x="371.375" y="596" text-anchor="middle" font-size="11">Document worker</text>
+</g>
+
+<g id="res-api_alb_b">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Networking-Content-Delivery/64/Arch_Elastic-Load-Balancing_64.svg" x="605" y="178" width="48" height="48"/>
+  <text x="628.6" y="242" text-anchor="middle" font-size="12" font-weight="500">Elastic Load Balancing</text>
+  <text x="628.6" y="260" text-anchor="middle" font-size="11">Document API ALB</text>
+</g>
+
+<g id="res-apiB">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Containers/64/Arch_Amazon-Elastic-Container-Service_64.svg" x="605" y="362" width="48" height="48"/>
+  <text x="629.3" y="426" text-anchor="middle" font-size="12" font-weight="500">Amazon ECS</text>
+  <text x="629.3" y="444" text-anchor="middle" font-size="11">Document API</text>
+</g>
+
+<g id="res-workerB">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Containers/64/Arch_Amazon-Elastic-Container-Service_64.svg" x="605" y="514" width="48" height="48"/>
+  <text x="629.375" y="578" text-anchor="middle" font-size="12" font-weight="500">Amazon ECS</text>
+  <text x="629.375" y="596" text-anchor="middle" font-size="11">Document worker</text>
+</g>
+
+<g id="res-jobs">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_Amazon-Simple-Queue-Service_64.svg" x="877" y="116" width="48" height="48"/>
+  <text x="901.4" y="180" text-anchor="middle" font-size="12" font-weight="500">Amazon SQS</text>
+  <text x="901.4" y="198" text-anchor="middle" font-size="11">Processing queue</text>
+</g>
+
+<g id="res-jobs_dlq">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Application-Integration/64/Arch_Amazon-Simple-Queue-Service_64.svg" x="883" y="268" width="36" height="36"/>
+  <text x="901" y="320" text-anchor="middle" font-size="12" font-weight="500">Amazon SQS</text>
+  <text x="901" y="338" text-anchor="middle" font-size="11">DLQ</text>
+</g>
+
+<g id="res-artifacts">
+  <image href="file:///Users/asado/Desktop/aws-icons/Architecture-Service-Icons_07312026/Arch_Storage/64/Arch_Amazon-Simple-Storage-Service_64.svg" x="883" y="446" width="48" height="48"/>
+  <text x="907.475" y="510" text-anchor="middle" font-size="12" font-weight="500">Amazon S3</text>
+  <text x="907.475" y="528" text-anchor="middle" font-size="11">Processed artifacts</text>
+</g>
+
+<g id="edge-client-api_alb">
+  <path d="M 125 80 L 160 80 L 160 192 L 347 192" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle cx="253.5" cy="192" r="10" fill="#232F3E"/>
+  <text x="253.5" y="196" text-anchor="middle" font-size="11" fill="#FFFFFF" font-weight="600">1</text>
+</g>
+
+<g id="edge-api_alb-apiA">
+  <path d="M 395 216 L 472 216 L 472 376 L 395 376" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+</g>
+
+<g id="edge-apiA-jobs">
+  <path d="M 395 400 L 520 400 L 520 296 L 832 296 L 832 128 L 877 128" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+</g>
+
+<g id="edge-jobs-workerA">
+  <path d="M 877 152 L 728 152 L 728 504 L 419 504 L 419 528 L 395 528" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+</g>
+
+<g id="edge-workerA-artifacts">
+  <path d="M 395 552 L 395 480 L 824 480 L 824 464 L 883 464" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+</g>
+
+<g id="edge-jobs-jobs_dlq">
+  <path d="M 925 152 L 960 152 L 960 244 L 888 244 L 888 268" fill="none" stroke="#232F3E" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
+  <path d="M 925 152 L 960 152 L 960 244 L 888 244 L 888 268" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+</g>
+</svg>

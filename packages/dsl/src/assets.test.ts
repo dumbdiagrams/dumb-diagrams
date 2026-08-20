@@ -1,0 +1,32 @@
+import { describe, expect, it } from "vitest";
+
+import { parseArch, printArch } from "./parse.js";
+
+describe("assets round-trip", () => {
+  it("preserves embedded svg assets and icon references", () => {
+    const source = `diagram demo {
+  grammar aws
+  flow lr
+
+  generic.custom box "Custom" { icon logo1 }
+}
+
+assets {
+  asset logo1 {
+    svg "<svg viewBox='0 0 32 32'><rect width='32' height='32'/></svg>"
+    w 32
+    h 32
+  }
+}
+
+view default {
+}`;
+    const parsed = parseArch(source);
+    expect(parsed.assets).toHaveLength(1);
+    expect(parsed.resources[0]?.props.iconAsset).toBe("logo1");
+    const roundTrip = printArch(parsed);
+    const reparsed = parseArch(roundTrip);
+    expect(reparsed.assets?.[0]?.id).toBe("logo1");
+    expect(reparsed.resources[0]?.props.iconAsset).toBe("logo1");
+  });
+});

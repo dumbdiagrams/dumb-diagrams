@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-08-20",
+  "sources": [
+    {
+      "provider": "aws",
+      "sourcePage": "https://aws.amazon.com/architecture/icons/",
+      "archiveUrl": "https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/architecture-icon-release/Icon-package_07312026.5846e92413caa21490223536cc97f1269e44fa92.zip",
+      "packageVersion": "07312026",
+      "releaseLabel": "AWS Architecture Icons July 2026",
+      "sha256": "d2d166c453526471749d520e0db022c459abef759d2946cf2dd1d1c992dc6526",
+      "reviewedAt": "2026-08-20",
+      "termsUrl": "https://aws.amazon.com/terms/",
+      "expectedStructure": [
+        "Architecture-Service-Icons_07312026",
+        "Architecture-Group-Icons_07312026",
+        "Resource-Icons_07312026"
+      ],
+      "minimumCanonicalCount": 303
+    },
+    {
+      "provider": "azure",
+      "sourcePage": "https://learn.microsoft.com/en-us/azure/architecture/icons/",
+      "archiveUrl": "https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip",
+      "packageVersion": "V24",
+      "releaseLabel": "Azure Public Service Icons V24",
+      "sha256": "921594ccd1bf3d9c0a1bd7b6d924e050551a59342f2b353bb74bdcf761c35141",
+      "reviewedAt": "2026-08-20",
+      "termsUrl": "https://learn.microsoft.com/en-us/legal/cognitive-services/",
+      "expectedStructure": ["Icons"],
+      "minimumCanonicalCount": 636
+    },
+    {
+      "provider": "gcp",
+      "sourcePage": "https://cloud.google.com/icons",
+      "archiveUrl": "https://services.google.com/fh/files/misc/core-products-icons.zip",
+      "packageVersion": "core-products-icons",
+      "releaseLabel": "Google Cloud core and category icons",
+      "sha256": "6531a10f58bc599c24d9a455d81dd757c1a03c3c43da9cddf639b859c1c1eece",
+      "reviewedAt": "2026-08-20",
+      "termsUrl": "https://cloud.google.com/terms",
+      "expectedStructure": ["Unique Icons", "Category Icons"],
+      "minimumCanonicalCount": 19
+    },
+    {
+      "provider": "cloud-agnostic",
+      "sourcePage": "https://github.com/phosphor-icons/core",
+      "packageVersion": "2.1.1",
+      "releaseLabel": "Curated architecture vocabulary",
+      "sha256": "local-curated-assets",
+      "reviewedAt": "2026-08-20",
+      "termsUrl": "https://github.com/phosphor-icons/core/blob/main/LICENSE",
+      "expectedStructure": ["neutral-icons"],
+      "minimumCanonicalCount": 12
+    }
+  ]
+}

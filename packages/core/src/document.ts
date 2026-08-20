@@ -1,0 +1,68 @@
+import type {
+  DiagramDocument,
+  Edge,
+  Group,
+  ID,
+  Resource,
+  View,
+} from "./types.js";
+
+export function createEmptyDocument(id: ID): DiagramDocument {
+  return {
+    id,
+    grammar: "aws",
+    flow: "lr",
+    resources: [],
+    groups: [],
+    edges: [],
+    annotations: [],
+    views: [{ id: "default", places: {}, routes: {} }],
+  };
+}
+
+export function getResource(doc: DiagramDocument, id: ID): Resource | undefined {
+  return doc.resources.find((r) => r.id === id);
+}
+
+export function getGroup(doc: DiagramDocument, id: ID): Group | undefined {
+  return doc.groups.find((g) => g.id === id);
+}
+
+export function getEdge(doc: DiagramDocument, id: ID): Edge | undefined {
+  return doc.edges.find((e) => e.id === id);
+}
+
+export function getDefaultView(doc: DiagramDocument): View {
+  return doc.views.find((v) => v.id === "default") ?? doc.views[0]!;
+}
+
+export function allNodeIds(doc: DiagramDocument): ID[] {
+  return [...doc.groups.map((g) => g.id), ...doc.resources.map((r) => r.id)];
+}
+
+export function getParentGroup(
+  doc: DiagramDocument,
+  childId: ID,
+): Group | undefined {
+  return doc.groups.find(
+    (g) =>
+      g.children.includes(childId) ||
+      g.borderChildren?.some((b) => b.id === childId),
+  );
+}
+
+export function getChildren(
+  doc: DiagramDocument,
+  groupId: ID,
+): Array<Resource | Group> {
+  const group = getGroup(doc, groupId);
+  if (!group) return [];
+  const items: Array<Resource | Group> = [];
+  for (const id of group.children) {
+    const g = getGroup(doc, id);
+    const r = getResource(doc, id);
+    if (g) items.push(g);
+    else if (r) items.push(r);
+  }
+  return items;
+}

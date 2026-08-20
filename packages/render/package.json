@@ -1,0 +1,29 @@
+{
+  "name": "@dumb-diagrams/render",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dumb-diagrams/catalog": "workspace:*",
+    "@dumb-diagrams/core": "workspace:*",
+    "@dumb-diagrams/grammar-aws": "workspace:*",
+    "@dumb-diagrams/layout": "workspace:*",
+    "@dumb-diagrams/route": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
