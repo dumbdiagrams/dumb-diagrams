@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
+import { StrictMode, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
@@ -13,7 +13,13 @@ import type {
 } from "@dumb-diagrams/core";
 import {
   createAsyncDocsFixture,
+  createEmptyDocument,
+  characterLength,
+  DIAGRAM_LIMITS,
   hasErrors,
+  normalizeMultilineText,
+  normalizeSingleLineText,
+  utf8ByteLength,
   validateDocument,
 } from "@dumb-diagrams/core";
 import {
@@ -21,10 +27,10 @@ import {
   catalogIconUrl,
   type CatalogEntry,
 } from "@dumb-diagrams/catalog";
-import { parseArch, printArch } from "@dumb-diagrams/dsl";
+import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import { GRAMMAR } from "@dumb-diagrams/grammar-aws";
-import { renderPortableSvg, renderSvg } from "@dumb-diagrams/render";
+import { renderPortableSvg, renderSvg, sanitizeSvg } from "@dumb-diagrams/render";
 import { routeEdges, attachRoutes } from "@dumb-diagrams/route";
 
 import {
@@ -47,6 +53,7 @@ import {
   renameEdge,
   renameGroup,
   renameResource,
+  updateGroupStep,
   resourceIconSize,
   serializeClipboard,
   setResourceIconSize,
@@ -71,6 +78,7 @@ import {
   type Selection,
   type SelectionItem,
   type ResourceIconSize,
+  MAX_EDGE_STEP,
 } from "./editor-model";
 import {
   CanvasStage,
@@ -82,23 +90,39 @@ import { AssetBrowser } from "./panels/AssetBrowser";
 import { ContextMenu, type ContextMenuItem } from "./panels/ContextMenu";
 import { EdgePanel } from "./panels/EdgePanel";
 import { ExportMenu } from "./panels/ExportMenu";
+import { ExamplesModal } from "./panels/ExamplesModal";
+import { HelpModal } from "./panels/HelpModal";
+import { CommandPalette, type Command } from "./panels/CommandPalette";
+import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
 import { SourceDrawer } from "./panels/SourceDrawer";
-import { clearDraft, loadDraft, saveDraft } from "./state/autosave";
+import { WorkspaceTabs } from "./panels/WorkspaceTabs";
+import { clearDraft, loadDraft } from "./state/autosave";
+import {
+  downloadText,
+  exportDgmFile,
+  exportPngFile,
+  exportSvgFile,
+  filenameWithExtension,
+} from "./state/export-actions";
+import { isTabDirty, MAX_WORKSPACE_TABS, useWorkspace, type WorkspaceTab } from "./state/workspace";
 import { FloatingPanel } from "./ui/FloatingPanel";
+import { Modal } from "./ui/Modal";
+import { TopMenu, type TopMenuItem } from "./ui/TopMenu";
 import {
   IconEdit,
   IconFit,
-  IconFolderOpen,
   IconGrid,
+  IconHelp,
+  IconLock,
   IconMagicWand,
+  IconMenu,
   IconRedo,
   IconUndo,
 } from "./ui/icons";
 import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
-import { useSourceHistory } from "./useSourceHistory";
 import {
   GRID_SIZE,
   outsideCanvasInsertionPoint,
@@ -109,12 +133,15 @@ import "./styles.css";
 
 initTheme();
 
-const DEFAULT_SOURCE = printArch(createAsyncDocsFixture());
+const DEFAULT_SOURCE = printDgm(createAsyncDocsFixture());
+const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
+const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
+const TAB_CLOSE_FALLBACK_MS = 500;
 const RECOVERY = (() => {
   const draft = loadDraft();
   if (!draft) return null;
   try {
-    const doc = parseArch(draft.source);
+    const doc = parseDgm(draft.source);
     if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) {
       clearDraft();
       return null;
@@ -128,6 +155,7 @@ const RECOVERY = (() => {
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
 type ContextMenuState = { x: number; y: number; selection: Selection } | null;
+type TabContextMenuState = { x: number; y: number; tabId: string } | null;
 
 function documentNameForDisplay(doc: DiagramDocument): string {
   const authoredTitle = doc.title?.trim();
@@ -139,23 +167,58 @@ function documentNameForDisplay(doc: DiagramDocument): string {
   return readableId || "Untitled diagram";
 }
 
+function rejectOversizedPaste(
+  event: ReactClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  limit: number,
+  onReject: () => void,
+): void {
+  const target = event.currentTarget;
+  const start = target.selectionStart ?? target.value.length;
+  const end = target.selectionEnd ?? start;
+  const next = target.value.slice(0, start) + event.clipboardData.getData("text") + target.value.slice(end);
+  if (characterLength(next) <= limit) return;
+  event.preventDefault();
+  onReject();
+}
+
 function App() {
   const {
+    ready: workspaceReady,
+    tabs,
+    activeTab,
+    activeTabId,
+    recentlyClosed,
     source,
-    replace: replaceSource,
-    commit: commitSource,
-    resetHistory,
+    viewport,
+    replaceSource,
+    commitSource,
+    resetActive,
     beginTransaction,
     endTransaction,
     undo,
     redo,
     canUndo,
     canRedo,
-  } = useSourceHistory(RECOVERY?.source ?? DEFAULT_SOURCE);
+    setActiveTab,
+    reorderTabs,
+    openTab,
+    newTab,
+    closeTab,
+    reopenClosed,
+    duplicateTab,
+    updateViewport,
+    markTabSaved,
+    setTabFilename,
+  } = useWorkspace({
+    initialSource: RECOVERY?.source ?? DEFAULT_SOURCE,
+    initialSavedSource: RECOVERY ? "" : DEFAULT_SOURCE,
+    initialOrigin: RECOVERY ? "recovery" : "fixture",
+    initialViewport: INITIAL_VIEWPORT,
+    blankSource: BLANK_SOURCE,
+  });
   const [tool, setTool] = useState<Tool>("select");
   const [selection, setSelection] = useState<Selection>([]);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
-  const [viewport, setViewport] = useState(() => defaultViewportForContent(0, 0));
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -165,27 +228,283 @@ function App() {
   const [layersQuery, setLayersQuery] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
   const [noteComposerStyle, setNoteComposerStyle] = useState<AnnotationStyle>("paper");
-  const [toast, setToastMessage] = useState<string | null>(RECOVERY ? "Draft restored" : null);
+  const [toast, setToastMessage] = useState<string | null>(null);
   const [toastNonce, setToastNonce] = useState(0);
-  const skipDraftSaveRef = useRef(false);
   const lastGoodRef = useRef<{
     doc: DiagramDocument;
     layout: LayoutResult;
     svg: string;
   } | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+  const [tabContextMenu, setTabContextMenu] = useState<TabContextMenuState>(null);
   const internalClipboardRef = useRef<string | null>(null);
   const sourceCommitTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [saveAsDraft, setSaveAsDraft] = useState("");
+  const [closeRequest, setCloseRequest] = useState<string | null>(null);
+  const [closingTabId, setClosingTabId] = useState<string | null>(null);
+  const closeAnimationTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeAnimationTimerRef.current !== null) {
+        window.clearTimeout(closeAnimationTimerRef.current);
+      }
+    };
+  }, []);
 
   const setToast = (message: string | null) => {
     if (message !== null) setToastNonce((current) => current + 1);
     setToastMessage(message);
   };
 
+  const tabLabel = (tab: WorkspaceTab): string => {
+    try {
+      return documentNameForDisplay(parseDgm(tab.source));
+    } catch {
+      return tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
+    }
+  };
+
+  const sourceIsValid = (candidate: string): boolean => {
+    try {
+      const doc = parseDgm(candidate);
+      if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) return false;
+      for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const saveTabSource = (tabId: string, requestedFilename?: string): boolean => {
+    const tab = tabs.find((candidate) => candidate.id === tabId);
+    if (!tab) return false;
+    if (!sourceIsValid(tab.source)) {
+      setToast("Cannot save an invalid diagram. Fix the source errors first.");
+      return false;
+    }
+    const baseName = requestedFilename || tab.filename || tabLabel(tab);
+    const filename = filenameWithExtension(baseName, "dgm");
+    if (!downloadText(tab.source, filename)) {
+      setToast("Save failed. Your browser blocked the download.");
+      return false;
+    }
+    markTabSaved(tab.id, tab.source, filename);
+    setToast(`Downloaded ${filename}`);
+    return true;
+  };
+
+  const saveActive = () => saveTabSource(activeTab.id);
+
+  const exportCurrentSource = () => {
+    const result = exportDgmFile(source, tabLabel(activeTab));
+    setToast(result.ok ? `Downloaded ${result.filename}` : "Source export failed.");
+  };
+
+  const openSaveAs = () => {
+    setSaveAsDraft(activeTab.filename || filenameWithExtension(tabLabel(activeTab), "dgm"));
+    setSaveAsOpen(true);
+  };
+
+  const confirmSaveAs = () => {
+    const filename = normalizeSingleLineText(saveAsDraft);
+    if (!filename) {
+      setToast("Filename cannot be empty");
+      return;
+    }
+    setSaveAsDraft(filename);
+    if (saveTabSource(activeTab.id, filename)) setSaveAsOpen(false);
+  };
+
+  const exportCurrentSvg = async () => {
+    if (!compiled.ok) return;
+    const result = await exportSvgFile(
+      tabLabel(activeTab),
+      () => renderPortableSvg(compiled.doc, compiled.layout),
+    );
+    setToast(result.ok ? `Downloaded ${result.filename}` : "SVG export failed.");
+  };
+
+  const exportCurrentPng = async () => {
+    if (!compiled.ok) return;
+    const result = await exportPngFile(
+      tabLabel(activeTab),
+      () => renderPortableSvg(compiled.doc, compiled.layout),
+    );
+    setToast(result.ok ? `Downloaded ${result.filename}` : "PNG export failed.");
+  };
+
+  const resetTransientState = () => {
+    setSelection([]);
+    setPendingPort(null);
+    setContextMenu(null);
+    setTabContextMenu(null);
+    setTool("select");
+  };
+
+  const tabLimitMessage = `You can have up to ${MAX_WORKSPACE_TABS} open diagrams. Close a tab to create another.`;
+
+  const beginTabClose = (tabId: string) => {
+    if (closingTabId || tabs.length <= 1 || !tabs.some((tab) => tab.id === tabId)) return;
+    if (tabId === activeTabId) {
+      const closingIndex = tabs.findIndex((tab) => tab.id === tabId);
+      const nextActiveTab = tabs[closingIndex - 1] ?? tabs[closingIndex + 1];
+      if (nextActiveTab) setActiveTab(nextActiveTab.id);
+    }
+    setClosingTabId(tabId);
+    resetTransientState();
+    // Animation events are the precise path. This only protects against a
+    // backgrounded page or a browser that suppresses animations entirely.
+    closeAnimationTimerRef.current = window.setTimeout(() => {
+      closeAnimationTimerRef.current = null;
+      closeTab(tabId);
+      setClosingTabId(null);
+    }, TAB_CLOSE_FALLBACK_MS);
+  };
+
+  const finishTabClose = (tabId: string) => {
+    if (tabId !== closingTabId) return;
+    if (closeAnimationTimerRef.current !== null) {
+      window.clearTimeout(closeAnimationTimerRef.current);
+      closeAnimationTimerRef.current = null;
+    }
+    window.requestAnimationFrame(() => {
+      closeTab(tabId);
+      setClosingTabId(null);
+    });
+  };
+
+  const handleNewTab = () => {
+    if (!newTab()) {
+      setToast(tabLimitMessage);
+      return;
+    }
+    resetTransientState();
+    setToast("New diagram created");
+  };
+
+  const handleSelectTab = (tabId: string) => {
+    setActiveTab(tabId);
+    resetTransientState();
+  };
+
+  const handleCloseTab = (tabId: string) => {
+    if (closingTabId || tabs.length <= 1) return;
+    const tab = tabs.find((candidate) => candidate.id === tabId);
+    if (!tab) return;
+    if (isTabDirty(tab)) {
+      setCloseRequest(tabId);
+      return;
+    }
+    beginTabClose(tabId);
+  };
+
+  const closeRequestedTab = () => {
+    if (!closeRequest) return;
+    const tabId = closeRequest;
+    setCloseRequest(null);
+    beginTabClose(tabId);
+  };
+
+  const saveAndCloseRequestedTab = () => {
+    if (!closeRequest) return;
+    const tabId = closeRequest;
+    if (saveTabSource(tabId)) {
+      setCloseRequest(null);
+      beginTabClose(tabId);
+    }
+  };
+
+  const handleOpenFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const opened: string[] = [];
+    const rejected: string[] = [];
+    const remainingSlots = Math.max(0, MAX_WORKSPACE_TABS - tabs.length);
+    let limitReached = files.length > remainingSlots;
+    for (const file of Array.from(files).slice(0, remainingSlots)) {
+      try {
+        if (file.size > DIAGRAM_LIMITS.sourceBytes) {
+          rejected.push(`${file.name} (over 1 MiB)`);
+          continue;
+        }
+        if (!/\.dgm$/i.test(file.name)) {
+          rejected.push(file.name);
+          continue;
+        }
+        const candidate = await file.text();
+        const doc = parseDgm(candidate);
+        if (hasErrors(validateDocument(doc, getCatalogMap()))) {
+          rejected.push(file.name);
+          continue;
+        }
+        for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
+        const filename = normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters);
+        if (!openTab(candidate, { filename, origin: "import" })) {
+          limitReached = true;
+          continue;
+        }
+        opened.push(file.name);
+      } catch {
+        rejected.push(file.name);
+      }
+    }
+    if (opened.length) {
+      resetTransientState();
+      setToast(`Opened ${opened.length} diagram${opened.length === 1 ? "" : "s"}`);
+    }
+    if (rejected.length) {
+      setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}: invalid .dgm source`);
+    }
+    if (limitReached) setToast(tabLimitMessage);
+  };
+
+  const duplicateTabWithFeedback = (tabId: string) => {
+    if (!duplicateTab(tabId)) {
+      setToast(tabLimitMessage);
+      return;
+    }
+    resetTransientState();
+    setToast("Duplicated diagram in a new tab");
+  };
+
+  const duplicateActiveTab = () => duplicateTabWithFeedback(activeTab.id);
+
+  const handleTabContextMenu = (tabId: string, x: number, y: number) => {
+    setContextMenu(null);
+    setTabContextMenu({ tabId, x, y });
+  };
+
+  const reopenLastTab = () => {
+    if (reopenClosed()) {
+      resetTransientState();
+      setToast("Reopened diagram");
+    } else if (tabs.length >= MAX_WORKSPACE_TABS) {
+      setToast(tabLimitMessage);
+    }
+  };
+
+  const openExampleInTab = (example: DiagramExample) => {
+    if (!openTab(example.source, {
+      filename: `${example.id}.dgm`,
+      origin: "example",
+    })) {
+      setToast(tabLimitMessage);
+      return;
+    }
+    setExamplesOpen(false);
+    setHelpOpen(false);
+    resetTransientState();
+    setToast(`Opened ${example.title}`);
+  };
+
   const compiled = useMemo(() => {
     try {
-      const doc = parseArch(source);
+      const doc = parseDgm(source);
       const catalog = getCatalogMap();
       const issues = validateDocument(doc, catalog, { enforceCatalogRules: false });
       if (hasErrors(issues)) {
@@ -227,12 +546,24 @@ function App() {
   }, [compiled]);
 
   useEffect(() => {
-    if (skipDraftSaveRef.current) {
-      skipDraftSaveRef.current = false;
-      return;
+    if (sourceCommitTimerRef.current) {
+      window.clearTimeout(sourceCommitTimerRef.current);
+      sourceCommitTimerRef.current = null;
     }
-    saveDraft(source);
-  }, [source]);
+    lastGoodRef.current = null;
+    resetTransientState();
+  }, [activeTabId]);
+
+  useEffect(() => {
+    if (!workspaceReady || activeTab.viewportCustomized) return;
+    setDefaultFrameKey((current) => current + 1);
+  }, [activeTab.viewportCustomized, activeTabId, workspaceReady]);
+
+  useEffect(() => {
+    if (!workspaceReady || !RECOVERY) return;
+    if (activeTab.origin === "recovery") setToast("Draft restored");
+    clearDraft();
+  }, [activeTab.origin, workspaceReady]);
 
   const displayCompiled = compiled.ok ? compiled : lastGoodRef.current;
 
@@ -261,11 +592,24 @@ function App() {
     return compiled.invariantFailures;
   }, [compiled]);
 
-  const updateDocument = (doc: DiagramDocument) => commitSource(printArch(doc));
+  const commitDocument = (doc: DiagramDocument): boolean => {
+    const nextIssues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
+    const error = nextIssues.find((issue) => issue.level === "error");
+    if (error) {
+      setToast(error.message);
+      return false;
+    }
+    commitSource(printDgm(doc));
+    return true;
+  };
+
+  const updateDocument = (doc: DiagramDocument) => commitDocument(doc);
 
   const previewMutate = (change: (doc: DiagramDocument) => DiagramDocument) => {
     try {
-      replaceSource(printArch(change(parseArch(sourceRef.current))));
+      const next = change(parseDgm(sourceRef.current));
+      if (hasErrors(validateDocument(next, getCatalogMap(), { enforceCatalogRules: false }))) return;
+      replaceSource(printDgm(next));
     } catch {
       // Keep the source editor authoritative while it contains parse errors.
     }
@@ -273,13 +617,29 @@ function App() {
 
   const mutateCurrent = (change: (doc: DiagramDocument) => DiagramDocument) => {
     try {
-      commitSource(printArch(change(parseArch(source))));
+      commitDocument(change(parseDgm(source)));
+    } catch {
+      // Keep the source editor authoritative while it contains parse errors.
+    }
+  };
+
+  const renameCurrent = () => {
+    try {
+      const title = normalizeSingleLineText(titleDraft);
+      const nextDoc = setTitle(parseDgm(sourceRef.current), title);
+      if (!commitDocument(nextDoc)) return;
+      setTitleDraft(title);
+      setTabFilename(activeTab.id, filenameWithExtension(documentNameForDisplay(nextDoc), "dgm"));
     } catch {
       // Keep the source editor authoritative while it contains parse errors.
     }
   };
 
   const onSourceChange = (next: string) => {
+    if (utf8ByteLength(next) > DIAGRAM_LIMITS.sourceBytes) {
+      setToast("Diagram exceeds the 1 MiB source limit");
+      return;
+    }
     replaceSource(next);
     if (sourceCommitTimerRef.current) {
       window.clearTimeout(sourceCommitTimerRef.current);
@@ -334,7 +694,7 @@ function App() {
     );
     try {
       const result = addResource(compiled.doc, entry, parent, at);
-      updateDocument(result.doc);
+      if (!updateDocument(result.doc)) return;
       setSelection([{ kind: "resource", id: result.id }]);
       setTool("select");
     } catch (error) {
@@ -352,7 +712,7 @@ function App() {
     if (!compiled.ok) return;
     const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
     const result = addAnnotation(compiled.doc, "Note", at, undefined, style);
-    updateDocument(result.doc);
+    if (!updateDocument(result.doc)) return;
     setSelection([{ kind: "annotation", id: result.id }]);
     setTool("select");
   };
@@ -375,7 +735,7 @@ function App() {
       sourceOffset,
       targetOffset,
     );
-    updateDocument(result.doc);
+    if (!updateDocument(result.doc)) return;
     setPendingPort(null);
     setSelection([{ kind: "edge", id: result.id }]);
     setTool("select");
@@ -403,7 +763,13 @@ function App() {
     showToast = true,
   ): Promise<boolean> => {
     if (!compiled.ok || items.length === 0) return false;
-    const payload = serializeClipboard(compiled.doc, items);
+    let payload: string;
+    try {
+      payload = serializeClipboard(compiled.doc, items);
+    } catch (error) {
+      setToast((error as Error).message);
+      return false;
+    }
     internalClipboardRef.current = payload;
     try {
       await navigator.clipboard?.writeText(payload);
@@ -446,7 +812,7 @@ function App() {
     for (const payload of payloads) {
       try {
         const result = pasteClipboard(compiled.doc, payload, at);
-        updateDocument(result.doc);
+        if (!updateDocument(result.doc)) return;
         setSelection(result.selection);
         setToast("Pasted selection");
         return;
@@ -460,7 +826,7 @@ function App() {
   const duplicateCurrentSelection = (items: Selection = selection) => {
     if (!compiled.ok || items.length === 0) return;
     const result = duplicateSelection(compiled.doc, items);
-    updateDocument(result.doc);
+    if (!updateDocument(result.doc)) return;
     setSelection(result.selection);
     setContextMenu(null);
     setToast("Duplicated selection");
@@ -481,13 +847,69 @@ function App() {
     setToast("Deleted selection");
   };
 
+  const toggleSelectedLocked = () => {
+    if (!compiled.ok || selection.length !== 1) return;
+    const item = selection[0]!;
+    const view = compiled.doc.views[0];
+    const place = item.kind === "annotation"
+      ? view?.annotations?.[item.id]
+      : view?.places[item.id];
+    mutateCurrent((doc) => setLocked(doc, item.kind, item.id, !place?.locked));
+  };
+
+  const toggleSelectedVisible = () => {
+    if (!compiled.ok || selection.length !== 1) return;
+    const item = selection[0]!;
+    const view = compiled.doc.views[0];
+    const place = item.kind === "annotation"
+      ? view?.annotations?.[item.id]
+      : view?.places[item.id];
+    mutateCurrent((doc) => setVisible(doc, item.kind, item.id, place?.visible === false));
+  };
+
+  const changeSelectedZIndex = (direction: "front" | "back") => {
+    if (!compiled.ok || selection.length !== 1) return;
+    const item = selection[0]!;
+    mutateCurrent((doc) => direction === "front"
+      ? sendToFront(doc, item.id)
+      : sendToBack(doc, item.id));
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
-      if (target.matches("textarea, input, select, [contenteditable='true']") || target.closest(".cm-editor")) return;
-
       const mod = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
+
+      if (mod && key === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen(true);
+        return;
+      }
+      if (mod && key === "n") {
+        event.preventDefault();
+        handleNewTab();
+        return;
+      }
+      if (mod && key === "o") {
+        event.preventDefault();
+        fileInputRef.current?.click();
+        return;
+      }
+      if (mod && key === "s") {
+        event.preventDefault();
+        if (event.shiftKey) openSaveAs();
+        else saveActive();
+        return;
+      }
+      if (mod && key === "w") {
+        event.preventDefault();
+        handleCloseTab(activeTab.id);
+        return;
+      }
+
+      if (target.matches("textarea, input, select, [contenteditable='true']") || target.closest(".cm-editor")) return;
+
       if (mod && key === "z") {
         event.preventDefault();
         if (event.shiftKey) redo();
@@ -564,12 +986,97 @@ function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selection, source, undo, redo, compiled, snapToGrid]);
 
+  const fileMenuItems: TopMenuItem[] = [
+    { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
+    { id: "open", label: "Open / Import .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => fileInputRef.current?.click() },
+    { id: "file-divider-1", label: "", separator: true },
+    { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !compiled.ok, onSelect: saveActive },
+    { id: "save-as", label: "Save As…", shortcut: "⌘⇧S / Ctrl+Shift+S", disabled: !compiled.ok, onSelect: openSaveAs },
+    {
+      id: "export",
+      label: "Export",
+      submenu: [
+        { id: "export-svg", label: "SVG image", disabled: !compiled.ok, onSelect: () => void exportCurrentSvg() },
+        { id: "export-png", label: "PNG image", disabled: !compiled.ok, onSelect: () => void exportCurrentPng() },
+        { id: "export-source", label: "Source (.dgm)", onSelect: exportCurrentSource },
+      ],
+    },
+  ];
+
+  const helpMenuItems: TopMenuItem[] = [
+    { id: "examples", label: "Browse examples", onSelect: () => setExamplesOpen(true) },
+    { id: "shortcuts", label: "Keyboard shortcuts", onSelect: () => setHelpOpen(true) },
+    { id: "help-guide", label: "Source and LLM workflow", onSelect: () => setHelpOpen(true) },
+    { id: "help-divider", label: "", separator: true },
+    { id: "about", label: "About DumbDiagrams", onSelect: () => setHelpOpen(true) },
+  ];
+
+  const commands: Command[] = [
+    { id: "command-new", label: "New diagram", section: "File", shortcut: "⌘N", onSelect: handleNewTab },
+    { id: "command-open", label: "Open / Import .dgm", section: "File", shortcut: "⌘O", onSelect: () => fileInputRef.current?.click() },
+    { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !compiled.ok, onSelect: saveActive },
+    { id: "command-save-as", label: "Save As", section: "File", shortcut: "⌘⇧S", disabled: !compiled.ok, onSelect: openSaveAs },
+    { id: "command-duplicate-tab", label: "Duplicate tab", section: "Workspace", onSelect: duplicateActiveTab },
+    { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", disabled: tabs.length <= 1, onSelect: () => handleCloseTab(activeTab.id) },
+    { id: "command-reopen-tab", label: "Reopen closed tab", section: "Workspace", disabled: recentlyClosed.length === 0, onSelect: reopenLastTab },
+    { id: "command-examples", label: "Browse examples", section: "Help", onSelect: () => setExamplesOpen(true) },
+    { id: "command-help", label: "Open help", section: "Help", onSelect: () => setHelpOpen(true) },
+    { id: "command-undo", label: "Undo", section: "Edit", shortcut: "⌘Z", disabled: !canUndo, onSelect: undo },
+    { id: "command-redo", label: "Redo", section: "Edit", shortcut: "⌘⇧Z", disabled: !canRedo, onSelect: redo },
+    { id: "command-copy", label: "Copy selection", section: "Edit", shortcut: "⌘C", disabled: selection.length === 0, onSelect: () => void copySelection() },
+    { id: "command-cut", label: "Cut selection", section: "Edit", shortcut: "⌘X", disabled: selection.length === 0, onSelect: () => void cutSelection() },
+    { id: "command-paste", label: "Paste selection", section: "Edit", shortcut: "⌘V", disabled: !compiled.ok, onSelect: () => void pasteSelection() },
+    { id: "command-duplicate-selection", label: "Duplicate selection", section: "Edit", shortcut: "⌘D", disabled: selection.length === 0, onSelect: () => duplicateCurrentSelection() },
+    { id: "command-delete-selection", label: "Delete selection", section: "Edit", shortcut: "Delete", disabled: selection.length === 0, onSelect: () => deleteCurrentSelection() },
+    { id: "command-align-left", label: "Align left", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "left")) },
+    { id: "command-align-center", label: "Align center", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "center")) },
+    { id: "command-align-right", label: "Align right", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "right")) },
+    { id: "command-align-top", label: "Align top", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "top")) },
+    { id: "command-align-middle", label: "Align middle", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "middle")) },
+    { id: "command-align-bottom", label: "Align bottom", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "bottom")) },
+    { id: "command-distribute-horizontal", label: "Distribute horizontally", section: "Arrange", disabled: selection.length < 3 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => distributeSelection(doc, selection, compiled.layout, "horizontal")) },
+    { id: "command-distribute-vertical", label: "Distribute vertically", section: "Arrange", disabled: selection.length < 3 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => distributeSelection(doc, selection, compiled.layout, "vertical")) },
+    { id: "command-bring-front", label: "Bring to front", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: () => changeSelectedZIndex("front") },
+    { id: "command-send-back", label: "Send to back", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: () => changeSelectedZIndex("back") },
+    { id: "command-toggle-lock", label: "Toggle lock", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: toggleSelectedLocked },
+    { id: "command-toggle-visibility", label: "Toggle visibility", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: toggleSelectedVisible },
+    { id: "command-auto-fix", label: "Auto-fix diagram", section: "View", onSelect: autoFix },
+    { id: "command-fit", label: "Fit to screen", section: "View", onSelect: () => fitRef.current?.() },
+    { id: "command-zoom-in", label: "Zoom in", section: "View", onSelect: () => updateViewport({ ...viewport, zoom: clampZoom(viewport.zoom + 0.1) }) },
+    { id: "command-zoom-out", label: "Zoom out", section: "View", onSelect: () => updateViewport({ ...viewport, zoom: clampZoom(viewport.zoom - 0.1) }) },
+    { id: "command-reset-zoom", label: "Reset zoom", section: "View", onSelect: () => updateViewport({ ...viewport, zoom: 1 }) },
+    { id: "command-grid", label: snapToGrid ? "Disable snap to grid" : "Enable snap to grid", section: "View", onSelect: () => setSnapToGrid((current) => !current) },
+    { id: "command-source", label: "Open source editor", section: "Tools", onSelect: () => setTool("code") },
+    { id: "command-layers", label: "Open layers", section: "Tools", onSelect: () => setTool("layers") },
+    { id: "command-resources", label: "Browse resources", section: "Tools", onSelect: () => setTool("resources") },
+  ];
+  const requestedCloseTab = closeRequest
+    ? tabs.find((tab) => tab.id === closeRequest)
+    : undefined;
+  const tabContextTarget = tabContextMenu
+    ? tabs.find((tab) => tab.id === tabContextMenu.tabId)
+    : undefined;
+  const tabContextMenuItems: ContextMenuItem[] = tabContextTarget ? [
+    {
+      id: "duplicate-tab",
+      label: "Duplicate tab",
+      onSelect: () => duplicateTabWithFeedback(tabContextTarget.id),
+    },
+    ...(tabs.length > 1 ? [{
+      id: "close-tab",
+      label: "Close tab",
+      shortcut: "⌘W / Ctrl+W",
+      danger: true,
+      onSelect: () => handleCloseTab(tabContextTarget.id),
+    }] : []),
+  ] : [];
+
   return (
     <div className="app">
-      <section className="canvas-pane">
+      <section id="diagram-canvas" className="canvas-pane">
         <CanvasStage
           viewport={viewport}
-          onViewportChange={setViewport}
+          onViewportChange={updateViewport}
           contentSize={displayCompiled?.layout}
           defaultFrameKey={defaultFrameKey}
           onFitRequest={(fit) => {
@@ -673,25 +1180,29 @@ function App() {
 
         <header className="floating-topbar">
           <div className="topbar-left">
-            <span className="brand-mark">D</span>
-            <span className="brand-name">DumbDiagrams</span>
             <div className="document-name-field">
               <input
                 ref={titleInputRef}
                 className="title-input"
                 value={titleDraft}
+                maxLength={DIAGRAM_LIMITS.titleCharacters}
                 placeholder="Untitled diagram"
                 title="Rename diagram"
                 onChange={(event) => setTitleDraft(event.target.value)}
+                onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.titleCharacters, () => setToast(`Diagram names are limited to ${DIAGRAM_LIMITS.titleCharacters} characters`))}
                 onBlur={() => {
                   if (!compiled.ok) return;
-                  mutateCurrent((doc) => setTitle(doc, titleDraft));
+                  renameCurrent();
                 }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") event.currentTarget.blur();
                 }}
-                aria-label="Diagram name"
+              aria-label="Diagram name"
+              aria-describedby="diagram-name-limit"
               />
+              <span id="diagram-name-limit" className="sr-only" aria-live="polite">
+                {characterLength(titleDraft)} of {DIAGRAM_LIMITS.titleCharacters} characters
+              </span>
               <button
                 type="button"
                 className="document-name-edit"
@@ -705,7 +1216,7 @@ function App() {
                 <IconEdit />
               </button>
             </div>
-            <span className="file-name">.arch</span>
+            <span className="file-name">{activeTab.filename ?? ".dgm"}</span>
           </div>
           <div className="topbar-center">
             <button
@@ -734,6 +1245,7 @@ function App() {
                 ? `${issues.length} issue${issues.length === 1 ? "" : "s"}`
                 : "Valid"}
             </span>
+            {isTabDirty(activeTab) && <span className="dirty-pill">Unsaved</span>}
             <div className="history-controls">
               <button
                 type="button"
@@ -758,61 +1270,60 @@ function App() {
             </div>
             <ThemeControl />
             <div className="topbar-group">
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Open .arch"
-                aria-label="Open .arch"
-              >
-                <IconFolderOpen />
-              </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".arch,text/plain"
-              hidden
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const text = await file.text();
-                try {
-                  const imported = parseArch(text);
-                  const importIssues = validateDocument(imported, getCatalogMap());
-                  if (hasErrors(importIssues)) {
-                    setToast("Import rejected: the document is invalid.");
-                    return;
-                  }
-                  skipDraftSaveRef.current = true;
-                  commitSource(text);
-                  clearDraft();
-                  setSelection([]);
-                  setPendingPort(null);
-                  setDefaultFrameKey((current) => current + 1);
-                  setToast(`Opened ${file.name}`);
-                } catch (error) {
-                  setToast(`Import rejected: ${(error as Error).message}`);
-                } finally {
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".dgm,text/plain"
+                multiple
+                hidden
+                onChange={(event) => {
+                  const files = event.currentTarget.files;
+                  void handleOpenFiles(files);
                   event.currentTarget.value = "";
-                }
-              }}
-            />
-            {compiled.ok ? (
-              <ExportMenu
-                title={compiled.doc.title ?? compiled.doc.id}
-                svg={compiled.svg}
-                source={source}
-                getPortableSvg={() => renderPortableSvg(compiled.doc, compiled.layout)}
-                onToast={setToast}
+                }}
               />
-            ) : (
-              <button type="button" className="primary-button" disabled>
-                Download SVG
-              </button>
-            )}
+              {compiled.ok ? (
+                <ExportMenu
+                  title={tabLabel(activeTab)}
+                  svg={compiled.svg}
+                  source={source}
+                  getPortableSvg={() => renderPortableSvg(compiled.doc, compiled.layout)}
+                  onToast={setToast}
+                />
+              ) : (
+                <button type="button" className="primary-button" disabled>
+                  Download SVG
+                </button>
+              )}
             </div>
           </div>
         </header>
+
+        <div className="studio-tabbar">
+          <nav className="studio-tabbar-leading" aria-label="File menu">
+            <TopMenu label="File" Icon={IconMenu} iconOnly items={fileMenuItems} />
+            <div className="studio-brand" aria-label="DumbDiagrams">
+              <span className="brand-mark">D</span>
+              <span className="brand-name">DumbDiagrams</span>
+            </div>
+          </nav>
+          <WorkspaceTabs
+            tabs={tabs}
+            activeTabId={activeTabId}
+            closingTabId={closingTabId}
+            tabLimit={MAX_WORKSPACE_TABS}
+            getLabel={tabLabel}
+            onSelect={handleSelectTab}
+            onClose={handleCloseTab}
+            onCloseAnimationEnd={finishTabClose}
+            onNew={handleNewTab}
+            onReorder={reorderTabs}
+            onContextMenu={handleTabContextMenu}
+          />
+          <nav className="studio-tabbar-actions" aria-label="Studio menu">
+            <TopMenu label="Help" Icon={IconHelp} items={helpMenuItems} />
+          </nav>
+        </div>
 
         <ToolDock
           active={tool}
@@ -857,6 +1368,7 @@ function App() {
               onImportSvg={async (file) => {
                 if (!compiled.ok) return;
                 try {
+                  if (file.size > DIAGRAM_LIMITS.svgBytes) throw new Error("SVG exceeds 256 KiB limit");
                   const text = await file.text();
                   const imported = importSvgAsset(compiled.doc, text);
                   const importParent = primarySelection(selection)?.kind === "group"
@@ -865,7 +1377,7 @@ function App() {
                   const placed = addCustomResource(
                     imported.doc,
                     imported.assetId,
-                    file.name.replace(/\.svg$/i, ""),
+                    normalizeSingleLineText(file.name.replace(/\.svg$/i, "")),
                     importParent,
                     snapPoint(
                       importParent
@@ -874,7 +1386,7 @@ function App() {
                       snapToGrid,
                     ),
                   );
-                  updateDocument(placed.doc);
+                  if (!updateDocument(placed.doc)) return;
                   setSelection([{ kind: "resource", id: placed.id }]);
                   setToast(`Imported ${file.name}`);
                 } catch (error) {
@@ -916,7 +1428,7 @@ function App() {
                     at,
                     entry.type,
                   );
-                  updateDocument(result.doc);
+                  if (!updateDocument(result.doc)) return;
                   setSelection([{ kind: "group", id: result.id }]);
                   setTool("select");
                 } catch (error) {
@@ -1015,18 +1527,16 @@ function App() {
               onCommit={onSourceCommit}
               onFormat={() => {
                 try {
-                  commitSource(printArch(parseArch(source)));
+                  commitSource(printDgm(parseDgm(source)));
                   setToast("Formatted source");
                 } catch {
                   setToast("Cannot format invalid source");
                 }
               }}
               onReset={() => {
-                skipDraftSaveRef.current = true;
-                resetHistory(DEFAULT_SOURCE);
+                resetActive(DEFAULT_SOURCE, DEFAULT_SOURCE, { origin: "fixture", filename: undefined });
                 clearDraft();
-                setSelection([]);
-                setPendingPort(null);
+                resetTransientState();
                 setDefaultFrameKey((current) => current + 1);
                 setToast("Draft cleared");
               }}
@@ -1080,14 +1590,18 @@ function App() {
             onRename={(label) => {
               const item = primarySelection(selection);
               if (!item) return;
+              const normalized = item.kind === "annotation"
+                ? normalizeMultilineText(label)
+                : normalizeSingleLineText(label);
               mutateCurrent((doc) => {
-                if (item.kind === "resource") return renameResource(doc, item.id, label);
-                if (item.kind === "group") return renameGroup(doc, item.id, label);
-                if (item.kind === "edge") return renameEdge(doc, item.id, label);
-                if (item.kind === "annotation") return updateAnnotationText(doc, item.id, label);
+                if (item.kind === "resource") return renameResource(doc, item.id, normalized);
+                if (item.kind === "group") return renameGroup(doc, item.id, normalized);
+                if (item.kind === "edge") return renameEdge(doc, item.id, normalized);
+                if (item.kind === "annotation") return updateAnnotationText(doc, item.id, normalized);
                 return doc;
               });
             }}
+            onLimitError={setToast}
             onAlign={(axis) =>
               mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, axis))
             }
@@ -1105,6 +1619,11 @@ function App() {
               const annotation = selection.find((item) => item.kind === "annotation");
               if (!annotation) return;
               mutateCurrent((doc) => setAnnotationStyle(doc, annotation.id, style));
+            }}
+            onUpdateGroupStep={(step) => {
+              const group = selection.find((item) => item.kind === "group");
+              if (!group) return;
+              mutateCurrent((doc) => updateGroupStep(doc, group.id, step));
             }}
             onUpdateEdge={(style, kind) => {
               const edge = selection.find((item) => item.kind === "edge");
@@ -1157,7 +1676,7 @@ function App() {
           <button
             type="button"
             className="status-capsule-button status-capsule-reset"
-            onClick={() => setViewport((v) => ({ ...v, zoom: 1 }))}
+            onClick={() => updateViewport({ ...viewport, zoom: 1 })}
             aria-label="Reset zoom"
           >
             100%
@@ -1166,7 +1685,7 @@ function App() {
             <button
               type="button"
               className="status-capsule-button status-capsule-step"
-              onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom - 0.1) }))}
+              onClick={() => updateViewport({ ...viewport, zoom: clampZoom(viewport.zoom - 0.1) })}
               aria-label="Zoom out"
             >
               −
@@ -1174,7 +1693,7 @@ function App() {
             <button
               type="button"
               className="status-capsule-button status-capsule-step"
-              onClick={() => setViewport((v) => ({ ...v, zoom: clampZoom(v.zoom + 0.1) }))}
+              onClick={() => updateViewport({ ...viewport, zoom: clampZoom(viewport.zoom + 0.1) })}
               aria-label="Zoom in"
             >
               +
@@ -1184,7 +1703,104 @@ function App() {
           <span className="status-capsule-readout">{Math.round(viewport.zoom * 100)}%</span>
         </div>
 
+        <footer
+          className="privacy-footer"
+          aria-label="Privacy notice"
+          title="Your diagrams stay on this device. DumbDiagrams does not upload or store them on our servers."
+        >
+          <span className="privacy-footer-brand">© 2026 DumbDiagrams</span>
+          <span className="privacy-footer-divider" aria-hidden="true">|</span>
+          <span className="privacy-footer-message">
+            <IconLock />
+            <span>Your data stays on your device · nothing is uploaded.</span>
+          </span>
+        </footer>
+
         {toast && <div key={`${toast}-${toastNonce}`} className="toast" role="status">{toast}</div>}
+
+        <ExamplesModal
+          open={examplesOpen}
+          onClose={() => setExamplesOpen(false)}
+          onOpen={openExampleInTab}
+        />
+
+        <HelpModal
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          onExamples={() => {
+            setHelpOpen(false);
+            setExamplesOpen(true);
+          }}
+        />
+
+        <CommandPalette
+          open={commandPaletteOpen}
+          commands={commands}
+          onClose={() => setCommandPaletteOpen(false)}
+        />
+
+        <Modal
+          open={saveAsOpen}
+          title="Save diagram as"
+          subtitle="Choose the filename for the downloaded .dgm source."
+          onClose={() => setSaveAsOpen(false)}
+          width={440}
+        >
+          <form
+            className="save-as-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              confirmSaveAs();
+            }}
+          >
+            <label htmlFor="save-as-filename">Filename</label>
+            <input
+              id="save-as-filename"
+              data-autofocus
+              value={saveAsDraft}
+              maxLength={DIAGRAM_LIMITS.filenameCharacters}
+              onChange={(event) => setSaveAsDraft(event.target.value)}
+              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.filenameCharacters, () => setToast(`Filenames are limited to ${DIAGRAM_LIMITS.filenameCharacters} characters`))}
+              placeholder="diagram.dgm"
+              aria-describedby="save-as-limit"
+            />
+            <span id="save-as-limit" className="input-limit" aria-live="polite">
+              {characterLength(saveAsDraft)} / {DIAGRAM_LIMITS.filenameCharacters}
+            </span>
+            <div className="modal-actions">
+              <button type="button" className="text-button" onClick={() => setSaveAsOpen(false)}>Cancel</button>
+              <button type="submit" className="primary-button" disabled={!saveAsDraft.trim()}>Save .dgm</button>
+            </div>
+          </form>
+        </Modal>
+
+        <Modal
+          open={Boolean(requestedCloseTab)}
+          title="Unsaved changes"
+          subtitle={requestedCloseTab ? tabLabel(requestedCloseTab) : undefined}
+          onClose={() => setCloseRequest(null)}
+          className="confirm-dialog"
+          width={440}
+        >
+          <div className="confirm-modal">
+            <p>Save your changes before closing this diagram?</p>
+            <div className="modal-actions modal-actions-spread">
+              <button type="button" className="text-button" onClick={() => setCloseRequest(null)}>Cancel</button>
+              <button type="button" className="danger-button" onClick={closeRequestedTab}>Discard</button>
+              <button type="button" className="primary-button" onClick={saveAndCloseRequestedTab}>Save and close</button>
+            </div>
+          </div>
+        </Modal>
+
+        {tabContextMenu && tabContextTarget && (
+          <ContextMenu
+            x={tabContextMenu.x}
+            y={tabContextMenu.y}
+            ariaLabel="Tab context menu"
+            onClose={() => setTabContextMenu(null)}
+            items={tabContextMenuItems}
+          />
+        )}
 
         {contextMenu && compiled.ok && (
           <ContextMenu
@@ -1352,10 +1968,12 @@ function Inspector({
   layout,
   selection,
   onRename,
+  onLimitError,
   onAlign,
   onDistribute,
   onSetIconSize,
   onSetAnnotationStyle,
+  onUpdateGroupStep,
   onUpdateEdge,
   onPinRoute,
   onAutoRoute,
@@ -1366,10 +1984,12 @@ function Inspector({
   layout: LayoutResult;
   selection: Selection;
   onRename: (label: string) => void;
+  onLimitError: (message: string) => void;
   onAlign: (axis: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
   onDistribute: (axis: "horizontal" | "vertical") => void;
   onSetIconSize: (size: ResourceIconSize) => void;
   onSetAnnotationStyle: (style: AnnotationStyle) => void;
+  onUpdateGroupStep: (step?: number) => void;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
   onPinRoute: () => void;
   onAutoRoute: () => void;
@@ -1391,9 +2011,13 @@ function Inspector({
     : undefined;
   const routePinned = Boolean(item && doc.views[0]?.routes[item.id]?.pin);
 
+  const resourceServiceLabel = resource
+    ? layout.nodes.find((candidate) => candidate.id === resource.id)?.serviceLabel
+    : undefined;
   const title =
     resource?.label.role ??
     resource?.label.service ??
+    resourceServiceLabel ??
     group?.label ??
     edge?.label ??
     annotation?.text ??
@@ -1401,8 +2025,9 @@ function Inspector({
     item?.id ??
     `${selection.length} selected`;
 
-  const [labelDraft, setLabelDraft] = useState(title);
-  useEffect(() => setLabelDraft(title), [title]);
+  const editableLabel = resource ? resource.label.role ?? "" : title;
+  const [labelDraft, setLabelDraft] = useState(editableLabel);
+  useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
 
   return (
     <FloatingPanel
@@ -1442,21 +2067,31 @@ function Inspector({
             <textarea
               id="inspector-label"
               value={labelDraft}
+              maxLength={DIAGRAM_LIMITS.annotationCharacters}
               rows={5}
               onChange={(event) => setLabelDraft(event.target.value)}
+              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.annotationCharacters, () => onLimitError(`Notes are limited to ${DIAGRAM_LIMITS.annotationCharacters} characters`))}
               onBlur={() => onRename(labelDraft)}
+              aria-describedby="inspector-label-limit"
             />
           ) : (
             <input
               id="inspector-label"
               value={labelDraft}
+              placeholder={resource ? "Optional label" : undefined}
+              maxLength={DIAGRAM_LIMITS.labelCharacters}
               onChange={(event) => setLabelDraft(event.target.value)}
+              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.labelCharacters, () => onLimitError(`Labels are limited to ${DIAGRAM_LIMITS.labelCharacters} characters`))}
               onBlur={() => onRename(labelDraft)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") event.currentTarget.blur();
               }}
+              aria-describedby="inspector-label-limit"
             />
           )}
+          <span id="inspector-label-limit" className="input-limit" aria-live="polite">
+            {characterLength(labelDraft)} / {annotation ? DIAGRAM_LIMITS.annotationCharacters : DIAGRAM_LIMITS.labelCharacters}
+          </span>
         </div>
       )}
       {annotation && (
@@ -1487,6 +2122,39 @@ function Inspector({
               Small ({GRAMMAR.iconSecondary}px)
             </button>
           </div>
+        </div>
+      )}
+      {group && (
+        <div className="property-section">
+          <label htmlFor="group-step">Group number</label>
+          <div className="edge-badge-editor">
+            <input
+              id="group-step"
+              aria-label="Group number"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={MAX_EDGE_STEP}
+              step={1}
+              placeholder="Add number"
+              value={group.step ?? ""}
+              onChange={(event) => {
+                const raw = event.target.value;
+                if (!raw) return onUpdateGroupStep(undefined);
+                if (!/^\d+$/.test(raw)) return;
+                const value = Number(raw);
+                if (Number.isSafeInteger(value) && value <= MAX_EDGE_STEP) onUpdateGroupStep(value);
+              }}
+            />
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => onUpdateGroupStep(group.step === undefined ? 1 : undefined)}
+            >
+              {group.step === undefined ? "Add" : "Remove"}
+            </button>
+          </div>
+          <p className="property-hint">Whole numbers only: 0–99.</p>
         </div>
       )}
       {group && (

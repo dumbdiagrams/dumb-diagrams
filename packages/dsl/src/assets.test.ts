@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseArch, printArch } from "./parse.js";
+import { parseDgm, printDgm } from "./parse.js";
 
 describe("assets round-trip", () => {
   it("preserves embedded svg assets and icon references", () => {
@@ -21,11 +21,11 @@ assets {
 
 view default {
 }`;
-    const parsed = parseArch(source);
+    const parsed = parseDgm(source);
     expect(parsed.assets).toHaveLength(1);
     expect(parsed.resources[0]?.props.iconAsset).toBe("logo1");
-    const roundTrip = printArch(parsed);
-    const reparsed = parseArch(roundTrip);
+    const roundTrip = printDgm(parsed);
+    const reparsed = parseDgm(roundTrip);
     expect(reparsed.assets?.[0]?.id).toBe("logo1");
     expect(reparsed.resources[0]?.props.iconAsset).toBe("logo1");
   });

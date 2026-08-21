@@ -9,7 +9,7 @@ import {
   type CatalogProviderFilter,
   type UserCloudProvider,
 } from "@dumb-diagrams/catalog";
-import type { GroupKind } from "@dumb-diagrams/core";
+import { DIAGRAM_LIMITS, type GroupKind } from "@dumb-diagrams/core";
 
 import { CatalogAssetCard } from "./CatalogAssetCard";
 
@@ -27,14 +27,21 @@ const FAVORITE_KEY = "dumb-diagrams.favorite-assets";
 function readIds(key: string): string[] {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as string[]) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === "string" && value.length <= DIAGRAM_LIMITS.idCharacters).slice(0, 24)
+      : [];
   } catch {
     return [];
   }
 }
 
 function writeIds(key: string, ids: string[]) {
-  localStorage.setItem(key, JSON.stringify(ids.slice(0, 24)));
+  try {
+    localStorage.setItem(key, JSON.stringify(ids.slice(0, 24)));
+  } catch {
+    // Storage restrictions should not break catalog interactions.
+  }
 }
 
 function rememberRecent(type: string) {
@@ -153,6 +160,7 @@ export function AssetBrowser({
         <input
           className="drawer-search-input"
           value={query}
+          maxLength={DIAGRAM_LIMITS.searchCharacters}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={
             mode === "groups"

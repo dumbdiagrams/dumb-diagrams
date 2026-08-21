@@ -15,6 +15,13 @@ describe("generated catalog", () => {
     expect(getCatalogEntry("aws.rds")?.serviceName).toContain("RDS");
   });
 
+  it("uses compact conventional AWS names", () => {
+    expect(getCatalogEntry("aws.simple-storage-service")?.serviceName).toBe("S3");
+    expect(getCatalogEntry("aws.aws-database-migration-service")?.serviceName).toBe("DMS");
+    expect(getCatalogEntry("aws.managed-streaming-for-apache-kafka")?.serviceName).toBe("MSK");
+    expect(getCatalogEntry("aws.vpc-nat-gateway")?.serviceName).toBe("VPC NAT Gateway");
+  });
+
   it("lists providers and categories", () => {
     expect(listProviders()).toEqual(
       ["aws", "azure", "gcp", "cloud-agnostic"],

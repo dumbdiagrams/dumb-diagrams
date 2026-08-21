@@ -1,4 +1,5 @@
 import { getGroup, getResource } from "./document.js";
+import { validateDocumentConstraints } from "./constraints.js";
 import type { DiagramDocument, ValidationIssue, CatalogRule } from "./types.js";
 
 export interface ValidationOptions {
@@ -15,7 +16,7 @@ export function validateDocument(
   options: ValidationOptions = {},
 ): ValidationIssue[] {
   const enforceCatalogRules = options.enforceCatalogRules ?? true;
-  const issues: ValidationIssue[] = [];
+  const issues: ValidationIssue[] = validateDocumentConstraints(doc);
   const ids = new Set<string>();
 
   for (const g of doc.groups) {
@@ -171,7 +172,9 @@ export function validateDocument(
 
 function isInsideVpc(doc: DiagramDocument, groupId: string): boolean {
   let current = getGroup(doc, groupId);
-  while (current) {
+  const seen = new Set<string>();
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
     if (current.kind === "vpc" || current.kind === "az" || current.kind === "subnet" || current.kind === "subnet-public" || current.kind === "subnet-private") {
       if (current.kind === "vpc") return true;
     }

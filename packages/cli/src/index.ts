@@ -9,7 +9,7 @@ import {
   createTransferHubFixture,
 } from "@dumb-diagrams/core";
 import { getCatalogEntryByBrowserPath } from "@dumb-diagrams/catalog";
-import { parseArch } from "@dumb-diagrams/dsl";
+import { parseDgm } from "@dumb-diagrams/dsl";
 import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/render";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,13 +37,13 @@ async function main() {
 }
 
 function printHelp() {
-  console.log(`DumbDiagrams — architecture diagram compiler
+  console.log(`DumbDiagrams — diagram compiler
 
 Usage:
-  arch render <file.arch> [output.svg]
-  arch check <dir>
-  arch dev <file.arch> [port]
-  arch fixtures <name>   # async-docs | transfer-hub
+  dgm render <file.dgm> [output.svg]
+  dgm check <dir>
+  dgm dev <file.dgm> [port]
+  dgm fixtures <name>   # async-docs | transfer-hub
 `);
 }
 
@@ -73,10 +73,10 @@ async function cmdRender(input?: string, output?: string) {
 async function cmdCheck(dir?: string) {
   const target = dir ?? "examples/src";
   const root = resolve(process.cwd(), target);
-  const files = collectArchFiles(root);
+  const files = collectDgmFiles(root);
   let failed = 0;
   for (const file of files) {
-    const doc = parseArch(readFileSync(file, "utf8"));
+    const doc = parseDgm(readFileSync(file, "utf8"));
     const result = compileDiagram(doc);
     const name = file.replace(root + "/", "");
     if (!result.ok) {
@@ -104,7 +104,7 @@ async function cmdCheck(dir?: string) {
 }
 
 async function cmdDev(input?: string, port = 5173) {
-  const file = input ?? "examples/src/async-docs.arch";
+  const file = input ?? "examples/src/async-docs.dgm";
   const abs = resolve(process.cwd(), file);
 
   const renderPage = async () => {
@@ -145,7 +145,7 @@ async function cmdDev(input?: string, port = 5173) {
   });
 
   server.listen(port, () => {
-    console.log(`arch dev: http://localhost:${port}`);
+    console.log(`dgm dev: http://localhost:${port}`);
     console.log(`Watching ${file}`);
   });
 }
@@ -172,23 +172,23 @@ async function cmdFixtures(name?: string) {
 
 function loadDocument(input?: string) {
   if (!input) return createAsyncDocsFixture();
-  if (input.endsWith(".arch")) {
-    return parseArch(readFileSync(resolve(process.cwd(), input), "utf8"));
+  if (input.endsWith(".dgm")) {
+    return parseDgm(readFileSync(resolve(process.cwd(), input), "utf8"));
   }
   const fixtures: Record<string, () => ReturnType<typeof createAsyncDocsFixture>> = {
     "async-docs": createAsyncDocsFixture,
     "transfer-hub": createTransferHubFixture,
   };
   if (fixtures[input]) return fixtures[input]!();
-  return parseArch(readFileSync(resolve(process.cwd(), input), "utf8"));
+  return parseDgm(readFileSync(resolve(process.cwd(), input), "utf8"));
 }
 
-function collectArchFiles(dir: string): string[] {
+function collectDgmFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
-    if (statSync(p).isDirectory()) out.push(...collectArchFiles(p));
-    else if (p.endsWith(".arch")) out.push(p);
+    if (statSync(p).isDirectory()) out.push(...collectDgmFiles(p));
+    else if (p.endsWith(".dgm")) out.push(p);
   }
   return out;
 }

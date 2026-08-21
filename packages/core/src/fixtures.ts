@@ -244,7 +244,7 @@ export function createTransferHubFixture(): DiagramDocument {
     },
     {
       id: "appsync",
-      type: "aws.appsync",
+      type: "aws.aws-appsync",
       parent: "customer",
       label: { service: "AWS AppSync" },
       role: "primary",
@@ -260,7 +260,7 @@ export function createTransferHubFixture(): DiagramDocument {
     },
     {
       id: "sfn",
-      type: "aws.stepfunctions",
+      type: "aws.aws-step-functions",
       parent: "workflow",
       label: { service: "AWS Step Functions" },
       role: "primary",
@@ -268,7 +268,7 @@ export function createTransferHubFixture(): DiagramDocument {
     },
     {
       id: "lambda1",
-      type: "aws.lambda",
+      type: "aws.aws-lambda",
       parent: "workflow",
       label: { service: "AWS Lambda", role: "Workflow task" },
       role: "primary",
@@ -276,7 +276,7 @@ export function createTransferHubFixture(): DiagramDocument {
     },
     {
       id: "cfn",
-      type: "aws.cloudformation",
+      type: "aws.aws-cloudformation",
       parent: "workflow",
       label: { service: "AWS CloudFormation" },
       role: "primary",
@@ -284,7 +284,7 @@ export function createTransferHubFixture(): DiagramDocument {
     },
     {
       id: "s3_templates",
-      type: "aws.s3",
+      type: "aws.simple-storage-service",
       parent: "managed",
       label: { service: "Amazon S3", role: "Templates" },
       role: "primary",
@@ -292,7 +292,7 @@ export function createTransferHubFixture(): DiagramDocument {
     },
     {
       id: "s3_images",
-      type: "aws.s3",
+      type: "aws.simple-storage-service",
       parent: "managed",
       label: { service: "Amazon S3", role: "Images" },
       role: "primary",

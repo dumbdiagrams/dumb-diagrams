@@ -62,6 +62,8 @@ export interface BorderChild {
 export interface Group {
   id: ID;
   kind: GroupKind;
+  /** Optional numbered callout rendered on the group boundary. */
+  step?: number;
   type?: string;
   parent?: ID;
   label: string;
@@ -174,6 +176,8 @@ export interface RoutedEdge {
   points: Point[];
   step?: number;
   label?: string;
+  labelPoint?: Point;
+  labelRect?: Rect;
   style: EdgeStyle;
   kind?: EdgeKind;
   badge?: Point;

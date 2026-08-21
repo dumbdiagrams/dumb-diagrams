@@ -162,20 +162,26 @@ function layoutVpcGroup(
   state: LayoutState,
 ): Measured {
   const style = GROUP_STYLES.vpc;
-  const azChildren = group.children
-    .map((id) => getGroup(doc, id))
-    .filter((g): g is Group => !!g && g.kind === "az");
-
   let contentW = 0;
   let contentH = 0;
   let x = 0;
 
-  for (const az of azChildren) {
-    const size = layoutGroup(doc, az.id, state);
-    placeGroup(state, az.id, x, 0, getDefaultView(doc));
-    x += size.w + H_GAP;
-    contentW = x - H_GAP;
-    contentH = Math.max(contentH, size.h);
+  for (const childId of group.children) {
+    const childGroup = getGroup(doc, childId);
+    const childResource = getResource(doc, childId);
+    if (childGroup) {
+      const size = layoutGroup(doc, childGroup.id, state);
+      placeGroup(state, childGroup.id, x, 0, getDefaultView(doc));
+      x += size.w + H_GAP;
+      contentW = x - H_GAP;
+      contentH = Math.max(contentH, size.h);
+    } else if (childResource) {
+      const size = measureResource(doc, childResource, state);
+      placeResource(state, childResource.id, x, 0, getDefaultView(doc));
+      x += size.w + H_GAP;
+      contentW = x - H_GAP;
+      contentH = Math.max(contentH, size.h);
+    }
   }
 
   const w = Math.max(contentW, 200) + style.padding * 2;
@@ -194,22 +200,22 @@ function layoutAzGroup(
   let contentH = 0;
   let y = 0;
 
-  const subnets = group.children
-    .map((id) => getGroup(doc, id))
-    .filter((g): g is Group => !!g);
-
-  subnets.sort((a, b) => {
-    const order = (k: string) =>
-      k === "subnet-public" ? 0 : k === "subnet-private" ? 1 : 2;
-    return order(a.kind) - order(b.kind);
-  });
-
-  for (const subnet of subnets) {
-    const size = layoutGroup(doc, subnet.id, state);
-    placeGroup(state, subnet.id, 0, y, getDefaultView(doc));
-    contentW = Math.max(contentW, size.w);
-    y += size.h + V_GAP;
-    contentH = y - V_GAP;
+  for (const childId of group.children) {
+    const childGroup = getGroup(doc, childId);
+    const childResource = getResource(doc, childId);
+    if (childGroup) {
+      const size = layoutGroup(doc, childGroup.id, state);
+      placeGroup(state, childGroup.id, 0, y, getDefaultView(doc));
+      contentW = Math.max(contentW, size.w);
+      y += size.h + V_GAP;
+      contentH = y - V_GAP;
+    } else if (childResource) {
+      const size = measureResource(doc, childResource, state);
+      placeResource(state, childResource.id, 0, y, getDefaultView(doc));
+      contentW = Math.max(contentW, size.w);
+      y += size.h + V_GAP;
+      contentH = y - V_GAP;
+    }
   }
 
   const w = Math.max(contentW, 180) + style.padding * 2;
@@ -255,22 +261,22 @@ function layoutLogicalGroup(
   let contentH = 0;
   let y = 0;
 
-  const resources = group.children
-    .map((id) => getResource(doc, id))
-    .filter((r): r is Resource => !!r)
-    .sort((a, b) => {
-      if (a.role === "secondary" && b.role !== "secondary") return 1;
-      if (b.role === "secondary" && a.role !== "secondary") return -1;
-      return 0;
-    });
-
-  for (const r of resources) {
-    measureResource(doc, r, state);
-    placeResource(state, r.id, 0, y, getDefaultView(doc));
-    const geom = state.nodeGeoms.get(r.id)!;
-    contentW = Math.max(contentW, geom.obstacle.w);
-    y += geom.obstacle.h + RESOURCE_GAP;
-    contentH = y - RESOURCE_GAP;
+  for (const childId of group.children) {
+    const childGroup = getGroup(doc, childId);
+    const childResource = getResource(doc, childId);
+    if (childGroup) {
+      const size = layoutGroup(doc, childGroup.id, state);
+      placeGroup(state, childGroup.id, 0, y, getDefaultView(doc));
+      contentW = Math.max(contentW, size.w);
+      y += size.h + V_GAP;
+      contentH = y - V_GAP;
+    } else if (childResource) {
+      const size = measureResource(doc, childResource, state);
+      placeResource(state, childResource.id, 0, y, getDefaultView(doc));
+      contentW = Math.max(contentW, size.w);
+      y += size.h + RESOURCE_GAP;
+      contentH = y - RESOURCE_GAP;
+    }
   }
 
   const w = Math.max(contentW, 120) + style.padding * 2;
@@ -332,7 +338,9 @@ function measureResource(
       : GRAMMAR.iconPrimary;
   const serviceLabel =
     resource.label.service ?? entry?.serviceName ?? resource.type;
-  const roleLabel = resource.label.role;
+  const roleLabel = isDuplicateCatalogLabel(resource.label.role, serviceLabel, entry?.aliases)
+    ? undefined
+    : resource.label.role;
   const labelWidth = Math.max(
     estimateTextWidth(serviceLabel, GRAMMAR.serviceFontSize),
     roleLabel ? estimateTextWidth(roleLabel, GRAMMAR.roleFontSize) : 0,
@@ -378,6 +386,20 @@ function measureResource(
   });
 
   return { w: obstacle.w, h: obstacle.h };
+}
+
+function isDuplicateCatalogLabel(
+  label: string | undefined,
+  serviceLabel: string,
+  aliases: string[] | undefined,
+): boolean {
+  if (!label) return false;
+  const normalized = normalizeLabel(label);
+  return [serviceLabel, ...(aliases ?? [])].some((candidate) => normalizeLabel(candidate) === normalized);
+}
+
+function normalizeLabel(value: string): string {
+  return value.toLowerCase().replace(/\b(?:amazon|aws)\b/g, "").replace(/[^a-z0-9]+/g, "");
 }
 
 function placeResource(
@@ -568,6 +590,8 @@ function applyPinnedViewOverrides(
     group.content.h = Math.max(24, group.bounds.h - group.header.h - 12);
   }
 
+  organizeSiblingResources(doc, layout);
+
   const right = [
     ...layout.nodes.map((node) => node.obstacle.x + node.obstacle.w),
     ...layout.groups.map((group) => group.bounds.x + group.bounds.w),
@@ -578,6 +602,164 @@ function applyPinnedViewOverrides(
   ];
   layout.width = Math.max(layout.width, Math.ceil(Math.max(0, ...right) + 32));
   layout.height = Math.max(layout.height, Math.ceil(Math.max(0, ...bottom) + 32));
+}
+
+function organizeSiblingResources(doc: DiagramDocument, layout: LayoutResult): void {
+  const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
+  const groupById = new Map(layout.groups.map((group) => [group.id, group]));
+  const view = getDefaultView(doc);
+  const gapX = 24;
+  const gapY = 28;
+
+  for (const model of doc.groups) {
+    const group = groupById.get(model.id);
+    if (!group) continue;
+    const nodes = model.children
+      .map((id) => nodeById.get(id))
+      .filter((node): node is NodeGeom => Boolean(node));
+    const childGroups = model.children
+      .map((id) => groupById.get(id))
+      .filter((child): child is GroupGeom => Boolean(child));
+    if (!nodes.length) continue;
+    // Automatic layout already reserves measured label widths. This repair is
+    // specifically for authored/LLM pins that bypass those safe placements.
+    if (!nodes.some((node) => view.places[node.id]?.pin)) continue;
+
+    let overlap = nodes.some((node, index) =>
+      nodes.slice(index + 1).some((other) => rectsOverlap(node.obstacle, other.obstacle, 12)),
+    );
+    let groupOverlap = nodes.some((node) =>
+      childGroups.some((child) => rectsOverlap(node.obstacle, child.bounds, 8)),
+    );
+    const outOfBounds = nodes.some((node) => !rectContains(group.content, node.obstacle));
+    if (!overlap && !groupOverlap && !outOfBounds) continue;
+
+    // A harmless pin just beyond the right/bottom edge should grow its
+    // boundary, not jump to the top of the group where it could obscure a
+    // nested subnet or Availability Zone.
+    if (!overlap && !groupOverlap) {
+      for (const node of nodes) {
+        const safeX = Math.max(node.obstacle.x, group.content.x);
+        const safeY = Math.max(node.obstacle.y, group.content.y);
+        if (safeX !== node.obstacle.x || safeY !== node.obstacle.y) {
+          shiftAbsoluteNode(node, safeX - node.obstacle.x, safeY - node.obstacle.y);
+        }
+        growGroupToContain(doc, groupById, model, node.obstacle, 8);
+      }
+      overlap = nodes.some((node, index) =>
+        nodes.slice(index + 1).some((other) => rectsOverlap(node.obstacle, other.obstacle, 12)),
+      );
+      groupOverlap = nodes.some((node) =>
+        childGroups.some((child) => rectsOverlap(node.obstacle, child.bounds, 8)),
+      );
+      if (!overlap && !groupOverlap) continue;
+    }
+
+    if (groupOverlap && !overlap) {
+      const offenders = nodes.filter((node) =>
+        childGroups.some((child) => rectsOverlap(node.obstacle, child.bounds, 8)),
+      );
+      const shelfY = Math.max(...childGroups.map((child) => child.bounds.y + child.bounds.h)) + gapY;
+      const cellH = Math.max(...offenders.map((node) => node.obstacle.h));
+      offenders.forEach((node, index) => {
+        const x = Math.min(
+          Math.max(node.obstacle.x, group.content.x),
+          group.content.x + group.content.w - node.obstacle.w,
+        );
+        const y = shelfY + index * (cellH + 8);
+        growGroupToContain(doc, groupById, model, { x, y, w: node.obstacle.w, h: node.obstacle.h }, 8);
+        shiftAbsoluteNode(node, snap(x) - node.obstacle.x, snap(y) - node.obstacle.y);
+      });
+      for (const node of nodes) {
+        if (!offenders.includes(node) && !rectContains(group.content, node.obstacle)) {
+          growGroupToContain(doc, groupById, model, node.obstacle, 8);
+        }
+      }
+      continue;
+    }
+
+    const cellW = Math.max(...nodes.map((node) => node.obstacle.w));
+    const cellH = Math.max(...nodes.map((node) => node.obstacle.h));
+    const columns = Math.max(1, Math.floor((group.content.w + gapX) / (cellW + gapX)));
+    const rows = Math.ceil(nodes.length / columns);
+    const minimumGapY = 8;
+    const shelfY = childGroups.length
+      ? Math.max(...childGroups.map((child) => child.bounds.y + child.bounds.h)) + gapY
+      : group.content.y;
+    const requiredContentH = rows * cellH + Math.max(0, rows - 1) * minimumGapY;
+    growGroupToContain(doc, groupById, model, {
+      x: group.content.x,
+      y: shelfY,
+      w: Math.min(group.content.w, columns * cellW + Math.max(0, columns - 1) * gapX),
+      h: requiredContentH,
+    }, 8);
+    const fittedGapY = rows <= 1
+      ? gapY
+      : Math.max(
+          minimumGapY,
+          Math.min(gapY, (group.content.h - rows * cellH) / (rows - 1)),
+        );
+
+    nodes.forEach((node, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const x = childGroups.length && !overlap
+        ? Math.min(
+            Math.max(node.obstacle.x, group.content.x),
+            group.content.x + group.content.w - node.obstacle.w,
+          )
+        : group.content.x + column * (cellW + gapX) + (cellW - node.obstacle.w) / 2;
+      const y = shelfY + row * (cellH + fittedGapY);
+      const safeX = Math.min(
+        Math.max(snap(x), group.content.x),
+        group.content.x + group.content.w - node.obstacle.w,
+      );
+      const safeY = Math.min(
+        Math.max(snap(y), group.content.y),
+        group.content.y + group.content.h - node.obstacle.h,
+      );
+      shiftAbsoluteNode(node, safeX - node.obstacle.x, safeY - node.obstacle.y);
+    });
+  }
+}
+
+function growGroupToContain(
+  doc: DiagramDocument,
+  groupById: Map<ID, GroupGeom>,
+  model: DiagramDocument["groups"][number],
+  rect: Rect,
+  padding: number,
+): void {
+  const group = groupById.get(model.id);
+  if (!group) return;
+  const growthX = Math.max(0, rect.x + rect.w + padding - (group.content.x + group.content.w));
+  const growthY = Math.max(0, rect.y + rect.h + padding - (group.content.y + group.content.h));
+  if (!growthX && !growthY) return;
+  group.content.w += growthX;
+  group.content.h += growthY;
+  group.bounds.w += growthX;
+  group.bounds.h += growthY;
+  if (!model.parent) return;
+  const parent = doc.groups.find((candidate) => candidate.id === model.parent);
+  if (parent) growGroupToContain(doc, groupById, parent, group.bounds, padding);
+}
+
+function rectContains(outer: Rect, inner: Rect): boolean {
+  return (
+    inner.x >= outer.x &&
+    inner.y >= outer.y &&
+    inner.x + inner.w <= outer.x + outer.w &&
+    inner.y + inner.h <= outer.y + outer.h
+  );
+}
+
+function rectsOverlap(a: Rect, b: Rect, margin: number): boolean {
+  return !(
+    a.x + a.w + margin <= b.x ||
+    b.x + b.w + margin <= a.x ||
+    a.y + a.h + margin <= b.y ||
+    b.y + b.h + margin <= a.y
+  );
 }
 
 function sortLayoutByZIndex(doc: DiagramDocument, layout: LayoutResult): void {

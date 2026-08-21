@@ -35,8 +35,8 @@ describe("routeEdgePreview", () => {
     ];
     const top = getEdgeBadgePlacement(points, 0.25, "top");
     const bottom = getEdgeBadgePlacement(points, 0.25, "bottom");
-    expect(top?.point).toEqual({ x: 40, y: 82 });
-    expect(bottom?.point).toEqual({ x: 40, y: 118 });
+    expect(top?.point).toEqual({ x: 40, y: 84 });
+    expect(bottom?.point).toEqual({ x: 40, y: 116 });
     expect(projectPointToPolyline({ x: 72, y: 111 }, points)?.t).toBeCloseTo(0.45);
   });
 
@@ -48,6 +48,25 @@ describe("routeEdgePreview", () => {
     );
     expect(edge?.badge).toBeDefined();
     expect(edge?.step).toBe(0);
+  });
+
+  it("keeps a connector label clear of its numbered badge", () => {
+    const doc = createAsyncDocsFixture();
+    doc.edges[0]!.label = "Direct Connect";
+    const edge = routeEdges(doc, layoutDocument(doc)).find(
+      (candidate) => candidate.id === doc.edges[0]!.id,
+    )!;
+    expect(edge.badge).toBeDefined();
+    expect(edge.labelRect).toBeDefined();
+    const closestX = Math.max(
+      edge.labelRect!.x,
+      Math.min(edge.badge!.x, edge.labelRect!.x + edge.labelRect!.w),
+    );
+    const closestY = Math.max(
+      edge.labelRect!.y,
+      Math.min(edge.badge!.y, edge.labelRect!.y + edge.labelRect!.h),
+    );
+    expect(Math.hypot(edge.badge!.x - closestX, edge.badge!.y - closestY)).toBeGreaterThan(12);
   });
 
   it("routes explicit ports to their exact visible face offsets", () => {
@@ -206,13 +225,12 @@ describe("routeEdgePreview", () => {
     const route = routeEdges(doc, layoutDocument(doc)).find((edge) => edge.id === "e3");
     const source = layoutDocument(doc).nodes.find((node) => node.id === "apiA")!;
     const target = layoutDocument(doc).nodes.find((node) => node.id === "jobs")!;
-    const anchored = [
+    const snapped = [
       nearestPortAnchor(source.icon, manual[0]!).point,
       manual[1]!,
-      manual[2]!,
       nearestPortAnchor(target.icon, manual.at(-1)!).point,
     ];
-    expect(route?.points).toEqual(normalizeOrthogonalRoute(anchored));
+    expect(route?.points).toEqual(collapseOrthogonalRouteArtifacts(snapped));
     expect(route?.points.slice(0, -1).every((point, index) => {
       const next = route.points[index + 1]!;
       return point.x === next.x || point.y === next.y;

@@ -199,21 +199,7 @@ function positionVpcChildren(
   nodes: NodeGeom[],
   groups: GroupGeom[],
 ): number {
-  const azs = group.children
-    .map((id) => getGroup(doc, id))
-    .filter((g) => g && g.kind === "az");
-
-  const widths = azs.map((az) => state.groupGeoms.get(az!.id)?.bounds.w ?? 200);
-  const maxW = Math.max(...widths, 200);
-
-  let x = content.x;
-  for (const az of azs) {
-    if (!az) continue;
-    positionGroupTree(doc, state, az.id, x, content.y, nodes, groups);
-    x += maxW + 24;
-  }
-
-  return azs.length * (maxW + 24);
+  return positionMixedChildren(doc, state, group, content, nodes, groups);
 }
 
 function positionAzChildren(
@@ -224,26 +210,7 @@ function positionAzChildren(
   nodes: NodeGeom[],
   groups: GroupGeom[],
 ): number {
-  const subnets = group.children
-    .map((id) => getGroup(doc, id))
-    .filter((g): g is NonNullable<typeof g> => !!g)
-    .sort((a, b) => {
-      const order = (k: string) =>
-        k === "subnet-public" ? 0 : k === "subnet-private" ? 1 : 2;
-      return order(a.kind) - order(b.kind);
-    });
-
-  let y = content.y;
-  let maxW = 0;
-  for (const subnet of subnets) {
-    const local = state.groupGeoms.get(subnet.id);
-    const w = local?.bounds.w ?? 160;
-    const h = local?.bounds.h ?? 100;
-    positionGroupTree(doc, state, subnet.id, content.x, y, nodes, groups);
-    y += h + 20;
-    maxW = Math.max(maxW, w);
-  }
-  return maxW;
+  return positionMixedChildren(doc, state, group, content, nodes, groups);
 }
 
 function positionSubnetChildren(
@@ -277,28 +244,41 @@ function positionLogicalChildren(
   group: ReturnType<typeof getGroup> & object,
   content: { x: number; y: number; w?: number },
   nodes: NodeGeom[],
-  _groups: GroupGeom[],
+  groups: GroupGeom[],
 ): number {
-  const groupGeom = state.groupGeoms.get(group.id);
-  const contentW = groupGeom?.content.w ?? content.w ?? 120;
-  let maxW = 0;
-  const resources = group.children
-    .map((id) => getResource(doc, id))
-    .filter((r): r is NonNullable<typeof r> => !!r)
-    .sort((a, b) => {
-      if (a.role === "secondary") return 1;
-      if (b.role === "secondary") return -1;
-      return 0;
-    });
+  return positionMixedChildren(doc, state, group, content, nodes, groups);
+}
 
-  for (const r of resources) {
-    const node = state.nodeGeoms.get(r.id);
-    if (!node) continue;
-    const targetIconX = Math.round(content.x + (contentW - node.icon.w) / 2);
-    const localIconX = node.icon.x - node.obstacle.x;
-    const absY = content.y + node.obstacle.y;
-    nodes.push(moveNodeTo(node, targetIconX - localIconX, absY));
-    maxW = Math.max(maxW, node.obstacle.w);
+function positionMixedChildren(
+  doc: DiagramDocument,
+  state: LayoutState,
+  group: ReturnType<typeof getGroup> & object,
+  content: { x: number; y: number },
+  nodes: NodeGeom[],
+  groups: GroupGeom[],
+): number {
+  let maxW = 0;
+  for (const childId of group.children) {
+    const childGroup = getGroup(doc, childId);
+    const childResource = getResource(doc, childId);
+    if (childGroup) {
+      const local = state.groupGeoms.get(childGroup.id);
+      positionGroupTree(
+        doc,
+        state,
+        childGroup.id,
+        content.x + (local?.bounds.x ?? 0),
+        content.y + (local?.bounds.y ?? 0),
+        nodes,
+        groups,
+      );
+      maxW = Math.max(maxW, (local?.bounds.x ?? 0) + (local?.bounds.w ?? 0));
+    } else if (childResource) {
+      const node = state.nodeGeoms.get(childResource.id);
+      if (!node) continue;
+      nodes.push(moveNodeTo(node, content.x + node.obstacle.x, content.y + node.obstacle.y));
+      maxW = Math.max(maxW, node.obstacle.x + node.obstacle.w);
+    }
   }
   return maxW;
 }

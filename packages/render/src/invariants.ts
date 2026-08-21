@@ -21,6 +21,12 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         message: `Edge ${edge.id} does not start on icon ${source.id}`,
       });
     }
+    if (edge.badge && edge.labelRect && circleHitsRect(edge.badge, 10, edge.labelRect)) {
+      failures.push({
+        code: "edge-badge-label-collision",
+        message: `Edge ${edge.id} has an overlapping number and label`,
+      });
+    }
     if (
       target &&
       edge.points.length > 0 &&
@@ -101,6 +107,16 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
   }
 
   return failures;
+}
+
+function circleHitsRect(
+  center: { x: number; y: number },
+  radius: number,
+  rect: { x: number; y: number; w: number; h: number },
+): boolean {
+  const x = Math.max(rect.x, Math.min(center.x, rect.x + rect.w));
+  const y = Math.max(rect.y, Math.min(center.y, rect.y + rect.h));
+  return Math.hypot(center.x - x, center.y - y) < radius + 2;
 }
 
 function pointOnRectBorder(

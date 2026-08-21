@@ -35,7 +35,7 @@ export interface CatalogEntry extends CatalogRule {
   category: string;
   aliases: string[];
   icon: CatalogIcon;
-  /** Source path retained for `.arch` and CLI compatibility. */
+  /** Source path retained for `.dgm` and CLI compatibility. */
   iconPath: string;
   browserPath: string;
   specificity: IconSpecificity;

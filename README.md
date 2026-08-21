@@ -1,6 +1,6 @@
 # DumbDiagrams
 
-LLM-first architecture diagrams with deterministic layout and practical manual controls.
+LLM-first diagrams with deterministic layout and practical manual controls.
 
 ## Quick start
 
@@ -13,13 +13,13 @@ pnpm test
 node packages/cli/dist/index.js fixtures async-docs
 
 # Render from source
-node packages/cli/dist/index.js render examples/src/async-docs.arch output.svg
+node packages/cli/dist/index.js render examples/src/async-docs.dgm output.svg
 
 # Full browser editor (menus, tools, inspectors)
 pnpm dev
 
 # Minimal CLI preview (code → canvas)
-pnpm dev:cli -- examples/src/async-docs.arch
+pnpm dev:cli -- examples/src/async-docs.dgm
 
 # Validate examples
 node packages/cli/dist/index.js check examples/src
@@ -33,8 +33,8 @@ node packages/cli/dist/index.js check examples/src
 - `@dumb-diagrams/layout` — semantic layout engine
 - `@dumb-diagrams/route` — Manhattan router with label obstacles
 - `@dumb-diagrams/render` — SVG renderer + invariant checks
-- `@dumb-diagrams/dsl` — `.arch` parser and printer
-- `@dumb-diagrams/cli` — `arch render`, `arch dev`, `arch check`
+- `@dumb-diagrams/dsl` — `.dgm` parser and printer
+- `@dumb-diagrams/cli` — `dgm render`, `dgm dev`, `dgm check`
 - `@dumb-diagrams/editor` — browser editor (Vite + React)
 - `@dumb-diagrams/mcp` — MCP server for agent integration
 
@@ -45,7 +45,7 @@ pnpm dev
 ```
 
 The minimal source-and-canvas CLI preview remains available with
-`pnpm dev:cli -- examples/src/async-docs.arch`.
+`pnpm dev:cli -- examples/src/async-docs.dgm`.
 
 ## MCP
 

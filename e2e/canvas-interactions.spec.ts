@@ -142,7 +142,12 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
 
   const numberInput = page.locator("input#edge-panel-step");
   await expect(numberInput).toHaveCount(1);
+  await expect(numberInput).toHaveAttribute("min", "0");
+  await expect(numberInput).toHaveAttribute("max", "99");
+  await expect(page.getByText("Whole numbers only: 0–99.", { exact: false })).toBeVisible();
   await numberInput.fill("7");
+  await numberInput.fill("100");
+  await expect(numberInput).toHaveValue("7");
   const badge = page.locator('[data-edge-badge="e3"]');
   await expect(badge).toHaveCount(1);
   await expect(badge.locator("text")).toHaveText("7");
@@ -199,6 +204,44 @@ test("exposes draggable turn points and moves a connector bend", async ({ page }
   await page.mouse.up();
 
   await expect.poll(async () => edge.getAttribute("points")).not.toBe(beforePoints);
+});
+
+test("previews resource movement without rerouting the document until release", async ({ page }) => {
+  await page.goto("/");
+  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
+  const rendered = page.locator("#res-apiA");
+  const connectedEdges = page.locator(
+    '[data-entity-kind="edge"][data-entity-id="e2"], [data-entity-kind="edge"][data-entity-id="e3"]',
+  );
+  const targetBox = await hitTarget.boundingBox();
+  const beforeBox = await rendered.boundingBox();
+  const beforeEdges = await connectedEdges.evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute("points")),
+  );
+  expect(targetBox).not.toBeNull();
+  expect(beforeBox).not.toBeNull();
+
+  const startX = targetBox!.x + targetBox!.width / 2;
+  const startY = targetBox!.y + targetBox!.height / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 96, startY + 54, { steps: 16 });
+
+  await expect.poll(async () => rendered.getAttribute("transform")).toContain("translate(");
+  const previewBox = await rendered.boundingBox();
+  expect(previewBox).not.toBeNull();
+  expect(previewBox!.x - beforeBox!.x).toBeCloseTo(96, 0);
+  expect(previewBox!.y - beforeBox!.y).toBeCloseTo(54, 0);
+  expect(await connectedEdges.evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute("points")),
+  )).toEqual(beforeEdges);
+
+  await page.mouse.up();
+  await expect.poll(async () => rendered.getAttribute("transform")).toBeNull();
+  const afterBox = await rendered.boundingBox();
+  expect(afterBox).not.toBeNull();
+  expect(afterBox!.x).toBeGreaterThan(beforeBox!.x + 80);
+  expect(afterBox!.y).toBeGreaterThan(beforeBox!.y + 40);
 });
 
 test("moves the adjoining leg when a connector bend is dragged past its line", async ({ page }) => {
@@ -407,6 +450,7 @@ test("shows a friendly editable diagram name", async ({ page }) => {
   await expect(title).toHaveCSS("outline-style", "none");
   await title.press("Enter");
   await expect(title).toHaveValue("Orders Platform");
+  await expect(page.locator(".file-name")).toHaveText("Orders-Platform.dgm");
 });
 
 test("keeps the canvas zoom controls ordered and padded", async ({ page }) => {

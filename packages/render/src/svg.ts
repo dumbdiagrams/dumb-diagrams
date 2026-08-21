@@ -90,6 +90,10 @@ function renderGroup(
 
   const textX = iconPath ? iconX + style.iconSize + 8 : group.bounds.x + 8;
   const textY = iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2) + style.fontSize * 0.35;
+  const model = doc.groups.find((candidate) => candidate.id === group.id);
+  const badge = model?.step === undefined ? "" : `
+  <circle class="group-badge-circle" cx="${group.bounds.x + group.bounds.w - 14}" cy="${group.bounds.y + 12}" r="10" fill="${GRAMMAR.badgeFill}"/>
+  <text class="group-badge-text" x="${group.bounds.x + group.bounds.w - 14}" y="${group.bounds.y + 16}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${model.step}</text>`;
 
   return `
 <g id="group-${group.id}">
@@ -98,6 +102,7 @@ function renderGroup(
   ${iconTag}
   <text x="${textX}" y="${textY}"
     font-size="${style.fontSize}" font-weight="${style.fontWeight}" dominant-baseline="alphabetic">${escapeXml(group.label)}</text>
+  ${badge}
 </g>`;
 }
 
@@ -158,8 +163,8 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
 
   let label = "";
   if (edge.label && edge.points.length >= 2) {
-    const mid = edge.points[Math.floor(edge.points.length / 2)]!;
-    label = `<text x="${mid.x}" y="${mid.y - 8}" text-anchor="middle" font-size="11" fill="${GRAMMAR.edgeColor}">${escapeXml(edge.label)}</text>`;
+    const point = edge.labelPoint ?? edge.points[Math.floor(edge.points.length / 2)]!;
+    label = `<text class="edge-label" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${GRAMMAR.edgeColor}">${escapeXml(edge.label)}</text>`;
   }
 
   return `

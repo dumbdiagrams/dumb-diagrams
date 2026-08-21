@@ -92,6 +92,75 @@ describe("async-docs fixture", () => {
     );
   });
 
+  it("renders numbered badges on groups", () => {
+    const doc = createAsyncDocsFixture();
+    doc.groups.find((group) => group.id === "queues")!.step = 3;
+    const svg = renderSvg(doc, layoutDocument(doc));
+    expect(svg).toContain('class="group-badge-circle"');
+    expect(svg).toContain('class="group-badge-text"');
+    expect(svg).toMatch(/class="group-badge-text"[\s\S]*?>3<\/text>/);
+  });
+
+  it("repacks overlapping pinned siblings inside their group", () => {
+    const doc = createAsyncDocsFixture();
+    const view = getDefaultView(doc);
+    view.places.jobs = { x: 720, y: 160, pin: true };
+    view.places.jobs_dlq = { x: 720, y: 160, pin: true };
+    const layout = layoutDocument(doc);
+    const jobs = layout.nodes.find((node) => node.id === "jobs")!.obstacle;
+    const dlq = layout.nodes.find((node) => node.id === "jobs_dlq")!.obstacle;
+    const overlaps = !(
+      jobs.x + jobs.w <= dlq.x || dlq.x + dlq.w <= jobs.x ||
+      jobs.y + jobs.h <= dlq.y || dlq.y + dlq.h <= jobs.y
+    );
+    expect(overlaps).toBe(false);
+  });
+
+  it("repacks pinned siblings that extend outside their group", () => {
+    const doc = createAsyncDocsFixture();
+    const view = getDefaultView(doc);
+    view.places.jobs = { x: 720, y: 980, pin: true };
+    const layout = layoutDocument(doc);
+    const group = layout.groups.find((candidate) => candidate.id === "queues");
+    const node = layout.nodes.find((candidate) => candidate.id === "jobs");
+    expect(group).toBeDefined();
+    expect(node).toBeDefined();
+    expect(node!.obstacle.x).toBeGreaterThanOrEqual(group!.content.x);
+    expect(node!.obstacle.y).toBeGreaterThanOrEqual(group!.content.y);
+    expect(node!.obstacle.x + node!.obstacle.w).toBeLessThanOrEqual(
+      group!.content.x + group!.content.w,
+    );
+    expect(node!.obstacle.y + node!.obstacle.h).toBeLessThanOrEqual(
+      group!.content.y + group!.content.h,
+    );
+  });
+
+  it("moves a pinned direct resource clear of nested child groups", () => {
+    const doc = createAsyncDocsFixture();
+    doc.resources.push({
+      id: "gateway",
+      type: "aws.vpc-internet-gateway",
+      parent: "main",
+      label: {},
+      role: "primary",
+      props: {},
+    });
+    doc.groups.find((group) => group.id === "main")!.children.push("gateway");
+    getDefaultView(doc).places.gateway = { x: 128, y: 160, pin: true };
+    const layout = layoutDocument(doc);
+    const gateway = layout.nodes.find((node) => node.id === "gateway")!.obstacle;
+    const childGroups = layout.groups.filter((group) => group.id === "azA" || group.id === "azB");
+    for (const child of childGroups) {
+      const overlaps = !(
+        gateway.x + gateway.w + 8 <= child.bounds.x ||
+        child.bounds.x + child.bounds.w + 8 <= gateway.x ||
+        gateway.y + gateway.h + 8 <= child.bounds.y ||
+        child.bounds.y + child.bounds.h + 8 <= gateway.y
+      );
+      expect(overlaps).toBe(false);
+    }
+  });
+
   it("keeps connectors simple and gives dashed edges an arrowhead", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);
@@ -137,7 +206,7 @@ describe("async-docs fixture", () => {
     expect(result.svg).toMatch(/id="edge-e6"[\s\S]*marker-end="url\(#arrow\)"/);
   });
 
-  it("applies pinned places and routes as absolute view overrides", () => {
+  it("repairs unsafe pinned places and preserves pinned routes", () => {
     const doc = createAsyncDocsFixture();
     const view = doc.views[0]!;
     view.places.api_alb = { x: 128, y: 96, pin: true };
@@ -151,8 +220,15 @@ describe("async-docs fixture", () => {
 
     const layout = layoutDocument(doc);
     const api = layout.nodes.find((node) => node.id === "api_alb")!;
-    expect(api.obstacle.x).toBe(128);
-    expect(api.obstacle.y).toBe(96);
+    const publicSubnet = layout.groups.find((group) => group.id === "pubA")!;
+    expect(api.obstacle.x).toBeGreaterThanOrEqual(publicSubnet.content.x);
+    expect(api.obstacle.y).toBeGreaterThanOrEqual(publicSubnet.content.y);
+    expect(api.obstacle.x + api.obstacle.w).toBeLessThanOrEqual(
+      publicSubnet.content.x + publicSubnet.content.w,
+    );
+    expect(api.obstacle.y + api.obstacle.h).toBeLessThanOrEqual(
+      publicSubnet.content.y + publicSubnet.content.h,
+    );
 
     const edges = routeEdges(doc, layout);
     const edge = edges.find((candidate) => candidate.id === "e2")!;

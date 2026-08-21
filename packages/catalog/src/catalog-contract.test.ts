@@ -14,7 +14,7 @@ const ROOT = join(import.meta.dirname, "../../..");
 
 describe("canonical catalog contract", () => {
   it("keeps canonical ids unique without dropping collision sources", () => {
-    const ids = manifest.entries.map((entry) => `${entry.provider}:${entry.assetKind}:${entry.type}`);
+    const ids = manifest.entries.map((entry) => entry.type);
     expect(new Set(ids).size).toBe(ids.length);
     expect(manifest.collisions.length).toBeGreaterThan(0);
     expect(manifest.entries.filter((entry) => entry.provider === "azure")).toHaveLength(720);
@@ -24,6 +24,39 @@ describe("canonical catalog contract", () => {
     expect(listProviders()).toEqual(["aws", "azure", "gcp", "cloud-agnostic"]);
     expect(getCatalogEntry("generic.user")?.provider).toBe("cloud-agnostic");
     expect(getCatalogEntry("neutral.region")?.groupKind).toBe("region");
+  });
+
+  it("keeps cloud-agnostic groups distinct from similarly named resources", () => {
+    const cloudGroup = getCatalogEntry("cloud-agnostic.cloud");
+    expect(cloudGroup).toMatchObject({ assetKind: "group", groupKind: "cloud" });
+    expect(getCatalogEntry("cloud-agnostic.cloud-resource")).toMatchObject({
+      assetKind: "resource",
+      name: "Cloud Resource",
+    });
+  });
+
+  it("uses the AWS boundary palette for cloud-agnostic group tiles", () => {
+    const expectedColors: Record<string, string> = {
+      "cloud-agnostic.cloud": "#242F3E",
+      "cloud-agnostic.account": "#E7157B",
+      "cloud-agnostic.region": "#00A4A6",
+      "cloud-agnostic.zone": "#00A4A6",
+      "cloud-agnostic.network": "#8C4FFF",
+      "cloud-agnostic.subnet": "#147EBA",
+      "cloud-agnostic.security-group": "#879196",
+      "cloud-agnostic.cluster": "#879196",
+      "cloud-agnostic.datacenter": "#879196",
+      "cloud-agnostic.logical": "#879196",
+      "cloud-agnostic.trust-boundary": "#E7157B",
+    };
+
+    for (const [type, color] of Object.entries(expectedColors)) {
+      const entry = getCatalogEntry(type)!;
+      expect(entry.assetKind, type).toBe("group");
+      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(
+        `fill="${color}"`,
+      );
+    }
   });
 
   it("uses named GCP product categories and keeps category glyphs non-browsable", () => {

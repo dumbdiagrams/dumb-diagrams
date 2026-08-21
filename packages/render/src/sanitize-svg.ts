@@ -18,10 +18,10 @@ const ALLOWED_TAGS = new Set([
   "polyline",
   "polygon",
   "defs",
-  "clipPath",
+  "clippath",
   "mask",
-  "linearGradient",
-  "radialGradient",
+  "lineargradient",
+  "radialgradient",
   "stop",
   "title",
   "desc",
@@ -30,6 +30,16 @@ const ALLOWED_TAGS = new Set([
 ]);
 
 const FORBIDDEN_ATTR = /^(on|xlink:href|href|style)$/i;
+const ALLOWED_ATTRS = new Set([
+  "id", "xmlns", "viewbox", "width", "height", "x", "y", "x1", "y1", "x2", "y2",
+  "cx", "cy", "r", "rx", "ry", "d", "points", "transform", "fill", "fill-opacity",
+  "fill-rule", "stroke", "stroke-width", "stroke-opacity", "stroke-linecap", "stroke-linejoin",
+  "stroke-dasharray", "stroke-dashoffset", "opacity", "clip-path", "clip-rule", "mask",
+  "offset", "stop-color", "stop-opacity", "gradientunits", "gradienttransform", "spreadmethod",
+  "preserveaspectratio", "marker-start", "marker-mid", "marker-end", "href",
+]);
+const LOCAL_REFERENCE_ATTRS = new Set(["clip-path", "mask", "marker-start", "marker-mid", "marker-end"]);
+const MAX_INTRINSIC_SIZE = 10_000;
 
 export interface SanitizedSvg {
   content: string;
@@ -39,6 +49,7 @@ export interface SanitizedSvg {
 }
 
 export function sanitizeSvg(input: string): SanitizedSvg {
+  validateMarkupSafety(input);
   if (typeof DOMParser === "undefined") {
     return sanitizeSvgNode(input);
   }
@@ -52,8 +63,8 @@ export function sanitizeSvg(input: string): SanitizedSvg {
   }
   walkAndSanitize(root);
   const viewBox = root.getAttribute("viewBox")?.split(/\s+/).map(Number) ?? [];
-  const width = Number(root.getAttribute("width")) || viewBox[2] || 64;
-  const height = Number(root.getAttribute("height")) || viewBox[3] || 64;
+  const width = boundedDimension(Number(root.getAttribute("width")) || viewBox[2] || 64, "width");
+  const height = boundedDimension(Number(root.getAttribute("height")) || viewBox[3] || 64, "height");
   const content = new XMLSerializer().serializeToString(root);
   const hash = hashContent(content);
   return {
@@ -72,28 +83,16 @@ function walkAndSanitize(node: Element): void {
   }
   for (const attr of [...node.attributes]) {
     const name = attr.name.toLowerCase();
-    if (FORBIDDEN_ATTR.test(name)) {
-      node.removeAttribute(attr.name);
-      continue;
-    }
-    if ((name === "href" || name === "xlink:href") && !attr.value.startsWith("#")) {
-      node.removeAttribute(attr.name);
-    }
-    if (attr.value.toLowerCase().includes("javascript:")) {
-      node.removeAttribute(attr.name);
-    }
+    if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") node.removeAttribute(attr.name);
   }
   for (const child of [...node.children]) walkAndSanitize(child);
 }
 
 function sanitizeSvgNode(input: string): SanitizedSvg {
   if (!/<svg[\s>]/i.test(input)) throw new Error("Invalid SVG");
-  if (/<script|foreignObject|on\w+=/i.test(input)) {
-    throw new Error("SVG contains forbidden content");
-  }
   const viewBox = input.match(/viewBox=["']([^"']+)["']/i)?.[1]?.split(/\s+/).map(Number) ?? [];
-  const width = Number(input.match(/\bwidth=["']([^"']+)["']/i)?.[1]) || viewBox[2] || 64;
-  const height = Number(input.match(/\bheight=["']([^"']+)["']/i)?.[1]) || viewBox[3] || 64;
+  const width = boundedDimension(Number(input.match(/\bwidth=["']([^"']+)["']/i)?.[1]) || viewBox[2] || 64, "width");
+  const height = boundedDimension(Number(input.match(/\bheight=["']([^"']+)["']/i)?.[1]) || viewBox[3] || 64, "height");
   const hash = hashContent(input);
   return {
     content: input,
@@ -101,4 +100,46 @@ function sanitizeSvgNode(input: string): SanitizedSvg {
     intrinsicH: Math.max(16, Math.round(height)),
     hash,
   };
+}
+
+function validateMarkupSafety(input: string): void {
+  if (/<!doctype|<!entity|<\?xml-stylesheet/i.test(input)) throw new Error("SVG contains forbidden declarations");
+  const tagPattern = /<\s*([a-zA-Z][\w-]*)([^<>]*)>/g;
+  let match: RegExpExecArray | null;
+  let foundRoot = false;
+  while ((match = tagPattern.exec(input))) {
+    const tag = match[1]!.toLowerCase();
+    if (!foundRoot) {
+      if (tag !== "svg") throw new Error("Invalid SVG: root element must be <svg>");
+      foundRoot = true;
+    }
+    if (!ALLOWED_TAGS.has(tag)) throw new Error(`SVG element <${tag}> is not allowed`);
+    const rawAttributes = match[2]!.replace(/\/\s*$/, "");
+    const attributePattern = /([:\w-]+)\s*=\s*(["'])(.*?)\2/gs;
+    let attribute: RegExpExecArray | null;
+    let consumed = 0;
+    while ((attribute = attributePattern.exec(rawAttributes))) {
+      if (rawAttributes.slice(consumed, attribute.index).trim()) throw new Error("SVG contains malformed attributes");
+      const name = attribute[1]!.toLowerCase();
+      const value = attribute[3]!;
+      if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") {
+        throw new Error(`SVG attribute ${name} is not allowed`);
+      }
+      if (name === "href" && !/^#[A-Za-z_][\w:.-]*$/.test(value)) throw new Error("SVG href must be a local fragment reference");
+      if (LOCAL_REFERENCE_ATTRS.has(name) && !/^url\(#[A-Za-z_][\w:.-]*\)$/.test(value)) {
+        throw new Error(`SVG ${name} must use a local fragment reference`);
+      }
+      if (/javascript:|data:|https?:|\/\//i.test(value)) throw new Error("SVG contains an external or executable reference");
+      consumed = attributePattern.lastIndex;
+    }
+    if (rawAttributes.slice(consumed).trim()) throw new Error("SVG contains malformed attributes");
+  }
+  if (!foundRoot) throw new Error("Invalid SVG");
+}
+
+function boundedDimension(value: number, name: string): number {
+  if (!Number.isFinite(value) || value <= 0 || value > MAX_INTRINSIC_SIZE) {
+    throw new Error(`SVG ${name} must be between 1 and ${MAX_INTRINSIC_SIZE}`);
+  }
+  return value;
 }

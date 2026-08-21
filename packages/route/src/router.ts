@@ -148,6 +148,9 @@ export function routeEdges(
     const badge = edge.step !== undefined
       ? getEdgeBadgePlacement(points, routeOverride?.badgeT, routeOverride?.badgeSide)
       : undefined;
+    const labelPlacement = edge.label
+      ? getEdgeLabelPlacement(points, edge.label, obstacles, badge)
+      : undefined;
 
     routed.push({
       id: edge.id,
@@ -156,6 +159,8 @@ export function routeEdges(
       points,
       step: edge.step,
       label: edge.label,
+      labelPoint: labelPlacement?.point,
+      labelRect: labelPlacement?.rect,
       style: edge.style,
       kind: edge.kind,
       badge: badge?.point,
@@ -885,6 +890,7 @@ export interface EdgeBadgePlacement {
   t: number;
   side: EdgeBadgeSide;
   segmentIndex: number;
+  tangent: Point;
 }
 
 export interface PolylineProjection {
@@ -968,7 +974,7 @@ export function getEdgeBadgePlacement(
   const normal = requestedSide === "top"
     ? topNormal
     : { x: -topNormal.x, y: -topNormal.y };
-  const offset = GRAMMAR.badgeRadius + 8;
+  const offset = GRAMMAR.badgeRadius + 6;
   return {
     point: {
       x: projection.point.x + normal.x * offset,
@@ -978,7 +984,67 @@ export function getEdgeBadgePlacement(
     t,
     side: requestedSide,
     segmentIndex: projection.segmentIndex,
+    tangent: projection.tangent,
   };
+}
+
+function getEdgeLabelPlacement(
+  points: Point[],
+  label: string,
+  obstacles: Obstacle[],
+  badge?: EdgeBadgePlacement,
+): { point: Point; rect: Rect } | undefined {
+  const reference = badge ?? getEdgeBadgePlacement(points);
+  if (!reference) return undefined;
+  const textW = Math.max(16, label.length * 11 * 0.55);
+  const horizontal = Math.abs(reference.tangent.x) >= Math.abs(reference.tangent.y);
+  const candidates: Array<{ point: Point; rect: Rect }> = [];
+  if (horizontal) {
+    const badgeAbove = badge ? badge.point.y < badge.anchor.y : false;
+    const offsets = badge
+      ? (badgeAbove ? [20, -32, 44] : [-8, 44, -32])
+      : [-8, 20];
+    for (const offset of offsets) {
+      const y = reference.anchor.y + offset;
+      candidates.push({
+        point: { x: reference.anchor.x, y },
+        rect: { x: reference.anchor.x - textW / 2, y: y - 11, w: textW, h: 14 },
+      });
+    }
+  } else {
+    const badgeLeft = badge ? badge.point.x < badge.anchor.x : true;
+    const direction = badgeLeft ? 1 : -1;
+    const offsets = badge
+      ? [direction * (textW / 2 + 12), -direction * (textW / 2 + 28)]
+      : [textW / 2 + 12, -textW / 2 - 12];
+    for (const offset of offsets) {
+      const x = reference.anchor.x + offset;
+      const y = reference.anchor.y + 4;
+      candidates.push({
+        point: { x, y },
+        rect: { x: x - textW / 2, y: y - 11, w: textW, h: 14 },
+      });
+    }
+  }
+  return candidates.find((candidate) =>
+    !obstacles.some((obstacle) => rectsIntersect(candidate.rect, obstacle, 4)) &&
+    (!badge || !circleIntersectsRect(badge.point, GRAMMAR.badgeRadius, candidate.rect, 4))
+  ) ?? candidates.at(-1);
+}
+
+function rectsIntersect(a: Rect, b: Rect, margin: number): boolean {
+  return !(
+    a.x + a.w + margin <= b.x ||
+    b.x + b.w + margin <= a.x ||
+    a.y + a.h + margin <= b.y ||
+    b.y + b.h + margin <= a.y
+  );
+}
+
+function circleIntersectsRect(center: Point, radius: number, rect: Rect, margin: number): boolean {
+  const x = Math.max(rect.x, Math.min(center.x, rect.x + rect.w));
+  const y = Math.max(rect.y, Math.min(center.y, rect.y + rect.h));
+  return Math.hypot(center.x - x, center.y - y) < radius + margin;
 }
 
 function pathSegments(points: Point[]) {

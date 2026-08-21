@@ -9,11 +9,12 @@ import {
 import {
   createEmptyDocument,
   getResource,
+  normalizeSingleLineText,
   type DiagramDocument,
   type Resource,
   type Edge,
 } from "@dumb-diagrams/core";
-import { parseArch, printArch } from "@dumb-diagrams/dsl";
+import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
 import { compileDiagram } from "@dumb-diagrams/render";
 
 let document: DiagramDocument = createEmptyDocument("workspace");
@@ -27,7 +28,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: "diagram.read",
-      description: "Read the current diagram as .arch source",
+      description: "Read the current diagram as .dgm source",
       inputSchema: { type: "object", properties: {} },
     },
     {
@@ -37,7 +38,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "diagram.load",
-      description: "Load diagram from .arch source",
+      description: "Load diagram from .dgm source",
       inputSchema: {
         type: "object",
         properties: { source: { type: "string" } },
@@ -89,11 +90,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   switch (name) {
     case "diagram.read":
-      return textResult(printArch(document));
+      return textResult(printDgm(document));
 
     case "diagram.load": {
-      const source = (args as { source: string }).source;
-      document = parseArch(source);
+      const source = (args as { source?: unknown }).source;
+      if (typeof source !== "string") return textResult("Load failed: source must be a string");
+      const candidate = parseDgm(source);
+      const issue = firstValidationError(candidate);
+      if (issue) return textResult(`Load failed: ${issue}`);
+      document = candidate;
       return textResult("Diagram loaded");
     }
 
@@ -115,17 +120,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         parent: string;
         label?: string;
       };
+      if (typeof type !== "string" || typeof id !== "string" || typeof parent !== "string" || (label !== undefined && typeof label !== "string")) {
+        return textResult("Add failed: type, id, parent, and label must be strings");
+      }
+      const candidate = structuredClone(document);
       const resource: Resource = {
-        id,
-        type,
-        parent,
-        label: { role: label },
+        id: normalizeSingleLineText(id),
+        type: normalizeSingleLineText(type),
+        parent: normalizeSingleLineText(parent),
+        label: { role: label === undefined ? undefined : normalizeSingleLineText(label) },
         role: "primary",
         props: {},
       };
-      document.resources.push(resource);
-      const group = document.groups.find((g) => g.id === parent);
-      group?.children.push(id);
+      candidate.resources.push(resource);
+      const group = candidate.groups.find((g) => g.id === resource.parent);
+      group?.children.push(resource.id);
+      const issue = firstValidationError(candidate);
+      if (issue) return textResult(`Add failed: ${issue}`);
+      document = candidate;
       return textResult(`Added resource ${id}`);
     }
 
@@ -135,6 +147,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         target: string;
         step?: number;
       };
+      if (typeof source !== "string" || typeof target !== "string" || (step !== undefined && typeof step !== "number")) {
+        return textResult("Connect failed: source and target must be strings and step must be numeric");
+      }
+      const candidate = structuredClone(document);
       const edge: Edge = {
         id: `${source}-${target}`,
         source,
@@ -142,7 +158,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         step,
         style: "solid",
       };
-      document.edges.push(edge);
+      candidate.edges.push(edge);
+      const issue = firstValidationError(candidate);
+      if (issue) return textResult(`Connect failed: ${issue}`);
+      document = candidate;
       return textResult(`Connected ${source} -> ${target}`);
     }
 
@@ -173,6 +192,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 function textResult(text: string) {
   return { content: [{ type: "text" as const, text }] };
+}
+
+function firstValidationError(candidate: DiagramDocument): string | null {
+  const result = compileDiagram(candidate);
+  return result.ok ? null : result.issues.find((issue) => issue.level === "error")?.message ?? "invalid diagram";
 }
 
 async function main() {

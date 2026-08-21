@@ -72,6 +72,16 @@ export function IconCaret(props: IconProps) {
   );
 }
 
+export function IconMenu(props: IconProps) {
+  return (
+    <IconBase strokeWidth={2.6} {...props}>
+      <path d="M3 4.5H15" />
+      <path d="M3 9H15" />
+      <path d="M3 13.5H15" />
+    </IconBase>
+  );
+}
+
 export function IconFit(props: IconProps) {
   return (
     <IconBase {...props}>
@@ -241,6 +251,55 @@ export function IconClose(props: IconProps) {
     <IconBase {...props}>
       <path d="M5 5L13 13" />
       <path d="M13 5L5 13" />
+    </IconBase>
+  );
+}
+
+export function IconPlus(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M9 3V15" />
+      <path d="M3 9H15" />
+    </IconBase>
+  );
+}
+
+export function IconSearch(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <circle cx="7.75" cy="7.75" r="4.25" />
+      <path d="M11 11L15 15" />
+    </IconBase>
+  );
+}
+
+export function IconHelp(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <circle cx="9" cy="9" r="6.5" />
+      <path d="M7.25 7.1A1.9 1.9 0 0 1 9.1 5.75A1.8 1.8 0 0 1 11 7.55C11 9 9 9.25 9 10.5" />
+      <path d="M9 13.15V13.2" />
+    </IconBase>
+  );
+}
+
+export function IconLock(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="8" width="10" height="7" rx="1.5" />
+      <path d="M6.25 8V6.25a2.75 2.75 0 0 1 5.5 0V8" />
+      <circle cx="9" cy="11.5" r="0.8" fill="currentColor" stroke="none" />
+      <path d="M9 12.25V13.25" />
+    </IconBase>
+  );
+}
+
+export function IconFile(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M5 2.5H10.5L14 6V15.5H5Z" />
+      <path d="M10.5 2.5V6H14" />
+      <path d="M7.25 9H11.75M7.25 12H11.75" />
     </IconBase>
   );
 }

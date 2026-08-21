@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { IconCaret } from "../ui/icons";
+import {
+  exportDgmFile,
+  exportPngFile,
+  exportSvgFile,
+} from "../state/export-actions";
 
 export function ExportMenu({
   title,
@@ -26,50 +31,26 @@ export function ExportMenu({
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const filename = sanitizeFilename(title || "diagram");
-
-  const download = (blob: Blob, name: string) => {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = name;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportTitle = title || "diagram";
 
   const exportSvg = async () => {
     if (!svg) return;
-    const portable = await getPortableSvg();
-    download(new Blob([portable], { type: "image/svg+xml" }), `${filename}.svg`);
-    onToast(`Downloaded ${filename}.svg`);
+    const result = await exportSvgFile(exportTitle, getPortableSvg);
+    onToast(result.ok ? `Downloaded ${result.filename}` : "SVG export failed.");
     setOpen(false);
   };
 
-  const exportArch = () => {
-    download(new Blob([source], { type: "text/plain" }), `${filename}.arch`);
-    onToast(`Downloaded ${filename}.arch`);
+  const exportDgm = () => {
+    const result = exportDgmFile(source, exportTitle);
+    onToast(result.ok ? `Downloaded ${result.filename}` : "Source export failed.");
     setOpen(false);
   };
 
   const exportPng = async () => {
     if (!svg) return;
-    const portable = await getPortableSvg();
-    const image = new Image();
-    const url = URL.createObjectURL(new Blob([portable], { type: "image/svg+xml" }));
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(image, 0, 0);
-      canvas.toBlob((blob) => {
-        if (blob) download(blob, `${filename}.png`);
-        URL.revokeObjectURL(url);
-        onToast(`Downloaded ${filename}.png`);
-        setOpen(false);
-      });
-    };
-    image.src = url;
+    const result = await exportPngFile(exportTitle, getPortableSvg);
+    onToast(result.ok ? `Downloaded ${result.filename}` : "PNG export failed.");
+    setOpen(false);
   };
 
   return (
@@ -88,14 +69,10 @@ export function ExportMenu({
       {open && (
         <div className="export-dropdown" role="menu">
           <button type="button" onClick={() => void exportSvg()}>SVG image</button>
-          <button type="button" onClick={exportArch}>Source (.arch)</button>
+          <button type="button" onClick={exportDgm}>Source (.dgm)</button>
           <button type="button" onClick={exportPng}>PNG image</button>
         </div>
       )}
     </div>
   );
-}
-
-function sanitizeFilename(value: string): string {
-  return value.trim().replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "diagram";
 }

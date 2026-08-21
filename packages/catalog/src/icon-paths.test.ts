@@ -26,8 +26,10 @@ function walkSvgFiles(root: string): string[] {
 const SOURCE_ICON_LIBRARIES = [
   {
     provider: "aws" as const,
-    root: "aws-icons/Architecture-Service-Icons_07312026",
-    include: (file: string) => file.endsWith("_64.svg"),
+    root: "aws-icons",
+    include: (file: string) =>
+      (file.includes("Architecture-Service-Icons_07312026") && file.endsWith("_64.svg")) ||
+      (file.includes("Resource-Icons_07312026") && file.endsWith("_48.svg")),
     kinds: ["resource"],
     excluded: [],
   },

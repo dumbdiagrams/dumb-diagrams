@@ -4,6 +4,8 @@ import {
 } from "@dumb-diagrams/catalog";
 import type { DiagramDocument } from "@dumb-diagrams/core";
 
+import { sanitizeSvg } from "./sanitize-svg.js";
+
 export function resolveResourceIcon(
   doc: DiagramDocument,
   resourceType: string,
@@ -27,10 +29,10 @@ export function resolveResourceIcon(
 export function embedAssetsInSvg(svg: string, doc: DiagramDocument): string {
   if (!doc.assets?.length) return svg;
   const defs = doc.assets
-    .map(
-      (asset) =>
-        `<symbol id="asset-${escapeAttr(asset.id)}" viewBox="0 0 ${asset.intrinsicW} ${asset.intrinsicH}">${stripOuterSvg(asset.content)}</symbol>`,
-    )
+    .map((asset) => {
+      const sanitized = sanitizeSvg(asset.content);
+      return `<symbol id="asset-${escapeAttr(asset.id)}" viewBox="0 0 ${sanitized.intrinsicW} ${sanitized.intrinsicH}">${stripOuterSvg(sanitized.content)}</symbol>`;
+    })
     .join("\n");
   return svg.replace("<defs>", `<defs>\n${defs}\n`);
 }

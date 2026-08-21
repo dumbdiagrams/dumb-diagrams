@@ -537,14 +537,16 @@ export function InteractionOverlay({
                 const targetPlace = targetGroup ? view.places[targetGroup.id] : undefined;
                 if (target.kind === "group" && targetGroup && !targetPlace?.locked) {
                   const origin = placeOrigin(targetPlace, targetGroup.bounds);
+                  const active = selection.some(
+                    (candidate) => candidate.kind === target.kind && candidate.id === target.id,
+                  ) ? selection : [target];
                   beginMove(
                     event,
                     zoom,
                     snapToGrid,
                     origin,
                     (x, y, dx, dy) => onMove("group", target.id, x, y, dx, dy),
-                    onGestureBegin,
-                    onGestureEnd,
+                    createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
                   );
                 }
               }
@@ -711,14 +713,16 @@ export function InteractionOverlay({
                 const targetPlace = targetNode ? view.places[targetNode.id] : undefined;
                 if (!targetNode || targetPlace?.locked) return;
                 const origin = placeOrigin(targetPlace, targetNode.obstacle);
+                const active = selection.some(
+                  (candidate) => candidate.kind === target.kind && candidate.id === target.id,
+                ) ? selection : [target];
                 beginMove(
                   event,
                   zoom,
                   snapToGrid,
                   origin,
                   (x, y, dx, dy) => onMove("resource", target.id, x, y, dx, dy),
-                  onGestureBegin,
-                  onGestureEnd,
+                  createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
                 );
               }
             }}
@@ -766,14 +770,16 @@ export function InteractionOverlay({
                 ?? { kind: "annotation" as const, id: annotation.id };
               onSelect(target, event.shiftKey);
               if (tool === "select" && target.kind === "annotation" && !place?.locked) {
+                const active = selection.some(
+                  (candidate) => candidate.kind === target.kind && candidate.id === target.id,
+                ) ? selection : [target];
                 beginMove(
                   event,
                   zoom,
                   snapToGrid,
                   rect,
                   (x, y, dx, dy) => onMove("annotation", target.id, x, y, dx, dy),
-                  onGestureBegin,
-                  onGestureEnd,
+                  createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
                 );
               }
             }}
@@ -823,7 +829,11 @@ export function InteractionOverlay({
         if (!bounds || !isEntityVisible(doc, view, item.id)) return null;
         const radius = item.kind === "group" ? 10 : 8;
         return (
-          <g key={`selection-outline-${item.kind}-${item.id}`}>
+          <g
+            key={`selection-outline-${item.kind}-${item.id}`}
+            data-drag-overlay-kind={item.kind}
+            data-drag-overlay-id={item.id}
+          >
             <rect
               className="selection-outline-halo"
               x={bounds.x}
@@ -849,7 +859,11 @@ export function InteractionOverlay({
         const place = item.kind === "annotation" ? view.annotations?.[item.id] : view.places[item.id];
         if (!bounds || item.kind === "edge" || item.kind === "resource" || place?.locked) return null;
         return (
-          <g key={`resize-${item.kind}-${item.id}`}>
+          <g
+            key={`resize-${item.kind}-${item.id}`}
+            data-drag-overlay-kind={item.kind}
+            data-drag-overlay-id={item.id}
+          >
             {resizeHandles(bounds).map((handle) => (
               <rect
                 key={handle.name}
@@ -971,14 +985,18 @@ export function InteractionOverlay({
         const predictedBadge = dragging
           ? getEdgeBadgePlacement(edgeGeom.points, current.t, oppositeSide)
           : undefined;
+        const currentPoint = stableBadgePoint(current.point);
+        const predictedPoint = predictedBadge
+          ? stableBadgePoint(predictedBadge.point)
+          : undefined;
         return (
           <g key={`${edgeGeom.id}-badge`}>
-            {predictedBadge && (
+            {predictedPoint && (
               <g
                 data-edge-badge-preview
                 data-edge-id={edgeGeom.id}
                 className="edge-badge-prediction"
-                transform={`translate(${predictedBadge.point.x} ${predictedBadge.point.y})`}
+                transform={`translate(${predictedPoint.x} ${predictedPoint.y})`}
               >
                 <circle className="edge-badge-preview-ring" r={15} />
                 <circle className="edge-badge-preview-core" r={10} />
@@ -993,6 +1011,7 @@ export function InteractionOverlay({
               data-edge-id={edgeGeom.id}
               aria-label={`Move number ${edgeModel.step}`}
               className="edge-badge-handle"
+              transform={`translate(${currentPoint.x} ${currentPoint.y})`}
               onPointerDown={(event) => {
                 event.stopPropagation();
                 if (view.places[edgeGeom.id]?.locked) return;
@@ -1008,20 +1027,16 @@ export function InteractionOverlay({
               <title>Arrow number {edgeModel.step}</title>
               <circle
                 className="edge-badge-handle-ring"
-                cx={current.point.x}
-                cy={current.point.y}
                 r={15}
               />
               <circle
                 className="edge-badge-handle-core"
-                cx={current.point.x}
-                cy={current.point.y}
                 r={10}
               />
               <text
                 className="edge-badge-handle-text"
-                x={current.point.x}
-                y={current.point.y}
+                x={0}
+                y={0}
                 textAnchor="middle"
               >
                 {edgeModel.step}
@@ -1283,6 +1298,10 @@ function closestInteractiveTarget(
   return candidates[0]?.item ?? null;
 }
 
+function stableBadgePoint(point: Point): Point {
+  return { x: Math.round(point.x), y: Math.round(point.y) };
+}
+
 function distanceToRect(point: Point, rect: { x: number; y: number; w: number; h: number }): number {
   const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.w));
   const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.h));
@@ -1347,47 +1366,176 @@ function resizeHandles(rect: { x: number; y: number; w: number; h: number }) {
   ];
 }
 
+interface MovePreviewController {
+  update: (dx: number, dy: number) => void;
+  finish: () => void;
+}
+
+function createMovePreview(
+  overlay: SVGSVGElement | null,
+  doc: DiagramDocument,
+  selection: Selection,
+): MovePreviewController {
+  if (!overlay) return { update: () => {}, finish: () => {} };
+
+  const view = getDefaultView(doc);
+  const moving = new Map<string, SelectionItem>();
+  const add = (item: SelectionItem) => {
+    if (item.kind === "edge") return;
+    const locked = item.kind === "annotation"
+      ? view.annotations?.[item.id]?.locked
+      : view.places[item.id]?.locked;
+    if (!locked) moving.set(`${item.kind}:${item.id}`, item);
+  };
+  const addGroupChildren = (groupId: string) => {
+    const group = doc.groups.find((candidate) => candidate.id === groupId);
+    for (const childId of group?.children ?? []) {
+      const childGroup = doc.groups.find((candidate) => candidate.id === childId);
+      if (childGroup) {
+        add({ kind: "group", id: childId });
+        addGroupChildren(childId);
+        continue;
+      }
+      if (doc.resources.some((candidate) => candidate.id === childId)) {
+        add({ kind: "resource", id: childId });
+      } else if (doc.annotations.some((candidate) => candidate.id === childId)) {
+        add({ kind: "annotation", id: childId });
+      }
+    }
+  };
+
+  for (const item of selection) {
+    add(item);
+    if (item.kind === "group") addGroupChildren(item.id);
+  }
+
+  type Target = {
+    element: SVGElement;
+    transform: string | null;
+    willChange: string;
+  };
+  let targets: Target[] | null = null;
+  const resolveTargets = (): Target[] => {
+    const elements = new Set<SVGElement>();
+    const resourceIds = new Set(
+      [...moving.values()]
+        .filter((item) => item.kind === "resource")
+        .map((item) => item.id),
+    );
+
+    for (const item of moving.values()) {
+      const renderedId = item.kind === "resource"
+        ? `res-${item.id}`
+        : item.kind === "group"
+          ? `group-${item.id}`
+          : `annotation-${item.id}`;
+      const rendered = document.getElementById(renderedId);
+      if (rendered instanceof SVGElement) elements.add(rendered);
+    }
+    for (const edge of doc.edges) {
+      if (!resourceIds.has(edge.source) || !resourceIds.has(edge.target)) continue;
+      const rendered = document.getElementById(`edge-${edge.id}`);
+      if (rendered instanceof SVGElement) elements.add(rendered);
+    }
+
+    for (const element of overlay.querySelectorAll<SVGElement>(
+      "[data-entity-kind][data-entity-id], [data-hover-kind][data-hover-id], [data-drag-overlay-kind][data-drag-overlay-id], [data-quick-connect]",
+    )) {
+      const kind = element.getAttribute("data-entity-kind")
+        ?? element.getAttribute("data-hover-kind")
+        ?? element.getAttribute("data-drag-overlay-kind");
+      const id = element.getAttribute("data-entity-id")
+        ?? element.getAttribute("data-hover-id")
+        ?? element.getAttribute("data-drag-overlay-id")
+        ?? element.getAttribute("data-quick-connect");
+      if (id && [...moving.values()].some((item) => item.id === id && (!kind || item.kind === kind))) {
+        elements.add(element);
+      }
+    }
+
+    return [...elements].map((element) => ({
+      element,
+      transform: element.getAttribute("transform"),
+      willChange: element.style.willChange,
+    }));
+  };
+
+  return {
+    update: (dx, dy) => {
+      targets ??= resolveTargets();
+      for (const target of targets) {
+        const base = target.transform ? `${target.transform} ` : "";
+        target.element.style.willChange = "transform";
+        target.element.setAttribute("transform", `${base}translate(${dx} ${dy})`);
+      }
+    },
+    finish: () => {
+      for (const target of targets ?? []) {
+        if (target.transform === null) target.element.removeAttribute("transform");
+        else target.element.setAttribute("transform", target.transform);
+        target.element.style.willChange = target.willChange;
+      }
+      targets = null;
+    },
+  };
+}
+
 function beginMove(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
   snapToGrid: boolean,
   rect: { x: number; y: number },
   onMove: (x: number, y: number, dx: number, dy: number) => void,
-  onBegin?: () => void,
-  onEnd?: () => void,
+  preview: MovePreviewController,
 ) {
   const start = { x: event.clientX, y: event.clientY };
   const origin = { x: rect.x, y: rect.y };
   let dragging = false;
-  let previousDx = 0;
-  let previousDy = 0;
+  let rawDx = 0;
+  let rawDy = 0;
+  let dx = 0;
+  let dy = 0;
+  let frame = 0;
   const threshold = 4;
 
   const move = (next: PointerEvent) => {
-    const rawDx = (next.clientX - start.x) / zoom;
-    const rawDy = (next.clientY - start.y) / zoom;
+    rawDx = (next.clientX - start.x) / zoom;
+    rawDy = (next.clientY - start.y) / zoom;
     if (!dragging && Math.hypot(rawDx, rawDy) < threshold) return;
-    if (!dragging) {
-      dragging = true;
-      onBegin?.();
-    }
+    dragging = true;
     const nextX = snapCoordinate(origin.x + rawDx, snapToGrid);
     const nextY = snapCoordinate(origin.y + rawDy, snapToGrid);
-    const dx = nextX - origin.x;
-    const dy = nextY - origin.y;
-    const incrementalDx = dx - previousDx;
-    const incrementalDy = dy - previousDy;
-    previousDx = dx;
-    previousDy = dy;
-    onMove(nextX, nextY, incrementalDx, incrementalDy);
+    dx = nextX - origin.x;
+    dy = nextY - origin.y;
+    if (!frame) {
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        preview.update(rawDx, rawDy);
+      });
+    }
   };
   const up = () => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
-    if (dragging) onEnd?.();
+    window.removeEventListener("pointercancel", cancel);
+    if (!dragging) return;
+    if (frame) window.cancelAnimationFrame(frame);
+    preview.update(rawDx, rawDy);
+    onMove(origin.x + dx, origin.y + dy, dx, dy);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => preview.finish());
+    });
+  };
+  const cancel = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    if (frame) window.cancelAnimationFrame(frame);
+    preview.finish();
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", cancel);
 }
 
 function placeOrigin(

@@ -330,7 +330,7 @@ const CLOUD_RESOURCES = [
   ["cloud-agnostic.repository", "Repository", "Delivery", "neutral-icons/repository.svg", ["source code", "git"]],
   ["cloud-agnostic.pipeline", "CI/CD Pipeline", "Delivery", "neutral-icons/pipeline.svg", ["build", "deploy"]],
   ["cloud-agnostic.device", "Device", "Actors", "neutral-icons/device.svg", ["edge"]],
-  ["cloud-agnostic.cloud", "Cloud", "Network", "neutral-icons/cloud-resource.svg", ["provider"]],
+  ["cloud-agnostic.cloud-resource", "Cloud Resource", "Network", "neutral-icons/cloud-resource.svg", ["cloud", "provider"]],
 ];
 
 function slug(value) {
@@ -339,6 +339,48 @@ function slug(value) {
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+const AWS_SHORT_NAMES = [
+  [/^Amazon Simple Storage Service(?: Glacier)?\b/, (match) => match.includes("Glacier") ? "S3 Glacier" : "S3"],
+  [/^Amazon Elastic Compute Cloud\b/, "EC2"],
+  [/^Amazon Elastic Container Service\b/, "ECS"],
+  [/^Amazon Elastic Container Registry\b/, "ECR"],
+  [/^Amazon Elastic Kubernetes Service\b/, "EKS"],
+  [/^Amazon Managed Streaming for Apache Kafka\b/, "MSK"],
+  [/^AWS Database Migration Service\b/, "DMS"],
+  [/^AWS Identity and Access Management\b/, "IAM"],
+  [/^AWS IAM Identity Center\b/, "IAM Identity Center"],
+  [/^Elastic Load Balancing\b/, "ELB"],
+  [/^Amazon API Gateway\b/, "API Gateway"],
+  [/^Amazon Virtual Private Cloud\b/, "VPC"],
+  [/^Amazon VPC\b/, "VPC"],
+  [/^AWS Direct Connect\b/, "Direct Connect"],
+  [/^AWS Site to Site VPN\b/, "Site-to-Site VPN"],
+  [/^Amazon CloudFront\b/, "CloudFront"],
+  [/^Amazon Cognito\b/, "Cognito"],
+  [/^Amazon DataZone\b/, "DataZone"],
+  [/^Amazon SageMaker(?: AI)?\b/, "SageMaker"],
+  [/^Amazon Redshift\b/, "Redshift"],
+  [/^Amazon Athena\b/, "Athena"],
+  [/^Amazon Kinesis\b/, "Kinesis"],
+  [/^Amazon AppFlow\b/, "AppFlow"],
+  [/^Amazon Quick\b/, "QuickSight"],
+  [/^AWS Glue\b/, "Glue"],
+  [/^AWS IoT Core\b/, "IoT Core"],
+  [/^AWS AppSync\b/, "AppSync"],
+  [/^AWS CloudFormation\b/, "CloudFormation"],
+  [/^AWS Step Functions\b/, "Step Functions"],
+  [/^Amazon RDS\b/, "RDS"],
+  [/^Amazon EC2\b/, "EC2"],
+];
+
+function awsShortName(value) {
+  for (const [pattern, replacement] of AWS_SHORT_NAMES) {
+    if (!pattern.test(value)) continue;
+    return value.replace(pattern, replacement);
+  }
+  return value.replace(/^(?:Amazon|AWS)\s+/, "");
 }
 
 function walk(dir) {
@@ -464,9 +506,38 @@ function scanAws(used, collisionLog) {
       type: uniqueType(baseType, file, used, collisionLog),
       provider: "aws",
       assetKind: "resource",
-      name: display,
+      name: awsShortName(display),
       category,
       aliases: [display, baseType],
+      file,
+      specificity: "unique",
+      allowedParents: ALL_PARENT_KINDS,
+      allowRoot: false,
+    });
+  });
+}
+
+function scanAwsResourceIcons(used, collisionLog) {
+  const base = join(ROOT, "aws-icons/Resource-Icons_07312026");
+  const files = walk(base).filter((file) => file.endsWith("_48.svg"));
+  return files.map((file) => {
+    const rel = relative(base, file).replaceAll("\\", "/").split("/");
+    const category = (rel[0] ?? "General").replace(/^Res_/, "").replace(/-/g, " ");
+    const display = basename(file, ".svg")
+      .replace(/^Res_/, "")
+      .replace(/_48$/, "")
+      .replace(/_/g, " ")
+      .replace(/-/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const baseType = `aws.${slug(display.replace(/^Amazon /, "").replace(/^AWS /, "aws-"))}`;
+    return entry({
+      type: uniqueType(baseType, file, used, collisionLog),
+      provider: "aws",
+      assetKind: "resource",
+      name: awsShortName(display),
+      category,
+      aliases: [display, baseType, `AWS resource ${display}`],
       file,
       specificity: "unique",
       allowedParents: ALL_PARENT_KINDS,
@@ -542,6 +613,8 @@ function providerGroupEntries(used, collisionLog) {
   return PROVIDER_GROUPS.map((item) => {
     const file = join(ROOT, item.iconPath);
     if (!existsSync(file)) throw new Error(`Missing curated group icon: ${item.iconPath}`);
+    if (used.has(item.type)) throw new Error(`Duplicate curated group type: ${item.type}`);
+    used.add(item.type);
     return entry({
       type: item.type,
       provider: item.provider,
@@ -562,6 +635,8 @@ function providerGroupEntries(used, collisionLog) {
 function cloudAgnosticEntries(used, collisionLog) {
   const groups = CLOUD_GROUPS.map(([type, name, relativeIcon, kind]) => {
     const file = join(ROOT, relativeIcon.replace("cloud-icons/", "neutral-icons/"));
+    if (used.has(type)) throw new Error(`Duplicate curated group type: ${type}`);
+    used.add(type);
     return entry({
       type,
       provider: "cloud-agnostic",
@@ -580,7 +655,7 @@ function cloudAgnosticEntries(used, collisionLog) {
   const resources = CLOUD_RESOURCES.map(([type, name, category, iconPath, aliases]) => {
     const file = join(ROOT, iconPath);
     return entry({
-      type,
+      type: uniqueType(type, file, used, collisionLog),
       provider: "cloud-agnostic",
       assetKind: "resource",
       name,
@@ -602,6 +677,7 @@ const entries = [
   ...providerGroupEntries(usedTypes, collisionLog),
   ...cloudAgnosticEntries(usedTypes, collisionLog),
   ...scanAws(usedTypes, collisionLog),
+  ...scanAwsResourceIcons(usedTypes, collisionLog),
   ...scanAzure(usedTypes, collisionLog),
   ...scanGcp(usedTypes, collisionLog),
 ];

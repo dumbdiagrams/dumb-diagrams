@@ -34,8 +34,8 @@ export const GRAMMAR = {
 
 export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
   cloud: {
-    stroke: "#232F3E",
-    fill: "rgba(35,47,62,0.03)",
+    stroke: "#242F3E",
+    fill: "rgba(36,47,62,0.03)",
     strokeWidth: 1.5,
     headerHeight: 24,
     padding: 24,
@@ -45,8 +45,8 @@ export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
     cornerRadius: 0,
   },
   account: {
-    stroke: "#545B64",
-    fill: "rgba(84,91,100,0.04)",
+    stroke: "#E7157B",
+    fill: "rgba(231,21,123,0.04)",
     strokeWidth: 1.5,
     headerHeight: 24,
     padding: 24,
@@ -79,8 +79,8 @@ export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
     cornerRadius: 0,
   },
   az: {
-    stroke: "#147EBA",
-    fill: "rgba(20,126,186,0.04)",
+    stroke: "#00A4A6",
+    fill: "rgba(0,164,166,0.04)",
     dash: "6 4",
     strokeWidth: 1.5,
     headerHeight: 20,
@@ -102,8 +102,8 @@ export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
     cornerRadius: 0,
   },
   "subnet-public": {
-    stroke: "#248814",
-    fill: "rgba(36,136,20,0.04)",
+    stroke: "#7AA116",
+    fill: "rgba(122,161,22,0.04)",
     strokeWidth: 1,
     headerHeight: 18,
     padding: 16,
@@ -113,8 +113,8 @@ export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
     cornerRadius: 0,
   },
   "subnet-private": {
-    stroke: "#147EBA",
-    fill: "rgba(20,126,186,0.04)",
+    stroke: "#00A4A6",
+    fill: "rgba(0,164,166,0.04)",
     strokeWidth: 1,
     headerHeight: 18,
     padding: 16,
@@ -130,7 +130,7 @@ export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
     strokeWidth: 1,
     headerHeight: 22,
     padding: 16,
-    iconSize: 0,
+    iconSize: 24,
     fontSize: 12,
     fontWeight: 500,
     cornerRadius: 0,

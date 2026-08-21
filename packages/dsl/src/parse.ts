@@ -6,7 +6,7 @@ import type {
   Resource,
   View,
 } from "@dumb-diagrams/core";
-import { createEmptyDocument, normalizePortOffset } from "@dumb-diagrams/core";
+import { createEmptyDocument, DIAGRAM_LIMITS, normalizePortOffset, utf8ByteLength } from "@dumb-diagrams/core";
 
 type Token =
   | { type: "id"; value: string }
@@ -45,17 +45,36 @@ function tokenize(input: string): Token[] {
     if (ch === '"') {
       let s = "";
       i++;
-      while (i < input.length && input[i] !== '"') {
-        s += input[i++];
+      let terminated = false;
+      while (i < input.length) {
+        const current = input[i++]!;
+        if (current === '"') {
+          terminated = true;
+          break;
+        }
+        if (current !== "\\") {
+          s += current;
+          continue;
+        }
+        if (i >= input.length) throw new Error("Unterminated escape sequence in quoted string");
+        const escaped = input[i++]!;
+        if (escaped === '"' || escaped === "\\") s += escaped;
+        else if (escaped === "n") s += "\n";
+        else if (escaped === "r") s += "\r";
+        else if (escaped === "t") s += "\t";
+        else throw new Error(`Unsupported escape sequence \\${escaped}`);
       }
-      i++;
+      if (!terminated) throw new Error("Unterminated quoted string");
       tokens.push({ type: "string", value: s });
       continue;
     }
-    if (/[0-9]/.test(ch)) {
-      let n = "";
-      while (i < input.length && /[0-9.]/.test(input[i]!)) n += input[i++];
-      tokens.push({ type: "number", value: Number(n) });
+    if (/[0-9]/.test(ch) || (ch === "-" && /[0-9]/.test(input[i + 1] ?? ""))) {
+      const match = input.slice(i).match(/^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/);
+      if (!match) throw new Error(`Invalid number at character ${i + 1}`);
+      const value = Number(match[0]);
+      if (!Number.isFinite(value)) throw new Error(`Number is outside the supported range at character ${i + 1}`);
+      i += match[0].length;
+      tokens.push({ type: "number", value });
       continue;
     }
     if (/[a-zA-Z_./-]/.test(ch)) {
@@ -64,7 +83,7 @@ function tokenize(input: string): Token[] {
       tokens.push({ type: "id", value: id });
       continue;
     }
-    i++;
+    throw new Error(`Unexpected character ${JSON.stringify(ch)} at character ${i + 1}`);
   }
   return tokens;
 }
@@ -121,7 +140,7 @@ class Parser {
     const id = this.expect("id").value;
     this.doc.id = id;
     this.expect("lbrace");
-    while (!this.is("rbrace")) {
+    while (this.blockHasMore()) {
       const t = this.peek();
       if (!t || t.type === "newline") {
         this.pos++;
@@ -167,7 +186,7 @@ class Parser {
   private parseResourceOrGroup(): void {
     const typeTok = this.expect("id");
     const idTok = this.expect("id");
-    let label = idTok.value;
+    let label: string | undefined;
     if (this.peek()?.type === "string") {
       label = this.expect("string").value;
     }
@@ -179,14 +198,15 @@ class Parser {
         kind,
         type: typeTok.value,
         parent: this.currentGroupStack.at(-1),
-        label,
+        label: label ?? idTok.value,
         children: [],
       };
       this.doc.groups.push(group);
       if (this.peek()?.type === "lbrace") {
         this.pos++;
+        if (this.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) throw new Error(`Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`);
         this.currentGroupStack.push(group.id);
-        while (!this.is("rbrace")) {
+        while (this.blockHasMore()) {
           const t = this.peek();
           if (!t || t.type === "newline") {
             this.pos++;
@@ -194,6 +214,11 @@ class Parser {
           }
           if (t.type === "id" && t.value.includes(".")) {
             this.parseResourceOrGroup();
+            continue;
+          }
+          if (t.type === "id" && t.value === "step") {
+            this.pos++;
+            group.step = this.expect("number").value;
             continue;
           }
           if (t.type === "id" && t.value === "group") {
@@ -217,14 +242,14 @@ class Parser {
       id: idTok.value,
       type: typeTok.value,
       parent: this.currentGroupStack.at(-1),
-      label: { role: label },
+      label: label ? { role: label } : {},
       role: "primary",
       props: {},
     };
 
     if (this.peek()?.type === "lbrace") {
       this.pos++;
-      while (!this.is("rbrace")) {
+      while (this.blockHasMore()) {
         const t = this.peek();
         if (!t || t.type === "newline") {
           this.pos++;
@@ -274,8 +299,9 @@ class Parser {
     }
     if (this.peek()?.type === "lbrace") {
       this.pos++;
+      if (this.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) throw new Error(`Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`);
       this.currentGroupStack.push(group.id);
-      while (!this.is("rbrace")) {
+      while (this.blockHasMore()) {
         const t = this.peek();
         if (!t || t.type === "newline") {
           this.pos++;
@@ -283,6 +309,15 @@ class Parser {
         }
         if (t.type === "id" && t.value.includes(".")) {
           this.parseResourceOrGroup();
+          continue;
+        }
+        if (t.type === "id" && t.value === "step") {
+          this.pos++;
+          group.step = this.expect("number").value;
+          continue;
+        }
+        if (t.type === "id" && t.value === "group") {
+          this.parseLogicalGroup();
           continue;
         }
         this.pos++;
@@ -305,7 +340,7 @@ class Parser {
     };
     if (this.peek()?.type === "lbrace") {
       this.pos++;
-      while (!this.is("rbrace")) {
+      while (this.blockHasMore()) {
         const t = this.peek();
         if (!t || t.type === "newline") {
           this.pos++;
@@ -339,7 +374,7 @@ class Parser {
     };
     if (this.peek()?.type === "lbrace") {
       this.pos++;
-      while (!this.is("rbrace")) {
+      while (this.blockHasMore()) {
         const t = this.peek();
         if (!t || t.type === "newline") {
           this.pos++;
@@ -396,7 +431,7 @@ class Parser {
     this.expect("id", "assets");
     this.expect("lbrace");
     if (!this.doc.assets) this.doc.assets = [];
-    while (!this.is("rbrace")) {
+    while (this.blockHasMore()) {
       const t = this.peek();
       if (!t || t.type === "newline") {
         this.pos++;
@@ -409,7 +444,7 @@ class Parser {
         let content = "";
         let intrinsicW = 64;
         let intrinsicH = 64;
-        while (!this.is("rbrace")) {
+        while (this.blockHasMore()) {
           const key = this.expect("id").value;
           if (key === "svg") content = this.expect("string").value;
           else if (key === "w") intrinsicW = this.expect("number").value;
@@ -429,7 +464,7 @@ class Parser {
     const id = this.expect("id").value;
     this.view.id = id;
     this.expect("lbrace");
-    while (!this.is("rbrace")) {
+    while (this.blockHasMore()) {
       const t = this.peek();
       if (!t || t.type === "newline") {
         this.pos++;
@@ -440,7 +475,7 @@ class Parser {
         const nodeId = this.expect("id").value;
         this.expect("lbrace");
         const place: NonNullable<View["places"][string]> = {};
-        while (!this.is("rbrace")) {
+        while (this.blockHasMore()) {
           const k = this.expect("id").value;
           if (k === "x" || k === "y" || k === "w" || k === "h") {
             place[k] = this.expect("number").value;
@@ -464,7 +499,7 @@ class Parser {
         const edgeId = this.expect("id").value;
         this.expect("lbrace");
         const route: NonNullable<View["routes"][string]> = { waypoints: [] };
-        while (!this.is("rbrace")) {
+        while (this.blockHasMore()) {
           const key = this.expect("id").value;
           if (key === "point") {
             route.waypoints!.push({
@@ -494,7 +529,7 @@ class Parser {
         const annotationId = this.expect("id").value;
         this.expect("lbrace");
         const place: NonNullable<View["places"][string]> = {};
-        while (!this.is("rbrace")) {
+        while (this.blockHasMore()) {
           const k = this.expect("id").value;
           if (k === "x" || k === "y" || k === "w" || k === "h") {
             place[k] = this.expect("number").value;
@@ -526,6 +561,11 @@ class Parser {
       return t.type === "arrow";
     }
     return false;
+  }
+
+  private blockHasMore(): boolean {
+    if (!this.peek()) throw new Error("Unterminated block; expected }");
+    return !this.is("rbrace");
   }
 
   private peek(): Token | undefined {
@@ -583,6 +623,17 @@ function typeToGroupKind(type: string): Group["kind"] | null {
     "gcp.zone": "az",
     "gcp.vpc": "vpc",
     "gcp.subnet": "subnet",
+    "cloud-agnostic.cloud": "cloud",
+    "cloud-agnostic.account": "account",
+    "cloud-agnostic.region": "region",
+    "cloud-agnostic.zone": "az",
+    "cloud-agnostic.network": "vpc",
+    "cloud-agnostic.subnet": "subnet",
+    "cloud-agnostic.security-group": "logical",
+    "cloud-agnostic.cluster": "logical",
+    "cloud-agnostic.datacenter": "logical",
+    "cloud-agnostic.logical": "logical",
+    "cloud-agnostic.trust-boundary": "overlay",
     "neutral.cloud": "cloud",
     "neutral.tenant": "account",
     "neutral.region": "region",
@@ -598,12 +649,15 @@ function typeToGroupKind(type: string): Group["kind"] | null {
   return map[type] ?? null;
 }
 
-export function parseArch(source: string): DiagramDocument {
+export function parseDgm(source: string): DiagramDocument {
+  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
+    throw new Error("Diagram exceeds the 1 MiB source limit");
+  }
   const tokens = tokenize(source);
   return new Parser(tokens).parse();
 }
 
-export function printArch(doc: DiagramDocument): string {
+export function printDgm(doc: DiagramDocument): string {
   const lines: string[] = [];
   lines.push(`diagram ${doc.id} {`);
   lines.push(`  grammar ${doc.grammar}`);
@@ -721,7 +775,12 @@ function formatPlace(
 }
 
 function escapeString(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+    .replace(/\t/g, "\\t");
 }
 
 function findRoots(doc: DiagramDocument): string[] {
@@ -750,14 +809,16 @@ function printNode(
   const resource = doc.resources.find((r) => r.id === id);
   if (group) {
     const type = group.type ?? groupKindToType(group.kind);
-    lines.push(`${pad}${type} ${group.id} "${group.label}" {`);
+    lines.push(`${pad}${type} ${group.id} "${escapeString(group.label)}" {`);
+    if (group.step !== undefined) lines.push(`${pad}  step ${group.step}`);
     for (const child of group.children) {
       printNode(doc, child, indent + 1, lines);
     }
     lines.push(`${pad}}`);
   } else if (resource) {
-    const label = resource.label.role ?? resource.label.service ?? resource.id;
-    let line = `${pad}${resource.type} ${resource.id} "${label}"`;
+    const label = resource.label.role;
+    let line = `${pad}${resource.type} ${resource.id}`;
+    if (label) line += ` "${escapeString(label)}"`;
     const opts: string[] = [];
     if (resource.role !== "primary") opts.push(`role ${resource.role}`);
     if (resource.props.iconAsset) opts.push(`icon ${resource.props.iconAsset}`);

@@ -1,5 +1,7 @@
 import type { Edge, EdgeKind, EdgeStyle } from "@dumb-diagrams/core";
 
+import { MAX_EDGE_STEP } from "../editor-model";
+
 export function EdgePanel({
   edge,
   routePinned,
@@ -68,7 +70,7 @@ export function EdgePanel({
             type="number"
             inputMode="numeric"
             min={0}
-            max={9999}
+            max={MAX_EDGE_STEP}
             step={1}
             placeholder="Add number"
             value={edge.step ?? ""}
@@ -80,7 +82,7 @@ export function EdgePanel({
               }
               if (!/^\d+$/.test(raw)) return;
               const value = Number(raw);
-              if (Number.isSafeInteger(value) && value <= 9999) onUpdateStep(value);
+              if (Number.isSafeInteger(value) && value <= MAX_EDGE_STEP) onUpdateStep(value);
             }}
           />
           <button
@@ -91,7 +93,7 @@ export function EdgePanel({
             {edge.step === undefined ? "Add" : "Remove"}
           </button>
         </div>
-        <p className="property-hint">Drag the badge along the connector to place it above or below the line.</p>
+        <p className="property-hint">Whole numbers only: 0–99. Drag the badge along the connector to place it above or below the line.</p>
       </div>
 
       <div className="property-section">

@@ -1,0 +1,38 @@
+diagram transfer-hub {
+  grammar aws
+  flow lr
+
+  generic.user user "User"
+
+  aws.cloud cloud "AWS Cloud" {
+    aws.account customer "Customer's AWS Account" {
+      generic.client ui "Data Transfer Hub UI"
+      group auth "Authentication" {
+        aws.cognito cognito
+      }
+      aws.aws-appsync appsync
+      aws.cloudfront cloudfront
+      group workflow "AWS Step Functions workflow" {
+        aws.aws-step-functions sfn
+        aws.aws-lambda lambda1 "Workflow task"
+        aws.aws-cloudformation cfn
+      }
+    }
+    aws.account managed "AWS Managed Account" {
+      aws.simple-storage-service s3_templates "Templates"
+      aws.simple-storage-service s3_images "Images"
+    }
+  }
+
+  user -> ui { step 1 }
+  ui -> appsync { step 2 }
+  appsync -> cloudfront { step 3 }
+  cloudfront -> sfn { step 4 }
+  sfn -> lambda1 { step 5 }
+  lambda1 -> s3_templates { step 6 }
+  cfn -> s3_images { step 7 }
+  ui -> cognito { step 8 style dashed }
+}
+
+view default {
+}

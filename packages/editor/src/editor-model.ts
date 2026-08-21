@@ -14,8 +14,8 @@ import type {
   ResourceRole,
   Side,
 } from "@dumb-diagrams/core";
-import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/core";
-import { getCatalogEntry, type CatalogEntry } from "@dumb-diagrams/catalog";
+import { DIAGRAM_LIMITS, getDefaultView, hasErrors, normalizePortOffset, utf8ByteLength, validateDocument } from "@dumb-diagrams/core";
+import { getCatalogEntry, getCatalogMap, type CatalogEntry } from "@dumb-diagrams/catalog";
 import { sanitizeSvg } from "@dumb-diagrams/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
 
@@ -29,6 +29,8 @@ export interface SelectionItem {
 }
 
 export type Selection = SelectionItem[];
+
+export const MAX_EDGE_STEP = 99;
 
 export const ANNOTATION_STYLES: Array<{
   id: AnnotationStyle;
@@ -127,8 +129,8 @@ export function setPlace(
   return next;
 }
 
-export const MAX_SVG_BYTES = 256 * 1024;
-export const MAX_TOTAL_ASSET_BYTES = 2 * 1024 * 1024;
+export const MAX_SVG_BYTES = DIAGRAM_LIMITS.svgBytes;
+export const MAX_TOTAL_ASSET_BYTES = DIAGRAM_LIMITS.totalAssetBytes;
 
 export type ResourceIconSize = "normal" | "small";
 
@@ -539,7 +541,7 @@ export function renameResource(
   const next = cloneDocument(doc);
   const resource = next.resources.find((candidate) => candidate.id === id);
   if (!resource) return doc;
-  resource.label = { ...resource.label, role: label };
+  resource.label = { ...resource.label, role: label || undefined };
   return next;
 }
 
@@ -552,6 +554,21 @@ export function renameGroup(
   const group = next.groups.find((candidate) => candidate.id === id);
   if (!group) return doc;
   group.label = label;
+  return next;
+}
+
+export function updateGroupStep(
+  doc: DiagramDocument,
+  id: string,
+  step?: number,
+): DiagramDocument {
+  if (step !== undefined && (!Number.isInteger(step) || step < 0 || step > MAX_EDGE_STEP)) {
+    return doc;
+  }
+  const next = cloneDocument(doc);
+  const group = next.groups.find((candidate) => candidate.id === id);
+  if (!group) return doc;
+  group.step = step;
   return next;
 }
 
@@ -615,7 +632,7 @@ export function addResource(
     id,
     type: entry.type,
     parent,
-    label: { service: entry.serviceName },
+    label: {},
     role: "primary",
     props: {},
   });
@@ -859,6 +876,12 @@ export function updateEdge(
     >
   >,
 ): DiagramDocument {
+  if (
+    patch.step !== undefined &&
+    (!Number.isInteger(patch.step) || patch.step < 0 || patch.step > MAX_EDGE_STEP)
+  ) {
+    return doc;
+  }
   const next = cloneDocument(doc);
   const edge = next.edges.find((candidate) => candidate.id === id);
   if (edge) {
@@ -1075,6 +1098,10 @@ export function serializeClipboard(doc: DiagramDocument, selection: Selection): 
     (edge) => selectedEdges.has(edge.id) || (included.has(edge.source) && included.has(edge.target)),
   );
   const copiedAnnotations = doc.annotations.filter((annotation) => selectedAnnotations.has(annotation.id));
+  const itemCount = copiedGroups.length + copiedResources.length + copiedEdges.length + copiedAnnotations.length;
+  if (itemCount > DIAGRAM_LIMITS.clipboardItems) {
+    throw new Error(`Selection exceeds the ${DIAGRAM_LIMITS.clipboardItems}-object clipboard limit`);
+  }
   const assetIds = new Set(
     copiedResources
       .map((resource) => resource.props.iconAsset)
@@ -1095,7 +1122,11 @@ export function serializeClipboard(doc: DiagramDocument, selection: Selection): 
     // explicit so nested copy/paste can remap every reference.
     items: selection,
   };
-  return JSON.stringify(payload);
+  const serialized = JSON.stringify(payload);
+  if (utf8ByteLength(serialized) > DIAGRAM_LIMITS.clipboardBytes) {
+    throw new Error("Selection exceeds the 512 KiB clipboard limit");
+  }
+  return serialized;
 }
 
 export function pasteClipboard(
@@ -1103,7 +1134,11 @@ export function pasteClipboard(
   payload: string,
   at: Point,
 ): { doc: DiagramDocument; selection: Selection } {
-  const data = JSON.parse(payload) as {
+  if (utf8ByteLength(payload) > DIAGRAM_LIMITS.clipboardBytes) {
+    throw new Error("Clipboard payload exceeds the 512 KiB limit");
+  }
+  const parsed: unknown = JSON.parse(payload);
+  const data = decodeClipboardPayload(parsed) as {
     type: string;
     items?: Array<Record<string, unknown>>;
     groups?: Array<{ group: DiagramDocument["groups"][number]; place?: DiagramDocument["views"][number]["places"][string] }>;
@@ -1124,6 +1159,10 @@ export function pasteClipboard(
   const edges = data.edges ?? legacyClipboardEdges(data.items ?? []);
   const annotations = data.annotations ?? legacyClipboardAnnotations(data.items ?? []);
   const assets = data.assets ?? [];
+  const itemCount = groups.length + resources.length + edges.length + annotations.length;
+  if (itemCount > DIAGRAM_LIMITS.clipboardItems) {
+    throw new Error(`Clipboard payload exceeds the ${DIAGRAM_LIMITS.clipboardItems}-object limit`);
+  }
   const idMap = new Map<string, string>();
   const assetMap = new Map<string, string>();
   const created: Selection = [];
@@ -1137,9 +1176,17 @@ export function pasteClipboard(
   const dy = at.y - (origin?.y ?? 0);
 
   for (const asset of assets) {
+    const sanitized = sanitizeSvg(asset.content);
     const id = uniqueId(next, asset.id);
     assetMap.set(asset.id, id);
-    next.assets = [...(next.assets ?? []), { ...structuredClone(asset), id }];
+    next.assets = [...(next.assets ?? []), {
+      id,
+      kind: "svg",
+      content: sanitized.content,
+      intrinsicW: sanitized.intrinsicW,
+      intrinsicH: sanitized.intrinsicH,
+      hash: sanitized.hash,
+    }];
   }
   for (const item of groups) idMap.set(item.group.id, uniqueId(next, item.group.id));
   for (const item of resources) idMap.set(item.resource.id, uniqueId(next, item.resource.id));
@@ -1193,7 +1240,87 @@ export function pasteClipboard(
     view.annotations[id] = shiftedPlace(item.place, dx, dy);
     created.push({ kind: "annotation", id });
   }
+  const issues = validateDocument(next, getCatalogMap(), { enforceCatalogRules: false });
+  if (hasErrors(issues)) throw new Error(issues[0]?.message ?? "Clipboard payload is invalid");
   return { doc: next, selection: created };
+}
+
+function decodeClipboardPayload(input: unknown): Record<string, unknown> {
+  if (!isRecord(input) || input.type !== "dumb-diagrams/clipboard") {
+    throw new Error("Unsupported clipboard payload");
+  }
+  for (const key of ["groups", "resources", "edges", "annotations", "assets", "items", "ancestorGroups"] as const) {
+    if (input[key] !== undefined && !Array.isArray(input[key])) throw new Error(`Clipboard ${key} must be an array`);
+  }
+  const groups = input.groups as unknown[] | undefined;
+  const resources = input.resources as unknown[] | undefined;
+  const edges = input.edges as unknown[] | undefined;
+  const annotations = input.annotations as unknown[] | undefined;
+  const assets = input.assets as unknown[] | undefined;
+  const modernItemCount = (groups?.length ?? 0) + (resources?.length ?? 0) + (edges?.length ?? 0) + (annotations?.length ?? 0);
+  const legacyItemCount = (input.items as unknown[] | undefined)?.length ?? 0;
+  if (modernItemCount > DIAGRAM_LIMITS.clipboardItems || legacyItemCount > DIAGRAM_LIMITS.clipboardItems) {
+    throw new Error(`Clipboard payload exceeds the ${DIAGRAM_LIMITS.clipboardItems}-object limit`);
+  }
+  if (groups?.some((item) => !isRecord(item) || !validGroup(item.group) || !validPlace(item.place))) throw new Error("Clipboard contains an invalid group");
+  if (resources?.some((item) => !isRecord(item) || !validResource(item.resource) || !validPlace(item.place))) throw new Error("Clipboard contains an invalid resource");
+  if (edges?.some((item) => !validEdge(item))) throw new Error("Clipboard contains an invalid edge");
+  if (annotations?.some((item) => !isRecord(item) || !validAnnotation(item.annotation) || !validPlace(item.place))) throw new Error("Clipboard contains an invalid annotation");
+  if (assets?.some((item) => !validAsset(item))) throw new Error("Clipboard contains an invalid asset");
+  if ((input.ancestorGroups as unknown[] | undefined)?.some((id) => typeof id !== "string")) throw new Error("Clipboard ancestor group ids must be strings");
+  if ((input.items as unknown[] | undefined)?.some((item) => !validLegacyClipboardItem(item))) throw new Error("Clipboard legacy items are invalid");
+  return input;
+}
+
+function validLegacyClipboardItem(value: unknown): boolean {
+  if (!isRecord(value) || !validPlace(value.place)) return false;
+  if (typeof value.id === "string" && (value.kind === "group" || value.kind === "resource" || value.kind === "edge" || value.kind === "annotation")) return true;
+  if (value.kind === "group") return validGroup(value.group);
+  if (value.kind === "resource") return validResource(value.resource);
+  if (value.kind === "edge") return validEdge(value.edge);
+  if (value.kind === "annotation") return validAnnotation(value.annotation);
+  return false;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function validGroup(value: unknown): boolean {
+  const groupKinds = new Set(["cloud", "account", "region", "vpc", "az", "subnet", "subnet-public", "subnet-private", "logical", "overlay"]);
+  return isRecord(value) && typeof value.id === "string" && typeof value.kind === "string" && groupKinds.has(value.kind) && typeof value.label === "string" &&
+    Array.isArray(value.children) && value.children.every((id) => typeof id === "string") &&
+    (value.parent === undefined || typeof value.parent === "string") &&
+    (value.step === undefined || (typeof value.step === "number" && Number.isInteger(value.step) && value.step >= 0 && value.step <= MAX_EDGE_STEP));
+}
+
+function validResource(value: unknown): boolean {
+  return isRecord(value) && typeof value.id === "string" && typeof value.type === "string" && isRecord(value.label) &&
+    (value.label.service === undefined || typeof value.label.service === "string") && (value.label.role === undefined || typeof value.label.role === "string") &&
+    (value.role === "primary" || value.role === "secondary" || value.role === "border") && isRecord(value.props) &&
+    (value.parent === undefined || typeof value.parent === "string");
+}
+
+function validEdge(value: unknown): boolean {
+  return isRecord(value) && typeof value.id === "string" && typeof value.source === "string" && typeof value.target === "string" &&
+    (value.style === "solid" || value.style === "dashed") && (value.kind === undefined || value.kind === "flow" || value.kind === "peer" || value.kind === "fail");
+}
+
+function validAnnotation(value: unknown): boolean {
+  return isRecord(value) && typeof value.id === "string" && typeof value.text === "string" &&
+    (value.anchor === undefined || typeof value.anchor === "string") &&
+    (value.style === undefined || value.style === "paper" || value.style === "code" || value.style === "callout" || value.style === "checklist");
+}
+
+function validAsset(value: unknown): boolean {
+  return isRecord(value) && typeof value.id === "string" && value.kind === "svg" && typeof value.content === "string" &&
+    typeof value.intrinsicW === "number" && typeof value.intrinsicH === "number";
+}
+
+function validPlace(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+  return ["x", "y", "w", "h", "zIndex"].every((key) => value[key] === undefined || typeof value[key] === "number" && Number.isFinite(value[key]));
 }
 
 function shiftedPlace(

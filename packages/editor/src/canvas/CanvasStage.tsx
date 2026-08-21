@@ -8,6 +8,9 @@ export const DEFAULT_VIEWPORT_ZOOM = 0.9;
 export const DEFAULT_VIEWPORT_TOP_MARGIN = 96;
 export const DEFAULT_VIEWPORT_LEFT_MARGIN = 96;
 export const DEFAULT_VIEWPORT_RIGHT_MARGIN = 40;
+export const DEFAULT_VIEWPORT_BOTTOM_MARGIN = 96;
+export const DEFAULT_EMPTY_CANVAS_WIDTH = 480;
+export const DEFAULT_EMPTY_CANVAS_HEIGHT = 240;
 
 export interface Viewport {
   panX: number;
@@ -15,25 +18,47 @@ export interface Viewport {
   zoom: number;
 }
 
+export interface ViewportChangeOptions {
+  userInitiated?: boolean;
+}
+
 export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
 /**
- * Place a diagram toward the upper-right without allowing it to disappear
- * behind the left tool dock when the artboard is wider than the viewport.
+ * Center a diagram when it fits, while keeping a safe starting margin when it
+ * is wider or taller than the viewport. Empty diagrams use the same framing
+ * as the visible empty-canvas card instead of being positioned at x=0.
  */
 export function defaultViewportForContent(
   stageWidth: number,
   contentWidth: number,
+  stageHeight = 0,
+  contentHeight = 0,
 ): Viewport {
-  const width = Math.max(0, contentWidth);
-  const rightAnchoredX = stageWidth - width * DEFAULT_VIEWPORT_ZOOM - DEFAULT_VIEWPORT_RIGHT_MARGIN;
+  const width = Math.max(0, contentWidth) || DEFAULT_EMPTY_CANVAS_WIDTH;
+  const height = Math.max(0, contentHeight) || DEFAULT_EMPTY_CANVAS_HEIGHT;
+  const horizontalFit = stageWidth > 0
+    ? (stageWidth - DEFAULT_VIEWPORT_LEFT_MARGIN - DEFAULT_VIEWPORT_RIGHT_MARGIN) / width
+    : Number.POSITIVE_INFINITY;
+  const verticalFit = stageHeight > 0
+    ? (stageHeight - DEFAULT_VIEWPORT_TOP_MARGIN - DEFAULT_VIEWPORT_BOTTOM_MARGIN) / height
+    : Number.POSITIVE_INFINITY;
+  const zoom = clampZoom(Math.min(DEFAULT_VIEWPORT_ZOOM, horizontalFit, verticalFit));
+  const scaledWidth = width * zoom;
+  const scaledHeight = height * zoom;
+  const centeredX = (stageWidth - scaledWidth) / 2;
+  const centeredY = (stageHeight - scaledHeight) / 2;
 
   return {
-    panX: Math.max(DEFAULT_VIEWPORT_LEFT_MARGIN, rightAnchoredX),
-    panY: DEFAULT_VIEWPORT_TOP_MARGIN,
-    zoom: DEFAULT_VIEWPORT_ZOOM,
+    panX: stageWidth > 0
+      ? Math.max(DEFAULT_VIEWPORT_LEFT_MARGIN, Math.min(centeredX, stageWidth - scaledWidth - DEFAULT_VIEWPORT_RIGHT_MARGIN))
+      : DEFAULT_VIEWPORT_LEFT_MARGIN,
+    panY: stageHeight > 0
+      ? Math.max(DEFAULT_VIEWPORT_TOP_MARGIN, centeredY)
+      : DEFAULT_VIEWPORT_TOP_MARGIN,
+    zoom,
   };
 }
 
@@ -48,7 +73,7 @@ export function CanvasStage({
 }: {
   children: ReactNode;
   viewport: Viewport;
-  onViewportChange: (next: Viewport) => void;
+  onViewportChange: (next: Viewport, options?: ViewportChangeOptions) => void;
   onBackgroundClick: () => void;
   onFitRequest?: (fit: () => void) => void;
   contentSize?: { width: number; height: number };
@@ -103,7 +128,15 @@ export function CanvasStage({
       if (!width) return;
 
       framedKeyRef.current = defaultFrameKey;
-      onViewportChange(defaultViewportForContent(width, contentSize.width));
+      onViewportChange(
+        defaultViewportForContent(
+          width,
+          contentSize.width,
+          el.getBoundingClientRect().height,
+          contentSize.height,
+        ),
+        { userInitiated: false },
+      );
     };
 
     frameIfNeeded();

@@ -152,6 +152,14 @@ test("opens the group library and keeps provider group icons available", async (
   await expect(groups).toHaveCount(1);
   await groups.click();
 
+  const footerZ = await page.locator(".privacy-footer").evaluate((element) =>
+    Number.parseInt(getComputedStyle(element).zIndex, 10),
+  );
+  const drawerZ = await page.locator(".floating-panel.drawer-sheet").evaluate((element) =>
+    Number.parseInt(getComputedStyle(element).zIndex, 10),
+  );
+  expect(footerZ).toBeLessThan(drawerZ);
+
   const cards = page.locator('[data-catalog-type][data-asset-kind="group"]');
   const count = await cards.count();
   expect(count).toBeGreaterThan(10);
@@ -159,6 +167,31 @@ test("opens the group library and keeps provider group icons available", async (
   await expect
     .poll(() => cards.locator("img").evaluateAll((images) => images.filter((image) => image.naturalWidth > 0).length))
     .toBe(count);
+});
+
+test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
+  await page.goto("/");
+  const groups = page.locator('[data-entity-kind="group"]');
+  const beforeCount = await groups.count();
+
+  await page.getByRole("button", { name: "Groups", exact: true }).click();
+  await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
+
+  const cloud = page.locator('[data-catalog-type="cloud-agnostic.cloud"]');
+  await expect(cloud).toHaveCount(1);
+  await expect(cloud).toHaveAttribute("data-asset-kind", "group");
+
+  const cluster = page.locator('[data-catalog-type="cloud-agnostic.cluster"]');
+  await expect(cluster).toHaveCount(1);
+  await expect(cluster).toHaveAttribute("data-asset-kind", "group");
+  await cluster.locator(".palette-item").click();
+
+  await expect(groups).toHaveCount(beforeCount + 1);
+  await expect(page.locator('[data-entity-kind="group"][aria-label="Group Cluster"]')).toHaveCount(1);
+  await expect(page.locator('[data-entity-kind="resource"][aria-label="Resource Cluster"]')).toHaveCount(0);
+  await expect(page.locator('[data-resize-kind="group"][data-resize-handle="se"]')).toHaveCount(1);
+  await expect(page.locator('[data-resize-kind="group"][data-resize-handle="e"]')).toHaveCount(1);
+  await expect(page.locator('[data-resize-kind="group"][data-resize-handle="s"]')).toHaveCount(1);
 });
 
 test("places a new root group outside the tiled canvas with resize controls", async ({ page }) => {

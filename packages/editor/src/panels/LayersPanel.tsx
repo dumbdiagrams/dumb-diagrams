@@ -1,5 +1,5 @@
 import type { DiagramDocument } from "@dumb-diagrams/core";
-import { getDefaultView } from "@dumb-diagrams/core";
+import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/core";
 
 import type { Selection, SelectionItem } from "../editor-model";
 import { IconEye, IconEyeOff } from "../ui/icons";
@@ -58,6 +58,7 @@ export function LayersPanel({
       <input
         className="layers-search"
         value={query}
+        maxLength={DIAGRAM_LIMITS.searchCharacters}
         onChange={(event) => onQuery(event.target.value)}
         placeholder="Search layers"
         aria-label="Search layers"

@@ -15,11 +15,13 @@ export function ContextMenu({
   y,
   items,
   onClose,
+  ariaLabel = "Canvas context menu",
 }: {
   x: number;
   y: number;
   items: ContextMenuItem[];
   onClose: () => void;
+  ariaLabel?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,7 +51,7 @@ export function ContextMenu({
       className="context-menu"
       style={{ left: x, top: y }}
       role="menu"
-      aria-label="Canvas context menu"
+      aria-label={ariaLabel}
       onContextMenu={(event) => event.preventDefault()}
     >
       {items.map((item) => (

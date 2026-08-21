@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/core";
+import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/core";
 import { getCatalogEntry } from "@dumb-diagrams/catalog";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
@@ -14,6 +14,7 @@ import {
   clearView,
   deleteSelection,
   importSvgAsset,
+  MAX_EDGE_STEP,
   moveSelection,
   nudgeSelection,
   pasteClipboard,
@@ -31,9 +32,19 @@ import {
   setResourceIconSize,
   setTitle,
   swapEdgeDirection,
+  updateEdge,
 } from "./editor-model.js";
 
 describe("editor commands", () => {
+  it("limits arrow numbers to the supported 0-99 range", () => {
+    const doc = createAsyncDocsFixture();
+
+    expect(updateEdge(doc, "e1", { step: MAX_EDGE_STEP }).edges.find((edge) => edge.id === "e1")?.step)
+      .toBe(MAX_EDGE_STEP);
+    expect(updateEdge(doc, "e1", { step: MAX_EDGE_STEP + 1 })).toBe(doc);
+    expect(updateEdge(doc, "e1", { step: -1 })).toBe(doc);
+  });
+
   it("allows manual catalog items to be staged outside generated containment rules", () => {
     const doc = createAsyncDocsFixture();
     const service = getCatalogEntry("aws.elastic-container-service")!;
@@ -364,5 +375,26 @@ describe("editor commands", () => {
       "primary",
     );
     expect(resourceIconSize(normal.resources.find((c) => c.id === "client")!)).toBe("normal");
+  });
+
+  it("rejects oversized and structurally invalid clipboard payloads", () => {
+    const doc = createAsyncDocsFixture();
+    expect(() => pasteClipboard(doc, "x".repeat(DIAGRAM_LIMITS.clipboardBytes + 1), { x: 0, y: 0 })).toThrow(/512 KiB/);
+    expect(() => pasteClipboard(doc, JSON.stringify({
+      type: "dumb-diagrams/clipboard",
+      resources: [{ resource: { id: 42 } }],
+    }), { x: 0, y: 0 })).toThrow(/invalid resource/);
+  });
+
+  it("rejects a paste when the merged document would exceed an object limit", () => {
+    const doc = createAsyncDocsFixture();
+    while (doc.resources.length < DIAGRAM_LIMITS.resources) {
+      const id = `extra-${doc.resources.length}`;
+      doc.resources.push({ id, type: "generic.user", label: { role: id }, role: "primary", props: {} });
+    }
+    const source = createAsyncDocsFixture();
+    const payload = serializeClipboard(source, [{ kind: "resource", id: source.resources[0]!.id }]);
+    expect(() => pasteClipboard(doc, payload, { x: 0, y: 0 })).toThrow(/500-resources/);
+    expect(doc.resources).toHaveLength(DIAGRAM_LIMITS.resources);
   });
 });
