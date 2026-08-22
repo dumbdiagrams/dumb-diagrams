@@ -6,6 +6,7 @@ import {
   nearestPortAnchor,
   portPoint,
 } from "@dumb-diagrams/core";
+import type { DiagramDocument, LayoutResult, NodeGeom } from "@dumb-diagrams/core";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import {
   collapseOrthogonalRouteArtifacts,
@@ -260,6 +261,55 @@ describe("routeEdgePreview", () => {
     expect(sharedLength(existingRoute.points, convergingRoute.points)).toBeLessThanOrEqual(12);
   });
 
+  it("takes the short top approach instead of crossing CloudFront like the example regression", () => {
+    const { doc, layout } = gatewayRoutingRegressionLayout(false);
+    const routes = routeEdges(doc, layout);
+    const cloudfront = routes.find((edge) => edge.id === "cdn_to_api")!;
+    const authorizer = routes.find((edge) => edge.id === "api_authorizer")!;
+    const gateway = layout.nodes.find((node) => node.id === "gateway")!;
+
+    expect(pathsCross(cloudfront.points, authorizer.points)).toBe(false);
+    expect(sharedLength(cloudfront.points, authorizer.points)).toBe(0);
+    expect(authorizer.points.at(-1)!.y).toBe(gateway.icon.y);
+    expect(pathManhattanLength(authorizer.points)).toBeLessThan(300);
+  });
+
+  it("reselects clean faces after the API Gateway is moved above both sources", () => {
+    const { doc, layout } = gatewayRoutingRegressionLayout(true);
+    const routes = routeEdges(doc, layout);
+    const cloudfront = routes.find((edge) => edge.id === "cdn_to_api")!;
+    const authorizer = routes.find((edge) => edge.id === "api_authorizer")!;
+
+    expect(pathsCross(cloudfront.points, authorizer.points)).toBe(false);
+    expect(sharedLength(cloudfront.points, authorizer.points)).toBe(0);
+    expect(pathManhattanLength(cloudfront.points)).toBeLessThan(520);
+    expect(pathManhattanLength(authorizer.points)).toBeLessThan(360);
+  });
+
+  it("avoids the same crossing when connector declaration order is reversed", () => {
+    const { doc, layout } = gatewayRoutingRegressionLayout(false);
+    doc.edges = [doc.edges[0]!, doc.edges[2]!, doc.edges[1]!];
+    const routes = routeEdges(doc, layout);
+    const cloudfront = routes.find((edge) => edge.id === "cdn_to_api")!;
+    const authorizer = routes.find((edge) => edge.id === "api_authorizer")!;
+
+    expect(pathsCross(cloudfront.points, authorizer.points)).toBe(false);
+    expect(sharedLength(cloudfront.points, authorizer.points)).toBe(0);
+  });
+
+  it("keeps exact dragged port offsets locked while face-only hints remain flexible", () => {
+    const { doc, layout } = gatewayRoutingRegressionLayout(false);
+    const edge = doc.edges.find((candidate) => candidate.id === "api_authorizer")!;
+    edge.sourcePortOffset = 0.25;
+    edge.targetPortOffset = 0.75;
+
+    const route = routeEdges(doc, layout).find((candidate) => candidate.id === edge.id)!;
+    const source = layout.nodes.find((node) => node.id === edge.source)!;
+    const target = layout.nodes.find((node) => node.id === edge.target)!;
+    expect(route.points[0]).toEqual(portPoint(source.icon, "e", 0.25));
+    expect(route.points.at(-1)).toEqual(portPoint(target.icon, "s", 0.75));
+  });
+
   it("keeps manual breakpoints orthogonal and preserves the authored breaks", () => {
     const manual = normalizeOrthogonalRoute([
       { x: 100, y: 100 },
@@ -340,6 +390,87 @@ describe("routeEdgePreview", () => {
   });
 });
 
+function gatewayRoutingRegressionLayout(movedGateway: boolean): {
+  doc: DiagramDocument;
+  layout: LayoutResult;
+} {
+  const doc = createEmptyDocument(movedGateway ? "gateway-moved" : "gateway-default");
+  doc.resources = [
+    routingResource("identity", "aws.cognito", "Cognito"),
+    routingResource("cdn", "aws.cloudfront", "CloudFront"),
+    routingResource("gateway", "aws.api-gateway", "API Gateway"),
+  ];
+  doc.edges = [
+    {
+      id: "identity_to_cdn",
+      source: "identity",
+      target: "cdn",
+      sourcePort: "s",
+      targetPort: "n",
+      style: "solid",
+      kind: "flow",
+    },
+    {
+      id: "cdn_to_api",
+      source: "cdn",
+      target: "gateway",
+      sourcePort: "e",
+      targetPort: "w",
+      style: "solid",
+      kind: "flow",
+    },
+    {
+      id: "api_authorizer",
+      source: "identity",
+      target: "gateway",
+      sourcePort: "e",
+      targetPort: "s",
+      label: "JWT authorizer",
+      style: "dashed",
+      kind: "peer",
+    },
+  ];
+
+  const nodes = movedGateway
+    ? [
+        routingNode("identity", 60, 100, 126),
+        routingNode("cdn", 60, 300, 92),
+        routingNode("gateway", 340, 40, 92),
+      ]
+    : [
+        routingNode("identity", 60, 80, 126),
+        routingNode("cdn", 60, 260, 92),
+        routingNode("gateway", 280, 170, 92),
+      ];
+  return {
+    doc,
+    layout: { nodes, groups: [], edges: [], width: 560, height: 520, symmetries: [] },
+  };
+}
+
+function routingResource(id: string, type: string, service: string) {
+  return {
+    id,
+    type,
+    label: { service },
+    role: "primary" as const,
+    props: {},
+  };
+}
+
+function routingNode(id: string, x: number, y: number, obstacleHeight: number): NodeGeom {
+  return {
+    id,
+    type: "resource",
+    icon: { x, y, w: 48, h: 48 },
+    label: { x: x - 20, y: y + 52, w: 88, h: obstacleHeight - 56 },
+    obstacle: { x: x - 28, y, w: 104, h: obstacleHeight },
+    role: "primary",
+    resourceType: id,
+    serviceLabel: id,
+  };
+}
+
 function inflate(rect: { x: number; y: number; w: number; h: number }, pad: number) {
   return {
     x: rect.x - pad,
@@ -404,4 +535,44 @@ function sharedLength(
     }
   }
   return total;
+}
+
+function pathsCross(
+  first: Array<{ x: number; y: number }>,
+  second: Array<{ x: number; y: number }>,
+) {
+  for (let i = 0; i < first.length - 1; i++) {
+    for (let j = 0; j < second.length - 1; j++) {
+      if (segmentsCross(first[i]!, first[i + 1]!, second[j]!, second[j + 1]!)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function segmentsCross(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+  d: { x: number; y: number },
+) {
+  const firstVertical = a.x === b.x;
+  const secondVertical = c.x === d.x;
+  if (firstVertical === secondVertical) return false;
+  const verticalA = firstVertical ? a : c;
+  const verticalB = firstVertical ? b : d;
+  const horizontalA = firstVertical ? c : a;
+  const horizontalB = firstVertical ? d : b;
+  return horizontalA.y > Math.min(verticalA.y, verticalB.y) &&
+    horizontalA.y < Math.max(verticalA.y, verticalB.y) &&
+    verticalA.x > Math.min(horizontalA.x, horizontalB.x) &&
+    verticalA.x < Math.max(horizontalA.x, horizontalB.x);
+}
+
+function pathManhattanLength(points: Array<{ x: number; y: number }>) {
+  return points.slice(0, -1).reduce((total, point, index) => {
+    const next = points[index + 1]!;
+    return total + Math.abs(point.x - next.x) + Math.abs(point.y - next.y);
+  }, 0);
 }

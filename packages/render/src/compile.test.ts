@@ -4,10 +4,11 @@ import {
   createTransferHubFixture,
   getDefaultView,
 } from "@dumb-diagrams/core";
+import type { LayoutResult } from "@dumb-diagrams/core";
 import { compileDiagram, renderSvg } from "@dumb-diagrams/render";
-import { checkInvariants } from "@dumb-diagrams/render";
 import { layoutDocument } from "@dumb-diagrams/layout";
 import { normalizeOrthogonalRoute, routeEdges, attachRoutes } from "@dumb-diagrams/route";
+import { checkInvariants } from "./invariants.js";
 
 describe("async-docs fixture", () => {
   it("compiles without validation errors", () => {
@@ -50,6 +51,37 @@ describe("async-docs fixture", () => {
     const full = attachRoutes(layout, edges);
     const failures = checkInvariants(full);
     expect(failures).toEqual([]);
+  });
+
+  it("reports a strict connector crossing as a routing invariant failure", () => {
+    const layout = {
+      nodes: [],
+      groups: [],
+      edges: [
+        {
+          id: "horizontal",
+          source: "a",
+          target: "b",
+          points: [{ x: 0, y: 50 }, { x: 100, y: 50 }],
+          style: "solid",
+        },
+        {
+          id: "vertical",
+          source: "c",
+          target: "d",
+          points: [{ x: 50, y: 0 }, { x: 50, y: 100 }],
+          style: "solid",
+        },
+      ],
+      width: 100,
+      height: 100,
+      symmetries: [],
+    } satisfies LayoutResult;
+
+    expect(checkInvariants(layout)).toContainEqual({
+      code: "edge-crossing",
+      message: "Edges horizontal and vertical cross",
+    });
   });
 
   it("equalizes AZ dimensions", () => {
@@ -214,7 +246,7 @@ describe("async-docs fixture", () => {
 
     const intoApi = edges.find((edge) => edge.id === "e2")!;
     const outOfApi = edges.find((edge) => edge.id === "e3")!;
-    expect(intoApi.points[intoApi.points.length - 1]!.y).toBe(
+    expect(intoApi.points[intoApi.points.length - 1]!.y).not.toBe(
       outOfApi.points[0]!.y,
     );
 

@@ -97,6 +97,12 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
           message: `Edges ${a.id} and ${b.id} share a corridor outside a fan-out stem`,
         });
       }
+      if (pathsCross(a.points, b.points)) {
+        failures.push({
+          code: "edge-crossing",
+          message: `Edges ${a.id} and ${b.id} cross`,
+        });
+      }
     }
   }
 
@@ -113,6 +119,37 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
   }
 
   return failures;
+}
+
+function pathsCross(
+  a: Array<{ x: number; y: number }>,
+  b: Array<{ x: number; y: number }>,
+): boolean {
+  for (let i = 0; i < a.length - 1; i++) {
+    for (let j = 0; j < b.length - 1; j++) {
+      if (segmentsCross(a[i]!, a[i + 1]!, b[j]!, b[j + 1]!)) return true;
+    }
+  }
+  return false;
+}
+
+function segmentsCross(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+  d: { x: number; y: number },
+): boolean {
+  const firstVertical = a.x === b.x;
+  const secondVertical = c.x === d.x;
+  if (firstVertical === secondVertical) return false;
+  const verticalA = firstVertical ? a : c;
+  const verticalB = firstVertical ? b : d;
+  const horizontalA = firstVertical ? c : a;
+  const horizontalB = firstVertical ? d : b;
+  return horizontalA.y > Math.min(verticalA.y, verticalB.y) &&
+    horizontalA.y < Math.max(verticalA.y, verticalB.y) &&
+    verticalA.x > Math.min(horizontalA.x, horizontalB.x) &&
+    verticalA.x < Math.max(horizontalA.x, horizontalB.x);
 }
 
 function circleHitsRect(
