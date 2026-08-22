@@ -128,6 +128,7 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
         checkCoordinate(issues, point.y, "route y", id);
       }
       checkOptionalNumber(issues, route.badgeT, "badge position", id, 0, 1);
+      checkOptionalNumber(issues, route.labelT, "label position", id, 0, 1);
     }
   }
 

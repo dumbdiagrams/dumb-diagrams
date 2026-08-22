@@ -9,31 +9,47 @@ import type {
 import { GROUP_STYLES } from "@dumb-diagrams/grammar-aws";
 
 import type { LayoutState } from "./internal.js";
+import { LAYOUT_METRICS } from "./metrics.js";
 
 export function finalizeAbsoluteLayout(
   doc: DiagramDocument,
   state: LayoutState,
-  canvasX = 48,
-  canvasY = 48,
+  canvasX = LAYOUT_METRICS.canvasPadding,
+  canvasY = LAYOUT_METRICS.canvasPadding,
 ): LayoutResult {
   const nodes: NodeGeom[] = [];
   const groups: GroupGeom[] = [];
 
   const roots = findPositionRoots(doc);
+  const rootHeight = Math.max(
+    0,
+    ...roots.map((rootId) => {
+      const group = getGroup(doc, rootId);
+      if (group) return state.groupGeoms.get(group.id)?.bounds.h ?? 0;
+      const resource = getResource(doc, rootId);
+      return resource ? state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0 : 0;
+    }),
+  );
   let cursorX = canvasX;
 
   for (const rootId of roots) {
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
+    const height = group
+      ? state.groupGeoms.get(group.id)?.bounds.h ?? 0
+      : resource
+        ? state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0
+        : 0;
+    const rootY = canvasY + Math.max(0, (rootHeight - height) / 2);
     if (group) {
-      const w = positionGroupTree(doc, state, group.id, cursorX, canvasY, nodes, groups);
-      cursorX += w + 48;
+      const w = positionGroupTree(doc, state, group.id, cursorX, rootY, nodes, groups);
+      cursorX += w + LAYOUT_METRICS.rootGap;
     } else if (resource) {
       const node = state.nodeGeoms.get(resource.id);
       if (node) {
-        const abs = translateNode(node, cursorX, canvasY);
+        const abs = translateNode(node, cursorX, rootY);
         nodes.push(abs);
-        cursorX += abs.obstacle.w + 48;
+        cursorX += abs.obstacle.w + LAYOUT_METRICS.rootGap;
       }
     }
   }
@@ -48,8 +64,14 @@ export function finalizeAbsoluteLayout(
     nodes,
     groups,
     edges: [],
-    width: Math.max(Math.ceil(bounds.x + bounds.w + 48), 800),
-    height: Math.max(Math.ceil(bounds.y + bounds.h + 48), 600),
+    width: Math.max(
+      Math.ceil(bounds.x + bounds.w + LAYOUT_METRICS.canvasPadding),
+      LAYOUT_METRICS.minCanvasWidth,
+    ),
+    height: Math.max(
+      Math.ceil(bounds.y + bounds.h + LAYOUT_METRICS.canvasPadding),
+      LAYOUT_METRICS.minCanvasHeight,
+    ),
     symmetries: [],
   };
 }
@@ -88,23 +110,28 @@ function positionGroupTree(
   });
 
   if (group.kind === "region") {
-    return positionRegionChildren(doc, state, group, content, nodes, groups);
+    positionRegionChildren(doc, state, group, content, nodes, groups);
+    return w;
   }
   if (group.kind === "vpc") {
-    return positionVpcChildren(doc, state, group, content, nodes, groups);
+    positionVpcChildren(doc, state, group, content, nodes, groups);
+    return w;
   }
   if (group.kind === "az") {
-    return positionAzChildren(doc, state, group, content, nodes, groups);
+    positionAzChildren(doc, state, group, content, nodes, groups);
+    return w;
   }
   if (
     group.kind === "subnet" ||
     group.kind === "subnet-public" ||
     group.kind === "subnet-private"
   ) {
-    return positionSubnetChildren(doc, state, group, content, nodes, groups);
+    positionSubnetChildren(doc, state, group, content, nodes, groups);
+    return w;
   }
   if (group.kind === "logical") {
-    return positionLogicalChildren(doc, state, group, content, nodes, groups);
+    positionLogicalChildren(doc, state, group, content, nodes, groups);
+    return w;
   }
 
   for (const childId of group.children) {
@@ -146,49 +173,7 @@ function positionRegionChildren(
   nodes: NodeGeom[],
   groups: GroupGeom[],
 ): number {
-  const vpcChildren = group.children
-    .map((id) => getGroup(doc, id))
-    .filter((g) => g && g.kind === "vpc");
-  const others = group.children.filter(
-    (id) => !vpcChildren.some((v) => v!.id === id),
-  );
-
-  let x = content.x;
-  let maxW = 0;
-  let maxH = 0;
-
-  for (const vpc of vpcChildren) {
-    if (!vpc) continue;
-    const local = state.groupGeoms.get(vpc.id);
-    const w = local?.bounds.w ?? 300;
-    const h = local?.bounds.h ?? 200;
-    positionGroupTree(doc, state, vpc.id, x, content.y, nodes, groups);
-    x += w + 32;
-    maxW = x - content.x - 32;
-    maxH = Math.max(maxH, h);
-  }
-
-  let sideY = content.y;
-  const sideX = content.x + maxW + 48;
-  for (const childId of others) {
-    const g = getGroup(doc, childId);
-    const r = getResource(doc, childId);
-    if (g) {
-      const local = state.groupGeoms.get(g.id);
-      const h = local?.bounds.h ?? 100;
-      positionGroupTree(doc, state, g.id, sideX, sideY, nodes, groups);
-      sideY += h + 24;
-      maxH = Math.max(maxH, sideY - content.y);
-    } else if (r) {
-      const node = state.nodeGeoms.get(r.id);
-      if (node) {
-        nodes.push(translateNode(node, sideX, sideY));
-        sideY += node.obstacle.h + 24;
-      }
-    }
-  }
-
-  return Math.max(maxW + 48 + 160, state.groupGeoms.get(group.id)?.bounds.w ?? 400);
+  return positionMixedChildren(doc, state, group, content, nodes, groups);
 }
 
 function positionVpcChildren(
@@ -221,19 +206,20 @@ function positionSubnetChildren(
   nodes: NodeGeom[],
   _groups: GroupGeom[],
 ): number {
-  const groupGeom = state.groupGeoms.get(group.id);
-  const contentW = groupGeom?.content.w ?? content.w ?? 160;
   let maxW = 0;
   for (const childId of group.children) {
     const r = getResource(doc, childId);
     if (!r) continue;
     const node = state.nodeGeoms.get(r.id);
     if (!node) continue;
-    const targetIconX = Math.round(content.x + (contentW - node.icon.w) / 2);
-    const localIconX = node.icon.x - node.obstacle.x;
-    const absY = content.y + node.obstacle.y;
-    nodes.push(moveNodeTo(node, targetIconX - localIconX, absY));
-    maxW = Math.max(maxW, node.obstacle.w);
+    nodes.push(
+      moveNodeTo(
+        node,
+        content.x + node.obstacle.x,
+        content.y + node.obstacle.y,
+      ),
+    );
+    maxW = Math.max(maxW, node.obstacle.x + node.obstacle.w);
   }
   return maxW;
 }

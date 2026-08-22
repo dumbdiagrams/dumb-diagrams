@@ -151,6 +151,16 @@ export function IconNote(props: IconProps) {
   );
 }
 
+export function IconText(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 4.5H15" />
+      <path d="M9 4.5V14.5" />
+      <path d="M6.5 14.5H11.5" />
+    </IconBase>
+  );
+}
+
 export function IconExport(props: IconProps) {
   return (
     <IconBase {...props}>

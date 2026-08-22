@@ -13,13 +13,13 @@ pnpm test
 node packages/cli/dist/index.js fixtures async-docs
 
 # Render from source
-node packages/cli/dist/index.js render examples/src/async-docs.dgm output.svg
+node packages/cli/dist/index.js render examples/src/aws-high-availability-web-app.dgm output.svg
 
 # Full browser editor (menus, tools, inspectors)
 pnpm dev
 
 # Minimal CLI preview (code → canvas)
-pnpm dev:cli -- examples/src/async-docs.dgm
+pnpm dev:cli -- examples/src/aws-high-availability-web-app.dgm
 
 # Validate examples
 node packages/cli/dist/index.js check examples/src
@@ -45,7 +45,7 @@ pnpm dev
 ```
 
 The minimal source-and-canvas CLI preview remains available with
-`pnpm dev:cli -- examples/src/async-docs.dgm`.
+`pnpm dev:cli -- examples/src/aws-high-availability-web-app.dgm`.
 
 ## MCP
 

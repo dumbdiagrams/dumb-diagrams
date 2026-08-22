@@ -9,6 +9,7 @@ import type {
   Rect,
   RoutedEdge,
   EdgeBadgeSide,
+  EdgeLabelSide,
   Side,
 } from "@dumb-diagrams/core";
 import {
@@ -24,10 +25,17 @@ const CELL = GRAMMAR.grid;
 const BEND_COST = 320;
 const COLLISION_COST = 100_000;
 const HEADER_COST = 100_000;
-const OVERLAP_COST = 480;
+// A non-branching route must pay enough to move into another lane. A small
+// overlap penalty only nudges candidates and still lets two unrelated edges
+// collapse onto the same long corridor when that corridor is otherwise the
+// cheapest option.
+const OVERLAP_COST = 4_000;
 const PORT_FALLBACK_COST = 1_200;
 const PORT_ENDPOINT_COLLISION_COST = 40_000;
 const TURN_COST = 140;
+const MICRO_JOG_THRESHOLD = CELL / 2;
+const VERTICAL_BADGE_TARGET_T = 0.75;
+const MINIMUM_BADGE_RUN = CELL * 2;
 
 interface PortChoice {
   src: Point;
@@ -43,6 +51,12 @@ interface RouteContext {
   targetPoint: Point;
   sourceSide: Side;
   targetSide: Side;
+}
+
+interface ExistingRoute {
+  points: Point[];
+  sourceId: string;
+  targetId: string;
 }
 
 interface Obstacle extends Rect {
@@ -68,8 +82,12 @@ export function routeEdges(
   const hGutters = horizontalGutters(layout, obstacles);
   const grid = buildGrid(layout, obstacles);
   const routed: RoutedEdge[] = [];
-  const existing: Point[][] = [];
+  const existing: ExistingRoute[] = [];
   const view = getDefaultView(doc);
+  const incomingCounts = new Map<string, number>();
+  for (const edge of doc.edges) {
+    incomingCounts.set(edge.target, (incomingCounts.get(edge.target) ?? 0) + 1);
+  }
 
   for (const edge of doc.edges) {
     const source = nodeMap.get(edge.source);
@@ -77,14 +95,22 @@ export function routeEdges(
     if (!source || !target) continue;
 
     const isFailure = edge.kind === "fail" || edge.style === "dashed";
-    const ports = candidatePorts(
+    const ports = alignNearHorizontalPorts(
+      candidatePorts(
+        source,
+        target,
+        isFailure,
+        edge.sourcePort,
+        edge.targetPort,
+        edge.sourcePortOffset,
+        edge.targetPortOffset,
+        (incomingCounts.get(edge.target) ?? 0) > PORT_OFFSETS.length &&
+          edge.targetPortOffset === undefined,
+      ),
       source,
       target,
-      isFailure,
-      edge.sourcePort,
-      edge.targetPort,
-      edge.sourcePortOffset,
-      edge.targetPortOffset,
+      edge.sourcePortOffset !== undefined,
+      edge.targetPortOffset !== undefined,
     );
 
     let best: Point[] | null = null;
@@ -113,7 +139,7 @@ export function routeEdges(
         const context = createRouteContext(source, target, port);
         const astarPath = routeAStar(grid, port, source, target);
         if (!astarPath) continue;
-        const smoothed = shortcut(simplify(astarPath), obstacles, context);
+        const smoothed = shortcut(simplify(astarPath), obstacles, context, existing);
         const s =
           scorePath(smoothed, obstacles, context, existing) +
           portIndex * PORT_FALLBACK_COST;
@@ -126,7 +152,12 @@ export function routeEdges(
     }
 
     let points = best ?? [ports[0]!.src, ports[0]!.tgt];
-    points = shortcut(points, obstacles, createRouteContext(source, target, bestPort));
+    points = shortcut(
+      points,
+      obstacles,
+      createRouteContext(source, target, bestPort),
+      existing,
+    );
     points = simplify(points);
     const routeOverride = view.routes[edge.id];
     if (routeOverride?.pin) {
@@ -143,13 +174,24 @@ export function routeEdges(
       }
     }
     points = normalizeOrthogonalRoute(points);
-    existing.push(points);
+    existing.push({
+      points,
+      sourceId: edge.source,
+      targetId: edge.target,
+    });
 
     const badge = edge.step !== undefined
       ? getEdgeBadgePlacement(points, routeOverride?.badgeT, routeOverride?.badgeSide)
       : undefined;
     const labelPlacement = edge.label
-      ? getEdgeLabelPlacement(points, edge.label, obstacles, badge)
+      ? getEdgeLabelPlacement(
+          points,
+          edge.label,
+          obstacles,
+          badge,
+          routeOverride?.labelT,
+          routeOverride?.labelSide,
+        )
       : undefined;
 
     routed.push({
@@ -161,6 +203,8 @@ export function routeEdges(
       label: edge.label,
       labelPoint: labelPlacement?.point,
       labelRect: labelPlacement?.rect,
+      labelT: labelPlacement?.t,
+      labelSide: labelPlacement?.side,
       style: edge.style,
       kind: edge.kind,
       badge: badge?.point,
@@ -264,6 +308,7 @@ function candidatePorts(
   targetPort?: Side,
   sourcePortOffset?: number,
   targetPortOffset?: number,
+  allowTargetSideFallback = false,
 ): PortChoice[] {
   const make = (
     a: Side,
@@ -284,11 +329,33 @@ function candidatePorts(
   ) {
     const fallbackSource = isFailure ? "e" : iconCenter(target).x >= iconCenter(source).x ? "e" : "w";
     const fallbackTarget = isFailure ? "n" : fallbackSource === "e" ? "w" : "e";
+    const resolvedSource = sourcePort ?? fallbackSource;
+    const resolvedTarget = targetPort ?? fallbackTarget;
+    const sourceOffset = normalizePortOffset(sourcePortOffset);
+    if (targetPortOffset === undefined) {
+      // A requested target face is a routing preference unless a precise
+      // offset was authored. Keep the center candidate first, then offer the
+      // visible quarter/three-quarter ports so multiple incoming edges can
+      // land on separate lanes. If one face runs out of ports, fall back to
+      // another face rather than stacking arrowheads at the same point.
+      const targetSides = [
+        resolvedTarget,
+        ...(allowTargetSideFallback
+          ? (["n", "e", "s", "w"] as Side[]).filter((side) => side !== resolvedTarget)
+          : []),
+      ];
+      const offsets = [0.5, ...PORT_OFFSETS];
+      return uniquePortChoices([
+        ...targetSides.flatMap((side) =>
+          offsets.map((offset) => make(resolvedSource, side, sourceOffset, offset)),
+        ),
+      ]);
+    }
     return [
       make(
-        sourcePort ?? fallbackSource,
-        targetPort ?? fallbackTarget,
-        normalizePortOffset(sourcePortOffset),
+        resolvedSource,
+        resolvedTarget,
+        sourceOffset,
         normalizePortOffset(targetPortOffset),
       ),
     ];
@@ -296,12 +363,27 @@ function candidatePorts(
   const expand = (pairs: Array<[Side, Side]>): PortChoice[] =>
     pairs.flatMap(([a, b]) => portOffsetVariants(a, b, make));
 
-  if (isFailure) return expand([["e", "n"], ["e", "e"], ["s", "n"]]);
-
   const sc = iconCenter(source);
   const tc = iconCenter(target);
   const dx = tc.x - sc.x;
   const dy = tc.y - sc.y;
+
+  if (isFailure) {
+    // Dashed/peer edges still follow the geometric relationship between the
+    // resources. Keep the west/east pair first for left-to-right monitoring
+    // and dependency links, but offer alternate target faces so converging
+    // routes can approach on distinct lanes instead of being stacked on one
+    // target-side corridor.
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      return dx >= 0
+        ? expand([["e", "w"], ["e", "n"], ["e", "e"], ["s", "w"], ["n", "w"]])
+        : expand([["w", "e"], ["w", "n"], ["w", "w"], ["s", "e"], ["n", "e"]]);
+    }
+    return dy >= 0
+      ? expand([["s", "n"], ["e", "w"], ["w", "e"], ["s", "e"], ["s", "w"]])
+      : expand([["n", "s"], ["e", "w"], ["w", "e"], ["n", "e"], ["n", "w"]]);
+  }
+
   const sameColumn =
     source.obstacle.x < target.obstacle.x + target.obstacle.w &&
     target.obstacle.x < source.obstacle.x + source.obstacle.w;
@@ -326,6 +408,60 @@ function portOffsetVariants(
     }
   }
   return variants;
+}
+
+function uniquePortChoices(choices: PortChoice[]): PortChoice[] {
+  const seen = new Set<string>();
+  return choices.filter((choice) => {
+    const key = [
+      choice.src.x,
+      choice.src.y,
+      choice.tgt.x,
+      choice.tgt.y,
+      choice.srcSide,
+      choice.tgtSide,
+    ].join(":");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function alignNearHorizontalPorts(
+  choices: PortChoice[],
+  source: NodeGeom,
+  target: NodeGeom,
+  sourceOffsetLocked: boolean,
+  targetOffsetLocked: boolean,
+): PortChoice[] {
+  const aligned = choices.map((choice) => {
+    const opposingHorizontalFaces =
+      (choice.srcSide === "e" && choice.tgtSide === "w") ||
+      (choice.srcSide === "w" && choice.tgtSide === "e");
+    if (!opposingHorizontalFaces) return choice;
+
+    const delta = Math.abs(choice.src.y - choice.tgt.y);
+    if (delta === 0 || delta > MICRO_JOG_THRESHOLD) return choice;
+
+    const commonTop = Math.max(source.icon.y, target.icon.y);
+    const commonBottom = Math.min(
+      source.icon.y + source.icon.h,
+      target.icon.y + target.icon.h,
+    );
+    const alignedY = sourceOffsetLocked
+      ? choice.src.y
+      : targetOffsetLocked
+        ? choice.tgt.y
+        : choice.src.y;
+    if (alignedY < commonTop || alignedY > commonBottom) return choice;
+
+    return {
+      ...choice,
+      src: sourceOffsetLocked ? choice.src : { ...choice.src, y: alignedY },
+      tgt: targetOffsetLocked ? choice.tgt : { ...choice.tgt, y: alignedY },
+    };
+  });
+  return uniquePortChoices(aligned);
 }
 
 function iconCenter(node: NodeGeom): Point {
@@ -452,9 +588,13 @@ function uniqueNums(values: number[]): number[] {
   return [...new Set(values.map((v) => snap(v)))];
 }
 
-function corridorGutters(existing: Point[][], axis: "vertical" | "horizontal"): number[] {
+function corridorGutters(
+  existing: ExistingRoute[],
+  axis: "vertical" | "horizontal",
+): number[] {
   const lanes: number[] = [];
-  for (const path of existing) {
+  for (const route of existing) {
+    const path = route.points;
     for (let i = 0; i < path.length - 1; i++) {
       const a = path[i]!;
       const b = path[i + 1]!;
@@ -473,7 +613,7 @@ function scorePath(
   points: Point[],
   obstacles: Obstacle[],
   context: RouteContext,
-  existing: Point[][],
+  existing: ExistingRoute[],
 ): number {
   if (points.length < 2) return Infinity;
   if (
@@ -513,20 +653,46 @@ function scorePath(
       score += obs.kind === "header" ? HEADER_COST : COLLISION_COST;
     }
     for (const other of existing) {
-      score += overlapLength(a, b, other) * OVERLAP_COST;
+      const overlap = overlapLength(a, b, other.points);
+      if (!overlap) continue;
+      const shareableStem = canShareFanoutStem(points, i, context, other, a, b);
+      const allowedStem = shareableStem
+        ? overlapLength(a, b, other.points.slice(0, 2))
+        : 0;
+      score += Math.max(0, overlap - allowedStem) * OVERLAP_COST;
     }
   }
   for (const other of existing) {
-    if (
-      samePoint(points[0]!, other[0]!) ||
-      samePoint(points[0]!, other.at(-1)!) ||
-      samePoint(points.at(-1)!, other[0]!) ||
-      samePoint(points.at(-1)!, other.at(-1)!)
-    ) {
+    const shareableSource =
+      other.sourceId === context.sourceId &&
+      other.targetId !== context.targetId &&
+      samePoint(points[0]!, other.points[0]!);
+    const endpointCollision =
+      samePoint(points[0]!, other.points.at(-1)!) ||
+      samePoint(points.at(-1)!, other.points[0]!) ||
+      samePoint(points.at(-1)!, other.points.at(-1)!) ||
+      (!shareableSource && samePoint(points[0]!, other.points[0]!));
+    if (endpointCollision) {
       score += PORT_ENDPOINT_COLLISION_COST;
     }
   }
   return score;
+}
+
+function canShareFanoutStem(
+  points: Point[],
+  segmentIndex: number,
+  context: RouteContext,
+  other: ExistingRoute,
+  a: Point,
+  b: Point,
+): boolean {
+  if (segmentIndex !== 0 || other.points.length < 2) return false;
+  if (other.sourceId !== context.sourceId || other.targetId === context.targetId) {
+    return false;
+  }
+  if (!samePoint(points[0]!, other.points[0]!)) return false;
+  return overlapLength(a, b, other.points.slice(0, 2)) > 0;
 }
 
 function overlapLength(a: Point, b: Point, path: Point[]): number {
@@ -551,6 +717,7 @@ function shortcut(
   points: Point[],
   obstacles: Obstacle[],
   context: RouteContext,
+  existing: ExistingRoute[] = [],
 ): Point[] {
   let path = simplify(points);
   for (let iter = 0; iter < 12; iter++) {
@@ -575,7 +742,7 @@ function shortcut(
           ) {
             continue;
           }
-          if (!pathClear(next, obstacles, context)) continue;
+          if (!pathClear(next, obstacles, context, existing)) continue;
           path = simplify([...path.slice(0, i), ...next, ...path.slice(j + 1)]);
           changed = true;
           break outer;
@@ -591,8 +758,9 @@ function pathClear(
   points: Point[],
   obstacles: Obstacle[],
   context: RouteContext,
+  existing: ExistingRoute[] = [],
 ): boolean {
-  return scorePath(points, obstacles, context, []) < HEADER_COST;
+  return scorePath(points, obstacles, context, existing) < HEADER_COST;
 }
 
 function samePoint(a: Point, b: Point): boolean {
@@ -893,6 +1061,16 @@ export interface EdgeBadgePlacement {
   tangent: Point;
 }
 
+export interface EdgeLabelPlacement {
+  point: Point;
+  rect: Rect;
+  anchor: Point;
+  t: number;
+  side: EdgeLabelSide;
+  segmentIndex: number;
+  tangent: Point;
+}
+
 export interface PolylineProjection {
   point: Point;
   t: number;
@@ -944,8 +1122,9 @@ export function projectPointToPolyline(
 
 /**
  * Place a numbered edge badge at a stable, fixed offset from an orthogonal
- * path. With no explicit t, preserve the original behavior of using the
- * longest horizontal run, falling back to the longest run for vertical edges.
+ * path. Horizontal runs remain centered. For vertical runs, the default
+ * position is biased toward the target so badges do not crowd the preceding
+ * service label. Tiny connector fragments are ignored when choosing the run.
  */
 export function getEdgeBadgePlacement(
   points: Point[],
@@ -957,12 +1136,18 @@ export function getEdgeBadgePlacement(
   const total = segments.reduce((sum, segment) => sum + segment.len, 0);
   if (!total) return undefined;
 
-  const preferred = segments
+  const horizontal = segments
     .filter((segment) => segment.a.y === segment.b.y)
-    .sort((a, b) => b.len - a.len)[0]
-    ?? [...segments].sort((a, b) => b.len - a.len)[0];
+    .sort((a, b) => b.len - a.len)[0];
+  const vertical = segments
+    .filter((segment) => segment.a.x === segment.b.x)
+    .sort((a, b) => b.len - a.len)[0];
+  const preferred = horizontal && horizontal.len >= MINIMUM_BADGE_RUN
+    ? horizontal
+    : vertical ?? horizontal ?? [...segments].sort((a, b) => b.len - a.len)[0];
+  const verticalRun = preferred?.a.x === preferred?.b.x;
   const fallbackT = preferred
-    ? (preferred.start + preferred.len / 2) / total
+    ? (preferred.start + preferred.len * (verticalRun ? VERTICAL_BADGE_TARGET_T : 0.5)) / total
     : 0.5;
   const t = clamp01(requestedT ?? fallbackT);
   const projection = pointAtPath(segments, total, t);
@@ -988,48 +1173,114 @@ export function getEdgeBadgePlacement(
   };
 }
 
+/**
+ * Place a connector label at an explicit route-relative position. The editor
+ * uses this while dragging so the label follows the pointer immediately,
+ * before the full document is recompiled.
+ */
+export function getEdgeLabelPlacementOnPath(
+  points: Point[],
+  label: string,
+  requestedT: number,
+  requestedSide: EdgeLabelSide,
+): EdgeLabelPlacement | undefined {
+  return getEdgeLabelPlacement(points, label, [], undefined, requestedT, requestedSide);
+}
+
 function getEdgeLabelPlacement(
   points: Point[],
   label: string,
   obstacles: Obstacle[],
   badge?: EdgeBadgePlacement,
-): { point: Point; rect: Rect } | undefined {
+  requestedT?: number,
+  requestedSide?: EdgeLabelSide,
+): EdgeLabelPlacement | undefined {
   const reference = badge ?? getEdgeBadgePlacement(points);
   if (!reference) return undefined;
   const textW = Math.max(16, label.length * 11 * 0.55);
+  const segments = pathSegments(points);
+  const total = segments.reduce((sum, segment) => sum + segment.len, 0);
+  if (!total) return undefined;
   const horizontal = Math.abs(reference.tangent.x) >= Math.abs(reference.tangent.y);
-  const candidates: Array<{ point: Point; rect: Rect }> = [];
+  const fallbackSide: EdgeLabelSide = badge
+    ? oppositeLabelSide(badge.side)
+    : horizontal
+      ? "top"
+      : "bottom";
+  const t = clamp01(requestedT ?? reference.t);
+  const projection = pointAtPath(segments, total, t);
+  if (!projection) return undefined;
+
+  // Once a user chooses a label position, respect that exact route-relative
+  // position. Auto-placement still tries nearby clearances, but manual label
+  // movement must not silently jump to another side or another segment.
+  if (requestedT !== undefined || requestedSide !== undefined) {
+    return labelPlacementAt(
+      projection,
+      textW,
+      requestedSide ?? fallbackSide,
+      t,
+    );
+  }
+
+  const candidates: EdgeLabelPlacement[] = [];
+  const pushCandidate = (side: EdgeLabelSide, clearance: number) => {
+    candidates.push(labelPlacementAt(projection, textW, side, t, clearance));
+  };
   if (horizontal) {
-    const badgeAbove = badge ? badge.point.y < badge.anchor.y : false;
-    const offsets = badge
-      ? (badgeAbove ? [20, -32, 44] : [-8, 44, -32])
-      : [-8, 20];
-    for (const offset of offsets) {
-      const y = reference.anchor.y + offset;
-      candidates.push({
-        point: { x: reference.anchor.x, y },
-        rect: { x: reference.anchor.x - textW / 2, y: y - 11, w: textW, h: 14 },
-      });
+    if (badge?.side === "top") {
+      pushCandidate("bottom", 20);
+      pushCandidate("top", 32);
+      pushCandidate("bottom", 44);
+    } else if (badge?.side === "bottom") {
+      pushCandidate("top", 8);
+      pushCandidate("bottom", 44);
+      pushCandidate("top", 32);
+    } else {
+      pushCandidate("top", 8);
+      pushCandidate("bottom", 20);
     }
   } else {
-    const badgeLeft = badge ? badge.point.x < badge.anchor.x : true;
-    const direction = badgeLeft ? 1 : -1;
-    const offsets = badge
-      ? [direction * (textW / 2 + 12), -direction * (textW / 2 + 28)]
-      : [textW / 2 + 12, -textW / 2 - 12];
-    for (const offset of offsets) {
-      const x = reference.anchor.x + offset;
-      const y = reference.anchor.y + 4;
-      candidates.push({
-        point: { x, y },
-        rect: { x: x - textW / 2, y: y - 11, w: textW, h: 14 },
-      });
-    }
+    const firstSide: EdgeLabelSide = badge
+      ? oppositeLabelSide(badge.side)
+      : "bottom";
+    pushCandidate(firstSide, textW / 2 + 12);
+    pushCandidate(oppositeLabelSide(firstSide), textW / 2 + 28);
   }
   return candidates.find((candidate) =>
     !obstacles.some((obstacle) => rectsIntersect(candidate.rect, obstacle, 4)) &&
     (!badge || !circleIntersectsRect(badge.point, GRAMMAR.badgeRadius, candidate.rect, 4))
   ) ?? candidates.at(-1);
+}
+
+function labelPlacementAt(
+  projection: { point: Point; segmentIndex: number; tangent: Point },
+  textW: number,
+  side: EdgeLabelSide,
+  t: number,
+  clearance?: number,
+): EdgeLabelPlacement {
+  const horizontal = Math.abs(projection.tangent.x) >= Math.abs(projection.tangent.y);
+  const distance = clearance ?? (horizontal
+    ? side === "top" ? 8 : 20
+    : textW / 2 + 12);
+  const signedDistance = side === "top" ? -distance : distance;
+  const point = horizontal
+    ? { x: projection.point.x, y: projection.point.y + signedDistance }
+    : { x: projection.point.x + signedDistance, y: projection.point.y + 4 };
+  return {
+    point,
+    rect: { x: point.x - textW / 2, y: point.y - 11, w: textW, h: 14 },
+    anchor: projection.point,
+    t,
+    side,
+    segmentIndex: projection.segmentIndex,
+    tangent: projection.tangent,
+  };
+}
+
+function oppositeLabelSide(side: EdgeLabelSide): EdgeLabelSide {
+  return side === "top" ? "bottom" : "top";
 }
 
 function rectsIntersect(a: Rect, b: Rect, margin: number): boolean {
@@ -1203,14 +1454,20 @@ export function routeConnectionPreview(
   const hGutters = horizontalGutters(layout, obstacles);
   const grid = buildGrid(layout, obstacles);
   const isFailure = options.kind === "fail" || options.style === "dashed";
-  const ports = candidatePorts(
+  const ports = alignNearHorizontalPorts(
+    candidatePorts(
+      source,
+      target,
+      isFailure,
+      options.sourcePort,
+      options.targetPort,
+      options.sourcePortOffset,
+      options.targetPortOffset,
+    ),
     source,
     target,
-    isFailure,
-    options.sourcePort,
-    options.targetPort,
-    options.sourcePortOffset,
-    options.targetPortOffset,
+    options.sourcePortOffset !== undefined,
+    options.targetPortOffset !== undefined,
   );
 
   let best: Point[] | null = null;

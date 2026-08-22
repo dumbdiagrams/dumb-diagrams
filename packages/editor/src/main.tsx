@@ -35,6 +35,7 @@ import { routeEdges, attachRoutes } from "@dumb-diagrams/route";
 
 import {
   addAnnotation,
+  addText,
   ANNOTATION_STYLES,
   annotationStyle,
   addEdge,
@@ -65,6 +66,7 @@ import {
   sendToFront,
   sendToBack,
   setEdgeBadgePosition,
+  setEdgeLabelPosition,
   swapEdgeDirection,
   toggleSelectionItem,
   updateEdge,
@@ -218,6 +220,7 @@ function App() {
   });
   const [tool, setTool] = useState<Tool>("select");
   const [selection, setSelection] = useState<Selection>([]);
+  const [textEditRequest, setTextEditRequest] = useState<SelectionItem | null>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
@@ -228,6 +231,7 @@ function App() {
   const [layersQuery, setLayersQuery] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
   const [noteComposerStyle, setNoteComposerStyle] = useState<AnnotationStyle>("paper");
+  const [textDraft, setTextDraft] = useState("Text");
   const [toast, setToastMessage] = useState<string | null>(null);
   const [toastNonce, setToastNonce] = useState(0);
   const lastGoodRef = useRef<{
@@ -582,6 +586,32 @@ function App() {
     if (tool === "layers") setTool("select");
   };
 
+  const requestTextEdit = (item: SelectionItem) => {
+    setSelection([item]);
+    if (tool === "layers") setTool("select");
+    setTextEditRequest(item);
+  };
+
+  useEffect(() => {
+    if (!textEditRequest) return;
+    const fieldId = textEditRequest.kind === "edge"
+      ? "edge-panel-label"
+      : textEditRequest.kind === "annotation"
+        ? "inspector-label"
+        : null;
+    if (!fieldId) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const field = document.getElementById(fieldId);
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+        field.focus();
+        field.select();
+      }
+      setTextEditRequest(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [textEditRequest]);
+
   const issues = useMemo(() => {
     if ("parseError" in compiled && compiled.parseError) {
       return [{ message: compiled.parseError }];
@@ -712,6 +742,26 @@ function App() {
     if (!compiled.ok) return;
     const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
     const result = addAnnotation(compiled.doc, "Note", at, undefined, style);
+    if (!updateDocument(result.doc)) return;
+    setSelection([{ kind: "annotation", id: result.id }]);
+    setTool("select");
+  };
+
+  const openTextComposer = () => {
+    setTextDraft("Text");
+    setPendingPort(null);
+    setTool("text");
+  };
+
+  const createText = () => {
+    if (!compiled.ok) return;
+    const text = normalizeMultilineText(textDraft);
+    if (!text) {
+      setToast("Enter some text before placing it");
+      return;
+    }
+    const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
+    const result = addText(compiled.doc, text, at);
     if (!updateDocument(result.doc)) return;
     setSelection([{ kind: "annotation", id: result.id }]);
     setTool("select");
@@ -972,6 +1022,7 @@ function App() {
       }
       if (key === "v" && !mod) setTool("select");
       if (key === "c" && !mod) setTool("connector");
+      if (key === "t" && !mod) openTextComposer();
       if (selection.length && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         event.preventDefault();
         const step = event.shiftKey ? 32 : 8;
@@ -1049,6 +1100,7 @@ function App() {
     { id: "command-source", label: "Open source editor", section: "Tools", onSelect: () => setTool("code") },
     { id: "command-layers", label: "Open layers", section: "Tools", onSelect: () => setTool("layers") },
     { id: "command-resources", label: "Browse resources", section: "Tools", onSelect: () => setTool("resources") },
+    { id: "command-text", label: "Add text", section: "Tools", shortcut: "T", onSelect: openTextComposer },
   ];
   const requestedCloseTab = closeRequest
     ? tabs.find((tab) => tab.id === closeRequest)
@@ -1103,6 +1155,7 @@ function App() {
                 pendingPort={pendingPort}
                 ghostRoute={null}
                 onSelect={selectItem}
+                onEditText={requestTextEdit}
                 onMarquee={selectMarquee}
                 onBackgroundClick={() => {
                   setSelection([]);
@@ -1142,6 +1195,9 @@ function App() {
                 }
                 onBadgeMove={(edgeId, t, side) =>
                   previewMutate((doc) => setEdgeBadgePosition(doc, edgeId, t, side))
+                }
+                onLabelMove={(edgeId, t, side) =>
+                  mutateCurrent((doc) => setEdgeLabelPosition(doc, edgeId, t, side))
                 }
                 onContextMenu={(clientX, clientY, item) => {
                   const itemIsSelected = Boolean(
@@ -1332,6 +1388,10 @@ function App() {
               openNoteComposer();
               return;
             }
+            if (next === "text") {
+              openTextComposer();
+              return;
+            }
             setTool(next);
             if (next !== "connector") setPendingPort(null);
           }}
@@ -1349,6 +1409,22 @@ function App() {
               style={noteComposerStyle}
               onStyleChange={setNoteComposerStyle}
               onCreate={() => createNote(noteComposerStyle)}
+            />
+          </FloatingPanel>
+        )}
+
+        {tool === "text" && (
+          <FloatingPanel
+            className="drawer-sheet text-composer-sheet"
+            title="Add text"
+            subtitle="Place editable text on the canvas"
+            onClose={() => setTool("select")}
+            width={320}
+          >
+            <TextComposer
+              value={textDraft}
+              onChange={setTextDraft}
+              onCreate={createText}
             />
           </FloatingPanel>
         )}
@@ -1478,6 +1554,9 @@ function App() {
                   <EdgePanel
                     edge={edge}
                     routePinned={routePinned}
+                    onUpdateLabel={(label) =>
+                      mutateCurrent((doc) => renameEdge(doc, edge.id, normalizeSingleLineText(label)))
+                    }
                     onUpdateEdge={(style, kind) =>
                       mutateCurrent((doc) => updateEdge(doc, edge.id, { style, kind }))
                     }
@@ -1854,6 +1933,7 @@ function NoteComposer({
           selectedStyle={style}
           onStyleChange={onStyleChange}
           showPreviews
+          includeText={false}
         />
       </div>
 
@@ -1866,18 +1946,68 @@ function NoteComposer({
   );
 }
 
+function TextComposer({
+  value,
+  onChange,
+  onCreate,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="text-composer">
+      <div className="property-section">
+        <label htmlFor="text-composer-content">Text content</label>
+        <textarea
+          id="text-composer-content"
+          data-autofocus
+          value={value}
+          maxLength={DIAGRAM_LIMITS.annotationCharacters}
+          rows={5}
+          placeholder="Type something…"
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") onCreate();
+          }}
+          aria-describedby="text-composer-hint"
+        />
+        <p id="text-composer-hint" className="property-hint">
+          Uses the open-font text style. You can edit or drag it after placing it.
+        </p>
+      </div>
+      <div className="note-composer-footer">
+        <button
+          type="button"
+          className="primary-button note-create-button"
+          onClick={onCreate}
+          disabled={!normalizeMultilineText(value)}
+        >
+          Place text
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function NoteStyleOptions({
   selectedStyle,
   onStyleChange,
   showPreviews = false,
+  includeText = true,
 }: {
   selectedStyle: AnnotationStyle;
   onStyleChange: (style: AnnotationStyle) => void;
   showPreviews?: boolean;
+  includeText?: boolean;
 }) {
+  const styles = includeText
+    ? ANNOTATION_STYLES
+    : ANNOTATION_STYLES.filter((candidate) => candidate.id !== "text");
+
   return (
     <div className={`note-style-grid${showPreviews ? " note-style-grid-with-previews" : ""}`}>
-      {ANNOTATION_STYLES.map((candidate) => (
+      {styles.map((candidate) => (
         <button
           key={candidate.id}
           type="button"
@@ -1921,6 +2051,12 @@ function NoteStylePreview({
           <span className="note-preview-code-line note-preview-code-line-long" />
           <span className="note-preview-code-line note-preview-code-line-medium" />
           <span className="note-preview-code-line note-preview-code-line-short" />
+        </>
+      )}
+      {style === "text" && (
+        <>
+          <span className="note-preview-text-line note-preview-text-line-long">Text</span>
+          <span className="note-preview-text-line note-preview-text-line-short">editable</span>
         </>
       )}
       {style === "callout" && (
@@ -2037,7 +2173,9 @@ function Inspector({
         selection.length > 1
           ? `${selection.length} selected`
           : item
-            ? INSPECTOR_KIND_LABELS[item.kind]
+            ? item.kind === "annotation" && annotation && annotationStyle(annotation) === "text"
+              ? "Text"
+              : INSPECTOR_KIND_LABELS[item.kind]
             : "Selection"
       }
       onClose={onClose}

@@ -1,0 +1,67 @@
+diagram aws-high-availability-web-app {
+  grammar aws
+  flow lr
+  title "Highly available AWS web application"
+
+  generic.client browser "Web client"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    group public_edge "Frontend services" {
+      aws.route-53 dns
+      aws.cognito identity "User authentication"
+      aws.cloudfront cdn
+      aws.simple-storage-service static_site "Static content"
+    }
+
+    aws.api-gateway gateway
+
+    aws.vpc network "VPC" {
+      aws.elastic-load-balancing-application-load-balancer load_balancer
+
+      aws.az zone_one "Availability Zone A" {
+        aws.subnet.private app_subnet_one "Private application subnet" {
+          aws.elastic-container-service service_one "ECS service"
+          aws.aws-fargate tasks_one "Fargate tasks" { role secondary }
+        }
+        aws.subnet.private data_subnet_one "Private database subnet" {
+          aws.dynamodb table_one "DynamoDB table"
+        }
+      }
+
+      aws.az zone_two "Availability Zone B" {
+        aws.subnet.private app_subnet_two "Private application subnet" {
+          aws.elastic-container-service service_two "ECS service"
+          aws.aws-fargate tasks_two "Fargate tasks" { role secondary }
+        }
+        aws.subnet.private data_subnet_two "Private database subnet" {
+          aws.dynamodb table_two "DynamoDB table"
+        }
+      }
+    }
+
+    group platform_services "Shared platform services" {
+      aws.elastic-container-registry registry "Container images"
+      aws.cloudwatch monitoring "Application + database monitoring"
+    }
+  }
+
+  browser -> dns { id request_dns step 1 from e to w }
+  dns -> identity { id resolve_identity step 2 from s to n }
+  identity -> cdn { id identity_to_cdn step 3 from s to n }
+  cdn -> static_site { id static_origin from s to n label "static content" }
+  cdn -> gateway { id cdn_to_api step 4 from e to w }
+  identity -> gateway { id api_authorizer from e to s label "JWT authorizer" style dashed kind peer }
+  gateway -> load_balancer { id api_to_alb step 5 from e to w }
+  load_balancer -> service_one { id distribute_a step 6 from e to w }
+  load_balancer -> service_two { id distribute_b from e to w }
+  service_one -> tasks_one { id run_tasks_a from e to w style dashed kind peer }
+  service_two -> tasks_two { id run_tasks_b from e to w style dashed kind peer }
+  registry -> tasks_one { id pull_image_a from e to n label "container image" style dashed }
+  registry -> tasks_two { id pull_image_b from e to n style dashed }
+  tasks_one -> table_one { id read_data_a from e to w }
+  tasks_two -> table_two { id read_data_b from e to w }
+  tasks_one -> monitoring { id monitor_app_a from e to w style dashed kind peer }
+  tasks_two -> monitoring { id monitor_app_b from e to w style dashed kind peer }
+  table_one -> monitoring { id monitor_data_a from e to w style dashed kind peer }
+  table_two -> monitoring { id monitor_data_b from e to w style dashed kind peer }
+}

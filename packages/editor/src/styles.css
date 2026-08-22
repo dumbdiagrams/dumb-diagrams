@@ -977,6 +977,35 @@ textarea:focus-visible {
   border-color: #8aa7df;
 }
 
+.note-style-preview-text {
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 12px;
+  background: var(--surface-solid);
+  border-color: var(--line-strong);
+  color: var(--ink);
+  font-family: Inter, "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  text-align: left;
+}
+
+.note-preview-text-line {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.note-preview-text-line-long {
+  font-weight: 600;
+}
+
+.note-preview-text-line-short {
+  color: var(--muted);
+}
+
 .note-preview-callout-mark {
   display: grid;
   width: 19px;
@@ -1582,10 +1611,18 @@ textarea:focus-visible {
   cursor: grab;
 }
 
+.interaction-overlay.is-select-tool .hit-annotation-text {
+  cursor: grab;
+}
+
 .interaction-overlay.is-select-tool .hit-group[aria-selected="true"],
 .interaction-overlay.is-select-tool .hit-node[aria-selected="true"],
 .interaction-overlay.is-select-tool .hit-annotation[aria-selected="true"] {
   cursor: move;
+}
+
+.interaction-overlay.is-select-tool .hit-annotation-text[aria-selected="true"] {
+  cursor: text;
 }
 
 .interaction-overlay.is-select-tool .hit-group:active,
@@ -1594,8 +1631,25 @@ textarea:focus-visible {
   cursor: grabbing;
 }
 
+.interaction-overlay.is-select-tool .hit-annotation-text:active {
+  cursor: grabbing;
+}
+
+.interaction-overlay.is-text-tool,
+.interaction-overlay.is-text-tool .hit-annotation-text {
+  cursor: text;
+}
+
 .interaction-overlay.is-select-tool .hit-edge {
   cursor: pointer;
+}
+
+.interaction-overlay.is-select-tool .hit-edge-label {
+  cursor: grab;
+}
+
+.interaction-overlay.is-select-tool .hit-edge-label:active {
+  cursor: grabbing;
 }
 
 .hit-group.is-selected {
@@ -2828,6 +2882,12 @@ textarea:focus-visible {
   fill: #234b31;
 }
 
+.diagram-svg svg g[data-annotation-style="text"] text {
+  fill: var(--ink);
+  font-family: Inter, "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+}
+
 .floating-panel.drawer-sheet {
   top: 52px;
   right: auto;
@@ -2970,6 +3030,14 @@ textarea:focus-visible {
 .selection-annotation {
   stroke: color-mix(in srgb, var(--accent) 78%, #b68418);
   fill: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.selection-text {
+  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+  rx: 5;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3220,6 +3288,12 @@ textarea:focus-visible {
   stroke-width: 2;
   pointer-events: all;
   vector-effect: non-scaling-stroke;
+}
+
+.interaction-overlay .hit-edge-label {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: transparent;
+  pointer-events: all;
 }
 
 .interaction-overlay .hit-group:hover,
@@ -3997,6 +4071,13 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.examples-empty {
+  grid-column: 1 / -1;
+  padding: 28px 16px;
+  color: var(--muted);
+  text-align: center;
 }
 
 .example-card {
@@ -4789,4 +4870,55 @@ textarea:focus-visible {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+
+/* Keep the tool rail and every canvas drawer below the two-row studio chrome. */
+.tool-dock,
+.floating-panel.drawer-sheet,
+.floating-panel.inspector-sheet,
+.floating-panel.edge-sheet,
+.note-composer-sheet {
+  top: 120px;
+}
+
+.floating-panel.drawer-sheet,
+.floating-panel.inspector-sheet {
+  height: calc(100% - 120px);
+}
+
+.floating-panel.edge-sheet {
+  max-height: calc(100% - 120px);
+}
+
+.floating-panel.drawer-sheet.edge-sheet {
+  top: 120px;
+  max-height: calc(100% - 120px);
+}
+
+.floating-panel.edge-sheet .floating-panel-body {
+  overflow-y: auto;
+}
+
+.interaction-overlay .hit-annotation-text:hover,
+.interaction-overlay .hit-annotation-text.is-selected {
+  fill: color-mix(in srgb, var(--accent) 5%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.hover-edge-label {
+  fill: color-mix(in srgb, var(--accent) 5%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.selection-edge-label {
+  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
 }

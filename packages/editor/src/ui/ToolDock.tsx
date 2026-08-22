@@ -8,9 +8,10 @@ import {
   IconNote,
   IconResources,
   IconSelect,
+  IconText,
 } from "./icons";
 
-export type ToolId = "select" | "resources" | "groups" | "connector" | "code" | "layers" | "note";
+export type ToolId = "select" | "resources" | "groups" | "connector" | "code" | "layers" | "note" | "text";
 
 const TOOLS: Array<{
   id: ToolId;
@@ -23,6 +24,7 @@ const TOOLS: Array<{
   { id: "resources", label: "Resources", Icon: IconResources },
   { id: "connector", label: "Connector", shortcut: "C", Icon: IconConnector },
   { id: "layers", label: "Layers", Icon: IconLayers },
+  { id: "text", label: "Text", shortcut: "T", Icon: IconText },
   { id: "note", label: "Add note", Icon: IconNote },
   { id: "code", label: "Source", Icon: IconCode },
 ];

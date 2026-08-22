@@ -41,7 +41,11 @@ export function ExamplesModal({
       width={820}
     >
       <div className="examples-grid">
-        {DIAGRAM_EXAMPLES.map((example) => (
+        {DIAGRAM_EXAMPLES.length === 0 ? (
+          <div className="examples-empty" role="status">
+            No bundled examples are available yet.
+          </div>
+        ) : DIAGRAM_EXAMPLES.map((example) => (
           <article key={example.id} className="example-card">
             <div className="example-preview" aria-label={`${example.title} preview`}>
               {previews.get(example.id) ? (

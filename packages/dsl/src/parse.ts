@@ -515,6 +515,10 @@ class Parser {
             route.badgeT = Math.max(0, Math.min(1, this.expect("number").value));
             const side = this.expect("id").value;
             if (side === "top" || side === "bottom") route.badgeSide = side;
+          } else if (key === "label") {
+            route.labelT = Math.max(0, Math.min(1, this.expect("number").value));
+            const side = this.expect("id").value;
+            if (side === "top" || side === "bottom") route.labelSide = side;
           }
         }
         this.expect("rbrace");
@@ -741,6 +745,9 @@ export function printDgm(doc: DiagramDocument): string {
       if (route.badgeT !== undefined || route.badgeSide !== undefined) {
         parts.push(`badge ${route.badgeT ?? 0.5} ${route.badgeSide ?? "top"}`);
       }
+      if (route.labelT !== undefined || route.labelSide !== undefined) {
+        parts.push(`label ${route.labelT ?? 0.5} ${route.labelSide ?? "top"}`);
+      }
       parts.push("}");
       lines.push(`  ${parts.join(" ")}`);
     }
@@ -753,7 +760,7 @@ export function printDgm(doc: DiagramDocument): string {
 }
 
 function isAnnotationStyle(value: string): value is AnnotationStyle {
-  return value === "paper" || value === "code" || value === "callout" || value === "checklist";
+  return value === "text" || value === "paper" || value === "code" || value === "callout" || value === "checklist";
 }
 
 function formatPlace(

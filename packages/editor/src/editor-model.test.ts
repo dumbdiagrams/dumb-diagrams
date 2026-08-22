@@ -7,6 +7,7 @@ import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
 
 import {
   addAnnotation,
+  addText,
   addGroup,
   addResource,
   alignSelection,
@@ -25,6 +26,7 @@ import {
   sendToBack,
   sendToFront,
   setEdgeBadgePosition,
+  setEdgeLabelPosition,
   setAnnotationStyle,
   setGroupPlace,
   setRoute,
@@ -102,6 +104,17 @@ describe("editor commands", () => {
     const paper = setAnnotationStyle(code, added.id, "paper");
     expect(paper.annotations.find((annotation) => annotation.id === added.id)?.style).toBeUndefined();
     expect(getDefaultView(paper).annotations?.[added.id]).toMatchObject({ w: 220, h: 96 });
+  });
+
+  it("adds plain text items with an editable text style", () => {
+    const doc = createAsyncDocsFixture();
+    const added = addText(doc, "A manual annotation", { x: 80, y: 80 });
+
+    expect(added.doc.annotations.find((annotation) => annotation.id === added.id)).toMatchObject({
+      text: "A manual annotation",
+      style: "text",
+    });
+    expect(getDefaultView(added.doc).annotations?.[added.id]).toMatchObject({ w: 240, h: 48 });
   });
 
   it("nudges pinned places", () => {
@@ -337,6 +350,16 @@ describe("editor commands", () => {
     expect(getDefaultView(next).routes.e1).toMatchObject({
       badgeT: 0.75,
       badgeSide: "bottom",
+    });
+    expect(getDefaultView(next).routes.e1?.pin).toBeUndefined();
+  });
+
+  it("persists connector label placement without pinning the route", () => {
+    const doc = createAsyncDocsFixture();
+    const next = setEdgeLabelPosition(doc, "e1", 0.35, "bottom");
+    expect(getDefaultView(next).routes.e1).toMatchObject({
+      labelT: 0.35,
+      labelSide: "bottom",
     });
     expect(getDefaultView(next).routes.e1?.pin).toBeUndefined();
   });

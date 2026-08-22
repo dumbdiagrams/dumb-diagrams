@@ -28,7 +28,7 @@ export function renderSvg(
   <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="${GRAMMAR.edgeColor}"/>
   </marker>
-  <style>text{font-family:${GRAMMAR.fontFamily};fill:#232F3E}</style>
+  <style>text{font-family:${GRAMMAR.fontFamily};fill:#232F3E} g[data-annotation-style="text"] text{font-family:${GRAMMAR.textFontFamily};font-size:14px}</style>
 </defs>`);
 
   const view = getDefaultView(doc);
@@ -164,7 +164,7 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   let label = "";
   if (edge.label && edge.points.length >= 2) {
     const point = edge.labelPoint ?? edge.points[Math.floor(edge.points.length / 2)]!;
-    label = `<text class="edge-label" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${GRAMMAR.edgeColor}">${escapeXml(edge.label)}</text>`;
+    label = `<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${GRAMMAR.edgeColor}">${escapeXml(edge.label)}</text>`;
   }
 
   return `
@@ -186,6 +186,15 @@ function renderAnnotation(
   const h = place?.h ?? 48;
   const style: AnnotationStyle = annotation.style ?? "paper";
   const groupStart = `<g id="annotation-${annotation.id}" data-annotation-style="${style}" class="annotation annotation-${style}">`;
+
+  if (style === "text") {
+    const maxChars = Math.max(8, Math.floor(Math.max(24, w - 4) / 8));
+    const maxLines = Math.max(1, Math.floor(Math.max(18, h - 8) / 20));
+    return `
+${groupStart}
+  ${renderAnnotationLines(annotation.text, x + 2, y + 17, maxChars, 20, maxLines, GRAMMAR.edgeColor, GRAMMAR.textFontFamily, 14)}
+</g>`;
+  }
 
   if (style === "code") {
     return `
@@ -270,10 +279,11 @@ function renderAnnotationLines(
   maxLines: number,
   fill: string,
   fontFamily?: string,
+  fontSize = 12,
 ): string {
   const lines = annotationLines(text, maxChars, maxLines);
   const family = fontFamily ? ` font-family="${fontFamily}"` : "";
-  return `<text x="${x}" y="${firstY}" font-size="12" fill="${fill}"${family}>${lines
+  return `<text x="${x}" y="${firstY}" font-size="${fontSize}" fill="${fill}"${family}>${lines
     .map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line || " ")}</tspan>`)
     .join("")}</text>`;
 }

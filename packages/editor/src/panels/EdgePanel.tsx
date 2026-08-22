@@ -1,10 +1,13 @@
 import type { Edge, EdgeKind, EdgeStyle } from "@dumb-diagrams/core";
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/core";
+import { useEffect, useState } from "react";
 
 import { MAX_EDGE_STEP } from "../editor-model";
 
 export function EdgePanel({
   edge,
   routePinned,
+  onUpdateLabel,
   onUpdateEdge,
   onUpdateStep,
   onPinRoute,
@@ -14,6 +17,7 @@ export function EdgePanel({
 }: {
   edge: Edge;
   routePinned: boolean;
+  onUpdateLabel: (label: string) => void;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
   onUpdateStep: (step?: number) => void;
   onPinRoute: () => void;
@@ -22,6 +26,13 @@ export function EdgePanel({
   onDelete: () => void;
 }) {
   const label = edge.label ?? edge.id;
+  const [labelDraft, setLabelDraft] = useState(edge.label ?? "");
+
+  useEffect(() => {
+    setLabelDraft(edge.label ?? "");
+  }, [edge.id, edge.label]);
+
+  const commitLabel = () => onUpdateLabel(labelDraft);
 
   return (
     <div className="edge-panel">
@@ -31,6 +42,25 @@ export function EdgePanel({
         <button className="wide-button edge-swap-button" type="button" onClick={onSwapDirection}>
           Swap direction
         </button>
+      </div>
+
+      <div className="property-section">
+        <label htmlFor="edge-panel-label">Connector label</label>
+        <input
+          id="edge-panel-label"
+          value={labelDraft}
+          maxLength={DIAGRAM_LIMITS.labelCharacters}
+          placeholder="Optional label"
+          onChange={(event) => setLabelDraft(event.target.value)}
+          onBlur={commitLabel}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+          aria-describedby="edge-panel-label-hint"
+        />
+        <p id="edge-panel-label-hint" className="property-hint">
+          Edit the text, or drag its label along the connector and across the line to switch sides.
+        </p>
       </div>
 
       <div className="property-section">

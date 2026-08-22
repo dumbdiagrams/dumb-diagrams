@@ -20,6 +20,7 @@ describe("async-docs fixture", () => {
     const doc = createAsyncDocsFixture();
     doc.annotations = [
       { id: "paper", text: "A paper note" },
+      { id: "text", text: "A plain text item", style: "text" },
       { id: "code", text: "const ready = true", style: "code" },
       { id: "callout", text: "Keep this private", style: "callout" },
       { id: "checklist", text: "Review IAM", style: "checklist" },
@@ -27,14 +28,16 @@ describe("async-docs fixture", () => {
     const view = getDefaultView(doc);
     view.annotations = {
       paper: { x: 40, y: 40, w: 220, h: 96 },
+      text: { x: 40, y: 150, w: 240, h: 48 },
       code: { x: 280, y: 40, w: 300, h: 160 },
       callout: { x: 620, y: 40, w: 280, h: 104 },
       checklist: { x: 40, y: 180, w: 260, h: 152 },
     };
 
     const svg = renderSvg(doc, layoutDocument(doc));
-    expect(svg.match(/data-annotation-style=/g)).toHaveLength(4);
+    expect(svg.match(/<g[^>]*data-annotation-style=/g)).toHaveLength(5);
     expect(svg).toContain('data-annotation-style="paper"');
+    expect(svg).toContain('data-annotation-style="text"');
     expect(svg).toContain('data-annotation-style="code"');
     expect(svg).toContain('data-annotation-style="callout"');
     expect(svg).toContain('data-annotation-style="checklist"');
@@ -56,6 +59,25 @@ describe("async-docs fixture", () => {
     expect(azs.length).toBe(2);
     expect(azs[0]!.bounds.w).toBe(azs[1]!.bounds.w);
     expect(azs[0]!.bounds.h).toBe(azs[1]!.bounds.h);
+  });
+
+  it("uses the compact AWS hierarchy orientation", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const azA = layout.groups.find((group) => group.id === "azA")!;
+    const azB = layout.groups.find((group) => group.id === "azB")!;
+    const publicA = layout.groups.find((group) => group.id === "pubA")!;
+    const appA = layout.groups.find((group) => group.id === "appA")!;
+    const api = layout.nodes.find((node) => node.id === "apiA")!;
+    const worker = layout.nodes.find((node) => node.id === "workerA")!;
+    const alb = layout.nodes.find((node) => node.id === "api_alb")!;
+
+    expect(azA.bounds.x).toBe(azB.bounds.x);
+    expect(azA.bounds.y).toBeLessThan(azB.bounds.y);
+    expect(publicA.bounds.y).toBe(appA.bounds.y);
+    expect(publicA.bounds.x).toBeLessThan(appA.bounds.x);
+    expect(api.obstacle.x).toBeLessThan(worker.obstacle.x);
+    expect(alb.obstacle.x).toBeGreaterThan(publicA.bounds.x);
   });
 
   it("keeps resources inside their parent groups", () => {
@@ -192,7 +214,7 @@ describe("async-docs fixture", () => {
 
     const intoApi = edges.find((edge) => edge.id === "e2")!;
     const outOfApi = edges.find((edge) => edge.id === "e3")!;
-    expect(intoApi.points[intoApi.points.length - 1]!.y).not.toBe(
+    expect(intoApi.points[intoApi.points.length - 1]!.y).toBe(
       outOfApi.points[0]!.y,
     );
 

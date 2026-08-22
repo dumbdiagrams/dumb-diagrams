@@ -1,6 +1,7 @@
 import type {
   DiagramDocument,
   EdgeBadgeSide,
+  EdgeLabelSide,
   EdgeKind,
   EdgeStyle,
   LayoutResult,
@@ -15,12 +16,13 @@ import {
 } from "@dumb-diagrams/core";
 import {
   getEdgeBadgePlacement,
+  getEdgeLabelPlacementOnPath,
   normalizeOrthogonalRoute,
   projectPointToPolyline,
   routeConnectionPreview,
   routeEdgePreview,
 } from "@dumb-diagrams/route";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   isSelected,
@@ -34,12 +36,17 @@ import {
   moveOrthogonalBend,
 } from "./route-editing.js";
 
-type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note";
+type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note" | "text";
 type RewireTarget = { nodeId: string; side: Side; offset: number };
 type BadgeDrag = {
   edgeId: string;
   t: number;
   side: EdgeBadgeSide;
+} | null;
+type LabelDrag = {
+  edgeId: string;
+  t: number;
+  side: EdgeLabelSide;
 } | null;
 
 export function InteractionOverlay({
@@ -52,6 +59,7 @@ export function InteractionOverlay({
   pendingPort,
   ghostRoute,
   onSelect,
+  onEditText,
   onMarquee,
   onBackgroundClick,
   onChoosePort,
@@ -63,6 +71,7 @@ export function InteractionOverlay({
   onResize,
   onRoute,
   onBadgeMove,
+  onLabelMove,
   onContextMenu,
 }: {
   doc: DiagramDocument;
@@ -74,6 +83,7 @@ export function InteractionOverlay({
   pendingPort: { nodeId: string; side: Side; offset: number } | null;
   ghostRoute: Point[] | null;
   onSelect: (item: SelectionItem, additive: boolean) => void;
+  onEditText: (item: SelectionItem) => void;
   onMarquee: (rect: { x: number; y: number; w: number; h: number }) => void;
   onBackgroundClick: () => void;
   onChoosePort: (nodeId: string, side: Side, offset: number) => void;
@@ -111,6 +121,7 @@ export function InteractionOverlay({
   ) => void;
   onRoute: (edgeId: string, points: Point[]) => void;
   onBadgeMove: (edgeId: string, t: number, side: EdgeBadgeSide) => void;
+  onLabelMove: (edgeId: string, t: number, side: EdgeLabelSide) => void;
   onContextMenu: (
     clientX: number,
     clientY: number,
@@ -138,6 +149,7 @@ export function InteractionOverlay({
   } | null>(null);
   const [hoveredItem, setHoveredItem] = useState<SelectionItem | null>(null);
   const [badgeDrag, setBadgeDrag] = useState<BadgeDrag>(null);
+  const labelDragRef = useRef<LabelDrag>(null);
 
   const groups = useMemo(
     () => [...layout.groups].sort((a, b) => {
@@ -453,9 +465,97 @@ export function InteractionOverlay({
     window.addEventListener("pointercancel", cancel);
   };
 
+  const beginLabelMove = (
+    event: React.PointerEvent<SVGRectElement>,
+    edgeId: string,
+    points: Point[],
+    label: string,
+    initialT: number,
+    initialSide: EdgeLabelSide,
+  ) => {
+    const handle = event.currentTarget;
+    const svg = handle.ownerSVGElement;
+    const pointerId = event.pointerId;
+    let lastT = initialT;
+    let lastSide = initialSide;
+    let didDrag = false;
+    const dragStart = { x: event.clientX, y: event.clientY };
+    const labelText = document
+      .getElementById(`edge-${edgeId}`)
+      ?.querySelector<SVGTextElement>("text.edge-label");
+    let selectionOutlines: SVGRectElement[] | undefined;
+
+    const applyPlacement = (placement: ReturnType<typeof getEdgeLabelPlacementOnPath>) => {
+      if (!placement) return;
+      labelText?.setAttribute("x", String(placement.point.x));
+      labelText?.setAttribute("y", String(placement.point.y));
+      handle.setAttribute("x", String(placement.rect.x));
+      handle.setAttribute("y", String(placement.rect.y));
+      handle.setAttribute("width", String(placement.rect.w));
+      handle.setAttribute("height", String(placement.rect.h));
+
+      // React may render the selection outline after the pointerdown event.
+      // Resolve it lazily so the outline follows the same imperative preview.
+      if (!selectionOutlines?.length) {
+        selectionOutlines = Array.from(
+          document.querySelectorAll<SVGRectElement>("[data-selection-edge-label]"),
+        ).filter((candidate) => candidate.getAttribute("data-selection-edge-label") === edgeId);
+      }
+      for (const outline of selectionOutlines) {
+        outline.setAttribute("x", String(placement.rect.x));
+        outline.setAttribute("y", String(placement.rect.y));
+        outline.setAttribute("width", String(placement.rect.w));
+        outline.setAttribute("height", String(placement.rect.h));
+      }
+    };
+
+    handle.setPointerCapture(pointerId);
+    onGestureBegin();
+    setHoveredItem(null);
+    labelDragRef.current = { edgeId, t: initialT, side: initialSide };
+    applyPlacement(getEdgeLabelPlacementOnPath(points, label, initialT, initialSide));
+
+    const move = (next: PointerEvent) => {
+      if (Math.hypot(next.clientX - dragStart.x, next.clientY - dragStart.y) >= 3) {
+        didDrag = true;
+      }
+      const pointer = pointFromClient(svg, next.clientX, next.clientY, zoom);
+      const projection = projectPointToPolyline(pointer, points);
+      if (!projection) return;
+      lastT = projection.t;
+      lastSide = labelSideAt(pointer, projection.point, projection.tangent);
+      labelDragRef.current = { edgeId, t: lastT, side: lastSide };
+      applyPlacement(getEdgeLabelPlacementOnPath(points, label, lastT, lastSide));
+    };
+    const finish = (next?: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      if (next) move(next);
+      const final = labelDragRef.current;
+      if (next && didDrag && final && (final.t !== initialT || final.side !== initialSide)) {
+        onLabelMove(final.edgeId, final.t, final.side);
+      } else if (!next) {
+        applyPlacement(getEdgeLabelPlacementOnPath(points, label, initialT, initialSide));
+      }
+      labelDragRef.current = null;
+      onGestureEnd();
+      try {
+        handle.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already have been released by the browser.
+      }
+    };
+    const up = (next: PointerEvent) => finish(next);
+    const cancel = () => finish();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+  };
+
   return (
     <svg
-      className={`interaction-overlay ${tool === "select" ? "is-select-tool" : ""}`}
+      className={`interaction-overlay${tool === "select" ? " is-select-tool" : ""}${tool === "text" ? " is-text-tool" : ""}`}
       data-testid="canvas-interaction-overlay"
       width={layout.width}
       height={layout.height}
@@ -632,6 +732,66 @@ export function InteractionOverlay({
         />;
       })}
 
+      {edges.map((edge) => {
+        if (
+          !edge.label ||
+          !edge.labelRect ||
+          view.places[edge.id]?.visible === false ||
+          !isEntityVisible(doc, view, edge.source) ||
+          !isEntityVisible(doc, view, edge.target)
+        ) return null;
+        const rect = edge.labelRect;
+        const labelT = edge.labelT ?? 0.5;
+        const labelSide = edge.labelSide ?? "top";
+        return (
+          <rect
+            key={`${edge.id}-label-hit`}
+            data-interactive
+            data-entity-kind="edge"
+            data-entity-id={edge.id}
+            data-edge-label-hit
+            data-edge-label-handle={edge.id}
+            aria-label={`Connector label ${edge.label}`}
+            className="hit-edge-label"
+            x={rect.x}
+            y={rect.y}
+            width={rect.w}
+            height={rect.h}
+            pointerEvents="all"
+            onPointerEnter={updateHover}
+            onPointerMove={(event) => {
+              if (!labelDragRef.current) updateHover(event);
+            }}
+            onPointerLeave={() => clearHover("edge", edge.id)}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
+              if (tool === "select" && !view.places[edge.id]?.locked) {
+                beginLabelMove(
+                  event,
+                  edge.id,
+                  edge.points,
+                  edge.label,
+                  labelT,
+                  labelSide,
+                );
+              }
+            }}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSelect({ kind: "edge", id: edge.id }, false);
+              onEditText({ kind: "edge", id: edge.id });
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onContextMenu(event.clientX, event.clientY, { kind: "edge", id: edge.id });
+            }}
+          />
+        );
+      })}
+
       {predicted && (
         <polyline
           className="ghost-route"
@@ -742,6 +902,7 @@ export function InteractionOverlay({
       {doc.annotations.map((annotation) => {
         const place = view.annotations?.[annotation.id];
         if (place?.visible === false) return null;
+        const isText = annotation.style === "text";
         const rect = {
           x: place?.x ?? 48,
           y: place?.y ?? 48,
@@ -754,9 +915,10 @@ export function InteractionOverlay({
             data-interactive
             data-entity-kind="annotation"
             data-entity-id={annotation.id}
+            data-annotation-style={annotation.style ?? "paper"}
             aria-selected={isSelected(selection, "annotation", annotation.id)}
-            aria-label={`Note ${annotation.text}`}
-            className={`hit-annotation ${isSelected(selection, "annotation", annotation.id) ? "is-selected" : ""}`}
+            aria-label={`${isText ? "Text" : "Note"} ${annotation.text}`}
+            className={`hit-annotation${isText ? " hit-annotation-text" : ""}${isSelected(selection, "annotation", annotation.id) ? " is-selected" : ""}`}
             x={rect.x}
             y={rect.y}
             width={rect.w}
@@ -783,6 +945,12 @@ export function InteractionOverlay({
                 );
               }
             }}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSelect({ kind: "annotation", id: annotation.id }, false);
+              onEditText({ kind: "annotation", id: annotation.id });
+            }}
             onContextMenu={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -796,17 +964,34 @@ export function InteractionOverlay({
         );
       })}
 
-      {hoveredItem?.kind === "edge" && layout.edges.find((edge) => edge.id === hoveredItem.id) && (
-        <polyline
-          data-hover-kind="edge"
-          data-hover-id={hoveredItem.id}
-          className="hover-edge"
-          points={layout.edges
-            .find((edge) => edge.id === hoveredItem.id)!
-            .points.map((point) => `${point.x},${point.y}`)
-            .join(" ")}
-        />
-      )}
+      {hoveredItem?.kind === "edge" && (() => {
+        const hoveredEdge = layout.edges.find((edge) => edge.id === hoveredItem.id);
+        if (!hoveredEdge) return null;
+        return (
+          <g>
+            <polyline
+              data-hover-kind="edge"
+              data-hover-id={hoveredItem.id}
+              className="hover-edge"
+              points={hoveredEdge.points
+                .map((point) => `${point.x},${point.y}`)
+                .join(" ")}
+            />
+            {hoveredEdge.labelRect && (
+              <rect
+                data-hover-kind="edge-label"
+                data-hover-id={hoveredItem.id}
+                className="hover-edge-label"
+                x={hoveredEdge.labelRect.x}
+                y={hoveredEdge.labelRect.y}
+                width={hoveredEdge.labelRect.w}
+                height={hoveredEdge.labelRect.h}
+                rx={5}
+              />
+            )}
+          </g>
+        );
+      })()}
       {hoveredItem && hoveredItem.kind !== "edge" && (() => {
         const bounds = boundsFor(hoveredItem, layout, doc);
         if (!bounds) return null;
@@ -828,6 +1013,12 @@ export function InteractionOverlay({
         const bounds = boundsFor(item, layout, doc);
         if (!bounds || !isEntityVisible(doc, view, item.id)) return null;
         const radius = item.kind === "group" ? 10 : 8;
+        const isText = item.kind === "annotation" && doc.annotations.some(
+          (annotation) => annotation.id === item.id && annotation.style === "text",
+        );
+        const isEdgeLabel = item.kind === "edge" && Boolean(
+          layout.edges.find((edge) => edge.id === item.id)?.labelRect,
+        );
         return (
           <g
             key={`selection-outline-${item.kind}-${item.id}`}
@@ -836,6 +1027,7 @@ export function InteractionOverlay({
           >
             <rect
               className="selection-outline-halo"
+              data-selection-edge-label={isEdgeLabel ? item.id : undefined}
               x={bounds.x}
               y={bounds.y}
               width={bounds.w}
@@ -843,7 +1035,8 @@ export function InteractionOverlay({
               rx={radius}
             />
             <rect
-              className={`selection-outline selection-${item.kind}`}
+              className={`selection-outline selection-${item.kind}${isText ? " selection-text" : ""}${isEdgeLabel ? " selection-edge-label" : ""}`}
+              data-selection-edge-label={isEdgeLabel ? item.id : undefined}
               x={bounds.x}
               y={bounds.y}
               width={bounds.w}
@@ -1333,6 +1526,14 @@ function badgeSideAt(point: Point, anchor: Point, tangent: Point): EdgeBadgeSide
   return dot >= 0 ? "top" : "bottom";
 }
 
+function labelSideAt(point: Point, anchor: Point, tangent: Point): EdgeLabelSide {
+  const normal = Math.abs(tangent.x) >= Math.abs(tangent.y)
+    ? { x: 0, y: -1 }
+    : { x: -1, y: 0 };
+  const dot = (point.x - anchor.x) * normal.x + (point.y - anchor.y) * normal.y;
+  return dot >= 0 ? "top" : "bottom";
+}
+
 function boundsFor(
   item: SelectionItem,
   layout: LayoutResult,
@@ -1354,6 +1555,9 @@ function boundsFor(
       w: place?.w ?? 160,
       h: place?.h ?? 48,
     };
+  }
+  if (item.kind === "edge") {
+    return layout.edges.find((candidate) => candidate.id === item.id)?.labelRect ?? null;
   }
   return null;
 }
@@ -1665,7 +1869,7 @@ function portPoints(rect: { x: number; y: number; w: number; h: number }) {
 function portAt(clientX: number, clientY: number): RewireTarget | null {
   const target = document.elementFromPoint(clientX, clientY)?.closest<SVGElement>(
     "[data-node-id][data-port-side][data-port-offset]",
-  );
+  ) ?? null;
   return readPortTarget(target);
 }
 

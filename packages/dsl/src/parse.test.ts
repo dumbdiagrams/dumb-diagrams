@@ -88,7 +88,7 @@ ${declarations}
 
 view default {
   place client { x 40 y 48 w 120 h 96 pin locked z 2 }
-  route e1 { point 100 120 point 200 120 pin mode manual badge 0.75 bottom }
+  route e1 { point 100 120 point 200 120 pin mode manual badge 0.75 bottom label 0.35 top }
   annotation note1 { x 300 y 80 w 160 h 48 pin visible false }
 }`;
     const parsed = parseDgm(source);
@@ -122,6 +122,8 @@ view default {
       mode: "manual",
       badgeT: 0.75,
       badgeSide: "bottom",
+      labelT: 0.35,
+      labelSide: "top",
     });
     expect(view.routes.e1?.points).toHaveLength(2);
     expect(view.annotations?.note1).toMatchObject({
@@ -144,6 +146,7 @@ view default {
   flow lr
 
   annotation codeNote "const queue = await receive()" { style code }
+  annotation textNote "Add a manual label" { style text }
   annotation calloutNote "Keep the worker private" { style callout }
   annotation checklistNote "Review IAM / Run smoke test" { style checklist }
 }`;
@@ -151,6 +154,7 @@ view default {
     const parsed = parseDgm(source);
     expect(parsed.annotations.map((annotation) => annotation.style)).toEqual([
       "code",
+      "text",
       "callout",
       "checklist",
     ]);

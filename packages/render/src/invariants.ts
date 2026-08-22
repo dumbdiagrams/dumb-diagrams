@@ -91,6 +91,12 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
           message: `Edges ${a.id} and ${b.id} share a corridor in opposite directions`,
         });
       }
+      if (pathsShareExclusiveCorridor(a, b)) {
+        failures.push({
+          code: "edge-corridor-overlap",
+          message: `Edges ${a.id} and ${b.id} share a corridor outside a fan-out stem`,
+        });
+      }
     }
   }
 
@@ -149,6 +155,62 @@ function pathsReverseOverlap(
     }
   }
   return false;
+}
+
+function pathsShareExclusiveCorridor(
+  a: LayoutResult["edges"][number],
+  b: LayoutResult["edges"][number],
+): boolean {
+  for (let i = 0; i < a.points.length - 1; i++) {
+    for (let j = 0; j < b.points.length - 1; j++) {
+      const shared = segmentsOverlapLength(
+        a.points[i]!,
+        a.points[i + 1]!,
+        b.points[j]!,
+        b.points[j + 1]!,
+      );
+      if (shared <= 12) continue;
+
+      const fanoutStem =
+        i === 0 &&
+        j === 0 &&
+        a.source === b.source &&
+        a.target !== b.target &&
+        samePoint(a.points[0]!, b.points[0]!);
+      if (!fanoutStem) return true;
+    }
+  }
+  return false;
+}
+
+function segmentsOverlapLength(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+  d: { x: number; y: number },
+): number {
+  if (a.x === b.x && c.x === d.x && a.x === c.x) {
+    return Math.max(
+      0,
+      Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) -
+        Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
+    );
+  }
+  if (a.y === b.y && c.y === d.y && a.y === c.y) {
+    return Math.max(
+      0,
+      Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) -
+        Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
+    );
+  }
+  return 0;
+}
+
+function samePoint(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): boolean {
+  return a.x === b.x && a.y === b.y;
 }
 
 function segmentsReverseOverlap(

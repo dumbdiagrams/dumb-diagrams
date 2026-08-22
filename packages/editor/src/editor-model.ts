@@ -3,6 +3,7 @@ import type {
   DiagramAsset,
   Edge,
   EdgeBadgeSide,
+  EdgeLabelSide,
   EdgeKind,
   EdgeStyle,
   AnnotationStyle,
@@ -40,6 +41,7 @@ export const ANNOTATION_STYLES: Array<{
   h: number;
 }> = [
   { id: "paper", label: "Paper", description: "Warm pinned note", w: 220, h: 96 },
+  { id: "text", label: "Text", description: "Plain editable text", w: 240, h: 48 },
   { id: "code", label: "Code snippet", description: "Monospace dark card", w: 300, h: 160 },
   { id: "callout", label: "Callout", description: "Focused explanation", w: 280, h: 104 },
   { id: "checklist", label: "Checklist", description: "Actionable items", w: 260, h: 152 },
@@ -438,6 +440,23 @@ export function setEdgeBadgePosition(
   return next;
 }
 
+export function setEdgeLabelPosition(
+  doc: DiagramDocument,
+  edgeId: string,
+  t: number,
+  side: EdgeLabelSide,
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const view = getDefaultView(next);
+  const current = view.routes[edgeId] ?? {};
+  view.routes[edgeId] = {
+    ...current,
+    labelT: Math.max(0, Math.min(1, t)),
+    labelSide: side,
+  };
+  return next;
+}
+
 export function clearRoute(
   doc: DiagramDocument,
   edgeId: string,
@@ -445,10 +464,17 @@ export function clearRoute(
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
   const existing = view.routes[edgeId];
-  if (existing?.badgeT !== undefined || existing?.badgeSide !== undefined) {
+  if (
+    existing?.badgeT !== undefined ||
+    existing?.badgeSide !== undefined ||
+    existing?.labelT !== undefined ||
+    existing?.labelSide !== undefined
+  ) {
     view.routes[edgeId] = {
       badgeT: existing.badgeT,
       badgeSide: existing.badgeSide,
+      labelT: existing.labelT,
+      labelSide: existing.labelSide,
     };
   } else {
     delete view.routes[edgeId];
@@ -707,6 +733,15 @@ export function addAnnotation(
     zIndex: maxZ + 1,
   };
   return { doc: next, id };
+}
+
+/** Add a free-form text item using the plain, editable text treatment. */
+export function addText(
+  doc: DiagramDocument,
+  text: string,
+  at: Point,
+): { doc: DiagramDocument; id: string } {
+  return addAnnotation(doc, text, at, undefined, "text");
 }
 
 export function setAnnotationPlace(

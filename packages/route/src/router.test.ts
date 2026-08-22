@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createAsyncDocsFixture,
+  createEmptyDocument,
   nearestPortAnchor,
   portPoint,
 } from "@dumb-diagrams/core";
@@ -9,6 +10,7 @@ import { layoutDocument } from "@dumb-diagrams/layout";
 import {
   collapseOrthogonalRouteArtifacts,
   getEdgeBadgePlacement,
+  getEdgeLabelPlacementOnPath,
   normalizeOrthogonalRoute,
   projectPointToPolyline,
   routeConnectionPreview,
@@ -40,6 +42,15 @@ describe("routeEdgePreview", () => {
     expect(projectPointToPolyline({ x: 72, y: 111 }, points)?.t).toBeCloseTo(0.45);
   });
 
+  it("biases default badges toward the target on vertical runs", () => {
+    const badge = getEdgeBadgePlacement([
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+    ]);
+    expect(badge?.t).toBeCloseTo(0.75);
+    expect(badge?.point).toEqual({ x: 84, y: 75 });
+  });
+
   it("renders a badge for zero as well as positive step numbers", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.step = 0;
@@ -69,6 +80,22 @@ describe("routeEdgePreview", () => {
     expect(Math.hypot(edge.badge!.x - closestX, edge.badge!.y - closestY)).toBeGreaterThan(12);
   });
 
+  it("places connector labels at an explicit path position and side", () => {
+    const points = [
+      { x: 0, y: 100 },
+      { x: 160, y: 100 },
+    ];
+    const top = getEdgeLabelPlacementOnPath(points, "request", 0.25, "top");
+    const bottom = getEdgeLabelPlacementOnPath(points, "request", 0.75, "bottom");
+
+    expect(top?.t).toBeCloseTo(0.25);
+    expect(top?.side).toBe("top");
+    expect(top?.point).toEqual({ x: 40, y: 92 });
+    expect(bottom?.t).toBeCloseTo(0.75);
+    expect(bottom?.side).toBe("bottom");
+    expect(bottom?.point).toEqual({ x: 120, y: 120 });
+  });
+
   it("routes explicit ports to their exact visible face offsets", () => {
     const doc = createAsyncDocsFixture();
     const edge = doc.edges.find((candidate) => candidate.id === "e3")!;
@@ -84,6 +111,51 @@ describe("routeEdgePreview", () => {
 
     expect(route?.points[0]).toEqual(portPoint(source.icon, "e", 0.25));
     expect(route?.points.at(-1)).toEqual(portPoint(target.icon, "w", 0.75));
+  });
+
+  it("removes tiny alignment jogs between opposing horizontal ports", () => {
+    const doc = createEmptyDocument("micro-jog");
+    doc.resources = [
+      {
+        id: "ecs",
+        type: "aws.ecs",
+        parent: "subnet",
+        label: { service: "ECS", role: "Service" },
+        role: "primary",
+        props: {},
+      },
+      {
+        id: "fargate",
+        type: "aws.aws-fargate",
+        parent: "subnet",
+        label: { service: "Fargate", role: "Tasks" },
+        role: "secondary",
+        props: {},
+      },
+    ];
+    doc.groups = [
+      { id: "region", kind: "region", label: "Region", children: ["subnet"] },
+      {
+        id: "subnet",
+        kind: "subnet-private",
+        parent: "region",
+        label: "Private subnet",
+        children: ["ecs", "fargate"],
+      },
+    ];
+    doc.edges = [{
+      id: "ecs_to_fargate",
+      source: "ecs",
+      target: "fargate",
+      sourcePort: "e",
+      targetPort: "w",
+      style: "dashed",
+      kind: "peer",
+    }];
+
+    const route = routeEdges(doc, layoutDocument(doc))[0]!;
+    expect(route.points).toHaveLength(2);
+    expect(route.points[0]!.y).toBe(route.points[1]!.y);
   });
 
   it("previews a new connection without adding it to the document", () => {
@@ -156,6 +228,36 @@ describe("routeEdgePreview", () => {
     const e3 = routes.find((route) => route.id === "e3");
     const e5 = routes.find((route) => route.id === "e5");
     expect(e3 && e5 ? sharedLength(e3.points, e5.points) : 1).toBe(0);
+  });
+
+  it("shares only a source fan-out stem and separates converging routes", () => {
+    const fanoutDoc = createAsyncDocsFixture();
+    fanoutDoc.edges.push({
+      id: "fanout",
+      source: "api_alb",
+      target: "apiB",
+      style: "solid",
+      kind: "flow",
+    });
+    const fanoutLayout = layoutDocument(fanoutDoc);
+    const fanoutRoutes = routeEdges(fanoutDoc, fanoutLayout);
+    const originalBranch = fanoutRoutes.find((edge) => edge.id === "e2")!;
+    const addedBranch = fanoutRoutes.find((edge) => edge.id === "fanout")!;
+    expect(sharedLength(originalBranch.points, addedBranch.points)).toBeGreaterThan(12);
+
+    const convergenceDoc = createAsyncDocsFixture();
+    convergenceDoc.edges.push({
+      id: "converge",
+      source: "workerA",
+      target: "jobs",
+      style: "dashed",
+      kind: "peer",
+    });
+    const convergenceLayout = layoutDocument(convergenceDoc);
+    const convergenceRoutes = routeEdges(convergenceDoc, convergenceLayout);
+    const existingRoute = convergenceRoutes.find((edge) => edge.id === "e3")!;
+    const convergingRoute = convergenceRoutes.find((edge) => edge.id === "converge")!;
+    expect(sharedLength(existingRoute.points, convergingRoute.points)).toBeLessThanOrEqual(12);
   });
 
   it("keeps manual breakpoints orthogonal and preserves the authored breaks", () => {
