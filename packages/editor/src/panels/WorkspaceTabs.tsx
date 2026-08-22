@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { WorkspaceTab } from "../state/workspace";
 import { IconClose, IconPlus } from "../ui/icons";
@@ -32,6 +32,26 @@ export function WorkspaceTabs({
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const tabRefs = useRef(new Map<string, HTMLDivElement>());
   const knownTabIdsRef = useRef(new Set(tabs.map((tab) => tab.id)));
+  const labelCacheRef = useRef(new Map<string, { source: string; label: string }>());
+  const labels = useMemo(() => {
+    const cache = labelCacheRef.current;
+    const next = new Map<string, string>();
+
+    for (const tab of tabs) {
+      const cached = cache.get(tab.id);
+      if (!cached || cached.source !== tab.source) {
+        cache.set(tab.id, { source: tab.source, label: getLabel(tab) });
+      }
+      next.set(tab.id, cache.get(tab.id)!.label);
+    }
+
+    const openTabIds = new Set(tabs.map((tab) => tab.id));
+    for (const id of cache.keys()) {
+      if (!openTabIds.has(id)) cache.delete(id);
+    }
+
+    return next;
+  }, [getLabel, tabs]);
   const atTabLimit = tabs.length >= tabLimit;
   const newTabLabel = atTabLimit
     ? `Maximum reached: ${tabLimit} open diagrams. Close a tab to create another.`
@@ -88,7 +108,7 @@ export function WorkspaceTabs({
         {tabs.map((tab) => {
           const active = tab.id === activeTabId;
           const closing = tab.id === closingTabId;
-          const label = getLabel(tab);
+          const label = labels.get(tab.id) ?? "Untitled diagram";
           return (
             <div
               key={tab.id}

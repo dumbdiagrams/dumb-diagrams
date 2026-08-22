@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
@@ -86,13 +86,56 @@ export function CanvasStage({
   const framedKeyRef = useRef<number | null>(null);
   const viewportRef = useRef(viewport);
   viewportRef.current = viewport;
+  const onViewportChangeRef = useRef(onViewportChange);
+  onViewportChangeRef.current = onViewportChange;
+  const pendingViewportRef = useRef<Viewport | null>(null);
+  const pendingViewportOptionsRef = useRef<ViewportChangeOptions | undefined>(undefined);
+  const viewportFrameRef = useRef<number | null>(null);
 
-  const setZoomAt = (nextZoom: number, anchor?: { x: number; y: number }) => {
+  const flushViewportChange = useCallback(() => {
+    if (viewportFrameRef.current !== null) {
+      window.cancelAnimationFrame(viewportFrameRef.current);
+      viewportFrameRef.current = null;
+    }
+    const next = pendingViewportRef.current;
+    if (!next) return;
+    pendingViewportRef.current = null;
+    const options = pendingViewportOptionsRef.current;
+    pendingViewportOptionsRef.current = undefined;
+    onViewportChangeRef.current(next, options);
+  }, []);
+
+  const enqueueViewportChange = useCallback((next: Viewport, options?: ViewportChangeOptions) => {
+    viewportRef.current = next;
+    pendingViewportRef.current = next;
+    pendingViewportOptionsRef.current = options;
+    if (viewportFrameRef.current !== null) return;
+    viewportFrameRef.current = window.requestAnimationFrame(() => {
+      viewportFrameRef.current = null;
+      const pending = pendingViewportRef.current;
+      if (!pending) return;
+      pendingViewportRef.current = null;
+      const pendingOptions = pendingViewportOptionsRef.current;
+      pendingViewportOptionsRef.current = undefined;
+      onViewportChangeRef.current(pending, pendingOptions);
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (viewportFrameRef.current !== null) {
+      window.cancelAnimationFrame(viewportFrameRef.current);
+    }
+    viewportFrameRef.current = null;
+    pendingViewportRef.current = null;
+    pendingViewportOptionsRef.current = undefined;
+  }, []);
+
+  const setZoomAt = useCallback((nextZoom: number, anchor?: { x: number; y: number }) => {
     const el = ref.current;
     const cur = viewportRef.current;
     const k = clampZoom(nextZoom);
     if (!el || !anchor) {
-      onViewportChange({ ...cur, zoom: k });
+      enqueueViewportChange({ ...cur, zoom: k });
       return;
     }
     const rect = el.getBoundingClientRect();
@@ -100,8 +143,8 @@ export function CanvasStage({
     const cy = anchor.y - rect.top;
     const panX = cx - ((cx - cur.panX) * k) / cur.zoom;
     const panY = cy - ((cy - cur.panY) * k) / cur.zoom;
-    onViewportChange({ panX, panY, zoom: k });
-  };
+    enqueueViewportChange({ panX, panY, zoom: k });
+  }, [enqueueViewportChange]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -182,7 +225,7 @@ export function CanvasStage({
         setZoomAt(cur.zoom * factor, { x: e.clientX, y: e.clientY });
         return;
       }
-      onViewportChange({
+      enqueueViewportChange({
         ...cur,
         panX: cur.panX - e.deltaX,
         panY: cur.panY - e.deltaY,
@@ -191,7 +234,7 @@ export function CanvasStage({
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [onViewportChange]);
+  }, [enqueueViewportChange, setZoomAt]);
 
   useEffect(() => {
     const onNav = (e: WheelEvent) => {
@@ -241,19 +284,29 @@ export function CanvasStage({
             setPanning(true);
           }
           if (!dragged) return;
-          onViewportChange({
+          enqueueViewportChange({
             ...origin,
             panX: origin.panX + dx,
             panY: origin.panY + dy,
           });
         };
-        const up = () => {
+        const cancel = () => {
+          flushViewportChange();
           setPanning(false);
           window.removeEventListener("pointermove", move);
           window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
+        };
+        const up = () => {
+          flushViewportChange();
+          setPanning(false);
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
         };
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", cancel);
       }}
     >
       <div

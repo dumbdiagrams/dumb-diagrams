@@ -154,6 +154,9 @@ export function useWorkspace(options: WorkspaceOptions) {
   const workspaceRef = useRef(workspace);
   workspaceRef.current = workspace;
   const historiesRef = useRef(new Map<string, HistoryState>());
+  const persistTimerRef = useRef<number | null>(null);
+  const pendingPersistRef = useRef<WorkspaceState | null>(null);
+  const persistQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [historyVersion, setHistoryVersion] = useState(0);
   const [ready, setReady] = useState(false);
 
@@ -199,8 +202,35 @@ export function useWorkspace(options: WorkspaceOptions) {
 
   useEffect(() => {
     if (!ready) return;
-    void persistWorkspace(workspace);
+    pendingPersistRef.current = workspace;
+    if (persistTimerRef.current !== null) {
+      window.clearTimeout(persistTimerRef.current);
+    }
+    persistTimerRef.current = window.setTimeout(() => {
+      persistTimerRef.current = null;
+      const next = pendingPersistRef.current;
+      pendingPersistRef.current = null;
+      if (!next) return;
+      // Keep writes ordered while still collapsing the many intermediate
+      // workspace snapshots produced by pan, zoom, and drag gestures.
+      persistQueueRef.current = persistQueueRef.current
+        .catch(() => undefined)
+        .then(() => persistWorkspace(next));
+    }, 200);
+
+    return () => {
+      if (persistTimerRef.current !== null) {
+        window.clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+    };
   }, [ready, workspace]);
+
+  useEffect(() => () => {
+    if (persistTimerRef.current !== null) {
+      window.clearTimeout(persistTimerRef.current);
+    }
+  }, []);
 
   const activeTab = workspace.tabs.find((tab) => tab.id === workspace.activeTabId) ?? workspace.tabs[0]!;
 

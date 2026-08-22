@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
+import { lazy, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
@@ -97,7 +97,6 @@ import { HelpModal } from "./panels/HelpModal";
 import { CommandPalette, type Command } from "./panels/CommandPalette";
 import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
-import { SourceDrawer } from "./panels/SourceDrawer";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { clearDraft, loadDraft } from "./state/autosave";
 import {
@@ -139,6 +138,9 @@ const DEFAULT_SOURCE = printDgm(createAsyncDocsFixture());
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
+const SourceDrawer = lazy(() => import("./panels/SourceDrawer").then((module) => ({
+  default: module.SourceDrawer,
+})));
 const RECOVERY = (() => {
   const draft = loadDraft();
   if (!draft) return null;
@@ -266,13 +268,13 @@ function App() {
     setToastMessage(message);
   };
 
-  const tabLabel = (tab: WorkspaceTab): string => {
+  const tabLabel = useCallback((tab: WorkspaceTab): string => {
     try {
       return documentNameForDisplay(parseDgm(tab.source));
     } catch {
       return tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
     }
-  };
+  }, []);
 
   const sourceIsValid = (candidate: string): boolean => {
     try {
@@ -1340,7 +1342,7 @@ function App() {
               />
               {compiled.ok ? (
                 <ExportMenu
-                  title={tabLabel(activeTab)}
+                  title={documentNameForDisplay(compiled.doc)}
                   svg={compiled.svg}
                   source={source}
                   getPortableSvg={() => renderPortableSvg(compiled.doc, compiled.layout)}
@@ -1599,27 +1601,29 @@ function App() {
             onClose={() => setTool("select")}
             width={520}
           >
-            <SourceDrawer
-              source={source}
-              issues={issues}
-              onChange={onSourceChange}
-              onCommit={onSourceCommit}
-              onFormat={() => {
-                try {
-                  commitSource(printDgm(parseDgm(source)));
-                  setToast("Formatted source");
-                } catch {
-                  setToast("Cannot format invalid source");
-                }
-              }}
-              onReset={() => {
-                resetActive(DEFAULT_SOURCE, DEFAULT_SOURCE, { origin: "fixture", filename: undefined });
-                clearDraft();
-                resetTransientState();
-                setDefaultFrameKey((current) => current + 1);
-                setToast("Draft cleared");
-              }}
-            />
+            <Suspense fallback={<div className="source-drawer"><div className="source-editor-shell source-drawer-loading">Loading source editor…</div></div>}>
+              <SourceDrawer
+                source={source}
+                issues={issues}
+                onChange={onSourceChange}
+                onCommit={onSourceCommit}
+                onFormat={() => {
+                  try {
+                    commitSource(printDgm(parseDgm(source)));
+                    setToast("Formatted source");
+                  } catch {
+                    setToast("Cannot format invalid source");
+                  }
+                }}
+                onReset={() => {
+                  resetActive(DEFAULT_SOURCE, DEFAULT_SOURCE, { origin: "fixture", filename: undefined });
+                  clearDraft();
+                  resetTransientState();
+                  setDefaultFrameKey((current) => current + 1);
+                  setToast("Draft cleared");
+                }}
+              />
+            </Suspense>
           </FloatingPanel>
         )}
 

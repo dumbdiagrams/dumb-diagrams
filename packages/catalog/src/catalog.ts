@@ -119,8 +119,15 @@ function buildCatalog(): Record<string, CatalogEntry> {
 
 export const CATALOG: Record<string, CatalogEntry> = buildCatalog();
 
+// Catalog rules are immutable after startup. Reusing the index avoids
+// rebuilding a 1.5k-entry Map on every validation/compile pass (which is
+// especially costly while editing source or committing gesture previews).
+const CATALOG_MAP = new Map<string, CatalogRule>(
+  Object.values(CATALOG).map((entry) => [entry.type, entry]),
+);
+
 export function getCatalogMap(): Map<string, CatalogRule> {
-  return new Map(Object.values(CATALOG).map((entry) => [entry.type, entry]));
+  return CATALOG_MAP;
 }
 
 export function getCatalogEntry(type: string): CatalogEntry | undefined {

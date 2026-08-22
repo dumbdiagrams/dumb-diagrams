@@ -289,8 +289,12 @@ export function InteractionOverlay({
             target: target.nodeId,
             targetPort: target.side,
             targetPortOffset: target.offset,
-          }) ?? [cursor, cursor];
+        }) ?? [cursor, cursor];
     };
+    const preview = createFramePreview<{ cursor: Point; target: RewireTarget | null }>(({ cursor, target }) => {
+      setRewireTarget(target);
+      setRewirePreview(previewFor(cursor, target));
+    });
 
     const move = (next: PointerEvent) => {
       if (Math.hypot(next.clientX - dragStart.x, next.clientY - dragStart.y) >= 3) {
@@ -304,13 +308,14 @@ export function InteractionOverlay({
         latestTarget,
       );
       latestTarget = target;
-      setRewireTarget(target);
-      setRewirePreview(previewFor(cursor, target));
+      preview.schedule({ cursor, target });
     };
     const finish = (next?: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", cancel);
+      if (next) move(next);
+      preview.flush();
       // Commit the exact mount represented by the last rendered preview.
       // Re-resolving on pointerup can see a different DOM layer after React
       // updates and used to make a highlighted port silently fail to attach.
@@ -365,6 +370,14 @@ export function InteractionOverlay({
         kind: "flow",
       }) ?? [sourcePoint, cursor];
     };
+    const preview = createFramePreview<{ cursor: Point; target: RewireTarget | null }>(({ cursor, target }) => {
+      setConnectorDrag({
+        source,
+        cursor,
+        target,
+        preview: previewFor(cursor, target),
+      });
+    });
 
     const update = (next: PointerEvent) => {
       const cursor = pointFromClient(svg, next.clientX, next.clientY, zoom);
@@ -376,17 +389,14 @@ export function InteractionOverlay({
       );
       const target = candidate?.nodeId === source.nodeId ? null : candidate;
       latestTarget = target;
-      setConnectorDrag({
-        source,
-        cursor,
-        target,
-        preview: previewFor(cursor, target),
-      });
+      preview.schedule({ cursor, target });
     };
     const finish = (next?: PointerEvent) => {
       window.removeEventListener("pointermove", update);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", cancel);
+      if (next) update(next);
+      preview.flush();
       const target = next ? latestTarget : null;
       if (target) {
         onConnectPorts(
@@ -431,6 +441,10 @@ export function InteractionOverlay({
     const pointerId = event.pointerId;
     let lastT = initialT;
     let lastSide = initialSide;
+    const preview = createFramePreview<{ t: number; side: EdgeBadgeSide }>((placement) => {
+      setBadgeDrag({ edgeId, t: placement.t, side: placement.side });
+      onBadgeMove(edgeId, placement.t, placement.side);
+    });
 
     handle.setPointerCapture(pointerId);
     onGestureBegin();
@@ -442,14 +456,14 @@ export function InteractionOverlay({
       if (!projection) return;
       lastT = projection.t;
       lastSide = badgeSideAt(pointer, projection.point, projection.tangent);
-      setBadgeDrag({ edgeId, t: lastT, side: lastSide });
-      onBadgeMove(edgeId, lastT, lastSide);
+      preview.schedule({ t: lastT, side: lastSide });
     };
     const finish = (next?: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", cancel);
       if (next) move(next);
+      preview.flush();
       setBadgeDrag(null);
       onGestureEnd();
       try {
@@ -577,14 +591,22 @@ export function InteractionOverlay({
         const up = (next: PointerEvent) => {
           window.removeEventListener("pointermove", move);
           window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
           const current = toSvg(next.clientX, next.clientY);
           const rect = rectFromPoints(start, current);
           setMarquee(null);
           if (rect.w > 4 || rect.h > 4) onMarquee(rect);
           else onBackgroundClick();
         };
+        const cancel = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
+          setMarquee(null);
+        };
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", cancel);
       }}
       onContextMenu={(event) => {
         event.preventDefault();
@@ -1742,6 +1764,41 @@ function beginMove(
   window.addEventListener("pointercancel", cancel);
 }
 
+function createFramePreview<T>(apply: (value: T) => void) {
+  let frame: number | null = null;
+  let pending: T | undefined;
+  let hasPending = false;
+
+  const flush = () => {
+    if (frame !== null) {
+      window.cancelAnimationFrame(frame);
+      frame = null;
+    }
+    if (!hasPending) return;
+    const value = pending as T;
+    pending = undefined;
+    hasPending = false;
+    apply(value);
+  };
+
+  return {
+    schedule(value: T) {
+      pending = value;
+      hasPending = true;
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        if (!hasPending) return;
+        const next = pending as T;
+        pending = undefined;
+        hasPending = false;
+        apply(next);
+      });
+    },
+    flush,
+  };
+}
+
 function placeOrigin(
   place: { x?: number; y?: number; pin?: boolean } | undefined,
   bounds: { x: number; y: number },
@@ -1765,6 +1822,7 @@ function beginResize(
   onBegin?.();
   const start = { x: event.clientX, y: event.clientY };
   const origin = { ...rect };
+  const preview = createFramePreview<{ w: number; h: number }>(({ w, h }) => onResize(w, h));
   const move = (next: PointerEvent) => {
     const dx = (next.clientX - start.x) / zoom;
     const dy = (next.clientY - start.y) / zoom;
@@ -1774,15 +1832,26 @@ function beginResize(
     const h = handle.includes("s")
       ? Math.max(32, snapCoordinate(origin.h + dy, snapToGrid))
       : origin.h;
-    onResize(w, h);
+    preview.schedule({ w, h });
   };
-  const up = () => {
+  const up = (next: PointerEvent) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    move(next);
+    preview.flush();
+    onEnd?.();
+  };
+  const cancel = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    preview.flush();
     onEnd?.();
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", cancel);
 }
 
 function beginSegmentMove(
@@ -1799,6 +1868,7 @@ function beginSegmentMove(
   const start = { x: event.clientX, y: event.clientY };
   const origin = points.map((point) => ({ ...point }));
   const horizontal = origin[index]!.y === origin[index + 1]!.y;
+  const preview = createFramePreview<Point[]>((next) => onMove(next));
   const move = (next: PointerEvent) => {
     const updated = origin.map((point) => ({ ...point }));
     if (horizontal) {
@@ -1816,15 +1886,26 @@ function beginSegmentMove(
       updated[index]!.x = x;
       updated[index + 1]!.x = x;
     }
-    onMove(normalizeOrthogonalRoute(updated));
+    preview.schedule(normalizeOrthogonalRoute(updated));
   };
-  const up = () => {
+  const up = (next: PointerEvent) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    move(next);
+    preview.flush();
+    onEnd?.();
+  };
+  const cancel = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    preview.flush();
     onEnd?.();
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", cancel);
 }
 
 function beginPointMove(
@@ -1840,6 +1921,7 @@ function beginPointMove(
   onBegin?.();
   const start = { x: event.clientX, y: event.clientY };
   const origin = points.map((point) => ({ ...point }));
+  const preview = createFramePreview<Point[]>((next) => onMove(next));
   const move = (next: PointerEvent) => {
     const target = {
       x: snapCoordinate(
@@ -1851,15 +1933,26 @@ function beginPointMove(
         snapToGrid,
       ),
     };
-    onMove(moveOrthogonalBend(origin, index, target));
+    preview.schedule(moveOrthogonalBend(origin, index, target));
   };
-  const up = () => {
+  const up = (next: PointerEvent) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    move(next);
+    preview.flush();
+    onEnd?.();
+  };
+  const cancel = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", cancel);
+    preview.flush();
     onEnd?.();
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", cancel);
 }
 
 function portPoints(rect: { x: number; y: number; w: number; h: number }) {
