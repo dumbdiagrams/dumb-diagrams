@@ -3,6 +3,8 @@ export type ID = string;
 export type FlowDirection = "lr" | "tb";
 export type Grammar = "aws";
 export type ResourceRole = "primary" | "secondary" | "border";
+export type ResourceLabelPosition = "top" | "bottom" | "left" | "right";
+export type GroupLabelPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type EdgeStyle = "solid" | "dashed";
 export type EdgeKind = "flow" | "peer" | "fail";
 export type GroupKind =
@@ -22,6 +24,8 @@ export type RouteMode = "auto" | "manual";
 export type EdgeBadgeSide = "top" | "bottom";
 export type EdgeLabelSide = "top" | "bottom";
 export type AnnotationStyle = "text" | "paper" | "code" | "callout" | "checklist";
+export type TextFontFamily = "sans" | "serif" | "mono";
+export type TextAlign = "left" | "center" | "right";
 
 export interface PortAnchor {
   side: Side;
@@ -44,6 +48,8 @@ export interface Rect {
 export interface ResourceLabel {
   service?: string;
   role?: string;
+  /** Where the complete display label is placed relative to the icon. */
+  position?: ResourceLabelPosition;
 }
 
 export interface Resource {
@@ -68,6 +74,8 @@ export interface Group {
   type?: string;
   parent?: ID;
   label: string;
+  /** Corner used for the boundary icon and display label. */
+  labelPosition?: GroupLabelPosition;
   children: ID[];
   borderChildren?: BorderChild[];
   overlayTargets?: ID[];
@@ -104,6 +112,10 @@ export interface Annotation {
   anchor?: ID;
   /** Visual treatment used when the annotation is rendered on the canvas. */
   style?: AnnotationStyle;
+  /** Typography overrides for plain text annotations. */
+  font?: TextFontFamily;
+  fontSize?: number;
+  align?: TextAlign;
 }
 
 export interface RouteOverride {
@@ -128,6 +140,8 @@ export interface PlaceOverride {
   w?: number;
   h?: number;
   pin?: boolean;
+  /** Preserve the exact coordinates authored by an interactive move. */
+  manual?: boolean;
   locked?: boolean;
   visible?: boolean;
   zIndex?: number;
@@ -160,9 +174,14 @@ export interface NodeGeom {
   label: Rect;
   obstacle: Rect;
   role: ResourceRole;
+  labelPosition?: ResourceLabelPosition;
   resourceType: string;
   serviceLabel: string;
+  /** Pre-wrapped display lines used to keep long provider names compact. */
+  serviceLines?: string[];
   roleLabel?: string;
+  /** Pre-wrapped secondary-label lines matching the measured resource card. */
+  roleLines?: string[];
 }
 
 export interface GroupGeom {
@@ -170,8 +189,10 @@ export interface GroupGeom {
   kind: GroupKind;
   bounds: Rect;
   header: Rect;
+  labelRect?: Rect;
   content: Rect;
   label: string;
+  labelPosition?: GroupLabelPosition;
 }
 
 export interface RoutedEdge {

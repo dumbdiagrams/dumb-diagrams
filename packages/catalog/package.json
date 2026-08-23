@@ -1,6 +1,7 @@
 {
   "name": "@dumb-diagrams/catalog",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -28,7 +28,7 @@ export function renderSvg(
   <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="${GRAMMAR.edgeColor}"/>
   </marker>
-  <style>text{font-family:${GRAMMAR.fontFamily};fill:#232F3E} g[data-annotation-style="text"] text{font-family:${GRAMMAR.textFontFamily};font-size:14px}</style>
+  <style>text{font-family:${GRAMMAR.fontFamily};fill:#232F3E}.group-badge-text,.edge-badge-text{fill:${GRAMMAR.badgeText}} g[data-annotation-style="text"] text{font-family:${GRAMMAR.textFontFamily};font-size:14px}</style>
 </defs>`);
 
   const view = getDefaultView(doc);
@@ -82,18 +82,23 @@ function renderGroup(
   const style = GROUP_STYLES[group.kind];
   const dash = style.dash ? `stroke-dasharray="${style.dash}"` : "";
   const iconPath = groupIconPath(doc, group);
-  const iconX = group.bounds.x;
-  const iconY = group.bounds.y;
+  const labelRect = group.labelRect ?? group.header;
+  const labelPosition = group.labelPosition ?? "top-left";
+  const bottom = labelPosition.startsWith("bottom");
+  const iconX = labelRect.x;
+  const iconY = bottom ? group.bounds.y + group.bounds.h - style.iconSize : group.bounds.y;
   const iconTag = iconPath
     ? `<image href="${escapeAttr(resolveHref(iconPath))}" x="${iconX}" y="${iconY}" width="${style.iconSize}" height="${style.iconSize}" preserveAspectRatio="none"/>`
     : "";
 
-  const textX = iconPath ? iconX + style.iconSize + 8 : group.bounds.x + 8;
-  const textY = iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2) + style.fontSize * 0.35;
+  const textX = iconPath ? iconX + style.iconSize + 8 : labelRect.x + 8;
+  const textY = (bottom ? group.bounds.y + group.bounds.h - (iconPath ? style.iconSize / 2 : style.headerHeight / 2) : iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2)) + style.fontSize * 0.35;
   const model = doc.groups.find((candidate) => candidate.id === group.id);
+  const badgeOnLeft = (group.labelPosition ?? model?.labelPosition ?? "top-left") === "top-right";
+  const badgeX = badgeOnLeft ? group.bounds.x + 14 : group.bounds.x + group.bounds.w - 14;
   const badge = model?.step === undefined ? "" : `
-  <circle class="group-badge-circle" cx="${group.bounds.x + group.bounds.w - 14}" cy="${group.bounds.y + 12}" r="10" fill="${GRAMMAR.badgeFill}"/>
-  <text class="group-badge-text" x="${group.bounds.x + group.bounds.w - 14}" y="${group.bounds.y + 16}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${model.step}</text>`;
+  <circle class="group-badge-circle" cx="${badgeX}" cy="${group.bounds.y + 12}" r="10" fill="${GRAMMAR.badgeFill}"/>
+  <text class="group-badge-text" x="${badgeX}" y="${group.bounds.y + 16}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${model.step}</text>`;
 
   return `
 <g id="group-${group.id}">
@@ -126,18 +131,31 @@ function renderNode(
     iconTag = `<rect x="${node.icon.x}" y="${node.icon.y}" width="${node.icon.w}" height="${node.icon.h}" fill="#eee"/>`;
   }
 
-  const serviceY = node.icon.y + node.icon.h + GRAMMAR.labelLineHeight;
-  const roleY = serviceY + GRAMMAR.labelLineHeight + 2;
-
-  const roleLine = node.roleLabel
-    ? `<text x="${node.label.x + node.label.w / 2}" y="${roleY}" text-anchor="middle" font-size="${GRAMMAR.roleFontSize}">${escapeXml(node.roleLabel)}</text>`
-    : "";
+  const serviceLines = node.serviceLines?.length ? node.serviceLines : [node.serviceLabel];
+  const roleLines = node.roleLines?.length
+    ? node.roleLines
+    : node.roleLabel
+      ? [node.roleLabel]
+      : [];
+  const labelX = node.label.x + node.label.w / 2;
+  const labelFirstY = node.label.y + GRAMMAR.labelLineHeight - 4;
+  const serviceText = serviceLines
+    .map((line, index) =>
+      `<text x="${labelX}" y="${labelFirstY + GRAMMAR.labelLineHeight * index}" text-anchor="middle" font-size="${GRAMMAR.serviceFontSize}" font-weight="500">${escapeXml(line)}</text>`
+    )
+    .join("\n  ");
+  const roleStartY = labelFirstY + serviceLines.length * GRAMMAR.labelLineHeight + 2;
+  const roleText = roleLines
+    .map((line, index) =>
+      `<text x="${labelX}" y="${roleStartY + index * GRAMMAR.labelLineHeight}" text-anchor="middle" font-size="${GRAMMAR.roleFontSize}" font-style="italic">${escapeXml(line)}</text>`
+    )
+    .join("\n  ");
 
   return `
 <g id="res-${node.id}">
   ${iconTag}
-  <text x="${node.label.x + node.label.w / 2}" y="${serviceY}" text-anchor="middle" font-size="${GRAMMAR.serviceFontSize}" font-weight="500">${escapeXml(node.serviceLabel)}</text>
-  ${roleLine}
+  ${serviceText}
+  ${roleText}
 </g>`;
 }
 
@@ -188,11 +206,20 @@ function renderAnnotation(
   const groupStart = `<g id="annotation-${annotation.id}" data-annotation-style="${style}" class="annotation annotation-${style}">`;
 
   if (style === "text") {
-    const maxChars = Math.max(8, Math.floor(Math.max(24, w - 4) / 8));
-    const maxLines = Math.max(1, Math.floor(Math.max(18, h - 8) / 20));
+    const fontSize = annotation.fontSize ?? 14;
+    const lineHeight = Math.round(fontSize * 1.42);
+    const fontFamily = annotation.font === "serif"
+      ? "Georgia, Cambria, Times New Roman, serif"
+      : annotation.font === "mono"
+        ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+        : GRAMMAR.textFontFamily;
+    const align = annotation.align ?? "left";
+    const textX = align === "center" ? x + w / 2 : align === "right" ? x + w - 2 : x + 2;
+    const maxChars = Math.max(8, Math.floor(Math.max(24, w - 4) / (fontSize * 0.56)));
+    const maxLines = Math.max(1, Math.floor(Math.max(fontSize, h - 8) / lineHeight));
     return `
 ${groupStart}
-  ${renderAnnotationLines(annotation.text, x + 2, y + 17, maxChars, 20, maxLines, GRAMMAR.edgeColor, GRAMMAR.textFontFamily, 14)}
+  ${renderAnnotationLines(annotation.text, textX, y + fontSize + 3, maxChars, lineHeight, maxLines, GRAMMAR.edgeColor, fontFamily, fontSize, align)}
 </g>`;
   }
 
@@ -280,10 +307,12 @@ function renderAnnotationLines(
   fill: string,
   fontFamily?: string,
   fontSize = 12,
+  align: "left" | "center" | "right" = "left",
 ): string {
   const lines = annotationLines(text, maxChars, maxLines);
   const family = fontFamily ? ` font-family="${fontFamily}"` : "";
-  return `<text x="${x}" y="${firstY}" font-size="${fontSize}" fill="${fill}"${family}>${lines
+  const anchor = align === "center" ? "middle" : align === "right" ? "end" : "start";
+  return `<text x="${x}" y="${firstY}" text-anchor="${anchor}" font-size="${fontSize}" fill="${fill}"${family}>${lines
     .map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line || " ")}</tspan>`)
     .join("")}</text>`;
 }

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
@@ -68,6 +76,8 @@ export function CanvasStage({
   onViewportChange,
   onBackgroundClick,
   onFitRequest,
+  onCatalogDragOver,
+  onCatalogDrop,
   contentSize,
   defaultFrameKey = 0,
 }: {
@@ -76,6 +86,8 @@ export function CanvasStage({
   onViewportChange: (next: Viewport, options?: ViewportChangeOptions) => void;
   onBackgroundClick: () => void;
   onFitRequest?: (fit: () => void) => void;
+  onCatalogDragOver?: (event: DragEvent<HTMLDivElement>) => void;
+  onCatalogDrop?: (event: DragEvent<HTMLDivElement>, point: { x: number; y: number }) => void;
   contentSize?: { width: number; height: number };
   defaultFrameKey?: number;
 }) {
@@ -249,6 +261,16 @@ export function CanvasStage({
       ref={ref}
       className={`canvas-stage${panning ? " is-panning" : ""}`}
       data-testid="canvas-stage"
+      onDragOver={onCatalogDragOver}
+      onDrop={(event) => {
+        if (!onCatalogDrop) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        const current = viewportRef.current;
+        onCatalogDrop(event, {
+          x: (event.clientX - rect.left - current.panX) / current.zoom,
+          y: (event.clientY - rect.top - current.panY) / current.zoom,
+        });
+      }}
       onClick={(event) => {
         if (interactivePointerRef.current) {
           interactivePointerRef.current = false;

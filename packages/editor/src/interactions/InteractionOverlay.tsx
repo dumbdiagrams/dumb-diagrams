@@ -763,6 +763,7 @@ export function InteractionOverlay({
           !isEntityVisible(doc, view, edge.target)
         ) return null;
         const rect = edge.labelRect;
+        const label = edge.label;
         const labelT = edge.labelT ?? 0.5;
         const labelSide = edge.labelSide ?? "top";
         return (
@@ -773,7 +774,7 @@ export function InteractionOverlay({
             data-entity-id={edge.id}
             data-edge-label-hit
             data-edge-label-handle={edge.id}
-            aria-label={`Connector label ${edge.label}`}
+            aria-label={`Connector label ${label}`}
             className="hit-edge-label"
             x={rect.x}
             y={rect.y}
@@ -793,7 +794,7 @@ export function InteractionOverlay({
                   event,
                   edge.id,
                   edge.points,
-                  edge.label,
+                  label,
                   labelT,
                   labelSide,
                 );
@@ -937,7 +938,7 @@ export function InteractionOverlay({
             data-interactive
             data-entity-kind="annotation"
             data-entity-id={annotation.id}
-            data-annotation-style={annotation.style ?? "paper"}
+            data-hit-annotation-style={annotation.style ?? "paper"}
             aria-selected={isSelected(selection, "annotation", annotation.id)}
             aria-label={`${isText ? "Text" : "Note"} ${annotation.text}`}
             className={`hit-annotation${isText ? " hit-annotation-text" : ""}${isSelected(selection, "annotation", annotation.id) ? " is-selected" : ""}`}
@@ -1453,7 +1454,10 @@ function closestInteractiveTarget(
       candidates.push({
         item: { kind: "resource", id: node.id },
         distance,
-        priority: 0,
+        // A connector endpoint can sit directly on top of a resource card.
+        // Keep the card draggable from its own interior; connectors still win
+        // in the surrounding hit slop where their visible stroke is specific.
+        priority: distance === 0 ? -2 : 0,
       });
     }
   }
@@ -1472,7 +1476,7 @@ function closestInteractiveTarget(
       candidates.push({
         item: { kind: "annotation", id: annotation.id },
         distance,
-        priority: 0,
+        priority: distance === 0 ? -2 : 0,
       });
     }
   }
@@ -1488,10 +1492,9 @@ function closestInteractiveTarget(
       candidates.push({
         item: { kind: "edge", id: edge.id },
         distance: projection.distance,
-        // A connector is the most specific target when the pointer is on its
-        // visible stroke, even if the route crosses the source/target card.
-        // Without this, the card's zero interior distance always won and made
-        // arrows near icons feel impossible to select precisely.
+        // A connector is the most specific target on its visible stroke unless
+        // the pointer is inside a resource or annotation card. This keeps
+        // arrows precise without making connected items feel locked in place.
         priority: projection.distance <= 8 ? -1 : 1,
       });
     }

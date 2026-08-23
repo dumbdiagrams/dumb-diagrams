@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { catalogIconUrl, type CatalogEntry } from "@dumb-diagrams/catalog";
 
+import {
+  CATALOG_DRAG_MIME,
+  serializeCatalogDragPayload,
+} from "../catalog-dnd";
+
 const ICON_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000] as const;
 
 export function CatalogAssetCard({
@@ -62,7 +67,16 @@ export function CatalogAssetCard({
         type="button"
         className="palette-item"
         onClick={onActivate}
-        title={`${entry.name} · ${entry.type}`}
+        draggable
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "copy";
+          event.dataTransfer.setData(
+            CATALOG_DRAG_MIME,
+            serializeCatalogDragPayload(entry),
+          );
+          event.dataTransfer.setData("text/plain", entry.type);
+        }}
+        title={`${entry.name} · ${entry.type} · Click to add or drag to the canvas`}
         aria-label={`Add ${entry.name}`}
       >
         <span className="palette-thumb">

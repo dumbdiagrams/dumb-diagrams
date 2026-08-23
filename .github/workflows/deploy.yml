@@ -1,0 +1,75 @@
+name: Deploy editor
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (use a previous vX.Y.Z tag to roll back)"
+        required: false
+        default: ""
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref to deploy"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_REF: ${{ inputs.ref || github.ref }}
+    steps:
+      - name: Check out deployment ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build editor
+        run: pnpm build
+
+      - name: Record deployed ref
+        run: printf '%s\n' "$DEPLOY_REF" > packages/editor/dist/DEPLOYED_REF
+
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/editor/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

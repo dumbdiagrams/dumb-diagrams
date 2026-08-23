@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  closeWorkspaceTabs,
   createWorkspaceState,
   createWorkspaceTab,
   deserializeWorkspace,
   isTabDirty,
+  MAX_RECYCLED_PREVIEW_BYTES,
+  MAX_RECENTLY_CLOSED,
   MAX_WORKSPACE_TABS,
+  normalizeWorkspacePreview,
   normalizeWorkspaceState,
+  restoreWorkspaceTab,
   serializeWorkspace,
 } from "./workspace";
 import { DIAGRAM_LIMITS } from "@dumb-diagrams/core";
@@ -111,5 +116,112 @@ describe("workspace state", () => {
       activeTabId: "bad",
       recentlyClosed: [],
     })).toBeNull();
+  });
+
+  it("keeps safe recycle-bin previews and drops unsafe or oversized markup", () => {
+    const safe = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><rect width="100" height="60"/></svg>';
+    const tab = createWorkspaceTab("source", { id: "tab-1", viewport });
+    const normalized = normalizeWorkspaceState({
+      version: 1,
+      tabs: [tab],
+      activeTabId: tab.id,
+      recentlyClosed: [{ ...tab, previewSvg: safe }],
+    });
+
+    expect(normalized?.recentlyClosed[0]?.previewSvg).toBe(safe);
+    expect(normalizeWorkspacePreview('<svg><script>alert(1)</script></svg>')).toBeUndefined();
+    expect(normalizeWorkspacePreview(`<svg>${"x".repeat(MAX_RECYCLED_PREVIEW_BYTES)}</svg>`)).toBeUndefined();
+  });
+
+  it("bulk closes tabs while keeping the requested tab active and archiving the closed tabs", () => {
+    const tabs = ["a", "b", "c", "d"].map((id) => createWorkspaceTab(id, {
+      id: `tab-${id}`,
+      viewport,
+    }));
+    const workspace = {
+      version: 1 as const,
+      tabs,
+      activeTabId: "tab-d",
+      recentlyClosed: [],
+    };
+
+    const result = closeWorkspaceTabs(workspace, ["tab-c", "tab-d"], {
+      preferredActiveTabId: "tab-b",
+    });
+
+    expect(result.closed.map((tab) => tab.id)).toEqual(["tab-c", "tab-d"]);
+    expect(result.state.tabs.map((tab) => tab.id)).toEqual(["tab-a", "tab-b"]);
+    expect(result.state.activeTabId).toBe("tab-b");
+    expect(result.state.recentlyClosed.map((tab) => tab.id)).toEqual(["tab-d", "tab-c"]);
+  });
+
+  it("attaches the latest render preview when tabs are archived", () => {
+    const tab = createWorkspaceTab("source", { id: "tab-a", viewport });
+    const replacement = createWorkspaceTab("blank", { id: "blank", viewport });
+    const preview = '<svg viewBox="0 0 120 80"><rect width="120" height="80"/></svg>';
+    const workspace = {
+      version: 1 as const,
+      tabs: [tab],
+      activeTabId: tab.id,
+      recentlyClosed: [],
+    };
+
+    const result = closeWorkspaceTabs(workspace, [tab.id], {
+      replacementTab: replacement,
+      previewByTabId: { [tab.id]: preview },
+    });
+
+    expect(result.closed[0]?.previewSvg).toBe(preview);
+    expect(result.state.recentlyClosed[0]?.previewSvg).toBe(preview);
+  });
+
+  it("keeps a replacement tab after closing everything and caps the recycle bin", () => {
+    const tabs = ["a", "b", "c"].map((id) => createWorkspaceTab(id, {
+      id: `tab-${id}`,
+      viewport,
+    }));
+    const existing = Array.from({ length: MAX_RECENTLY_CLOSED - 1 }, (_, index) => createWorkspaceTab(`old-${index}`, {
+      id: `old-${index}`,
+      viewport,
+    }));
+    const replacement = createWorkspaceTab("blank", { id: "blank", viewport });
+    const workspace = {
+      version: 1 as const,
+      tabs,
+      activeTabId: "tab-b",
+      recentlyClosed: existing,
+    };
+
+    const result = closeWorkspaceTabs(workspace, tabs.map((tab) => tab.id), { replacementTab: replacement });
+
+    expect(result.state.tabs.map((tab) => tab.id)).toEqual(["blank"]);
+    expect(result.state.activeTabId).toBe("blank");
+    expect(result.state.recentlyClosed).toHaveLength(MAX_RECENTLY_CLOSED);
+    expect(result.state.recentlyClosed.slice(0, 3).map((tab) => tab.id)).toEqual(["tab-c", "tab-b", "tab-a"]);
+  });
+
+  it("restores a selected recycle-bin entry and refuses recovery at the tab limit", () => {
+    const open = createWorkspaceTab("open", { id: "open", viewport });
+    const closed = createWorkspaceTab("closed", { id: "closed", viewport });
+    const workspace = {
+      version: 1 as const,
+      tabs: [open],
+      activeTabId: open.id,
+      recentlyClosed: [closed],
+    };
+
+    const restored = restoreWorkspaceTab(workspace, closed.id);
+    expect(restored?.tabs.map((tab) => tab.id)).toEqual(["open", "closed"]);
+    expect(restored?.activeTabId).toBe("closed");
+    expect(restored?.recentlyClosed).toEqual([]);
+
+    const full = {
+      ...workspace,
+      tabs: Array.from({ length: MAX_WORKSPACE_TABS }, (_, index) => createWorkspaceTab(`open-${index}`, {
+        id: `open-${index}`,
+        viewport,
+      })),
+    };
+    expect(restoreWorkspaceTab(full, closed.id)).toBeNull();
   });
 });

@@ -47,6 +47,27 @@ pnpm dev
 The minimal source-and-canvas CLI preview remains available with
 `pnpm dev:cli -- examples/src/aws-high-availability-web-app.dgm`.
 
+v1 is desktop-focused. The editor intentionally keeps a 900px minimum layout
+width so the canvas, tool rail, inspector, and two-row studio chrome remain
+usable together. A viewport around 1280px wide is the supported baseline; a
+small-screen responsive editor is out of scope for v1.
+
+## Licensing and publication
+
+The original DumbDiagrams source, package code, and repository-authored
+examples are published under the [MIT License](./LICENSE). Generated provider
+catalog icons and their source packs remain subject to the notices and terms in
+[ICON-NOTICES.md](./ICON-NOTICES.md); those third-party terms control where an
+icon may be redistributed.
+
+All ten workspace packages are released together from a `vMAJOR.MINOR.PATCH`
+tag. The versioning rules, compatibility promises, and release checklist live
+in [docs/VERSIONING.md](./docs/VERSIONING.md) and [docs/RELEASE.md](./docs/RELEASE.md).
+The editor is deployed as a static site by GitHub Actions, with a manual
+previous-tag deployment for rollback.
+
+See [CHANGELOG.md](./CHANGELOG.md) for release notes.
+
 ## MCP
 
 ```bash

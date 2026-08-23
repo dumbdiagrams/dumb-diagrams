@@ -45,7 +45,7 @@ test("keeps groups before resources in the left tool dock", async ({ page }) => 
   expect(labels).toEqual(["Select", "Groups", "Resources"]);
 });
 
-test("renders a real icon for every catalog entry in the all-provider view", async ({ page }) => {
+test("progressively renders real catalog icons in the all-provider view", async ({ page }) => {
   const failedIconResponses: string[] = [];
   page.on("response", (response) => {
     if (response.url().includes("/catalog-icons/") && !response.ok()) {
@@ -59,7 +59,10 @@ test("renders a real icon for every catalog entry in the all-provider view", asy
   await openResources(page);
   const cards = page.locator('[data-catalog-type][data-asset-kind="resource"]');
   const cardCount = await cards.count();
-  expect(cardCount).toBeGreaterThan(1_000);
+  expect(cardCount).toBe(80);
+  await expect(page.getByText(/Showing 80 of \d+/)).toBeVisible();
+  await page.getByRole("button", { name: "Load more", exact: true }).click();
+  await expect(cards).toHaveCount(160);
 
   await expect
     .poll(
@@ -69,7 +72,7 @@ test("renders a real icon for every catalog entry in the all-provider view", asy
         ),
       { timeout: 30_000, intervals: [250, 500, 1_000] },
     )
-    .toBe(cardCount);
+    .toBe(160);
   await expect(page.locator('[data-icon-status="error"]')).toHaveCount(0);
   expect(failedIconResponses).toEqual([]);
 
@@ -92,27 +95,47 @@ test("searches across providers, favorites a service, and adds it to the canvas"
   await expectLoadedIcon(card);
 
   const favorite = card.getByRole("button", {
-    name: "Add Amazon Elastic Container Registry to favorites",
+    name: "Add ECR to favorites",
     exact: true,
   });
   await favorite.click();
   await expect(
     card.getByRole("button", {
-      name: "Remove Amazon Elastic Container Registry from favorites",
+      name: "Remove ECR from favorites",
       exact: true,
     }),
   ).toHaveAttribute("aria-pressed", "true");
 
-  await card.getByRole("button", { name: "Add Amazon Elastic Container Registry", exact: true }).click();
+  await card.getByRole("button", { name: "Add ECR", exact: true }).click();
   await expect(page.getByRole("button", { name: "Resources", exact: true })).toHaveAttribute(
     "aria-pressed",
     "false",
   );
   await expect(
     page.locator(
-      '[data-entity-kind="resource"][aria-label="Resource Amazon Elastic Container Registry"]',
+      '[data-entity-kind="resource"][aria-label="Resource ECR"]',
     ),
   ).toHaveCount(1);
+});
+
+test("drags a catalog resource onto the canvas", async ({ page }) => {
+  await openResources(page);
+  await page.getByRole("textbox", { name: "Search catalog", exact: true }).fill("Elastic Container Registry");
+
+  const card = page.locator('[data-catalog-type="aws.elastic-container-registry"]');
+  await expect(card).toHaveCount(1);
+  const stage = page.locator('[data-testid="canvas-stage"]');
+  const stageBox = await stage.boundingBox();
+  expect(stageBox).not.toBeNull();
+
+  await card.locator(".palette-item").dragTo(stage, {
+    targetPosition: {
+      x: stageBox!.width - 120,
+      y: stageBox!.height - 120,
+    },
+  });
+
+  await expect(page.locator('[data-entity-kind="resource"][aria-label="Resource ECR"]')).toHaveCount(1);
 });
 
 test("places root resources in the open lane and allows manual compatibility overrides", async ({ page }) => {
@@ -128,7 +151,7 @@ test("places root resources in the open lane and allows manual compatibility ove
   await search.fill("Elastic Container Registry");
   const rootCard = page.locator('[data-catalog-type="aws.elastic-container-registry"]');
   await expect(rootCard).toHaveCount(1);
-  await rootCard.getByRole("button", { name: "Add Amazon Elastic Container Registry", exact: true }).click();
+  await rootCard.getByRole("button", { name: "Add ECR", exact: true }).click();
 
   const rootResource = page.locator('[data-entity-kind="resource"][aria-selected="true"]');
   await expect(rootResource).toHaveCount(1);
@@ -138,9 +161,9 @@ test("places root resources in the open lane and allows manual compatibility ove
   await page.getByRole("textbox", { name: "Search catalog", exact: true }).fill("Elastic Container Service");
   const manuallyNestedCard = page.locator('[data-catalog-type="aws.elastic-container-service"]');
   await expect(manuallyNestedCard).toHaveCount(1);
-  await manuallyNestedCard.getByRole("button", { name: "Add Amazon Elastic Container Service", exact: true }).click();
+  await manuallyNestedCard.getByRole("button", { name: "Add ECS", exact: true }).click();
 
-  const inspector = page.getByRole("dialog", { name: "Amazon Elastic Container Service", exact: true });
+  const inspector = page.getByRole("dialog", { name: "ECS", exact: true });
   await expect(inspector).toHaveCount(1);
   await inspector.getByText("Advanced details", { exact: true }).click();
   await expect(inspector.getByText("AWS Region (us-east-1)", { exact: true })).toBeVisible();
@@ -192,6 +215,28 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   await expect(page.locator('[data-resize-kind="group"][data-resize-handle="se"]')).toHaveCount(1);
   await expect(page.locator('[data-resize-kind="group"][data-resize-handle="e"]')).toHaveCount(1);
   await expect(page.locator('[data-resize-kind="group"][data-resize-handle="s"]')).toHaveCount(1);
+});
+
+test("drags a catalog group onto the canvas", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Groups", exact: true }).click();
+  await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
+
+  const card = page.locator('[data-catalog-type="cloud-agnostic.cluster"]');
+  await expect(card).toHaveCount(1);
+  const stage = page.locator('[data-testid="canvas-stage"]');
+  const stageBox = await stage.boundingBox();
+  expect(stageBox).not.toBeNull();
+
+  await card.locator(".palette-item").dragTo(stage, {
+    targetPosition: {
+      x: stageBox!.width - 120,
+      y: stageBox!.height - 120,
+    },
+  });
+
+  await expect(page.locator('[data-entity-kind="group"][aria-label="Group Cluster"]')).toHaveCount(1);
+  await expect(page.locator('[data-entity-kind="resource"][aria-label="Resource Cluster"]')).toHaveCount(0);
 });
 
 test("places a new root group outside the tiled canvas with resize controls", async ({ page }) => {
@@ -288,4 +333,27 @@ test("supports paper, code, callout, and checklist note styles", async ({ page }
   expect(inspectorBox).not.toBeNull();
   expect(inspectorBox!.x).toBeGreaterThan(stageBox!.x + stageBox!.width / 2);
   await expect(inspector.getByText("Note style", { exact: true })).toBeVisible();
+});
+
+test("formats plain text from the composer and selection inspector", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Text", exact: true }).click();
+
+  const composer = page.getByRole("dialog", { name: "Add text", exact: true });
+  await expect(composer).toBeVisible();
+  await composer.getByRole("textbox", { name: "Text content" }).fill("Architecture note");
+  await composer.getByLabel("Font", { exact: true }).selectOption("serif");
+  await composer.getByLabel("Size", { exact: true }).selectOption("20");
+  await composer.getByRole("button", { name: "Center", exact: true }).click();
+  await composer.getByRole("button", { name: "Place text", exact: true }).click();
+
+  const renderedText = page.locator('.diagram-svg [data-annotation-style="text"] text');
+  await expect(renderedText).toHaveAttribute("font-family", /Georgia/);
+  await expect(renderedText).toHaveAttribute("font-size", "20");
+  await expect(renderedText).toHaveAttribute("text-anchor", "middle");
+
+  const inspector = page.locator(".inspector-sheet");
+  await expect(inspector.getByLabel("Font", { exact: true })).toHaveValue("serif");
+  await inspector.getByLabel("Font", { exact: true }).selectOption("mono");
+  await expect(renderedText).toHaveAttribute("font-family", /ui-monospace/);
 });

@@ -80,6 +80,7 @@ export function snapLayoutToGrid(
         ...group,
         bounds: translateRect(group.bounds, dx, dy),
         header: translateRect(group.header, dx, dy),
+        labelRect: group.labelRect ? translateRect(group.labelRect, dx, dy) : undefined,
         content: translateRect(group.content, dx, dy),
       };
     }),

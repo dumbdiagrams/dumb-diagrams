@@ -104,6 +104,15 @@ describe("document validation modes", () => {
     expect(codes).toContain("asset-size-limit");
   });
 
+  it("limits every display label to 120 characters", () => {
+    expect(DIAGRAM_LIMITS.labelCharacters).toBe(120);
+    const doc = stagedDocument();
+    doc.resources[0]!.label.role = "x".repeat(121);
+    expect(validateDocument(doc, catalog, { enforceCatalogRules: false })).toContainEqual(
+      expect.objectContaining({ code: "text-limit", id: "service" }),
+    );
+  });
+
   it("detects cycles and excessive hierarchy depth without hanging", () => {
     const doc = createEmptyDocument("hierarchy");
     doc.groups = Array.from({ length: DIAGRAM_LIMITS.hierarchyDepth + 1 }, (_, index) => ({

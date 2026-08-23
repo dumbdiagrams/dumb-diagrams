@@ -10,6 +10,7 @@ import type { DiagramDocument, LayoutResult, NodeGeom } from "@dumb-diagrams/cor
 import { layoutDocument } from "@dumb-diagrams/layout";
 import {
   collapseOrthogonalRouteArtifacts,
+  eraseOrthogonalRouteLoops,
   getEdgeBadgePlacement,
   getEdgeLabelPlacementOnPath,
   normalizeOrthogonalRoute,
@@ -81,6 +82,66 @@ describe("routeEdgePreview", () => {
     expect(Math.hypot(edge.badge!.x - closestX, edge.badge!.y - closestY)).toBeGreaterThan(12);
   });
 
+  it("moves a later badge to the clear side instead of covering an earlier arrow", () => {
+    const doc = createEmptyDocument("badge-clearance");
+    doc.resources = [
+      routingResource("browser", "generic.client", "Browser"),
+      routingResource("dns", "aws.route-53", "Route 53"),
+      routingResource("identity", "aws.cognito", "Identity"),
+    ];
+    doc.edges = [
+      {
+        id: "request_dns",
+        source: "browser",
+        target: "dns",
+        sourcePort: "e",
+        targetPort: "w",
+        step: 1,
+        style: "solid",
+        kind: "flow",
+      },
+      {
+        id: "resolve_identity",
+        source: "dns",
+        target: "identity",
+        sourcePort: "s",
+        targetPort: "n",
+        step: 2,
+        style: "solid",
+        kind: "flow",
+      },
+    ];
+    doc.views[0]!.routes.resolve_identity = {
+      pin: true,
+      mode: "manual",
+      points: [
+        { x: 184, y: 148 },
+        { x: 184, y: 144 },
+        { x: 84, y: 144 },
+        { x: 84, y: 180 },
+      ],
+    };
+    const layout: LayoutResult = {
+      nodes: [
+        routingNode("browser", 0, 100, 48),
+        routingNode("dns", 160, 100, 48),
+        routingNode("identity", 60, 180, 48),
+      ],
+      groups: [],
+      edges: [],
+      width: 300,
+      height: 280,
+      symmetries: [],
+    };
+
+    const routes = routeEdges(doc, layout);
+    const request = routes.find((edge) => edge.id === "request_dns")!;
+    const resolve = routes.find((edge) => edge.id === "resolve_identity")!;
+    expect(resolve.badgeSide).toBe("bottom");
+    expect(resolve.badge!.y).toBeGreaterThan(144);
+    expect(distanceToPath(resolve.badge!, request.points)).toBeGreaterThan(14);
+  });
+
   it("places connector labels at an explicit path position and side", () => {
     const points = [
       { x: 0, y: 100 },
@@ -112,6 +173,41 @@ describe("routeEdgePreview", () => {
 
     expect(route?.points[0]).toEqual(portPoint(source.icon, "e", 0.25));
     expect(route?.points.at(-1)).toEqual(portPoint(target.icon, "w", 0.75));
+  });
+
+  it("moves automatic attachments away from the side occupied by a display label", () => {
+    const doc = createEmptyDocument("label-clearance");
+    doc.resources = [
+      routingResource("source", "generic.client", "Source"),
+      routingResource("target", "aws.cognito", "Target"),
+    ];
+    doc.edges = [{
+      id: "source-target",
+      source: "source",
+      target: "target",
+      sourcePort: "n",
+      targetPort: "s",
+      style: "solid",
+    }];
+    const source = routingNode("source", 60, 240, 100);
+    const target = routingNode("target", 60, 80, 112);
+    const layout: LayoutResult = {
+      nodes: [source, target],
+      groups: [],
+      edges: [],
+      width: 260,
+      height: 400,
+      symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!;
+    expect(route.points.at(-1)).not.toEqual(portPoint(target.icon, "s", 0.5));
+    expect(route.points.at(-1)!.y).not.toBe(target.icon.y + target.icon.h);
+
+    doc.resources[1]!.label.position = "top";
+    target.labelPosition = "top";
+    const clearBelow = routeEdges(doc, layout)[0]!;
+    expect(clearBelow.points.at(-1)!.y).toBe(target.icon.y + target.icon.h);
   });
 
   it("removes tiny alignment jogs between opposing horizontal ports", () => {
@@ -231,7 +327,7 @@ describe("routeEdgePreview", () => {
     expect(e3 && e5 ? sharedLength(e3.points, e5.points) : 1).toBe(0);
   });
 
-  it("shares only a source fan-out stem and separates converging routes", () => {
+  it("separates source fan-out stems as well as converging routes", () => {
     const fanoutDoc = createAsyncDocsFixture();
     fanoutDoc.edges.push({
       id: "fanout",
@@ -240,11 +336,22 @@ describe("routeEdgePreview", () => {
       style: "solid",
       kind: "flow",
     });
+    fanoutDoc.edges.push({
+      id: "mixed_style_fanout",
+      source: "api_alb",
+      target: "apiB",
+      style: "dashed",
+      kind: "peer",
+    });
     const fanoutLayout = layoutDocument(fanoutDoc);
     const fanoutRoutes = routeEdges(fanoutDoc, fanoutLayout);
     const originalBranch = fanoutRoutes.find((edge) => edge.id === "e2")!;
     const addedBranch = fanoutRoutes.find((edge) => edge.id === "fanout")!;
-    expect(sharedLength(originalBranch.points, addedBranch.points)).toBeGreaterThan(12);
+    const mixedStyleBranch = fanoutRoutes.find((edge) => edge.id === "mixed_style_fanout")!;
+    expect(sharedLength(originalBranch.points, addedBranch.points)).toBe(0);
+    expect(originalBranch.points[0]).not.toEqual(addedBranch.points[0]);
+    expect(sharedLength(addedBranch.points, mixedStyleBranch.points)).toBe(0);
+    expect(mixedStyleBranch.points[0]).not.toEqual(addedBranch.points[0]);
 
     const convergenceDoc = createAsyncDocsFixture();
     convergenceDoc.edges.push({
@@ -344,6 +451,38 @@ describe("routeEdgePreview", () => {
       { x: 96, y: 0 },
       { x: 96, y: 64 },
       { x: 144, y: 64 },
+    ]);
+  });
+
+  it("erases connector loops and backtracking spurs instead of rendering dead ends", () => {
+    expect(eraseOrthogonalRouteLoops([
+      { x: 0, y: 0 },
+      { x: 120, y: 0 },
+      { x: 120, y: 80 },
+      { x: 40, y: 80 },
+      { x: 40, y: 144 },
+      { x: 40, y: 80 },
+      { x: 200, y: 80 },
+    ])).toEqual([
+      { x: 0, y: 0 },
+      { x: 120, y: 0 },
+      { x: 120, y: 80 },
+      { x: 200, y: 80 },
+    ]);
+
+    const loop = eraseOrthogonalRouteLoops([
+      { x: 0, y: 0 },
+      { x: 160, y: 0 },
+      { x: 160, y: 120 },
+      { x: 48, y: 120 },
+      { x: 48, y: 48 },
+      { x: 200, y: 48 },
+    ]);
+    expect(loop).toEqual([
+      { x: 0, y: 0 },
+      { x: 160, y: 0 },
+      { x: 160, y: 48 },
+      { x: 200, y: 48 },
     ]);
   });
 
@@ -535,6 +674,28 @@ function sharedLength(
     }
   }
   return total;
+}
+
+function distanceToPath(
+  point: { x: number; y: number },
+  path: Array<{ x: number; y: number }>,
+) {
+  let distance = Infinity;
+  for (let index = 0; index < path.length - 1; index++) {
+    const a = path[index]!;
+    const b = path[index + 1]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const t = lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
+    distance = Math.min(
+      distance,
+      Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t)),
+    );
+  }
+  return distance;
 }
 
 function pathsCross(

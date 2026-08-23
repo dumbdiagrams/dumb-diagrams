@@ -1,6 +1,7 @@
 {
   "name": "@dumb-diagrams/editor",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +9,8 @@
     "build": "vite build",
     "predev": "node ../../scripts/icon-workflow.mjs build",
     "dev": "vite",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.0",
@@ -20,6 +22,7 @@
     "@dumb-diagrams/catalog": "workspace:*",
     "@dumb-diagrams/core": "workspace:*",
     "@dumb-diagrams/dsl": "workspace:*",
+    "@dumb-diagrams/grammar-aws": "workspace:*",
     "@dumb-diagrams/layout": "workspace:*",
     "@dumb-diagrams/render": "workspace:*",
     "@dumb-diagrams/route": "workspace:*",

@@ -157,7 +157,18 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".example-card")).toHaveCount(2);
+  await expect(examples.locator(".example-card")).toHaveCount(3);
+  await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(3);
+  await expect(examples.locator(".example-prompt pre")).toHaveCount(3);
+  await expect(examples.locator(".example-prompt pre").nth(0)).toContainText(
+    'Create a diagram titled "Claims processing with Amazon Bedrock"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(1)).toContainText(
+    'Create a diagram titled "AWS Data Transfer Hub"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(2)).toContainText(
+    'Create a diagram titled "Highly available AWS web application"',
+  );
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);
 
@@ -183,6 +194,32 @@ test("keeps the Help menu inside the viewport", async ({ page }) => {
   expect(bounds!.y).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width);
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height);
+});
+
+test("opens the format picker and export studio with auto-filled canvas options", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "More export formats", exact: true }).click();
+  const picker = page.getByRole("menu", { name: "Export as", exact: true });
+  await expect(picker).toBeVisible();
+  await expect(picker.locator(".export-format-option")).toHaveCount(11);
+  await picker.locator(".export-format-option").filter({ hasText: "PNG" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Export PNG" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /Entire diagram/ })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /Selection only/ })).toBeDisabled();
+  await expect(dialog.getByText(/Auto-filled from the full canvas/)).toBeVisible();
+  await expect(dialog.getByText(/Advanced/)).toBeVisible();
+
+  await dialog.locator("select").first().selectOption("svg");
+  const svgDialog = page.getByRole("dialog", { name: "Export SVG" });
+  await expect(svgDialog).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await svgDialog.getByRole("button", { name: "Export SVG", exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.svg$/);
+  await expect(svgDialog).toHaveCount(0);
 });
 
 test("opens multiple .dgm files as separate tabs", async ({ page }) => {

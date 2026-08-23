@@ -7,7 +7,12 @@ import {
 import type { LayoutResult } from "@dumb-diagrams/core";
 import { compileDiagram, renderSvg } from "@dumb-diagrams/render";
 import { layoutDocument } from "@dumb-diagrams/layout";
-import { normalizeOrthogonalRoute, routeEdges, attachRoutes } from "@dumb-diagrams/route";
+import {
+  eraseOrthogonalRouteLoops,
+  normalizeOrthogonalRoute,
+  routeEdges,
+  attachRoutes,
+} from "@dumb-diagrams/route";
 import { checkInvariants } from "./invariants.js";
 
 describe("async-docs fixture", () => {
@@ -21,7 +26,7 @@ describe("async-docs fixture", () => {
     const doc = createAsyncDocsFixture();
     doc.annotations = [
       { id: "paper", text: "A paper note" },
-      { id: "text", text: "A plain text item", style: "text" },
+      { id: "text", text: "A plain text item", style: "text", font: "serif", fontSize: 20, align: "center" },
       { id: "code", text: "const ready = true", style: "code" },
       { id: "callout", text: "Keep this private", style: "callout" },
       { id: "checklist", text: "Review IAM", style: "checklist" },
@@ -42,6 +47,9 @@ describe("async-docs fixture", () => {
     expect(svg).toContain('data-annotation-style="code"');
     expect(svg).toContain('data-annotation-style="callout"');
     expect(svg).toContain('data-annotation-style="checklist"');
+    expect(svg).toContain('font-family="Georgia, Cambria, Times New Roman, serif"');
+    expect(svg).toContain('font-size="20"');
+    expect(svg).toContain('text-anchor="middle"');
   });
 
   it("has no connector collisions, detached ports, or reverse overlaps", () => {
@@ -91,6 +99,22 @@ describe("async-docs fixture", () => {
     expect(azs.length).toBe(2);
     expect(azs[0]!.bounds.w).toBe(azs[1]!.bounds.w);
     expect(azs[0]!.bounds.h).toBe(azs[1]!.bounds.h);
+  });
+
+  it("lays out resource labels on every icon side and group labels in alternate corners", () => {
+    const doc = createAsyncDocsFixture();
+    const client = doc.resources.find((resource) => resource.id === "client")!;
+    const region = doc.groups.find((group) => group.id === "use1")!;
+    client.label.position = "top";
+    region.labelPosition = "bottom-right";
+
+    const layout = layoutDocument(doc);
+    const node = layout.nodes.find((candidate) => candidate.id === "client")!;
+    const group = layout.groups.find((candidate) => candidate.id === "use1")!;
+
+    expect(node.label.y + node.label.h).toBeLessThanOrEqual(node.icon.y);
+    expect(group.labelRect!.x + group.labelRect!.w).toBe(group.bounds.x + group.bounds.w);
+    expect(group.labelRect!.y).toBeGreaterThan(group.bounds.y + group.bounds.h / 2);
   });
 
   it("uses the compact AWS hierarchy orientation", () => {
@@ -260,7 +284,7 @@ describe("async-docs fixture", () => {
     expect(result.svg).toMatch(/id="edge-e6"[\s\S]*marker-end="url\(#arrow\)"/);
   });
 
-  it("repairs unsafe pinned places and preserves pinned routes", () => {
+  it("repairs unsafe pinned places and removes loops from pinned routes", () => {
     const doc = createAsyncDocsFixture();
     const view = doc.views[0]!;
     view.places.api_alb = { x: 128, y: 96, pin: true };
@@ -287,15 +311,13 @@ describe("async-docs fixture", () => {
     const edges = routeEdges(doc, layout);
     const edge = edges.find((candidate) => candidate.id === "e2")!;
     expect(edge.points).toEqual(
-      normalizeOrthogonalRoute([
+      eraseOrthogonalRouteLoops(normalizeOrthogonalRoute([
         edge.points[0]!,
         ...view.routes.e2!.waypoints!,
         edge.points.at(-1)!,
-      ]),
+      ])),
     );
-    for (const waypoint of view.routes.e2!.waypoints!) {
-      expect(edge.points).toContainEqual(waypoint);
-    }
+    expect(edge.points.length).toBeLessThan(6);
   });
 });
 

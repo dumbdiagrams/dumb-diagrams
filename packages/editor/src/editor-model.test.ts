@@ -17,6 +17,7 @@ import {
   importSvgAsset,
   MAX_EDGE_STEP,
   moveSelection,
+  needsAutoFix,
   nudgeSelection,
   pasteClipboard,
   reconnectEdge,
@@ -28,10 +29,13 @@ import {
   setEdgeBadgePosition,
   setEdgeLabelPosition,
   setAnnotationStyle,
+  updateTextFormat,
   setGroupPlace,
   setRoute,
   setSize,
   setResourceIconSize,
+  setResourceLabelPosition,
+  setGroupLabelPosition,
   setTitle,
   swapEdgeDirection,
   updateEdge,
@@ -84,6 +88,15 @@ describe("editor commands", () => {
     );
   });
 
+  it("persists resource and group display-label positions", () => {
+    const doc = createAsyncDocsFixture();
+    const resource = setResourceLabelPosition(doc, "client", "top");
+    const group = setGroupLabelPosition(resource, "use1", "top-right");
+
+    expect(group.resources.find((candidate) => candidate.id === "client")?.label.position).toBe("top");
+    expect(group.groups.find((candidate) => candidate.id === "use1")?.labelPosition).toBe("top-right");
+  });
+
   it("sets diagram title independently from id", () => {
     const doc = createAsyncDocsFixture();
     const next = setTitle(doc, "Async Docs");
@@ -115,6 +128,17 @@ describe("editor commands", () => {
       style: "text",
     });
     expect(getDefaultView(added.doc).annotations?.[added.id]).toMatchObject({ w: 240, h: 48 });
+
+    const formatted = updateTextFormat(added.doc, added.id, {
+      font: "mono",
+      fontSize: 20,
+      align: "right",
+    });
+    expect(formatted.annotations.find((annotation) => annotation.id === added.id)).toMatchObject({
+      font: "mono",
+      fontSize: 20,
+      align: "right",
+    });
   });
 
   it("nudges pinned places", () => {
@@ -146,6 +170,7 @@ describe("editor commands", () => {
     view.places.api_alb = { x: 24, y: 30, pin: true };
     view.routes.e1 = { pin: true, points: [{ x: 1, y: 1 }, { x: 2, y: 2 }] };
 
+    expect(needsAutoFix(doc)).toBe(true);
     const fixed = clearView(doc);
     const fixedView = getDefaultView(fixed);
 
@@ -158,6 +183,7 @@ describe("editor commands", () => {
     expect(fixedView.places.main).not.toHaveProperty("x");
     expect(fixedView.places.api_alb).not.toHaveProperty("y");
     expect(fixedView.routes).toEqual({});
+    expect(needsAutoFix(fixed)).toBe(false);
 
     const layout = layoutDocument(fixed);
     const region = layout.groups.find((group) => group.id === "use1")!;
@@ -187,6 +213,24 @@ describe("editor commands", () => {
     expect(getDefaultView(next).places.appA).toMatchObject({ x: 208, y: 216 });
     expect(getDefaultView(next).places.apiA).toMatchObject({ x: 248, y: 256 });
     expect(getDefaultView(next).places.workerA).toMatchObject({ x: 288, y: 256 });
+  });
+
+  it("keeps a dragged resource at its pinned drop position", () => {
+    const doc = createAsyncDocsFixture();
+    const before = layoutDocument(doc);
+    const beforeNode = before.nodes.find((node) => node.id === "apiA")!;
+    const next = moveSelection(
+      doc,
+      [{ kind: "resource", id: "apiA" }],
+      112,
+      64,
+      before,
+    );
+    const afterNode = layoutDocument(next).nodes.find((node) => node.id === "apiA")!;
+    const place = getDefaultView(next).places.apiA!;
+
+    expect(afterNode.obstacle.x).toBe(place.x);
+    expect(afterNode.obstacle.y).toBe(place.y);
   });
 
   it("pastes nested groups without duplicating child ids", () => {

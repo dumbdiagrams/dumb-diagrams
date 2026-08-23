@@ -1,35 +1,54 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
-import { catalogIconUrl } from "@dumb-diagrams/catalog";
-import { parseDgm } from "@dumb-diagrams/dsl";
-import { layoutDocument } from "@dumb-diagrams/layout";
-import { renderSvg } from "@dumb-diagrams/render";
-import { attachRoutes, routeEdges } from "@dumb-diagrams/route";
-
+import { compileDiagramSource, getCachedDiagramCompilation } from "../diagram-compiler";
 import { DIAGRAM_EXAMPLES, type DiagramExample } from "../examples";
 import { Modal } from "../ui/Modal";
+
+type Preview = { status: "ready"; svg: string } | { status: "error" };
 
 export function ExamplesModal({
   open,
   onClose,
   onOpen,
+  openingExampleId,
 }: {
   open: boolean;
   onClose: () => void;
   onOpen: (example: DiagramExample) => void;
+  openingExampleId: string | null;
 }) {
-  const previews = useMemo(() => new Map(
-    DIAGRAM_EXAMPLES.map((example) => {
-      try {
-        const doc = parseDgm(example.source);
-        const placedLayout = layoutDocument(doc);
-        const layout = attachRoutes(placedLayout, routeEdges(doc, placedLayout));
-        return [example.id, renderSvg(doc, layout, { resolveIconHref: catalogIconUrl })] as const;
-      } catch {
-        return [example.id, ""] as const;
-      }
-    }),
-  ), []);
+  const [previews, setPreviews] = useState(() => new Map<string, Preview>());
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    let frame = 0;
+    let index = 0;
+
+    const prepareNext = () => {
+      if (cancelled || index >= DIAGRAM_EXAMPLES.length) return;
+      const example = DIAGRAM_EXAMPLES[index++]!;
+      const compilation = getCachedDiagramCompilation(example.source, true)
+        ?? compileDiagramSource(example.source, true);
+      if (cancelled) return;
+      setPreviews((current) => {
+        const next = new Map(current);
+        next.set(example.id, compilation.ok
+          ? { status: "ready", svg: compilation.svg }
+          : { status: "error" });
+        return next;
+      });
+      frame = window.requestAnimationFrame(prepareNext);
+    };
+
+    // Give the modal and its loading placeholders a frame to paint before the
+    // first layout/route/render pass, then prepare one card per frame.
+    frame = window.requestAnimationFrame(prepareNext);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [open]);
 
   return (
     <Modal
@@ -45,35 +64,51 @@ export function ExamplesModal({
           <div className="examples-empty" role="status">
             No bundled examples are available yet.
           </div>
-        ) : DIAGRAM_EXAMPLES.map((example) => (
-          <article key={example.id} className="example-card">
-            <div className="example-preview" aria-label={`${example.title} preview`}>
-              {previews.get(example.id) ? (
-                <div dangerouslySetInnerHTML={{ __html: previews.get(example.id)! }} />
-              ) : (
-                <span>Preview unavailable</span>
-              )}
-            </div>
-            <div className="example-card-content">
-              <div className="example-card-heading">
-                <div>
-                  <h3>{example.title}</h3>
-                  <p>{example.description}</p>
+        ) : DIAGRAM_EXAMPLES.map((example) => {
+          const preview = previews.get(example.id);
+          const preparing = !preview;
+          const opening = openingExampleId === example.id;
+          return (
+            <article key={example.id} className="example-card" aria-busy={preparing || opening}>
+              <div className="example-preview" aria-label={`${example.title} preview`}>
+                {preview?.status === "ready" ? (
+                  <div dangerouslySetInnerHTML={{ __html: preview.svg }} />
+                ) : preview?.status === "error" ? (
+                  <span>Preview unavailable</span>
+                ) : (
+                  <div className="example-preview-skeleton" role="status" aria-label={`Preparing ${example.title} preview`}>
+                    <span className="loading-spinner" aria-hidden="true" />
+                    <span>Preparing preview…</span>
+                  </div>
+                )}
+              </div>
+              <div className="example-card-content">
+                <div className="example-card-heading">
+                  <div>
+                    <h3>{example.title}</h3>
+                    <p>{example.description}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={preparing || openingExampleId !== null}
+                    onClick={() => onOpen(example)}
+                  >
+                    {opening && <span className="loading-spinner is-small" aria-hidden="true" />}
+                    {opening ? "Opening…" : preparing ? "Preparing…" : "Open"}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={() => onOpen(example)}
-                >
-                  Open
-                </button>
+                <div className="example-tags">
+                  {example.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                </div>
+                <details className="example-prompt">
+                  <summary>Creation prompt</summary>
+                  <pre>{example.prompt}</pre>
+                </details>
               </div>
-              <div className="example-tags">
-                {example.tags.map((tag) => <span key={tag}>{tag}</span>)}
-              </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </Modal>
   );

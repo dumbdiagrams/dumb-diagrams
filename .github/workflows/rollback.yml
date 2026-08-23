@@ -1,0 +1,21 @@
+name: Rollback editor deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Known-good release tag to redeploy, for example v1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  rollback:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ inputs.version }}
+    secrets: inherit

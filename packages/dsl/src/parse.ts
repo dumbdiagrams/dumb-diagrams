@@ -4,6 +4,8 @@ import type {
   Edge,
   Group,
   Resource,
+  TextAlign,
+  TextFontFamily,
   View,
 } from "@dumb-diagrams/core";
 import { createEmptyDocument, DIAGRAM_LIMITS, normalizePortOffset, utf8ByteLength } from "@dumb-diagrams/core";
@@ -221,6 +223,12 @@ class Parser {
             group.step = this.expect("number").value;
             continue;
           }
+          if (t.type === "id" && t.value === "label-position") {
+            this.pos++;
+            const position = this.expect("id").value;
+            if (isGroupLabelPosition(position)) group.labelPosition = position;
+            continue;
+          }
           if (t.type === "id" && t.value === "group") {
             this.parseLogicalGroup();
             continue;
@@ -259,9 +267,16 @@ class Parser {
           this.pos++;
           const role = this.expect("id").value;
           if (role === "secondary" || role === "border") resource.role = role;
+        } else if (t.type === "id" && t.value === "service") {
+          this.pos++;
+          resource.label.service = this.expect("string").value;
         } else if (t.type === "id" && t.value === "icon") {
           this.pos++;
           resource.props.iconAsset = this.expect("id").value;
+        } else if (t.type === "id" && t.value === "label-position") {
+          this.pos++;
+          const position = this.expect("id").value;
+          if (isResourceLabelPosition(position)) resource.label.position = position;
         } else {
           this.pos++;
         }
@@ -316,6 +331,12 @@ class Parser {
           group.step = this.expect("number").value;
           continue;
         }
+        if (t.type === "id" && t.value === "label-position") {
+          this.pos++;
+          const position = this.expect("id").value;
+          if (isGroupLabelPosition(position)) group.labelPosition = position;
+          continue;
+        }
         if (t.type === "id" && t.value === "group") {
           this.parseLogicalGroup();
           continue;
@@ -334,7 +355,15 @@ class Parser {
     if (this.peek()?.type === "string") {
       text = this.expect("string").value;
     }
-    const annotation: { id: string; text: string; anchor?: string; style?: AnnotationStyle } = {
+    const annotation: {
+      id: string;
+      text: string;
+      anchor?: string;
+      style?: AnnotationStyle;
+      font?: TextFontFamily;
+      fontSize?: number;
+      align?: TextAlign;
+    } = {
       id: idTok.value,
       text,
     };
@@ -353,6 +382,18 @@ class Parser {
           this.pos++;
           const style = this.expect("id").value;
           if (isAnnotationStyle(style)) annotation.style = style;
+        } else if (t.type === "id" && t.value === "font") {
+          this.pos++;
+          const font = this.expect("id").value;
+          if (font === "sans" || font === "serif" || font === "mono") annotation.font = font;
+        } else if (t.type === "id" && t.value === "size") {
+          this.pos++;
+          const size = this.expect("number").value;
+          if (size >= 10 && size <= 48) annotation.fontSize = size;
+        } else if (t.type === "id" && t.value === "align") {
+          this.pos++;
+          const align = this.expect("id").value;
+          if (align === "left" || align === "center" || align === "right") annotation.align = align;
         } else {
           this.pos++;
         }
@@ -481,6 +522,8 @@ class Parser {
             place[k] = this.expect("number").value;
           } else if (k === "pin") {
             place.pin = true;
+          } else if (k === "manual") {
+            place.manual = true;
           } else if (k === "locked") {
             place.locked = true;
           } else if (k === "visible") {
@@ -539,6 +582,8 @@ class Parser {
             place[k] = this.expect("number").value;
           } else if (k === "pin") {
             place.pin = true;
+          } else if (k === "manual") {
+            place.manual = true;
           } else if (k === "locked") {
             place.locked = true;
           } else if (k === "visible") {
@@ -679,6 +724,9 @@ export function printDgm(doc: DiagramDocument): string {
     const options: string[] = [];
     if (annotation.anchor) options.push(`anchor ${annotation.anchor}`);
     if (annotation.style && annotation.style !== "paper") options.push(`style ${annotation.style}`);
+    if (annotation.font) options.push(`font ${annotation.font}`);
+    if (annotation.fontSize) options.push(`size ${annotation.fontSize}`);
+    if (annotation.align) options.push(`align ${annotation.align}`);
     if (options.length) line += ` { ${options.join(" ")} }`;
     lines.push(line);
   }
@@ -763,6 +811,14 @@ function isAnnotationStyle(value: string): value is AnnotationStyle {
   return value === "text" || value === "paper" || value === "code" || value === "callout" || value === "checklist";
 }
 
+function isResourceLabelPosition(value: string): value is NonNullable<Resource["label"]["position"]> {
+  return value === "top" || value === "bottom" || value === "left" || value === "right";
+}
+
+function isGroupLabelPosition(value: string): value is NonNullable<Group["labelPosition"]> {
+  return value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right";
+}
+
 function formatPlace(
   keyword: "place" | "annotation",
   id: string,
@@ -774,6 +830,7 @@ function formatPlace(
   if (place.w !== undefined) parts.push(`w ${place.w}`);
   if (place.h !== undefined) parts.push(`h ${place.h}`);
   if (place.pin) parts.push("pin");
+  if (place.manual) parts.push("manual");
   if (place.locked) parts.push("locked");
   if (place.visible === false) parts.push("visible false");
   if (place.zIndex !== undefined) parts.push(`z ${place.zIndex}`);
@@ -818,6 +875,7 @@ function printNode(
     const type = group.type ?? groupKindToType(group.kind);
     lines.push(`${pad}${type} ${group.id} "${escapeString(group.label)}" {`);
     if (group.step !== undefined) lines.push(`${pad}  step ${group.step}`);
+    if (group.labelPosition) lines.push(`${pad}  label-position ${group.labelPosition}`);
     for (const child of group.children) {
       printNode(doc, child, indent + 1, lines);
     }
@@ -827,6 +885,8 @@ function printNode(
     let line = `${pad}${resource.type} ${resource.id}`;
     if (label) line += ` "${escapeString(label)}"`;
     const opts: string[] = [];
+    if (resource.label.service) opts.push(`service "${escapeString(resource.label.service)}"`);
+    if (resource.label.position) opts.push(`label-position ${resource.label.position}`);
     if (resource.role !== "primary") opts.push(`role ${resource.role}`);
     if (resource.props.iconAsset) opts.push(`icon ${resource.props.iconAsset}`);
     if (opts.length) line += ` { ${opts.join(" ")} }`;

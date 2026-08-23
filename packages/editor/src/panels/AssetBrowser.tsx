@@ -23,6 +23,7 @@ const PROVIDER_LABELS: Record<"all" | UserCloudProvider, string> = {
 
 const RECENT_KEY = "dumb-diagrams.recent-assets";
 const FAVORITE_KEY = "dumb-diagrams.favorite-assets";
+const ASSET_PAGE_SIZE = 80;
 
 function readIds(key: string): string[] {
   try {
@@ -109,6 +110,8 @@ export function AssetBrowser({
   const [filter, setFilter] = useState<"all" | "favorites" | "recent">("all");
   const [favorites, setFavorites] = useState<string[]>(() => readIds(FAVORITE_KEY));
   const [recents, setRecents] = useState<string[]>(() => readIds(RECENT_KEY));
+  const [importingSvg, setImportingSvg] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(ASSET_PAGE_SIZE);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const categories = useMemo(
@@ -142,6 +145,11 @@ export function AssetBrowser({
     if (filter === "recent") entries = entries.filter((entry) => recents.includes(entry.type));
     return entries;
   }, [allEntries, category, filter, favorites, mode, provider, query, recents]);
+  const visibleEntries = filteredEntries.slice(0, visibleCount);
+
+  useEffect(() => {
+    setVisibleCount(ASSET_PAGE_SIZE);
+  }, [category, filter, mode, provider, query]);
 
   const activate = (entry: CatalogEntry) => {
     const next = [entry.type, ...recents.filter((id) => id !== entry.type)];
@@ -174,18 +182,26 @@ export function AssetBrowser({
             <button
               type="button"
               className="secondary-button"
+              disabled={importingSvg}
               onClick={() => fileRef.current?.click()}
             >
-              Import SVG
+              {importingSvg ? "Importing…" : "Import SVG"}
             </button>
             <input
               ref={fileRef}
               type="file"
               accept=".svg,image/svg+xml"
               hidden
-              onChange={(event) => {
+              onChange={async (event) => {
                 const file = event.target.files?.[0];
-                if (file) onImportSvg(file);
+                event.currentTarget.value = "";
+                if (!file) return;
+                setImportingSvg(true);
+                try {
+                  await onImportSvg(file);
+                } finally {
+                  setImportingSvg(false);
+                }
               }}
             />
           </>
@@ -194,7 +210,7 @@ export function AssetBrowser({
 
       <div className="asset-browser-controls">
         <div className="provider-tabs" role="tablist">
-          {(["all", ...listProviders()] as CatalogProviderFilter[]).map((item) => (
+          {(["all" as const, ...listProviders()]).map((item) => (
             <button
               key={item}
               type="button"
@@ -247,12 +263,24 @@ export function AssetBrowser({
 
       <div className="asset-browser-body">
         <AssetGrid
-          entries={filteredEntries}
+          entries={visibleEntries}
           favorites={favorites}
           variant={mode === "groups" ? "group" : "service"}
           onActivate={activate}
           onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
         />
+        {visibleCount < filteredEntries.length && (
+          <div className="asset-browser-more">
+            <span>Showing {visibleEntries.length} of {filteredEntries.length}</span>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setVisibleCount((current) => current + ASSET_PAGE_SIZE)}
+            >
+              Load more
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

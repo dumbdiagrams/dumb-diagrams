@@ -1,4 +1,4 @@
-import { lazy, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
+import { lazy, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
@@ -7,9 +7,13 @@ import type {
   EdgeKind,
   EdgeStyle,
   GroupKind,
+  GroupLabelPosition,
   LayoutResult,
   Point,
+  ResourceLabelPosition,
   Side,
+  TextAlign,
+  TextFontFamily,
 } from "@dumb-diagrams/core";
 import {
   createAsyncDocsFixture,
@@ -24,6 +28,7 @@ import {
 } from "@dumb-diagrams/core";
 import {
   getCatalogMap,
+  getCatalogEntry,
   catalogIconUrl,
   type CatalogEntry,
 } from "@dumb-diagrams/catalog";
@@ -58,8 +63,11 @@ import {
   resourceIconSize,
   serializeClipboard,
   setResourceIconSize,
+  setResourceLabelPosition,
+  setGroupLabelPosition,
   setRoute,
   setSize,
+  setPlace,
   setTitle,
   setLocked,
   setVisible,
@@ -75,7 +83,9 @@ import {
   duplicateSelection,
   importSvgAsset,
   moveSelection,
+  needsAutoFix,
   updateAnnotationText,
+  updateTextFormat,
   setAnnotationStyle,
   type Selection,
   type SelectionItem,
@@ -88,25 +98,36 @@ import {
   defaultViewportForContent,
 } from "./canvas/CanvasStage";
 import { InteractionOverlay } from "./interactions/InteractionOverlay";
+import {
+  CATALOG_DRAG_MIME,
+  parseCatalogDragPayload,
+} from "./catalog-dnd";
 import { AssetBrowser } from "./panels/AssetBrowser";
 import { ContextMenu, type ContextMenuItem } from "./panels/ContextMenu";
 import { EdgePanel } from "./panels/EdgePanel";
+import { ExportDialog } from "./panels/ExportDialog";
 import { ExportMenu } from "./panels/ExportMenu";
-import { ExamplesModal } from "./panels/ExamplesModal";
 import { HelpModal } from "./panels/HelpModal";
 import { CommandPalette, type Command } from "./panels/CommandPalette";
 import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
+import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { clearDraft, loadDraft } from "./state/autosave";
 import {
   downloadText,
   exportDgmFile,
-  exportPngFile,
-  exportSvgFile,
   filenameWithExtension,
+  type ExportFormat,
 } from "./state/export-actions";
-import { isTabDirty, MAX_WORKSPACE_TABS, useWorkspace, type WorkspaceTab } from "./state/workspace";
+import {
+  isTabDirty,
+  MAX_WORKSPACE_TABS,
+  normalizeWorkspacePreview,
+  useWorkspace,
+  type WorkspacePreviewMap,
+  type WorkspaceTab,
+} from "./state/workspace";
 import { FloatingPanel } from "./ui/FloatingPanel";
 import { Modal } from "./ui/Modal";
 import { TopMenu, type TopMenuItem } from "./ui/TopMenu";
@@ -124,6 +145,7 @@ import {
 import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
+import { compileDiagramSource } from "./diagram-compiler";
 import {
   GRID_SIZE,
   outsideCanvasInsertionPoint,
@@ -140,6 +162,9 @@ const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
 const SourceDrawer = lazy(() => import("./panels/SourceDrawer").then((module) => ({
   default: module.SourceDrawer,
+})));
+const ExamplesModal = lazy(() => import("./panels/ExamplesModal").then((module) => ({
+  default: module.ExamplesModal,
 })));
 const RECOVERY = (() => {
   const draft = loadDraft();
@@ -160,6 +185,24 @@ type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
 type ContextMenuState = { x: number; y: number; selection: Selection } | null;
 type TabContextMenuState = { x: number; y: number; tabId: string } | null;
+type BulkCloseRequest = {
+  kind: "all" | "right";
+  tabId: string;
+  tabCount: number;
+  dirtyCount: number;
+} | null;
+type OperationState = { label: string } | null;
+type CatalogPlacement = {
+  parent: string | undefined;
+  at: Point;
+  manual: boolean;
+};
+
+function waitForPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => window.setTimeout(resolve, 0));
+  });
+}
 
 function documentNameForDisplay(doc: DiagramDocument): string {
   const authoredTitle = doc.title?.trim();
@@ -208,7 +251,12 @@ function App() {
     openTab,
     newTab,
     closeTab,
+    closeAllTabs,
+    closeTabsToRight,
     reopenClosed,
+    restoreClosed,
+    removeClosed,
+    clearRecentlyClosed,
     duplicateTab,
     updateViewport,
     markTabSaved,
@@ -234,6 +282,9 @@ function App() {
   const [titleDraft, setTitleDraft] = useState("");
   const [noteComposerStyle, setNoteComposerStyle] = useState<AnnotationStyle>("paper");
   const [textDraft, setTextDraft] = useState("Text");
+  const [textFont, setTextFont] = useState<TextFontFamily>("sans");
+  const [textFontSize, setTextFontSize] = useState(14);
+  const [textAlign, setTextAlign] = useState<TextAlign>("left");
   const [toast, setToastMessage] = useState<string | null>(null);
   const [toastNonce, setToastNonce] = useState(0);
   const lastGoodRef = useRef<{
@@ -243,17 +294,24 @@ function App() {
   } | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const [tabContextMenu, setTabContextMenu] = useState<TabContextMenuState>(null);
+  const [bulkCloseRequest, setBulkCloseRequest] = useState<BulkCloseRequest>(null);
+  const [recycleBinOpen, setRecycleBinOpen] = useState(false);
   const internalClipboardRef = useRef<string | null>(null);
   const sourceCommitTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
+  const [openingExampleId, setOpeningExampleId] = useState<string | null>(null);
+  const [isExampleOpening, startExampleOpening] = useTransition();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [exportDialogFormat, setExportDialogFormat] = useState<ExportFormat | null>(null);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState("");
   const [closeRequest, setCloseRequest] = useState<string | null>(null);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
   const closeAnimationTimerRef = useRef<number | null>(null);
+  const pendingClosePreviewsRef = useRef<WorkspacePreviewMap>({});
+  const [operation, setOperation] = useState<OperationState>(null);
 
   useEffect(() => {
     return () => {
@@ -327,24 +385,6 @@ function App() {
     if (saveTabSource(activeTab.id, filename)) setSaveAsOpen(false);
   };
 
-  const exportCurrentSvg = async () => {
-    if (!compiled.ok) return;
-    const result = await exportSvgFile(
-      tabLabel(activeTab),
-      () => renderPortableSvg(compiled.doc, compiled.layout),
-    );
-    setToast(result.ok ? `Downloaded ${result.filename}` : "SVG export failed.");
-  };
-
-  const exportCurrentPng = async () => {
-    if (!compiled.ok) return;
-    const result = await exportPngFile(
-      tabLabel(activeTab),
-      () => renderPortableSvg(compiled.doc, compiled.layout),
-    );
-    setToast(result.ok ? `Downloaded ${result.filename}` : "PNG export failed.");
-  };
-
   const resetTransientState = () => {
     setSelection([]);
     setPendingPort(null);
@@ -355,8 +395,36 @@ function App() {
 
   const tabLimitMessage = `You can have up to ${MAX_WORKSPACE_TABS} open diagrams. Close a tab to create another.`;
 
-  const beginTabClose = (tabId: string) => {
+  const renderTabPreview = useCallback((tab: WorkspaceTab): string | undefined => {
+    try {
+      const doc = parseDgm(tab.source);
+      const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
+      if (hasErrors(issues)) return undefined;
+      const placedLayout = snapLayoutToGrid(layoutDocument(doc), snapToGrid, doc);
+      const layout = attachRoutes(placedLayout, routeEdges(doc, placedLayout));
+      return normalizeWorkspacePreview(renderSvg(doc, layout, {
+        resolveIconHref: (path) => catalogIconUrl(path),
+      }));
+    } catch {
+      return undefined;
+    }
+  }, [snapToGrid]);
+
+  const previewsForTabs = useCallback((targetTabs: WorkspaceTab[]): WorkspacePreviewMap => {
+    const previews: Record<string, string | undefined> = {};
+    for (const tab of targetTabs) previews[tab.id] = renderTabPreview(tab);
+    return previews;
+  }, [renderTabPreview]);
+
+  const consumeClosingPreviews = () => {
+    const previews = pendingClosePreviewsRef.current;
+    pendingClosePreviewsRef.current = {};
+    return previews;
+  };
+
+  const beginTabClose = (tabId: string, previewByTabId: WorkspacePreviewMap = {}) => {
     if (closingTabId || tabs.length <= 1 || !tabs.some((tab) => tab.id === tabId)) return;
+    pendingClosePreviewsRef.current = previewByTabId;
     if (tabId === activeTabId) {
       const closingIndex = tabs.findIndex((tab) => tab.id === tabId);
       const nextActiveTab = tabs[closingIndex - 1] ?? tabs[closingIndex + 1];
@@ -368,7 +436,7 @@ function App() {
     // backgrounded page or a browser that suppresses animations entirely.
     closeAnimationTimerRef.current = window.setTimeout(() => {
       closeAnimationTimerRef.current = null;
-      closeTab(tabId);
+      closeTab(tabId, consumeClosingPreviews());
       setClosingTabId(null);
     }, TAB_CLOSE_FALLBACK_MS);
   };
@@ -380,7 +448,7 @@ function App() {
       closeAnimationTimerRef.current = null;
     }
     window.requestAnimationFrame(() => {
-      closeTab(tabId);
+      closeTab(tabId, consumeClosingPreviews());
       setClosingTabId(null);
     });
   };
@@ -407,66 +475,78 @@ function App() {
       setCloseRequest(tabId);
       return;
     }
-    beginTabClose(tabId);
+    beginTabClose(tabId, previewsForTabs([tab]));
   };
 
   const closeRequestedTab = () => {
     if (!closeRequest) return;
     const tabId = closeRequest;
+    const tab = tabs.find((candidate) => candidate.id === tabId);
     setCloseRequest(null);
-    beginTabClose(tabId);
+    beginTabClose(tabId, tab ? previewsForTabs([tab]) : {});
   };
 
   const saveAndCloseRequestedTab = () => {
     if (!closeRequest) return;
     const tabId = closeRequest;
+    const tab = tabs.find((candidate) => candidate.id === tabId);
     if (saveTabSource(tabId)) {
       setCloseRequest(null);
-      beginTabClose(tabId);
+      beginTabClose(tabId, tab ? previewsForTabs([tab]) : {});
     }
   };
 
   const handleOpenFiles = async (files: FileList | null) => {
     if (!files?.length) return;
+    // FileList is live and is cleared by the input after this handler returns.
+    // Snapshot it before yielding so the browser can paint the progress state.
+    const inputFiles = Array.from(files);
+    setOperation({ label: `Opening ${inputFiles.length} diagram${inputFiles.length === 1 ? "" : "s"}…` });
+    await waitForPaint();
     const opened: string[] = [];
     const rejected: string[] = [];
     const remainingSlots = Math.max(0, MAX_WORKSPACE_TABS - tabs.length);
-    let limitReached = files.length > remainingSlots;
-    for (const file of Array.from(files).slice(0, remainingSlots)) {
-      try {
-        if (file.size > DIAGRAM_LIMITS.sourceBytes) {
-          rejected.push(`${file.name} (over 1 MiB)`);
-          continue;
-        }
-        if (!/\.dgm$/i.test(file.name)) {
+    let limitReached = inputFiles.length > remainingSlots;
+    try {
+      for (const file of inputFiles.slice(0, remainingSlots)) {
+        try {
+          if (file.size > DIAGRAM_LIMITS.sourceBytes) {
+            rejected.push(`${file.name} (over 1 MiB)`);
+            continue;
+          }
+          if (!/\.dgm$/i.test(file.name)) {
+            rejected.push(file.name);
+            continue;
+          }
+          const candidate = await file.text();
+          const doc = parseDgm(candidate);
+          if (hasErrors(validateDocument(doc, getCatalogMap()))) {
+            rejected.push(file.name);
+            continue;
+          }
+          for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
+          const filename = normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters);
+          if (!openTab(candidate, { filename, origin: "import" })) {
+            limitReached = true;
+            continue;
+          }
+          opened.push(file.name);
+        } catch {
           rejected.push(file.name);
-          continue;
         }
-        const candidate = await file.text();
-        const doc = parseDgm(candidate);
-        if (hasErrors(validateDocument(doc, getCatalogMap()))) {
-          rejected.push(file.name);
-          continue;
-        }
-        for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
-        const filename = normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters);
-        if (!openTab(candidate, { filename, origin: "import" })) {
-          limitReached = true;
-          continue;
-        }
-        opened.push(file.name);
-      } catch {
-        rejected.push(file.name);
+        await waitForPaint();
       }
+      if (opened.length) {
+        resetTransientState();
+        setToast(`Opened ${opened.length} diagram${opened.length === 1 ? "" : "s"}`);
+      }
+      if (rejected.length) {
+        setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}: invalid .dgm source`);
+      }
+      if (limitReached) setToast(tabLimitMessage);
+    } finally {
+      setOperation(null);
     }
-    if (opened.length) {
-      resetTransientState();
-      setToast(`Opened ${opened.length} diagram${opened.length === 1 ? "" : "s"}`);
-    }
-    if (rejected.length) {
-      setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}: invalid .dgm source`);
-    }
-    if (limitReached) setToast(tabLimitMessage);
   };
 
   const duplicateTabWithFeedback = (tabId: string) => {
@@ -485,6 +565,66 @@ function App() {
     setTabContextMenu({ tabId, x, y });
   };
 
+  const requestBulkClose = (kind: "all" | "right", tabId: string) => {
+    const index = tabs.findIndex((tab) => tab.id === tabId);
+    if (index < 0) return;
+    const targets = kind === "all" ? tabs : tabs.slice(index + 1);
+    if (!targets.length) return;
+    setTabContextMenu(null);
+    setBulkCloseRequest({
+      kind,
+      tabId,
+      tabCount: targets.length,
+      dirtyCount: targets.filter((tab) => isTabDirty(tab)).length,
+    });
+  };
+
+  const confirmBulkClose = async () => {
+    if (!bulkCloseRequest) return;
+    const tabIndex = tabs.findIndex((tab) => tab.id === bulkCloseRequest.tabId);
+    const targets = bulkCloseRequest.kind === "all"
+      ? tabs
+      : tabIndex < 0 ? [] : tabs.slice(tabIndex + 1);
+    setOperation({ label: `Preparing ${targets.length} preview${targets.length === 1 ? "" : "s"}…` });
+    setBulkCloseRequest(null);
+    await waitForPaint();
+    try {
+      const previews: Record<string, string | undefined> = {};
+      for (const tab of targets) {
+        previews[tab.id] = renderTabPreview(tab);
+        await waitForPaint();
+      }
+      const closedCount = bulkCloseRequest.kind === "all"
+        ? closeAllTabs(previews)
+        : closeTabsToRight(bulkCloseRequest.tabId, previews);
+      resetTransientState();
+      if (closedCount) {
+        setToast(`${closedCount} diagram${closedCount === 1 ? "" : "s"} moved to the recycle bin`);
+      }
+    } finally {
+      setOperation(null);
+    }
+  };
+
+  const restoreFromRecycleBin = (tabId: string) => {
+    const tab = recentlyClosed.find((candidate) => candidate.id === tabId);
+    if (!restoreClosed(tabId)) {
+      setToast(tabs.length >= MAX_WORKSPACE_TABS ? tabLimitMessage : "That diagram is no longer available");
+      return;
+    }
+    setRecycleBinOpen(false);
+    resetTransientState();
+    setToast(`Restored ${tab ? tabLabel(tab) : "diagram"} from the recycle bin`);
+  };
+
+  const removeFromRecycleBin = (tabId: string) => {
+    if (removeClosed(tabId)) setToast("Removed diagram from the recycle bin");
+  };
+
+  const emptyRecycleBin = () => {
+    if (clearRecentlyClosed()) setToast("Recycle bin emptied");
+  };
+
   const reopenLastTab = () => {
     if (reopenClosed()) {
       resetTransientState();
@@ -495,56 +635,32 @@ function App() {
   };
 
   const openExampleInTab = (example: DiagramExample) => {
-    if (!openTab(example.source, {
-      filename: `${example.id}.dgm`,
-      origin: "example",
-    })) {
+    if (tabs.length >= MAX_WORKSPACE_TABS) {
       setToast(tabLimitMessage);
       return;
     }
-    setExamplesOpen(false);
-    setHelpOpen(false);
-    resetTransientState();
-    setToast(`Opened ${example.title}`);
+    setOpeningExampleId(example.id);
+    startExampleOpening(() => {
+      if (!openTab(example.source, {
+        filename: `${example.id}.dgm`,
+        origin: "example",
+      })) {
+        setToast(tabLimitMessage);
+        return;
+      }
+      setExamplesOpen(false);
+      setHelpOpen(false);
+      resetTransientState();
+      setToast(`Opened ${example.title}`);
+    });
   };
 
+  useEffect(() => {
+    if (!isExampleOpening && openingExampleId !== null) setOpeningExampleId(null);
+  }, [isExampleOpening, openingExampleId]);
+
   const compiled = useMemo(() => {
-    try {
-      const doc = parseDgm(source);
-      const catalog = getCatalogMap();
-      const issues = validateDocument(doc, catalog, { enforceCatalogRules: false });
-      if (hasErrors(issues)) {
-        return {
-          ok: false as const,
-          issues,
-          svg: null,
-          invariantFailures: [],
-        };
-      }
-      const placedLayout = snapLayoutToGrid(layoutDocument(doc), snapToGrid, doc);
-      const edges = routeEdges(doc, placedLayout);
-      const layout = attachRoutes(placedLayout, edges);
-      const svg = renderSvg(doc, layout, {
-        resolveIconHref: (p) => catalogIconUrl(p),
-      });
-      return {
-        ok: true as const,
-        issues,
-        invariantFailures: [],
-        doc,
-        layout,
-        svg,
-      };
-    } catch (e) {
-      return {
-        ok: false as const,
-        parseError: (e as Error).message,
-        issues: [],
-        svg: null,
-        layout: null,
-        invariantFailures: [],
-      };
-    }
+    return compileDiagramSource(source, snapToGrid);
   }, [source, snapToGrid]);
 
   useEffect(() => {
@@ -691,9 +807,18 @@ function App() {
   };
 
   const autoFix = () => {
-    mutateCurrent(clearView);
-    setPendingPort(null);
-    setToast("Diagram auto-fixed");
+    try {
+      const current = parseDgm(sourceRef.current);
+      setPendingPort(null);
+      if (!needsAutoFix(current)) {
+        setToast("Already auto-fixed");
+        return;
+      }
+      commitDocument(clearView(current));
+      setToast("Diagram auto-fixed");
+    } catch {
+      // Keep the source editor authoritative while it contains parse errors.
+    }
   };
 
   const selectMarquee = (rect: { x: number; y: number; w: number; h: number }) => {
@@ -708,17 +833,19 @@ function App() {
     setSelection(hits);
   };
 
-  const addCatalogResource = (entry: CatalogEntry) => {
+  const addCatalogResource = (entry: CatalogEntry, requestedPlacement?: CatalogPlacement) => {
     if (!compiled.ok) return;
-    const parent = primarySelection(selection)?.kind === "group"
-      ? primarySelection(selection)!.id
-      : undefined;
+    const parent = requestedPlacement
+      ? requestedPlacement.parent
+      : primarySelection(selection)?.kind === "group"
+        ? primarySelection(selection)!.id
+        : undefined;
     const placement = canPlaceCatalogEntry(compiled.doc, entry, parent);
     if (!placement.ok) {
       setToast(placement.reason ?? "The selected parent group is no longer available.");
       return;
     }
-    const at = snapPoint(
+    const at = requestedPlacement?.at ?? snapPoint(
       parent
         ? insertionPoint(compiled.layout, parent)
         : outsideCanvasInsertionPoint(compiled.layout),
@@ -726,11 +853,91 @@ function App() {
     );
     try {
       const result = addResource(compiled.doc, entry, parent, at);
-      if (!updateDocument(result.doc)) return;
+      const placedDoc = requestedPlacement?.manual
+        ? setPlace(result.doc, result.id, at.x, at.y)
+        : result.doc;
+      if (!updateDocument(placedDoc)) return;
       setSelection([{ kind: "resource", id: result.id }]);
       setTool("select");
     } catch (error) {
       setToast((error as Error).message);
+    }
+  };
+
+  const addCatalogGroup = (
+    entry: CatalogEntry,
+    kind: GroupKind,
+    requestedPlacement?: CatalogPlacement,
+  ) => {
+    if (!compiled.ok) return;
+    const parent = requestedPlacement
+      ? requestedPlacement.parent
+      : primarySelection(selection)?.kind === "group"
+        ? primarySelection(selection)!.id
+        : undefined;
+    const at = requestedPlacement?.at ?? snapPoint(
+      parent
+        ? insertionPoint(compiled.layout, parent)
+        : outsideCanvasInsertionPoint(compiled.layout),
+      snapToGrid,
+    );
+    try {
+      const result = addGroup(
+        compiled.doc,
+        kind,
+        entry.name,
+        parent,
+        at,
+        entry.type,
+      );
+      const placedDoc = requestedPlacement?.manual
+        ? setPlace(result.doc, result.id, at.x, at.y)
+        : result.doc;
+      if (!updateDocument(placedDoc)) return;
+      setSelection([{ kind: "group", id: result.id }]);
+      setTool("select");
+    } catch (error) {
+      setToast((error as Error).message);
+    }
+  };
+
+  const catalogGroupAt = (point: Point): string | undefined => {
+    if (!compiled.ok) return undefined;
+    return [...compiled.layout.groups]
+      .filter((group) => containsPoint(group.content, point))
+      .sort((a, b) => a.content.w * a.content.h - b.content.w * b.content.h)
+      .at(0)?.id;
+  };
+
+  const handleCatalogDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer.types).includes(CATALOG_DRAG_MIME)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleCatalogDrop = (
+    event: ReactDragEvent<HTMLDivElement>,
+    point: Point,
+  ) => {
+    const payload = parseCatalogDragPayload(
+      event.dataTransfer.getData(CATALOG_DRAG_MIME),
+    );
+    if (!payload) return;
+    event.preventDefault();
+    const entry = getCatalogEntry(payload.type);
+    if (!entry || (payload.assetKind && payload.assetKind !== entry.assetKind)) {
+      setToast("That catalog item is no longer available.");
+      return;
+    }
+    const placement: CatalogPlacement = {
+      parent: catalogGroupAt(point),
+      at: snapPoint(point, snapToGrid),
+      manual: true,
+    };
+    if (entry.assetKind === "group") {
+      addCatalogGroup(entry, (entry.groupKind as GroupKind) ?? "logical", placement);
+    } else {
+      addCatalogResource(entry, placement);
     }
   };
 
@@ -751,6 +958,9 @@ function App() {
 
   const openTextComposer = () => {
     setTextDraft("Text");
+    setTextFont("sans");
+    setTextFontSize(14);
+    setTextAlign("left");
     setPendingPort(null);
     setTool("text");
   };
@@ -763,7 +973,11 @@ function App() {
       return;
     }
     const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
-    const result = addText(compiled.doc, text, at);
+    const result = addText(compiled.doc, text, at, {
+      font: textFont,
+      fontSize: textFontSize,
+      align: textAlign,
+    });
     if (!updateDocument(result.doc)) return;
     setSelection([{ kind: "annotation", id: result.id }]);
     setTool("select");
@@ -1042,6 +1256,7 @@ function App() {
   const fileMenuItems: TopMenuItem[] = [
     { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
     { id: "open", label: "Open / Import .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => fileInputRef.current?.click() },
+    { id: "recycle-bin", label: `Recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`, onSelect: () => setRecycleBinOpen(true) },
     { id: "file-divider-1", label: "", separator: true },
     { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !compiled.ok, onSelect: saveActive },
     { id: "save-as", label: "Save As…", shortcut: "⌘⇧S / Ctrl+Shift+S", disabled: !compiled.ok, onSelect: openSaveAs },
@@ -1049,8 +1264,9 @@ function App() {
       id: "export",
       label: "Export",
       submenu: [
-        { id: "export-svg", label: "SVG image", disabled: !compiled.ok, onSelect: () => void exportCurrentSvg() },
-        { id: "export-png", label: "PNG image", disabled: !compiled.ok, onSelect: () => void exportCurrentPng() },
+        { id: "export-studio", label: "Export…", disabled: !compiled.ok, onSelect: () => setExportDialogFormat("svg") },
+        { id: "export-png", label: "PNG image…", disabled: !compiled.ok, onSelect: () => setExportDialogFormat("png") },
+        { id: "export-pdf", label: "PDF document…", disabled: !compiled.ok, onSelect: () => setExportDialogFormat("pdf") },
         { id: "export-source", label: "Source (.dgm)", onSelect: exportCurrentSource },
       ],
     },
@@ -1072,6 +1288,7 @@ function App() {
     { id: "command-duplicate-tab", label: "Duplicate tab", section: "Workspace", onSelect: duplicateActiveTab },
     { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", disabled: tabs.length <= 1, onSelect: () => handleCloseTab(activeTab.id) },
     { id: "command-reopen-tab", label: "Reopen closed tab", section: "Workspace", disabled: recentlyClosed.length === 0, onSelect: reopenLastTab },
+    { id: "command-recycle-bin", label: `Open recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`, section: "Workspace", onSelect: () => setRecycleBinOpen(true) },
     { id: "command-examples", label: "Browse examples", section: "Help", onSelect: () => setExamplesOpen(true) },
     { id: "command-help", label: "Open help", section: "Help", onSelect: () => setHelpOpen(true) },
     { id: "command-undo", label: "Undo", section: "Edit", shortcut: "⌘Z", disabled: !canUndo, onSelect: undo },
@@ -1123,10 +1340,24 @@ function App() {
       danger: true,
       onSelect: () => handleCloseTab(tabContextTarget.id),
     }] : []),
+    { id: "tab-context-divider", label: "", separator: true },
+    {
+      id: "close-tabs-right",
+      label: "Close all to the right",
+      danger: true,
+      disabled: tabs.findIndex((tab) => tab.id === tabContextTarget.id) >= tabs.length - 1,
+      onSelect: () => requestBulkClose("right", tabContextTarget.id),
+    },
+    {
+      id: "close-all-tabs",
+      label: "Close all",
+      danger: true,
+      onSelect: () => requestBulkClose("all", tabContextTarget.id),
+    },
   ] : [];
 
   return (
-    <div className="app">
+    <div className="app" aria-busy={!workspaceReady || Boolean(operation)}>
       <section id="diagram-canvas" className="canvas-pane">
         <CanvasStage
           viewport={viewport}
@@ -1136,6 +1367,8 @@ function App() {
           onFitRequest={(fit) => {
             fitRef.current = fit;
           }}
+          onCatalogDragOver={handleCatalogDragOver}
+          onCatalogDrop={handleCatalogDrop}
           onBackgroundClick={() => {
             setSelection([]);
             if (tool !== "connector") setPendingPort(null);
@@ -1342,15 +1575,12 @@ function App() {
               />
               {compiled.ok ? (
                 <ExportMenu
-                  title={documentNameForDisplay(compiled.doc)}
-                  svg={compiled.svg}
-                  source={source}
-                  getPortableSvg={() => renderPortableSvg(compiled.doc, compiled.layout)}
-                  onToast={setToast}
+                  selectionCount={selection.length}
+                  onOpenExport={setExportDialogFormat}
                 />
               ) : (
                 <button type="button" className="primary-button" disabled>
-                  Download SVG
+                  Export
                 </button>
               )}
             </div>
@@ -1426,6 +1656,12 @@ function App() {
             <TextComposer
               value={textDraft}
               onChange={setTextDraft}
+              font={textFont}
+              fontSize={textFontSize}
+              align={textAlign}
+              onFontChange={setTextFont}
+              onFontSizeChange={setTextFontSize}
+              onAlignChange={setTextAlign}
               onCreate={createText}
             />
           </FloatingPanel>
@@ -1486,33 +1722,7 @@ function App() {
             <AssetBrowser
               mode="groups"
               onAddService={() => {}}
-              onAddGroup={(entry, kind) => {
-                if (!compiled.ok) return;
-                const parent = primarySelection(selection)?.kind === "group"
-                  ? primarySelection(selection)!.id
-                  : undefined;
-                try {
-                  const at = snapPoint(
-                    parent
-                      ? insertionPoint(compiled.layout, parent)
-                      : outsideCanvasInsertionPoint(compiled.layout),
-                    snapToGrid,
-                  );
-                  const result = addGroup(
-                    compiled.doc,
-                    kind,
-                    entry.name,
-                    parent,
-                    at,
-                    entry.type,
-                  );
-                  if (!updateDocument(result.doc)) return;
-                  setSelection([{ kind: "group", id: result.id }]);
-                  setTool("select");
-                } catch (error) {
-                  setToast((error as Error).message);
-                }
-              }}
+              onAddGroup={addCatalogGroup}
               onImportSvg={() => {}}
             />
           </FloatingPanel>
@@ -1698,10 +1908,25 @@ function App() {
               if (!resource) return;
               mutateCurrent((doc) => setResourceIconSize(doc, resource.id, size));
             }}
+            onSetResourceLabelPosition={(position) => {
+              const resource = selection.find((item) => item.kind === "resource");
+              if (!resource) return;
+              mutateCurrent((doc) => setResourceLabelPosition(doc, resource.id, position));
+            }}
+            onSetGroupLabelPosition={(position) => {
+              const group = selection.find((item) => item.kind === "group");
+              if (!group) return;
+              mutateCurrent((doc) => setGroupLabelPosition(doc, group.id, position));
+            }}
             onSetAnnotationStyle={(style) => {
               const annotation = selection.find((item) => item.kind === "annotation");
               if (!annotation) return;
               mutateCurrent((doc) => setAnnotationStyle(doc, annotation.id, style));
+            }}
+            onSetTextFormat={(format) => {
+              const annotation = selection.find((item) => item.kind === "annotation");
+              if (!annotation) return;
+              mutateCurrent((doc) => updateTextFormat(doc, annotation.id, format));
             }}
             onUpdateGroupStep={(step) => {
               const group = selection.find((item) => item.kind === "group");
@@ -1800,12 +2025,44 @@ function App() {
         </footer>
 
         {toast && <div key={`${toast}-${toastNonce}`} className="toast" role="status">{toast}</div>}
+        {operation && (
+          <div className="operation-status" role="status" aria-live="polite">
+            <span className="loading-spinner is-small" aria-hidden="true" />
+            <span>{operation.label}</span>
+          </div>
+        )}
+        {!workspaceReady && (
+          <div className="workspace-loading" role="status" aria-live="polite">
+            <span className="loading-spinner" aria-hidden="true" />
+            <strong>Restoring your workspace…</strong>
+            <span>Loading local diagrams and view settings</span>
+          </div>
+        )}
 
-        <ExamplesModal
-          open={examplesOpen}
-          onClose={() => setExamplesOpen(false)}
-          onOpen={openExampleInTab}
-        />
+        {examplesOpen && (
+          <Suspense fallback={(
+            <Modal
+              open
+              title="Browse examples"
+              subtitle="Loading the example gallery…"
+              onClose={() => setExamplesOpen(false)}
+              className="examples-modal"
+              width={820}
+            >
+              <div className="examples-loading" role="status">
+                <span className="loading-spinner" aria-hidden="true" />
+                <span>Loading examples…</span>
+              </div>
+            </Modal>
+          )}>
+            <ExamplesModal
+              open
+              onClose={() => setExamplesOpen(false)}
+              onOpen={openExampleInTab}
+              openingExampleId={openingExampleId}
+            />
+          </Suspense>
+        )}
 
         <HelpModal
           open={helpOpen}
@@ -1821,6 +2078,21 @@ function App() {
           commands={commands}
           onClose={() => setCommandPaletteOpen(false)}
         />
+
+        {compiled.ok && (
+          <ExportDialog
+            open={exportDialogFormat !== null}
+            initialFormat={exportDialogFormat ?? "svg"}
+            title={documentNameForDisplay(compiled.doc)}
+            source={source}
+            doc={compiled.doc}
+            layout={compiled.layout}
+            selection={selection}
+            getPortableSvg={() => renderPortableSvg(compiled.doc, compiled.layout)}
+            onClose={() => setExportDialogFormat(null)}
+            onToast={setToast}
+          />
+        )}
 
         <Modal
           open={saveAsOpen}
@@ -1874,6 +2146,46 @@ function App() {
             </div>
           </div>
         </Modal>
+
+        <Modal
+          open={Boolean(bulkCloseRequest)}
+          title={bulkCloseRequest?.kind === "right" ? "Close tabs to the right?" : "Close all tabs?"}
+          subtitle={bulkCloseRequest
+            ? `${bulkCloseRequest.tabCount} tab${bulkCloseRequest.tabCount === 1 ? "" : "s"} will be closed`
+            : undefined}
+          onClose={() => setBulkCloseRequest(null)}
+          className="confirm-dialog"
+          width={460}
+        >
+          <div className="confirm-modal">
+            {bulkCloseRequest?.dirtyCount ? (
+              <p>
+                {bulkCloseRequest.dirtyCount} unsaved diagram{bulkCloseRequest.dirtyCount === 1 ? "" : "s"} will be discarded. Closed diagrams remain in the recycle bin for recovery.
+              </p>
+            ) : (
+              <p>These diagrams have no unsaved changes and will be closed.</p>
+            )}
+            <p>The recycle bin keeps the latest 10 closed diagrams.</p>
+            <div className="modal-actions modal-actions-spread">
+              <button type="button" className="text-button" onClick={() => setBulkCloseRequest(null)}>Cancel</button>
+              <button type="button" className="danger-button" onClick={() => void confirmBulkClose()}>
+                {bulkCloseRequest?.dirtyCount ? "Discard and close" : "Close tabs"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        {recycleBinOpen && (
+          <RecycleBinModal
+            open
+            tabs={recentlyClosed}
+            getLabel={tabLabel}
+            onClose={() => setRecycleBinOpen(false)}
+            onRestore={restoreFromRecycleBin}
+            onRemove={removeFromRecycleBin}
+            onClear={emptyRecycleBin}
+          />
+        )}
 
         {tabContextMenu && tabContextTarget && (
           <ContextMenu
@@ -1952,11 +2264,23 @@ function NoteComposer({
 
 function TextComposer({
   value,
+  font,
+  fontSize,
+  align,
   onChange,
+  onFontChange,
+  onFontSizeChange,
+  onAlignChange,
   onCreate,
 }: {
   value: string;
+  font: TextFontFamily;
+  fontSize: number;
+  align: TextAlign;
   onChange: (value: string) => void;
+  onFontChange: (font: TextFontFamily) => void;
+  onFontSizeChange: (fontSize: number) => void;
+  onAlignChange: (align: TextAlign) => void;
   onCreate: () => void;
 }) {
   return (
@@ -1977,9 +2301,20 @@ function TextComposer({
           aria-describedby="text-composer-hint"
         />
         <p id="text-composer-hint" className="property-hint">
-          Uses the open-font text style. You can edit or drag it after placing it.
+          Press ⌘Enter or Ctrl+Enter to place. You can edit or drag it afterward.
         </p>
       </div>
+      <TextFormattingControls
+        idPrefix="composer"
+        font={font}
+        fontSize={fontSize}
+        align={align}
+        onChange={({ font: nextFont, fontSize: nextSize, align: nextAlign }) => {
+          if (nextFont !== undefined) onFontChange(nextFont);
+          if (nextSize !== undefined) onFontSizeChange(nextSize);
+          if (nextAlign !== undefined) onAlignChange(nextAlign);
+        }}
+      />
       <div className="note-composer-footer">
         <button
           type="button"
@@ -1989,6 +2324,65 @@ function TextComposer({
         >
           Place text
         </button>
+      </div>
+    </div>
+  );
+}
+
+function TextFormattingControls({
+  idPrefix,
+  font,
+  fontSize,
+  align,
+  onChange,
+}: {
+  idPrefix: string;
+  font: TextFontFamily;
+  fontSize: number;
+  align: TextAlign;
+  onChange: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
+}) {
+  return (
+    <div className="property-section text-formatting">
+      <div className="property-control-row">
+        <label htmlFor={`${idPrefix}-text-font-family`}>Font</label>
+        <select
+          id={`${idPrefix}-text-font-family`}
+          value={font}
+          onChange={(event) => onChange({ font: event.target.value as TextFontFamily })}
+        >
+          <option value="sans">Sans serif</option>
+          <option value="serif">Serif</option>
+          <option value="mono">Monospace</option>
+        </select>
+      </div>
+      <div className="property-control-row">
+        <label htmlFor={`${idPrefix}-text-font-size`}>Size</label>
+        <select
+          id={`${idPrefix}-text-font-size`}
+          value={fontSize}
+          onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
+        >
+          {[12, 14, 16, 20, 24, 32].map((size) => (
+            <option key={size} value={size}>{size}px</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <span className="property-control-label">Alignment</span>
+        <div className="button-pair button-triplet" role="group" aria-label="Text alignment">
+          {(["left", "center", "right"] as const).map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              className={align === candidate ? "is-active" : ""}
+              aria-pressed={align === candidate}
+              onClick={() => onChange({ align: candidate })}
+            >
+              {candidate[0]!.toUpperCase() + candidate.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -2112,7 +2506,10 @@ function Inspector({
   onAlign,
   onDistribute,
   onSetIconSize,
+  onSetResourceLabelPosition,
+  onSetGroupLabelPosition,
   onSetAnnotationStyle,
+  onSetTextFormat,
   onUpdateGroupStep,
   onUpdateEdge,
   onPinRoute,
@@ -2128,7 +2525,10 @@ function Inspector({
   onAlign: (axis: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
   onDistribute: (axis: "horizontal" | "vertical") => void;
   onSetIconSize: (size: ResourceIconSize) => void;
+  onSetResourceLabelPosition: (position: ResourceLabelPosition) => void;
+  onSetGroupLabelPosition: (position: GroupLabelPosition) => void;
   onSetAnnotationStyle: (style: AnnotationStyle) => void;
+  onSetTextFormat: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
   onUpdateGroupStep: (step?: number) => void;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
   onPinRoute: () => void;
@@ -2245,6 +2645,15 @@ function Inspector({
           />
         </div>
       )}
+      {annotation && annotationStyle(annotation) === "text" && (
+        <TextFormattingControls
+          idPrefix="inspector"
+          font={annotation.font ?? "sans"}
+          fontSize={annotation.fontSize ?? 14}
+          align={annotation.align ?? "left"}
+          onChange={onSetTextFormat}
+        />
+      )}
       {resource && (
         <div className="property-section">
           <label>Icon size</label>
@@ -2264,6 +2673,37 @@ function Inspector({
               Small ({GRAMMAR.iconSecondary}px)
             </button>
           </div>
+        </div>
+      )}
+      {resource && (
+        <div className="property-section">
+          <label htmlFor="resource-label-position">Display label position</label>
+          <select
+            id="resource-label-position"
+            value={resource.label.position ?? "bottom"}
+            onChange={(event) => onSetResourceLabelPosition(event.target.value as ResourceLabelPosition)}
+          >
+            <option value="top">Above icon</option>
+            <option value="bottom">Below icon</option>
+            <option value="left">Left of icon</option>
+            <option value="right">Right of icon</option>
+          </select>
+          <p className="property-hint">Automatic connectors avoid the side occupied by the label.</p>
+        </div>
+      )}
+      {group && (
+        <div className="property-section">
+          <label htmlFor="group-label-position">Display label position</label>
+          <select
+            id="group-label-position"
+            value={group.labelPosition ?? "top-left"}
+            onChange={(event) => onSetGroupLabelPosition(event.target.value as GroupLabelPosition)}
+          >
+            <option value="top-left">Top left</option>
+            <option value="top-right">Top right</option>
+            <option value="bottom-left">Bottom left</option>
+            <option value="bottom-right">Bottom right</option>
+          </select>
         </div>
       )}
       {group && (
@@ -2402,6 +2842,18 @@ function intersects(
     a.x + a.w > b.x &&
     a.y < b.y + b.h &&
     a.y + a.h > b.y
+  );
+}
+
+function containsPoint(
+  rect: { x: number; y: number; w: number; h: number },
+  point: Point,
+): boolean {
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h
   );
 }
 

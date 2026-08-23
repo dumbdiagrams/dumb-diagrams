@@ -73,6 +73,24 @@ ${declarations}
     );
   });
 
+  it("round-trips custom service labels", () => {
+    const doc = parseDgm(`diagram labels {
+  grammar aws
+  group shell "Shell" {
+    label-position bottom-right
+    aws.sns notice "Claims notification" { service "Amazon SNS" label-position left }
+  }
+}`);
+
+    expect(doc.groups[0]?.labelPosition).toBe("bottom-right");
+    expect(doc.resources[0]?.label).toEqual({
+      service: "Amazon SNS",
+      role: "Claims notification",
+      position: "left",
+    });
+    expect(parseDgm(printDgm(doc))).toEqual(doc);
+  });
+
   it("round-trips title, labels, sizes, and view metadata", () => {
     const source = `diagram demo {
   grammar aws
@@ -87,7 +105,7 @@ ${declarations}
 }
 
 view default {
-  place client { x 40 y 48 w 120 h 96 pin locked z 2 }
+  place client { x 40 y 48 w 120 h 96 pin manual locked z 2 }
   route e1 { point 100 120 point 200 120 pin mode manual badge 0.75 bottom label 0.35 top }
   annotation note1 { x 300 y 80 w 160 h 48 pin visible false }
 }`;
@@ -114,6 +132,7 @@ view default {
       w: 120,
       h: 96,
       pin: true,
+      manual: true,
       locked: true,
       zIndex: 2,
     });
@@ -146,7 +165,7 @@ view default {
   flow lr
 
   annotation codeNote "const queue = await receive()" { style code }
-  annotation textNote "Add a manual label" { style text }
+  annotation textNote "Add a manual label" { style text font serif size 20 align center }
   annotation calloutNote "Keep the worker private" { style callout }
   annotation checklistNote "Review IAM / Run smoke test" { style checklist }
 }`;
@@ -158,6 +177,11 @@ view default {
       "callout",
       "checklist",
     ]);
+    expect(parsed.annotations[1]).toMatchObject({
+      font: "serif",
+      fontSize: 20,
+      align: "center",
+    });
     expect(parseDgm(printDgm(parsed))).toEqual(parsed);
   });
 

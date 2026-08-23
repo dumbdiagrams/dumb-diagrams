@@ -107,6 +107,9 @@ importers:
       '@dumb-diagrams/dsl':
         specifier: workspace:*
         version: link:../dsl
+      '@dumb-diagrams/grammar-aws':
+        specifier: workspace:*
+        version: link:../grammar-aws
       '@dumb-diagrams/layout':
         specifier: workspace:*
         version: link:../layout

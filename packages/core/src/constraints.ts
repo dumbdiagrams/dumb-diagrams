@@ -4,7 +4,7 @@ export const DIAGRAM_LIMITS = Object.freeze({
   sourceBytes: 1024 * 1024,
   idCharacters: 128,
   titleCharacters: 120,
-  labelCharacters: 256,
+  labelCharacters: 120,
   annotationCharacters: 4_000,
   filenameCharacters: 128,
   resources: 500,
@@ -67,6 +67,9 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
   for (const group of doc.groups) {
     checkText(issues, "group id", group.id, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
     checkText(issues, "group label", group.label, DIAGRAM_LIMITS.labelCharacters, group.id, "text-limit");
+    if (group.labelPosition !== undefined && !isGroupLabelPosition(group.labelPosition)) {
+      issues.push({ level: "error", code: "invalid-label-position", message: `Invalid group label position: ${group.labelPosition}`, id: group.id });
+    }
     checkOptionalNumber(issues, group.step, "group step", group.id, 0, 99);
     if (group.parent) checkText(issues, "parent id", group.parent, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
     for (const child of group.children) checkText(issues, "child id", child, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
@@ -77,6 +80,9 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
     if (resource.parent) checkText(issues, "parent id", resource.parent, DIAGRAM_LIMITS.idCharacters, resource.id, "invalid-id");
     if (resource.label.service !== undefined) checkText(issues, "service label", resource.label.service, DIAGRAM_LIMITS.labelCharacters, resource.id, "text-limit");
     if (resource.label.role !== undefined) checkText(issues, "resource label", resource.label.role, DIAGRAM_LIMITS.labelCharacters, resource.id, "text-limit");
+    if (resource.label.position !== undefined && !isResourceLabelPosition(resource.label.position)) {
+      issues.push({ level: "error", code: "invalid-label-position", message: `Invalid resource label position: ${resource.label.position}`, id: resource.id });
+    }
   }
   for (const edge of doc.edges) {
     checkText(issues, "edge id", edge.id, DIAGRAM_LIMITS.idCharacters, edge.id, "invalid-id");
@@ -134,6 +140,14 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
 
   validateHierarchy(doc, issues);
   return issues;
+}
+
+function isResourceLabelPosition(value: string): boolean {
+  return value === "top" || value === "bottom" || value === "left" || value === "right";
+}
+
+function isGroupLabelPosition(value: string): boolean {
+  return value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right";
 }
 
 function checkCount(issues: ValidationIssue[], name: string, values: unknown[], limit: number): void {

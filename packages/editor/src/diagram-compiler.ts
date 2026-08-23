@@ -1,0 +1,134 @@
+import type { DiagramDocument, LayoutResult, ValidationIssue } from "@dumb-diagrams/core";
+import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/core";
+import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/catalog";
+import { parseDgm } from "@dumb-diagrams/dsl";
+import { layoutDocument } from "@dumb-diagrams/layout";
+import { renderSvg } from "@dumb-diagrams/render";
+import { attachRoutes, routeEdges } from "@dumb-diagrams/route";
+
+import { snapLayoutToGrid } from "./grid";
+
+export type DiagramCompilation = {
+  ok: true;
+  issues: ValidationIssue[];
+  svg: string;
+  invariantFailures: Array<{ message: string }>;
+  doc: DiagramDocument;
+  layout: LayoutResult;
+} | {
+  ok: false;
+  issues: ValidationIssue[];
+  svg: null;
+  invariantFailures: Array<{ message: string }>;
+  parseError?: string;
+  layout?: null;
+};
+
+const MAX_CACHED_COMPILATIONS = 12;
+const compilationCache = new Map<string, DiagramCompilation>();
+
+function cacheKey(source: string, snapToGrid: boolean): string {
+  return `${snapToGrid ? "grid" : "free"}\0${source}`;
+}
+
+function remember(key: string, compilation: DiagramCompilation): DiagramCompilation {
+  compilationCache.delete(key);
+  compilationCache.set(key, compilation);
+  while (compilationCache.size > MAX_CACHED_COMPILATIONS) {
+    const oldestKey = compilationCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    compilationCache.delete(oldestKey);
+  }
+  return compilation;
+}
+
+export function getCachedDiagramCompilation(
+  source: string,
+  snapToGrid: boolean,
+): DiagramCompilation | undefined {
+  const key = cacheKey(source, snapToGrid);
+  const cached = compilationCache.get(key);
+  if (!cached) return undefined;
+  // Refresh insertion order so diagrams in active use remain in the small LRU.
+  compilationCache.delete(key);
+  compilationCache.set(key, cached);
+  return cached;
+}
+
+export function compileDiagramSource(source: string, snapToGrid: boolean): DiagramCompilation {
+  const cached = getCachedDiagramCompilation(source, snapToGrid);
+  if (cached) return cached;
+
+  const key = cacheKey(source, snapToGrid);
+  try {
+    const doc = parseDgm(source);
+    const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
+    if (hasErrors(issues)) {
+      return remember(key, {
+        ok: false,
+        issues,
+        svg: null,
+        invariantFailures: [],
+      });
+    }
+    const placedLayout = snapToGrid
+      ? snapLayoutToGrid(layoutDocument(doc), true, doc)
+      : layoutDocument(doc);
+    const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routeEdges(doc, placedLayout)));
+    const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
+    return remember(key, {
+      ok: true,
+      issues,
+      invariantFailures: [],
+      doc,
+      layout,
+      svg,
+    });
+  } catch (error) {
+    return remember(key, {
+      ok: false,
+      parseError: (error as Error).message,
+      issues: [],
+      svg: null,
+      layout: null,
+      invariantFailures: [],
+    });
+  }
+}
+
+/** Keep the visible artboard large enough for authored moves, notes, and long routes. */
+function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): LayoutResult {
+  const view = getDefaultView(doc);
+  const right: number[] = [layout.width];
+  const bottom: number[] = [layout.height];
+  const includeIfOutside = (x: number, y: number, w = 0, h = 0) => {
+    if (x + w > layout.width) right.push(x + w + 32);
+    if (y + h > layout.height) bottom.push(y + h + 32);
+  };
+
+  for (const edge of layout.edges) {
+    for (const point of edge.points) includeIfOutside(point.x, point.y);
+    if (edge.labelPoint) includeIfOutside(edge.labelPoint.x - 48, edge.labelPoint.y - 16, 96, 32);
+    if (edge.labelRect) includeIfOutside(edge.labelRect.x, edge.labelRect.y, edge.labelRect.w, edge.labelRect.h);
+  }
+
+  for (const annotation of doc.annotations) {
+    const place = view.annotations?.[annotation.id];
+    const dimensions = annotationDimensions(annotation.style);
+    includeIfOutside(place?.x ?? 48, place?.y ?? 48, place?.w ?? dimensions.w, place?.h ?? dimensions.h);
+  }
+
+  layout.width = Math.max(layout.width, Math.ceil(Math.max(...right)));
+  layout.height = Math.max(layout.height, Math.ceil(Math.max(...bottom)));
+  return layout;
+}
+
+function annotationDimensions(style: string | undefined): { w: number; h: number } {
+  switch (style) {
+    case "text": return { w: 240, h: 48 };
+    case "code": return { w: 300, h: 160 };
+    case "callout": return { w: 280, h: 104 };
+    case "checklist": return { w: 260, h: 152 };
+    default: return { w: 220, h: 96 };
+  }
+}

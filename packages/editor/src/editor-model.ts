@@ -8,12 +8,16 @@ import type {
   EdgeStyle,
   AnnotationStyle,
   GroupKind,
+  GroupLabelPosition,
   LayoutResult,
   PlaceOverride,
   Point,
   Rect,
   ResourceRole,
+  ResourceLabelPosition,
   Side,
+  TextAlign,
+  TextFontFamily,
 } from "@dumb-diagrams/core";
 import { DIAGRAM_LIMITS, getDefaultView, hasErrors, normalizePortOffset, utf8ByteLength, validateDocument } from "@dumb-diagrams/core";
 import { getCatalogEntry, getCatalogMap, type CatalogEntry } from "@dumb-diagrams/catalog";
@@ -127,6 +131,7 @@ export function setPlace(
     x: Math.max(0, Math.round(x)),
     y: Math.max(0, Math.round(y)),
     pin: true,
+    manual: true,
   };
   return next;
 }
@@ -155,6 +160,30 @@ export function setResourceIconSize(
     delete place.w;
     delete place.h;
   }
+  return next;
+}
+
+export function setResourceLabelPosition(
+  doc: DiagramDocument,
+  id: string,
+  position: ResourceLabelPosition,
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const resource = next.resources.find((candidate) => candidate.id === id);
+  if (!resource) return doc;
+  resource.label = { ...resource.label, position };
+  return next;
+}
+
+export function setGroupLabelPosition(
+  doc: DiagramDocument,
+  id: string,
+  position: GroupLabelPosition,
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const group = next.groups.find((candidate) => candidate.id === id);
+  if (!group) return doc;
+  group.labelPosition = position;
   return next;
 }
 
@@ -288,6 +317,7 @@ export function moveSelection(
         x: Math.max(0, Math.round((place.x ?? bounds?.x ?? 0) + dx)),
         y: Math.max(0, Math.round((place.y ?? bounds?.y ?? 0) + dy)),
         pin: true,
+        manual: true,
       };
       continue;
     }
@@ -559,6 +589,20 @@ export function clearView(doc: DiagramDocument): DiagramDocument {
   return next;
 }
 
+/** Whether Auto-fix would remove authored node geometry or connector overrides. */
+export function needsAutoFix(doc: DiagramDocument): boolean {
+  return doc.views.some((view) =>
+    Object.values(view.places).some((place) =>
+      place.x !== undefined ||
+      place.y !== undefined ||
+      place.w !== undefined ||
+      place.h !== undefined ||
+      place.pin !== undefined ||
+      place.manual !== undefined
+    ) || Object.keys(view.routes).length > 0,
+  );
+}
+
 export function renameResource(
   doc: DiagramDocument,
   id: string,
@@ -740,8 +784,10 @@ export function addText(
   doc: DiagramDocument,
   text: string,
   at: Point,
+  format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign } = {},
 ): { doc: DiagramDocument; id: string } {
-  return addAnnotation(doc, text, at, undefined, "text");
+  const result = addAnnotation(doc, text, at, undefined, "text");
+  return { doc: updateTextFormat(result.doc, result.id, format), id: result.id };
 }
 
 export function setAnnotationPlace(
@@ -773,6 +819,23 @@ export function updateAnnotationText(
   const annotation = next.annotations.find((candidate) => candidate.id === id);
   if (!annotation) return doc;
   annotation.text = text;
+  return next;
+}
+
+export function updateTextFormat(
+  doc: DiagramDocument,
+  id: string,
+  format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign },
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const annotation = next.annotations.find((candidate) => candidate.id === id);
+  if (!annotation || annotationStyle(annotation) !== "text") return doc;
+  if (format.font !== undefined) annotation.font = format.font;
+  if (format.fontSize !== undefined) {
+    if (!Number.isFinite(format.fontSize) || format.fontSize < 10 || format.fontSize > 48) return doc;
+    annotation.fontSize = Math.round(format.fontSize);
+  }
+  if (format.align !== undefined) annotation.align = format.align;
   return next;
 }
 
@@ -1326,12 +1389,14 @@ function validGroup(value: unknown): boolean {
   return isRecord(value) && typeof value.id === "string" && typeof value.kind === "string" && groupKinds.has(value.kind) && typeof value.label === "string" &&
     Array.isArray(value.children) && value.children.every((id) => typeof id === "string") &&
     (value.parent === undefined || typeof value.parent === "string") &&
+    (value.labelPosition === undefined || value.labelPosition === "top-left" || value.labelPosition === "top-right" || value.labelPosition === "bottom-left" || value.labelPosition === "bottom-right") &&
     (value.step === undefined || (typeof value.step === "number" && Number.isInteger(value.step) && value.step >= 0 && value.step <= MAX_EDGE_STEP));
 }
 
 function validResource(value: unknown): boolean {
   return isRecord(value) && typeof value.id === "string" && typeof value.type === "string" && isRecord(value.label) &&
     (value.label.service === undefined || typeof value.label.service === "string") && (value.label.role === undefined || typeof value.label.role === "string") &&
+    (value.label.position === undefined || value.label.position === "top" || value.label.position === "bottom" || value.label.position === "left" || value.label.position === "right") &&
     (value.role === "primary" || value.role === "secondary" || value.role === "border") && isRecord(value.props) &&
     (value.parent === undefined || typeof value.parent === "string");
 }
@@ -1344,7 +1409,10 @@ function validEdge(value: unknown): boolean {
 function validAnnotation(value: unknown): boolean {
   return isRecord(value) && typeof value.id === "string" && typeof value.text === "string" &&
     (value.anchor === undefined || typeof value.anchor === "string") &&
-    (value.style === undefined || value.style === "paper" || value.style === "code" || value.style === "callout" || value.style === "checklist");
+    (value.style === undefined || value.style === "text" || value.style === "paper" || value.style === "code" || value.style === "callout" || value.style === "checklist") &&
+    (value.font === undefined || value.font === "sans" || value.font === "serif" || value.font === "mono") &&
+    (value.fontSize === undefined || typeof value.fontSize === "number" && value.fontSize >= 10 && value.fontSize <= 48) &&
+    (value.align === undefined || value.align === "left" || value.align === "center" || value.align === "right");
 }
 
 function validAsset(value: unknown): boolean {
@@ -1359,7 +1427,7 @@ function validPlace(value: unknown): boolean {
 }
 
 function shiftedPlace(
-  place: { x?: number; y?: number; w?: number; h?: number; pin?: boolean; locked?: boolean; visible?: boolean; zIndex?: number } | undefined,
+  place: { x?: number; y?: number; w?: number; h?: number; pin?: boolean; manual?: boolean; locked?: boolean; visible?: boolean; zIndex?: number } | undefined,
   dx: number,
   dy: number,
 ) {
@@ -1368,6 +1436,7 @@ function shiftedPlace(
     x: Math.round((place?.x ?? 0) + dx),
     y: Math.round((place?.y ?? 0) + dy),
     pin: true,
+    manual: true,
   };
 }
 

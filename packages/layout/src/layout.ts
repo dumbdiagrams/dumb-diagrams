@@ -28,6 +28,7 @@ interface Measured {
 const H_GAP = LAYOUT_METRICS.horizontalGap;
 const V_GAP = LAYOUT_METRICS.verticalGap;
 const RESOURCE_GAP = LAYOUT_METRICS.resourceGap;
+const RESOURCE_LABEL_MAX_WIDTH = 176;
 
 type LayoutChild = {
   id: ID;
@@ -104,6 +105,9 @@ function layoutGroup(
   if (group.kind === "logical") {
     return layoutLogicalGroup(doc, group, state);
   }
+  if (group.kind === "account") {
+    return layoutAccountGroup(doc, group, state);
+  }
   if (
     group.kind === "subnet" ||
     group.kind === "subnet-public" ||
@@ -113,6 +117,146 @@ function layoutGroup(
   }
 
   return layoutGenericGroup(doc, group, state, style.padding);
+}
+
+function layoutAccountGroup(
+  doc: DiagramDocument,
+  group: Group,
+  state: LayoutState,
+): Measured {
+  const style = GROUP_STYLES.account;
+  const children = measureChildren(doc, group.children, state);
+  const parent = group.parent ? getGroup(doc, group.parent) : undefined;
+  const shouldCompact =
+    doc.flow === "lr" &&
+    parent?.kind === "cloud" &&
+    children.length >= 5;
+  if (!shouldCompact) {
+    return layoutGenericGroup(doc, group, state, style.padding);
+  }
+
+  const chain = longestChildFlow(doc, group);
+  const chainIds = new Set(chain);
+  const orderedIds = [
+    ...chain,
+    ...group.children.filter((id) => !chainIds.has(id)),
+  ];
+  const ordered = orderedIds
+    .map((id) => children.find((child) => child.id === id))
+    .filter((child): child is LayoutChild => Boolean(child));
+  const followsFlow = chain.length >= 4;
+  const columns = followsFlow ? 3 : 2;
+  const rows = Math.ceil(ordered.length / columns);
+  const archedFlowCells = followsFlow && columns === 3 && rows === 3 && chain.length === 5
+    ? [
+        { row: 2, column: 0 },
+        { row: 1, column: 0 },
+        { row: 1, column: 1 },
+        { row: 1, column: 2 },
+        { row: 2, column: 2 },
+      ]
+    : undefined;
+  const remainingArchedCells = archedFlowCells
+    ? [
+        { row: 0, column: 0 },
+        { row: 0, column: 1 },
+        { row: 0, column: 2 },
+        { row: 2, column: 1 },
+      ]
+    : [];
+  const cells = ordered.map((child, index) => {
+    if (archedFlowCells) {
+      return {
+        child,
+        ...(index < archedFlowCells.length
+          ? archedFlowCells[index]!
+          : remainingArchedCells[index - archedFlowCells.length]!),
+      };
+    }
+    if (!followsFlow) {
+      return { child, row: Math.floor(index / columns), column: index % columns };
+    }
+    const rowFromBottom = Math.floor(index / columns);
+    const offset = index % columns;
+    return {
+      child,
+      row: rows - 1 - rowFromBottom,
+      column: rowFromBottom % 2 === 0 ? offset : columns - 1 - offset,
+    };
+  });
+  const columnWidths = Array.from({ length: columns }, (_, column) =>
+    Math.max(0, ...cells.filter((cell) => cell.column === column).map((cell) => cell.child.w)),
+  );
+  const rowHeights = Array.from({ length: rows }, (_, row) =>
+    Math.max(0, ...cells.filter((cell) => cell.row === row).map((cell) => cell.child.h)),
+  );
+  const columnX = columnWidths.map((_, column) =>
+    columnWidths.slice(0, column).reduce((sum, width) => sum + width, 0) + column * H_GAP,
+  );
+  const rowY = rowHeights.map((_, row) =>
+    rowHeights.slice(0, row).reduce((sum, height) => sum + height, 0) + row * V_GAP,
+  );
+
+  for (const { child, row, column } of cells) {
+    placeLayoutChild(
+      state,
+      child,
+      columnX[column]! + (columnWidths[column]! - child.w) / 2,
+      rowY[row]! + (rowHeights[row]! - child.h) / 2,
+      doc,
+    );
+  }
+
+  const contentW = columnWidths.reduce((sum, width) => sum + width, 0) +
+    Math.max(0, columns - 1) * H_GAP;
+  const contentH = rowHeights.reduce((sum, height) => sum + height, 0) +
+    Math.max(0, rows - 1) * V_GAP;
+  const w = Math.max(contentW, 100) + style.padding * 2;
+  const h = Math.max(contentH, 40) + style.headerHeight + style.padding * 2;
+  storeGroupGeom(state, group, 0, 0, w, h);
+  return { w, h };
+}
+
+function longestChildFlow(doc: DiagramDocument, group: Group): ID[] {
+  const ownerByResource = new Map<ID, ID>();
+  const collect = (id: ID, owner: ID): void => {
+    const resource = getResource(doc, id);
+    if (resource) {
+      ownerByResource.set(resource.id, owner);
+      return;
+    }
+    const childGroup = getGroup(doc, id);
+    if (!childGroup) return;
+    for (const childId of childGroup.children) collect(childId, owner);
+  };
+  for (const childId of group.children) collect(childId, childId);
+
+  const adjacency = new Map<ID, ID[]>();
+  for (const childId of group.children) adjacency.set(childId, []);
+  for (const edge of doc.edges) {
+    if (edge.style === "dashed" || edge.kind === "fail") continue;
+    const source = ownerByResource.get(edge.source);
+    const target = ownerByResource.get(edge.target);
+    if (!source || !target || source === target) continue;
+    const targets = adjacency.get(source)!;
+    if (!targets.includes(target)) targets.push(target);
+  }
+
+  const bestFrom = (id: ID, visiting: Set<ID>): ID[] => {
+    if (visiting.has(id)) return [id];
+    const nextVisiting = new Set(visiting).add(id);
+    let best: ID[] = [id];
+    for (const target of adjacency.get(id) ?? []) {
+      const candidate = [id, ...bestFrom(target, nextVisiting)];
+      if (candidate.length > best.length) best = candidate;
+    }
+    return best;
+  };
+
+  return group.children.reduce<ID[]>((best, id) => {
+    const candidate = bestFrom(id, new Set());
+    return candidate.length > best.length ? candidate : best;
+  }, []);
 }
 
 function layoutRegionGroup(
@@ -160,7 +304,18 @@ function layoutRegionGroup(
     const size = columnSizes(items);
     let y = (contentH - size.h) / 2;
     for (const item of items) {
-      placeLayoutChild(state, item, x + (size.w - item.w) / 2, y, doc);
+      // Direct services in the outer rails should hug the relevant side of
+      // the architecture instead of floating in the middle of a much wider
+      // sibling group. In particular, right-rail outputs such as email stay
+      // aligned beneath the final service in the main processing band.
+      const alignmentOffset = item.resource
+        ? column === "right"
+          ? size.w - item.w
+          : column === "left"
+            ? 0
+            : (size.w - item.w) / 2
+        : (size.w - item.w) / 2;
+      placeLayoutChild(state, item, x + alignmentOffset, y, doc);
       y += item.h + V_GAP;
     }
     x += size.w + H_GAP;
@@ -286,25 +441,78 @@ function layoutLogicalGroup(
 ): Measured {
   const style = GROUP_STYLES.logical;
   const children = measureChildren(doc, group.children, state);
-  const contentW = Math.max(120, Math.max(0, ...children.map((item) => item.w)));
-  const contentH = Math.max(
-    60,
-    children.reduce(
-      (height, item, index) => height + item.h + (index > 0 ? V_GAP : 0),
-      0,
-    ),
-  );
+  const horizontal = doc.flow === "lr" && hasHorizontalChildFlow(doc, group);
+  const contentW = horizontal
+    ? Math.max(
+        120,
+        children.reduce(
+          (width, item, index) => width + item.w + (index > 0 ? H_GAP : 0),
+          0,
+        ),
+      )
+    : Math.max(120, Math.max(0, ...children.map((item) => item.w)));
+  const contentH = horizontal
+    ? Math.max(60, Math.max(0, ...children.map((item) => item.h)))
+    : Math.max(
+        60,
+        children.reduce(
+          (height, item, index) => height + item.h + (index > 0 ? V_GAP : 0),
+          0,
+        ),
+      );
 
-  let y = 0;
+  let cursor = 0;
   for (const item of children) {
-    placeLayoutChild(state, item, (contentW - item.w) / 2, y, doc);
-    y += item.h + V_GAP;
+    const x = horizontal ? cursor : (contentW - item.w) / 2;
+    const y = horizontal ? (contentH - item.h) / 2 : cursor;
+    placeLayoutChild(state, item, x, y, doc);
+    cursor += (horizontal ? item.w : item.h) + (horizontal ? H_GAP : V_GAP);
   }
 
   const w = Math.max(contentW, 120) + style.padding * 2;
   const h = Math.max(contentH, 60) + style.headerHeight + style.padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
+}
+
+function hasHorizontalChildFlow(doc: DiagramDocument, group: Group): boolean {
+  if (group.children.length < 2) return false;
+  const ownerByResource = new Map<ID, ID>();
+
+  const collect = (id: ID, owner: ID): void => {
+    const resource = getResource(doc, id);
+    if (resource) {
+      ownerByResource.set(resource.id, owner);
+      return;
+    }
+    const childGroup = getGroup(doc, id);
+    if (!childGroup) return;
+    for (const childId of childGroup.children) collect(childId, owner);
+  };
+
+  for (const childId of group.children) collect(childId, childId);
+  const hasInternalFlow = doc.edges.some((edge) => {
+    if (edge.kind === "fail") return false;
+    if (edge.style === "dashed" && edge.kind !== "peer") return false;
+    const sourceOwner = ownerByResource.get(edge.source);
+    const targetOwner = ownerByResource.get(edge.target);
+    return Boolean(sourceOwner && targetOwner && sourceOwner !== targetOwner);
+  });
+  if (hasInternalFlow) return true;
+
+  // Alternative peers fed by the same external source belong side by side.
+  // This covers authentication choices such as Cognito and OpenID Connect
+  // without inventing a connector between the alternatives themselves.
+  const targetsByExternalSource = new Map<ID, Set<ID>>();
+  for (const edge of doc.edges) {
+    const sourceOwner = ownerByResource.get(edge.source);
+    const targetOwner = ownerByResource.get(edge.target);
+    if (sourceOwner || !targetOwner) continue;
+    const targets = targetsByExternalSource.get(edge.source) ?? new Set<ID>();
+    targets.add(targetOwner);
+    targetsByExternalSource.set(edge.source, targets);
+  }
+  return [...targetsByExternalSource.values()].some((targets) => targets.size >= 2);
 }
 
 function layoutGenericGroup(
@@ -443,31 +651,57 @@ function measureResource(
   const roleLabel = isDuplicateCatalogLabel(resource.label.role, serviceLabel, entry?.aliases)
     ? undefined
     : resource.label.role;
+  const serviceLines = wrapResourceLabel(
+    serviceLabel,
+    GRAMMAR.serviceFontSize,
+    RESOURCE_LABEL_MAX_WIDTH,
+  );
+  const roleLines = roleLabel
+    ? wrapResourceLabel(roleLabel, GRAMMAR.roleFontSize, RESOURCE_LABEL_MAX_WIDTH)
+    : [];
   const labelWidth = Math.max(
-    estimateTextWidth(serviceLabel, GRAMMAR.serviceFontSize),
-    roleLabel ? estimateTextWidth(roleLabel, GRAMMAR.roleFontSize) : 0,
+    ...serviceLines.map((line) => estimateTextWidth(line, GRAMMAR.serviceFontSize)),
+    ...roleLines.map((line) => estimateTextWidth(line, GRAMMAR.roleFontSize)),
   );
   const labelHeight =
-    GRAMMAR.labelLineHeight +
-    (roleLabel ? GRAMMAR.labelLineHeight + 6 : 0) +
+    serviceLines.length * GRAMMAR.labelLineHeight +
+    (roleLines.length ? roleLines.length * GRAMMAR.labelLineHeight + 6 : 0) +
     GRAMMAR.labelPad;
-
-  const w = Math.max(iconSize, labelWidth) + 16;
-  const h = iconSize + labelHeight;
-  const iconX = Math.round((w - iconSize) / 2);
-
-  const icon: Rect = {
-    x: iconX,
-    y: 0,
-    w: iconSize,
-    h: iconSize,
-  };
-  const label: Rect = {
-    x: (w - labelWidth) / 2,
-    y: iconSize + 4,
-    w: labelWidth,
-    h: labelHeight,
-  };
+  const labelPosition = resource.label.position ?? "bottom";
+  const verticalLabel = labelPosition === "top" || labelPosition === "bottom";
+  const gap = 4;
+  const w = verticalLabel
+    ? Math.max(iconSize, labelWidth) + 16
+    : iconSize + labelWidth + gap + 16;
+  const h = verticalLabel
+    ? iconSize + labelHeight
+    : Math.max(iconSize, labelHeight);
+  const icon: Rect = verticalLabel
+    ? {
+        x: Math.round((w - iconSize) / 2),
+        y: labelPosition === "top" ? labelHeight + gap : 0,
+        w: iconSize,
+        h: iconSize,
+      }
+    : {
+        x: labelPosition === "left" ? labelWidth + gap + 8 : 8,
+        y: Math.round((h - iconSize) / 2),
+        w: iconSize,
+        h: iconSize,
+      };
+  const label: Rect = verticalLabel
+    ? {
+        x: (w - labelWidth) / 2,
+        y: labelPosition === "top" ? 0 : iconSize + gap,
+        w: labelWidth,
+        h: labelHeight,
+      }
+    : {
+        x: labelPosition === "left" ? 8 : iconSize + gap + 8,
+        y: Math.round((h - labelHeight) / 2),
+        w: labelWidth,
+        h: labelHeight,
+      };
   const obstacle: Rect = {
     x: 0,
     y: 0,
@@ -482,9 +716,12 @@ function measureResource(
     label,
     obstacle,
     role: resource.role,
+    labelPosition,
     resourceType: resource.type,
     serviceLabel,
+    serviceLines,
     roleLabel,
+    roleLines: roleLines.length ? roleLines : undefined,
   });
 
   return { w: obstacle.w, h: obstacle.h };
@@ -545,25 +782,37 @@ function storeGroupGeom(
 ): void {
   const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
   const bounds: Rect = { x, y, w, h };
+  const labelPosition = group.labelPosition ?? "top-left";
+  const bottom = labelPosition.startsWith("bottom");
   const header: Rect = {
     x,
-    y,
+    y: bottom ? y + h - style.headerHeight : y,
     w,
     h: style.headerHeight,
   };
   const content: Rect = {
     x: x + style.padding,
-    y: y + style.headerHeight + style.padding / 2,
+    y: y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
     w: w - style.padding * 2,
     h: h - style.headerHeight - style.padding * 1.5,
+  };
+  const textW = group.label.length * style.fontSize * 0.62;
+  const labelW = Math.min(w, Math.max(80, style.iconSize + 12 + textW + 12));
+  const labelRect: Rect = {
+    x: labelPosition.endsWith("right") ? x + w - labelW : x,
+    y: bottom ? header.y - 10 : header.y,
+    w: labelW,
+    h: style.headerHeight + 10,
   };
   state.groupGeoms.set(group.id, {
     id: group.id,
     kind: group.kind,
     bounds,
     header,
+    labelRect,
     content,
     label: group.label,
+    labelPosition,
   });
 }
 
@@ -584,6 +833,7 @@ function offsetGroupGeom(state: LayoutState, groupId: ID, dx: number, dy: number
     y: g.bounds.y + dy,
   };
   g.header = { ...g.header, x: g.header.x + dx, y: g.header.y + dy };
+  if (g.labelRect) g.labelRect = { ...g.labelRect, x: g.labelRect.x + dx, y: g.labelRect.y + dy };
   g.content = { ...g.content, x: g.content.x + dx, y: g.content.y + dy };
 }
 
@@ -678,14 +928,28 @@ function isSubnetGroup(group: Group): boolean {
 
 function resizeGroupGeom(geom: GroupGeom, w: number, h: number): void {
   const style = GROUP_STYLES[geom.kind] ?? GROUP_STYLES.logical;
+  const labelPosition = geom.labelPosition ?? "top-left";
+  const bottom = labelPosition.startsWith("bottom");
   geom.bounds = { ...geom.bounds, w, h };
-  geom.header = { x: geom.bounds.x, y: geom.bounds.y, w, h: style.headerHeight };
+  geom.header = {
+    x: geom.bounds.x,
+    y: bottom ? geom.bounds.y + h - style.headerHeight : geom.bounds.y,
+    w,
+    h: style.headerHeight,
+  };
   geom.content = {
     x: geom.bounds.x + style.padding,
-    y: geom.bounds.y + style.headerHeight + style.padding / 2,
+    y: geom.bounds.y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
     w: Math.max(24, w - style.padding * 2),
     h: Math.max(24, h - style.headerHeight - style.padding * 1.5),
   };
+  if (geom.labelRect) {
+    geom.labelRect = {
+      ...geom.labelRect,
+      x: labelPosition.endsWith("right") ? geom.bounds.x + w - geom.labelRect.w : geom.bounds.x,
+      y: bottom ? geom.header.y - 10 : geom.header.y,
+    };
+  }
 }
 
 function setGroupPosition(geom: GroupGeom, x: number, y: number): void {
@@ -693,6 +957,7 @@ function setGroupPosition(geom: GroupGeom, x: number, y: number): void {
   const dy = y - geom.bounds.y;
   shiftRect(geom.bounds, dx, dy);
   shiftRect(geom.header, dx, dy);
+  if (geom.labelRect) shiftRect(geom.labelRect, dx, dy);
   shiftRect(geom.content, dx, dy);
 }
 
@@ -744,6 +1009,7 @@ function applyPinnedViewOverrides(
       if (!descendants.has(candidate.id)) continue;
       shiftRect(candidate.bounds, dx, dy);
       shiftRect(candidate.header, dx, dy);
+      if (candidate.labelRect) shiftRect(candidate.labelRect, dx, dy);
       shiftRect(candidate.content, dx, dy);
     }
     for (const node of layout.nodes) {
@@ -773,22 +1039,51 @@ function applyPinnedViewOverrides(
     if (place.w) group.bounds.w = Math.max(80, snap(place.w));
     if (place.h) group.bounds.h = Math.max(48, snap(place.h));
     const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
+    const labelPosition = group.labelPosition ?? "top-left";
+    const bottom = labelPosition.startsWith("bottom");
     group.header = {
       ...group.header,
       x: group.bounds.x,
-      y: group.bounds.y,
+      y: bottom ? group.bounds.y + group.bounds.h - style.headerHeight : group.bounds.y,
       w: group.bounds.w,
       h: style.headerHeight,
     };
     group.content = {
       x: group.bounds.x + style.padding,
-      y: group.bounds.y + style.headerHeight + style.padding / 2,
+      y: group.bounds.y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
       w: Math.max(24, group.bounds.w - style.padding * 2),
       h: Math.max(24, group.bounds.h - style.headerHeight - style.padding * 1.5),
     };
+    const labelW = Math.min(group.bounds.w, group.labelRect?.w ?? 80);
+    group.labelRect = {
+      x: labelPosition.endsWith("right") ? group.bounds.x + group.bounds.w - labelW : group.bounds.x,
+      y: bottom ? group.header.y - 10 : group.header.y,
+      w: labelW,
+      h: style.headerHeight + 10,
+    };
   }
 
+  // Collision repair may rearrange siblings to make authored diagrams
+  // readable, but an explicit pin is also the editor's promise that a drag
+  // lands exactly where the user released it. Preserve those coordinates
+  // across the repair pass and grow containing groups around them afterward.
+  const pinnedNodePositions = new Map(
+    layout.nodes
+      .filter((node) => view.places[node.id]?.pin && view.places[node.id]?.manual)
+      .map((node) => [node.id, { x: node.obstacle.x, y: node.obstacle.y }]),
+  );
   organizeSiblingResources(doc, layout);
+  const groupById = new Map(layout.groups.map((group) => [group.id, group]));
+  for (const [id, position] of pinnedNodePositions) {
+    const node = layout.nodes.find((candidate) => candidate.id === id);
+    if (!node) continue;
+    shiftAbsoluteNode(node, position.x - node.obstacle.x, position.y - node.obstacle.y);
+    const resource = getResource(doc, id);
+    const parent = resource?.parent
+      ? doc.groups.find((candidate) => candidate.id === resource.parent)
+      : undefined;
+    if (parent) growGroupToContain(doc, groupById, parent, node.obstacle, 8);
+  }
 
   const right = [
     ...layout.nodes.map((node) => node.obstacle.x + node.obstacle.w),
@@ -943,6 +1238,13 @@ function growGroupToContain(
   group.content.h += growthY;
   group.bounds.w += growthX;
   group.bounds.h += growthY;
+  group.header.w += growthX;
+  const labelPosition = group.labelPosition ?? model.labelPosition ?? "top-left";
+  if (labelPosition.startsWith("bottom")) {
+    group.header.y += growthY;
+    if (group.labelRect) group.labelRect.y += growthY;
+  }
+  if (labelPosition.endsWith("right") && group.labelRect) group.labelRect.x += growthX;
   if (!model.parent) return;
   const parent = doc.groups.find((candidate) => candidate.id === model.parent);
   if (parent) growGroupToContain(doc, groupById, parent, group.bounds, padding);
@@ -1051,6 +1353,24 @@ function estimateTextWidth(text: string, fontSize: number): number {
   return text.length * fontSize * 0.55;
 }
 
+function wrapResourceLabel(text: string, fontSize: number, maxWidth: number): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [text];
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (current && estimateTextWidth(candidate, fontSize) > maxWidth) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 export function absoluteNodeGeoms(
   doc: DiagramDocument,
   layout: LayoutResult,
@@ -1084,7 +1404,8 @@ function groupOffset(
     : { x: 0, y: 0 };
   return {
     x: parentOffset.x + group.bounds.x + style.padding,
-    y: parentOffset.y + group.bounds.y + style.headerHeight + style.padding / 2,
+    y: parentOffset.y + group.bounds.y +
+      (parentGroup?.labelPosition?.startsWith("bottom") ? style.padding / 2 : style.headerHeight + style.padding / 2),
   };
 }
 

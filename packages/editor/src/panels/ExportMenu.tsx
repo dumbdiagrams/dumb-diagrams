@@ -1,24 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
-import { IconCaret } from "../ui/icons";
-import {
-  exportDgmFile,
-  exportPngFile,
-  exportSvgFile,
-} from "../state/export-actions";
+import { EXPORT_FORMATS, type ExportFormat } from "../state/export-actions";
+import { IconCaret, IconExport } from "../ui/icons";
 
 export function ExportMenu({
-  title,
-  svg,
-  source,
-  getPortableSvg,
-  onToast,
+  onOpenExport,
+  selectionCount = 0,
 }: {
-  title: string;
-  svg: string | null;
-  source: string;
-  getPortableSvg: () => Promise<string>;
-  onToast: (message: string) => void;
+  onOpenExport: (format: ExportFormat) => void;
+  selectionCount?: number;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -31,46 +21,49 @@ export function ExportMenu({
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const exportTitle = title || "diagram";
-
-  const exportSvg = async () => {
-    if (!svg) return;
-    const result = await exportSvgFile(exportTitle, getPortableSvg);
-    onToast(result.ok ? `Downloaded ${result.filename}` : "SVG export failed.");
+  const choose = (format: ExportFormat) => {
     setOpen(false);
-  };
-
-  const exportDgm = () => {
-    const result = exportDgmFile(source, exportTitle);
-    onToast(result.ok ? `Downloaded ${result.filename}` : "Source export failed.");
-    setOpen(false);
-  };
-
-  const exportPng = async () => {
-    if (!svg) return;
-    const result = await exportPngFile(exportTitle, getPortableSvg);
-    onToast(result.ok ? `Downloaded ${result.filename}` : "PNG export failed.");
-    setOpen(false);
+    onOpenExport(format);
   };
 
   return (
     <div className="export-menu" ref={ref}>
-      <button type="button" className="primary-button" onClick={() => void exportSvg()}>
-        Download SVG
+      <button type="button" className="primary-button export-primary" onClick={() => choose("svg")}>
+        <IconExport />
+        <span>{selectionCount > 0 ? "Export selection" : "Export"}</span>
       </button>
       <button
         type="button"
         className="primary-button caret"
         aria-label="More export formats"
+        aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
         <IconCaret />
       </button>
       {open && (
-        <div className="export-dropdown" role="menu">
-          <button type="button" onClick={() => void exportSvg()}>SVG image</button>
-          <button type="button" onClick={exportDgm}>Source (.dgm)</button>
-          <button type="button" onClick={exportPng}>PNG image</button>
+        <div className="export-dropdown" role="menu" aria-label="Export as">
+          <div className="export-dropdown-heading">
+            <span>Export as</span>
+            {selectionCount > 0 && <small>{selectionCount} selected</small>}
+          </div>
+          <div className="export-format-list">
+            {EXPORT_FORMATS.map((format) => (
+              <button
+                key={format.value}
+                type="button"
+                className="export-format-option"
+                role="menuitem"
+                onClick={() => choose(format.value)}
+              >
+                <span className="export-format-name">{format.label}</span>
+                <span className="export-format-description">{format.description}</span>
+              </button>
+            ))}
+          </div>
+          <div className="export-dropdown-footer">
+            <span>Choose scope, theme, and dimensions next</span>
+          </div>
         </div>
       )}
     </div>

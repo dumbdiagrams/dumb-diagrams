@@ -1,0 +1,47 @@
+diagram bedrock-claims-processing {
+  grammar aws
+  flow lr
+  title "Claims processing with Amazon Bedrock"
+
+  cloud-agnostic.actor claims_analyst { service "Claims analyst" }
+  cloud-agnostic.client web_client { service "Web client" }
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.region region "Region" {
+      group blueprint_creation "Blueprints Creation" {
+        aws.simple-storage-service sample_docs "Sample documents bucket" { service "Amazon S3" }
+        aws.bedrock blueprint_generation "Blueprints generation" { service "Amazon Bedrock Data Automation" }
+        step 3
+      }
+
+      group claims_processing "Claims Processing" {
+        aws.simple-storage-service claims_docs "Claims document bucket" { service "Amazon S3" }
+
+        aws.account workflow "AWS Step Functions Workflow · Claims Processing" {
+          aws.bedrock extractor "Multimodal extraction" { service "Amazon Bedrock Data Automation" }
+          aws.sagemaker-ai fraud_model "Fraud detection model" { service "Amazon SageMaker AI" }
+          aws.dynamodb claims_state "Claims processing state" { service "Amazon DynamoDB" }
+          aws.bedrock nova "Insights generation" { service "Amazon Bedrock Nova Pro/Lite" }
+          step 5
+        }
+
+        aws.simple-notification-service sns { service "Amazon SNS" label-position top }
+        step 9
+      }
+
+      aws.simple-notification-service-email-notification email { service "Email notification" }
+    }
+  }
+
+  claims_analyst -> sample_docs { id analyst_to_samples step 1 from e to w }
+  sample_docs -> blueprint_generation { id sample_to_blueprints step 2 from e to w }
+  web_client -> claims_docs { id client_to_claims step 4 from e to w }
+  claims_docs -> extractor { id claims_to_extract from e to w }
+  claims_docs -> claims_state { id workflow_to_state step 6 from e to n }
+  extractor -> fraud_model { id extractor_to_fraud step 7 from e to w }
+  fraud_model -> claims_state { id fraud_to_state from e to n }
+  claims_state -> nova { id state_to_nova step 8 from e to w }
+  nova -> sns { id nova_to_sns from e to w }
+  sns -> email { id sns_to_email step 9 from s to n }
+  email -> web_client { id notify_client from s to e }
+}
