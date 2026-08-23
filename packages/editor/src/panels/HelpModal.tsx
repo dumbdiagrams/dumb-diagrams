@@ -26,8 +26,9 @@ export function HelpModal({
             import it from a repository, or let an LLM update it and then reload the visual result.
           </p>
           <p>
-            Browser Studio saves by downloading <code>.dgm</code>. A future local Studio server will
-            let <code>dumbdiagrams studio</code> read and write files directly while keeping this same tab flow.
+            Run <code>dumbdiagrams studio path/to/diagram.dgm</code> for the local workflow. Studio
+            writes the connected file directly, watches for edits from an agent or another editor,
+            and asks before replacing a newer disk revision.
           </p>
         </section>
         <section>
@@ -54,7 +55,7 @@ export function HelpModal({
         </section>
         <section className="help-about">
           <h3>About</h3>
-          <p>DumbDiagrams Studio v0.0.1 · deterministic diagrams for people and LLMs.</p>
+          <p>Dumb Diagrams Studio · deterministic diagrams for people and LLMs.</p>
         </section>
       </div>
     </Modal>

@@ -1,23 +1,31 @@
 {
-  "name": "@dumb-diagrams/cli",
+  "name": "dumbdiagrams",
   "version": "1.0.0",
   "license": "MIT",
+  "description": "Local, source-first diagram studio for agent-generated .dgm files",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
+    "dumbdiagrams": "./dist/index.js",
     "dgm": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepare:standalone": "node ../../scripts/prepare-cli-package.mjs",
+    "prepack": "node ../../scripts/prepare-cli-package.mjs",
     "test": "vitest run"
   },
-  "dependencies": {
+  "devDependencies": {
     "@dumb-diagrams/catalog": "workspace:*",
     "@dumb-diagrams/core": "workspace:*",
     "@dumb-diagrams/dsl": "workspace:*",
-    "@dumb-diagrams/render": "workspace:*"
-  },
-  "devDependencies": {
+    "@dumb-diagrams/render": "workspace:*",
     "@types/node": "^22.13.4",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"

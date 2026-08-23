@@ -192,6 +192,16 @@ type BulkCloseRequest = {
   dirtyCount: number;
 } | null;
 type OperationState = { label: string } | null;
+type LocalStudioPayload = {
+  source: string;
+  revision: string;
+  fileName: string;
+  filePath: string;
+};
+type LocalStudioState = LocalStudioPayload & {
+  status: "connected" | "saving" | "offline" | "conflict";
+  external?: LocalStudioPayload;
+};
 type CatalogPlacement = {
   parent: string | undefined;
   at: Point;
@@ -239,6 +249,7 @@ function App() {
     viewport,
     replaceSource,
     commitSource,
+    resetTab,
     resetActive,
     beginTransaction,
     endTransaction,
@@ -277,6 +288,13 @@ function App() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef(source);
   sourceRef.current = source;
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
+  const connectedStudioTabIdRef = useRef<string | null>(null);
+  const localStudioRevisionRef = useRef<string | null>(null);
+  const [localStudio, setLocalStudio] = useState<LocalStudioState | null>(null);
   const fitRef = useRef<(() => void) | null>(null);
   const [layersQuery, setLayersQuery] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
@@ -326,6 +344,81 @@ function App() {
     setToastMessage(message);
   };
 
+  useEffect(() => {
+    if (!workspaceReady) return;
+    let cancelled = false;
+    let events: EventSource | null = null;
+
+    const connect = async () => {
+      try {
+        const sessionResponse = await fetch("/api/session", { headers: { Accept: "application/json" } });
+        if (!sessionResponse.ok || !sessionResponse.headers.get("content-type")?.includes("application/json")) return;
+        const session = await sessionResponse.json() as Partial<LocalStudioPayload>;
+        const documentResponse = await fetch("/api/document", { headers: { Accept: "application/json" } });
+        if (!documentResponse.ok) throw new Error("The local Studio document could not be loaded.");
+        const document = await documentResponse.json() as LocalStudioPayload;
+        if (cancelled || typeof document.source !== "string" || typeof document.revision !== "string") return;
+
+        connectedStudioTabIdRef.current = activeTabRef.current.id;
+        localStudioRevisionRef.current = document.revision;
+        resetTab(activeTabRef.current.id, document.source, document.source, {
+          filename: document.fileName,
+          origin: "file",
+        });
+        setLocalStudio({
+          source: document.source,
+          revision: document.revision,
+          fileName: document.fileName ?? String(session.fileName ?? "diagram.dgm"),
+          filePath: document.filePath ?? String(session.filePath ?? ""),
+          status: "connected",
+        });
+        setToast(`Connected to ${document.fileName}`);
+
+        events = new EventSource("/api/events");
+        events.addEventListener("document", (event) => {
+          if (cancelled) return;
+          const next = JSON.parse((event as MessageEvent).data) as LocalStudioPayload;
+          if (!next.revision || next.revision === localStudioRevisionRef.current) return;
+          const connectedTab = tabsRef.current.find((tab) => tab.id === connectedStudioTabIdRef.current);
+          if (!connectedTab) return;
+          const currentTab = connectedTab;
+          const isDirty = currentTab.source !== currentTab.savedSource;
+          if (isDirty) {
+            setLocalStudio((current) => current
+              ? { ...current, status: "conflict", external: next }
+              : current);
+            setToast("The .dgm changed outside Studio");
+            return;
+          }
+          localStudioRevisionRef.current = next.revision;
+          resetTab(connectedTab.id, next.source, next.source, {
+            filename: next.fileName,
+            origin: "file",
+          });
+          setLocalStudio((current) => current
+            ? { ...current, ...next, status: "connected", external: undefined }
+            : current);
+          setToast(`Updated from ${next.fileName}`);
+        });
+        events.addEventListener("document-missing", () => {
+          setLocalStudio((current) => current ? { ...current, status: "offline" } : current);
+          setToast("The connected .dgm file is no longer on disk");
+        });
+        events.onerror = () => {
+          if (!cancelled) setLocalStudio((current) => current ? { ...current, status: "offline" } : current);
+        };
+      } catch {
+        // Browser Studio and the static site intentionally have no local API.
+      }
+    };
+
+    void connect();
+    return () => {
+      cancelled = true;
+      events?.close();
+    };
+  }, [resetTab, workspaceReady]);
+
   const tabLabel = useCallback((tab: WorkspaceTab): string => {
     try {
       return documentNameForDisplay(parseDgm(tab.source));
@@ -345,12 +438,69 @@ function App() {
     }
   };
 
-  const saveTabSource = (tabId: string, requestedFilename?: string): boolean => {
+  const saveToLocalStudio = async (
+    tabId: string,
+    candidate: string,
+    requestedFilename?: string,
+  ): Promise<boolean> => {
+    const connection = localStudio;
+    const baseRevision = localStudioRevisionRef.current;
+    if (!connection || !baseRevision) return false;
+    setLocalStudio((current) => current ? { ...current, status: "saving" } : current);
+    try {
+      const response = await fetch("/api/document", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          source: candidate,
+          baseRevision,
+          ...(requestedFilename ? { filename: requestedFilename } : {}),
+        }),
+      });
+      const payload = await response.json() as Partial<LocalStudioPayload> & { message?: string; error?: string };
+      if (response.status === 409 && payload.revision && payload.source) {
+        localStudioRevisionRef.current = payload.revision;
+        setLocalStudio((current) => current
+          ? {
+              ...current,
+              status: "conflict",
+              external: {
+                source: payload.source!,
+                revision: payload.revision!,
+                fileName: payload.fileName ?? current.fileName,
+                filePath: payload.filePath ?? current.filePath,
+              },
+            }
+          : current);
+        setToast("Save blocked — the .dgm changed outside Studio");
+        return false;
+      }
+      if (!response.ok || !payload.revision || !payload.fileName || !payload.filePath) {
+        throw new Error(payload.message ?? "The local Studio could not save the diagram.");
+      }
+      localStudioRevisionRef.current = payload.revision;
+      markTabSaved(tabId, candidate, payload.fileName);
+      setLocalStudio((current) => current
+        ? { ...current, ...payload as LocalStudioPayload, status: "connected", external: undefined }
+        : current);
+      setToast(`Saved ${payload.fileName}`);
+      return true;
+    } catch (error) {
+      setLocalStudio((current) => current ? { ...current, status: "offline" } : current);
+      setToast(error instanceof Error ? error.message : "The local Studio could not save the diagram.");
+      return false;
+    }
+  };
+
+  const saveTabSource = async (tabId: string, requestedFilename?: string): Promise<boolean> => {
     const tab = tabs.find((candidate) => candidate.id === tabId);
     if (!tab) return false;
     if (!sourceIsValid(tab.source)) {
       setToast("Cannot save an invalid diagram. Fix the source errors first.");
       return false;
+    }
+    if (localStudio && tabId === connectedStudioTabIdRef.current) {
+      return saveToLocalStudio(tabId, tab.source, requestedFilename);
     }
     const baseName = requestedFilename || tab.filename || tabLabel(tab);
     const filename = filenameWithExtension(baseName, "dgm");
@@ -363,7 +513,7 @@ function App() {
     return true;
   };
 
-  const saveActive = () => saveTabSource(activeTab.id);
+  const saveActive = () => { void saveTabSource(activeTab.id); };
 
   const exportCurrentSource = () => {
     const result = exportDgmFile(source, tabLabel(activeTab));
@@ -375,14 +525,42 @@ function App() {
     setSaveAsOpen(true);
   };
 
-  const confirmSaveAs = () => {
+  const confirmSaveAs = async () => {
     const filename = normalizeSingleLineText(saveAsDraft);
     if (!filename) {
       setToast("Filename cannot be empty");
       return;
     }
     setSaveAsDraft(filename);
-    if (saveTabSource(activeTab.id, filename)) setSaveAsOpen(false);
+    if (await saveTabSource(activeTab.id, filename)) setSaveAsOpen(false);
+  };
+
+  const reloadExternalStudioSource = () => {
+    const external = localStudio?.external;
+    if (!external) return;
+    localStudioRevisionRef.current = external.revision;
+    const connectedTabId = connectedStudioTabIdRef.current;
+    if (!connectedTabId) return;
+    resetTab(connectedTabId, external.source, external.source, {
+      filename: external.fileName,
+      origin: "file",
+    });
+    setLocalStudio((current) => current
+      ? { ...current, ...external, status: "connected", external: undefined }
+      : current);
+    setToast(`Reloaded ${external.fileName}`);
+  };
+
+  const keepLocalStudioChanges = () => {
+    const external = localStudio?.external;
+    if (!external) return;
+    // The user explicitly chose to keep the in-browser copy. The next save
+    // may now replace the newer disk revision instead of silently doing so.
+    localStudioRevisionRef.current = external.revision;
+    setLocalStudio((current) => current
+      ? { ...current, revision: external.revision, status: "connected", external: undefined }
+      : current);
+    setToast("Kept your changes — save to overwrite the file");
   };
 
   const resetTransientState = () => {
@@ -486,11 +664,11 @@ function App() {
     beginTabClose(tabId, tab ? previewsForTabs([tab]) : {});
   };
 
-  const saveAndCloseRequestedTab = () => {
+  const saveAndCloseRequestedTab = async () => {
     if (!closeRequest) return;
     const tabId = closeRequest;
     const tab = tabs.find((candidate) => candidate.id === tabId);
-    if (saveTabSource(tabId)) {
+    if (await saveTabSource(tabId)) {
       setCloseRequest(null);
       beginTabClose(tabId, tab ? previewsForTabs([tab]) : {});
     }
@@ -1468,6 +1646,18 @@ function App() {
             <span>{issues[0]?.message}</span>
           </div>
         )}
+        {localStudio?.status === "conflict" && localStudio.external && (
+          <div className="local-studio-conflict" role="alert">
+            <div className="local-studio-conflict-copy">
+              <strong>File changed outside Studio</strong>
+              <span>{localStudio.external.fileName} has a newer revision on disk.</span>
+            </div>
+            <div className="local-studio-conflict-actions">
+              <button type="button" className="text-button" onClick={reloadExternalStudioSource}>Reload from disk</button>
+              <button type="button" className="primary-button" onClick={keepLocalStudioChanges}>Keep my changes</button>
+            </div>
+          </div>
+        )}
 
         <header className="floating-topbar">
           <div className="topbar-left">
@@ -1508,6 +1698,21 @@ function App() {
               </button>
             </div>
             <span className="file-name">{activeTab.filename ?? ".dgm"}</span>
+            {localStudio && (
+              <span
+                className={`local-studio-status is-${localStudio.status}`}
+                title={localStudio.filePath}
+              >
+                <span className="local-studio-status-dot" aria-hidden="true" />
+                {localStudio.status === "saving"
+                  ? "Saving"
+                  : localStudio.status === "offline"
+                    ? "Offline"
+                    : localStudio.status === "conflict"
+                      ? "Needs review"
+                      : "Local file"}
+              </span>
+            )}
           </div>
           <div className="topbar-center">
             <button
@@ -1591,8 +1796,8 @@ function App() {
           <nav className="studio-tabbar-leading" aria-label="File menu">
             <TopMenu label="File" Icon={IconMenu} iconOnly items={fileMenuItems} />
             <div className="studio-brand" aria-label="DumbDiagrams">
-              <span className="brand-mark">D</span>
-              <span className="brand-name">DumbDiagrams</span>
+              <img className="brand-logo" src="./logo_dumbdiagrams.png" alt="" />
+              <span className="brand-name">Dumb Diagrams</span>
             </div>
           </nav>
           <WorkspaceTabs
@@ -2097,7 +2302,7 @@ function App() {
         <Modal
           open={saveAsOpen}
           title="Save diagram as"
-          subtitle="Choose the filename for the downloaded .dgm source."
+          subtitle={localStudio ? "Save a connected copy next to the current .dgm file." : "Choose the filename for the downloaded .dgm source."}
           onClose={() => setSaveAsOpen(false)}
           width={440}
         >
@@ -2105,7 +2310,7 @@ function App() {
             className="save-as-form"
             onSubmit={(event) => {
               event.preventDefault();
-              confirmSaveAs();
+              void confirmSaveAs();
             }}
           >
             <label htmlFor="save-as-filename">Filename</label>

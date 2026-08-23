@@ -1,10 +1,11 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const packagesRoot = new URL("../packages/", import.meta.url);
 const packages = readdirSync(packagesRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
+  .filter((name) => existsSync(join(packagesRoot.pathname, name, "package.json")))
   .sort();
 const versions = packages.map((name) => {
   const filename = join(packagesRoot.pathname, name, "package.json");

@@ -1,6 +1,6 @@
 # Versioning strategy
 
-DumbDiagrams uses Semantic Versioning for the ten workspace packages:
+DumbDiagrams uses Semantic Versioning for its workspace packages:
 
 - `MAJOR` changes may break the `.dgm` grammar, document model, public package
   APIs, renderer output contract, or supported deployment behavior.
@@ -10,10 +10,10 @@ DumbDiagrams uses Semantic Versioning for the ten workspace packages:
   without changing the compatibility contract.
 
 The packages are versioned and released together so a parsed document, layout,
-router, renderer, CLI, MCP server, and editor always share one compatibility
-line. The editor package remains private for distribution purposes, but its
-version is kept in lockstep with the nine publishable packages. The repository
-root is a workspace container and is not independently versioned.
+router, renderer, CLI, and editor always share one compatibility line. The
+editor package remains private for distribution purposes, while the public
+`dumbdiagrams` package is the end-user distribution. The repository root is a
+workspace container and is not independently versioned.
 
 Release requirements:
 

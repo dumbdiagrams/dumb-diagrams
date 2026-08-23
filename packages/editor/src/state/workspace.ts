@@ -13,7 +13,8 @@ export type DocumentOrigin =
   | "import"
   | "example"
   | "recovery"
-  | "duplicate";
+  | "duplicate"
+  | "file";
 
 export type DocumentRef =
   | { kind: "browser"; id: string }
@@ -354,20 +355,27 @@ export function useWorkspace(options: WorkspaceOptions) {
     [ensureHistory, touchHistory, updateWorkspace],
   );
 
-  const resetActive = useCallback(
-    (source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin">> = {}) => {
+  const resetTab = useCallback(
+    (tabId: string, source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin">> = {}) => {
       if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes || utf8ByteLength(savedSource) > DIAGRAM_LIMITS.sourceBytes) return;
-      const activeId = workspaceRef.current.activeTabId;
-      historiesRef.current.set(activeId, createHistory());
+      if (!workspaceRef.current.tabs.some((tab) => tab.id === tabId)) return;
+      historiesRef.current.set(tabId, createHistory());
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === activeId
+        tabs: current.tabs.map((tab) => tab.id === tabId
           ? { ...tab, source, savedSource, ...metadata }
           : tab),
       }));
       touchHistory();
     },
     [touchHistory, updateWorkspace],
+  );
+
+  const resetActive = useCallback(
+    (source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin">> = {}) => {
+      resetTab(workspaceRef.current.activeTabId, source, savedSource, metadata);
+    },
+    [resetTab],
   );
 
   const beginTransaction = useCallback(() => {
@@ -637,6 +645,7 @@ export function useWorkspace(options: WorkspaceOptions) {
     viewport: activeTab.viewport,
     replaceSource,
     commitSource,
+    resetTab,
     resetActive,
     beginTransaction,
     endTransaction,
@@ -747,7 +756,7 @@ function normalizeSourceFilename(filename?: string): string | undefined {
 }
 
 function isDocumentOrigin(value: unknown): value is DocumentOrigin {
-  return value === "fixture" || value === "new" || value === "import" || value === "example" || value === "recovery" || value === "duplicate";
+  return value === "fixture" || value === "new" || value === "import" || value === "example" || value === "recovery" || value === "duplicate" || value === "file";
 }
 
 async function loadPersistedWorkspace(): Promise<WorkspaceState | null> {

@@ -17,12 +17,23 @@
     "check": "node packages/cli/dist/index.js check examples/src",
     "render": "node packages/cli/dist/index.js render",
     "dev": "pnpm --filter @dumb-diagrams/editor dev",
-    "dev:cli": "node packages/cli/dist/index.js dev"
+    "dev:cli": "node packages/cli/dist/index.js studio"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "esbuild": "^0.25.12",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.15.4",
+  "version": "1.0.0",
+  "description": "LLM-first diagrams with deterministic layout and practical manual controls.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

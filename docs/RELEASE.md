@@ -2,8 +2,8 @@
 
 ## Release
 
-From a clean branch, update all ten package versions and the changelog, then
-run:
+From a clean branch, update the workspace package versions and the changelog,
+then run:
 
 ```bash
 pnpm install --frozen-lockfile
@@ -11,6 +11,21 @@ pnpm test
 pnpm typecheck
 pnpm build
 pnpm check
+```
+
+Build the standalone npm artifact from the compiled workspace:
+
+```bash
+pnpm --filter dumbdiagrams run prepare:standalone
+pnpm --dir packages/cli pack
+```
+
+The resulting tarball contains the CLI, bundled diagram runtime, and compiled
+Studio assets. Publishing that package makes the end-user flow work without
+shipping the repository source:
+
+```bash
+npx dumbdiagrams@latest init my-diagrams
 ```
 
 Create and push the release tag only after those checks pass:

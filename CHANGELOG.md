@@ -7,7 +7,7 @@ the versioning policy in [docs/VERSIONING.md](./docs/VERSIONING.md).
 
 ### Added
 
-- Stable `.dgm` source format, deterministic AWS layout/routing, CLI, MCP, and
+- Stable `.dgm` source format, deterministic AWS layout/routing, CLI, and
   desktop editor package release.
 - Enterprise command-center and data-transfer architecture examples.
 - Export studio with PNG, JPEG, WebP, GIF, SVG, PDF, HTML, XML, URL, JSON, and

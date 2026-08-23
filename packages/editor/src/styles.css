@@ -5382,6 +5382,15 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
+.studio-brand .brand-logo {
+  display: block;
+  width: 30px;
+  height: 28px;
+  flex: 0 0 30px;
+  object-fit: contain;
+  object-position: center;
+}
+
 .studio-brand .brand-name {
   font-size: 13px;
   font-weight: 750;
@@ -5391,6 +5400,96 @@ textarea:focus-visible {
 .studio-tabbar-actions {
   padding-right: 10px;
   border-left: 1px solid var(--line);
+}
+
+.local-studio-status {
+  display: inline-flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--line));
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--success) 8%, var(--surface-solid));
+  color: var(--success);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.local-studio-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.local-studio-status.is-saving {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-solid));
+  color: var(--accent);
+}
+
+.local-studio-status.is-offline,
+.local-studio-status.is-conflict {
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--line));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.local-studio-conflict {
+  position: absolute;
+  z-index: 26;
+  top: 94px;
+  left: 50%;
+  display: flex;
+  width: min(720px, calc(100% - 40px));
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, var(--danger) 46%, var(--line));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--danger-soft) 82%, var(--surface-solid));
+  box-shadow: var(--shadow-md);
+  padding: 10px 12px 10px 14px;
+  color: var(--ink);
+  animation: panel-in 180ms ease;
+}
+
+.local-studio-conflict-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.local-studio-conflict-copy strong {
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.local-studio-conflict-copy span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-studio-conflict-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.local-studio-conflict-actions .primary-button,
+.local-studio-conflict-actions .text-button {
+  min-height: 32px;
+  padding-inline: 10px;
+  white-space: nowrap;
 }
 
 .studio-tabbar-leading .top-menu-trigger,
