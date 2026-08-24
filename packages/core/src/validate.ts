@@ -152,7 +152,8 @@ export function validateDocument(
           code: "missing-child",
           message: `Group ${g.id} child ${childId} not found`,
           id: g.id,
-      });
+        });
+      }
     }
     for (const child of g.borderChildren ?? []) {
       if (!getGroup(doc, child.id) && !getResource(doc, child.id)) {
@@ -165,7 +166,6 @@ export function validateDocument(
       }
     }
   }
-  }
 
   return issues;
 }
@@ -175,9 +175,7 @@ function isInsideVpc(doc: DiagramDocument, groupId: string): boolean {
   const seen = new Set<string>();
   while (current && !seen.has(current.id)) {
     seen.add(current.id);
-    if (current.kind === "vpc" || current.kind === "az" || current.kind === "subnet" || current.kind === "subnet-public" || current.kind === "subnet-private") {
-      if (current.kind === "vpc") return true;
-    }
+    if (current.kind === "vpc") return true;
     if (!current.parent) break;
     current = getGroup(doc, current.parent);
   }

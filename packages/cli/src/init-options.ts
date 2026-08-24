@@ -16,7 +16,6 @@ export interface ResolvedInitOptions {
   projectName?: string;
   diagramName: string;
   description?: string;
-  prompted: boolean;
 }
 
 const INTERACTIVE_DEFAULT_NAME = "my-diagram-project";
@@ -37,12 +36,10 @@ export async function resolveInitOptions(
 
   let projectName = cleanDisplayText(optionalValueFlag(args, "name"), "project name", 120);
   let projectDirectory = positionalDirectory ?? flaggedDirectory;
-  let prompted = false;
 
   if (!projectDirectory && !projectName && context.interactive && !args.flags.has("yes")) {
     const answer = await context.askProjectName?.(INTERACTIVE_DEFAULT_NAME);
     projectName = cleanDisplayText(answer?.trim() || INTERACTIVE_DEFAULT_NAME, "project name", 120);
-    prompted = true;
   }
 
   if (!projectDirectory) {
@@ -64,7 +61,6 @@ export async function resolveInitOptions(
     projectName,
     diagramName,
     description,
-    prompted,
   };
 }
 

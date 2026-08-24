@@ -1,10 +1,11 @@
 {
   "name": "@dumb-diagrams/dsl",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "MIT",
-  "files": ["dist"],
-  "publishConfig": { "access": "public" },
-  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -23,5 +24,6 @@
   "devDependencies": {
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
-  }
+  },
+  "type": "module"
 }

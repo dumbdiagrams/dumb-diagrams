@@ -58,7 +58,7 @@ pnpm build
 mkdir -p .artifacts
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts
 
-ARTIFACT="$(pwd)/.artifacts/dumbdiagrams-1.0.0.tgz"
+ARTIFACT="$(pwd)/.artifacts/dumbdiagrams-0.1.0.tgz"
 PROJECT_DIR="../dumb-diagrams-$(date +%Y-%m-%d-%H-%M-%S)"
 npx --yes \
   --package="$ARTIFACT" \
@@ -76,7 +76,34 @@ The packed CLI bundles the diagram runtime and includes the compiled Studio,
 logo, provider icons, and the example source/prompt pairs copied into each new
 project. The initializer generates a project-local catalog reference from the
 same runtime catalog. The tarball contains no repository `src/` tree. When
-published, the same commands become `npx dumbdiagrams@latest …`.
+published, the same commands become `npx dumbdiagrams@latest …` or
+`npx dumbdiagrams@0.1.0 …` for a specific version.
+
+### After publishing to npm
+
+```bash
+npx dumbdiagrams@latest init --open-editor
+npx dumbdiagrams@latest studio diagrams
+npx dumbdiagrams@latest validate diagrams
+
+# Optional global install (exposes dumbdiagrams and dgm)
+npm install -g dumbdiagrams
+dumbdiagrams init --yes
+dgm studio diagrams
+```
+
+The unscoped `dumbdiagrams` package is always public on npm. For a private
+registry-only preview, use a scoped package name with restricted access on a
+paid npm account, or keep using the local tarball flow above.
+
+## Future landing page and docs
+
+Keep plain pnpm workspaces. When you add a marketing site, place a private Astro
+app in `packages/docs` and deploy it with a separate CI job so docs changes do
+not force npm packaging or Studio deployment. Nx or Turborepo are optional only
+if measured CI build time becomes a bottleneck.
+
+## Agent workflow
 
 Once the project is open in Cursor, VS Code, Claude Code, Codex, or another
 coding agent, use a prompt like:

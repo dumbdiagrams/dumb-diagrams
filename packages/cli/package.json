@@ -1,11 +1,32 @@
 {
   "name": "dumbdiagrams",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "Local, source-first diagram studio for agent-generated .dgm files",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dumbdiagrams/dumb-diagrams.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dumbdiagrams/dumb-diagrams/issues"
+  },
+  "homepage": "https://github.com/dumbdiagrams/dumb-diagrams#readme",
+  "keywords": [
+    "diagrams",
+    "architecture",
+    "aws",
+    "cli",
+    "dgm",
+    "studio"
+  ],
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "ICON-NOTICES.md"
   ],
   "publishConfig": {
     "access": "public"

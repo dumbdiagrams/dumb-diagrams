@@ -1,6 +1,8 @@
+import { join } from "node:path";
+
 import { expect, test } from "@playwright/test";
 
-const ROOT = "/Users/asado/Desktop/dumb-diagrams";
+const ROOT = join(import.meta.dirname, "..");
 
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");

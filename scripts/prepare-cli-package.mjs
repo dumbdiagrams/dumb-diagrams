@@ -3,6 +3,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   renameSync,
   rmSync,
 } from "node:fs";
@@ -10,11 +11,14 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const cliDist = join(root, "packages/cli/dist");
+const cliPackageRoot = join(root, "packages/cli");
+const cliDist = join(cliPackageRoot, "dist");
 const editorDist = join(root, "packages/editor/dist");
 const standaloneEditor = join(cliDist, "studio");
 const packagedExamples = join(cliDist, "templates/examples");
-const exampleTemplateSource = join(root, "packages/cli/templates/examples");
+const projectTemplatesSource = join(cliPackageRoot, "templates");
+const projectTemplatesTarget = join(cliDist, "templates");
+const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
 const exampleSource = join(root, "examples/src");
 const entry = join(cliDist, "index.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
@@ -44,9 +48,15 @@ await build({
 });
 
 renameSync(temporaryEntry, entry);
+cleanupDistArtifacts(cliDist);
+
 rmSync(standaloneEditor, { recursive: true, force: true });
 mkdirSync(standaloneEditor, { recursive: true });
 cpSync(editorDist, standaloneEditor, { recursive: true });
+
+rmSync(projectTemplatesTarget, { recursive: true, force: true });
+cpSync(projectTemplatesSource, projectTemplatesTarget, { recursive: true });
+
 rmSync(packagedExamples, { recursive: true, force: true });
 mkdirSync(packagedExamples, { recursive: true });
 cpSync(exampleTemplateSource, packagedExamples, { recursive: true });
@@ -59,7 +69,19 @@ for (const fileName of exampleFiles) {
   cpSync(source, target);
 }
 
+for (const legalFile of ["LICENSE", "ICON-NOTICES.md"]) {
+  cpSync(join(root, legalFile), join(cliPackageRoot, legalFile));
+}
+
 console.log("Prepared dumbdiagrams package assets:");
 console.log(`  CLI:    ${entry} (bundled runtime)`);
 console.log(`  Studio: ${standaloneEditor}`);
 console.log(`  Examples: ${packagedExamples}`);
+console.log(`  Templates: ${projectTemplatesTarget}`);
+
+function cleanupDistArtifacts(distDir) {
+  for (const fileName of readdirSync(distDir)) {
+    if (fileName === "index.js") continue;
+    rmSync(join(distDir, fileName), { recursive: true, force: true });
+  }
+}

@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "pnpm --filter @dumb-diagrams/editor typecheck",
     "check:versions": "node scripts/check-versions.mjs",
-    "check:release": "pnpm check:versions && pnpm test && pnpm -r run build && pnpm typecheck && pnpm check",
+    "check:release": "pnpm check:versions && pnpm test && pnpm -r run build && pnpm typecheck && pnpm check && pnpm smoke:package",
+    "smoke:package": "node scripts/smoke-cli-package.mjs",
     "test:e2e": "playwright test",
     "check": "node packages/cli/dist/index.js check examples/src",
     "render": "node packages/cli/dist/index.js render",
@@ -21,12 +22,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "@vitest/coverage-v8": "^3.0.5",
     "esbuild": "^0.25.12",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   },
   "packageManager": "pnpm@9.15.4",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "LLM-first diagrams with deterministic layout and practical manual controls.",
   "main": "index.js",
   "directories": {
@@ -35,5 +37,5 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 }

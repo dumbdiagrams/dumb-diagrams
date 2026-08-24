@@ -1,10 +1,11 @@
 {
   "name": "@dumb-diagrams/grammar-aws",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "MIT",
-  "files": ["dist"],
-  "publishConfig": { "access": "public" },
-  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -21,5 +22,6 @@
   },
   "devDependencies": {
     "typescript": "^5.7.3"
-  }
+  },
+  "type": "module"
 }

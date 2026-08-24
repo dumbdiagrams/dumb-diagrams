@@ -18,7 +18,6 @@ describe("init options", () => {
       projectName: "Payments Platform",
       diagramName: "architecture",
       description: undefined,
-      prompted: true,
     });
   });
 
@@ -35,7 +34,6 @@ describe("init options", () => {
       projectName: "Billing Architecture",
       diagramName: "system-overview",
       description: "Event-driven billing platform.",
-      prompted: false,
     });
   });
 
@@ -43,7 +41,6 @@ describe("init options", () => {
     const result = await resolveInitOptions(args(["existing-name"]), { interactive: true });
     expect(result.projectDirectory).toBe("existing-name");
     expect(result.projectName).toBeUndefined();
-    expect(result.prompted).toBe(false);
   });
 
   it("keeps timestamp naming as the non-interactive fallback", async () => {

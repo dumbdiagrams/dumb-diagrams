@@ -18,11 +18,13 @@ import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
 import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/render";
 
 import { createCliUi } from "./cli-ui.js";
+import { renderInitTemplate } from "./init-templates.js";
 import { displayNameForDirectory, resolveInitOptions } from "./init-options.js";
 import { resolveStudioEditorRoot, startStudioServer } from "./studio-server.js";
+import { readCliVersion } from "./version.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const VERSION = "1.0.0";
+const VERSION = readCliVersion();
 const ui = createCliUi();
 
 interface ParsedArgs {
@@ -47,6 +49,11 @@ const PROJECT_REFERENCE_FILES = [
 
 const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open", "yes"]);
 
+const FIXTURES: Record<string, () => ReturnType<typeof createAsyncDocsFixture>> = {
+  "async-docs": createAsyncDocsFixture,
+  "transfer-hub": createTransferHubFixture,
+};
+
 export async function runCli(argv: string[]): Promise<number> {
   const [command, ...rawArgs] = argv;
   const parsed = parseArgs(rawArgs);
@@ -70,9 +77,6 @@ export async function runCli(argv: string[]): Promise<number> {
     case "studio":
     case "open":
       await cmdStudio(parsed);
-      return 0;
-    case "dev":
-      await cmdStudio(parsed, true);
       return 0;
     case "render":
       return await cmdRender(parsed);
@@ -147,12 +151,9 @@ async function promptProjectName(defaultName: string): Promise<string> {
   }
 }
 
-async function cmdStudio(args: ParsedArgs, legacyDevSyntax = false): Promise<void> {
+async function cmdStudio(args: ParsedArgs): Promise<void> {
   const input = args.positionals[0] ?? "diagrams/architecture.dgm";
-  const legacyPort = legacyDevSyntax && args.positionals[1] && /^\d+$/.test(args.positionals[1])
-    ? Number(args.positionals[1])
-    : undefined;
-  const port = flagNumber(args, "port", legacyPort ?? 4788);
+  const port = flagNumber(args, "port", 4788);
   const host = flagString(args, "host", "127.0.0.1");
   const handle = await startStudioServer({
     filePath: resolveStudioInput(input),
@@ -173,6 +174,10 @@ async function cmdStudio(args: ParsedArgs, legacyDevSyntax = false): Promise<voi
 
 async function cmdRender(args: ParsedArgs): Promise<number> {
   const input = args.positionals[0];
+  if (!input) {
+    console.error(ui.error("render requires a .dgm file path"));
+    return 1;
+  }
   const output = flagString(args, "output", args.positionals[1] ?? "output.svg");
   const doc = loadDocument(input);
   const result = compileDiagram(doc);
@@ -191,7 +196,11 @@ async function cmdRender(args: ParsedArgs): Promise<number> {
 }
 
 function cmdCheck(args: ParsedArgs): number {
-  const target = args.positionals[0] ?? "examples/src";
+  const target = args.positionals[0];
+  if (!target) {
+    console.error(ui.error("validate requires a .dgm file or directory path"));
+    return 1;
+  }
   const root = resolve(process.cwd(), target);
   if (!existsAsFileOrDirectory(root)) {
     console.error(ui.error(`Path not found: ${target}`));
@@ -277,139 +286,11 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   console.log(ui.info("folder", projectRoot));
   console.log(ui.info("diagram", `diagrams/${diagramFile}`));
   console.log("");
-  const diagramsReadme = [
-    "# Project diagrams",
-    "",
-    "This is the writable output folder for the project. Keep one independent",
-    "`.dgm` source file per architecture or workflow.",
-    "",
-    "## File policy",
-    "",
-    `- \`${diagramFile}\` is only the starter diagram. Do not reuse it for a new`,
-    "  request unless the user explicitly asks you to revise that file.",
-    "- For a new request, create a new descriptive kebab-case file such as",
-    "  `basic-web-app.dgm` or `event-driven-orders.dgm`.",
-    "- If the user names an existing diagram, edit that exact file and preserve",
-    "  its intentional layout and source structure.",
-    "- Never overwrite another existing `.dgm` just because it is the first file",
-    "  in the directory.",
-    "",
-    "Open the folder in Studio to choose among the project diagrams:",
-    "",
-    "```bash",
-    "npx dumbdiagrams@latest studio diagrams",
-    "```",
-    "",
-  ].join("\n");
-  const instructions = [
-    "# Dumb Diagrams project",
-    "",
-    "This directory is a local, source-first diagram project. Every `*.dgm` file",
-    "is an independent source of truth. Dumb Diagrams Studio is only a visual",
-    "editor for those source files.",
-    "",
-    "## Project structure",
-    "",
-    "```text",
-    "diagrams/                                 # writable diagram source folder",
-    `diagrams/${diagramFile.padEnd(32)} # starter diagram only`,
-    "diagrams/<name>.dgm                        # one file per new diagram",
-    "diagrams/README.md                         # file policy and naming rules",
-    "DUMB_DIAGRAMS.md                         # workflow and source conventions",
-    "AGENTS.md / CLAUDE.md                    # pointers for coding agents",
-    "examples/README.md                       # style guide and prompt recipe",
-    "examples/*.dgm                           # rendered-structure references",
-    "examples/prompts/*.md                    # matching natural-language prompts",
-    "CATALOG.md                                # searchable human-readable icon catalog",
-    "CATALOG.json                             # machine-readable canonical catalog",
-    "```",
-    "",
-    "The files under `examples/` are read-only references. Authored diagrams belong",
-    "under `diagrams/`; do not edit the examples to satisfy a new request.",
-    "",
-    "## Required reading order",
-    "",
-    "1. Read this file completely.",
-    "2. Read `examples/README.md` for the deterministic prompt and source style.",
-    "3. Choose the closest matching pair: one file in `examples/prompts/` and its",
-    "   corresponding `.dgm` file in `examples/`.",
-    "4. When choosing service icons, search `CATALOG.md` or `CATALOG.json` for the",
-    "   exact canonical type. Never invent an icon type from a display label.",
-    "5. Inspect `diagrams/` before editing. If the user names an existing `.dgm`,",
-    "   edit that exact file. Otherwise create a new `diagrams/<name>.dgm` file.",
-    "6. Use the closest example pair as a style reference without overwriting it.",
-    "",
-    "## Agent workflow",
-    "",
-    "1. Read `diagrams/README.md` and list the existing files in `diagrams/`.",
-    "2. For a new diagram, create a new descriptive `.dgm` file in `diagrams/`;",
-    `   do not overwrite \`${diagramFile}\` or another existing file by default.`,
-    "3. For a requested revision, edit only the named existing file.",
-    "4. Run `npx dumbdiagrams@latest validate diagrams` to validate every project diagram.",
-    "5. Run `npx dumbdiagrams@latest studio diagrams/<name>.dgm` to inspect one file,",
-    "   or `npx dumbdiagrams@latest studio diagrams` to choose a project file.",
-    "6. Render a review artifact with `npx dumbdiagrams@latest render diagrams/<name>.dgm --output renders/<name>.svg`.",
-    "",
-    "## Source conventions",
-    "",
-    "- Start with `diagram <id>`, `grammar`, `flow`, and `title`.",
-    "- Declare actors and resources inside explicit cloud, account, region, network,",
-    "  group, zone, and subnet boundaries.",
-    "- Use stable ids for resources, groups, and edges. Use exact labels when the",
-    "  request specifies them; do not invent plausible services or relationships.",
-    "- The resource/group type is the icon identity. The quoted label is display",
-    "  text only. Use an exact canonical type from `CATALOG.md`; do not use a",
-    "  guessed type, a display name, or a legacy alias when a canonical type exists.",
-    "- Use `icon ...` only for an explicitly embedded/custom asset. It is not how",
-    "  normal AWS, Azure, GCP, or cloud-agnostic catalog icons are selected.",
-    "- Number the primary flow with `step` edge metadata. Use `from` and `to` hints",
-    "  when the intended connector sides matter, and use dashed peer edges for",
-    "  supporting relationships.",
-    "- Preserve the document's view and layout information when making semantic",
-    "  changes so manual placement survives.",
-    "- Prefer automatic layout: do not add a `view` block, manual node positions,",
-    "  or manual edge routes unless the request explicitly requires them.",
-    "- A new diagram means a new `.dgm` file under `diagrams/`; never silently",
-    "  replace an existing diagram with unrelated architecture.",
-    "",
-    "## Prompt recipe",
-    "",
-    "Write requests in this order: title and grammar; composition and hierarchy;",
-    "connections and numbered stages; then routing constraints. The reference",
-    "prompts in `examples/prompts/` are complete examples of this format.",
-    "",
-  ].join("\n");
-  const agentPointer = "# Diagram project instructions\n\nRead `DUMB_DIAGRAMS.md` completely. Then read `diagrams/README.md`, `examples/README.md`, and the closest matching pair in `examples/prompts/` and `examples/` before creating or editing any `.dgm` files. New diagrams belong in a new file under `diagrams/`; do not overwrite an existing diagram unless the user names it.\n";
-  const readme = [
-    `# ${projectName}`,
-    "",
-    ...(description ? [description, ""] : []),
-    "A local Dumb Diagrams project. Authored `.dgm` files live in `diagrams/`,",
-    "one diagram per file. The `examples/` directory contains matching source",
-    "and prompt references for coding agents.",
-    "",
-    "## Structure",
-    "",
-    `- \`diagrams/${diagramFile}\` — starter diagram only`,
-    "- `diagrams/<name>.dgm` — one new file per additional diagram",
-    "- `diagrams/README.md` — output-folder file policy",
-    "- `DUMB_DIAGRAMS.md` — required instructions and source conventions",
-    "- `examples/*.dgm` — reference diagram source files",
-    "- `examples/prompts/*.md` — prompts that produced the reference diagrams",
-    "- `CATALOG.md` / `CATALOG.json` — canonical resource and group icon types",
-    "",
-    "Open the visual editor with:",
-    "",
-    "```bash",
-    "npx dumbdiagrams@latest studio diagrams",
-    "```",
-    "",
-    "Ask your coding agent to read `DUMB_DIAGRAMS.md` and `diagrams/README.md`",
-    "completely. For a new request, ask it to create a new file under `diagrams/`;",
-    "for a revision, name the exact existing `.dgm` file. When adding services,",
-    "search `CATALOG.md` for the canonical type before writing the source.",
-    "",
-  ].join("\n");
+  const templateVars = { projectName, diagramFile, description };
+  const diagramsReadme = renderInitTemplate("diagrams-readme.md", templateVars);
+  const instructions = renderInitTemplate("DUMB_DIAGRAMS.md", templateVars);
+  const agentPointer = renderInitTemplate("AGENTS.md", templateVars);
+  const readme = renderInitTemplate("README.md", templateVars);
 
   const catalogReference = createCatalogReference();
   const catalogMarkdownPath = join(projectRoot, "CATALOG.md");
@@ -420,7 +301,7 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     [diagramPath, diagramSource],
     [instructionsPath, instructions],
     [agentsPath, agentPointer],
-    [claudePath, agentPointer],
+    [claudePath, renderInitTemplate("CLAUDE.md", templateVars)],
     [readmePath, readme],
     [catalogMarkdownPath, catalogReference.markdown],
     [catalogJsonPath, catalogReference.json],
@@ -604,11 +485,7 @@ function resolveProjectExample(fileName: string): string | undefined {
 
 async function cmdFixtures(args: ParsedArgs): Promise<number> {
   const name = args.positionals[0] ?? "async-docs";
-  const fixtures: Record<string, () => ReturnType<typeof createAsyncDocsFixture>> = {
-    "async-docs": createAsyncDocsFixture,
-    "transfer-hub": createTransferHubFixture,
-  };
-  const fixture = fixtures[name];
+  const fixture = FIXTURES[name];
   if (!fixture) {
     console.error(ui.error(`Unknown fixture: ${name}. Choose async-docs or transfer-hub.`));
     return 1;
@@ -657,13 +534,8 @@ function checkFile(filePath: string): CheckResult {
   }
 }
 
-function loadDocument(input?: string) {
-  if (!input) return createAsyncDocsFixture();
-  const fixtures: Record<string, () => ReturnType<typeof createAsyncDocsFixture>> = {
-    "async-docs": createAsyncDocsFixture,
-    "transfer-hub": createTransferHubFixture,
-  };
-  if (fixtures[input]) return fixtures[input]!();
+function loadDocument(input: string) {
+  if (FIXTURES[input]) return FIXTURES[input]!();
   return parseDgm(readFileSync(resolve(process.cwd(), input), "utf8"));
 }
 

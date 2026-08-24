@@ -1,5 +1,5 @@
-import { createEmptyDocument } from "@dumb-diagrams/core";
-import type { DiagramDocument } from "@dumb-diagrams/core";
+import { createEmptyDocument } from "./document.js";
+import type { DiagramDocument } from "./types.js";
 
 export function createAsyncDocsFixture(): DiagramDocument {
   const doc = createEmptyDocument("async-docs");
