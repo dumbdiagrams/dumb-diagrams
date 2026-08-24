@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { catalogIconUrl, type CatalogEntry } from "@dumb-diagrams/catalog";
+import { catalogIconUrl, type CatalogEntry } from "@dumb-diagrams/runtime/catalog";
 
 import {
   CATALOG_DRAG_MIME,

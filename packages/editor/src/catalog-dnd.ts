@@ -1,4 +1,4 @@
-import type { CatalogEntry } from "@dumb-diagrams/catalog";
+import type { CatalogEntry } from "@dumb-diagrams/runtime/catalog";
 
 export const CATALOG_DRAG_MIME = "application/x-dumb-diagrams-catalog";
 

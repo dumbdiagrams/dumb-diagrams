@@ -1,4 +1,4 @@
-import type { NodeGeom, Point, Rect } from "@dumb-diagrams/core";
+import type { NodeGeom, Point, Rect } from "@dumb-diagrams/runtime/core";
 
 const ICON_HIT_PADDING = 4;
 const LABEL_HIT_PADDING_X = 4;

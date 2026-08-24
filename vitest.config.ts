@@ -5,11 +5,12 @@ export default defineConfig({
     include: ["packages/**/src/**/*.test.ts"],
     coverage: {
       provider: "v8",
+      reportsDirectory: ".artifacts/coverage",
       reporter: ["text", "lcov"],
       include: [
         "packages/cli/src/**/*.ts",
-        "packages/core/src/**/*.ts",
-        "packages/render/src/**/*.ts",
+        "packages/runtime/src/core/**/*.ts",
+        "packages/runtime/src/render/**/*.ts",
       ],
       exclude: ["**/*.test.ts"],
       thresholds: {

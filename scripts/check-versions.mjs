@@ -12,14 +12,20 @@ const packages = readdirSync(packagesRoot, { withFileTypes: true })
 const versions = packages.map((name) => {
   const filename = join(packagesRoot, name, "package.json");
   const manifest = JSON.parse(readFileSync(filename, "utf8"));
-  return { name: manifest.name, version: manifest.version };
+  return { name: manifest.name, version: manifest.version, license: manifest.license };
 });
 const uniqueVersions = new Set(versions.map((entry) => entry.version));
 const version = [...uniqueVersions][0];
+const rootLicense = JSON.parse(readFileSync(join(rootPath, "package.json"), "utf8")).license;
 
 if (uniqueVersions.size !== 1 || !version || !/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) {
   console.error("Workspace package versions must be one valid SemVer value:");
   for (const entry of versions) console.error(`- ${entry.name}: ${entry.version ?? "missing"}`);
+  process.exit(1);
+}
+if (!rootLicense || versions.some((entry) => entry.license !== rootLicense)) {
+  console.error(`Workspace package licenses must match the root license (${rootLicense ?? "missing"}):`);
+  for (const entry of versions) console.error(`- ${entry.name}: ${entry.license ?? "missing"}`);
   process.exit(1);
 }
 
@@ -42,4 +48,5 @@ if (changelogErrors.length) {
 }
 
 console.log(`OK ${versions.length} workspace packages at ${version}`);
+console.log(`OK workspace package licenses match ${rootLicense}`);
 console.log(`OK changelog and release docs reference ${tag}`);

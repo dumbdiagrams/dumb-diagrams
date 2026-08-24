@@ -8,8 +8,8 @@ import {
   type CatalogEntry,
   type CatalogProviderFilter,
   type UserCloudProvider,
-} from "@dumb-diagrams/catalog";
-import { DIAGRAM_LIMITS, type GroupKind } from "@dumb-diagrams/core";
+} from "@dumb-diagrams/runtime/catalog";
+import { DIAGRAM_LIMITS, type GroupKind } from "@dumb-diagrams/runtime/core";
 
 import { CatalogAssetCard } from "./CatalogAssetCard";
 

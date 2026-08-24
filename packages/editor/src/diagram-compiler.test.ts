@@ -1,9 +1,9 @@
 import {
   createAsyncDocsFixture,
   getDefaultView,
-} from "@dumb-diagrams/core";
-import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
-import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/route";
+} from "@dumb-diagrams/runtime/core";
+import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
 import { compileDiagramSource } from "./diagram-compiler";

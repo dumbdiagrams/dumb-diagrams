@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { DIAGRAM_LIMITS, characterLength, hasErrors, utf8ByteLength, validateDocument } from "@dumb-diagrams/core";
-import { getCatalogMap } from "@dumb-diagrams/catalog";
-import { parseDgm } from "@dumb-diagrams/dsl";
-import { sanitizeSvg } from "@dumb-diagrams/render";
+import { DIAGRAM_LIMITS, characterLength, hasErrors, utf8ByteLength, validateDocument } from "@dumb-diagrams/runtime/core";
+import { getCatalogMap } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { sanitizeSvg } from "@dumb-diagrams/runtime/render";
 
 import type { Viewport } from "../canvas/CanvasStage";
 
@@ -15,16 +15,6 @@ export type DocumentOrigin =
   | "recovery"
   | "duplicate"
   | "file";
-
-export type DocumentRef =
-  | { kind: "browser"; id: string }
-  | { kind: "file"; path: string };
-
-export interface DocumentSourceAdapter {
-  load(ref: DocumentRef): Promise<string>;
-  save(ref: DocumentRef, source: string): Promise<void>;
-  watch?(ref: DocumentRef, onChange: (source: string) => void): () => void;
-}
 
 export interface WorkspaceTab {
   id: string;
@@ -671,33 +661,6 @@ export function useWorkspace(options: WorkspaceOptions) {
     setTabFilename,
   };
 }
-
-export const browserDocumentAdapter: DocumentSourceAdapter = {
-  async load(ref) {
-    if (ref.kind !== "browser") {
-      throw new Error("Filesystem documents are not available in browser Studio mode.");
-    }
-    const workspace = await loadPersistedWorkspace();
-    const tab = workspace?.tabs.find((candidate) => candidate.id === ref.id);
-    if (!tab) throw new Error(`Document ${ref.id} was not found.`);
-    return tab.source;
-  },
-  async save(ref, source) {
-    if (ref.kind !== "browser") {
-      throw new Error("Filesystem documents are not available in browser Studio mode.");
-    }
-    if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) throw new Error("Diagram exceeds the 1 MiB source limit");
-    const workspace = await loadPersistedWorkspace();
-    if (!workspace) throw new Error("The browser workspace has not been initialized.");
-    const next = {
-      ...workspace,
-      tabs: workspace.tabs.map((tab) => tab.id === ref.id
-        ? { ...tab, source, savedSource: source }
-        : tab),
-    };
-    await persistWorkspace(next);
-  },
-};
 
 function createHistory(): HistoryState {
   return { past: [], future: [], transactionStart: null };

@@ -17,7 +17,7 @@ export default defineConfig({
         // its own cadence. Keep it cacheable and out of the editor bootstrap
         // chunk so UI fixes do not invalidate a multi-megabyte entry file.
         manualChunks(id) {
-          if (id.startsWith(resolve(__dirname, "../catalog/src"))) return "catalog-index";
+          if (id.startsWith(resolve(__dirname, "../runtime/src/catalog"))) return "catalog-index";
           return undefined;
         },
       },
@@ -25,13 +25,13 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@dumb-diagrams/core": resolve(__dirname, "../core/src/index.ts"),
-      "@dumb-diagrams/catalog": resolve(__dirname, "../catalog/src/index.ts"),
-      "@dumb-diagrams/dsl": resolve(__dirname, "../dsl/src/index.ts"),
-      "@dumb-diagrams/layout": resolve(__dirname, "../layout/src/index.ts"),
-      "@dumb-diagrams/render": resolve(__dirname, "../render/src/browser.ts"),
-      "@dumb-diagrams/route": resolve(__dirname, "../route/src/index.ts"),
-      "@dumb-diagrams/grammar-aws": resolve(__dirname, "../grammar-aws/src/index.ts"),
+      "@dumb-diagrams/runtime/core": resolve(__dirname, "../runtime/src/core/index.ts"),
+      "@dumb-diagrams/runtime/catalog": resolve(__dirname, "../runtime/src/catalog/index.ts"),
+      "@dumb-diagrams/runtime/dsl": resolve(__dirname, "../runtime/src/dsl/index.ts"),
+      "@dumb-diagrams/runtime/layout": resolve(__dirname, "../runtime/src/layout/index.ts"),
+      "@dumb-diagrams/runtime/render": resolve(__dirname, "../runtime/src/render/browser.ts"),
+      "@dumb-diagrams/runtime/route": resolve(__dirname, "../runtime/src/route/index.ts"),
+      "@dumb-diagrams/runtime/grammar-aws": resolve(__dirname, "../runtime/src/grammar-aws/index.ts"),
     },
   },
   server: {

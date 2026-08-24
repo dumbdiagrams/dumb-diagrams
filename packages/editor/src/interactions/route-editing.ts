@@ -1,7 +1,7 @@
-import type { Point, Rect } from "@dumb-diagrams/core";
+import type { Point, Rect } from "@dumb-diagrams/runtime/core";
 
-import { nearestPortAnchor } from "@dumb-diagrams/core";
-import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
+import { nearestPortAnchor } from "@dumb-diagrams/runtime/core";
+import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 /**
  * Move an orthogonal turn without leaving either adjoining segment behind.

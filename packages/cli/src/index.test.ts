@@ -2,15 +2,15 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { printDgm } from "@dumb-diagrams/dsl";
-import { createEmptyDocument } from "@dumb-diagrams/core";
+import { printDgm } from "@dumb-diagrams/runtime/dsl";
+import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
 import { describe, expect, it } from "vitest";
 
 import { runCli } from "./index.js";
 import { readCliVersion } from "./version.js";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
-const exampleDiagram = join(ROOT, "examples/src/aws-high-availability-web-app.dgm");
+const exampleDiagram = join(ROOT, "examples/diagrams/aws-high-availability-web-app.dgm");
 
 describe("runCli", () => {
   it("prints help and version", async () => {

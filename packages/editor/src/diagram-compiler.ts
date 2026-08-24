@@ -1,10 +1,10 @@
-import type { DiagramDocument, LayoutResult, ValidationIssue } from "@dumb-diagrams/core";
-import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/core";
-import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/catalog";
-import { parseDgm } from "@dumb-diagrams/dsl";
-import { layoutDocument } from "@dumb-diagrams/layout";
-import { renderSvg } from "@dumb-diagrams/render";
-import { attachRoutes, routeEdges } from "@dumb-diagrams/route";
+import type { DiagramDocument, LayoutResult, ValidationIssue } from "@dumb-diagrams/runtime/core";
+import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/runtime/core";
+import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { layoutDocument } from "@dumb-diagrams/runtime/layout";
+import { renderSvg } from "@dumb-diagrams/runtime/render";
+import { attachRoutes, routeEdges } from "@dumb-diagrams/runtime/route";
 
 import { snapLayoutToGrid } from "./grid";
 

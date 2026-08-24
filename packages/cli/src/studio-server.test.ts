@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
-import { createEmptyDocument } from "@dumb-diagrams/core";
-import { printDgm } from "@dumb-diagrams/dsl";
+import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
+import { printDgm } from "@dumb-diagrams/runtime/dsl";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { startStudioServer, type StudioServerHandle } from "./studio-server.js";

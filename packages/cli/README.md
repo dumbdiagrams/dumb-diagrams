@@ -1,19 +1,22 @@
 # dumbdiagrams
 
-Local, source-first diagram Studio for agent-generated `.dgm` files.
+**LLM-first architecture diagrams that are hard to get wrong.**
+
+Local CLI and Studio for agent-generated `.dgm` source files — deterministic layout, validated catalog types, human controls when you need them.
+
+[![npm version](https://img.shields.io/npm/v/dumbdiagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/dumbdiagrams)
+[![Node.js](https://img.shields.io/node/v/dumbdiagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](../../LICENSE)
 
 Requires Node.js 24 or newer.
 
+## Quick start
+
 ```bash
 npx dumbdiagrams@latest init --open-editor
-# Prompts for a project name and opens it in your editor.
-# Run the printed `Next:` command to open its diagrams folder in Studio.
 ```
 
-When no directory or name is supplied in an interactive terminal, `init` asks
-what the project should be called. The answer becomes the display name and a
-safe kebab-case folder name. For scripted use, choose the values explicitly or
-use `--yes` for a timestamped fallback:
+When no directory or name is supplied in an interactive terminal, `init` asks what the project should be called. For scripted use, pass values explicitly or use `--yes` for a timestamped fallback:
 
 ```bash
 dumbdiagrams init --name "Payments Platform" --diagram system-overview
@@ -22,19 +25,47 @@ dumbdiagrams init --name payments --description "Event-driven billing system."
 dumbdiagrams init --yes
 ```
 
-The initializer creates a starter source in `diagrams/` and local instructions
-that coding agents should read before editing it. Each new diagram should be a
-new `.dgm` file in that folder; Studio can select among the project files. It
-also copies the built-in example diagrams and their matching prompts into
-`examples/` so an agent can inspect both the requested structure and the
-resulting source. Studio watches the selected project file and saves validated
-changes back to disk.
+## What `init` creates
 
-It also creates `CATALOG.md` and `CATALOG.json`. Agents should search those
-files for canonical resource/group types before adding service icons; a quoted
-label changes display text but does not select an icon.
+- `diagrams/` — starter `.dgm` source (one file per diagram)
+- `DUMB_DIAGRAMS.md`, `AGENTS.md`, `CLAUDE.md` — agent instructions
+- `CATALOG.md` / `CATALOG.json` — canonical resource and group types
+- `examples/` — bundled source/prompt pairs for style reference
 
-Use `--editor cursor` or `--editor code` to select a specific editor command.
-Without `--editor`, `--open-editor` tries Cursor, VS Code, Codium, Windsurf,
-and Zed in that order. The flag is opt-in so scripted initialization remains
-headless-friendly.
+Use `--editor cursor` or `--editor code` to pick an editor. Without `--editor`, `--open-editor` tries Cursor, VS Code, Codium, Windsurf, and Zed in that order.
+
+## Commands
+
+```bash
+dumbdiagrams help                         # full command reference
+dumbdiagrams studio diagrams              # local Studio
+dumbdiagrams validate diagrams            # check every .dgm in a folder
+dumbdiagrams render diagrams/foo.dgm --output foo.svg
+dumbdiagrams format diagrams/foo.dgm      # print canonical source
+```
+
+Run `dumbdiagrams help` for init, studio, and render flags.
+
+## Test the tarball locally
+
+```bash
+pnpm install
+pnpm build
+mkdir -p .artifacts/packages
+pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+
+export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
+npx --yes --package="$ARTIFACT" dumbdiagrams init ./preview-project --yes
+npx --yes --package="$ARTIFACT" dumbdiagrams validate ./preview-project/diagrams
+```
+
+`pnpm smoke:package` from the repository root exercises the same artifact and
+rebuilds the AGPL corresponding-source snapshot inside the tarball.
+
+## License and source
+
+Licensed under the [GNU AGPL v3.0 only](../../LICENSE). The npm artifact includes
+the corresponding buildable source snapshot under `dist/source/`, including vendored
+catalog inputs under `assets/catalog/`. A `registry.npmrc` file ships instead of
+`.npmrc` (npm omits dotfiles from tarballs); `pnpm install` restores it automatically
+via `preinstall`.

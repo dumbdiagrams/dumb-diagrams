@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createEmptyDocument } from "@dumb-diagrams/core";
+import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
 
 import { filenameWithExtension, getExportBounds, sanitizeFilename } from "./export-actions";
 

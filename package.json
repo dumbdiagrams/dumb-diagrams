@@ -3,24 +3,29 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": ">=24",
+    "pnpm": ">=11.23.0 <12"
   },
   "scripts": {
-    "generate:catalog": "node scripts/generate-catalog.mjs",
+    "preinstall": "node scripts/ensure-registry.mjs",
     "icons:check": "node scripts/icon-workflow.mjs check",
     "icons:update": "node scripts/icon-workflow.mjs update",
-    "icons:build": "node scripts/icon-workflow.mjs build",
-    "sync:icons": "node scripts/sync-icon-packs.mjs",
-    "build": "pnpm icons:build && pnpm -r run build",
+    "catalog:generate": "node scripts/generate-catalog.mjs",
+    "catalog:stage": "node scripts/stage-catalog-assets.mjs",
+    "icons:build": "pnpm catalog:generate && pnpm catalog:stage",
+    "build": "pnpm catalog:generate && pnpm --filter @dumb-diagrams/runtime build && pnpm --filter @dumb-diagrams/editor build && pnpm --filter dumbdiagrams build",
+    "pretest": "pnpm catalog:stage",
     "test": "vitest run",
+    "pretest:coverage": "pnpm catalog:stage",
     "test:coverage": "vitest run --coverage",
     "typecheck": "pnpm --filter @dumb-diagrams/editor typecheck",
     "check:versions": "node scripts/check-versions.mjs",
-    "check:release": "pnpm check:versions && pnpm build && pnpm test:coverage && pnpm typecheck && pnpm check && pnpm exec playwright install chromium && pnpm test:e2e && pnpm smoke:package",
+    "check:dependencies": "node scripts/check-dependencies.mjs",
+    "check:release": "pnpm check:versions && pnpm check:dependencies && pnpm build && pnpm test:coverage && pnpm typecheck && pnpm check && pnpm exec playwright install chromium && pnpm test:e2e && pnpm smoke:package",
     "smoke:package": "node scripts/smoke-cli-package.mjs",
     "preflight:publish": "node scripts/preflight-npm.mjs",
     "test:e2e": "playwright test",
-    "check": "node packages/cli/dist/index.js check examples/src",
+    "check": "node packages/cli/dist/index.js check examples/diagrams",
     "render": "node packages/cli/dist/index.js render",
     "dev": "pnpm --filter @dumb-diagrams/editor dev",
     "dev:cli": "node packages/cli/dist/index.js studio"
@@ -32,7 +37,7 @@
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   },
-  "packageManager": "pnpm@9.15.4",
-  "description": "LLM-first diagrams with deterministic layout and practical manual controls.",
-  "license": "MIT"
+  "packageManager": "pnpm@11.23.0",
+  "description": "LLM-first architecture diagrams that are hard to get wrong: deterministic layout, validated source, local Studio.",
+  "license": "AGPL-3.0-only"
 }

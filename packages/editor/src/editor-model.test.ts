@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/core";
-import { getCatalogEntry } from "@dumb-diagrams/catalog";
-import { layoutDocument } from "@dumb-diagrams/layout";
-import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
+import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
+import { layoutDocument } from "@dumb-diagrams/runtime/layout";
+import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import {
   addAnnotation,

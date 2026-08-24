@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/core";
-import { layoutDocument } from "@dumb-diagrams/layout";
+import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 
 import { GRID_SIZE, outsideCanvasInsertionPoint, snapLayoutToGrid } from "./grid.js";
 

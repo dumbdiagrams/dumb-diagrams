@@ -12,10 +12,10 @@ import {
   createTransferHubFixture,
   hasErrors,
   validateDocument,
-} from "@dumb-diagrams/core";
-import { getCatalogEntryByBrowserPath, getCatalogMap, listAssets } from "@dumb-diagrams/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
-import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/render";
+} from "@dumb-diagrams/runtime/core";
+import { getCatalogEntryByBrowserPath, getCatalogMap, listAssets } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/runtime/render";
 
 import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
@@ -478,7 +478,7 @@ function resolveProjectExample(fileName: string): string | undefined {
     resolve(__dirname, "templates", "examples", fileName),
     resolve(__dirname, "..", "templates", "examples", fileName),
     resolve(__dirname, "..", "..", "..", "examples", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", "src", fileName),
+    resolve(__dirname, "..", "..", "..", "examples", "diagrams", fileName),
   ];
   return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
 }
@@ -496,7 +496,7 @@ async function cmdFixtures(args: ParsedArgs): Promise<number> {
     printIssues("Fixture errors", result.issues);
     return 1;
   }
-  const output = resolve(process.cwd(), flagString(args, "output", `fixtures/golden/${name}.svg`));
+  const output = resolve(process.cwd(), flagString(args, "output", `.artifacts/golden/${name}.svg`));
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, await renderPortableSvg(doc, result.layout!, { loadCatalogSvg }), "utf8");
   console.log(ui.success(`Rendered ${relativeForLog(output)}`));

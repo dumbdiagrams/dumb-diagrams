@@ -1,2 +1,15 @@
 packages:
   - "packages/*"
+
+nodeLinker: isolated
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+autoInstallPeers: false
+strictPeerDependencies: true
+resolvePeersFromWorkspaceRoot: false
+engineStrict: true
+pmOnFail: error
+minimumReleaseAge: 1440
+strictDepBuilds: true
+allowBuilds:
+  esbuild: true

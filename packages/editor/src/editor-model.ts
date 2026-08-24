@@ -18,11 +18,11 @@ import type {
   Side,
   TextAlign,
   TextFontFamily,
-} from "@dumb-diagrams/core";
-import { DIAGRAM_LIMITS, getDefaultView, hasErrors, normalizePortOffset, utf8ByteLength, validateDocument } from "@dumb-diagrams/core";
-import { getCatalogEntry, getCatalogMap, type CatalogEntry } from "@dumb-diagrams/catalog";
-import { sanitizeSvg } from "@dumb-diagrams/render";
-import { normalizeOrthogonalRoute } from "@dumb-diagrams/route";
+} from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView, hasErrors, normalizePortOffset, utf8ByteLength, validateDocument } from "@dumb-diagrams/runtime/core";
+import { getCatalogEntry, getCatalogMap, type CatalogEntry } from "@dumb-diagrams/runtime/catalog";
+import { sanitizeSvg } from "@dumb-diagrams/runtime/render";
+import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import { snapCoordinate } from "./grid.js";
 
@@ -1454,10 +1454,6 @@ function legacyClipboardEdges(items: Array<Record<string, unknown>>) {
 
 function legacyClipboardAnnotations(items: Array<Record<string, unknown>>) {
   return items.filter((item) => item.kind === "annotation" && item.annotation).map((item) => ({ annotation: item.annotation as DiagramDocument["annotations"][number], place: item.place as PlaceOverride }));
-}
-
-export function createOrthogonalRoute(points: Point[]): Point[] {
-  return normalizeOrthogonalRoute(points);
 }
 
 function boundsFor(

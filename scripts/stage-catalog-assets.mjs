@@ -15,7 +15,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
-const manifestPath = join(ROOT, "packages/catalog/src/generated/manifest.json");
+const manifestPath = join(ROOT, "packages/runtime/src/catalog/generated/manifest.json");
 const publicRoot = join(ROOT, "packages/editor/public");
 const assetRoot = join(publicRoot, "catalog-icons");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));

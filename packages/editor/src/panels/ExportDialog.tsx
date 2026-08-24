@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { DiagramDocument, LayoutResult } from "@dumb-diagrams/core";
+import type { DiagramDocument, LayoutResult } from "@dumb-diagrams/runtime/core";
 
 import type { Selection } from "../editor-model";
 import {

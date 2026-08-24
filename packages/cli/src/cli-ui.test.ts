@@ -22,4 +22,9 @@ describe("CLI presentation", () => {
     expect(ui.error("Invalid source")).toBe("  ✖ Invalid source");
     expect(ui.info("studio", "http://127.0.0.1:4788")).toBe("  studio   http://127.0.0.1:4788");
   });
+
+  it("uses the LLM-first brand tagline", () => {
+    const ui = createCliUi({ color: false });
+    expect(ui.brand()).toContain("LLM-first architecture diagrams that are hard to get wrong");
+  });
 });

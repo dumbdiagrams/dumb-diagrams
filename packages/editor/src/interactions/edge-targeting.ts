@@ -1,7 +1,7 @@
-import type { NodeGeom, Point, RoutedEdge, Side } from "@dumb-diagrams/core";
+import type { NodeGeom, Point, RoutedEdge, Side } from "@dumb-diagrams/runtime/core";
 
-import { nearestPortAnchor, portPoint } from "@dumb-diagrams/core";
-import { projectPointToPolyline } from "@dumb-diagrams/route";
+import { nearestPortAnchor, portPoint } from "@dumb-diagrams/runtime/core";
+import { projectPointToPolyline } from "@dumb-diagrams/runtime/route";
 
 const EDGE_HIT_RADIUS = 16;
 

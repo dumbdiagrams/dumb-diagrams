@@ -1,5 +1,5 @@
-import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/core";
-import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText } from "@dumb-diagrams/core";
+import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText } from "@dumb-diagrams/runtime/core";
 
 export type ExportFormat =
   | "png"

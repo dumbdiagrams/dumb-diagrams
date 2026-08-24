@@ -14,10 +14,10 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
 
-import { createEmptyDocument, hasErrors, validateDocument } from "@dumb-diagrams/core";
-import { getCatalogMap } from "@dumb-diagrams/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
-import { compileDiagram } from "@dumb-diagrams/render";
+import { createEmptyDocument, hasErrors, validateDocument } from "@dumb-diagrams/runtime/core";
+import { getCatalogMap } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { compileDiagram } from "@dumb-diagrams/runtime/render";
 
 const MAX_REQUEST_BYTES = 1_250_000;
 const STUDIO_EXTENSION = ".dgm";

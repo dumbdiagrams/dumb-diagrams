@@ -23,8 +23,6 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,6 +35,12 @@ jobs:
 
       - name: Check synchronized package versions
         run: pnpm check:versions
+
+      - name: Check dependency declarations
+        run: pnpm check:dependencies
+
+      - name: Check catalog inventory
+        run: pnpm icons:check
 
       - name: Build all packages and editor
         run: pnpm build
@@ -61,8 +65,6 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

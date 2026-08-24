@@ -19,7 +19,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
-const LOCK_PATH = join(ROOT, "icon-sources.lock.json");
+const CATALOG_SOURCE_ROOT = join(ROOT, "assets/catalog/sources");
+const LOCK_PATH = join(ROOT, "assets/catalog/sources.lock.json");
 const PUBLIC_ROOT = join(ROOT, "packages/editor/public");
 const lock = JSON.parse(readFileSync(LOCK_PATH, "utf8"));
 const provider = process.argv[2];
@@ -96,32 +97,34 @@ function validateBrowserPath(browserPath, label) {
 const SOURCE_ICON_LIBRARIES = [
   {
     provider: "aws",
-    root: "aws-icons/Architecture-Service-Icons_07312026",
-    include: (file) => file.endsWith("_64.svg"),
+    root: "assets/catalog/sources/aws",
+    include: (file) =>
+      (file.includes("Architecture-Service-Icons_07312026") && file.endsWith("_64.svg")) ||
+      (file.includes("Resource-Icons_07312026") && file.endsWith("_48.svg")),
     kinds: ["resource"],
     excluded: new Set(),
   },
   {
     provider: "azure",
-    root: "azure-icons/Icons",
+    root: "assets/catalog/sources/azure/Icons",
     include: () => true,
     kinds: ["resource"],
     excluded: new Set(),
   },
   {
     provider: "gcp",
-    root: "gcp-icons/Unique Icons",
+    root: "assets/catalog/sources/gcp/Unique Icons",
     include: () => true,
     kinds: ["resource"],
     excluded: new Set(),
   },
   {
     provider: "cloud-agnostic",
-    root: "neutral-icons",
+    root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
     // Kept for legacy custom SVG imports; it is not a catalog item.
-    excluded: new Set(["neutral-icons/custom.svg"]),
+    excluded: new Set(["assets/catalog/sources/cloud-agnostic/custom.svg"]),
   },
 ];
 
@@ -168,7 +171,7 @@ function replaceDirectory(target, prepared) {
 }
 
 async function check() {
-  const manifest = JSON.parse(readFileSync(join(ROOT, "packages/catalog/src/generated/manifest.json"), "utf8"));
+  const manifest = JSON.parse(readFileSync(join(ROOT, "packages/runtime/src/catalog/generated/manifest.json"), "utf8"));
   const counts = new Map();
   const assetsBySourceId = new Map();
   const browserPaths = new Map();
@@ -320,19 +323,19 @@ async function update(name, acceptTerms) {
         const found = findDirectory(validationRoot, folder);
         if (found) cpSync(found, join(prepared, folder), { recursive: true });
       }
-      replaceDirectory(join(ROOT, "aws-icons"), prepared);
+      replaceDirectory(join(CATALOG_SOURCE_ROOT, "aws"), prepared);
     } else if (name === "azure") {
       const found = findDirectory(validationRoot, "Icons");
       if (!found) throw new Error("Azure archive does not contain Icons/");
       cpSync(found, join(prepared, "Icons"), { recursive: true });
-      replaceDirectory(join(ROOT, "azure-icons"), prepared);
+      replaceDirectory(join(CATALOG_SOURCE_ROOT, "azure"), prepared);
     } else if (name === "gcp") {
       for (const folder of ["Unique Icons", "Category Icons"]) {
         const found = findDirectory(validationRoot, folder);
         if (!found) throw new Error(`GCP archive does not contain ${folder}/`);
         cpSync(found, join(prepared, folder), { recursive: true });
       }
-      replaceDirectory(join(ROOT, "gcp-icons"), prepared);
+      replaceDirectory(join(CATALOG_SOURCE_ROOT, "gcp"), prepared);
     }
     console.log(`Updated ${name} from the pinned ${source.releaseLabel} archive`);
   } finally {

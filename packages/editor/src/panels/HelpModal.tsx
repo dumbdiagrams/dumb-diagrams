@@ -61,6 +61,12 @@ export function HelpModal({
         <section className="help-about">
           <h3>About</h3>
           <p>Dumb Diagrams Studio · deterministic diagrams for people and LLMs.</p>
+          <p>
+            Copyright © 2026 DumbDiagrams contributors. This program is free
+            software under the GNU AGPL v3 and comes without warranty. You may
+            redistribute and modify it under that license.{" "}
+            <a href="./LICENSE" target="_blank" rel="noreferrer">View license</a>.
+          </p>
         </section>
       </div>
     </Modal>

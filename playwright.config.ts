@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: ".artifacts/playwright/test-results",
   timeout: 45_000,
   expect: {
     timeout: 10_000,
@@ -14,7 +15,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "pnpm --dir packages/editor exec vite --host 127.0.0.1 --port 5174",
+    command: "pnpm catalog:stage && pnpm --dir packages/editor exec vite --host 127.0.0.1 --port 5174",
     url: "http://127.0.0.1:5174/",
     reuseExistingServer: false,
     timeout: 120_000,

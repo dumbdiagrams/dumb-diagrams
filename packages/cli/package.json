@@ -1,8 +1,8 @@
 {
   "name": "dumbdiagrams",
   "version": "0.1.0",
-  "license": "MIT",
-  "description": "Local, source-first diagram studio for agent-generated .dgm files",
+  "license": "AGPL-3.0-only",
+  "description": "LLM-first architecture diagrams that are hard to get wrong: local CLI and Studio for .dgm source files",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -21,7 +21,8 @@
     "ICON-NOTICES.md"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "bin": {
     "dumbdiagrams": "./dist/index.js",
@@ -35,10 +36,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@dumb-diagrams/catalog": "workspace:*",
-    "@dumb-diagrams/core": "workspace:*",
-    "@dumb-diagrams/dsl": "workspace:*",
-    "@dumb-diagrams/render": "workspace:*",
+    "@dumb-diagrams/runtime": "workspace:*",
     "@types/node": "^24.13.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"

@@ -14,7 +14,7 @@ import type {
   Side,
   TextAlign,
   TextFontFamily,
-} from "@dumb-diagrams/core";
+} from "@dumb-diagrams/runtime/core";
 import {
   createAsyncDocsFixture,
   createEmptyDocument,
@@ -25,18 +25,18 @@ import {
   normalizeSingleLineText,
   utf8ByteLength,
   validateDocument,
-} from "@dumb-diagrams/core";
+} from "@dumb-diagrams/runtime/core";
 import {
   getCatalogMap,
   getCatalogEntry,
   catalogIconUrl,
   type CatalogEntry,
-} from "@dumb-diagrams/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/dsl";
-import { layoutDocument } from "@dumb-diagrams/layout";
-import { GRAMMAR } from "@dumb-diagrams/grammar-aws";
-import { renderPortableSvg, renderSvg, sanitizeSvg } from "@dumb-diagrams/render";
-import { routeEdges, attachRoutes } from "@dumb-diagrams/route";
+} from "@dumb-diagrams/runtime/catalog";
+import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { layoutDocument } from "@dumb-diagrams/runtime/layout";
+import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
+import { renderPortableSvg, renderSvg, sanitizeSvg } from "@dumb-diagrams/runtime/render";
+import { routeEdges, attachRoutes, normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import {
   addAnnotation,
@@ -49,7 +49,6 @@ import {
   alignSelection,
   clearRoute,
   clearView,
-  createOrthogonalRoute,
   deleteSelection,
   distributeSelection,
   nudgeSelection,
@@ -2079,7 +2078,7 @@ function App() {
                         snapPoint(point, snapToGrid),
                       );
                       mutateCurrent((doc) =>
-                        setRoute(doc, edge.id, createOrthogonalRoute(routePoints)),
+                        setRoute(doc, edge.id, normalizeOrthogonalRoute(routePoints)),
                       );
                     }}
                     onAutoRoute={() => mutateCurrent((doc) => clearRoute(doc, edge.id))}
@@ -2240,7 +2239,7 @@ function App() {
                 : undefined;
               if (edge) {
                 mutateCurrent((doc) =>
-                  setRoute(doc, edge.id, createOrthogonalRoute(edge.points)),
+                  setRoute(doc, edge.id, normalizeOrthogonalRoute(edge.points)),
                 );
               }
             }}

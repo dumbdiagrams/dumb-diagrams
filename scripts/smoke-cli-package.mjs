@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const artifactsDir = join(root, ".artifacts");
+const artifactsDir = join(root, ".artifacts/packages");
 const cliPackageRoot = join(root, "packages/cli");
 const cliManifest = JSON.parse(readFileSync(join(cliPackageRoot, "package.json"), "utf8"));
 const version = cliManifest.version;
@@ -30,6 +30,15 @@ const required = [
   "package/dist/templates/project/DUMB_DIAGRAMS.md",
   "package/dist/templates/examples/README.md",
   "package/dist/templates/examples/aws-high-availability-web-app.dgm",
+  "package/dist/source/CORRESPONDING_SOURCE.md",
+  "package/dist/source/packages/cli/src/index.ts",
+  "package/dist/source/packages/editor/src/main.tsx",
+  "package/dist/source/packages/runtime/src/core/types.ts",
+  "package/dist/source/assets/catalog/sources.lock.json",
+  "package/dist/source/assets/catalog/sources/cloud-agnostic/server.svg",
+  "package/dist/source/examples/diagrams/aws-high-availability-web-app.dgm",
+  "package/dist/source/registry.npmrc",
+  "package/dist/source/scripts/prepare-cli-package.mjs",
   "package/LICENSE",
   "package/ICON-NOTICES.md",
 ];
@@ -41,12 +50,15 @@ for (const path of required) {
 
 const forbiddenPatterns = [".test.js", ".test.d.ts", ".map", "studio-server"];
 for (const entry of entries) {
+  if (entry.startsWith("package/dist/source/")) continue;
   for (const pattern of forbiddenPatterns) {
     if (entry.includes(pattern)) {
       throw new Error(`Tarball should not include ${pattern}: ${entry}`);
     }
   }
 }
+
+verifyCorrespondingSource(tarballPath);
 
 const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-smoke-"));
 const projectDir = join(workRoot, "smoke-project");
@@ -99,6 +111,24 @@ try {
 function listTarballEntries(tarballPath) {
   const listing = execFileSync("tar", ["-tzf", tarballPath], { encoding: "utf8" });
   return listing.trim().split("\n").filter(Boolean);
+}
+
+function verifyCorrespondingSource(tarballPath) {
+  const extracted = mkdtempSync(join(tmpdir(), "dumbdiagrams-source-"));
+  try {
+    execFileSync("tar", ["-xzf", tarballPath, "-C", extracted]);
+    const packageRoot = join(extracted, "package");
+    const sourceRoot = join(packageRoot, "dist/source");
+    const commands = [
+      ["install", "--frozen-lockfile"],
+      ["build"],
+    ];
+    for (const args of commands) {
+      execFileSync("pnpm", args, { cwd: sourceRoot, stdio: "inherit" });
+    }
+  } finally {
+    rmSync(extracted, { recursive: true, force: true });
+  }
 }
 
 function runNpx(tarballPath, args, bin = "dumbdiagrams") {

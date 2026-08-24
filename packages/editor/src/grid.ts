@@ -1,4 +1,4 @@
-import type { DiagramDocument, ID, LayoutResult, Rect } from "@dumb-diagrams/core";
+import type { DiagramDocument, ID, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 
 export const GRID_SIZE = 24;
 

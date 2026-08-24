@@ -1,5 +1,5 @@
-import type { DiagramDocument } from "@dumb-diagrams/core";
-import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/core";
+import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 
 import type { Selection, SelectionItem } from "../editor-model";
 import { IconEye, IconEyeOff } from "../ui/icons";

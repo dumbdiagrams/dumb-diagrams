@@ -1,5 +1,5 @@
-import type { Edge, EdgeKind, EdgeStyle } from "@dumb-diagrams/core";
-import { DIAGRAM_LIMITS } from "@dumb-diagrams/core";
+import type { Edge, EdgeKind, EdgeStyle } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 import { useEffect, useState } from "react";
 
 import { MAX_EDGE_STEP } from "../editor-model";

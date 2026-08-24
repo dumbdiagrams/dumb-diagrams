@@ -14,7 +14,7 @@ import {
   restoreWorkspaceTab,
   serializeWorkspace,
 } from "./workspace";
-import { DIAGRAM_LIMITS } from "@dumb-diagrams/core";
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 
 const viewport = { panX: 12, panY: 24, zoom: 0.9 };
 

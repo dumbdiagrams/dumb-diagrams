@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { DIAGRAM_LIMITS } from "@dumb-diagrams/core";
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 
 import { Modal } from "../ui/Modal";
 

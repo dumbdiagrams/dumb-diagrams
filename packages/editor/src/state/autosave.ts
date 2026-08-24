@@ -1,15 +1,6 @@
-import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/core";
+import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 
 const DRAFT_KEY = "dumb-diagrams:draft";
-
-export function saveDraft(source: string): void {
-  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) return;
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ source, savedAt: Date.now() }));
-  } catch {
-    // Ignore quota errors.
-  }
-}
 
 export function loadDraft(): { source: string; savedAt: number } | null {
   try {

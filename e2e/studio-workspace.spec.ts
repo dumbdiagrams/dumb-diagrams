@@ -228,8 +228,8 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
   await page.goto("/");
   const input = page.locator('input[type="file"]');
   await input.setInputFiles([
-    `${ROOT}/examples/src/async-docs.dgm`,
-    `${ROOT}/examples/src/transfer-hub.dgm`,
+    `${ROOT}/examples/diagrams/async-docs.dgm`,
+    `${ROOT}/examples/diagrams/transfer-hub.dgm`,
   ]);
 
   await expect(page.getByRole("tab")).toHaveCount(3);
@@ -238,7 +238,7 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
 
 test("updates an imported filename when the diagram is renamed", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/src/async-docs.dgm`);
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
 
   const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
   await expect(title).toHaveValue("Async Docs");

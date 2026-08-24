@@ -2,24 +2,25 @@
 
 ## Release
 
-Use Node.js 24 or newer. From a clean branch, update the workspace package
-versions and the changelog, then run:
+Use Node.js 24 or newer and the pinned pnpm version from `packageManager` in the
+root `package.json`. From a clean branch, update the workspace package versions
+and the changelog, then run:
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm check:release
 ```
 
-`check:release` runs version sync, build, unit/integration tests with coverage
-thresholds, editor typecheck, example validation, Playwright e2e tests, and the
-publishable package smoke test.
+`check:release` runs version sync, dependency-boundary checks, build,
+unit/integration tests with coverage thresholds, editor typecheck, example
+validation, Playwright e2e tests, and the publishable package smoke test.
 
 Build the standalone npm artifact from the compiled workspace:
 
 ```bash
 pnpm --filter dumbdiagrams run prepare:standalone
-mkdir -p .artifacts
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts
+mkdir -p .artifacts/packages
+pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 ```
 
 The resulting tarball contains the CLI, bundled diagram runtime, and compiled
@@ -37,9 +38,9 @@ Recommended: pack locally and exercise the exact consumer boundary:
 
 ```bash
 pnpm build
-mkdir -p .artifacts
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts
-ARTIFACT="$(pwd)/.artifacts/dumbdiagrams-0.1.0.tgz"
+mkdir -p .artifacts/packages
+pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
 npx --yes --package="$ARTIFACT" dumbdiagrams init ./preview-project --yes
 npx --yes --package="$ARTIFACT" dumbdiagrams validate ./preview-project/diagrams
 ```
@@ -113,6 +114,26 @@ The generated provider catalog is intentionally emitted as the cacheable
 multi-megabyte warning range; a catalog update should not invalidate the rest
 of the editor bootstrap. If the entry grows materially, investigate a new
 dynamic boundary instead of increasing the warning limit.
+
+## Repository layout
+
+- `assets/catalog/` — vendored provider SVGs, source locks, and collision policy.
+  See [`assets/catalog/README.md`](../assets/catalog/README.md).
+- `examples/diagrams/` — repository `.dgm` examples validated by CI.
+- `packages/runtime`, `packages/editor`, and `packages/cli` — the only workspace
+  packages.
+- `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed
+  tarballs.
+
+Generated editor catalog assets under `packages/editor/public/catalog-icons/`
+are reproducible build outputs and are not committed.
+
+## Supply-chain policy
+
+The workspace pins pnpm exactly, uses isolated linking, strict peer and engine
+checks, a 24-hour minimum package release age, and a lifecycle allowlist that
+permits only reviewed `esbuild` postinstall execution. Run `pnpm check:dependencies`
+after changing imports or package manifests.
 
 ## Future website and docs
 

@@ -7,13 +7,13 @@ import type {
   LayoutResult,
   Point,
   Side,
-} from "@dumb-diagrams/core";
+} from "@dumb-diagrams/runtime/core";
 import {
   getDefaultView,
   normalizePortOffset,
   portPoint,
   portAnchors,
-} from "@dumb-diagrams/core";
+} from "@dumb-diagrams/runtime/core";
 import {
   getEdgeBadgePlacement,
   getEdgeLabelPlacementOnPath,
@@ -21,7 +21,7 @@ import {
   projectPointToPolyline,
   routeConnectionPreview,
   routeEdgePreview,
-} from "@dumb-diagrams/route";
+} from "@dumb-diagrams/runtime/route";
 import { useMemo, useRef, useState } from "react";
 
 import {
