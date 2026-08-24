@@ -35,6 +35,12 @@ import {
   anchorOrthogonalRouteEndpoints,
   moveOrthogonalBend,
 } from "./route-editing.js";
+import {
+  distanceToResource,
+  pointInRect,
+  resourceHitRects,
+  resourceVisualBounds,
+} from "./selection-targeting.js";
 
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note" | "text";
 type RewireTarget = { nodeId: string; side: Side; offset: number };
@@ -754,67 +760,6 @@ export function InteractionOverlay({
         />;
       })}
 
-      {edges.map((edge) => {
-        if (
-          !edge.label ||
-          !edge.labelRect ||
-          view.places[edge.id]?.visible === false ||
-          !isEntityVisible(doc, view, edge.source) ||
-          !isEntityVisible(doc, view, edge.target)
-        ) return null;
-        const rect = edge.labelRect;
-        const label = edge.label;
-        const labelT = edge.labelT ?? 0.5;
-        const labelSide = edge.labelSide ?? "top";
-        return (
-          <rect
-            key={`${edge.id}-label-hit`}
-            data-interactive
-            data-entity-kind="edge"
-            data-entity-id={edge.id}
-            data-edge-label-hit
-            data-edge-label-handle={edge.id}
-            aria-label={`Connector label ${label}`}
-            className="hit-edge-label"
-            x={rect.x}
-            y={rect.y}
-            width={rect.w}
-            height={rect.h}
-            pointerEvents="all"
-            onPointerEnter={updateHover}
-            onPointerMove={(event) => {
-              if (!labelDragRef.current) updateHover(event);
-            }}
-            onPointerLeave={() => clearHover("edge", edge.id)}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
-              if (tool === "select" && !view.places[edge.id]?.locked) {
-                beginLabelMove(
-                  event,
-                  edge.id,
-                  edge.points,
-                  label,
-                  labelT,
-                  labelSide,
-                );
-              }
-            }}
-            onDoubleClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onSelect({ kind: "edge", id: edge.id }, false);
-              onEditText({ kind: "edge", id: edge.id });
-            }}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onContextMenu(event.clientX, event.clientY, { kind: "edge", id: edge.id });
-            }}
-          />
-        );
-      })}
-
       {predicted && (
         <polyline
           className="ghost-route"
@@ -869,57 +814,62 @@ export function InteractionOverlay({
       {nodes.map((node) => {
         const place = view.places[node.id];
         if (!isEntityVisible(doc, view, node.id)) return null;
-        return (
+        const hitRects = resourceHitRects(node);
+        const onNodePointerDown = (event: React.PointerEvent<SVGRectElement>) => {
+          event.stopPropagation();
+          const target = closestTargetAt(event.clientX, event.clientY)
+            ?? { kind: "resource" as const, id: node.id };
+          onSelect(target, event.shiftKey);
+          if (tool === "select" && target.kind === "resource") {
+            const targetNode = layout.nodes.find((candidate) => candidate.id === target.id);
+            const targetPlace = targetNode ? view.places[targetNode.id] : undefined;
+            if (!targetNode || targetPlace?.locked) return;
+            const origin = placeOrigin(targetPlace, targetNode.obstacle);
+            const active = selection.some(
+              (candidate) => candidate.kind === target.kind && candidate.id === target.id,
+            ) ? selection : [target];
+            beginMove(
+              event,
+              zoom,
+              snapToGrid,
+              origin,
+              (x, y, dx, dy) => onMove("resource", target.id, x, y, dx, dy),
+              createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
+            );
+          }
+        };
+        const onNodeContextMenu = (event: React.MouseEvent<SVGRectElement>) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onContextMenu(
+            event.clientX,
+            event.clientY,
+            closestTargetAt(event.clientX, event.clientY) ?? { kind: "resource", id: node.id },
+          );
+        };
+        return hitRects.map((rect, index) => (
           <rect
-            key={node.id}
+            key={`${node.id}-${index === 0 ? "icon" : "label"}`}
             data-interactive
-            data-entity-kind="resource"
-            data-entity-id={node.id}
-            data-node-id={node.id}
-            aria-selected={isSelected(selection, "resource", node.id)}
-            aria-label={`Resource ${node.serviceLabel}`}
-            className={`hit-node ${isSelected(selection, "resource", node.id) ? "is-selected" : ""}`}
-            x={node.obstacle.x}
-            y={node.obstacle.y}
-            width={node.obstacle.w}
-            height={node.obstacle.h}
+            data-entity-kind={index === 0 ? "resource" : undefined}
+            data-entity-id={index === 0 ? node.id : undefined}
+            data-node-id={index === 0 ? node.id : undefined}
+            data-resource-hit-part={index === 0 ? "icon" : "label"}
+            aria-selected={index === 0 ? isSelected(selection, "resource", node.id) : undefined}
+            aria-label={index === 0 ? `Resource ${node.serviceLabel}` : undefined}
+            aria-hidden={index === 1 ? true : undefined}
+            className={`hit-node hit-node-${index === 0 ? "icon" : "label"}${isSelected(selection, "resource", node.id) ? " is-selected" : ""}`}
+            x={rect.x}
+            y={rect.y}
+            width={rect.w}
+            height={rect.h}
             onPointerEnter={updateHover}
             onPointerMove={updateHover}
             onPointerLeave={() => clearHover("resource", node.id)}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              const target = closestTargetAt(event.clientX, event.clientY)
-                ?? { kind: "resource" as const, id: node.id };
-              onSelect(target, event.shiftKey);
-              if (tool === "select" && target.kind === "resource") {
-                const targetNode = layout.nodes.find((candidate) => candidate.id === target.id);
-                const targetPlace = targetNode ? view.places[targetNode.id] : undefined;
-                if (!targetNode || targetPlace?.locked) return;
-                const origin = placeOrigin(targetPlace, targetNode.obstacle);
-                const active = selection.some(
-                  (candidate) => candidate.kind === target.kind && candidate.id === target.id,
-                ) ? selection : [target];
-                beginMove(
-                  event,
-                  zoom,
-                  snapToGrid,
-                  origin,
-                  (x, y, dx, dy) => onMove("resource", target.id, x, y, dx, dy),
-                  createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
-                );
-              }
-            }}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onContextMenu(
-                event.clientX,
-                event.clientY,
-                closestTargetAt(event.clientX, event.clientY) ?? { kind: "resource", id: node.id },
-              );
-            }}
+            onPointerDown={onNodePointerDown}
+            onContextMenu={onNodeContextMenu}
           />
-        );
+        ));
       })}
 
       {doc.annotations.map((annotation) => {
@@ -982,6 +932,68 @@ export function InteractionOverlay({
                 event.clientY,
                 closestTargetAt(event.clientX, event.clientY) ?? { kind: "annotation", id: annotation.id },
               );
+            }}
+          />
+        );
+      })}
+
+      {/* Connector labels intentionally sit above broad node/group targets. */}
+      {edges.map((edge) => {
+        if (
+          !edge.label ||
+          !edge.labelRect ||
+          view.places[edge.id]?.visible === false ||
+          !isEntityVisible(doc, view, edge.source) ||
+          !isEntityVisible(doc, view, edge.target)
+        ) return null;
+        const rect = edge.labelRect;
+        const label = edge.label;
+        const labelT = edge.labelT ?? 0.5;
+        const labelSide = edge.labelSide ?? "top";
+        return (
+          <rect
+            key={`${edge.id}-label-hit`}
+            data-interactive
+            data-entity-kind="edge"
+            data-entity-id={edge.id}
+            data-edge-label-hit
+            data-edge-label-handle={edge.id}
+            aria-label={`Connector label ${label}`}
+            className="hit-edge-label"
+            x={rect.x}
+            y={rect.y}
+            width={rect.w}
+            height={rect.h}
+            pointerEvents="all"
+            onPointerEnter={updateHover}
+            onPointerMove={(event) => {
+              if (!labelDragRef.current) updateHover(event);
+            }}
+            onPointerLeave={() => clearHover("edge", edge.id)}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
+              if (tool === "select" && !view.places[edge.id]?.locked) {
+                beginLabelMove(
+                  event,
+                  edge.id,
+                  edge.points,
+                  label,
+                  labelT,
+                  labelSide,
+                );
+              }
+            }}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSelect({ kind: "edge", id: edge.id }, false);
+              onEditText({ kind: "edge", id: edge.id });
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onContextMenu(event.clientX, event.clientY, { kind: "edge", id: edge.id });
             }}
           />
         );
@@ -1447,10 +1459,24 @@ function closestInteractiveTarget(
     priority: number;
   }> = [];
 
+  // Labels are small, explicit targets and may legitimately overlap the
+  // routing footprint of a resource. They always win inside their visible box.
+  for (const edge of layout.edges) {
+    if (
+      edge.labelRect &&
+      pointInRect(point, edge.labelRect) &&
+      view.places[edge.id]?.visible !== false &&
+      isEntityVisible(doc, view, edge.source) &&
+      isEntityVisible(doc, view, edge.target)
+    ) {
+      return { kind: "edge", id: edge.id };
+    }
+  }
+
   for (const node of layout.nodes) {
     if (!isEntityVisible(doc, view, node.id)) continue;
-    const distance = distanceToRect(point, node.obstacle);
-    if (distance <= 16) {
+    const distance = distanceToResource(point, node);
+    if (distance <= 6) {
       candidates.push({
         item: { kind: "resource", id: node.id },
         distance,
@@ -1566,7 +1592,7 @@ function boundsFor(
 ): { x: number; y: number; w: number; h: number } | null {
   if (item.kind === "resource") {
     const node = layout.nodes.find((candidate) => candidate.id === item.id);
-    return node?.obstacle ?? null;
+    return node ? resourceVisualBounds(node) : null;
   }
   if (item.kind === "group") {
     const group = layout.groups.find((candidate) => candidate.id === item.id);

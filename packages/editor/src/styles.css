@@ -4481,6 +4481,126 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
+.project-files-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-files-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.project-files-list {
+  display: flex;
+  max-height: min(52vh, 420px);
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+.project-file-item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.project-file-item:hover,
+.project-file-item:focus-visible,
+.project-file-item.is-active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 56%, var(--surface-elevated));
+  outline: none;
+}
+
+.project-file-item:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.project-file-item:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.project-file-item-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.project-file-item-copy strong,
+.project-file-item-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-file-item-copy strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.project-file-item-copy span,
+.project-file-item-action {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.project-file-item-action {
+  flex: 0 0 auto;
+  font-weight: 650;
+}
+
+.project-files-empty {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.project-files-empty strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.project-files-error {
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.project-files-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .recycle-bin-list {
   display: flex;
   max-height: min(52vh, 420px);

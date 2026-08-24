@@ -25,7 +25,7 @@ Studio assets. Publishing that package makes the end-user flow work without
 shipping the repository source:
 
 ```bash
-npx dumbdiagrams@latest init my-diagrams
+npx dumbdiagrams@latest init --open-editor
 ```
 
 Create and push the release tag only after those checks pass:

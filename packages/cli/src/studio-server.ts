@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import {
   existsSync,
+  readdirSync,
   readFileSync,
   renameSync,
   unlinkSync,
@@ -41,6 +42,12 @@ interface StudioDocumentPayload {
   filePath: string;
 }
 
+interface StudioFileListPayload {
+  directory: string;
+  activeFileName: string;
+  files: string[];
+}
+
 interface StudioErrorPayload {
   error: string;
   message: string;
@@ -59,6 +66,7 @@ export async function startStudioServer(
   const port = options.port ?? 4788;
   let documentPath = resolve(options.filePath);
   ensureDocument(documentPath);
+  const projectDirectory = dirname(documentPath);
 
   const editorRoot = resolveStudioEditorRoot(options.editorRoot);
   if (!existsSync(join(editorRoot, "index.html"))) {
@@ -181,6 +189,70 @@ export async function startStudioServer(
     }
 
     if (pathname === "/api/document" && request.method === "GET") {
+      sendJson(response, 200, readPayload());
+      return;
+    }
+
+    if (pathname === "/api/files" && request.method === "GET") {
+      const payload: StudioFileListPayload = {
+        directory: projectDirectory,
+        activeFileName: basename(documentPath),
+        files: listProjectFiles(projectDirectory),
+      };
+      sendJson(response, 200, payload);
+      return;
+    }
+
+    if (pathname === "/api/select" && request.method === "POST") {
+      let body: Record<string, unknown>;
+      try {
+        body = await readJson(request);
+      } catch (error) {
+        sendJson(response, 400, {
+          error: "invalid_request",
+          message: error instanceof Error ? error.message : "Request body is not valid JSON.",
+        } satisfies StudioErrorPayload);
+        return;
+      }
+      if (typeof body.filename !== "string") {
+        sendJson(response, 400, {
+          error: "invalid_filename",
+          message: "Expected a .dgm filename.",
+        } satisfies StudioErrorPayload);
+        return;
+      }
+      const normalizedFilename = normalizeFilename(body.filename);
+      if (!normalizedFilename) {
+        sendJson(response, 400, {
+          error: "invalid_filename",
+          message: `Filename must be a simple ${STUDIO_EXTENSION} file name.`,
+        } satisfies StudioErrorPayload);
+        return;
+      }
+      if (!listProjectFiles(projectDirectory).includes(normalizedFilename)) {
+        sendJson(response, 404, {
+          error: "file_not_found",
+          message: `${normalizedFilename} is not a project diagram in ${projectDirectory}.`,
+        } satisfies StudioErrorPayload);
+        return;
+      }
+
+      const nextPath = join(projectDirectory, normalizedFilename);
+      const nextSource = readFileSync(nextPath, "utf8");
+      const validation = validateSource(nextSource);
+      if (!validation.ok) {
+        sendJson(response, 422, {
+          error: "invalid_source",
+          message: "The selected diagram has source errors.",
+          issues: validation.issues,
+        } satisfies StudioErrorPayload);
+        return;
+      }
+
+      documentPath = nextPath;
+      currentSource = nextSource;
+      currentRevision = revisionFor(nextSource);
+      startWatcher();
       sendJson(response, 200, readPayload());
       return;
     }
@@ -343,6 +415,17 @@ function normalizeFilename(filename: string): string | null {
   const withExtension = extname(trimmed) ? trimmed : `${trimmed}${STUDIO_EXTENSION}`;
   if (extname(withExtension).toLowerCase() !== STUDIO_EXTENSION) return null;
   return withExtension;
+}
+
+function listProjectFiles(directory: string): string[] {
+  try {
+    return readdirSync(directory, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(STUDIO_EXTENSION))
+      .map((entry) => entry.name)
+      .sort((left, right) => left.localeCompare(right));
+  } catch {
+    return [];
+  }
 }
 
 function atomicWrite(filePath: string, source: string): void {

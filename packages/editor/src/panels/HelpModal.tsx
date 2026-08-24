@@ -26,9 +26,14 @@ export function HelpModal({
             import it from a repository, or let an LLM update it and then reload the visual result.
           </p>
           <p>
-            Run <code>dumbdiagrams studio path/to/diagram.dgm</code> for the local workflow. Studio
-            writes the connected file directly, watches for edits from an agent or another editor,
-            and asks before replacing a newer disk revision.
+            Run <code>dumbdiagrams studio diagrams</code> for a local project workflow, or pass one
+            `.dgm` path directly. Studio lets you select among files in that folder, writes the
+            selected file directly, watches for edits from an agent or another editor, and asks
+            before replacing a newer disk revision.
+          </p>
+          <p>
+            Keep one diagram per file. For a new request, create a new `.dgm` under <code>diagrams/</code>;
+            edit an existing file only when the user explicitly names it.
           </p>
         </section>
         <section>

@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { createEmptyDocument } from "@dumb-diagrams/core";
@@ -53,6 +53,31 @@ describe("local Studio server", () => {
     const conflict = await staleSave.json() as { error: string; source: string };
     expect(conflict.error).toBe("conflict");
     expect(conflict.source).toContain("external-edit");
+  });
+
+  it("lists and selects another diagram in the project folder", async () => {
+    const created = await createTestServer();
+    if (!created) return;
+    const { handle, filePath } = created;
+    const secondPath = join(dirname(filePath), "network.dgm");
+    const secondSource = printDgm(createEmptyDocument("network-diagram"));
+    writeFileSync(secondPath, secondSource, "utf8");
+
+    const files = await getJson<{ files: string[] }>(`${handle.url}api/files`);
+    expect(files.files).toEqual(["architecture.dgm", "network.dgm"]);
+
+    const selected = await fetch(`${handle.url}api/select`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: "network.dgm" }),
+    });
+
+    expect(selected.status).toBe(200);
+    const document = await selected.json() as { source: string; fileName: string; filePath: string };
+    expect(document.source).toBe(secondSource);
+    expect(document.fileName).toBe("network.dgm");
+    expect(document.filePath).toBe(secondPath);
+    expect(handle.filePath).toBe(secondPath);
   });
 });
 

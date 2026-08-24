@@ -6,7 +6,7 @@ import {
   renameSync,
   rmSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -22,6 +22,9 @@ const exampleFiles = [
   "aws-high-availability-web-app.dgm",
   "aws-data-transfer-hub.dgm",
   "bedrock-claims-processing.dgm",
+  "prompts/aws-high-availability-web-app.md",
+  "prompts/aws-data-transfer-hub.md",
+  "prompts/bedrock-claims-processing.md",
 ];
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
@@ -48,7 +51,12 @@ rmSync(packagedExamples, { recursive: true, force: true });
 mkdirSync(packagedExamples, { recursive: true });
 cpSync(exampleTemplateSource, packagedExamples, { recursive: true });
 for (const fileName of exampleFiles) {
-  cpSync(join(exampleSource, fileName), join(packagedExamples, fileName));
+  const target = join(packagedExamples, fileName);
+  mkdirSync(dirname(target), { recursive: true });
+  const source = fileName.startsWith("prompts/")
+    ? join(root, "examples", fileName)
+    : join(exampleSource, fileName);
+  cpSync(source, target);
 }
 
 console.log("Prepared dumbdiagrams package assets:");

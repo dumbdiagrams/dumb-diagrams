@@ -111,6 +111,7 @@ import { HelpModal } from "./panels/HelpModal";
 import { CommandPalette, type Command } from "./panels/CommandPalette";
 import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
+import { ProjectFilesModal } from "./panels/ProjectFilesModal";
 import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { clearDraft, loadDraft } from "./state/autosave";
@@ -201,6 +202,9 @@ type LocalStudioPayload = {
 type LocalStudioState = LocalStudioPayload & {
   status: "connected" | "saving" | "offline" | "conflict";
   external?: LocalStudioPayload;
+};
+type ProjectFilesPayload = {
+  files: string[];
 };
 type CatalogPlacement = {
   parent: string | undefined;
@@ -323,6 +327,11 @@ function App() {
   const [isExampleOpening, startExampleOpening] = useTransition();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [exportDialogFormat, setExportDialogFormat] = useState<ExportFormat | null>(null);
+  const [projectFilesOpen, setProjectFilesOpen] = useState(false);
+  const [projectFiles, setProjectFiles] = useState<string[]>([]);
+  const [projectFilesLoading, setProjectFilesLoading] = useState(false);
+  const [projectFilesError, setProjectFilesError] = useState<string | null>(null);
+  const [openingProjectFile, setOpeningProjectFile] = useState<string | null>(null);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState("");
   const [closeRequest, setCloseRequest] = useState<string | null>(null);
@@ -343,6 +352,80 @@ function App() {
     if (message !== null) setToastNonce((current) => current + 1);
     setToastMessage(message);
   };
+
+  const refreshProjectFiles = useCallback(async () => {
+    setProjectFilesLoading(true);
+    setProjectFilesError(null);
+    try {
+      const response = await fetch("/api/files", { headers: { Accept: "application/json" } });
+      const payload = await response.json() as Partial<ProjectFilesPayload> & { message?: string };
+      if (!response.ok || !Array.isArray(payload.files)) {
+        throw new Error(payload.message ?? "The project diagram list could not be loaded.");
+      }
+      setProjectFiles(payload.files.filter((fileName): fileName is string => typeof fileName === "string"));
+    } catch (error) {
+      setProjectFilesError(error instanceof Error ? error.message : "The project diagram list could not be loaded.");
+    } finally {
+      setProjectFilesLoading(false);
+    }
+  }, []);
+
+  const openProjectFiles = () => {
+    if (!localStudio) {
+      setToast("Project diagram selection is available when Studio is opened from a local project.");
+      return;
+    }
+    setProjectFilesOpen(true);
+    void refreshProjectFiles();
+  };
+
+  const selectProjectFile = async (fileName: string) => {
+    const connection = localStudio;
+    const connectedTabId = connectedStudioTabIdRef.current;
+    const connectedTab = connectedTabId ? tabsRef.current.find((tab) => tab.id === connectedTabId) : undefined;
+    if (!connection || !connectedTabId) return;
+    if (connectedTab && isTabDirty(connectedTab)) {
+      setToast("Save the current diagram before switching project files.");
+      return;
+    }
+
+    setOpeningProjectFile(fileName);
+    setProjectFilesError(null);
+    try {
+      const response = await fetch("/api/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ filename: fileName }),
+      });
+      const payload = await response.json() as Partial<LocalStudioPayload> & { message?: string };
+      if (!response.ok || typeof payload.source !== "string" || !payload.revision || !payload.fileName || !payload.filePath) {
+        throw new Error(payload.message ?? "The selected project diagram could not be opened.");
+      }
+
+      localStudioRevisionRef.current = payload.revision;
+      setActiveTab(connectedTabId);
+      resetTab(connectedTabId, payload.source, payload.source, {
+        filename: payload.fileName,
+        origin: "file",
+      });
+      setLocalStudio((current) => current
+        ? { ...current, ...payload as LocalStudioPayload, status: "connected", external: undefined }
+        : current);
+      setProjectFilesOpen(false);
+      setToast(`Opened ${payload.fileName}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The selected project diagram could not be opened.";
+      setProjectFilesError(message);
+      setToast(message);
+    } finally {
+      setOpeningProjectFile(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!localStudio || localStudio.status === "offline") return;
+    void refreshProjectFiles();
+  }, [localStudio?.filePath, localStudio?.status, refreshProjectFiles]);
 
   useEffect(() => {
     if (!workspaceReady) return;
@@ -483,6 +566,7 @@ function App() {
       setLocalStudio((current) => current
         ? { ...current, ...payload as LocalStudioPayload, status: "connected", external: undefined }
         : current);
+      void refreshProjectFiles();
       setToast(`Saved ${payload.fileName}`);
       return true;
     } catch (error) {
@@ -499,8 +583,12 @@ function App() {
       setToast("Cannot save an invalid diagram. Fix the source errors first.");
       return false;
     }
-    if (localStudio && tabId === connectedStudioTabIdRef.current) {
-      return saveToLocalStudio(tabId, tab.source, requestedFilename);
+    if (localStudio) {
+      if (tabId === connectedStudioTabIdRef.current || requestedFilename) {
+        const saved = await saveToLocalStudio(tabId, tab.source, requestedFilename);
+        if (saved && requestedFilename) connectedStudioTabIdRef.current = tabId;
+        return saved;
+      }
     }
     const baseName = requestedFilename || tab.filename || tabLabel(tab);
     const filename = filenameWithExtension(baseName, "dgm");
@@ -1434,6 +1522,7 @@ function App() {
   const fileMenuItems: TopMenuItem[] = [
     { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
     { id: "open", label: "Open / Import .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => fileInputRef.current?.click() },
+    { id: "project-files", label: "Open project diagram…", disabled: !localStudio, onSelect: openProjectFiles },
     { id: "recycle-bin", label: `Recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`, onSelect: () => setRecycleBinOpen(true) },
     { id: "file-divider-1", label: "", separator: true },
     { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !compiled.ok, onSelect: saveActive },
@@ -1461,6 +1550,7 @@ function App() {
   const commands: Command[] = [
     { id: "command-new", label: "New diagram", section: "File", shortcut: "⌘N", onSelect: handleNewTab },
     { id: "command-open", label: "Open / Import .dgm", section: "File", shortcut: "⌘O", onSelect: () => fileInputRef.current?.click() },
+    { id: "command-project-files", label: "Open project diagram", section: "File", disabled: !localStudio, onSelect: openProjectFiles },
     { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !compiled.ok, onSelect: saveActive },
     { id: "command-save-as", label: "Save As", section: "File", shortcut: "⌘⇧S", disabled: !compiled.ok, onSelect: openSaveAs },
     { id: "command-duplicate-tab", label: "Duplicate tab", section: "Workspace", onSelect: duplicateActiveTab },
@@ -2269,6 +2359,18 @@ function App() {
           </Suspense>
         )}
 
+        <ProjectFilesModal
+          open={projectFilesOpen}
+          files={projectFiles}
+          activeFileName={localStudio?.fileName ?? ""}
+          loading={projectFilesLoading}
+          openingFileName={openingProjectFile}
+          error={projectFilesError}
+          onClose={() => setProjectFilesOpen(false)}
+          onRefresh={() => void refreshProjectFiles()}
+          onOpen={(fileName) => void selectProjectFile(fileName)}
+        />
+
         <HelpModal
           open={helpOpen}
           onClose={() => setHelpOpen(false)}
@@ -2302,7 +2404,9 @@ function App() {
         <Modal
           open={saveAsOpen}
           title="Save diagram as"
-          subtitle={localStudio ? "Save a connected copy next to the current .dgm file." : "Choose the filename for the downloaded .dgm source."}
+          subtitle={localStudio
+            ? "Create a new connected .dgm file next to the current project diagram."
+            : "Choose the filename for the downloaded .dgm source."}
           onClose={() => setSaveAsOpen(false)}
           width={440}
         >
