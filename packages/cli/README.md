@@ -2,6 +2,8 @@
 
 Local, source-first diagram Studio for agent-generated `.dgm` files.
 
+Requires Node.js 24 or newer.
+
 ```bash
 npx dumbdiagrams@latest init --open-editor
 # Prompts for a project name and opens it in your editor.

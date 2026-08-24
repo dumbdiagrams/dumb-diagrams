@@ -42,7 +42,7 @@ await build({
   bundle: true,
   platform: "node",
   format: "esm",
-  target: "node18",
+  target: "node24",
   outfile: temporaryEntry,
   sourcemap: false,
   legalComments: "none",

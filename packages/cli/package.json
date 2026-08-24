@@ -5,7 +5,7 @@
   "description": "Local, source-first diagram studio for agent-generated .dgm files",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=24"
   },
   "keywords": [
     "diagrams",
@@ -39,7 +39,7 @@
     "@dumb-diagrams/core": "workspace:*",
     "@dumb-diagrams/dsl": "workspace:*",
     "@dumb-diagrams/render": "workspace:*",
-    "@types/node": "^22.13.4",
+    "@types/node": "^24.13.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

@@ -2,8 +2,8 @@
 
 ## Release
 
-From a clean branch, update the workspace package versions and the changelog,
-then run:
+Use Node.js 24 or newer. From a clean branch, update the workspace package
+versions and the changelog, then run:
 
 ```bash
 pnpm install --frozen-lockfile

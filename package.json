@@ -2,6 +2,9 @@
   "name": "dumb-diagrams",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "generate:catalog": "node scripts/generate-catalog.mjs",
     "icons:check": "node scripts/icon-workflow.mjs check",

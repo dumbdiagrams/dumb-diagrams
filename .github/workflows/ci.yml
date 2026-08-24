@@ -29,7 +29,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -53,32 +53,6 @@ jobs:
       - name: Smoke test publishable CLI package
         run: pnpm smoke:package
 
-  node18-package:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build publishable assets
-        run: pnpm build
-
-      - name: Smoke test package on minimum Node version
-        run: pnpm smoke:package
-
   e2e:
     runs-on: ubuntu-latest
     steps:
@@ -93,7 +67,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies

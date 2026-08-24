@@ -5,6 +5,8 @@ LLM-first diagrams with deterministic layout and practical manual controls.
 End users install the `dumbdiagrams` npm package, not this repository. The
 repository is for developing the editor and publishing the CLI package.
 
+Requires Node.js 24 or newer.
+
 ## Install and create a project
 
 ```bash
