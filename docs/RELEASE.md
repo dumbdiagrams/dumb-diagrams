@@ -10,8 +10,9 @@ pnpm install --frozen-lockfile
 pnpm check:release
 ```
 
-`check:release` runs version sync, tests, build, editor typecheck, example
-validation, and the publishable package smoke test.
+`check:release` runs version sync, build, unit/integration tests with coverage
+thresholds, editor typecheck, example validation, Playwright e2e tests, and the
+publishable package smoke test.
 
 Build the standalone npm artifact from the compiled workspace:
 
@@ -49,11 +50,12 @@ The unscoped `dumbdiagrams` package name is always public on npm. For a
 registry-only private preview you need a paid npm account and a scoped package
 such as `@your-name/dumbdiagrams-preview` published with `--access restricted`.
 
-Before the first publish, confirm npm authentication and package name ownership:
+Before the first publish, authenticate to the public npm registry and run the
+repository preflight. It rejects an existing package owned by another account:
 
 ```bash
-npm login
-npm view dumbdiagrams version
+npm login --registry=https://registry.npmjs.org
+pnpm preflight:publish
 ```
 
 ### Public usage after publish
@@ -71,7 +73,8 @@ dumbdiagrams init --yes
 dgm studio diagrams
 ```
 
-Create and push the release tag only after `pnpm check:release` passes:
+Create and push the release tag only after `pnpm check:release`,
+`pnpm preflight:publish`, and branch CI pass:
 
 ```bash
 git tag -a v0.1.0 -m "Release v0.1.0"

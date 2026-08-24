@@ -171,10 +171,10 @@ For a new project from this repository, run `node packages/cli/dist/index.js ini
 guide plus `AGENTS.md`/`CLAUDE.md` pointers, a small README, and an
 `examples/` directory with source/prompt references.
 
-v1 is desktop-focused. The editor intentionally keeps a 900px minimum layout
+v0.1 is desktop-focused. The editor intentionally keeps a 900px minimum layout
 width so the canvas, tool rail, inspector, and two-row studio chrome remain
 usable together. A viewport around 1280px wide is the supported baseline; a
-small-screen responsive editor is out of scope for v1.
+small-screen responsive editor is out of scope for v0.1.
 
 ## Licensing and publication
 

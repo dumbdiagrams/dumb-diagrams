@@ -11,10 +11,13 @@ export default defineConfig({
         "packages/core/src/**/*.ts",
         "packages/render/src/**/*.ts",
       ],
-      exclude: [
-        "**/*.test.ts",
-        "packages/cli/src/index.ts",
-      ],
+      exclude: ["**/*.test.ts"],
+      thresholds: {
+        statements: 50,
+        branches: 60,
+        functions: 65,
+        lines: 50,
+      },
     },
   },
 });

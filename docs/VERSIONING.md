@@ -19,10 +19,13 @@ Release requirements:
 
 1. Update every `packages/*/package.json` version to the same value.
 2. Add a dated entry to [CHANGELOG.md](../CHANGELOG.md).
-3. Run `pnpm test`, `pnpm typecheck`, `pnpm build`, and `pnpm check`.
-4. Create an annotated `vMAJOR.MINOR.PATCH` tag and push it.
-5. Publish packages only after CI passes; deploy the editor from that same tag.
+3. Run `pnpm check:release`.
+4. Run `pnpm preflight:publish` against the public npm registry.
+5. Create an annotated `vMAJOR.MINOR.PATCH` tag only after CI passes.
+6. Publish the CLI package and deploy the editor from that same tag.
 
-The `.dgm` format is stable within v1. New fields must be optional or have
-documented defaults. A breaking grammar or model change requires v2, a
-migration note, and an updated example corpus.
+During the `0.x` series, the `.dgm` format is stable within each minor release
+line. Patch releases must remain backward compatible. A breaking grammar or
+model change requires the next minor version, a migration note, and an updated
+example corpus. The project may adopt a stronger v1 compatibility promise once
+the format has public usage history.

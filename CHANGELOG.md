@@ -24,10 +24,5 @@ Future changes will be grouped here until the next release tag is prepared.
 
 ### Notes
 
-- v1 does not promise a mobile editor layout.
+- v0.1 is desktop-focused and does not promise a mobile editor layout.
 - Provider icon redistribution remains governed by [ICON-NOTICES.md](./ICON-NOTICES.md).
-
-## [1.0.0] - 2026-08-23
-
-Pre-release development milestone. Functionality shipped in the first public npm
-release is documented under `0.1.0` above.

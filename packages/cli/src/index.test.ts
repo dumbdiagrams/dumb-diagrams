@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -67,7 +67,6 @@ describe("runCli", () => {
   });
 
   it("renders a bundled example diagram when assets are available", async () => {
-    if (!existsSync(exampleDiagram)) return;
     const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-render-"));
     const outputPath = join(workRoot, "render.svg");
     try {
@@ -77,7 +76,7 @@ describe("runCli", () => {
         "--output",
         outputPath,
       ]);
-      if (code !== 0) return;
+      expect(code).toBe(0);
       expect(readFileSync(outputPath, "utf8")).toContain("<svg");
     } finally {
       rmSync(workRoot, { recursive: true, force: true });

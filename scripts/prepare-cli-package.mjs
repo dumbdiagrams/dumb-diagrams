@@ -3,6 +3,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   renameSync,
   rmSync,
@@ -70,7 +71,14 @@ for (const fileName of exampleFiles) {
 }
 
 for (const legalFile of ["LICENSE", "ICON-NOTICES.md"]) {
-  cpSync(join(root, legalFile), join(cliPackageRoot, legalFile));
+  const source = join(root, legalFile);
+  const packaged = join(cliPackageRoot, legalFile);
+  if (!existsSync(packaged) || !readFileSync(source).equals(readFileSync(packaged))) {
+    throw new Error(
+      `packages/cli/${legalFile} must match the repository ${legalFile}. ` +
+      "Update the checked-in package copy before packing.",
+    );
+  }
 }
 
 console.log("Prepared dumbdiagrams package assets:");
