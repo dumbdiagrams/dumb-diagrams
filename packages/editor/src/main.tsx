@@ -1764,7 +1764,6 @@ function App() {
                 <IconRedo />
               </button>
             </div>
-            <ThemeControl />
             <div className="topbar-group">
               <input
                 ref={fileInputRef}
@@ -1814,6 +1813,7 @@ function App() {
             onContextMenu={handleTabContextMenu}
           />
           <nav className="studio-tabbar-actions" aria-label="Studio menu">
+            <ThemeControl />
             <TopMenu label="Help" Icon={IconHelp} items={helpMenuItems} />
           </nav>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { IconMonitor, IconMoon, IconSun } from "./icons";
+import { IconMoon, IconSun } from "./icons";
 import {
   applyTheme,
   getStoredTheme,
@@ -13,7 +13,6 @@ const OPTIONS: Array<{
   label: string;
   Icon: typeof IconSun;
 }> = [
-  { value: "system", label: "System", Icon: IconMonitor },
   { value: "light", label: "Light", Icon: IconSun },
   { value: "dark", label: "Dark", Icon: IconMoon },
 ];

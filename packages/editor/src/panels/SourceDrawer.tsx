@@ -10,37 +10,18 @@ function useResolvedTheme(): "light" | "dark" {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const attr = document.documentElement.dataset.theme;
     if (attr === "dark") return "dark";
-    if (attr === "light") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    return "light";
   });
 
   useEffect(() => {
     const root = document.documentElement;
     const observer = new MutationObserver(() => {
       const attr = root.dataset.theme;
-      if (attr === "dark" || attr === "light") {
-        setTheme(attr);
-        return;
-      }
-      setTheme(
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light",
-      );
+      setTheme(attr === "dark" ? "dark" : "light");
     });
     observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onMedia = () => {
-      if (!root.dataset.theme || root.dataset.theme === "system") {
-        setTheme(media.matches ? "dark" : "light");
-      }
-    };
-    media.addEventListener("change", onMedia);
     return () => {
       observer.disconnect();
-      media.removeEventListener("change", onMedia);
     };
   }, []);
 

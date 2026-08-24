@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -31,6 +31,14 @@ interface CheckResult {
   ok: boolean;
   messages: string[];
 }
+
+const PROJECT_EXAMPLE_FILES = [
+  "aws-high-availability-web-app.dgm",
+  "aws-data-transfer-hub.dgm",
+  "bedrock-claims-processing.dgm",
+] as const;
+
+const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open"]);
 
 export async function runCli(argv: string[]): Promise<number> {
   const [command, ...rawArgs] = argv;
@@ -97,11 +105,17 @@ Studio options:
   --host <address>        Bind address (default: 127.0.0.1)
   --no-open               Start the server without opening a browser
 
+Init options:
+  --open-editor           Open the project in Cursor, VS Code, or another editor
+  --editor <command>      Use a specific editor command (for example: cursor or code)
+
 Render options:
   --output <file.svg>     Output path (default: output.svg)
 
 Examples:
   npx dumbdiagrams@latest init diagrams
+  npx dumbdiagrams@latest init diagrams --open-editor
+  npx dumbdiagrams@latest init diagrams --editor cursor
   cd diagrams
   npx dumbdiagrams@latest studio architecture.dgm
   dumbdiagrams init diagrams
@@ -214,6 +228,7 @@ function cmdInit(args: ParsedArgs): number {
   const agentsPath = join(projectRoot, "AGENTS.md");
   const claudePath = join(projectRoot, "CLAUDE.md");
   const readmePath = join(projectRoot, "README.md");
+  const examplesRoot = join(projectRoot, "examples");
   const diagramSource = printDgm(createEmptyDocument("architecture"));
   const instructions = [
     "# Dumb Diagrams project",
@@ -223,17 +238,36 @@ function cmdInit(args: ParsedArgs): number {
     "",
     "## Agent workflow",
     "",
-    "1. Edit `architecture.dgm` directly when creating or changing the diagram.",
-    "2. Run `npx dumbdiagrams@latest validate architecture.dgm`.",
-    "3. Run `npx dumbdiagrams@latest studio architecture.dgm` to inspect and refine it visually.",
-    "4. Render a review artifact with `npx dumbdiagrams@latest render architecture.dgm --output architecture.svg`.",
+    "1. Read `examples/README.md` and inspect the closest `examples/*.dgm` reference before creating a new diagram.",
+    "2. Edit `architecture.dgm` directly when creating or changing the diagram.",
+    "3. Run `npx dumbdiagrams@latest validate architecture.dgm`.",
+    "4. Run `npx dumbdiagrams@latest studio architecture.dgm` to inspect and refine it visually.",
+    "5. Render a review artifact with `npx dumbdiagrams@latest render architecture.dgm --output architecture.svg`.",
     "",
     "Keep stable ids for resources, groups, and edges. Preserve the document's view",
     "and layout information when making semantic changes so manual placement survives.",
+    "Use the example files as style references: copy their explicit hierarchy, labels,",
+    "numbered stages, edge direction hints, and routing constraints without copying",
+    "their architecture unless the requested diagram needs it.",
     "",
   ].join("\n");
-  const agentPointer = "# Diagram project instructions\n\nRead `DUMB_DIAGRAMS.md` before creating or editing any `.dgm` files.\n";
-  const readme = `# ${projectName}\n\nA local Dumb Diagrams project. Open it with \`npx dumbdiagrams@latest studio architecture.dgm\`.\n`;
+  const agentPointer = "# Diagram project instructions\n\nRead `DUMB_DIAGRAMS.md` and the closest reference in `examples/` before creating or editing any `.dgm` files.\n";
+  const readme = [
+    `# ${projectName}`,
+    "",
+    "A local Dumb Diagrams project. The `.dgm` file is the source of truth and",
+    "the `examples/` directory contains style references for coding agents.",
+    "",
+    "Open the visual editor with:",
+    "",
+    "```bash",
+    "npx dumbdiagrams@latest studio architecture.dgm",
+    "```",
+    "",
+    "Ask your coding agent to read `DUMB_DIAGRAMS.md`, then inspect the closest",
+    "example before creating or editing `architecture.dgm`.",
+    "",
+  ].join("\n");
 
   const files = [
     [diagramPath, diagramSource],
@@ -252,9 +286,49 @@ function cmdInit(args: ParsedArgs): number {
     console.log(`Created ${relativeForLog(filePath)}`);
     created++;
   }
+  created += copyProjectExamples(projectRoot, examplesRoot);
+
+  const requestedEditor = flagString(args, "editor", "");
+  if (hasFlag(args, "open-editor") || hasFlag(args, "open") || requestedEditor) {
+    openProjectEditor(projectRoot, requestedEditor);
+  }
+
   console.log(`\n${created ? "Project ready" : "Project already exists"}.`);
   console.log(`Next: npx dumbdiagrams@latest studio ${relativeForLog(diagramPath)}`);
   return 0;
+}
+
+function copyProjectExamples(projectRoot: string, examplesRoot: string): number {
+  mkdirSync(examplesRoot, { recursive: true });
+  const files = ["README.md", ...PROJECT_EXAMPLE_FILES];
+  let created = 0;
+
+  for (const fileName of files) {
+    const sourcePath = resolveProjectExample(fileName);
+    if (!sourcePath) {
+      console.warn(`Warning: bundled example not found: ${fileName}`);
+      continue;
+    }
+    const targetPath = join(examplesRoot, fileName);
+    if (existsAsFileOrDirectory(targetPath)) {
+      console.log(`Skipped ${relativeForLog(targetPath)} (already exists)`);
+      continue;
+    }
+    copyFileSync(sourcePath, targetPath);
+    console.log(`Created ${relativeForLog(targetPath)}`);
+    created++;
+  }
+
+  return created;
+}
+
+function resolveProjectExample(fileName: string): string | undefined {
+  const candidates = [
+    resolve(__dirname, "templates", "examples", fileName),
+    resolve(__dirname, "..", "templates", "examples", fileName),
+    resolve(__dirname, "..", "..", "..", "examples", "src", fileName),
+  ];
+  return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
 }
 
 async function cmdFixtures(args: ParsedArgs): Promise<number> {
@@ -371,7 +445,7 @@ function parseArgs(args: string[]): ParsedArgs {
       continue;
     }
     const next = args[index + 1];
-    if (next && !next.startsWith("-")) {
+    if (next && !next.startsWith("-") && !BOOLEAN_FLAGS.has(withoutDashes)) {
       flags.set(withoutDashes, next);
       index += 1;
     } else {
@@ -419,6 +493,27 @@ function openBrowser(url: string): void {
   const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
   const child = spawn(command, args, { detached: true, stdio: "ignore" });
   child.unref();
+}
+
+function openProjectEditor(projectRoot: string, requestedEditor: string): void {
+  const candidates = requestedEditor ? [requestedEditor] : ["cursor", "code", "codium", "windsurf", "zed"];
+
+  const tryEditor = (index: number): void => {
+    const command = candidates[index];
+    if (!command) {
+      console.warn("Could not find a supported editor command. Open the project manually with `cursor .` or `code .`.");
+      return;
+    }
+
+    const child = spawn(command, [projectRoot], { detached: true, stdio: "ignore" });
+    child.once("spawn", () => {
+      child.unref();
+      console.log(`Opened project in ${command}: ${relativeForLog(projectRoot)}`);
+    });
+    child.once("error", () => tryEditor(index + 1));
+  };
+
+  tryEditor(0);
 }
 
 function waitForShutdown(server: { close(callback?: (error?: Error) => void): void }): Promise<void> {

@@ -8,7 +8,7 @@ repository is for developing the editor and publishing the CLI package.
 ## Install and create a project
 
 ```bash
-npx dumbdiagrams@latest init my-diagrams
+npx dumbdiagrams@latest init my-diagrams --open-editor
 cd my-diagrams
 npx dumbdiagrams@latest studio architecture.dgm
 ```
@@ -16,7 +16,9 @@ npx dumbdiagrams@latest studio architecture.dgm
 The project folder is the shared workspace for the human and the coding agent:
 the agent edits `architecture.dgm`, while Studio watches the file and renders
 the result. The initializer also creates `DUMB_DIAGRAMS.md`, `AGENTS.md`, and
-`CLAUDE.md` so the format and workflow are visible to common coding agents.
+`CLAUDE.md`, plus an `examples/` directory containing the three built-in style
+references. To open the project in an installed editor during initialization,
+add `--open-editor` or choose one explicitly with `--editor cursor` / `--editor code`.
 
 ## Test the standalone package locally
 
@@ -30,18 +32,32 @@ pnpm build
 mkdir -p .artifacts
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts
 
+ARTIFACT="$(pwd)/.artifacts/dumbdiagrams-1.0.0.tgz"
 npx --yes \
-  --package=./.artifacts/dumbdiagrams-1.0.0.tgz \
-  dumbdiagrams init my-diagrams
+  --package="$ARTIFACT" \
+  dumbdiagrams init my-diagrams --open-editor
 cd my-diagrams
 npx --yes \
-  --package=../.artifacts/dumbdiagrams-1.0.0.tgz \
+  --package="$ARTIFACT" \
   dumbdiagrams studio architecture.dgm
 ```
 
 The packed CLI bundles the diagram runtime and includes the compiled Studio,
-logo, and provider icons. The tarball contains no `src/` tree. When published,
-the same commands become `npx dumbdiagrams@latest …`.
+logo, provider icons, and the example files copied into each new project. The
+tarball contains no repository `src/` tree. When published, the same commands
+become `npx dumbdiagrams@latest …`.
+
+Once the project is open in Cursor, VS Code, Claude Code, Codex, or another
+coding agent, use a prompt like:
+
+```text
+Read DUMB_DIAGRAMS.md and examples/README.md. Inspect
+examples/aws-high-availability-web-app.dgm as the closest style reference.
+Create or update architecture.dgm for the requested architecture. Follow the
+same explicit hierarchy, labels, numbered stages, edge direction hints, and
+routing constraints. Run `npx dumbdiagrams@latest validate architecture.dgm`
+when finished.
+```
 
 ## Develop this repository
 
@@ -63,7 +79,7 @@ node packages/cli/dist/index.js render examples/src/aws-high-availability-web-ap
 node packages/cli/dist/index.js validate examples/src
 
 # Create an agent-ready project
-node packages/cli/dist/index.js init diagrams
+node packages/cli/dist/index.js init diagrams --open-editor
 ```
 
 ## Packages
@@ -90,9 +106,9 @@ Cursor, Codex, Claude, or another editor, and protects saves with revision
 checks. Browser-only Studio still works as a scratch/import mode when opened
 through Vite or the static site.
 
-For a new project from this repository, run `node packages/cli/dist/index.js init diagrams`. It creates an empty
+For a new project from this repository, run `node packages/cli/dist/index.js init diagrams --open-editor`. It creates an empty
 `architecture.dgm`, a `DUMB_DIAGRAMS.md` guide plus `AGENTS.md`/`CLAUDE.md`
-pointers, and a small README.
+pointers, a small README, and an `examples/` directory with style references.
 
 v1 is desktop-focused. The editor intentionally keeps a 900px minimum layout
 width so the canvas, tool rail, inspector, and two-row studio chrome remain
@@ -122,5 +138,5 @@ See [CHANGELOG.md](./CHANGELOG.md) for release notes.
 Cursor, Codex, Claude Code, or any other agent can edit the ordinary `.dgm`
 file, run `npx dumbdiagrams@latest validate architecture.dgm`, and let the
 local Studio reflect the change. The required project contract is the local
-`DUMB_DIAGRAMS.md` file; examples are onboarding material, not a runtime
-dependency.
+`DUMB_DIAGRAMS.md` file; the copied examples are onboarding/style references,
+not parser or renderer dependencies.

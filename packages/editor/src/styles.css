@@ -1,6 +1,6 @@
 /* ── Adaptive tokens ─────────────────────────────────────────────── */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     system-ui, sans-serif;
   font-synthesis: none;
@@ -44,38 +44,6 @@
   --panel-bg: var(--surface-elevated);
   --panel-border: var(--line);
   --surface-muted: color-mix(in srgb, var(--ink) 6%, var(--surface-solid));
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ink: #f3f6fb;
-    --muted: #9aa8bc;
-    --line: #2b374b;
-    --line-strong: #43516a;
-    --surface: #141b28;
-    --surface-solid: #151e2d;
-    --surface-elevated: #1b2637;
-    --canvas-bg: #090f19;
-    --canvas-tint: #40516c;
-    --accent: #8da8ff;
-    --accent-soft: #23345d;
-    --badge-fill: #f3f6fb;
-    --badge-text: #111827;
-    --success: #6cd19a;
-    --danger: #ff8d93;
-    --danger-soft: #4a2932;
-    --focus: #a6baff;
-    --artboard: #101824;
-    --diagram-ink: #d8e1ef;
-    --diagram-edge: #aebdd2;
-    --diagram-fallback: #263349;
-    --annotation-ink: #232f3e;
-    --canvas-atmosphere: radial-gradient(circle at 50% 8%, rgba(73, 101, 163, 0.16), transparent 42%);
-    --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.56);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
 }
 
 :root[data-theme="light"] {

@@ -451,10 +451,14 @@ test("uses clear lock controls in the layers panel", async ({ page }) => {
 test("applies the dark palette to the canvas and grid", async ({ page }) => {
   await page.goto("/");
 
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   const theme = page.getByRole("button", { name: "Theme", exact: true });
   await expect(theme).toHaveCount(1);
+  await expect(page.locator(".studio-tabbar-actions .theme-control")).toHaveCount(1);
+  await expect(page.locator(".floating-topbar .theme-control")).toHaveCount(0);
   await theme.click();
 
+  await expect(page.getByRole("menuitem", { name: "System", exact: true })).toHaveCount(0);
   const dark = page.getByRole("menuitem", { name: "Dark", exact: true });
   await expect(dark).toHaveCount(1);
   await dark.click();
