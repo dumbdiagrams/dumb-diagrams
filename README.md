@@ -74,6 +74,63 @@ numbered stages, edge direction hints, and routing constraints. Run
 
 Agents create or edit ordinary `.dgm` files, run `validate`, and Studio reflects the change. The required contract is local `DUMB_DIAGRAMS.md`; bundled examples are style references, not runtime dependencies.
 
+## Develop locally
+
+Three loops, depending on what you changed.
+
+### Editor (fastest — daily UI work)
+
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Vite serves the Studio with hot reload. Unit tests cover editor logic and interactions:
+
+```bash
+pnpm test
+pnpm test:e2e          # Playwright against the Vite dev server
+```
+
+This path does **not** exercise the published CLI bundle or `studio` command.
+
+### CLI from the workspace
+
+Use this when you change the CLI, `init` templates, Studio server, or how the CLI serves the editor:
+
+```bash
+pnpm build                              # or: runtime / editor / cli filters
+pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm
+
+# Same binary, explicit paths:
+node packages/cli/dist/index.js studio examples/diagrams/aws-high-availability-web-app.dgm
+node packages/cli/dist/index.js validate examples/diagrams
+node packages/cli/dist/index.js render examples/diagrams/aws-high-availability-web-app.dgm --output output.svg
+node packages/cli/dist/index.js init --name "Local Preview" --open-editor
+node packages/cli/dist/index.js fixtures async-docs   # writes .artifacts/golden/
+```
+
+`dev:cli` runs the workspace CLI against `packages/editor/dist` (built editor assets). Rebuild the editor after UI changes before expecting them in `studio`.
+
+CLI integration tests (`packages/cli/src/*.test.ts`) cover `init`, `validate`, `format`, `render`, help/version, and Studio server APIs. They do not drive a browser.
+
+### Tarball — same boundary as `npx` (before release)
+
+Pack and run commands through `npx --package=…` when you change bundling, `prepack`, init templates, or anything that only exists in the published artifact:
+
+```bash
+pnpm build
+mkdir -p .artifacts/packages
+pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+
+export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
+export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
+```
+
+`pnpm smoke:package` automates pack + `npx` smoke (`init`, `validate`, `render`, version) and rebuilds the AGPL source snapshot inside the tarball.
+
+**TL;DR:** `pnpm dev` for editor work; `pnpm build && pnpm dev:cli` for CLI + built Studio; tarball/`smoke:package` before you ship.
+
 ## Test the tarball locally
 
 This exercises the same package boundary as `npx`, without publishing. From the repository root:
@@ -143,28 +200,15 @@ dgm studio diagrams
 
 The unscoped `dumbdiagrams` package is public on npm. For a private preview, use a scoped package with restricted access, or keep using the local tarball flow above.
 
-## Develop this repository
+## Test coverage (what runs in CI)
 
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-pnpm test
+| Layer | What it checks | Gap |
+| --- | --- | --- |
+| Unit / integration (`pnpm test`) | Runtime, editor model, CLI `init`/`validate`/`render`/`format`, Studio server HTTP API | No browser |
+| Playwright (`pnpm test:e2e`, 47 tests) | Full Studio UI — canvas, catalog, workspace, export | Runs against **Vite**, not `dumbdiagrams studio` |
+| Tarball smoke (`pnpm smoke:package`) | Packed `npx` flow: `init`, `validate`, `render`, AGPL source rebuild | Does not open Studio in a browser |
 
-# Render a fixture
-node packages/cli/dist/index.js fixtures async-docs
-
-# Open the local Studio against a source file
-node packages/cli/dist/index.js studio examples/diagrams/aws-high-availability-web-app.dgm
-
-# Render from source
-node packages/cli/dist/index.js render examples/diagrams/aws-high-availability-web-app.dgm --output output.svg
-
-# Validate examples
-node packages/cli/dist/index.js validate examples/diagrams
-
-# Create an agent-ready project
-node packages/cli/dist/index.js init --name "Local Preview" --open-editor
-```
+Together this is enough for v0.1: core logic and UI are well covered; the main untested path is **browser → CLI `studio` server → bundled `dist/studio`**. Manual check: `$CLI studio diagrams --no-open` after a tarball pack. A future Playwright job against the CLI server would close that gap.
 
 ## Packages
 
