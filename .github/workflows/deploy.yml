@@ -50,8 +50,44 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build editor
+      - name: Check synchronized package versions
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm check:versions
+
+      - name: Check dependency declarations
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm check:dependencies
+
+      - name: Check catalog inventory
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm icons:check
+
+      - name: Build all packages and editor
         run: pnpm build
+
+      - name: Run unit tests with coverage
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm test:coverage
+
+      - name: Typecheck editor
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm typecheck
+
+      - name: Validate examples and reviewed routing warnings
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm check && pnpm check:routing
+
+      - name: Install Playwright Chromium
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Run browser and packed CLI Studio journeys
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm test:e2e && pnpm test:e2e:packed
+
+      - name: Smoke test publishable CLI package
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm smoke:package
 
       - name: Record deployed ref
         run: printf '%s\n' "$DEPLOY_REF" > packages/editor/dist/DEPLOYED_REF

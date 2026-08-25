@@ -4,9 +4,10 @@
 
 # Dumb Diagrams
 
-**LLM-first architecture diagrams that are hard to get wrong.**
+**Architecture diagrams for LLMs to start, and humans to finish.**
 
-Deterministic layout, validated `.dgm` source, and a local Studio — built for coding agents and the humans steering them.
+An opinionated, source-first diagram engine with deterministic layout, a local
+Studio, and enough guardrails to keep an AI-generated sketch understandable.
 
 <br />
 
@@ -19,246 +20,228 @@ Deterministic layout, validated `.dgm` source, and a local Studio — built for 
 
 ---
 
-End users install the [`dumbdiagrams`](https://www.npmjs.com/package/dumbdiagrams) npm package — not this repository. This repo is for developing the editor and publishing the CLI.
+## The idea
 
-**Requires Node.js 24 or newer.**
+LLMs are surprisingly good at understanding an architecture conversation.
+They know the services, the boundaries, and the flow. The awkward part begins
+when we ask them to turn that understanding into a diagram that is consistent,
+editable, and actually pleasant to read.
+
+Dumb Diagrams gives the model a small `.dgm` language and a strongly
+opinionated rendering engine. The model describes *what the architecture is*;
+the engine decides where things should go, how groups should nest, where
+connectors should travel, and whether the result is structurally valid. Then a
+human can open Studio, move things around, adjust a route, and keep those edits
+in the same source file.
+
+The visual opinion starts with AWS architecture guidance and official examples,
+filtered through what I—the creator 🙂—believe makes a diagram pretty, clear,
+and quick to digest. This is not a neutral canvas. That is rather the point.
+
+## Why another diagram tool?
+
+[draw.io](https://www.drawio.com/),
+[Lucidchart](https://www.lucidchart.com/), and
+[Mermaid](https://mermaid.js.org/) are great tools. This project is not here to
+pretend otherwise. They simply optimize for somewhat different jobs.
+
+| Tool or approach | Excellent when… | Where Dumb Diagrams takes a different bet |
+| --- | --- | --- |
+| draw.io / diagrams.net | You want a flexible visual canvas and full manual control | A general canvas gives an LLM many tiny visual decisions to get wrong; Dumb Diagrams starts from architecture meaning and applies one layout opinion |
+| Lucidchart | A team needs a mature collaborative diagramming workspace | Dumb Diagrams keeps plain files beside the code and focuses on the agent-to-architect loop rather than becoming another hosted workspace |
+| Mermaid | You want lightweight diagrams-as-code in documentation | Dumb Diagrams spends more of its complexity on nested cloud boundaries, provider icons, resource cards, ports, and editable connector routes |
+| MCP in front of an existing canvas | You need an agent to operate a tool your team already uses | MCP can be genuinely useful, but a model driving a general-purpose canvas can still produce mixed results between runs; here the model writes a constrained document and a deterministic engine does the drawing |
+
+The goal is not to replace every diagram. It is to make one particular moment
+much better: an architect has an idea, asks an LLM for the first pass, and gets
+an opinionated diagram that is already useful enough to discuss and refine.
+
+## What you get
+
+- **A tiny, agent-friendly source format.** `.dgm` is readable, reviewable, and
+  easy for an LLM to edit without moving hundreds of canvas objects.
+- **Deterministic results.** The same source and saved view produce the same
+  layout, connector routes, and SVG.
+- **Architecture-aware structure.** Resources, groups, containment, numbered
+  flows, labels, ports, and manual overrides are first-class concepts.
+- **Opinionated automatic layout.** New diagrams begin with a coherent visual
+  hierarchy instead of an empty infinite canvas.
+- **A human editing surface.** Studio supports moving and resizing items,
+  editing source, adjusting routes, managing multiple diagrams, and exporting.
+- **Local files, not a hidden database.** Diagrams live beside the project, work
+  with Git, and can be edited by Cursor, Codex, Claude, or another coding agent.
+- **Guardrails.** The CLI validates source and reports layout/routing problems
+  before a broken diagram quietly becomes the new reference.
+- **Useful outputs.** Export PNG, JPEG, WebP, GIF, SVG, PDF, standalone HTML,
+  XML, URL payloads, JSON, or canonical `.dgm` source.
+
+## Honest tradeoffs
+
+Dumb Diagrams is a good fit when you want an LLM-assisted architecture diagram
+with a strong default style. It is intentionally less suitable when you want:
+
+- a general illustration, free-form whiteboard, or pixel-perfect design tool;
+- real-time multi-user collaboration hosted by a SaaS vendor;
+- live discovery of cloud resources or a replacement for infrastructure
+  inventory;
+- a completely unopinionated renderer that accepts any visual arrangement;
+- a mobile editor—v0.1 is desktop-focused, with roughly 1280px as the comfortable
+  baseline.
+
+AWS is the strongest grammar, example, and visual-guidance path today. The
+catalog also contains cloud-agnostic and other provider assets, but the product
+should currently be evaluated as AWS-first rather than magically universal.
+Very dense diagrams can still force connector compromises; Studio exposes
+manual routes for the cases where the architect knows better than the router.
 
 ## Quick start
 
+Requires Node.js 24 or newer.
+
 ```bash
 npx dumbdiagrams@latest init --open-editor
-# Prompts for a project name and opens it in your editor.
-# Run the printed `Next:` command to open its diagrams folder in Studio.
 ```
 
-Each project is a shared workspace for you and your coding agent. Diagrams live as separate `.dgm` files under `diagrams/`; Studio watches the selected file and renders the result.
+The command asks for a project name, creates a folder with a starter diagram and
+agent instructions, and can open it in your editor. Run the printed `Next:`
+command to open the project’s diagrams in Studio.
 
-<p align="center">
-  <img src="examples/good/good-aws-example-2.png" alt="AWS architecture diagram rendered by Dumb Diagrams" width="720" />
-</p>
-
-## Install options
-
-In an interactive terminal, omitting the directory opens a project-name prompt. The answer becomes the display name and a safe kebab-case folder name:
+Prefer a fully explicit command?
 
 ```bash
-# Named folder and starter diagram
 npx dumbdiagrams@latest init \
   --name "Payments Platform" \
   --diagram system-overview \
-  --description "Event-driven billing architecture."
+  --description "Event-driven billing architecture." \
+  --open-editor
 
-# Separate output path and display name
-npx dumbdiagrams@latest init \
-  --directory ./projects/payments \
-  --name "Payments Platform"
-
-# Non-interactive timestamped fallback
-npx dumbdiagrams@latest init --yes
+cd payments-platform
+npx dumbdiagrams@latest studio diagrams
 ```
 
-`init` also writes `DUMB_DIAGRAMS.md`, `AGENTS.md`, `CLAUDE.md`, `CATALOG.md`, and `CATALOG.json` — the agent contract for icon types, hierarchy rules, and project conventions. Add `--open-editor` or `--editor cursor` / `--editor code` to open the project during setup.
+Every diagram is a normal file under `diagrams/`. Studio watches the selected
+file, saves changes back to disk, notices external edits, and protects against
+overwriting a newer revision.
 
-## Agent workflow
+## The agent workflow
 
-Once the project is open in Cursor, VS Code, Claude Code, Codex, or another agent:
+`init` creates more than an empty drawing. It adds:
+
+- `DUMB_DIAGRAMS.md`, the local architecture-diagram contract;
+- `AGENTS.md` and `CLAUDE.md`, entry points for common coding agents;
+- `CATALOG.md` and `CATALOG.json`, the available icon and type inventory;
+- a `diagrams/` directory with its own guidance;
+- curated source/prompt examples that show the expected style.
+
+That means the useful prompt can stay pleasantly short:
 
 ```text
-Read DUMB_DIAGRAMS.md, diagrams/README.md, and examples/README.md. Inspect
-the closest prompt/source pair in examples/. For a new request, create a new
-descriptive file under diagrams/; do not overwrite an existing .dgm unless the
-user names it explicitly. Follow the examples' explicit hierarchy, labels,
-numbered stages, edge direction hints, and routing constraints. Run
-`npx dumbdiagrams@latest validate diagrams` when finished.
+Read DUMB_DIAGRAMS.md and the closest example. Create a new diagram for our
+payments flow under diagrams/. Keep the public and private boundaries obvious,
+number the main request path, and validate the result when you are done.
 ```
 
-Agents create or edit ordinary `.dgm` files, run `validate`, and Studio reflects the change. The required contract is local `DUMB_DIAGRAMS.md`; bundled examples are style references, not runtime dependencies.
+The agent writes architecture, not SVG coordinates. A source file looks roughly
+like this:
 
-## Develop locally
+```dgm
+diagram payments {
+  grammar aws
+  flow lr
+  title "Payments platform"
 
-Three loops, depending on what you changed.
+  generic.user customer "Customer"
+  aws.region use1 "AWS Region" {
+    group app "Application" {
+      aws.api-gateway gateway "Payments API"
+      aws.aws-lambda handler "Payment handler"
+    }
+    aws.dynamodb ledger "Payment ledger"
+  }
 
-### Editor (fastest — daily UI work)
+  customer -> gateway { id request step 1 kind flow }
+  gateway -> handler { id invoke step 2 kind flow }
+  handler -> ledger { id persist step 3 kind flow }
+}
 
-```bash
-pnpm install --frozen-lockfile
-pnpm dev
+view default {
+}
 ```
 
-Vite serves the Studio with hot reload. Unit tests cover editor logic and interactions:
+The engine validates the service types and relationships, places the resources,
+and draws deterministic right-angle connectors. If you move something or pin a
+route in Studio, that human decision is written into the `view` block and wins
+on the next render.
+
+## Everyday commands
 
 ```bash
-pnpm test
-pnpm test:e2e          # Playwright against the Vite dev server
-```
-
-This path does **not** exercise the published CLI bundle or `studio` command.
-
-### CLI from the workspace
-
-Use this when you change the CLI, `init` templates, Studio server, or how the CLI serves the editor:
-
-```bash
-pnpm build                              # or: runtime / editor / cli filters
-pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm
-
-# Same binary, explicit paths:
-node packages/cli/dist/index.js studio examples/diagrams/aws-high-availability-web-app.dgm
-node packages/cli/dist/index.js validate examples/diagrams
-node packages/cli/dist/index.js render examples/diagrams/aws-high-availability-web-app.dgm --output output.svg
-node packages/cli/dist/index.js init --name "Local Preview" --open-editor
-node packages/cli/dist/index.js fixtures async-docs   # writes .artifacts/golden/
-```
-
-`dev:cli` runs the workspace CLI against `packages/editor/dist` (built editor assets). Rebuild the editor after UI changes before expecting them in `studio`.
-
-CLI integration tests (`packages/cli/src/*.test.ts`) cover `init`, `validate`, `format`, `render`, help/version, and Studio server APIs. They do not drive a browser.
-
-### Tarball — same boundary as `npx` (before release)
-
-Pack and run commands through `npx --package=…` when you change bundling, `prepack`, init templates, or anything that only exists in the published artifact:
-
-```bash
-pnpm build
-mkdir -p .artifacts/packages
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-
-export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
-export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
-```
-
-`pnpm smoke:package` automates pack + `npx` smoke (`init`, `validate`, `render`, version) and rebuilds the AGPL source snapshot inside the tarball.
-
-**TL;DR:** `pnpm dev` for editor work; `pnpm build && pnpm dev:cli` for CLI + built Studio; tarball/`smoke:package` before you ship.
-
-## Test the tarball locally
-
-This exercises the same package boundary as `npx`, without publishing. From the repository root:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-mkdir -p .artifacts/packages
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-
-export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
-export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
-```
-
-The AGPL package includes its corresponding buildable source under
-`dist/source/`, including the vendored catalog inputs needed for a clean build.
-
-### Full smoke test (new project + Studio)
-
-```bash
-PROJECT_DIR="../dumb-diagrams-$(date +%Y-%m-%d-%H-%M-%S)"
-$CLI init "$PROJECT_DIR" --open-editor --editor cursor
-$CLI studio "$PROJECT_DIR/diagrams"
-```
-
-`PROJECT_DIR` is a sibling of the repository so the test project stays outside the worktree. Use `--editor code` for VS Code.
-
-### Test individual CLI commands
-
-The full `init` flow creates a whole project. To exercise specific options in isolation, point each command at its own temp directory or at files that already exist:
-
-```bash
-TMP="$(mktemp -d)"
-
-# Reference — no project created
-$CLI --version
-$CLI help
-
-# Init flags, one scenario per folder
-$CLI init "$TMP/by-name" --name "Payments Platform" --diagram billing-flow
-$CLI init "$TMP/by-yes" --yes
-$CLI init "$TMP/with-desc" --name demo --description "Smoke-test project"
-
-# Read-only commands against an initialized project
-$CLI validate "$TMP/by-name/diagrams"
-$CLI render "$TMP/by-name/diagrams/architecture.dgm" --output "$TMP/out.svg"
-$CLI format "$TMP/by-name/diagrams/architecture.dgm"
-
-# Studio without opening a browser (Ctrl+C to stop)
-$CLI studio "$TMP/by-name/diagrams" --no-open --port 4799
-```
-
-After publishing, swap `$CLI` for `npx dumbdiagrams@latest` (or `@0.1.0` for a pinned version).
-
-### After publishing to npm
-
-```bash
-npx dumbdiagrams@latest init --open-editor
+# Start or open a project
+npx dumbdiagrams@latest init
 npx dumbdiagrams@latest studio diagrams
-npx dumbdiagrams@latest validate diagrams
+npx dumbdiagrams@latest studio diagrams/system-overview.dgm
 
-# Optional global install (exposes dumbdiagrams and dgm)
-npm install -g dumbdiagrams
-dumbdiagrams init --yes
-dgm studio diagrams
+# Check and normalize source
+npx dumbdiagrams@latest validate diagrams
+npx dumbdiagrams@latest format diagrams/system-overview.dgm --write
+
+# Produce a portable SVG without opening Studio
+npx dumbdiagrams@latest render diagrams/system-overview.dgm --output architecture.svg
 ```
 
-The unscoped `dumbdiagrams` package is public on npm. For a private preview, use a scoped package with restricted access, or keep using the local tarball flow above.
-
-## Test coverage (what runs in CI)
-
-| Layer | What it checks | Gap |
-| --- | --- | --- |
-| Unit / integration (`pnpm test`) | Runtime, editor model, CLI `init`/`validate`/`render`/`format`, Studio server HTTP API | No browser |
-| Playwright (`pnpm test:e2e`, 47 tests) | Full Studio UI — canvas, catalog, workspace, export | Runs against **Vite**, not `dumbdiagrams studio` |
-| Tarball smoke (`pnpm smoke:package`) | Packed `npx` flow: `init`, `validate`, `render`, AGPL source rebuild | Does not open Studio in a browser |
-
-Together this is enough for v0.1: core logic and UI are well covered; the main untested path is **browser → CLI `studio` server → bundled `dist/studio`**. Manual check: `$CLI studio diagrams --no-open` after a tarball pack. A future Playwright job against the CLI server would close that gap.
-
-## Packages
-
-| Package | Role |
-| --- | --- |
-| `dumbdiagrams` | Publishable CLI and local Studio runtime |
-| `@dumb-diagrams/runtime` | Model, catalog, `.dgm` parser, layout, routing, and rendering |
-| `@dumb-diagrams/editor` | Browser editor (Vite + React) |
-
-## Repository layout
-
-- `assets/catalog/` contains reviewed provider inputs, source locks, and
-  collision policy. Its [README](./assets/catalog/README.md) documents the
-  generation lifecycle.
-- `examples/diagrams/` contains `.dgm` examples; prompt and visual references
-  remain in the neighboring example directories.
-- `packages/runtime`, `packages/editor`, and `packages/cli` are the only
-  workspace packages.
-- `scripts/`, `docs/`, and `e2e/` contain root tooling, release documentation,
-  and browser tests.
-- `.artifacts/` is ignored and contains coverage, Playwright output, rendered
-  fixtures, and packed tarballs.
-
-The repository pins pnpm exactly. Installs use isolated linking, strict peer and
-engine checks, a 24-hour package release delay, and a dependency lifecycle
-allowlist containing only reviewed `esbuild` execution. Run
-`pnpm check:dependencies` after changing imports or package manifests; it
-rejects undeclared external imports in root tooling and every workspace.
-
-## Editor
+An optional global install exposes both command names:
 
 ```bash
-pnpm dev
+npm install -g dumbdiagrams
+dumbdiagrams studio diagrams
+dgm validate diagrams
 ```
 
-Each `.dgm` file is the portable source of truth for one diagram. `dumbdiagrams studio diagrams` opens the project folder and lets you select a source file; `dumbdiagrams studio diagrams/name.dgm` opens one file directly. Studio writes back to disk, watches edits from Cursor, Codex, Claude, or another editor, and protects saves with revision checks.
+## Working on this repository
 
-v0.1 is desktop-focused: 900px minimum layout width, ~1280px supported baseline. A small-screen responsive editor is out of scope for v0.1.
+This repository uses the pinned pnpm workspace setup. The supported development
+entry point is `pnpm dev`, not `npm run dev`.
 
-## Future landing page and docs
+| What you changed | Use this loop |
+| --- | --- |
+| Studio UI | `pnpm dev` |
+| Runtime, CLI, templates, or CLI-served Studio | `pnpm build && pnpm dev:cli [file-or-folder]` |
+| Packaging or bundled assets | `pnpm build && pnpm smoke:package` |
+| Release candidate | `pnpm check:release` |
 
-Keep plain pnpm workspaces. When you add a marketing site, place a private Astro app in `packages/docs` and deploy it with a separate CI job so docs changes do not force npm packaging or Studio deployment. Nx or Turborepo are optional only if measured CI build time becomes a bottleneck.
+The tarball path is for testing the real published-package boundary without
+publishing anything. `pnpm smoke:package` packs the CLI and exercises it through
+local `npx`; `pnpm test:e2e:packed` additionally drives the bundled Studio
+against real files.
 
-## Licensing and publication
+For the full programmer-oriented tour—technologies, repository structure,
+package boundaries, compilation stages, routing, local Studio APIs, catalog,
+packaging, and tests—read
+**[docs/TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md)**.
 
-Copyright © 2026 DumbDiagrams contributors. Original Dumb Diagrams source,
-package code, and repository-authored examples are licensed under the
-[GNU Affero General Public License v3.0 only](./LICENSE). Modified versions
-offered over a network must make their corresponding source available to their
-users. Provider catalog icons remain subject to
-[ICON-NOTICES.md](./ICON-NOTICES.md).
+Other maintainer references:
 
-Workspace packages version together from a `vMAJOR.MINOR.PATCH` tag. Versioning rules and the release checklist live in [docs/VERSIONING.md](./docs/VERSIONING.md) and [docs/RELEASE.md](./docs/RELEASE.md). See [CHANGELOG.md](./CHANGELOG.md) for release notes.
+- [Maintainer map](./docs/MAINTAINING.md)
+- [Release and rollback](./docs/RELEASE.md)
+- [Versioning policy](./docs/VERSIONING.md)
+- [Exact connector-routing rules](./packages/runtime/ROUTING.md)
+- [Catalog provenance and updates](./assets/catalog/README.md)
+- [Changelog](./CHANGELOG.md)
+
+## Project status
+
+v0.1 is deliberately focused: local, desktop-first, AWS-first, and built around
+the architect-plus-coding-agent workflow. The repository’s release gate covers
+the engine, CLI, Studio, all export formats, the packed npm consumer journey,
+and a clean rebuild of the AGPL corresponding source. Linux is the full browser
+release platform; Windows additionally runs the publishable CLI smoke in CI.
+
+## License
+
+Copyright © 2026 DumbDiagrams contributors.
+
+Original Dumb Diagrams source, package code, and repository-authored examples
+are licensed under the [GNU Affero General Public License v3.0 only](./LICENSE).
+Modified versions offered over a network must make their corresponding source
+available to their users. Provider catalog icons retain their upstream terms;
+see [ICON-NOTICES.md](./ICON-NOTICES.md).

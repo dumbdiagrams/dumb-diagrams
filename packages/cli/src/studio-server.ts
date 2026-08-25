@@ -5,7 +5,7 @@ import {
   readFileSync,
   renameSync,
   unlinkSync,
-  watch as watchFile,
+  watch,
   writeFileSync,
   mkdirSync,
   type FSWatcher,
@@ -21,6 +21,7 @@ import { compileDiagram } from "@dumb-diagrams/runtime/render";
 
 const MAX_REQUEST_BYTES = 1_250_000;
 const STUDIO_EXTENSION = ".dgm";
+const SSE_HEARTBEAT_INTERVAL_MS = 15_000;
 
 export interface StudioServerOptions {
   filePath: string;
@@ -78,9 +79,22 @@ export async function startStudioServer(
 
   let currentSource = readFileSync(documentPath, "utf8");
   let currentRevision = revisionFor(currentSource);
+  let documentPresent = true;
   let watcher: FSWatcher | null = null;
   let watchTimer: NodeJS.Timeout | null = null;
+  let watcherRestartTimer: NodeJS.Timeout | null = null;
+  let shuttingDown = false;
   const clients = new Set<ServerResponse>();
+  const heartbeat = setInterval(() => {
+    for (const client of clients) {
+      try {
+        client.write(": heartbeat\n\n");
+      } catch {
+        clients.delete(client);
+      }
+    }
+  }, SSE_HEARTBEAT_INTERVAL_MS);
+  heartbeat.unref();
 
   const closeWatcher = () => {
     watcher?.close();
@@ -105,34 +119,55 @@ export async function startStudioServer(
     }
   };
 
-  const syncFromDisk = (announce: boolean) => {
+  const syncFromDisk = (announce: boolean): boolean => {
     try {
       const nextSource = readFileSync(documentPath, "utf8");
       const nextRevision = revisionFor(nextSource);
-      if (nextRevision === currentRevision) return;
+      const recovered = !documentPresent;
+      documentPresent = true;
+      if (nextRevision === currentRevision && !recovered) return true;
       currentSource = nextSource;
       currentRevision = nextRevision;
       if (announce) sendEvent("document", readPayload());
+      return true;
     } catch {
-      sendEvent("document-missing", {
-        fileName: basename(documentPath),
-        filePath: documentPath,
-      });
+      const wasPresent = documentPresent;
+      documentPresent = false;
+      if (announce && wasPresent) {
+        sendEvent("document-missing", {
+          fileName: basename(documentPath),
+          filePath: documentPath,
+        });
+      }
+      return false;
     }
   };
 
   const startWatcher = () => {
+    if (watcherRestartTimer) {
+      clearTimeout(watcherRestartTimer);
+      watcherRestartTimer = null;
+    }
     closeWatcher();
-    watcher = watchFile(documentPath, { persistent: false }, () => {
+    watcher = watch(projectDirectory, { persistent: false }, (_eventType, filename) => {
+      if (filename && String(filename) !== basename(documentPath)) return;
       if (watchTimer) clearTimeout(watchTimer);
       watchTimer = setTimeout(() => {
         watchTimer = null;
         syncFromDisk(true);
       }, 80);
     });
-    watcher.on("error", () => {
-      // The browser still has the last good revision and can reconnect through
-      // /api/document if an editor replaces the file during a save.
+    watcher.once("error", () => {
+      // API reads and SSE reconnects always refresh from disk, so the browser
+      // can recover even if the operating-system watcher itself is interrupted.
+      closeWatcher();
+      if (shuttingDown) return;
+      watcherRestartTimer = setTimeout(() => {
+        watcherRestartTimer = null;
+        startWatcher();
+        syncFromDisk(true);
+      }, 250);
+      watcherRestartTimer.unref();
     });
   };
 
@@ -153,6 +188,9 @@ export async function startStudioServer(
   try {
     address = await listen(server, host, port);
   } catch (error) {
+    shuttingDown = true;
+    clearInterval(heartbeat);
+    if (watcherRestartTimer) clearTimeout(watcherRestartTimer);
     closeWatcher();
     throw error;
   }
@@ -160,7 +198,10 @@ export async function startStudioServer(
   const url = `http://${host}:${resolvedPort}/`;
 
   server.on("close", () => {
+    shuttingDown = true;
     if (watchTimer) clearTimeout(watchTimer);
+    if (watcherRestartTimer) clearTimeout(watcherRestartTimer);
+    clearInterval(heartbeat);
     closeWatcher();
     for (const client of clients) client.end();
     clients.clear();
@@ -179,6 +220,10 @@ export async function startStudioServer(
     const pathname = requestUrl.pathname;
 
     if (pathname === "/api/session" && request.method === "GET") {
+      if (!syncFromDisk(false)) {
+        sendMissingDocument(response);
+        return;
+      }
       sendJson(response, 200, {
         mode: "file",
         projectRoot: dirname(documentPath),
@@ -189,6 +234,10 @@ export async function startStudioServer(
     }
 
     if (pathname === "/api/document" && request.method === "GET") {
+      if (!syncFromDisk(false)) {
+        sendMissingDocument(response);
+        return;
+      }
       sendJson(response, 200, readPayload());
       return;
     }
@@ -252,6 +301,7 @@ export async function startStudioServer(
       documentPath = nextPath;
       currentSource = nextSource;
       currentRevision = revisionFor(nextSource);
+      documentPresent = true;
       startWatcher();
       sendJson(response, 200, readPayload());
       return;
@@ -283,6 +333,10 @@ export async function startStudioServer(
           error: "source_too_large",
           message: "The diagram source is larger than the Studio limit.",
         } satisfies StudioErrorPayload);
+        return;
+      }
+      if (!syncFromDisk(false)) {
+        sendMissingDocument(response);
         return;
       }
       if (baseRevision !== currentRevision) {
@@ -335,6 +389,7 @@ export async function startStudioServer(
       documentPath = nextPath;
       currentSource = source;
       currentRevision = revisionFor(source);
+      documentPresent = true;
       startWatcher();
       const payload = readPayload();
       sendEvent("document", payload);
@@ -343,13 +398,21 @@ export async function startStudioServer(
     }
 
     if (pathname === "/api/events" && request.method === "GET") {
+      const hasDocument = syncFromDisk(false);
       response.writeHead(200, {
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
         "Content-Type": "text/event-stream; charset=utf-8",
         "X-Accel-Buffering": "no",
       });
-      response.write(`event: ready\ndata: ${JSON.stringify(readPayload())}\n\n`);
+      if (hasDocument) {
+        response.write(`event: ready\ndata: ${JSON.stringify(readPayload())}\n\n`);
+      } else {
+        response.write(`event: document-missing\ndata: ${JSON.stringify({
+          fileName: basename(documentPath),
+          filePath: documentPath,
+        })}\n\n`);
+      }
       clients.add(response);
       request.on("close", () => clients.delete(response));
       return;
@@ -361,6 +424,13 @@ export async function startStudioServer(
     }
 
     serveEditorAsset(editorRoot, pathname, response);
+  }
+
+  function sendMissingDocument(response: ServerResponse): void {
+    sendJson(response, 404, {
+      error: "document_missing",
+      message: `${basename(documentPath)} is no longer available on disk.`,
+    } satisfies StudioErrorPayload);
   }
 }
 

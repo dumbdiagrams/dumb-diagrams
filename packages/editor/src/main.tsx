@@ -199,7 +199,7 @@ type LocalStudioPayload = {
   filePath: string;
 };
 type LocalStudioState = LocalStudioPayload & {
-  status: "connected" | "saving" | "offline" | "conflict";
+  status: "connected" | "saving" | "disconnected" | "conflict";
   external?: LocalStudioPayload;
 };
 type ProjectFilesPayload = {
@@ -422,7 +422,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (!localStudio || localStudio.status === "offline") return;
+    if (!localStudio || localStudio.status === "disconnected") return;
     void refreshProjectFiles();
   }, [localStudio?.filePath, localStudio?.status, refreshProjectFiles]);
 
@@ -457,10 +457,15 @@ function App() {
         setToast(`Connected to ${document.fileName}`);
 
         events = new EventSource("/api/events");
-        events.addEventListener("document", (event) => {
+        const applyStudioEvent = (next: LocalStudioPayload) => {
           if (cancelled) return;
-          const next = JSON.parse((event as MessageEvent).data) as LocalStudioPayload;
-          if (!next.revision || next.revision === localStudioRevisionRef.current) return;
+          if (!next.revision) return;
+          if (next.revision === localStudioRevisionRef.current) {
+            setLocalStudio((current) => current && current.status !== "conflict"
+              ? { ...current, ...next, status: "connected", external: undefined }
+              : current);
+            return;
+          }
           const connectedTab = tabsRef.current.find((tab) => tab.id === connectedStudioTabIdRef.current);
           if (!connectedTab) return;
           const currentTab = connectedTab;
@@ -481,13 +486,19 @@ function App() {
             ? { ...current, ...next, status: "connected", external: undefined }
             : current);
           setToast(`Updated from ${next.fileName}`);
+        };
+        events.addEventListener("ready", (event) => {
+          applyStudioEvent(JSON.parse((event as MessageEvent).data) as LocalStudioPayload);
+        });
+        events.addEventListener("document", (event) => {
+          applyStudioEvent(JSON.parse((event as MessageEvent).data) as LocalStudioPayload);
         });
         events.addEventListener("document-missing", () => {
-          setLocalStudio((current) => current ? { ...current, status: "offline" } : current);
+          setLocalStudio((current) => current ? { ...current, status: "disconnected" } : current);
           setToast("The connected .dgm file is no longer on disk");
         });
         events.onerror = () => {
-          if (!cancelled) setLocalStudio((current) => current ? { ...current, status: "offline" } : current);
+          if (!cancelled) setLocalStudio((current) => current ? { ...current, status: "disconnected" } : current);
         };
       } catch {
         // Browser Studio and the static site intentionally have no local API.
@@ -569,7 +580,7 @@ function App() {
       setToast(`Saved ${payload.fileName}`);
       return true;
     } catch (error) {
-      setLocalStudio((current) => current ? { ...current, status: "offline" } : current);
+      setLocalStudio((current) => current ? { ...current, status: "disconnected" } : current);
       setToast(error instanceof Error ? error.message : "The local Studio could not save the diagram.");
       return false;
     }
@@ -1795,8 +1806,8 @@ function App() {
                 <span className="local-studio-status-dot" aria-hidden="true" />
                 {localStudio.status === "saving"
                   ? "Saving"
-                  : localStudio.status === "offline"
-                    ? "Offline"
+                  : localStudio.status === "disconnected"
+                    ? "Studio disconnected"
                     : localStudio.status === "conflict"
                       ? "Needs review"
                       : "Local file"}

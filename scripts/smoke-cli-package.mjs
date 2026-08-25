@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,10 +11,12 @@ const cliManifest = JSON.parse(readFileSync(join(cliPackageRoot, "package.json")
 const version = cliManifest.version;
 const tarballName = `dumbdiagrams-${version}.tgz`;
 const tarballPath = join(artifactsDir, tarballName);
+const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 
 mkdirSync(artifactsDir, { recursive: true });
 
-execFileSync("pnpm", ["--dir", cliPackageRoot, "pack", "--pack-destination", artifactsDir], {
+execFileSync(pnpmCommand, ["--dir", cliPackageRoot, "pack", "--pack-destination", artifactsDir], {
   cwd: root,
   stdio: "inherit",
 });
@@ -88,6 +90,18 @@ try {
     throw new Error("render did not create output.svg");
   }
 
+  const formatted = runNpxCapture(tarballPath, ["format", diagramPath]);
+  if (!formatted.startsWith("diagram ")) {
+    throw new Error("format did not print canonical .dgm source");
+  }
+
+  const invalidPath = join(projectDir, "diagrams", "invalid.dgm");
+  writeFileSync(invalidPath, "this is not a diagram\n", "utf8");
+  const invalidCode = runNpx(tarballPath, ["validate", invalidPath]);
+  if (invalidCode === 0) {
+    throw new Error("validate accepted invalid source");
+  }
+
   const helpOut = runNpxCapture(tarballPath, ["help"]);
   if (!helpOut.includes("studio")) {
     throw new Error("help output missing studio command");
@@ -119,12 +133,21 @@ function verifyCorrespondingSource(tarballPath) {
     execFileSync("tar", ["-xzf", tarballPath, "-C", extracted]);
     const packageRoot = join(extracted, "package");
     const sourceRoot = join(packageRoot, "dist/source");
+    const registryConfig = join(sourceRoot, "registry.npmrc");
+    if (!existsSync(registryConfig)) {
+      throw new Error("Corresponding source is missing registry.npmrc");
+    }
+    // Package managers resolve dependencies before running the root
+    // preinstall hook, so the hook cannot protect a clean build from an
+    // unrelated user-level registry. Restore the bundled public-registry
+    // configuration before invoking pnpm.
+    copyFileSync(registryConfig, join(sourceRoot, ".npmrc"));
     const commands = [
       ["install", "--frozen-lockfile"],
       ["build"],
     ];
     for (const args of commands) {
-      execFileSync("pnpm", args, { cwd: sourceRoot, stdio: "inherit" });
+      execFileSync(pnpmCommand, args, { cwd: sourceRoot, stdio: "inherit" });
     }
   } finally {
     rmSync(extracted, { recursive: true, force: true });
@@ -134,7 +157,7 @@ function verifyCorrespondingSource(tarballPath) {
 function runNpx(tarballPath, args, bin = "dumbdiagrams") {
   try {
     execFileSync(
-      "npx",
+      npxCommand,
       ["--yes", `--package=${tarballPath}`, bin, ...args],
       { cwd: root, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
     );
@@ -147,7 +170,7 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams") {
 
 function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
   return execFileSync(
-    "npx",
+    npxCommand,
     ["--yes", `--package=${tarballPath}`, bin, ...args],
     { cwd: root, encoding: "utf8", env: { ...process.env, npm_config_yes: "true" } },
   );

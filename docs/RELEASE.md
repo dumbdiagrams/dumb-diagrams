@@ -13,7 +13,8 @@ pnpm check:release
 
 `check:release` runs version sync, dependency-boundary checks, build,
 unit/integration tests with coverage thresholds, editor typecheck, example
-validation, Playwright e2e tests, and the publishable package smoke test.
+validation plus the reviewed routing-warning baseline, static and packed-Studio
+Playwright journeys, and the publishable package smoke test.
 
 Build the standalone npm artifact from the compiled workspace:
 
@@ -23,9 +24,9 @@ mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 ```
 
-The resulting tarball contains the CLI, bundled diagram runtime, and compiled
-Studio assets. Publishing that package makes the end-user flow work without
-shipping the repository source:
+The resulting tarball contains the CLI, bundled diagram runtime, compiled
+Studio assets, and the AGPL corresponding-source snapshot. Publishing it makes
+the end-user flow work without requiring a repository checkout:
 
 ```bash
 npx dumbdiagrams@0.1.0 init --open-editor
@@ -40,7 +41,8 @@ Recommended: pack locally and exercise the exact consumer boundary:
 pnpm build
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
+VERSION="$(node -p 'require("./packages/cli/package.json").version')"
+ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-$VERSION.tgz"
 npx --yes --package="$ARTIFACT" dumbdiagrams init ./preview-project --yes
 npx --yes --package="$ARTIFACT" dumbdiagrams validate ./preview-project/diagrams
 ```
@@ -59,6 +61,20 @@ npm login --registry=https://registry.npmjs.org
 pnpm preflight:publish
 ```
 
+Publish the exact tarball that passed the local consumer-boundary checks, not a
+freshly packed directory:
+
+```bash
+npm publish "$ARTIFACT" --access public --registry=https://registry.npmjs.org/
+```
+
+Confirm the new version is visible before moving the `latest` documentation and
+deployment forward:
+
+```bash
+npm view "dumbdiagrams@$VERSION" version --registry=https://registry.npmjs.org/
+```
+
 ### Public usage after publish
 
 ```bash
@@ -75,7 +91,7 @@ dgm studio diagrams
 ```
 
 Create and push the release tag only after `pnpm check:release`,
-`pnpm preflight:publish`, and branch CI pass:
+`pnpm preflight:publish`, branch CI, and the npm verification above pass:
 
 ```bash
 git tag -a v0.1.0 -m "Release v0.1.0"
@@ -83,8 +99,12 @@ git push origin v0.1.0
 ```
 
 The tag starts the GitHub Pages deployment workflow in
-`.github/workflows/deploy.yml`. It builds the selected tag and publishes
-`packages/editor/dist` as the static site.
+`.github/workflows/deploy.yml`. A new release tag repeats the full Linux release
+verification against that exact ref and only then publishes
+`packages/editor/dist` as the static site. An explicit rollback ref is already
+a known-good release, so it is rebuilt and deployed without assuming that an
+older tag contains today's test scripts. Normal CI also runs the packed CLI
+smoke on Windows so path handling and Windows package preparation cannot drift.
 
 ## Rollback
 

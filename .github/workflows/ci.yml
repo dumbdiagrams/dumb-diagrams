@@ -54,6 +54,9 @@ jobs:
       - name: Validate examples
         run: pnpm check
 
+      - name: Check reviewed routing warnings
+        run: pnpm check:routing
+
       - name: Smoke test publishable CLI package
         run: pnpm smoke:package
 
@@ -83,3 +86,33 @@ jobs:
 
       - name: Run Playwright tests
         run: pnpm test:e2e
+
+      - name: Run packed CLI Studio journey
+        run: pnpm test:e2e:packed
+
+  cli-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages and editor
+        run: pnpm build
+
+      - name: Run CLI unit tests
+        run: pnpm exec vitest run packages/cli/src
+
+      - name: Smoke test publishable CLI package
+        run: pnpm smoke:package

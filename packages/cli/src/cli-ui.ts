@@ -31,12 +31,12 @@ const COMPACT_LOGO = [
   "═╩╝╚═╝╩ ╩╚═╝  ═╩╝╩╩ ╩╚═╝╩╚═╩ ╩╩ ╩╚═╝",
 ] as const;
 
+// Core brand colors sampled from packages/editor/public/logo_dumbdiagrams.png.
 const PALETTE = {
-  cyan: [80, 188, 255],
-  mint: [78, 230, 159],
-  pink: [238, 105, 168],
+  amber: [248, 162, 63],
+  orange: [230, 98, 49],
+  navy: [36, 64, 104],
   red: [255, 99, 112],
-  yellow: [245, 193, 92],
 } as const;
 
 export function createCliUi(options: CliUiOptions = {}) {
@@ -51,36 +51,36 @@ export function createCliUi(options: CliUiOptions = {}) {
     banner(): string {
       const lines = columns >= 72 ? WIDE_LOGO : COMPACT_LOGO;
       return lines
-        .map((line) => color && line ? gradient(line, PALETTE.cyan, PALETTE.pink) : line)
+        .map((line) => color && line ? gradient(line, PALETTE.amber, PALETTE.navy) : line)
         .join("\n");
     },
     brand(): string {
-      return `${bold(paint("DUMB DIAGRAMS", PALETTE.mint))} ${dim("— LLM-first architecture diagrams that are hard to get wrong")}`;
+      return `${bold(paint("DUMB DIAGRAMS", PALETTE.orange))} ${dim("— LLM-first architecture diagrams that are hard to get wrong")}`;
     },
     heading(value: string): string {
-      return bold(paint(value, PALETTE.mint));
+      return bold(paint(value, PALETTE.orange));
     },
     command(value: string): string {
-      return paint(value, PALETTE.cyan);
+      return paint(value, PALETTE.navy);
     },
     muted: dim,
     info(label: string, value: string): string {
       return `  ${dim(label.padEnd(8))} ${value}`;
     },
     success(value: string): string {
-      return `  ${paint("◆", PALETTE.mint)} ${value}`;
+      return `  ${paint("◆", PALETTE.orange)} ${value}`;
     },
     skip(value: string): string {
       return `  ${dim("◇")} ${dim(value)}`;
     },
     warning(value: string): string {
-      return `  ${paint("▲", PALETTE.yellow)} ${value}`;
+      return `  ${paint("▲", PALETTE.amber)} ${value}`;
     },
     error(value: string): string {
       return `  ${paint("✖", PALETTE.red)} ${value}`;
     },
     summary(value: string): string {
-      return `\n${bold(paint("  ──", PALETTE.mint))} ${bold(value)}`;
+      return `\n${bold(paint("  ──", PALETTE.orange))} ${bold(value)}`;
     },
   };
 }

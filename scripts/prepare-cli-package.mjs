@@ -50,6 +50,10 @@ await build({
   legalComments: "none",
 });
 
+// Windows does not replace an existing destination with renameSync. The
+// generated bundle is already complete, so remove only the old build output
+// immediately before swapping the new one into place.
+rmSync(entry, { force: true });
 renameSync(temporaryEntry, entry);
 cleanupDistArtifacts(cliDist);
 
@@ -108,6 +112,7 @@ function buildSourceSnapshot() {
     "README.md",
     "package.json",
     "playwright.config.ts",
+    "playwright.packed.config.ts",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "tsconfig.base.json",
@@ -131,6 +136,7 @@ function buildSourceSnapshot() {
     "assets/catalog",
     "docs",
     "e2e",
+    "e2e-packed",
     "examples/prompts",
     "examples/diagrams",
     "packages/cli/src",
@@ -164,12 +170,15 @@ and remain subject to \`ICON-NOTICES.md\`. Rebuild everything with the pinned
 package manager:
 
 \`\`\`bash
+cp registry.npmrc .npmrc
 pnpm install --frozen-lockfile
 pnpm build
 \`\`\`
 
-\`preinstall\` copies \`registry.npmrc\` to \`.npmrc\` automatically (npm tarballs
-cannot ship dot-prefixed npmrc files).
+The explicit copy must happen before dependency resolution. The \`preinstall\`
+hook cannot do this for a clean install because package managers resolve and
+download dependencies before running it. npm tarballs cannot ship the
+dot-prefixed file directly.
 
 Requires Node.js 24 or newer.
 `,

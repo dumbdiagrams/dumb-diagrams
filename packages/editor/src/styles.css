@@ -5520,7 +5520,7 @@ textarea:focus-visible {
   color: var(--accent);
 }
 
-.local-studio-status.is-offline,
+.local-studio-status.is-disconnected,
 .local-studio-status.is-conflict {
   border-color: color-mix(in srgb, var(--danger) 28%, var(--line));
   background: var(--danger-soft);

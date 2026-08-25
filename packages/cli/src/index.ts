@@ -20,6 +20,7 @@ import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/runtime/render
 import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
 import { displayNameForDirectory, resolveInitOptions } from "./init-options.js";
+import { browserLaunchCommand, editorLaunchCandidates } from "./platform-launch.js";
 import { resolveStudioEditorRoot, startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
@@ -644,14 +645,13 @@ function resolveStudioInput(input: string): string {
 }
 
 function openBrowser(url: string): void {
-  const command = process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
-  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+  const { command, args } = browserLaunchCommand(process.platform, url);
   const child = spawn(command, args, { detached: true, stdio: "ignore" });
   child.unref();
 }
 
 function openProjectEditor(projectRoot: string, requestedEditor: string): void {
-  const candidates = requestedEditor ? [requestedEditor] : ["cursor", "code", "codium", "windsurf", "zed"];
+  const candidates = editorLaunchCandidates(requestedEditor);
 
   const tryEditor = (index: number): void => {
     const command = candidates[index];

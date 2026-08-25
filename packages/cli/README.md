@@ -6,9 +6,19 @@ Local CLI and Studio for agent-generated `.dgm` source files — deterministic l
 
 [![npm version](https://img.shields.io/npm/v/dumbdiagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/dumbdiagrams)
 [![Node.js](https://img.shields.io/node/v/dumbdiagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](../../LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 
 Requires Node.js 24 or newer.
+
+## How routing works
+
+Connectors use deterministic Manhattan routing: they attach to visible icon
+ports and travel only horizontally or vertically. The router scores candidate
+ports and obstacle-free gutters for card collisions, connector crossings,
+unrelated junctions, crowded lanes, bends, and distance, with grid-based A* as
+a fallback for constrained diagrams. Pinned routes and exact fractional port
+attachments are preserved; face-only hints may move when another face produces
+a substantially cleaner path.
 
 ## Quick start
 
@@ -46,7 +56,9 @@ dumbdiagrams format diagrams/foo.dgm      # print canonical source
 
 Run `dumbdiagrams help` for init, studio, and render flags.
 
-## Test the tarball locally
+## Maintainer tarball test
+
+From a full repository checkout (not from an installed npm package):
 
 ```bash
 pnpm install
@@ -54,7 +66,8 @@ pnpm build
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 
-export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
+VERSION="$(node -p 'require("./packages/cli/package.json").version')"
+ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-$VERSION.tgz"
 npx --yes --package="$ARTIFACT" dumbdiagrams init ./preview-project --yes
 npx --yes --package="$ARTIFACT" dumbdiagrams validate ./preview-project/diagrams
 ```
@@ -64,8 +77,9 @@ rebuilds the AGPL corresponding-source snapshot inside the tarball.
 
 ## License and source
 
-Licensed under the [GNU AGPL v3.0 only](../../LICENSE). The npm artifact includes
+Licensed under the [GNU AGPL v3.0 only](./LICENSE). The npm artifact includes
 the corresponding buildable source snapshot under `dist/source/`, including vendored
 catalog inputs under `assets/catalog/`. A `registry.npmrc` file ships instead of
-`.npmrc` (npm omits dotfiles from tarballs); `pnpm install` restores it automatically
-via `preinstall`.
+`.npmrc` because npm omits dotfiles from tarballs. Before rebuilding that source
+on a clean machine, run `cp registry.npmrc .npmrc`, then
+`pnpm install --frozen-lockfile`.

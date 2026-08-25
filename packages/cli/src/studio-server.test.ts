@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -17,7 +17,6 @@ afterEach(async () => {
 describe("local Studio server", () => {
   it("loads and writes a .dgm file through the revision-safe API", async () => {
     const created = await createTestServer();
-    if (!created) return;
     const { handle, filePath } = created;
     const session = await getJson<{ source: string; revision: string }>(`${handle.url}api/session`);
     const nextSource = printDgm(createEmptyDocument("updated-diagram"));
@@ -37,11 +36,9 @@ describe("local Studio server", () => {
 
   it("rejects a stale save after an external edit", async () => {
     const created = await createTestServer();
-    if (!created) return;
     const { handle, filePath } = created;
     const session = await getJson<{ source: string; revision: string }>(`${handle.url}api/document`);
-    writeFileSync(filePath, printDgm(createEmptyDocument("external-edit")), "utf8");
-    await new Promise((resolve) => setTimeout(resolve, 140));
+    replaceFile(filePath, printDgm(createEmptyDocument("external-edit")));
 
     const staleSave = await fetch(`${handle.url}api/document`, {
       method: "PUT",
@@ -55,9 +52,30 @@ describe("local Studio server", () => {
     expect(conflict.source).toContain("external-edit");
   });
 
+  it("keeps streaming changes when an editor atomically replaces the file", async () => {
+    const { handle, filePath } = await createTestServer();
+    const response = await fetch(`${handle.url}api/events`);
+    const reader = response.body?.getReader();
+    expect(reader).toBeDefined();
+    if (!reader) return;
+
+    expect(await readSseEvent(reader)).toContain("event: ready");
+
+    replaceFile(filePath, printDgm(createEmptyDocument("first-replacement")));
+    const firstChange = await readSseEvent(reader);
+    expect(firstChange).toContain("event: document");
+    expect(firstChange).toContain("first-replacement");
+
+    replaceFile(filePath, printDgm(createEmptyDocument("second-replacement")));
+    const secondChange = await readSseEvent(reader);
+    expect(secondChange).toContain("event: document");
+    expect(secondChange).toContain("second-replacement");
+
+    await reader.cancel();
+  });
+
   it("lists and selects another diagram in the project folder", async () => {
     const created = await createTestServer();
-    if (!created) return;
     const { handle, filePath } = created;
     const secondPath = join(dirname(filePath), "network.dgm");
     const secondSource = printDgm(createEmptyDocument("network-diagram"));
@@ -81,20 +99,15 @@ describe("local Studio server", () => {
   });
 });
 
-async function createTestServer(): Promise<{ handle: StudioServerHandle; filePath: string } | null> {
+async function createTestServer(): Promise<{ handle: StudioServerHandle; filePath: string }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
   mkdirSync(editorRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
   const filePath = join(root, "architecture.dgm");
-  try {
-    const handle = await startStudioServer({ filePath, editorRoot, port: 0 });
-    handles.push(handle);
-    return { handle, filePath };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EPERM") return null;
-    throw error;
-  }
+  const handle = await startStudioServer({ filePath, editorRoot, port: 0 });
+  handles.push(handle);
+  return { handle, filePath };
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -107,4 +120,36 @@ function closeServer(handle: StudioServerHandle): Promise<void> {
   return new Promise((resolve, reject) => {
     handle.server.close((error) => error ? reject(error) : resolve());
   });
+}
+
+function replaceFile(filePath: string, source: string): void {
+  const replacementPath = `${filePath}.replacement`;
+  writeFileSync(replacementPath, source, "utf8");
+  renameSync(replacementPath, filePath);
+}
+
+async function readSseEvent(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<string> {
+  const decoder = new TextDecoder();
+  let content = "";
+  let timeoutHandle: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error("Timed out waiting for a Studio SSE event.")),
+      3_000,
+    );
+    timeoutHandle.unref();
+  });
+
+  try {
+    while (!content.includes("\n\n")) {
+      const result = await Promise.race([reader.read(), timeout]);
+      if (result.done) throw new Error("Studio SSE stream closed before sending an event.");
+      content += decoder.decode(result.value, { stream: true });
+    }
+    return content.slice(0, content.indexOf("\n\n"));
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+  }
 }
