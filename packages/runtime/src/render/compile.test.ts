@@ -299,7 +299,7 @@ describe("async-docs fixture", () => {
     expect(result.svg).toMatch(/id="edge-e6"[\s\S]*marker-end="url\(#arrow-red\)"/);
   });
 
-  it("renders connector colors and peer meaning as authored", () => {
+  it("renders connector colors and authored connector meanings", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.kind = "peer";
     doc.edges[0]!.color = "teal";
@@ -310,6 +310,14 @@ describe("async-docs fixture", () => {
     expect(peerEdge).toContain('class="edge edge-peer edge-solid"');
     expect(peerEdge).toContain('stroke="#0F766E"');
     expect(peerEdge).not.toContain("marker-end=");
+
+    doc.edges[1]!.kind = "bidirectional";
+    const bidirectionalResult = compileDiagram(doc);
+    expect(bidirectionalResult.ok).toBe(true);
+    const bidirectionalEdge = bidirectionalResult.svg?.match(/<g id="edge-e2"[\s\S]*?<\/g>/)?.[0] ?? "";
+    expect(bidirectionalEdge).toContain('class="edge edge-bidirectional edge-solid"');
+    expect(bidirectionalEdge).toContain('marker-start="url(#arrow)"');
+    expect(bidirectionalEdge).toContain('marker-end="url(#arrow)"');
   });
 
   it("repairs unsafe pinned places and removes loops from pinned routes", () => {

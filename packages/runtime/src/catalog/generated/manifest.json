@@ -61607,14 +61607,14 @@
         "neutral.cloud"
       ],
       "icon": {
-        "sourceId": "cloud-agnostic-group-cloud-11d50aef-60f0138a",
+        "sourceId": "cloud-agnostic-group-cloud-dd242557-60f0138a",
         "sourcePath": "assets/catalog/sources/cloud-agnostic/cloud.svg",
-        "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-11d50aef-60f0138a.svg",
-        "sha256": "11d50aefa838c328740b8eaedc90eede9f35cc13293920c2e1063ab09c42ef25",
+        "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-dd242557-60f0138a.svg",
+        "sha256": "dd242557abd6357617a6e67d556a667c0dee85ca2199f6ea047cc3454e5e6b9c",
         "specificity": "semantic-neutral"
       },
       "iconPath": "assets/catalog/sources/cloud-agnostic/cloud.svg",
-      "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-11d50aef-60f0138a.svg",
+      "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-dd242557-60f0138a.svg",
       "specificity": "semantic-neutral",
       "groupKind": "cloud",
       "allowedParents": [],
@@ -74536,10 +74536,10 @@
       "specificity": "semantic-neutral"
     },
     {
-      "sourceId": "cloud-agnostic-group-cloud-11d50aef-60f0138a",
+      "sourceId": "cloud-agnostic-group-cloud-dd242557-60f0138a",
       "sourcePath": "assets/catalog/sources/cloud-agnostic/cloud.svg",
-      "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-11d50aef-60f0138a.svg",
-      "sha256": "11d50aefa838c328740b8eaedc90eede9f35cc13293920c2e1063ab09c42ef25",
+      "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-dd242557-60f0138a.svg",
+      "sha256": "dd242557abd6357617a6e67d556a667c0dee85ca2199f6ea047cc3454e5e6b9c",
       "specificity": "semantic-neutral"
     },
     {

@@ -211,9 +211,7 @@ function InteractionOverlayComponent({
   const labelDragRef = useRef<LabelDrag>(null);
   const hoverFrameRef = useRef<number | null>(null);
   const pendingHoverRef = useRef<{
-    clientX: number;
-    clientY: number;
-    fallback: SelectionItem | null;
+    item: SelectionItem | null;
   } | null>(null);
 
   useEffect(() => {
@@ -282,9 +280,13 @@ function InteractionOverlayComponent({
     onRoute(edgeId, normalizeOrthogonalRoute(anchored));
   };
 
-  const closestTargetAt = (clientX: number, clientY: number): SelectionItem | null => {
+  const closestTargetAt = (
+    clientX: number,
+    clientY: number,
+    svg = document.querySelector<SVGSVGElement>('[data-testid="canvas-interaction-overlay"]'),
+  ): SelectionItem | null => {
     const point = pointFromClient(
-      document.querySelector<SVGSVGElement>('[data-testid="canvas-interaction-overlay"]'),
+      svg,
       clientX,
       clientY,
       zoom,
@@ -292,14 +294,44 @@ function InteractionOverlayComponent({
     return closestInteractiveTarget(point, layout, doc, view);
   };
 
-  const updateHover = (event: React.PointerEvent<SVGElement>) => {
-    if (tool !== "select") return;
+  const hoverTargetAt = (event: React.PointerEvent<SVGElement>): SelectionItem | null => {
     const kind = event.currentTarget.getAttribute("data-entity-kind") as SelectionItem["kind"] | null;
     const id = event.currentTarget.getAttribute("data-entity-id");
+    const fallback = kind && id ? { kind, id } : null;
+    if (!fallback) return null;
+
+    const target = closestTargetAt(
+      event.clientX,
+      event.clientY,
+      event.currentTarget.ownerSVGElement,
+    );
+    if (kind !== "edge" || !id || event.currentTarget.hasAttribute("data-edge-label-hit")) {
+      return target ?? fallback;
+    }
+
+    // Transparent connector hit strokes can overlap. Resolve only among
+    // nearby edges using the same SVG that received the event, with the
+    // browser-hit edge as the tie-breaker for coincident routes.
+    return target?.kind === "edge"
+      ? nearestEdgeAt(
+          pointFromClient(
+            event.currentTarget.ownerSVGElement,
+            event.clientX,
+            event.clientY,
+            zoom,
+          ),
+          layout,
+          doc,
+          view,
+          id,
+        ) ?? fallback
+      : target ?? fallback;
+  };
+
+  const updateHover = (event: React.PointerEvent<SVGElement>) => {
+    if (tool !== "select") return;
     pendingHoverRef.current = {
-      clientX: event.clientX,
-      clientY: event.clientY,
-      fallback: kind && id ? { kind, id } : null,
+      item: hoverTargetAt(event),
     };
     if (hoverFrameRef.current !== null) return;
     hoverFrameRef.current = window.requestAnimationFrame(() => {
@@ -307,7 +339,7 @@ function InteractionOverlayComponent({
       const pending = pendingHoverRef.current;
       pendingHoverRef.current = null;
       if (!pending) return;
-      const next = closestTargetAt(pending.clientX, pending.clientY) ?? pending.fallback;
+      const next = pending.item;
       setHoveredItem((current) =>
         current?.kind === next?.kind && current?.id === next?.id ? current : next
       );

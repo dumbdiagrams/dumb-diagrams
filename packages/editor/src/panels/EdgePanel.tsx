@@ -8,12 +8,12 @@ import { IconConnector } from "../ui/icons";
 type EdgePatch = Partial<Pick<Edge, "style" | "kind">>;
 
 const COLOR_OPTIONS: Array<{ id: EdgeColor; label: string; description: string }> = [
-  { id: "graphite", label: "Graphite", description: "Neutral" },
-  { id: "blue", label: "Blue", description: "Primary" },
+  { id: "graphite", label: "Navy", description: "Brand foundation" },
+  { id: "blue", label: "Slate", description: "Cool accent" },
   { id: "teal", label: "Teal", description: "Systems" },
   { id: "purple", label: "Purple", description: "Platform" },
-  { id: "amber", label: "Amber", description: "Attention" },
-  { id: "red", label: "Red", description: "Critical" },
+  { id: "amber", label: "Orange", description: "Brand highlight" },
+  { id: "red", label: "Coral", description: "Critical" },
   { id: "green", label: "Green", description: "Healthy" },
 ];
 
@@ -23,6 +23,7 @@ const MEANING_OPTIONS: Array<{
   description: string;
 }> = [
   { id: "flow", label: "Flow", description: "A directional path between components" },
+  { id: "bidirectional", label: "Bidirectional", description: "A path that can travel in both directions" },
   { id: "peer", label: "Peer", description: "A relationship without a direction" },
   { id: "fail", label: "Failure", description: "An error, retry, or exception path" },
 ];
@@ -109,15 +110,6 @@ export function EdgePanel({
         </div>
       </div>
 
-      <div className="edge-preview-card" aria-label={`Preview: ${meaning.label}, ${styleDraft}, ${colorDraft ? "custom color" : "automatic color"}`}>
-        <EdgePreview color={effectiveColor} kind={kindDraft} style={styleDraft} />
-        <div className="edge-preview-copy">
-          <span>Live preview</span>
-          <strong>{meaning.label}</strong>
-        </div>
-        <span className="edge-preview-style">{styleDraft}</span>
-      </div>
-
       <section className="edge-panel-section edge-label-section">
         <div className="edge-section-heading">
           <div>
@@ -144,126 +136,7 @@ export function EdgePanel({
         </p>
       </section>
 
-      <section className="edge-panel-section">
-        <div className="edge-section-heading">
-          <div>
-            <h4>Meaning</h4>
-            <p>Sets the connector’s visual language and routing priority.</p>
-          </div>
-          <span className={`edge-kind-pill is-${meaning.id}`}>{meaning.label}</span>
-        </div>
-        <div className="edge-meaning-options" role="radiogroup" aria-label="Connector meaning">
-          {MEANING_OPTIONS.map((option) => {
-            const selected = meaning.id === option.id;
-            return (
-              <button
-                key={option.id}
-                className={`edge-meaning-option${selected ? " is-active" : ""}`}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  setKindDraft(option.id);
-                  onUpdateEdge({ kind: option.id });
-                }}
-              >
-                <span className={`edge-meaning-glyph is-${option.id}`} aria-hidden="true">
-                  {option.id === "flow" ? "→" : option.id === "peer" ? "↔" : "!"}
-                </span>
-                <span className="edge-option-copy">
-                  <strong>{option.label}</strong>
-                  <small>{option.description}</small>
-                </span>
-                <span className="edge-option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="edge-panel-section">
-        <div className="edge-section-heading">
-          <div>
-            <h4>Line</h4>
-            <p>Choose how the path should read at a glance.</p>
-          </div>
-          <span className="edge-section-value">{styleDraft}</span>
-        </div>
-        <div className="edge-style-options" role="radiogroup" aria-label="Line style">
-          {STYLE_OPTIONS.map((option) => {
-            const selected = styleDraft === option.id;
-            return (
-              <button
-                key={option.id}
-                className={`edge-style-option${selected ? " is-active" : ""}`}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  setStyleDraft(option.id);
-                  onUpdateEdge({ style: option.id });
-                }}
-              >
-                <span className={`edge-style-sample is-${option.id}`} aria-hidden="true"><i /></span>
-                <span className="edge-option-copy">
-                  <strong>{option.label}</strong>
-                  <small>{option.description}</small>
-                </span>
-                <span className="edge-option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="edge-color-heading">
-          <div>
-            <h4>Color</h4>
-            <p>{colorDraft ? "Custom color" : "Automatically follows the meaning"}</p>
-          </div>
-          <span className="edge-current-color">
-            <i style={{ backgroundColor: effectiveColor }} aria-hidden="true" />
-            {colorDraft ? COLOR_OPTIONS.find((option) => option.id === colorDraft)?.label : "Auto"}
-          </span>
-        </div>
-        <div className="edge-color-options" role="radiogroup" aria-label="Connector color">
-          <button
-            className={`edge-color-option edge-color-auto${colorDraft === undefined ? " is-active" : ""}`}
-            type="button"
-            role="radio"
-            aria-checked={colorDraft === undefined}
-            onClick={() => {
-              setColorDraft(undefined);
-              onUpdateColor(undefined);
-            }}
-            title="Use the meaning-aware automatic color"
-          >
-            <span className="edge-color-swatch is-auto" aria-hidden="true" />
-            <span>Auto</span>
-          </button>
-          {COLOR_OPTIONS.map((option) => {
-            const selected = colorDraft === option.id;
-            return (
-              <button
-                key={option.id}
-                className={`edge-color-option${selected ? " is-active" : ""}`}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  setColorDraft(option.id);
-                  onUpdateColor(option.id);
-                }}
-                title={`${option.label}: ${option.description}`}
-              >
-                <span className="edge-color-swatch" style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }} aria-hidden="true" />
-                <span>{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="edge-panel-section">
+      <section className="edge-panel-section edge-sequence-section">
         <div className="edge-section-heading">
           <div>
             <h4>Sequence badge</h4>
@@ -313,6 +186,127 @@ export function EdgePanel({
         <p className="edge-help">Drag the badge along the connector to place it above or below the line.</p>
       </section>
 
+      <section className="edge-panel-section edge-line-section">
+        <div className="edge-section-heading">
+          <div>
+            <h4>Line</h4>
+            <p>Choose how the path should read at a glance.</p>
+          </div>
+          <span className="edge-section-value">{styleDraft}</span>
+        </div>
+        <div className="edge-style-options" role="radiogroup" aria-label="Line style">
+          {STYLE_OPTIONS.map((option) => {
+            const selected = styleDraft === option.id;
+            return (
+              <button
+                key={option.id}
+                className={`edge-style-option${selected ? " is-active" : ""}`}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => {
+                  setStyleDraft(option.id);
+                  onUpdateEdge({ style: option.id });
+                }}
+              >
+                <span className={`edge-style-sample is-${option.id}`} aria-hidden="true"><i /></span>
+                <span className="edge-option-copy">
+                  <strong>{option.label}</strong>
+                  <small>{option.description}</small>
+                </span>
+                <span className="edge-option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="edge-panel-section edge-color-section">
+        <div className="edge-color-heading">
+          <div>
+            <h4>Color</h4>
+            <p>{colorDraft ? "Custom color" : "Automatically follows the meaning"}</p>
+          </div>
+          <span className="edge-current-color">
+            <i style={{ backgroundColor: effectiveColor }} aria-hidden="true" />
+            {colorDraft ? COLOR_OPTIONS.find((option) => option.id === colorDraft)?.label : "Auto"}
+          </span>
+        </div>
+        <div className="edge-color-options" role="radiogroup" aria-label="Connector color">
+          <button
+            className={`edge-color-option edge-color-auto${colorDraft === undefined ? " is-active" : ""}`}
+            type="button"
+            role="radio"
+            aria-checked={colorDraft === undefined}
+            onClick={() => {
+              setColorDraft(undefined);
+              onUpdateColor(undefined);
+            }}
+            title="Use the meaning-aware automatic color"
+          >
+            <span className="edge-color-swatch is-auto" aria-hidden="true" />
+            <span>Auto</span>
+          </button>
+          {COLOR_OPTIONS.map((option) => {
+            const selected = colorDraft === option.id;
+            return (
+              <button
+                key={option.id}
+                className={`edge-color-option${selected ? " is-active" : ""}`}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => {
+                  setColorDraft(option.id);
+                  onUpdateColor(option.id);
+                }}
+                title={`${option.label}: ${option.description}`}
+              >
+                <span className="edge-color-swatch" style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }} aria-hidden="true" />
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="edge-panel-section edge-meaning-section">
+        <div className="edge-section-heading">
+          <div>
+            <h4>Meaning</h4>
+            <p>Sets the connector’s visual language and routing priority.</p>
+          </div>
+          <span className={`edge-kind-pill is-${meaning.id}`}>{meaning.label}</span>
+        </div>
+        <div className="edge-meaning-options" role="radiogroup" aria-label="Connector meaning">
+          {MEANING_OPTIONS.map((option) => {
+            const selected = meaning.id === option.id;
+            return (
+              <button
+                key={option.id}
+                className={`edge-meaning-option${selected ? " is-active" : ""}`}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => {
+                  setKindDraft(option.id);
+                  onUpdateEdge({ kind: option.id });
+                }}
+              >
+                <span className={`edge-meaning-glyph is-${option.id}`} aria-hidden="true">
+                  <MeaningGlyph kind={option.id} />
+                </span>
+                <span className="edge-option-copy">
+                  <strong>{option.label}</strong>
+                  <small>{option.description}</small>
+                </span>
+                <span className="edge-option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section className="edge-panel-section edge-route-section">
         <div className="edge-section-heading">
           <div>
@@ -351,27 +345,15 @@ export function EdgePanel({
   );
 }
 
-function EdgePreview({ color, kind, style }: { color: string; kind: EdgeKind; style: EdgeStyle }) {
-  return (
-    <svg className="edge-preview-graphic" viewBox="0 0 112 34" aria-hidden="true">
-      <line
-        x1="8"
-        y1="17"
-        x2="103"
-        y2="17"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeDasharray={style === "dashed" ? "8 6" : undefined}
-      />
-      {kind === "peer" ? (
-        <>
-          <circle cx="8" cy="17" r="4" fill="white" stroke={color} strokeWidth="2" />
-          <circle cx="103" cy="17" r="4" fill="white" stroke={color} strokeWidth="2" />
-        </>
-      ) : (
-        <path d="M103 10L112 17L103 24Z" fill={color} />
-      )}
-    </svg>
-  );
+function MeaningGlyph({ kind }: { kind: EdgeKind }) {
+  if (kind === "peer") {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <path d="M7 12H17" />
+        <circle cx="5" cy="12" r="2.2" />
+        <circle cx="19" cy="12" r="2.2" />
+      </svg>
+    );
+  }
+  return kind === "flow" ? "→" : kind === "bidirectional" ? "↔" : "!";
 }

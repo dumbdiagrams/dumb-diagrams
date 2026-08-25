@@ -23,10 +23,10 @@ export const GRAMMAR = {
   roleFontSize: 11,
   groupIconInset: 0,
   edgeStroke: 1.5,
-  edgeColor: "#232F3E",
+  edgeColor: "#244068",
   edgeDash: "6 4",
   badgeRadius: 10,
-  badgeFill: "#232F3E",
+  badgeFill: "#244068",
   badgeText: "#FFFFFF",
   canvasFill: "#FFFFFF",
   fontFamily: "Amazon Ember, Helvetica Neue, Arial, sans-serif",
@@ -37,8 +37,8 @@ export const GRAMMAR = {
 
 export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
   cloud: {
-    stroke: "#242F3E",
-    fill: "rgba(36,47,62,0.03)",
+    stroke: "#244068",
+    fill: "rgba(36,64,104,0.03)",
     strokeWidth: 1.5,
     headerHeight: 24,
     padding: 16,

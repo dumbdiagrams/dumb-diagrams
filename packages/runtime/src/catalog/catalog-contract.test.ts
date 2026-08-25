@@ -35,9 +35,9 @@ describe("canonical catalog contract", () => {
     });
   });
 
-  it("uses the AWS boundary palette for cloud-agnostic group tiles", () => {
+  it("uses the brand boundary palette for cloud-agnostic group tiles", () => {
     const expectedColors: Record<string, string> = {
-      "cloud-agnostic.cloud": "#242F3E",
+      "cloud-agnostic.cloud": "#244068",
       "cloud-agnostic.account": "#E7157B",
       "cloud-agnostic.region": "#00A4A6",
       "cloud-agnostic.zone": "#00A4A6",

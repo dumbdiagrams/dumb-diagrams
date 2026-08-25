@@ -1405,7 +1405,7 @@ function validResource(value: unknown): boolean {
 function validEdge(value: unknown): boolean {
   return isRecord(value) && typeof value.id === "string" && typeof value.source === "string" && typeof value.target === "string" &&
     (value.style === "solid" || value.style === "dashed") &&
-    (value.kind === undefined || value.kind === "flow" || value.kind === "peer" || value.kind === "fail") &&
+    (value.kind === undefined || value.kind === "flow" || value.kind === "bidirectional" || value.kind === "peer" || value.kind === "fail") &&
     (value.color === undefined || value.color === "graphite" || value.color === "blue" || value.color === "teal" ||
       value.color === "purple" || value.color === "amber" || value.color === "red" || value.color === "green");
 }

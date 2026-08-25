@@ -31,7 +31,7 @@ export function renderSvg(
     .join("\n  ");
   parts.push(`<defs>
   ${arrowMarkers}
-  <style>text{font-family:${GRAMMAR.fontFamily};fill:#232F3E}.group-badge-text,.edge-badge-text{fill:${GRAMMAR.badgeText}} g[data-annotation-style="text"] text{font-family:${GRAMMAR.textFontFamily};font-size:14px}</style>
+  <style>text{font-family:${GRAMMAR.fontFamily};fill:${GRAMMAR.edgeColor}}.group-badge-text,.edge-badge-text{fill:${GRAMMAR.badgeText}} g[data-annotation-style="text"] text{font-family:${GRAMMAR.textFontFamily};font-size:14px}</style>
 </defs>`);
 
   const view = getDefaultView(doc);
@@ -179,12 +179,16 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   const colorName = edge.color ?? (edge.kind === "fail" ? "red" : "graphite");
   const markerId = colorName === "graphite" ? "arrow" : `arrow-${colorName}`;
   const hasArrow = edge.kind !== "peer";
+  const isBidirectional = edge.kind === "bidirectional";
   const dash =
     edge.style === "dashed" ? `stroke-dasharray="${GRAMMAR.edgeDash}"` : "";
-  const marker = !hasArrow ? "" : `marker-end="url(#${markerId})"`;
+  const marker = [
+    isBidirectional ? `marker-start="url(#${markerId})"` : "",
+    hasArrow ? `marker-end="url(#${markerId})"` : "",
+  ].filter(Boolean).join(" ");
   const markerOverlay =
     edge.style === "dashed" && hasArrow
-      ? `<path d="${d}" fill="none" stroke="transparent" stroke-width="${GRAMMAR.edgeStroke}" marker-end="url(#${markerId})"/>`
+      ? `<path d="${d}" fill="none" stroke="transparent" stroke-width="${GRAMMAR.edgeStroke}" ${marker}/>`
       : "";
 
   let badge = "";
@@ -241,12 +245,12 @@ ${groupStart}
   if (style === "code") {
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#111827" stroke="#334155" stroke-width="1.5"/>
-  <rect x="${x}" y="${y}" width="${w}" height="28" rx="10" fill="#1f2937"/>
-  <rect x="${x}" y="${y + 18}" width="${w}" height="10" fill="#1f2937"/>
-  <circle cx="${x + 14}" cy="${y + 14}" r="4" fill="#fb7185"/>
-  <circle cx="${x + 28}" cy="${y + 14}" r="4" fill="#fbbf24"/>
-  <circle cx="${x + 42}" cy="${y + 14}" r="4" fill="#34d399"/>
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#183452" stroke="#244068" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="${w}" height="28" rx="10" fill="#244068"/>
+  <rect x="${x}" y="${y + 18}" width="${w}" height="10" fill="#244068"/>
+  <circle cx="${x + 14}" cy="${y + 14}" r="4" fill="#E66231"/>
+  <circle cx="${x + 28}" cy="${y + 14}" r="4" fill="#F8A23F"/>
+  <circle cx="${x + 42}" cy="${y + 14}" r="4" fill="#7BC4A0"/>
   ${renderAnnotationLines(annotation.text, x + 14, y + 50, Math.max(12, Math.floor((w - 28) / 8.1)), 17, 10, "#d1fae5", "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace")}
 </g>`;
   }
@@ -254,11 +258,11 @@ ${groupStart}
   if (style === "callout") {
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#eef4ff" stroke="#8aa7df" stroke-width="1.5"/>
-  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="#3154d4"/>
-  <circle cx="${x + 28}" cy="${y + 28}" r="12" fill="#3154d4"/>
-  <text x="${x + 28}" y="${y + 33}" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">i</text>
-  ${renderAnnotationLines(annotation.text, x + 50, y + 27, Math.max(12, Math.floor((w - 64) / 7.1)), 18, 4, "#233f78")}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#FBE4DA" stroke="#E3A489" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="#C94F2C"/>
+  <circle cx="${x + 28}" cy="${y + 28}" r="12" fill="#C94F2C"/>
+  <text x="${x + 28}" y="${y + 33}" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">i</text>
+  ${renderAnnotationLines(annotation.text, x + 50, y + 27, Math.max(12, Math.floor((w - 64) / 7.1)), 18, 4, "#244068")}
 </g>`;
   }
 
@@ -270,7 +274,7 @@ ${groupStart}
         return `
   <rect x="${x + 16}" y="${itemY - 12}" width="14" height="14" rx="3" fill="#ffffff" stroke="#4f9b69" stroke-width="1.4"/>
   <path d="M ${x + 19} ${itemY - 5} l 3 3 l 6 -7" fill="none" stroke="#4f9b69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="${x + 40}" y="${itemY}" font-size="12" fill="#234b31">${escapeXml(line || " ")}</text>`;
+  <text x="${x + 40}" y="${itemY}" font-size="12" fill="#2F6E56">${escapeXml(line || " ")}</text>`;
       })
       .join("");
     return `
@@ -282,10 +286,10 @@ ${groupStart}
 
   return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#fff7d6" stroke="#d4a72c" stroke-width="1.5"/>
-  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="#f5df91"/>
-  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="#d4a72c" stroke-width="1"/>
-  ${renderAnnotationLines(annotation.text, x + 14, y + 25, Math.max(12, Math.floor((w - 28) / 7.1)), 18, 5, "#232F3E")}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#FFF0D5" stroke="#F8A23F" stroke-width="1.5"/>
+  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="#F7D391"/>
+  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="#F8A23F" stroke-width="1"/>
+  ${renderAnnotationLines(annotation.text, x + 14, y + 25, Math.max(12, Math.floor((w - 28) / 7.1)), 18, 5, "#244068")}
 </g>`;
 }
 

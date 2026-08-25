@@ -1,5 +1,6 @@
 import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText } from "@dumb-diagrams/runtime/core";
+import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
 
 export type ExportFormat =
   | "png"
@@ -212,16 +213,22 @@ export function prepareExportSvg(
   root.setAttribute("viewBox", `${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`);
 
   const dark = options.appearance === "dark";
-  const foreground = dark ? "#E8EEF7" : "#232F3E";
-  const background = options.transparentBackground ? "none" : dark ? "#111827" : "#FFFFFF";
-  for (const element of [...root.querySelectorAll("[stroke='#232F3E']")]) {
-    element.setAttribute("stroke", foreground);
-  }
-  for (const element of [...root.querySelectorAll("[fill='#232F3E']")]) {
-    element.setAttribute("fill", foreground);
+  const foreground = dark ? "#F4EDE5" : GRAMMAR.edgeColor;
+  const background = options.transparentBackground ? "none" : dark ? "#101E32" : "#FFFFFF";
+  const foregroundTokens = ["#232F3E", GRAMMAR.edgeColor];
+  for (const token of foregroundTokens) {
+    for (const element of [...root.querySelectorAll(`[stroke='${token}']`)]) {
+      element.setAttribute("stroke", foreground);
+    }
+    for (const element of [...root.querySelectorAll(`[fill='${token}']`)]) {
+      element.setAttribute("fill", foreground);
+    }
   }
   for (const style of [...root.querySelectorAll("style")]) {
-    style.textContent = style.textContent?.replaceAll("#232F3E", foreground) ?? "";
+    style.textContent = foregroundTokens.reduce(
+      (value, token) => value.replaceAll(token, foreground),
+      style.textContent ?? "",
+    );
   }
 
   const backgroundRect = [...root.children].find(
@@ -271,7 +278,7 @@ export function prepareExportSvg(
     dropShadow.setAttribute("dx", "0");
     dropShadow.setAttribute("dy", "8");
     dropShadow.setAttribute("stdDeviation", "10");
-    dropShadow.setAttribute("flood-color", dark ? "#000000" : "#1F2937");
+    dropShadow.setAttribute("flood-color", dark ? "#000000" : GRAMMAR.edgeColor);
     dropShadow.setAttribute("flood-opacity", dark ? "0.42" : "0.18");
     filter.append(dropShadow);
     defs?.append(filter);
@@ -447,7 +454,7 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCa
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas export is unavailable");
     if (!options.transparentBackground || options.format === "jpeg") {
-      context.fillStyle = options.appearance === "dark" ? "#111827" : "#FFFFFF";
+      context.fillStyle = options.appearance === "dark" ? "#101E32" : "#FFFFFF";
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);

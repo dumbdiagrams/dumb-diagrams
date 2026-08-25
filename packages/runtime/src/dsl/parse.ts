@@ -438,7 +438,7 @@ class Parser {
         } else if (t.type === "id" && t.value === "kind") {
           this.pos++;
           const kind = this.expect("id").value;
-          if (kind === "flow" || kind === "peer" || kind === "fail")
+          if (kind === "flow" || kind === "bidirectional" || kind === "peer" || kind === "fail")
             edge.kind = kind;
         } else if (t.type === "id" && t.value === "color") {
           this.pos++;

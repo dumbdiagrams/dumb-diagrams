@@ -74,6 +74,14 @@ ${declarations}
     );
   });
 
+  it("round-trips the bidirectional connector meaning", () => {
+    const doc = createAsyncDocsFixture();
+    doc.edges[0]!.kind = "bidirectional";
+
+    const parsed = parseDgm(printDgm(doc));
+    expect(parsed.edges.find((edge) => edge.id === doc.edges[0]!.id)?.kind).toBe("bidirectional");
+  });
+
   it("round-trips custom service labels", () => {
     const doc = parseDgm(`diagram labels {
   grammar aws

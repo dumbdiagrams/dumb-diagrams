@@ -2319,7 +2319,6 @@ function App() {
               +
             </button>
           </div>
-          <span className="status-capsule-mode">Opinionated layout</span>
           <span className="status-capsule-readout">{Math.round(viewport.zoom * 100)}%</span>
         </div>
 
@@ -3156,6 +3155,7 @@ function Inspector({
               }
             >
               <option value="flow">Flow</option>
+              <option value="bidirectional">Bidirectional</option>
               <option value="peer">Peer</option>
               <option value="fail">Failure</option>
             </select>

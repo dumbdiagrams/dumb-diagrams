@@ -15,29 +15,48 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 
-  --ink: #20231f;
-  --muted: #62665f;
-  --line: #d8d2c7;
-  --line-strong: #b7b0a5;
-  --surface: #fffcf7;
-  --surface-solid: #fffcf7;
-  --surface-elevated: #fffcf7;
-  --canvas-bg: #f6f1e8;
-  --canvas-tint: #d8d2c7;
-  --accent: #3154d4;
-  --accent-soft: #e5eaff;
-  --badge-fill: #232f3e;
+  /* DumbDiagrams brand palette sampled from the logo asset. */
+  --brand-navy: #244068;
+  --brand-navy-deep: #183452;
+  --brand-coral: #e66231;
+  --brand-coral-deep: #c94f2c;
+  --brand-coral-soft: #fbe4da;
+  --brand-orange: #f8a23f;
+  --brand-orange-deep: #a96816;
+  --brand-orange-soft: #fff0d5;
+
+  --ink: var(--brand-navy);
+  --muted: #5e6975;
+  --line: #ddd5cc;
+  --line-strong: #b7aa9c;
+  --surface: #fffbf5;
+  --surface-solid: #fffdf9;
+  --surface-elevated: #fffdfb;
+  --canvas-bg: #f5efe7;
+  --canvas-tint: #ddd3c7;
+  --accent: var(--brand-navy);
+  --accent-strong: var(--brand-navy-deep);
+  --accent-soft: #e7eef7;
+  /* Keep interaction feedback light blue, independent of the brand accent. */
+  --highlight: #3154d4;
+  --highlight-soft: #e5eaff;
+  --accent-warm: var(--brand-orange);
+  --accent-warm-soft: var(--brand-orange-soft);
+  --action-fill: var(--brand-navy);
+  --action-hover: var(--brand-navy-deep);
+  --action-text: #ffffff;
+  --badge-fill: var(--brand-navy);
   --badge-text: #ffffff;
-  --success: #2f7d4a;
-  --danger: #b33b32;
-  --danger-soft: #f8e4df;
-  --focus: #3154d4;
+  --success: #2f7d62;
+  --danger: var(--brand-coral-deep);
+  --danger-soft: var(--brand-coral-soft);
+  --focus: var(--brand-navy);
   --artboard: #ffffff;
   --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.1);
-  --diagram-ink: #232f3e;
-  --diagram-edge: #232f3e;
-  --diagram-fallback: #eeeeee;
-  --annotation-ink: #232f3e;
+  --diagram-ink: var(--brand-navy);
+  --diagram-edge: var(--brand-navy);
+  --diagram-fallback: #eee8df;
+  --annotation-ink: var(--brand-navy);
   --canvas-atmosphere: none;
 
   --text-primary: var(--ink);
@@ -52,29 +71,37 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #f3f6fb;
-  --muted: #9aa8bc;
-  --line: #2b374b;
-  --line-strong: #43516a;
-  --surface: #141b28;
-  --surface-solid: #151e2d;
-  --surface-elevated: #1b2637;
-  --canvas-bg: #090f19;
-  --canvas-tint: #40516c;
-  --accent: #8da8ff;
-  --accent-soft: #23345d;
-  --badge-fill: #f3f6fb;
-  --badge-text: #111827;
-  --success: #6cd19a;
-  --danger: #ff8d93;
-  --danger-soft: #4a2932;
-  --focus: #a6baff;
-  --artboard: #101824;
-  --diagram-ink: #d8e1ef;
-  --diagram-edge: #aebdd2;
-  --diagram-fallback: #263349;
-  --annotation-ink: #232f3e;
-  --canvas-atmosphere: radial-gradient(circle at 50% 8%, rgba(73, 101, 163, 0.16), transparent 42%);
+  --ink: #f5f0ea;
+  --muted: #c3cbd5;
+  --line: #334a63;
+  --line-strong: #5a718a;
+  --surface: #101e32;
+  --surface-solid: #172a42;
+  --surface-elevated: #1d3551;
+  --canvas-bg: #0a1728;
+  --canvas-tint: #405873;
+  --accent: #9eb5d2;
+  --accent-strong: #d5e0ef;
+  --accent-soft: #2a405e;
+  --highlight: #8da8ff;
+  --highlight-soft: #23345d;
+  --accent-warm: var(--brand-orange);
+  --accent-warm-soft: #584221;
+  --action-fill: var(--brand-navy);
+  --action-hover: var(--brand-navy-deep);
+  --action-text: #ffffff;
+  --badge-fill: var(--brand-orange);
+  --badge-text: var(--brand-navy-deep);
+  --success: #7bc4a0;
+  --danger: #ff9b75;
+  --danger-soft: #5a302d;
+  --focus: var(--brand-orange);
+  --artboard: #142943;
+  --diagram-ink: #f4ede5;
+  --diagram-edge: #d6c9bc;
+  --diagram-fallback: #2c425c;
+  --annotation-ink: #f4ede5;
+  --canvas-atmosphere: none;
   --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.56);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -225,8 +252,8 @@ textarea:focus-visible {
   flex-shrink: 0;
   place-items: center;
   border-radius: 7px;
-  background: var(--accent);
-  color: #fff;
+  background: var(--action-fill);
+  color: var(--action-text);
   font-size: 13px;
   font-weight: 700;
 }
@@ -906,8 +933,8 @@ textarea:focus-visible {
 }
 
 .note-style-preview-paper {
-  background: #fff7d6;
-  border-color: #e2c867;
+  background: var(--brand-orange-soft);
+  border-color: color-mix(in srgb, var(--brand-orange) 70%, var(--line-strong));
 }
 
 .note-preview-fold {
@@ -916,9 +943,9 @@ textarea:focus-visible {
   right: 0;
   width: 15px;
   height: 15px;
-  border-bottom: 1px solid #d5b74f;
-  border-left: 1px solid #d5b74f;
-  background: #f1dda0;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-orange) 72%, var(--line-strong));
+  border-left: 1px solid color-mix(in srgb, var(--brand-orange) 72%, var(--line-strong));
+  background: color-mix(in srgb, var(--brand-orange) 38%, var(--surface-solid));
   clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
 
@@ -932,7 +959,7 @@ textarea:focus-visible {
 }
 
 .note-preview-line {
-  background: #c2a452;
+  background: color-mix(in srgb, var(--brand-orange-deep) 72%, var(--brand-orange));
 }
 
 .note-preview-line-long {
@@ -953,14 +980,14 @@ textarea:focus-visible {
 .note-style-preview-code {
   align-items: flex-start;
   justify-content: flex-start;
-  background: #111827;
-  border-color: #334155;
+  background: var(--brand-navy-deep);
+  border-color: var(--brand-navy);
 }
 
 .note-preview-code-line {
   left: 12px;
   height: 4px;
-  background: #86efac;
+  background: var(--brand-orange);
 }
 
 .note-preview-code-line-long {
@@ -971,19 +998,19 @@ textarea:focus-visible {
 .note-preview-code-line-medium {
   top: 23px;
   right: 27px;
-  background: #67e8f9;
+  background: var(--brand-coral);
 }
 
 .note-preview-code-line-short {
   top: 33px;
   right: 42px;
-  background: #c4b5fd;
+  background: color-mix(in srgb, var(--brand-orange) 72%, white);
 }
 
 .note-style-preview-callout {
   justify-content: flex-start;
-  background: #eef4ff;
-  border-color: #8aa7df;
+  background: var(--brand-coral-soft);
+  border-color: color-mix(in srgb, var(--brand-coral) 52%, var(--line-strong));
 }
 
 .note-style-preview-text {
@@ -1021,16 +1048,16 @@ textarea:focus-visible {
   height: 19px;
   margin-left: 11px;
   place-items: center;
-  border: 2px solid #3154d4;
+  border: 2px solid var(--accent);
   border-radius: 50%;
-  color: #3154d4;
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
 }
 
 .note-preview-callout-line {
   left: 39px;
-  background: #7f9bd3;
+  background: color-mix(in srgb, var(--brand-navy) 55%, var(--line-strong));
 }
 
 .note-preview-callout-line-long {
@@ -1214,12 +1241,6 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-.status-capsule-mode {
-  margin-left: 4px;
-  padding: 0 18px;
-  border-left: 1px solid var(--line);
-}
-
 .status-capsule-readout {
   min-width: 66px;
   justify-content: center;
@@ -1260,12 +1281,12 @@ textarea:focus-visible {
 }
 
 .hit-group:hover {
-  stroke: rgba(0, 122, 255, 0.45);
+  stroke: color-mix(in srgb, var(--highlight) 45%, transparent);
   stroke-dasharray: 4 3;
 }
 
 .hit-group.is-selected {
-  stroke: var(--accent);
+  stroke: var(--highlight);
   stroke-dasharray: 5 3;
 }
 
@@ -1278,7 +1299,7 @@ textarea:focus-visible {
 
 .hit-node:hover,
 .hit-node.is-selected {
-  stroke: var(--accent);
+  stroke: var(--highlight);
 }
 
 .hit-edge {
@@ -1291,7 +1312,7 @@ textarea:focus-visible {
 
 .hit-edge:hover,
 .hit-edge.is-selected {
-  stroke: rgba(0, 122, 255, 0.18);
+  stroke: color-mix(in srgb, var(--highlight) 18%, transparent);
 }
 
 .port-handle {
@@ -1662,33 +1683,33 @@ textarea:focus-visible {
 }
 
 .hit-group.is-selected {
-  stroke: var(--accent);
+  stroke: var(--highlight);
   stroke-width: 3;
   stroke-dasharray: 9 5;
-  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 38%, transparent));
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 38%, transparent));
 }
 
 .hit-node.is-selected {
-  fill: color-mix(in srgb, var(--accent) 7%, transparent);
-  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--highlight) 7%, transparent);
+  stroke: var(--highlight);
   stroke-width: 3;
   stroke-dasharray: 7 4;
-  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 34%, transparent));
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 34%, transparent));
 }
 
 .hit-edge.is-selected {
-  stroke: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 32%, transparent);
   stroke-width: 12;
 }
 
 .selection-outline {
-  fill: color-mix(in srgb, var(--accent) 5%, transparent);
-  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: var(--highlight);
   stroke-width: 2.5;
   stroke-dasharray: 8 4;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
-  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 26%, transparent));
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 26%, transparent));
 }
 
 .selection-group {
@@ -1697,8 +1718,8 @@ textarea:focus-visible {
 }
 
 .selection-annotation {
-  stroke: #b68418;
-  fill: color-mix(in srgb, #d4a72c 10%, transparent);
+  stroke: var(--brand-orange-deep);
+  fill: color-mix(in srgb, var(--brand-orange) 10%, transparent);
 }
 
 @media (max-width: 900px) {
@@ -1793,12 +1814,16 @@ textarea:focus-visible {
 
 .primary-button {
   border: none;
-  background: var(--accent);
-  color: #fff;
+  background: var(--action-fill);
+  color: var(--action-text);
   border-radius: 10px;
   padding: 8px 14px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.primary-button:hover {
+  background: var(--action-hover);
 }
 
 .export-menu {
@@ -2097,8 +2122,8 @@ textarea:focus-visible {
 }
 
 .export-segmented button.selected {
-  background: var(--accent);
-  color: #fff;
+  background: var(--action-fill);
+  color: var(--action-text);
 }
 
 .export-check-row {
@@ -2484,7 +2509,7 @@ textarea:focus-visible {
 }
 
 .favorite-toggle.is-active {
-  color: #d4a72c;
+  color: var(--brand-orange-deep);
 }
 
 .palette-meta {
@@ -2992,8 +3017,8 @@ textarea:focus-visible {
 }
 
 .hit-annotation.is-selected {
-  fill: color-mix(in srgb, #d4a72c 18%, transparent);
-  stroke: #d4a72c;
+  fill: color-mix(in srgb, var(--brand-orange) 18%, transparent);
+  stroke: var(--brand-orange-deep);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3155,13 +3180,13 @@ textarea:focus-visible {
 
 .hit-group.is-selected,
 .hit-node.is-selected {
-  stroke: var(--accent);
+  stroke: var(--highlight);
   stroke-width: 2;
   stroke-dasharray: none;
 }
 
 .hit-edge.is-selected {
-  stroke: var(--accent);
+  stroke: var(--highlight);
   stroke-width: 3;
   stroke-opacity: 0.9;
 }
@@ -3261,12 +3286,12 @@ textarea:focus-visible {
   fill: var(--diagram-ink);
 }
 
-.diagram-svg svg path[stroke="#232F3E"] {
+.diagram-svg svg path[stroke="#244068"] {
   stroke: var(--diagram-edge);
 }
 
-.diagram-svg svg path[fill="#232F3E"],
-.diagram-svg svg circle[fill="#232F3E"] {
+.diagram-svg svg path[fill="#244068"],
+.diagram-svg svg circle[fill="#244068"] {
   fill: var(--diagram-edge);
 }
 
@@ -3298,11 +3323,11 @@ textarea:focus-visible {
 }
 
 .diagram-svg svg g[data-annotation-style="callout"] text {
-  fill: #233f78;
+  fill: var(--brand-navy);
 }
 
 .diagram-svg svg g[data-annotation-style="checklist"] text {
-  fill: #234b31;
+  fill: var(--success);
 }
 
 .diagram-svg svg g[data-annotation-style="text"] text {
@@ -3415,17 +3440,17 @@ textarea:focus-visible {
 }
 
 .hit-edge.is-selected {
-  stroke: var(--accent);
+  stroke: var(--highlight);
   stroke-width: 14;
   stroke-linecap: round;
   stroke-opacity: 0.26;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 22%, transparent));
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--highlight) 22%, transparent));
   animation: selection-edge-pulse 1.55s ease-in-out infinite;
 }
 
 .selection-outline-halo {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--highlight);
   stroke-width: 8;
   stroke-opacity: 0.18;
   stroke-linejoin: round;
@@ -3435,8 +3460,8 @@ textarea:focus-visible {
 }
 
 .selection-outline {
-  fill: color-mix(in srgb, var(--accent) 2%, transparent);
-  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--highlight) 2%, transparent);
+  stroke: var(--highlight);
   stroke-width: 2;
   stroke-opacity: 0.92;
   stroke-dasharray: none;
@@ -3451,13 +3476,13 @@ textarea:focus-visible {
 }
 
 .selection-annotation {
-  stroke: color-mix(in srgb, var(--accent) 78%, #b68418);
-  fill: color-mix(in srgb, var(--accent) 3%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 78%, var(--brand-orange-deep));
+  fill: color-mix(in srgb, var(--highlight) 3%, transparent);
 }
 
 .selection-text {
-  stroke: var(--accent);
-  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  stroke: var(--highlight);
+  fill: color-mix(in srgb, var(--highlight) 8%, transparent);
   stroke-width: 2.5;
   stroke-dasharray: 6 4;
   rx: 5;
@@ -3731,39 +3756,39 @@ textarea:focus-visible {
 }
 
 .hover-outline {
-  fill: color-mix(in srgb, var(--accent) 5%, transparent);
-  stroke: color-mix(in srgb, var(--accent) 76%, white);
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 76%, white);
   stroke-width: 2.5;
   stroke-dasharray: 7 4;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 28%, transparent));
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--highlight) 28%, transparent));
   animation: hover-target-pulse 1.6s ease-in-out infinite;
 }
 
 .hover-group {
-  fill: color-mix(in srgb, var(--accent) 3%, transparent);
+  fill: color-mix(in srgb, var(--highlight) 3%, transparent);
   stroke-width: 3;
   stroke-dasharray: 10 5;
 }
 
 .hover-resource {
-  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  fill: color-mix(in srgb, var(--highlight) 8%, transparent);
   stroke-dasharray: none;
 }
 
 .hover-annotation {
-  fill: color-mix(in srgb, #d4a72c 10%, transparent);
-  stroke: #d4a72c;
+  fill: color-mix(in srgb, var(--brand-orange) 10%, transparent);
+  stroke: var(--brand-orange-deep);
   stroke-dasharray: 5 4;
 }
 
 .hover-edge {
   fill: none;
-  stroke: color-mix(in srgb, var(--accent) 42%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 42%, transparent);
   stroke-width: 10;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 25%, transparent));
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--highlight) 25%, transparent));
   animation: hover-target-pulse 1.6s ease-in-out infinite;
 }
 
@@ -5816,15 +5841,15 @@ textarea:focus-visible {
 
 .interaction-overlay .hit-annotation-text:hover,
 .interaction-overlay .hit-annotation-text.is-selected {
-  fill: color-mix(in srgb, var(--accent) 5%, transparent);
-  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 72%, transparent);
   stroke-width: 2;
   stroke-dasharray: 6 4;
 }
 
 .hover-edge-label {
-  fill: color-mix(in srgb, var(--accent) 5%, transparent);
-  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 72%, transparent);
   stroke-width: 2;
   stroke-dasharray: 6 4;
   vector-effect: non-scaling-stroke;
@@ -5832,8 +5857,8 @@ textarea:focus-visible {
 }
 
 .selection-edge-label {
-  fill: color-mix(in srgb, var(--accent) 8%, transparent);
-  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--highlight) 8%, transparent);
+  stroke: var(--highlight);
   stroke-width: 2.5;
   stroke-dasharray: 6 4;
 }
@@ -5983,54 +6008,6 @@ textarea:focus-visible {
   transform: translateY(1px);
 }
 
-.edge-preview-card {
-  display: flex;
-  min-height: 70px;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(135deg, var(--surface-muted), color-mix(in srgb, var(--accent-soft) 34%, var(--surface-elevated)));
-}
-
-.edge-preview-graphic {
-  display: block;
-  width: 104px;
-  height: 34px;
-  flex: 0 0 104px;
-  overflow: visible;
-}
-
-.edge-preview-copy {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-}
-
-.edge-preview-copy span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.edge-preview-copy strong {
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.edge-preview-style {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 650;
-  text-transform: capitalize;
-}
-
 .edge-panel-section {
   display: flex;
   min-width: 0;
@@ -6100,9 +6077,14 @@ textarea:focus-visible {
   color: var(--accent);
 }
 
+.edge-kind-pill.is-bidirectional {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-elevated));
+  color: var(--accent);
+}
+
 .edge-kind-pill.is-peer {
-  background: color-mix(in srgb, #64748b 12%, var(--surface-elevated));
-  color: #52606d;
+  background: color-mix(in srgb, var(--brand-navy) 12%, var(--surface-elevated));
+  color: color-mix(in srgb, var(--brand-navy) 72%, var(--muted));
 }
 
 .edge-kind-pill.is-fail {
@@ -6149,6 +6131,10 @@ textarea:focus-visible {
   gap: 7px;
 }
 
+.edge-meaning-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .edge-meaning-option,
 .edge-style-option,
 .edge-route-button {
@@ -6162,6 +6148,32 @@ textarea:focus-visible {
   padding: 10px;
   text-align: left;
   transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.edge-meaning-option {
+  position: relative;
+  min-height: 70px;
+  align-items: flex-start;
+  padding: 10px;
+}
+
+.edge-meaning-option .edge-option-copy {
+  min-width: 0;
+  padding-right: 12px;
+}
+
+.edge-meaning-option .edge-option-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.edge-meaning-option .edge-option-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
 }
 
 .edge-meaning-option:hover,
@@ -6193,9 +6205,14 @@ textarea:focus-visible {
 }
 
 .edge-meaning-glyph.is-peer {
-  background: color-mix(in srgb, #64748b 13%, var(--surface-elevated));
-  color: #52606d;
-  font-size: 16px;
+  background: color-mix(in srgb, var(--brand-navy) 13%, var(--surface-elevated));
+  color: color-mix(in srgb, var(--brand-navy) 72%, var(--muted));
+}
+
+.edge-meaning-glyph svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .edge-meaning-glyph.is-fail {
@@ -6245,8 +6262,8 @@ textarea:focus-visible {
 
 .is-active .edge-option-check {
   border-color: var(--accent);
-  background: var(--accent);
-  color: white;
+  background: var(--action-fill);
+  color: var(--action-text);
 }
 
 .edge-style-options {
@@ -6467,17 +6484,44 @@ textarea:focus-visible {
     padding-left: 16px;
   }
 
-  .edge-preview-card {
-    padding-right: 16px;
-    padding-left: 16px;
-  }
-
-  .edge-preview-graphic {
-    width: 88px;
-    flex-basis: 88px;
-  }
-
   .edge-style-option {
     min-height: 78px;
   }
+}
+
+/* Right-side panels keep their identity visible while their options scroll
+ * independently below the studio chrome. */
+.floating-panel.drawer-sheet.edge-sheet,
+.floating-panel.inspector-sheet {
+  top: 96px;
+  right: 0;
+  /* Keep a responsive breathing space above the floating zoom controls. The
+   * 56px base accounts for their 44px height plus the 12px bottom offset. */
+  bottom: calc(56px + clamp(30px, 4vw, 50px));
+  left: auto;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.floating-panel.drawer-sheet.edge-sheet .floating-panel-header,
+.floating-panel.inspector-sheet .floating-panel-header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  flex: 0 0 auto;
+}
+
+.floating-panel.drawer-sheet.edge-sheet .floating-panel-body,
+.floating-panel.inspector-sheet .floating-panel-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
