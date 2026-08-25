@@ -7,6 +7,25 @@ export type ResourceLabelPosition = "top" | "bottom" | "left" | "right";
 export type GroupLabelPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type EdgeStyle = "solid" | "dashed";
 export type EdgeKind = "flow" | "peer" | "fail";
+export type EdgeColor = "graphite" | "blue" | "teal" | "purple" | "amber" | "red" | "green";
+
+/** Curated connector colors keep authored diagrams portable and predictable. */
+export const EDGE_COLOR_VALUES: Record<EdgeColor, string> = {
+  graphite: "#334155",
+  blue: "#3154D4",
+  teal: "#0F766E",
+  purple: "#7C3AED",
+  amber: "#B45309",
+  red: "#C53B32",
+  green: "#2F855A",
+};
+
+export function resolveEdgeColor(color?: EdgeColor, kind?: EdgeKind): string {
+  if (color) return EDGE_COLOR_VALUES[color];
+  if (kind === "fail") return EDGE_COLOR_VALUES.red;
+  return EDGE_COLOR_VALUES.graphite;
+}
+
 export type GroupKind =
   | "cloud"
   | "account"
@@ -104,6 +123,7 @@ export interface Edge {
   label?: string;
   style: EdgeStyle;
   kind?: EdgeKind;
+  color?: EdgeColor;
 }
 
 export interface Annotation {
@@ -206,6 +226,7 @@ export interface RoutedEdge {
   labelRect?: Rect;
   style: EdgeStyle;
   kind?: EdgeKind;
+  color?: EdgeColor;
   badge?: Point;
   badgeT?: number;
   badgeSide?: EdgeBadgeSide;

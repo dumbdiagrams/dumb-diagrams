@@ -5837,3 +5837,647 @@ textarea:focus-visible {
   stroke-width: 2.5;
   stroke-dasharray: 6 4;
 }
+
+/* ── Connector inspector ────────────────────────────────────────── */
+.floating-panel.edge-sheet {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--line-strong) 72%, var(--line));
+}
+
+.floating-panel.edge-sheet .floating-panel-body {
+  background: var(--surface-elevated);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.edge-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.edge-panel-intro {
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.edge-panel-kicker {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.edge-panel-kicker-icon {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.edge-panel-kicker-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.edge-panel-id {
+  min-width: 0;
+  margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.edge-panel-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 13px;
+}
+
+.edge-panel-title-copy {
+  min-width: 0;
+}
+
+.edge-panel-title-copy h3 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 720;
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-panel-title-copy p {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  margin: 5px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-panel-direction {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.edge-reverse-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.edge-reverse-button > span {
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.edge-reverse-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.edge-reverse-button:active,
+.edge-inline-action:active,
+.edge-route-button:active,
+.edge-delete-button:active {
+  transform: translateY(1px);
+}
+
+.edge-preview-card {
+  display: flex;
+  min-height: 70px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(135deg, var(--surface-muted), color-mix(in srgb, var(--accent-soft) 34%, var(--surface-elevated)));
+}
+
+.edge-preview-graphic {
+  display: block;
+  width: 104px;
+  height: 34px;
+  flex: 0 0 104px;
+  overflow: visible;
+}
+
+.edge-preview-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.edge-preview-copy span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.edge-preview-copy strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-preview-style {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.edge-panel-section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 11px;
+  padding: 17px 20px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.edge-section-heading,
+.edge-color-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.edge-section-heading h4,
+.edge-color-heading h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.edge-section-heading p,
+.edge-color-heading p {
+  max-width: 232px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.edge-section-optional,
+.edge-section-value {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.edge-section-value {
+  color: var(--accent);
+  text-transform: capitalize;
+}
+
+.edge-kind-pill,
+.edge-route-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.edge-kind-pill.is-flow {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.edge-kind-pill.is-peer {
+  background: color-mix(in srgb, #64748b 12%, var(--surface-elevated));
+  color: #52606d;
+}
+
+.edge-kind-pill.is-fail {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.edge-field {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-solid);
+  padding: 9px 11px;
+  font-size: 13px;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.edge-field::placeholder {
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+.edge-field:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line-strong));
+}
+
+.edge-field:focus {
+  border-color: var(--accent);
+  background: var(--surface-elevated);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: none;
+}
+
+.edge-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.edge-meaning-options,
+.edge-style-options {
+  display: grid;
+  gap: 7px;
+}
+
+.edge-meaning-option,
+.edge-style-option,
+.edge-route-button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-solid);
+  padding: 10px;
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.edge-meaning-option:hover,
+.edge-style-option:hover,
+.edge-route-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 38%, var(--surface-solid));
+}
+
+.edge-meaning-option.is-active,
+.edge-style-option.is-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 66%, var(--surface-solid));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.edge-meaning-glyph {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.edge-meaning-glyph.is-peer {
+  background: color-mix(in srgb, #64748b 13%, var(--surface-elevated));
+  color: #52606d;
+  font-size: 16px;
+}
+
+.edge-meaning-glyph.is-fail {
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.edge-option-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 3px;
+}
+
+.edge-option-copy strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-option-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-option-check {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.is-active .edge-option-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.edge-style-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.edge-style-option {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 84px;
+  padding: 11px;
+}
+
+.edge-style-option .edge-option-copy {
+  width: 100%;
+}
+
+.edge-style-option .edge-option-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+
+.edge-style-option {
+  position: relative;
+}
+
+.edge-style-sample {
+  display: block;
+  width: 100%;
+  height: 14px;
+  padding-top: 6px;
+}
+
+.edge-style-sample i {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--diagram-edge);
+}
+
+.edge-style-sample.is-dashed i {
+  background: repeating-linear-gradient(90deg, var(--diagram-edge) 0 9px, transparent 9px 14px);
+}
+
+.edge-color-heading {
+  align-items: center;
+  margin-top: 3px;
+}
+
+.edge-current-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.edge-current-color i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 50%;
+}
+
+.edge-color-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.edge-color-option {
+  display: flex;
+  min-width: 0;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.edge-color-option:hover {
+  border-color: var(--line);
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.edge-color-option.is-active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.edge-color-swatch {
+  display: block;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, white 22%, transparent);
+}
+
+.edge-color-swatch.is-auto {
+  background: conic-gradient(var(--accent) 0 25%, var(--line-strong) 25% 50%, var(--danger) 50% 75%, var(--success) 75% 100%);
+}
+
+.edge-badge-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.edge-inline-action {
+  min-height: 40px;
+  padding: 0 4px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: color 140ms ease, transform 140ms ease;
+}
+
+.edge-inline-action:hover {
+  color: color-mix(in srgb, var(--accent) 72%, var(--ink));
+}
+
+.edge-route-status {
+  background: var(--surface-muted);
+  color: var(--muted);
+}
+
+.edge-route-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.edge-route-status.is-pinned {
+  background: color-mix(in srgb, var(--success) 13%, var(--surface-elevated));
+  color: var(--success);
+}
+
+.edge-route-status.is-pinned i {
+  background: var(--success);
+}
+
+.edge-route-button {
+  min-height: 58px;
+  padding: 10px 11px;
+}
+
+.edge-route-button-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--accent);
+  font-size: 17px;
+}
+
+.edge-route-button-arrow {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.edge-panel-footer {
+  padding: 14px 20px 18px;
+}
+
+.edge-delete-button {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger-soft) 78%, var(--surface-elevated));
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.edge-delete-button:hover {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--line));
+  background: var(--danger-soft);
+}
+
+@media (max-width: 900px) {
+  .floating-panel.edge-sheet {
+    width: min(100%, 420px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .edge-panel-intro,
+  .edge-panel-section,
+  .edge-panel-footer {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .edge-preview-card {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .edge-preview-graphic {
+    width: 88px;
+    flex-basis: 88px;
+  }
+
+  .edge-style-option {
+    min-height: 78px;
+  }
+}

@@ -22,7 +22,7 @@ import {
   routeConnectionPreview,
   routeEdgePreview,
 } from "@dumb-diagrams/runtime/route";
-import { useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   isSelected,
@@ -55,7 +55,51 @@ type LabelDrag = {
   side: EdgeLabelSide;
 } | null;
 
-export function InteractionOverlay({
+type DeferredRoutePreview = {
+  doc: DiagramDocument;
+  edgeId: string;
+  layout: LayoutResult;
+  points: Point[];
+};
+
+function useDeferredAutoRoutePreview(
+  doc: DiagramDocument,
+  layout: LayoutResult,
+  edgeId: string | undefined,
+  enabled: boolean,
+): Point[] | undefined {
+  const [preview, setPreview] = useState<DeferredRoutePreview | null>(null);
+
+  useEffect(() => {
+    if (!edgeId || !enabled) return;
+    let cancelled = false;
+    const calculate = () => {
+      if (cancelled) return;
+      const points = routeEdgePreview(doc, layout, edgeId);
+      if (!cancelled && points) setPreview({ doc, edgeId, layout, points });
+    };
+    const idleId = window.requestIdleCallback?.(calculate, { timeout: 300 });
+    const timerId = idleId === undefined
+      ? window.setTimeout(calculate, 0)
+      : undefined;
+
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
+      if (timerId !== undefined) window.clearTimeout(timerId);
+    };
+  }, [doc, edgeId, enabled, layout]);
+
+  return preview &&
+    preview.doc === doc &&
+    preview.edgeId === edgeId &&
+    preview.layout === layout &&
+    enabled
+    ? preview.points
+    : undefined;
+}
+
+function InteractionOverlayComponent({
   doc,
   layout,
   tool,
@@ -155,7 +199,34 @@ export function InteractionOverlay({
   } | null>(null);
   const [hoveredItem, setHoveredItem] = useState<SelectionItem | null>(null);
   const [badgeDrag, setBadgeDrag] = useState<BadgeDrag>(null);
+  const [routeEditPreview, setRouteEditPreview] = useState<{
+    edgeId: string;
+    points: Point[];
+  } | null>(null);
+  const [resizePreview, setResizePreview] = useState<{
+    kind: SelectionItem["kind"];
+    id: string;
+    bounds: { x: number; y: number; w: number; h: number };
+  } | null>(null);
   const labelDragRef = useRef<LabelDrag>(null);
+  const hoverFrameRef = useRef<number | null>(null);
+  const pendingHoverRef = useRef<{
+    clientX: number;
+    clientY: number;
+    fallback: SelectionItem | null;
+  } | null>(null);
+
+  useEffect(() => {
+    setRouteEditPreview(null);
+    setResizePreview(null);
+    setBadgeDrag(null);
+  }, [layout]);
+
+  useEffect(() => () => {
+    if (hoverFrameRef.current !== null) {
+      window.cancelAnimationFrame(hoverFrameRef.current);
+    }
+  }, []);
 
   const groups = useMemo(
     () => [...layout.groups].sort((a, b) => {
@@ -186,8 +257,20 @@ export function InteractionOverlay({
   const edgeModel = selectedEdge
     ? doc.edges.find((edge) => edge.id === selectedEdge.id)
     : undefined;
+  const selectedRoutePinned = Boolean(
+    selectedEdge && view.routes[selectedEdge.id]?.pin,
+  );
+  const deferredAutoRoutePreview = useDeferredAutoRoutePreview(
+    doc,
+    layout,
+    selectedEdge?.id,
+    selectedRoutePinned && ghostRoute === null,
+  );
   const showEdgeHandles = Boolean(edgeGeom && tool === "select");
   const showBendHandles = showEdgeHandles;
+  const editableEdgePoints = edgeGeom && routeEditPreview?.edgeId === edgeGeom.id
+    ? routeEditPreview.points
+    : edgeGeom?.points;
 
   const commitRoute = (edgeId: string, points: Point[]) => {
     const edge = doc.edges.find((candidate) => candidate.id === edgeId);
@@ -211,27 +294,42 @@ export function InteractionOverlay({
 
   const updateHover = (event: React.PointerEvent<SVGElement>) => {
     if (tool !== "select") return;
-    const closest = closestTargetAt(event.clientX, event.clientY);
-    if (closest) {
-      setHoveredItem(closest);
-      return;
-    }
     const kind = event.currentTarget.getAttribute("data-entity-kind") as SelectionItem["kind"] | null;
     const id = event.currentTarget.getAttribute("data-entity-id");
-    setHoveredItem(kind && id ? { kind, id } : null);
+    pendingHoverRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      fallback: kind && id ? { kind, id } : null,
+    };
+    if (hoverFrameRef.current !== null) return;
+    hoverFrameRef.current = window.requestAnimationFrame(() => {
+      hoverFrameRef.current = null;
+      const pending = pendingHoverRef.current;
+      pendingHoverRef.current = null;
+      if (!pending) return;
+      const next = closestTargetAt(pending.clientX, pending.clientY) ?? pending.fallback;
+      setHoveredItem((current) =>
+        current?.kind === next?.kind && current?.id === next?.id ? current : next
+      );
+    });
   };
 
   const clearHover = (kind: SelectionItem["kind"], id: string) => {
+    pendingHoverRef.current = null;
+    if (hoverFrameRef.current !== null) {
+      window.cancelAnimationFrame(hoverFrameRef.current);
+      hoverFrameRef.current = null;
+    }
     setHoveredItem((current) =>
       current?.kind === kind && current.id === id ? null : current,
     );
   };
 
-  const predicted =
-    ghostRoute ??
-    (selectedEdge
-      ? routeEdgePreview(doc, layout, selectedEdge.id) ?? undefined
-      : undefined);
+  // An auto-routed edge is already showing the route that a preview would
+  // calculate, so selecting it must not clone and reroute the whole diagram.
+  // Manual routes retain the useful auto-route comparison, computed during an
+  // idle period so the connector panel can paint first.
+  const predicted = ghostRoute ?? deferredAutoRoutePreview;
   const activePortTarget = rewireTarget ?? connectorDrag?.target;
 
   const portTargetAt = (
@@ -449,7 +547,6 @@ export function InteractionOverlay({
     let lastSide = initialSide;
     const preview = createFramePreview<{ t: number; side: EdgeBadgeSide }>((placement) => {
       setBadgeDrag({ edgeId, t: placement.t, side: placement.side });
-      onBadgeMove(edgeId, placement.t, placement.side);
     });
 
     handle.setPointerCapture(pointerId);
@@ -470,7 +567,13 @@ export function InteractionOverlay({
       window.removeEventListener("pointercancel", cancel);
       if (next) move(next);
       preview.flush();
-      setBadgeDrag(null);
+      const changed = Boolean(next && (lastT !== initialT || lastSide !== initialSide));
+      if (changed) {
+        onBadgeMove(edgeId, lastT, lastSide);
+      }
+      // Keep the committed preview visible until the worker returns the new
+      // layout, avoiding a one-frame snap back to the old badge position.
+      if (!changed) setBadgeDrag(null);
       onGestureEnd();
       try {
         handle.releasePointerCapture(pointerId);
@@ -1045,7 +1148,9 @@ export function InteractionOverlay({
       })()}
 
       {selection.map((item) => {
-        const bounds = boundsFor(item, layout, doc);
+        const bounds = resizePreview?.kind === item.kind && resizePreview.id === item.id
+          ? resizePreview.bounds
+          : boundsFor(item, layout, doc);
         if (!bounds || !isEntityVisible(doc, view, item.id)) return null;
         const radius = item.kind === "group" ? 10 : 8;
         const isText = item.kind === "annotation" && doc.annotations.some(
@@ -1083,7 +1188,9 @@ export function InteractionOverlay({
       })}
 
       {selection.map((item) => {
-        const bounds = boundsFor(item, layout, doc);
+        const bounds = resizePreview?.kind === item.kind && resizePreview.id === item.id
+          ? resizePreview.bounds
+          : boundsFor(item, layout, doc);
         const place = item.kind === "annotation" ? view.annotations?.[item.id] : view.places[item.id];
         if (!bounds || item.kind === "edge" || item.kind === "resource" || place?.locked) return null;
         return (
@@ -1112,14 +1219,19 @@ export function InteractionOverlay({
                     snapToGrid,
                     bounds,
                     handle.name,
-                    (w, h) =>
-                      onResize(
+                    (w, h) => setResizePreview({
+                      kind: item.kind,
+                      id: item.id,
+                      bounds: { ...bounds, w, h },
+                    }),
+                    (w, h) => onResize(
                         item.kind as "resource" | "group" | "annotation",
                         item.id,
                         w,
                         h,
                         event.shiftKey,
                       ),
+                    () => setResizePreview(null),
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -1283,14 +1395,14 @@ export function InteractionOverlay({
         >
           <polyline
             className="route-edit-rail"
-            points={edgeGeom.points.map((point) => `${point.x},${point.y}`).join(" ")}
+            points={editableEdgePoints!.map((point) => `${point.x},${point.y}`).join(" ")}
           />
 
-          {edgeGeom.points.map((point, index) => {
-            const endpoint = index === 0 || index === edgeGeom.points.length - 1;
+          {editableEdgePoints!.map((point, index) => {
+            const endpoint = index === 0 || index === editableEdgePoints!.length - 1;
             const endpointName = index === 0
               ? "source"
-              : index === edgeGeom.points.length - 1
+              : index === editableEdgePoints!.length - 1
                 ? "target"
                 : undefined;
             if (endpoint) {
@@ -1335,9 +1447,11 @@ export function InteractionOverlay({
                     event,
                     zoom,
                     snapToGrid,
-                    edgeGeom.points,
+                    editableEdgePoints!,
                     index,
+                    (points) => setRouteEditPreview({ edgeId: edgeGeom.id, points }),
                     commitRoute.bind(null, edgeGeom.id),
+                    () => setRouteEditPreview(null),
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -1350,8 +1464,8 @@ export function InteractionOverlay({
             );
           })}
 
-          {showBendHandles && edgeGeom.points.slice(0, -1).map((point, index) => {
-            const next = edgeGeom.points[index + 1]!;
+          {showBendHandles && editableEdgePoints!.slice(0, -1).map((point, index) => {
+            const next = editableEdgePoints![index + 1]!;
             const horizontal = point.y === next.y;
             const segmentLength = Math.abs(next.x - point.x) + Math.abs(next.y - point.y);
             if (segmentLength < 32) return null;
@@ -1374,9 +1488,11 @@ export function InteractionOverlay({
                     event,
                     zoom,
                     snapToGrid,
-                    edgeGeom.points,
+                    editableEdgePoints!,
                     index,
+                    (points) => setRouteEditPreview({ edgeId: edgeGeom.id, points }),
                     commitRoute.bind(null, edgeGeom.id),
+                    () => setRouteEditPreview(null),
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -1415,6 +1531,19 @@ export function InteractionOverlay({
     </svg>
   );
 }
+
+export const InteractionOverlay = memo(
+  InteractionOverlayComponent,
+  (previous, next) =>
+    previous.doc === next.doc &&
+    previous.layout === next.layout &&
+    previous.tool === next.tool &&
+    previous.zoom === next.zoom &&
+    previous.snapToGrid === next.snapToGrid &&
+    previous.selection === next.selection &&
+    previous.pendingPort === next.pendingPort &&
+    previous.ghostRoute === next.ghostRoute,
+);
 
 function isEntityVisible(
   doc: DiagramDocument,
@@ -1844,14 +1973,19 @@ function beginResize(
   snapToGrid: boolean,
   rect: { x: number; y: number; w: number; h: number },
   handle: string,
-  onResize: (w: number, h: number) => void,
+  onPreview: (w: number, h: number) => void,
+  onCommit: (w: number, h: number) => void,
+  onCancel: () => void,
   onBegin?: () => void,
   onEnd?: () => void,
 ) {
   onBegin?.();
   const start = { x: event.clientX, y: event.clientY };
   const origin = { ...rect };
-  const preview = createFramePreview<{ w: number; h: number }>(({ w, h }) => onResize(w, h));
+  let latest = { w: origin.w, h: origin.h };
+  const preview = createFramePreview<{ w: number; h: number }>(
+    ({ w, h }) => onPreview(w, h),
+  );
   const move = (next: PointerEvent) => {
     const dx = (next.clientX - start.x) / zoom;
     const dy = (next.clientY - start.y) / zoom;
@@ -1861,7 +1995,8 @@ function beginResize(
     const h = handle.includes("s")
       ? Math.max(32, snapCoordinate(origin.h + dy, snapToGrid))
       : origin.h;
-    preview.schedule({ w, h });
+    latest = { w, h };
+    preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
     window.removeEventListener("pointermove", move);
@@ -1869,6 +2004,7 @@ function beginResize(
     window.removeEventListener("pointercancel", cancel);
     move(next);
     preview.flush();
+    onCommit(latest.w, latest.h);
     onEnd?.();
   };
   const cancel = () => {
@@ -1876,6 +2012,7 @@ function beginResize(
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", cancel);
     preview.flush();
+    onCancel();
     onEnd?.();
   };
   window.addEventListener("pointermove", move);
@@ -1889,15 +2026,18 @@ function beginSegmentMove(
   snapToGrid: boolean,
   points: Point[],
   index: number,
-  onMove: (points: Point[]) => void,
+  onPreview: (points: Point[]) => void,
+  onCommit: (points: Point[]) => void,
+  onCancel: () => void,
   onBegin?: () => void,
   onEnd?: () => void,
 ) {
   onBegin?.();
   const start = { x: event.clientX, y: event.clientY };
   const origin = points.map((point) => ({ ...point }));
+  let latest = origin;
   const horizontal = origin[index]!.y === origin[index + 1]!.y;
-  const preview = createFramePreview<Point[]>((next) => onMove(next));
+  const preview = createFramePreview<Point[]>((next) => onPreview(next));
   const move = (next: PointerEvent) => {
     const updated = origin.map((point) => ({ ...point }));
     if (horizontal) {
@@ -1915,7 +2055,8 @@ function beginSegmentMove(
       updated[index]!.x = x;
       updated[index + 1]!.x = x;
     }
-    preview.schedule(normalizeOrthogonalRoute(updated));
+    latest = normalizeOrthogonalRoute(updated);
+    preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
     window.removeEventListener("pointermove", move);
@@ -1923,6 +2064,7 @@ function beginSegmentMove(
     window.removeEventListener("pointercancel", cancel);
     move(next);
     preview.flush();
+    onCommit(latest);
     onEnd?.();
   };
   const cancel = () => {
@@ -1930,6 +2072,7 @@ function beginSegmentMove(
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", cancel);
     preview.flush();
+    onCancel();
     onEnd?.();
   };
   window.addEventListener("pointermove", move);
@@ -1943,14 +2086,17 @@ function beginPointMove(
   snapToGrid: boolean,
   points: Point[],
   index: number,
-  onMove: (points: Point[]) => void,
+  onPreview: (points: Point[]) => void,
+  onCommit: (points: Point[]) => void,
+  onCancel: () => void,
   onBegin?: () => void,
   onEnd?: () => void,
 ) {
   onBegin?.();
   const start = { x: event.clientX, y: event.clientY };
   const origin = points.map((point) => ({ ...point }));
-  const preview = createFramePreview<Point[]>((next) => onMove(next));
+  let latest = origin;
+  const preview = createFramePreview<Point[]>((next) => onPreview(next));
   const move = (next: PointerEvent) => {
     const target = {
       x: snapCoordinate(
@@ -1962,7 +2108,8 @@ function beginPointMove(
         snapToGrid,
       ),
     };
-    preview.schedule(moveOrthogonalBend(origin, index, target));
+    latest = moveOrthogonalBend(origin, index, target);
+    preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
     window.removeEventListener("pointermove", move);
@@ -1970,6 +2117,7 @@ function beginPointMove(
     window.removeEventListener("pointercancel", cancel);
     move(next);
     preview.flush();
+    onCommit(latest);
     onEnd?.();
   };
   const cancel = () => {
@@ -1977,6 +2125,7 @@ function beginPointMove(
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", cancel);
     preview.flush();
+    onCancel();
     onEnd?.();
   };
   window.addEventListener("pointermove", move);

@@ -10,6 +10,7 @@ import {
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
+const VIEWPORT_COMMIT_DELAY_MS = 120;
 
 /** The first frame leaves the app chrome and some of the surrounding canvas visible. */
 export const DEFAULT_VIEWPORT_ZOOM = 0.9;
@@ -92,22 +93,30 @@ export function CanvasStage({
   defaultFrameKey?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const worldRef = useRef<HTMLDivElement>(null);
   const [panning, setPanning] = useState(false);
   const spaceRef = useRef(false);
   const interactivePointerRef = useRef(false);
   const framedKeyRef = useRef<number | null>(null);
   const viewportRef = useRef(viewport);
-  viewportRef.current = viewport;
   const onViewportChangeRef = useRef(onViewportChange);
   onViewportChangeRef.current = onViewportChange;
   const pendingViewportRef = useRef<Viewport | null>(null);
   const pendingViewportOptionsRef = useRef<ViewportChangeOptions | undefined>(undefined);
-  const viewportFrameRef = useRef<number | null>(null);
+  const viewportCommitTimerRef = useRef<number | null>(null);
+
+  const applyViewport = useCallback((next: Viewport) => {
+    viewportRef.current = next;
+    if (worldRef.current) {
+      worldRef.current.style.transform =
+        `translate(${next.panX}px, ${next.panY}px) scale(${next.zoom})`;
+    }
+  }, []);
 
   const flushViewportChange = useCallback(() => {
-    if (viewportFrameRef.current !== null) {
-      window.cancelAnimationFrame(viewportFrameRef.current);
-      viewportFrameRef.current = null;
+    if (viewportCommitTimerRef.current !== null) {
+      window.clearTimeout(viewportCommitTimerRef.current);
+      viewportCommitTimerRef.current = null;
     }
     const next = pendingViewportRef.current;
     if (!next) return;
@@ -117,27 +126,34 @@ export function CanvasStage({
     onViewportChangeRef.current(next, options);
   }, []);
 
-  const enqueueViewportChange = useCallback((next: Viewport, options?: ViewportChangeOptions) => {
-    viewportRef.current = next;
+  const previewViewportChange = useCallback((next: Viewport, options?: ViewportChangeOptions) => {
+    applyViewport(next);
     pendingViewportRef.current = next;
     pendingViewportOptionsRef.current = options;
-    if (viewportFrameRef.current !== null) return;
-    viewportFrameRef.current = window.requestAnimationFrame(() => {
-      viewportFrameRef.current = null;
-      const pending = pendingViewportRef.current;
-      if (!pending) return;
-      pendingViewportRef.current = null;
-      const pendingOptions = pendingViewportOptionsRef.current;
-      pendingViewportOptionsRef.current = undefined;
-      onViewportChangeRef.current(pending, pendingOptions);
-    });
-  }, []);
+  }, [applyViewport]);
+
+  const enqueueViewportChange = useCallback((next: Viewport, options?: ViewportChangeOptions) => {
+    previewViewportChange(next, options);
+    if (viewportCommitTimerRef.current !== null) {
+      window.clearTimeout(viewportCommitTimerRef.current);
+    }
+    viewportCommitTimerRef.current = window.setTimeout(
+      flushViewportChange,
+      VIEWPORT_COMMIT_DELAY_MS,
+    );
+  }, [flushViewportChange, previewViewportChange]);
+
+  useLayoutEffect(() => {
+    // During a wheel or pan gesture the DOM transform is intentionally ahead
+    // of persisted React state. Do not snap it back if unrelated UI rerenders.
+    if (pendingViewportRef.current === null) applyViewport(viewport);
+  }, [applyViewport, viewport]);
 
   useEffect(() => () => {
-    if (viewportFrameRef.current !== null) {
-      window.cancelAnimationFrame(viewportFrameRef.current);
+    if (viewportCommitTimerRef.current !== null) {
+      window.clearTimeout(viewportCommitTimerRef.current);
     }
-    viewportFrameRef.current = null;
+    viewportCommitTimerRef.current = null;
     pendingViewportRef.current = null;
     pendingViewportOptionsRef.current = undefined;
   }, []);
@@ -306,7 +322,7 @@ export function CanvasStage({
             setPanning(true);
           }
           if (!dragged) return;
-          enqueueViewportChange({
+          previewViewportChange({
             ...origin,
             panX: origin.panX + dx,
             panY: origin.panY + dy,
@@ -332,6 +348,7 @@ export function CanvasStage({
       }}
     >
       <div
+        ref={worldRef}
         className="canvas-world"
         style={{
           transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,

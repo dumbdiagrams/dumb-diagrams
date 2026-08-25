@@ -2,6 +2,7 @@ import type {
   AnnotationStyle,
   DiagramDocument,
   Edge,
+  EdgeColor,
   Group,
   Resource,
   TextAlign,
@@ -439,6 +440,10 @@ class Parser {
           const kind = this.expect("id").value;
           if (kind === "flow" || kind === "peer" || kind === "fail")
             edge.kind = kind;
+        } else if (t.type === "id" && t.value === "color") {
+          this.pos++;
+          const color = this.expect("id").value;
+          if (isEdgeColor(color)) edge.color = color;
         } else if (t.type === "id" && t.value === "from") {
           this.pos++;
           const side = this.expect("id").value;
@@ -744,6 +749,7 @@ export function printDgm(doc: DiagramDocument): string {
     if (edge.step !== undefined) opts.push(`step ${edge.step}`);
     if (edge.style !== "solid") opts.push(`style ${edge.style}`);
     if (edge.kind) opts.push(`kind ${edge.kind}`);
+    if (edge.color) opts.push(`color ${edge.color}`);
     if (edge.sourcePort) {
       opts.push(
         `from ${edge.sourcePort}${edge.sourcePortOffset !== undefined
@@ -807,6 +813,11 @@ export function printDgm(doc: DiagramDocument): string {
   }
   lines.push("}");
   return lines.join("\n");
+}
+
+function isEdgeColor(value: string): value is EdgeColor {
+  return value === "graphite" || value === "blue" || value === "teal" ||
+    value === "purple" || value === "amber" || value === "red" || value === "green";
 }
 
 function isAnnotationStyle(value: string): value is AnnotationStyle {

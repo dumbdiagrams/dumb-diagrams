@@ -102,7 +102,7 @@ ${declarations}
 
   annotation note1 "Callout" { anchor client }
 
-  client -> api { id e1 label "request" step 1 from e offset 0.25 to w offset 0.75 }
+  client -> api { id e1 label "request" step 1 color teal from e offset 0.25 to w offset 0.75 }
 }
 
 view default {
@@ -121,6 +121,7 @@ view default {
       id: "e1",
       label: "request",
       step: 1,
+      color: "teal",
       sourcePort: "e",
       targetPort: "w",
       sourcePortOffset: 0.25,

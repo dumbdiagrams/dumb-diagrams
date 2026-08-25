@@ -147,7 +147,7 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
   await expect(numberInput).toHaveCount(1);
   await expect(numberInput).toHaveAttribute("min", "0");
   await expect(numberInput).toHaveAttribute("max", "99");
-  await expect(page.getByText("Whole numbers only: 0–99.", { exact: false })).toBeVisible();
+  await expect(page.getByText("0–99", { exact: true })).toBeVisible();
   await numberInput.fill("7");
   await numberInput.fill("100");
   await expect(numberInput).toHaveValue("7");
@@ -228,6 +228,19 @@ test("exposes draggable turn points and moves a connector bend", async ({ page }
   await page.mouse.up();
 
   await expect.poll(async () => edge.getAttribute("points")).not.toBe(beforePoints);
+});
+
+test("opens the connector panel without rerouting an automatic edge", async ({ page }) => {
+  await page.goto("/");
+  await selectE3(page);
+
+  const connector = page.getByRole("dialog", { name: "Connector", exact: true });
+  await expect(connector).toBeVisible();
+  await expect(page.locator(".ghost-route")).toHaveCount(0);
+
+  await connector.getByRole("button", { name: "Pin current route" }).click();
+  await expect(connector.getByRole("button", { name: "Use automatic route", exact: false })).toBeVisible();
+  await expect(page.locator(".ghost-route")).toHaveCount(1);
 });
 
 test("previews resource movement without rerouting the document until release", async ({ page }) => {
@@ -705,9 +718,9 @@ test("keeps rewired endpoints on explicit icon ports", async ({ page }) => {
   const previewPoints = await preview.getAttribute("points");
   await page.mouse.up();
 
+  await expect.poll(async () => edge.getAttribute("points")).toBe(previewPoints);
   const afterPoints = await edge.getAttribute("points");
   expect(afterPoints).not.toBe(beforePoints);
-  expect(afterPoints).toBe(previewPoints);
   const first = afterPoints!.trim().split(/\s+/)[0]!.split(",").map(Number);
   expect(first[0]).toBeCloseTo(portPoint.x, 4);
   expect(first[1]).toBeCloseTo(portPoint.y, 4);
@@ -757,8 +770,8 @@ test("infers the top face and previews the routed path when an endpoint is dropp
   expect(Number(await previewEndpoint.getAttribute("cy"))).toBeCloseTo(expectedTop.y, 4);
   await page.mouse.up();
 
+  await expect.poll(async () => edge.getAttribute("points")).toBe(previewPoints);
   const afterPoints = await edge.getAttribute("points");
-  expect(afterPoints).toBe(previewPoints);
   const first = afterPoints!.trim().split(/\s+/)[0]!.split(",").map(Number);
   expect(first[0]).toBeCloseTo(expectedTop.x, 4);
   expect(first[1]).toBeCloseTo(expectedTop.y, 4);

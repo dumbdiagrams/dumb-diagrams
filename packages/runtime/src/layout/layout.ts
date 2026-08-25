@@ -502,7 +502,22 @@ function hasHorizontalChildFlow(doc: DiagramDocument, group: Group): boolean {
     const targetOwner = ownerByResource.get(edge.target);
     return Boolean(sourceOwner && targetOwner && sourceOwner !== targetOwner);
   });
-  return hasInternalFlow;
+  if (hasInternalFlow) return true;
+
+  // Explicit peer alternatives fed by the same external source are choices,
+  // not a processing fan-out. Keep those side by side; ordinary flow/event
+  // branches use the vertical cross-axis handled above.
+  const peerTargetsByExternalSource = new Map<ID, Set<ID>>();
+  for (const edge of doc.edges) {
+    if (edge.kind !== "peer") continue;
+    const sourceOwner = ownerByResource.get(edge.source);
+    const targetOwner = ownerByResource.get(edge.target);
+    if (sourceOwner || !targetOwner) continue;
+    const targets = peerTargetsByExternalSource.get(edge.source) ?? new Set<ID>();
+    targets.add(targetOwner);
+    peerTargetsByExternalSource.set(edge.source, targets);
+  }
+  return [...peerTargetsByExternalSource.values()].some((targets) => targets.size >= 2);
 }
 
 function layoutGenericGroup(

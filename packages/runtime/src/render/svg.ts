@@ -1,6 +1,6 @@
 import { getCatalogEntry } from "../catalog/index.js";
 import type { AnnotationStyle, DiagramDocument, LayoutResult } from "../core/index.js";
-import { getDefaultView } from "../core/index.js";
+import { EDGE_COLOR_VALUES, getDefaultView, resolveEdgeColor } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 
 import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon } from "./assets.js";
@@ -24,10 +24,13 @@ export function renderSvg(
   parts.push(
     `<rect width="100%" height="100%" fill="${GRAMMAR.canvasFill}"/>`,
   );
+  const arrowMarkers = Object.entries(EDGE_COLOR_VALUES)
+    .map(([name, color]) => `<marker id="${name === "graphite" ? "arrow" : `arrow-${name}`}" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="${color}"/>
+  </marker>`)
+    .join("\n  ");
   parts.push(`<defs>
-  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
-    <path d="M0,0 L10,5 L0,10 Z" fill="${GRAMMAR.edgeColor}"/>
-  </marker>
+  ${arrowMarkers}
   <style>text{font-family:${GRAMMAR.fontFamily};fill:#232F3E}.group-badge-text,.edge-badge-text{fill:${GRAMMAR.badgeText}} g[data-annotation-style="text"] text{font-family:${GRAMMAR.textFontFamily};font-size:14px}</style>
 </defs>`);
 
@@ -172,30 +175,34 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   const d = edge.points
     .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
     .join(" ");
+  const color = resolveEdgeColor(edge.color, edge.kind);
+  const colorName = edge.color ?? (edge.kind === "fail" ? "red" : "graphite");
+  const markerId = colorName === "graphite" ? "arrow" : `arrow-${colorName}`;
+  const hasArrow = edge.kind !== "peer";
   const dash =
     edge.style === "dashed" ? `stroke-dasharray="${GRAMMAR.edgeDash}"` : "";
-  const marker = edge.style === "dashed" ? "" : `marker-end="url(#arrow)"`;
+  const marker = !hasArrow ? "" : `marker-end="url(#${markerId})"`;
   const markerOverlay =
-    edge.style === "dashed"
-      ? `<path d="${d}" fill="none" stroke="transparent" stroke-width="${GRAMMAR.edgeStroke}" marker-end="url(#arrow)"/>`
+    edge.style === "dashed" && hasArrow
+      ? `<path d="${d}" fill="none" stroke="transparent" stroke-width="${GRAMMAR.edgeStroke}" marker-end="url(#${markerId})"/>`
       : "";
 
   let badge = "";
   if (edge.badge && edge.step !== undefined) {
     badge = `
-  <circle class="edge-badge-circle" cx="${edge.badge.x}" cy="${edge.badge.y}" r="${GRAMMAR.badgeRadius}" fill="${GRAMMAR.badgeFill}"/>
+  <circle class="edge-badge-circle" cx="${edge.badge.x}" cy="${edge.badge.y}" r="${GRAMMAR.badgeRadius}" fill="${color}"/>
   <text class="edge-badge-text" x="${edge.badge.x}" y="${edge.badge.y + 4}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${edge.step}</text>`;
   }
 
   let label = "";
   if (edge.label && edge.points.length >= 2) {
     const point = edge.labelPoint ?? edge.points[Math.floor(edge.points.length / 2)]!;
-    label = `<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${GRAMMAR.edgeColor}">${escapeXml(edge.label)}</text>`;
+    label = `<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${color}">${escapeXml(edge.label)}</text>`;
   }
 
   return `
-<g id="edge-${edge.id}">
-  <path d="${d}" fill="none" stroke="${GRAMMAR.edgeColor}" stroke-width="${GRAMMAR.edgeStroke}" stroke-linecap="butt" stroke-linejoin="round" ${dash} ${marker}/>
+<g id="edge-${edge.id}" class="edge edge-${edge.kind ?? "flow"} edge-${edge.style}">
+  <path d="${d}" fill="none" stroke="${color}" stroke-width="${GRAMMAR.edgeStroke}" stroke-linecap="butt" stroke-linejoin="round" ${dash} ${marker}/>
   ${markerOverlay}
   ${badge}
   ${label}

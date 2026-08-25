@@ -50,7 +50,7 @@ const BADGE_TO_BADGE_CLEARANCE = GRAMMAR.badgeRadius * 2 + 6;
 // product for every port pair makes routing grow explosively. Single-corridor
 // candidates below still consider every gutter; keep a small, representative
 // set only for the combined fallback shapes.
-const MAX_COMBINED_GUTTERS_PER_AXIS = 8;
+const MAX_COMBINED_GUTTERS_PER_AXIS = 4;
 const MAX_ASTAR_PORT_CHOICES = 1;
 
 interface PortChoice {
@@ -176,6 +176,15 @@ export function routeEdges(
     const routeHGutters = [...hGutters, ...corridorGutters(existing, "horizontal")];
 
     for (const port of ports) {
+      // No orthogonal path between these ports can be shorter than their
+      // Manhattan distance. Once another port has already reached or beaten
+      // that lower bound, generating and scoring this port's large template
+      // family cannot improve the result.
+      const lowerBound =
+        Math.abs(port.src.x - port.tgt.x) +
+        Math.abs(port.src.y - port.tgt.y) +
+        port.preferenceCost;
+      if (lowerBound >= bestScore) continue;
       const context = createRouteContext(source, target, port, edge.style);
       for (const candidate of templates(port, routeVGutters, routeHGutters, source, target)) {
         const path = simplify(candidate);
@@ -191,6 +200,10 @@ export function routeEdges(
           best = path;
           bestPort = port;
         }
+        // A collision-free path with no avoidable distance or turns is the
+        // mathematical optimum for this port. Avoid scoring the remaining
+        // gutter combinations, which dominate interactive edit latency.
+        if (bestScore <= lowerBound) break;
       }
     }
 
@@ -275,6 +288,7 @@ export function routeEdges(
       label: edge.label,
       style: edge.style,
       kind: edge.kind,
+      color: edge.color,
     });
   }
 

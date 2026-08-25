@@ -254,7 +254,7 @@ describe("async-docs fixture", () => {
     }
   });
 
-  it("keeps connectors simple and gives dashed edges an arrowhead", () => {
+  it("keeps connectors simple and gives dashed failure edges a red arrowhead", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);
     const edges = routeEdges(doc, layout);
@@ -296,7 +296,20 @@ describe("async-docs fixture", () => {
     );
 
     const result = compileDiagram(doc);
-    expect(result.svg).toMatch(/id="edge-e6"[\s\S]*marker-end="url\(#arrow\)"/);
+    expect(result.svg).toMatch(/id="edge-e6"[\s\S]*marker-end="url\(#arrow-red\)"/);
+  });
+
+  it("renders connector colors and peer meaning as authored", () => {
+    const doc = createAsyncDocsFixture();
+    doc.edges[0]!.kind = "peer";
+    doc.edges[0]!.color = "teal";
+
+    const result = compileDiagram(doc);
+    expect(result.ok).toBe(true);
+    const peerEdge = result.svg?.match(/<g id="edge-e1"[\s\S]*?<\/g>/)?.[0] ?? "";
+    expect(peerEdge).toContain('class="edge edge-peer edge-solid"');
+    expect(peerEdge).toContain('stroke="#0F766E"');
+    expect(peerEdge).not.toContain("marker-end=");
   });
 
   it("repairs unsafe pinned places and removes loops from pinned routes", () => {

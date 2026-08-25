@@ -1,4 +1,4 @@
-import { lazy, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
+import { lazy, startTransition, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
@@ -145,7 +145,7 @@ import {
 import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
-import { compileDiagramSource } from "./diagram-compiler";
+import { useDiagramCompilation } from "./use-diagram-compilation";
 import {
   GRID_SIZE,
   outsideCanvasInsertionPoint,
@@ -935,9 +935,7 @@ function App() {
     if (!isExampleOpening && openingExampleId !== null) setOpeningExampleId(null);
   }, [isExampleOpening, openingExampleId]);
 
-  const compiled = useMemo(() => {
-    return compileDiagramSource(source, snapToGrid);
-  }, [source, snapToGrid]);
+  const compiled = useDiagramCompilation(source, snapToGrid);
 
   useEffect(() => {
     if (compiled.ok) lastGoodRef.current = compiled;
@@ -1023,7 +1021,9 @@ function App() {
       setToast(error.message);
       return false;
     }
-    commitSource(printDgm(doc));
+    const nextSource = printDgm(doc);
+    sourceRef.current = nextSource;
+    commitSource(nextSource);
     return true;
   };
 
@@ -1041,7 +1041,10 @@ function App() {
 
   const mutateCurrent = (change: (doc: DiagramDocument) => DiagramDocument) => {
     try {
-      commitDocument(change(parseDgm(source)));
+      const next = change(parseDgm(sourceRef.current));
+      startTransition(() => {
+        commitDocument(next);
+      });
     } catch {
       // Keep the source editor authoritative while it contains parse errors.
     }
@@ -1659,6 +1662,7 @@ function App() {
                 dangerouslySetInnerHTML={{ __html: displayCompiled.svg }}
               />
               {compiled.ok && <InteractionOverlay
+                key={activeTabId}
                 doc={compiled.doc}
                 layout={compiled.layout}
                 tool={tool}
@@ -2051,14 +2055,14 @@ function App() {
           tool !== "groups" &&
           tool !== "code" &&
           tool !== "layers" && (
-            <FloatingPanel
-              className="drawer-sheet edge-sheet"
-              title="Connector"
-              subtitle="Style and routing"
+          <FloatingPanel
+            className="drawer-sheet edge-sheet"
+            title="Connector"
+            subtitle="Meaning, appearance, and routing"
               onClose={() =>
                 setSelection((current) => current.filter((item) => item.kind !== "edge"))
               }
-              width={300}
+            width={360}
             >
               {(() => {
                 const edgeItem = selection.find((item) => item.kind === "edge");
@@ -2074,8 +2078,11 @@ function App() {
                     onUpdateLabel={(label) =>
                       mutateCurrent((doc) => renameEdge(doc, edge.id, normalizeSingleLineText(label)))
                     }
-                    onUpdateEdge={(style, kind) =>
-                      mutateCurrent((doc) => updateEdge(doc, edge.id, { style, kind }))
+                    onUpdateEdge={(patch) =>
+                      mutateCurrent((doc) => updateEdge(doc, edge.id, patch))
+                    }
+                    onUpdateColor={(color) =>
+                      mutateCurrent((doc) => updateEdge(doc, edge.id, { color }))
                     }
                     onUpdateStep={(step) =>
                       mutateCurrent((doc) => updateEdge(doc, edge.id, { step }))
@@ -2887,6 +2894,24 @@ function Inspector({
   const editableLabel = resource ? resource.label.role ?? "" : title;
   const [labelDraft, setLabelDraft] = useState(editableLabel);
   useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
+  const authoredResourceLabelPosition = resource?.label.position ?? "bottom";
+  const [resourceLabelPositionDraft, setResourceLabelPositionDraft] =
+    useState<ResourceLabelPosition>(authoredResourceLabelPosition);
+  useEffect(() => {
+    setResourceLabelPositionDraft(authoredResourceLabelPosition);
+  }, [resource?.id, authoredResourceLabelPosition]);
+  const authoredResourceIconSize = resource ? resourceIconSize(resource) : "normal";
+  const [resourceIconSizeDraft, setResourceIconSizeDraft] =
+    useState<ResourceIconSize>(authoredResourceIconSize);
+  useEffect(() => {
+    setResourceIconSizeDraft(authoredResourceIconSize);
+  }, [resource?.id, authoredResourceIconSize]);
+  const authoredGroupLabelPosition = group?.labelPosition ?? "top-left";
+  const [groupLabelPositionDraft, setGroupLabelPositionDraft] =
+    useState<GroupLabelPosition>(authoredGroupLabelPosition);
+  useEffect(() => {
+    setGroupLabelPositionDraft(authoredGroupLabelPosition);
+  }, [group?.id, authoredGroupLabelPosition]);
 
   return (
     <FloatingPanel
@@ -2979,15 +3004,21 @@ function Inspector({
           <div className="button-pair">
             <button
               type="button"
-              className={resourceIconSize(resource) === "normal" ? "is-active" : ""}
-              onClick={() => onSetIconSize("normal")}
+              className={resourceIconSizeDraft === "normal" ? "is-active" : ""}
+              onClick={() => {
+                setResourceIconSizeDraft("normal");
+                onSetIconSize("normal");
+              }}
             >
               Normal ({GRAMMAR.iconPrimary}px)
             </button>
             <button
               type="button"
-              className={resourceIconSize(resource) === "small" ? "is-active" : ""}
-              onClick={() => onSetIconSize("small")}
+              className={resourceIconSizeDraft === "small" ? "is-active" : ""}
+              onClick={() => {
+                setResourceIconSizeDraft("small");
+                onSetIconSize("small");
+              }}
             >
               Small ({GRAMMAR.iconSecondary}px)
             </button>
@@ -2999,8 +3030,12 @@ function Inspector({
           <label htmlFor="resource-label-position">Display label position</label>
           <select
             id="resource-label-position"
-            value={resource.label.position ?? "bottom"}
-            onChange={(event) => onSetResourceLabelPosition(event.target.value as ResourceLabelPosition)}
+            value={resourceLabelPositionDraft}
+            onChange={(event) => {
+              const position = event.target.value as ResourceLabelPosition;
+              setResourceLabelPositionDraft(position);
+              onSetResourceLabelPosition(position);
+            }}
           >
             <option value="top">Above icon</option>
             <option value="bottom">Below icon</option>
@@ -3015,8 +3050,12 @@ function Inspector({
           <label htmlFor="group-label-position">Display label position</label>
           <select
             id="group-label-position"
-            value={group.labelPosition ?? "top-left"}
-            onChange={(event) => onSetGroupLabelPosition(event.target.value as GroupLabelPosition)}
+            value={groupLabelPositionDraft}
+            onChange={(event) => {
+              const position = event.target.value as GroupLabelPosition;
+              setGroupLabelPositionDraft(position);
+              onSetGroupLabelPosition(position);
+            }}
           >
             <option value="top-left">Top left</option>
             <option value="top-right">Top right</option>

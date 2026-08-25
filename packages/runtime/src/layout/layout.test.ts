@@ -72,4 +72,25 @@ describe("logical group layout", () => {
     expect(first.y).toBe(second.y);
     expect(second.y).toBe(third.y);
   });
+
+  it("keeps explicit external peer alternatives horizontal", () => {
+    const doc = logicalGroupDocument();
+    doc.edges = ["first", "second", "third"].map((target, index) => ({
+      id: `alternative-${index}`,
+      source: "source",
+      target,
+      style: "dashed",
+      kind: "peer",
+    }));
+
+    const nodes = new Map(layoutDocument(doc).nodes.map((node) => [node.id, node]));
+    const first = nodes.get("first")!.obstacle;
+    const second = nodes.get("second")!.obstacle;
+    const third = nodes.get("third")!.obstacle;
+
+    expect(first.x).toBeLessThan(second.x);
+    expect(second.x).toBeLessThan(third.x);
+    expect(first.y).toBe(second.y);
+    expect(second.y).toBe(third.y);
+  });
 });

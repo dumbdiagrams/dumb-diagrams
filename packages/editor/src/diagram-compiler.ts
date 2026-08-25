@@ -42,6 +42,14 @@ function remember(key: string, compilation: DiagramCompilation): DiagramCompilat
   return compilation;
 }
 
+export function cacheDiagramCompilation(
+  source: string,
+  snapToGrid: boolean,
+  compilation: DiagramCompilation,
+): DiagramCompilation {
+  return remember(cacheKey(source, snapToGrid), compilation);
+}
+
 export function getCachedDiagramCompilation(
   source: string,
   snapToGrid: boolean,
