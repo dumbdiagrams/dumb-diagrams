@@ -441,6 +441,10 @@ function layoutLogicalGroup(
 ): Measured {
   const style = GROUP_STYLES.logical;
   const children = measureChildren(doc, group.children, state);
+  // Keep the diagram's primary left-to-right direction for a real flow within
+  // the group. Parallel siblings reached from outside the group use the cross
+  // axis instead, which keeps fan-out tiers compact and avoids implying that
+  // the siblings call one another.
   const horizontal = doc.flow === "lr" && hasHorizontalChildFlow(doc, group);
   const contentW = horizontal
     ? Math.max(
@@ -498,21 +502,7 @@ function hasHorizontalChildFlow(doc: DiagramDocument, group: Group): boolean {
     const targetOwner = ownerByResource.get(edge.target);
     return Boolean(sourceOwner && targetOwner && sourceOwner !== targetOwner);
   });
-  if (hasInternalFlow) return true;
-
-  // Alternative peers fed by the same external source belong side by side.
-  // This covers authentication choices such as Cognito and OpenID Connect
-  // without inventing a connector between the alternatives themselves.
-  const targetsByExternalSource = new Map<ID, Set<ID>>();
-  for (const edge of doc.edges) {
-    const sourceOwner = ownerByResource.get(edge.source);
-    const targetOwner = ownerByResource.get(edge.target);
-    if (sourceOwner || !targetOwner) continue;
-    const targets = targetsByExternalSource.get(edge.source) ?? new Set<ID>();
-    targets.add(targetOwner);
-    targetsByExternalSource.set(edge.source, targets);
-  }
-  return [...targetsByExternalSource.values()].some((targets) => targets.size >= 2);
+  return hasInternalFlow;
 }
 
 function layoutGenericGroup(

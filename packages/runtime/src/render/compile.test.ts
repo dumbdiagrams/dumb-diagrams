@@ -117,6 +117,21 @@ describe("async-docs fixture", () => {
     expect(group.labelRect!.y).toBeGreaterThan(group.bounds.y + group.bounds.h / 2);
   });
 
+  it("anchors iconless group labels to the selected corner", () => {
+    const doc = createAsyncDocsFixture();
+    const queues = doc.groups.find((group) => group.id === "queues")!;
+    queues.labelPosition = "top-right";
+
+    const layout = layoutDocument(doc);
+    const group = layout.groups.find((candidate) => candidate.id === "queues")!;
+    const svg = renderSvg(doc, layout);
+
+    expect(group.labelRect!.x + group.labelRect!.w).toBe(group.bounds.x + group.bounds.w);
+    expect(svg).toMatch(
+      new RegExp(`id="group-queues"[\\s\\S]*text-anchor="end"[\\s\\S]*>${queues.label}<\\/text>`),
+    );
+  });
+
   it("uses the compact AWS hierarchy orientation", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);

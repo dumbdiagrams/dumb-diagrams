@@ -97,10 +97,12 @@ try {
 
   const invalidPath = join(projectDir, "diagrams", "invalid.dgm");
   writeFileSync(invalidPath, "this is not a diagram\n", "utf8");
+  console.log("Expecting validate to reject invalid.dgm (non-zero exit is success):");
   const invalidCode = runNpx(tarballPath, ["validate", invalidPath]);
   if (invalidCode === 0) {
     throw new Error("validate accepted invalid source");
   }
+  console.log(`OK validate rejected invalid source (exit ${invalidCode})`);
 
   const helpOut = runNpxCapture(tarballPath, ["help"]);
   if (!helpOut.includes("studio")) {

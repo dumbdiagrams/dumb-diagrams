@@ -46,6 +46,7 @@ describe("canonical catalog contract", () => {
       "cloud-agnostic.security-group": "#879196",
       "cloud-agnostic.cluster": "#879196",
       "cloud-agnostic.datacenter": "#879196",
+      "cloud-agnostic.boundary": "#879196",
       "cloud-agnostic.logical": "#879196",
       "cloud-agnostic.trust-boundary": "#E7157B",
     };

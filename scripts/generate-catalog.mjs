@@ -303,6 +303,12 @@ const CLOUD_GROUPS = [
     "assets/catalog/sources/cloud-agnostic/datacenter.svg",
     "logical",
   ],
+  [
+    "cloud-agnostic.boundary",
+    "Boundary",
+    "assets/catalog/sources/cloud-agnostic/boundary.svg",
+    "logical",
+  ],
   ["cloud-agnostic.logical", "Logical Group", "assets/catalog/sources/cloud-agnostic/logical.svg", "logical"],
   [
     "cloud-agnostic.trust-boundary",
@@ -714,6 +720,7 @@ const legacyAliases = {
   "neutral.security-group": "cloud-agnostic.security-group",
   "neutral.cluster": "cloud-agnostic.cluster",
   "neutral.datacenter": "cloud-agnostic.datacenter",
+  "neutral.boundary": "cloud-agnostic.boundary",
   "neutral.logical": "cloud-agnostic.logical",
   "neutral.trust-boundary": "cloud-agnostic.trust-boundary",
 };

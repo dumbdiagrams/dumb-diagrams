@@ -42,6 +42,7 @@ describe("parseDgm / printDgm round-trip", () => {
       "cloud-agnostic.security-group": "logical",
       "cloud-agnostic.cluster": "logical",
       "cloud-agnostic.datacenter": "logical",
+      "cloud-agnostic.boundary": "logical",
       "cloud-agnostic.logical": "logical",
       "cloud-agnostic.trust-boundary": "overlay",
     } as const;

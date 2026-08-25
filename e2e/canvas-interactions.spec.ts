@@ -183,6 +183,27 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
   await expect(page.getByRole("dialog", { name: "Connector", exact: true })).toHaveCount(1);
 });
 
+test("anchors a group display label at the selected corner", async ({ page }) => {
+  await page.goto("/");
+
+  const queues = page.locator('[data-entity-kind="group"][data-entity-id="queues"]');
+  await expect(queues).toHaveCount(1);
+  const bounds = await queues.boundingBox();
+  expect(bounds).not.toBeNull();
+  await queues.click({ position: { x: bounds!.width / 2, y: 8 } });
+
+  const inspector = page.getByRole("dialog", { name: "Async Queue Tier", exact: true });
+  await expect(inspector).toHaveCount(1);
+  await inspector.locator("#group-label-position").selectOption("top-right");
+
+  const renderedLabel = page.locator("#group-queues text");
+  await expect(renderedLabel).toHaveAttribute("text-anchor", "end");
+  const labelX = Number(await renderedLabel.getAttribute("x"));
+  const groupX = Number(await queues.getAttribute("x"));
+  const groupWidth = Number(await queues.getAttribute("width"));
+  expect(labelX).toBeCloseTo(groupX + groupWidth - 8, 5);
+});
+
 test("exposes draggable turn points and moves a connector bend", async ({ page }) => {
   await page.goto("/");
   const edge = await selectE3(page);

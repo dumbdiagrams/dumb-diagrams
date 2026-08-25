@@ -79,7 +79,120 @@ pnpm test:e2e:packed
 Nothing is published by those commands. The generated tarball lives under
 `.artifacts/packages/` and is consumed locally through `npx`.
 
-## Technologies in one minute
+## Testing the CLI
+
+The CLI is the publishable `dumbdiagrams` package (`dgm` is an alias). Use three
+loops depending on what you need to verify.
+
+| Loop | When to use it | What it proves |
+| --- | --- | --- |
+| Workspace binary | Daily CLI or Studio-server work | Compiled `packages/cli/dist/index.js` against workspace runtime and `packages/editor/dist` |
+| Tarball + `npx` | Before release, after packaging/template changes | Exact consumer boundary (bundled runtime, `dist/studio`, templates) |
+| Automated gates | Regression safety | Unit/integration, Playwright packed journey, `smoke:package` |
+
+### Workspace CLI (fast iteration)
+
+Build what changed, then invoke the dist entry directly or through `dev:cli`:
+
+```bash
+pnpm build
+pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm
+
+# equivalent:
+node packages/cli/dist/index.js studio examples/diagrams/aws-high-availability-web-app.dgm
+```
+
+`dev:cli` serves Studio from `packages/editor/dist` after an editor build. UI
+hot reload remains `pnpm dev` (Vite only — no CLI bundling).
+
+Global flags (any command):
+
+```bash
+node packages/cli/dist/index.js help
+node packages/cli/dist/index.js --version
+node packages/cli/dist/index.js -h
+```
+
+### Tarball CLI (consumer path)
+
+```bash
+pnpm build
+mkdir -p .artifacts/packages
+pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+
+export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
+export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
+```
+
+`pnpm smoke:package` runs the same pack + `npx` checks automatically (including
+a deliberate **invalid** `.dgm` that must fail validation — the red `✖` in the
+log is expected).
+
+### Command reference
+
+Run `dumbdiagrams help` (or `$CLI help` from a tarball) for the live list. Summary:
+
+| Command | Purpose | Positional args | Notable flags |
+| --- | --- | --- | --- |
+| `studio` / `open` | Local Studio + file bridge | `[file-or-folder]` — defaults to `diagrams/architecture.dgm` | `--port` (default 4788), `--host` (default 127.0.0.1), `--no-open` |
+| `render` | Portable SVG export | `<file.dgm>` | `--output <path>` (default `output.svg`) |
+| `validate` / `check` | Parse, validate, compile; report routing notes | `<file.dgm>` or directory | — |
+| `format` / `fmt` | Print canonical `.dgm` | `<file.dgm>` | `--write` to update the file |
+| `init` | Agent-ready project scaffold | `[directory]` | `--name`, `--directory`, `--diagram`, `--description`, `--open-editor`, `--editor`, `--yes` |
+| `fixtures` | Render built-in dev fixtures | `<name>` — `async-docs` or `transfer-hub` | `--output <path>` (default `.artifacts/golden/<name>.svg`) |
+
+`init` writes `diagrams/`, `DUMB_DIAGRAMS.md`, `AGENTS.md`, `CLAUDE.md`,
+`CATALOG.md`, `CATALOG.json`, and bundled `examples/` prompt/source pairs.
+
+### Try each command manually
+
+Use a temp directory so experiments stay outside the repo:
+
+```bash
+TMP="$(mktemp -d)"
+
+# Reference
+$CLI help
+$CLI --version
+npx --yes --package="$ARTIFACT" dgm --version   # alias
+
+# Init variants
+$CLI init "$TMP/by-name" --name "Payments Platform" --diagram billing-flow
+$CLI init "$TMP/by-yes" --yes
+$CLI init "$TMP/with-desc" --name demo --description "Smoke-test project"
+
+# Read-only on an initialized project
+$CLI validate "$TMP/by-name/diagrams"
+$CLI render "$TMP/by-name/diagrams/architecture.dgm" --output "$TMP/out.svg"
+$CLI format "$TMP/by-name/diagrams/architecture.dgm"
+$CLI format "$TMP/by-name/diagrams/architecture.dgm" --write
+
+# Studio without opening a browser (Ctrl+C to stop)
+$CLI studio "$TMP/by-name/diagrams" --no-open --port 4799
+
+# Workspace-only fixture render (needs monorepo examples/catalog)
+node packages/cli/dist/index.js fixtures async-docs
+node packages/cli/dist/index.js validate examples/diagrams
+```
+
+After publishing, replace `$CLI` with `npx dumbdiagrams@latest` or a pinned
+version (`@0.1.0`).
+
+### What automated tests cover
+
+| Gate | CLI surface exercised |
+| --- | --- |
+| `packages/cli/src/index.test.ts` | `help`, `--version`, `init`, `validate`, `format`, `render` |
+| `packages/cli/src/studio-server.test.ts` | Local Studio HTTP API (`/api/session`, document read/write, SSE) |
+| `pnpm check` | Compiled CLI validates every `examples/diagrams/*.dgm` |
+| `pnpm test:e2e` | Full Studio UI via **Vite** (not the CLI server) |
+| `pnpm test:e2e:packed` | Tarball → `studio` server → bundled Studio → disk lifecycle in a browser |
+| `pnpm smoke:package` | `npx` tarball: `init`, `validate`, `render`, `format`, invalid-input rejection, `dgm` alias, AGPL source rebuild |
+
+The main gap for manual spot-checking: browser UX through **workspace** `dev:cli`
+after editor changes (`pnpm build && pnpm dev:cli …`). Packed E2E covers the
+tarball path; Vite E2E covers editor UI without the CLI bundle.
+
 
 | Technology | What it does here |
 | --- | --- |

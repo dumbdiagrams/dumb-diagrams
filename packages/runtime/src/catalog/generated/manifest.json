@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generationVersion": "2026-08-20",
-  "count": 1512,
+  "count": 1513,
   "sources": [
     "aws",
     "azure",
@@ -61422,6 +61422,46 @@
       "browsable": true
     },
     {
+      "type": "cloud-agnostic.boundary",
+      "provider": "cloud-agnostic",
+      "assetKind": "group",
+      "name": "Boundary",
+      "serviceName": "Boundary",
+      "categories": [
+        "Groups"
+      ],
+      "category": "Groups",
+      "aliases": [
+        "Boundary",
+        "neutral.boundary"
+      ],
+      "icon": {
+        "sourceId": "cloud-agnostic-group-boundary-c153da67-ed56d6d8",
+        "sourcePath": "assets/catalog/sources/cloud-agnostic/boundary.svg",
+        "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-boundary-c153da67-ed56d6d8.svg",
+        "sha256": "c153da672bc049d852f11c3c81a016c5e7f0f47019627e2a5897e354e256b19c",
+        "specificity": "semantic-neutral"
+      },
+      "iconPath": "assets/catalog/sources/cloud-agnostic/boundary.svg",
+      "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-boundary-c153da67-ed56d6d8.svg",
+      "specificity": "semantic-neutral",
+      "groupKind": "logical",
+      "allowedParents": [
+        "cloud",
+        "account",
+        "region",
+        "logical",
+        "vpc",
+        "az"
+      ],
+      "allowRoot": false,
+      "scope": "global",
+      "column": "edge",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
       "type": "cloud-agnostic.cache",
       "provider": "cloud-agnostic",
       "assetKind": "resource",
@@ -63907,6 +63947,7 @@
     "neutral.security-group": "cloud-agnostic.security-group",
     "neutral.cluster": "cloud-agnostic.cluster",
     "neutral.datacenter": "cloud-agnostic.datacenter",
+    "neutral.boundary": "cloud-agnostic.boundary",
     "neutral.logical": "cloud-agnostic.logical",
     "neutral.trust-boundary": "cloud-agnostic.trust-boundary"
   },
@@ -74485,6 +74526,13 @@
       "sourcePath": "assets/catalog/sources/cloud-agnostic/tenant.svg",
       "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-account-e1b02a52-d0e56454.svg",
       "sha256": "e1b02a52dc9b014c8e401e800fbfff05ec7b7c6424ef755a502c8ad1bd2f68ca",
+      "specificity": "semantic-neutral"
+    },
+    {
+      "sourceId": "cloud-agnostic-group-boundary-c153da67-ed56d6d8",
+      "sourcePath": "assets/catalog/sources/cloud-agnostic/boundary.svg",
+      "browserPath": "catalog-icons/cloud-agnostic/cloud-agnostic-group-boundary-c153da67-ed56d6d8.svg",
+      "sha256": "c153da672bc049d852f11c3c81a016c5e7f0f47019627e2a5897e354e256b19c",
       "specificity": "semantic-neutral"
     },
     {

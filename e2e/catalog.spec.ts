@@ -207,6 +207,9 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   const cluster = page.locator('[data-catalog-type="cloud-agnostic.cluster"]');
   await expect(cluster).toHaveCount(1);
   await expect(cluster).toHaveAttribute("data-asset-kind", "group");
+  const boundary = page.locator('[data-catalog-type="cloud-agnostic.boundary"]');
+  await expect(boundary).toHaveCount(1);
+  await expect(boundary).toHaveAttribute("data-asset-kind", "group");
   await cluster.locator(".palette-item").click();
 
   await expect(groups).toHaveCount(beforeCount + 1);

@@ -681,6 +681,7 @@ function typeToGroupKind(type: string): Group["kind"] | null {
     "cloud-agnostic.security-group": "logical",
     "cloud-agnostic.cluster": "logical",
     "cloud-agnostic.datacenter": "logical",
+    "cloud-agnostic.boundary": "logical",
     "cloud-agnostic.logical": "logical",
     "cloud-agnostic.trust-boundary": "overlay",
     "neutral.cloud": "cloud",
@@ -692,6 +693,7 @@ function typeToGroupKind(type: string): Group["kind"] | null {
     "neutral.security-group": "logical",
     "neutral.cluster": "logical",
     "neutral.datacenter": "logical",
+    "neutral.boundary": "logical",
     "neutral.logical": "logical",
     "neutral.trust-boundary": "overlay",
   };

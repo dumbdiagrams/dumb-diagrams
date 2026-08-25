@@ -91,7 +91,15 @@ function renderGroup(
     ? `<image href="${escapeAttr(resolveHref(iconPath))}" x="${iconX}" y="${iconY}" width="${style.iconSize}" height="${style.iconSize}" preserveAspectRatio="none"/>`
     : "";
 
-  const textX = iconPath ? iconX + style.iconSize + 8 : labelRect.x + 8;
+  // Iconless source groups still carry the legacy full-header rect (which
+  // reserves room for a possible icon). Anchor the visible text itself to the
+  // right edge so that "top-right" and "bottom-right" are actual corners.
+  const textOnRight = !iconPath && labelPosition.endsWith("right");
+  const textX = iconPath
+    ? iconX + style.iconSize + 8
+    : textOnRight
+      ? labelRect.x + labelRect.w - 8
+      : labelRect.x + 8;
   const textY = (bottom ? group.bounds.y + group.bounds.h - (iconPath ? style.iconSize / 2 : style.headerHeight / 2) : iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2)) + style.fontSize * 0.35;
   const model = doc.groups.find((candidate) => candidate.id === group.id);
   const badgeOnLeft = (group.labelPosition ?? model?.labelPosition ?? "top-left") === "top-right";
@@ -106,7 +114,7 @@ function renderGroup(
     fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokeWidth}" ${dash} rx="${style.cornerRadius}"/>
   ${iconTag}
   <text x="${textX}" y="${textY}"
-    font-size="${style.fontSize}" font-weight="${style.fontWeight}" dominant-baseline="alphabetic">${escapeXml(group.label)}</text>
+    font-size="${style.fontSize}" font-weight="${style.fontWeight}" dominant-baseline="alphabetic"${textOnRight ? ' text-anchor="end"' : ""}>${escapeXml(group.label)}</text>
   ${badge}
 </g>`;
 }

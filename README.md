@@ -199,24 +199,44 @@ dgm validate diagrams
 
 ## Working on this repository
 
-This repository uses the pinned pnpm workspace setup. The supported development
-entry point is `pnpm dev`, not `npm run dev`.
+This repository uses the pinned pnpm workspace. Use `pnpm`, not `npm install`.
 
-| What you changed | Use this loop |
+### Try `init` locally (before publishing)
+
+Build once, then run `init` like an end user would:
+
+```bash
+pnpm build
+node packages/cli/dist/index.js init ../my-diagram-project --name "My Project" --open-editor
+```
+
+That creates a real folder **next to** this repo (`../my-diagram-project`) with
+`diagrams/`, agent instructions, examples, and a starter `.dgm` file. Open
+Studio on it with:
+
+```bash
+node packages/cli/dist/index.js studio ../my-diagram-project/diagrams
+```
+
+To skip the name prompt in scripts, add `--yes`.
+
+To test the **exact npm tarball** (what `npx dumbdiagrams` runs), use:
+
+```bash
+pnpm smoke:package
+```
+
+That packs the CLI and runs `init` for you automatically.
+
+### Other development loops
+
+| What you changed | Command |
 | --- | --- |
-| Studio UI | `pnpm dev` |
-| Runtime, CLI, templates, or CLI-served Studio | `pnpm build && pnpm dev:cli [file-or-folder]` |
-| Packaging or bundled assets | `pnpm build && pnpm smoke:package` |
-| Release candidate | `pnpm check:release` |
+| Studio UI only | `pnpm dev` |
+| CLI or how Studio is served | `pnpm build && pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm` |
+| Full release check | `pnpm check:release` |
 
-The tarball path is for testing the real published-package boundary without
-publishing anything. `pnpm smoke:package` packs the CLI and exercises it through
-local `npx`; `pnpm test:e2e:packed` additionally drives the bundled Studio
-against real files.
-
-For the full programmer-oriented tour—technologies, repository structure,
-package boundaries, compilation stages, routing, local Studio APIs, catalog,
-packaging, and tests—read
+For commands, flags, and deeper CLI testing, see
 **[docs/TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md)**.
 
 Other maintainer references:
