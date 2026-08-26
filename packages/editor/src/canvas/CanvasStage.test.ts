@@ -10,6 +10,7 @@ import {
   DEFAULT_EMPTY_CANVAS_WIDTH,
   clampZoom,
   defaultViewportForContent,
+  normalizedWheelDelta,
 } from "./CanvasStage.js";
 
 describe("CanvasStage zoom", () => {
@@ -17,6 +18,12 @@ describe("CanvasStage zoom", () => {
     expect(clampZoom(0.1)).toBe(0.25);
     expect(clampZoom(1)).toBe(1);
     expect(clampZoom(5)).toBe(2.5);
+  });
+
+  it("normalizes wheel units before applying pan or zoom", () => {
+    expect(normalizedWheelDelta(3, 0, 800)).toBe(3);
+    expect(normalizedWheelDelta(3, 1, 800)).toBe(48);
+    expect(normalizedWheelDelta(1, 2, 800)).toBe(800);
   });
 
   it("centers a fitting artboard with visible surrounding canvas", () => {

@@ -200,11 +200,17 @@ test("keeps the Help menu inside the viewport", async ({ page }) => {
 
 test("opens the format picker and export studio with auto-filled canvas options", async ({ page }) => {
   await page.goto("/");
+  const supportsWebp = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.toDataURL("image/webp").startsWith("data:image/webp");
+  });
 
   await page.getByRole("button", { name: "More export formats", exact: true }).click();
   const picker = page.getByRole("menu", { name: "Export as", exact: true });
   await expect(picker).toBeVisible();
-  await expect(picker.locator(".export-format-option")).toHaveCount(11);
+  await expect(picker.locator(".export-format-option")).toHaveCount(supportsWebp ? 11 : 10);
   await picker.locator(".export-format-option").filter({ hasText: "PNG" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Export PNG" });

@@ -1,4 +1,4 @@
-import { lazy, startTransition, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
+import { lazy, memo, startTransition, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
@@ -129,6 +129,7 @@ import {
   type WorkspaceTab,
 } from "./state/workspace";
 import { FloatingPanel } from "./ui/FloatingPanel";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { Modal } from "./ui/Modal";
 import { TopMenu, type TopMenuItem } from "./ui/TopMenu";
 import {
@@ -160,6 +161,19 @@ const DEFAULT_SOURCE = printDgm(createAsyncDocsFixture());
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
+const STUDIO_ACCESS_TOKEN = new URLSearchParams(window.location.search).get("token");
+
+function studioApiPath(pathname: string): string {
+  if (!STUDIO_ACCESS_TOKEN) return pathname;
+  const url = new URL(pathname, window.location.origin);
+  url.searchParams.set("token", STUDIO_ACCESS_TOKEN);
+  return `${url.pathname}${url.search}`;
+}
+
+const RenderedDiagram = memo(function RenderedDiagram({ svg }: { svg: string }) {
+  return <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
+});
+
 const SourceDrawer = lazy(() => import("./panels/SourceDrawer").then((module) => ({
   default: module.SourceDrawer,
 })));
@@ -356,7 +370,7 @@ function App() {
     setProjectFilesLoading(true);
     setProjectFilesError(null);
     try {
-      const response = await fetch("/api/files", { headers: { Accept: "application/json" } });
+      const response = await fetch(studioApiPath("/api/files"), { headers: { Accept: "application/json" } });
       const payload = await response.json() as Partial<ProjectFilesPayload> & { message?: string };
       if (!response.ok || !Array.isArray(payload.files)) {
         throw new Error(payload.message ?? "The project diagram list could not be loaded.");
@@ -391,7 +405,7 @@ function App() {
     setOpeningProjectFile(fileName);
     setProjectFilesError(null);
     try {
-      const response = await fetch("/api/select", {
+      const response = await fetch(studioApiPath("/api/select"), {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ filename: fileName }),
@@ -433,10 +447,10 @@ function App() {
 
     const connect = async () => {
       try {
-        const sessionResponse = await fetch("/api/session", { headers: { Accept: "application/json" } });
+        const sessionResponse = await fetch(studioApiPath("/api/session"), { headers: { Accept: "application/json" } });
         if (!sessionResponse.ok || !sessionResponse.headers.get("content-type")?.includes("application/json")) return;
         const session = await sessionResponse.json() as Partial<LocalStudioPayload>;
-        const documentResponse = await fetch("/api/document", { headers: { Accept: "application/json" } });
+        const documentResponse = await fetch(studioApiPath("/api/document"), { headers: { Accept: "application/json" } });
         if (!documentResponse.ok) throw new Error("The local Studio document could not be loaded.");
         const document = await documentResponse.json() as LocalStudioPayload;
         if (cancelled || typeof document.source !== "string" || typeof document.revision !== "string") return;
@@ -456,7 +470,7 @@ function App() {
         });
         setToast(`Connected to ${document.fileName}`);
 
-        events = new EventSource("/api/events");
+        events = new EventSource(studioApiPath("/api/events"));
         const applyStudioEvent = (next: LocalStudioPayload) => {
           if (cancelled) return;
           if (!next.revision) return;
@@ -541,7 +555,7 @@ function App() {
     if (!connection || !baseRevision) return false;
     setLocalStudio((current) => current ? { ...current, status: "saving" } : current);
     try {
-      const response = await fetch("/api/document", {
+      const response = await fetch(studioApiPath("/api/document"), {
         method: "PUT",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
@@ -1029,11 +1043,14 @@ function App() {
 
   const updateDocument = (doc: DiagramDocument) => commitDocument(doc);
 
-  const previewMutate = (change: (doc: DiagramDocument) => DiagramDocument) => {
+  const previewMutate = (
+    change: (doc: DiagramDocument) => DiagramDocument,
+  ) => {
     try {
       const next = change(parseDgm(sourceRef.current));
       if (hasErrors(validateDocument(next, getCatalogMap(), { enforceCatalogRules: false }))) return;
-      replaceSource(printDgm(next));
+      const nextSource = printDgm(next);
+      replaceSource(nextSource);
     } catch {
       // Keep the source editor authoritative while it contains parse errors.
     }
@@ -1657,10 +1674,7 @@ function App() {
         >
           {displayCompiled?.svg ? (
             <>
-              <div
-                className="diagram-svg"
-                dangerouslySetInnerHTML={{ __html: displayCompiled.svg }}
-              />
+              <RenderedDiagram svg={displayCompiled.svg} />
               {compiled.ok && <InteractionOverlay
                 key={activeTabId}
                 doc={compiled.doc}
@@ -1899,7 +1913,13 @@ function App() {
           <nav className="studio-tabbar-leading" aria-label="File menu">
             <TopMenu label="File" Icon={IconMenu} iconOnly items={fileMenuItems} />
             <div className="studio-brand" aria-label="DumbDiagrams">
-              <img className="brand-logo" src="./logo_dumbdiagrams.png" alt="" />
+              <img
+                className="brand-logo"
+                src="./logo_dumbdiagrams.png"
+                alt=""
+                width="128"
+                height="77"
+              />
               <span className="brand-name">Dumb Diagrams</span>
             </div>
           </nav>
@@ -3057,9 +3077,7 @@ function Inspector({
             }}
           >
             <option value="top-left">Top left</option>
-            <option value="top-right">Top right</option>
             <option value="bottom-left">Bottom left</option>
-            <option value="bottom-right">Bottom right</option>
           </select>
         </div>
       )}
@@ -3321,6 +3339,8 @@ function buildContextMenuItems(
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

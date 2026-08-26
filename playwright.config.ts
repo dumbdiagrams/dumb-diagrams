@@ -1,4 +1,7 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
+
+const port = Number(process.env.PLAYWRIGHT_PORT ?? 5174);
+const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -8,15 +11,19 @@ export default defineConfig({
     timeout: 10_000,
   },
   fullyParallel: true,
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+  ],
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:5174",
+    baseURL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "pnpm catalog:stage && pnpm --dir packages/editor exec vite --host 127.0.0.1 --port 5174",
-    url: "http://127.0.0.1:5174/",
+    command: `pnpm catalog:stage && pnpm --dir packages/editor exec vite --host 127.0.0.1 --port ${port}`,
+    url: `${baseURL}/`,
     reuseExistingServer: false,
     timeout: 120_000,
   },

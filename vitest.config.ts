@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["packages/**/src/**/*.test.ts"],
+    include: ["packages/**/src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
       reportsDirectory: ".artifacts/coverage",
@@ -11,9 +11,10 @@ export default defineConfig({
         "packages/cli/src/**/*.ts",
         "packages/runtime/src/**/*.ts",
         "packages/editor/src/**/*.ts",
+        "packages/editor/src/ui/ErrorBoundary.tsx",
       ],
       exclude: [
-        "**/*.test.ts",
+        "**/*.test.{ts,tsx}",
         "**/index.ts",
         "**/types.ts",
         "**/vite-env.d.ts",

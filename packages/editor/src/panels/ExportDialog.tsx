@@ -5,6 +5,7 @@ import type { DiagramDocument, LayoutResult } from "@dumb-diagrams/runtime/core"
 import type { Selection } from "../editor-model";
 import {
   EXPORT_FORMATS,
+  isExportFormatSupported,
   exportDiagramFile,
   exportFormat,
   getExportBounds,
@@ -154,7 +155,7 @@ export function ExportDialog({
           <label className="export-select-label">
             <span>Format</span>
             <select value={format} onChange={(event) => setFormat(event.target.value as ExportFormat)}>
-              {EXPORT_FORMATS.map((candidate) => (
+              {EXPORT_FORMATS.filter((candidate) => isExportFormatSupported(candidate.value)).map((candidate) => (
                 <option key={candidate.value} value={candidate.value}>
                   {candidate.label} — {candidate.description}
                 </option>
@@ -238,7 +239,7 @@ export function ExportDialog({
           </div>
         </section>
 
-        <details className="export-advanced" open>
+        <details className="export-advanced">
           <summary>
             <span>Advanced</span>
             <span className="export-advanced-summary">{width} × {height}px · {dpi} dpi</span>

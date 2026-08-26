@@ -65,6 +65,22 @@ export function exportFormat(value: ExportFormat) {
   return EXPORT_FORMATS.find((format) => format.value === value) ?? EXPORT_FORMATS[0]!;
 }
 
+let webpSupported: boolean | undefined;
+
+export function isExportFormatSupported(value: ExportFormat): boolean {
+  if (value !== "webp" || typeof document === "undefined") return true;
+  if (webpSupported !== undefined) return webpSupported;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    webpSupported = canvas.toDataURL("image/webp").startsWith("data:image/webp");
+  } catch {
+    webpSupported = false;
+  }
+  return webpSupported;
+}
+
 export function sanitizeFilename(value: string): string {
   const clean = normalizeSingleLineText(value)
     .replace(/[^\p{L}\p{N}_.-]+/gu, "-")
@@ -424,7 +440,7 @@ export async function exportDiagramFile(args: {
     }
     const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
     const blob = await canvasToBlob(canvas, mime, options.format === "jpeg" ? 0.92 : 0.95);
-    return { ok: Boolean(blob && downloadBlob(blob, filename)), filename };
+    return { ok: Boolean(blob?.type === mime && downloadBlob(blob, filename)), filename };
   } catch {
     return { ok: false, filename };
   }

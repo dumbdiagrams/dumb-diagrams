@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { EXPORT_FORMATS, type ExportFormat } from "../state/export-actions";
+import { EXPORT_FORMATS, isExportFormatSupported, type ExportFormat } from "../state/export-actions";
 import { IconCaret, IconExport } from "../ui/icons";
 
 export function ExportMenu({
@@ -48,7 +48,7 @@ export function ExportMenu({
             {selectionCount > 0 && <small>{selectionCount} selected</small>}
           </div>
           <div className="export-format-list">
-            {EXPORT_FORMATS.map((format) => (
+            {EXPORT_FORMATS.filter((format) => isExportFormatSupported(format.value)).map((format) => (
               <button
                 key={format.value}
                 type="button"

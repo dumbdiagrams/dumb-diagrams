@@ -1,6 +1,21 @@
 import type { DiagramDocument, ID, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 
 export const GRID_SIZE = 24;
+export const ALIGNMENT_GUIDE_THRESHOLD_PX = 6;
+
+export interface AlignmentGuide {
+  axis: "x" | "y";
+  position: number;
+  from: number;
+  to: number;
+  anchor: "start" | "center" | "end";
+}
+
+export interface DragSnapResult {
+  dx: number;
+  dy: number;
+  guides: AlignmentGuide[];
+}
 
 export function snapCoordinate(value: number, enabled: boolean): number {
   return enabled ? Math.round(value / GRID_SIZE) * GRID_SIZE : value;
@@ -14,6 +29,97 @@ export function snapPoint(
     x: snapCoordinate(point.x, enabled),
     y: snapCoordinate(point.y, enabled),
   };
+}
+
+/**
+ * Resolve a drag against the visible grid and nearby peer bounds. Alignment
+ * is deliberately magnetic: the pointer remains fluid until an edge or
+ * centre is within a small, zoom-independent screen distance.
+ */
+export function snapDragDelta(
+  moving: Rect,
+  targets: Rect[],
+  rawDx: number,
+  rawDy: number,
+  snapToGrid: boolean,
+  zoom = 1,
+): DragSnapResult {
+  const dx = snapCoordinate(moving.x + rawDx, snapToGrid) - moving.x;
+  const dy = snapCoordinate(moving.y + rawDy, snapToGrid) - moving.y;
+  const threshold = ALIGNMENT_GUIDE_THRESHOLD_PX / Math.max(zoom, 0.01);
+  const xMatch = closestAlignment(moving, targets, "x", rawDx, rawDy, threshold);
+  const yMatch = closestAlignment(moving, targets, "y", rawDx, rawDy, threshold);
+
+  return {
+    dx: xMatch?.delta ?? dx,
+    dy: yMatch?.delta ?? dy,
+    guides: [xMatch?.guide, yMatch?.guide].filter(
+      (guide): guide is AlignmentGuide => Boolean(guide),
+    ),
+  };
+}
+
+function closestAlignment(
+  moving: Rect,
+  targets: Rect[],
+  axis: "x" | "y",
+  rawDx: number,
+  rawDy: number,
+  threshold: number,
+): { delta: number; guide: AlignmentGuide; distance: number; priority: number } | null {
+  const rawDelta = axis === "x" ? rawDx : rawDy;
+  const anchors = [
+    { name: "center" as const, ratio: 0.5, priority: 0 },
+    { name: "start" as const, ratio: 0, priority: 1 },
+    { name: "end" as const, ratio: 1, priority: 1 },
+  ];
+  let best: { delta: number; guide: AlignmentGuide; distance: number; priority: number } | null = null;
+
+  for (const target of targets) {
+    for (const anchor of anchors) {
+      const movingStart = axis === "x" ? moving.x : moving.y;
+      const movingSize = axis === "x" ? moving.w : moving.h;
+      const targetStart = axis === "x" ? target.x : target.y;
+      const targetSize = axis === "x" ? target.w : target.h;
+      const movingAnchor = movingStart + movingSize * anchor.ratio + rawDelta;
+      const targetAnchor = targetStart + targetSize * anchor.ratio;
+      const distance = Math.abs(targetAnchor - movingAnchor);
+      if (distance > threshold) continue;
+      if (best && (distance > best.distance || (distance === best.distance && anchor.priority >= best.priority))) {
+        continue;
+      }
+
+      const delta = rawDelta + targetAnchor - movingAnchor;
+      const translated = {
+        x: moving.x + (axis === "x" ? delta : rawDx),
+        y: moving.y + (axis === "y" ? delta : rawDy),
+        w: moving.w,
+        h: moving.h,
+      };
+      best = {
+        delta,
+        distance,
+        priority: anchor.priority,
+        guide: axis === "x"
+          ? {
+              axis,
+              position: targetAnchor,
+              from: Math.min(translated.y, target.y),
+              to: Math.max(translated.y + translated.h, target.y + target.h),
+              anchor: anchor.name,
+            }
+          : {
+              axis,
+              position: targetAnchor,
+              from: Math.min(translated.x, target.x),
+              to: Math.max(translated.x + translated.w, target.x + target.w),
+              anchor: anchor.name,
+            },
+      };
+    }
+  }
+
+  return best;
 }
 
 /**
@@ -61,7 +167,10 @@ export function snapLayoutToGrid(
   for (const rootId of findPositionRoots(doc)) {
     const rootGroup = layout.groups.find((group) => group.id === rootId);
     const rootNode = layout.nodes.find((node) => node.id === rootId);
-    const rootBounds = rootGroup?.bounds ?? rootNode?.obstacle;
+    // A resource's obstacle includes label/routing padding, which varies with
+    // its caption. Snap the icon itself so equal icon boxes share the same
+    // visible grid even when their labels have different widths.
+    const rootBounds = rootGroup?.bounds ?? rootNode?.icon;
     if (!rootBounds) continue;
 
     const dx = snapCoordinate(rootBounds.x, true) - rootBounds.x;

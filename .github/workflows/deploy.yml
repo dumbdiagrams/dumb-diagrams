@@ -77,9 +77,17 @@ jobs:
         if: github.event_name == 'push' || inputs.ref == ''
         run: pnpm check && pnpm check:routing
 
-      - name: Install Playwright Chromium
+      - name: Enforce compilation performance budget
         if: github.event_name == 'push' || inputs.ref == ''
-        run: pnpm exec playwright install chromium --with-deps
+        run: pnpm check:performance
+
+      - name: Check editor asset budgets
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm check:assets
+
+      - name: Install Playwright browsers
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm exec playwright install chromium webkit --with-deps
 
       - name: Run browser and packed CLI Studio journeys
         if: github.event_name == 'push' || inputs.ref == ''

@@ -125,6 +125,7 @@ function buildSourceSnapshot() {
     "packages/editor/tsconfig.json",
     "packages/editor/vite.config.ts",
     "packages/editor/public/LICENSE",
+    "packages/editor/public/favicon.png",
     "packages/editor/public/logo_dumbdiagrams.png",
     "packages/cli/ICON-NOTICES.md",
     "packages/cli/LICENSE",

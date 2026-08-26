@@ -29,7 +29,11 @@ import {
   type Selection,
   type SelectionItem,
 } from "../editor-model";
-import { snapCoordinate } from "../grid.js";
+import {
+  snapCoordinate,
+  snapDragDelta,
+  type AlignmentGuide,
+} from "../grid.js";
 import { nearestEdgeIdAt, nearestNodePortAt } from "./edge-targeting.js";
 import {
   anchorOrthogonalRouteEndpoints,
@@ -41,6 +45,11 @@ import {
   resourceHitRects,
   resourceVisualBounds,
 } from "./selection-targeting.js";
+import {
+  createInteractionIndex,
+  isEntityVisible,
+  type InteractionCandidates,
+} from "./interaction-index.js";
 
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note" | "text";
 type RewireTarget = { nodeId: string; side: Side; offset: number };
@@ -178,7 +187,7 @@ function InteractionOverlayComponent({
     item: SelectionItem | null,
   ) => void;
 }) {
-  const view = getDefaultView(doc);
+  const view = useMemo(() => getDefaultView(doc), [doc]);
   const [marquee, setMarquee] = useState<{
     x: number;
     y: number;
@@ -211,7 +220,11 @@ function InteractionOverlayComponent({
   const labelDragRef = useRef<LabelDrag>(null);
   const hoverFrameRef = useRef<number | null>(null);
   const pendingHoverRef = useRef<{
-    item: SelectionItem | null;
+    clientX: number;
+    clientY: number;
+    svg: SVGSVGElement | null;
+    fallback: SelectionItem;
+    edgeLabel: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -241,6 +254,10 @@ function InteractionOverlayComponent({
   const nodes = useMemo(
     () => [...layout.nodes].sort((a, b) => (view.places[a.id]?.zIndex ?? 0) - (view.places[b.id]?.zIndex ?? 0)),
     [layout.nodes, view.places],
+  );
+  const interactionIndex = useMemo(
+    () => createInteractionIndex(layout, doc, view),
+    [doc, layout, view],
   );
   const showAllPorts = tool === "connector" || rewire !== null;
   const quickConnectNodeIds = new Set([
@@ -291,21 +308,19 @@ function InteractionOverlayComponent({
       clientY,
       zoom,
     );
-    return closestInteractiveTarget(point, layout, doc, view);
+    return closestInteractiveTarget(point, layout, doc, view, interactionIndex.at(point));
   };
 
-  const hoverTargetAt = (event: React.PointerEvent<SVGElement>): SelectionItem | null => {
-    const kind = event.currentTarget.getAttribute("data-entity-kind") as SelectionItem["kind"] | null;
-    const id = event.currentTarget.getAttribute("data-entity-id");
-    const fallback = kind && id ? { kind, id } : null;
-    if (!fallback) return null;
-
+  const resolveHoverTarget = (
+    pending: NonNullable<typeof pendingHoverRef.current>,
+  ): SelectionItem | null => {
+    const { clientX, clientY, svg, fallback, edgeLabel } = pending;
     const target = closestTargetAt(
-      event.clientX,
-      event.clientY,
-      event.currentTarget.ownerSVGElement,
+      clientX,
+      clientY,
+      svg,
     );
-    if (kind !== "edge" || !id || event.currentTarget.hasAttribute("data-edge-label-hit")) {
+    if (fallback.kind !== "edge" || edgeLabel) {
       return target ?? fallback;
     }
 
@@ -315,23 +330,31 @@ function InteractionOverlayComponent({
     return target?.kind === "edge"
       ? nearestEdgeAt(
           pointFromClient(
-            event.currentTarget.ownerSVGElement,
-            event.clientX,
-            event.clientY,
+            svg,
+            clientX,
+            clientY,
             zoom,
           ),
           layout,
           doc,
           view,
-          id,
+          fallback.id,
+          interactionIndex.at(pointFromClient(svg, clientX, clientY, zoom)).edges,
         ) ?? fallback
       : target ?? fallback;
   };
 
   const updateHover = (event: React.PointerEvent<SVGElement>) => {
     if (tool !== "select") return;
+    const kind = event.currentTarget.getAttribute("data-entity-kind") as SelectionItem["kind"] | null;
+    const id = event.currentTarget.getAttribute("data-entity-id");
+    if (!kind || !id) return;
     pendingHoverRef.current = {
-      item: hoverTargetAt(event),
+      clientX: event.clientX,
+      clientY: event.clientY,
+      svg: event.currentTarget.ownerSVGElement,
+      fallback: { kind, id },
+      edgeLabel: event.currentTarget.hasAttribute("data-edge-label-hit"),
     };
     if (hoverFrameRef.current !== null) return;
     hoverFrameRef.current = window.requestAnimationFrame(() => {
@@ -339,7 +362,7 @@ function InteractionOverlayComponent({
       const pending = pendingHoverRef.current;
       pendingHoverRef.current = null;
       if (!pending) return;
-      const next = pending.item;
+      const next = resolveHoverTarget(pending);
       setHoveredItem((current) =>
         current?.kind === next?.kind && current?.id === next?.id ? current : next
       );
@@ -769,6 +792,7 @@ function InteractionOverlayComponent({
           <path d="M0,0 L10,5 L0,10 Z" className="connector-preview-arrow" />
         </marker>
       </defs>
+      <g data-alignment-guides />
       {groups.map((group) => {
         const place = view.places[group.id];
         if (!isEntityVisible(doc, view, group.id)) return null;
@@ -799,7 +823,6 @@ function InteractionOverlayComponent({
                 const targetGroup = layout.groups.find((candidate) => candidate.id === target.id);
                 const targetPlace = targetGroup ? view.places[targetGroup.id] : undefined;
                 if (target.kind === "group" && targetGroup && !targetPlace?.locked) {
-                  const origin = placeOrigin(targetPlace, targetGroup.bounds);
                   const active = selection.some(
                     (candidate) => candidate.kind === target.kind && candidate.id === target.id,
                   ) ? selection : [target];
@@ -807,9 +830,11 @@ function InteractionOverlayComponent({
                     event,
                     zoom,
                     snapToGrid,
-                    origin,
+                    targetGroup.bounds,
                     (x, y, dx, dy) => onMove("group", target.id, x, y, dx, dy),
                     createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
+                    alignmentTargets(layout, doc, active),
+                    createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
                   );
                 }
               }
@@ -959,7 +984,6 @@ function InteractionOverlayComponent({
             const targetNode = layout.nodes.find((candidate) => candidate.id === target.id);
             const targetPlace = targetNode ? view.places[targetNode.id] : undefined;
             if (!targetNode || targetPlace?.locked) return;
-            const origin = placeOrigin(targetPlace, targetNode.obstacle);
             const active = selection.some(
               (candidate) => candidate.kind === target.kind && candidate.id === target.id,
             ) ? selection : [target];
@@ -967,9 +991,11 @@ function InteractionOverlayComponent({
               event,
               zoom,
               snapToGrid,
-              origin,
+              { ...targetNode.icon },
               (x, y, dx, dy) => onMove("resource", target.id, x, y, dx, dy),
               createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
+              alignmentTargets(layout, doc, active),
+              createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
             );
           }
         };
@@ -1050,6 +1076,8 @@ function InteractionOverlayComponent({
                   rect,
                   (x, y, dx, dy) => onMove("annotation", target.id, x, y, dx, dy),
                   createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
+                  alignmentTargets(layout, doc, active),
+                  createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
                 );
               }
             }}
@@ -1577,29 +1605,15 @@ export const InteractionOverlay = memo(
     previous.ghostRoute === next.ghostRoute,
 );
 
-function isEntityVisible(
-  doc: DiagramDocument,
-  view: ReturnType<typeof getDefaultView>,
-  id: string,
-): boolean {
-  if (view.places[id]?.visible === false || view.annotations?.[id]?.visible === false) return false;
-  let parent = doc.resources.find((resource) => resource.id === id)?.parent
-    ?? doc.groups.find((group) => group.id === id)?.parent;
-  while (parent) {
-    if (view.places[parent]?.visible === false) return false;
-    parent = doc.groups.find((group) => group.id === parent)?.parent;
-  }
-  return true;
-}
-
 function nearestEdgeAt(
   point: Point,
   layout: LayoutResult,
   doc: DiagramDocument,
   view: ReturnType<typeof getDefaultView>,
   preferredId?: string,
+  candidates: LayoutResult["edges"] = layout.edges,
 ): SelectionItem | null {
-  const visibleEdges = layout.edges.filter((edge) =>
+  const visibleEdges = candidates.filter((edge) =>
     view.places[edge.id]?.visible !== false &&
     isEntityVisible(doc, view, edge.source) &&
     isEntityVisible(doc, view, edge.target),
@@ -1613,6 +1627,12 @@ function closestInteractiveTarget(
   layout: LayoutResult,
   doc: DiagramDocument,
   view: ReturnType<typeof getDefaultView>,
+  pool: InteractionCandidates = {
+    nodes: layout.nodes,
+    edges: layout.edges,
+    groups: layout.groups,
+    annotations: doc.annotations,
+  },
 ): SelectionItem | null {
   const candidates: Array<{
     item: SelectionItem;
@@ -1622,7 +1642,7 @@ function closestInteractiveTarget(
 
   // Labels are small, explicit targets and may legitimately overlap the
   // routing footprint of a resource. They always win inside their visible box.
-  for (const edge of layout.edges) {
+  for (const edge of pool.edges) {
     if (
       edge.labelRect &&
       pointInRect(point, edge.labelRect) &&
@@ -1634,7 +1654,7 @@ function closestInteractiveTarget(
     }
   }
 
-  for (const node of layout.nodes) {
+  for (const node of pool.nodes) {
     if (!isEntityVisible(doc, view, node.id)) continue;
     const distance = distanceToResource(point, node);
     if (distance <= 6) {
@@ -1649,7 +1669,7 @@ function closestInteractiveTarget(
     }
   }
 
-  for (const annotation of doc.annotations) {
+  for (const annotation of pool.annotations) {
     const place = view.annotations?.[annotation.id];
     if (place?.visible === false) continue;
     const rect = {
@@ -1668,7 +1688,7 @@ function closestInteractiveTarget(
     }
   }
 
-  for (const edge of layout.edges) {
+  for (const edge of pool.edges) {
     if (
       view.places[edge.id]?.visible === false ||
       !isEntityVisible(doc, view, edge.source) ||
@@ -1687,7 +1707,7 @@ function closestInteractiveTarget(
     }
   }
 
-  for (const group of layout.groups) {
+  for (const group of pool.groups) {
     if (!isEntityVisible(doc, view, group.id)) continue;
     const distance = distanceToRectBorder(point, group.bounds);
     if (distance <= 18) {
@@ -1774,6 +1794,49 @@ function boundsFor(
   return null;
 }
 
+/** Alignment follows the boxes people perceive: resource icons rather than
+ * their variable-width label/routing obstacles, and visual container bounds. */
+function alignmentTargets(
+  layout: LayoutResult,
+  doc: DiagramDocument,
+  moving: Selection,
+): Array<{ x: number; y: number; w: number; h: number }> {
+  const excluded = new Set(moving.map((item) => item.id));
+  const excludeChildren = (groupId: string) => {
+    const group = doc.groups.find((candidate) => candidate.id === groupId);
+    for (const childId of group?.children ?? []) {
+      if (excluded.has(childId)) continue;
+      excluded.add(childId);
+      if (doc.groups.some((candidate) => candidate.id === childId)) excludeChildren(childId);
+    }
+    for (const child of group?.borderChildren ?? []) excluded.add(child.id);
+  };
+  for (const item of moving) {
+    if (item.kind === "group") excludeChildren(item.id);
+  }
+
+  const view = getDefaultView(doc);
+  return [
+    ...layout.groups
+      .filter((group) => !excluded.has(group.id) && isEntityVisible(doc, view, group.id))
+      .map((group) => group.bounds),
+    ...layout.nodes
+      .filter((node) => !excluded.has(node.id) && isEntityVisible(doc, view, node.id))
+      .map((node) => node.icon),
+    ...doc.annotations.flatMap((annotation) => {
+      if (excluded.has(annotation.id)) return [];
+      const place = view.annotations?.[annotation.id];
+      if (place?.visible === false) return [];
+      return [{
+        x: place?.x ?? 48,
+        y: place?.y ?? 48,
+        w: place?.w ?? 160,
+        h: place?.h ?? 48,
+      }];
+    }),
+  ];
+}
+
 function resizeHandles(rect: { x: number; y: number; w: number; h: number }) {
   return [
     { name: "se", x: rect.x + rect.w, y: rect.y + rect.h },
@@ -1784,7 +1847,38 @@ function resizeHandles(rect: { x: number; y: number; w: number; h: number }) {
 
 interface MovePreviewController {
   update: (dx: number, dy: number) => void;
+  commit: () => void;
   finish: () => void;
+}
+
+interface AlignmentGuidePreviewController {
+  update: (guides: AlignmentGuide[]) => void;
+  finish: () => void;
+}
+
+function createAlignmentGuidePreview(
+  overlay: SVGSVGElement | null,
+): AlignmentGuidePreviewController {
+  const layer = overlay?.querySelector<SVGGElement>("[data-alignment-guides]") ?? null;
+  const clear = () => layer?.replaceChildren();
+  return {
+    update: (guides) => {
+      if (!layer) return;
+      clear();
+      for (const guide of guides) {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("data-alignment-guide", guide.axis);
+        line.setAttribute("data-alignment-anchor", guide.anchor);
+        line.setAttribute("class", `alignment-guide is-${guide.anchor}`);
+        line.setAttribute("x1", String(guide.axis === "x" ? guide.position : guide.from - 12));
+        line.setAttribute("y1", String(guide.axis === "x" ? guide.from - 12 : guide.position));
+        line.setAttribute("x2", String(guide.axis === "x" ? guide.position : guide.to + 12));
+        line.setAttribute("y2", String(guide.axis === "x" ? guide.to + 12 : guide.position));
+        layer.append(line);
+      }
+    },
+    finish: clear,
+  };
 }
 
 function createMovePreview(
@@ -1792,7 +1886,7 @@ function createMovePreview(
   doc: DiagramDocument,
   selection: Selection,
 ): MovePreviewController {
-  if (!overlay) return { update: () => {}, finish: () => {} };
+  if (!overlay) return { update: () => {}, commit: () => {}, finish: () => {} };
 
   const view = getDefaultView(doc);
   const moving = new Map<string, SelectionItem>();
@@ -1831,6 +1925,7 @@ function createMovePreview(
     willChange: string;
   };
   let targets: Target[] | null = null;
+  let settleFrame: number | null = null;
   const resolveTargets = (): Target[] => {
     const elements = new Set<SVGElement>();
     const resourceIds = new Set(
@@ -1876,6 +1971,17 @@ function createMovePreview(
     }));
   };
 
+  const finish = () => {
+    if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
+    settleFrame = null;
+    for (const target of targets ?? []) {
+      if (target.transform === null) target.element.removeAttribute("transform");
+      else target.element.setAttribute("transform", target.transform);
+      target.element.style.willChange = target.willChange;
+    }
+    targets = null;
+  };
+
   return {
     update: (dx, dy) => {
       targets ??= resolveTargets();
@@ -1885,14 +1991,32 @@ function createMovePreview(
         target.element.setAttribute("transform", `${base}translate(${dx} ${dy})`);
       }
     },
-    finish: () => {
-      for (const target of targets ?? []) {
-        if (target.transform === null) target.element.removeAttribute("transform");
-        else target.element.setAttribute("transform", target.transform);
-        target.element.style.willChange = target.willChange;
+    commit: () => {
+      const renderedTargets = (targets ?? [])
+        .map((target) => target.element)
+        .filter((element) => element.closest(".diagram-svg"));
+      if (!renderedTargets.length) {
+        finish();
+        return;
       }
-      targets = null;
+      // A cold worker has to load the compiler/catalog chunks before its first
+      // route. Keep the optimistic position through that startup (and through
+      // unusually complex routes) without ever blocking the pointer-up frame.
+      const deadline = Date.now() + 15_000;
+      const settle = () => {
+        settleFrame = null;
+        // dangerouslySetInnerHTML replaces the rendered SVG descendants when
+        // the worker result lands. Keep the preview attached until then so
+        // there is no flash back to the pre-drag position.
+        if (renderedTargets.some((element) => !element.isConnected) || Date.now() >= deadline) {
+          finish();
+          return;
+        }
+        settleFrame = window.requestAnimationFrame(settle);
+      };
+      settleFrame = window.requestAnimationFrame(settle);
     },
+    finish,
   };
 }
 
@@ -1900,9 +2024,11 @@ function beginMove(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
   snapToGrid: boolean,
-  rect: { x: number; y: number },
+  rect: { x: number; y: number; w: number; h: number },
   onMove: (x: number, y: number, dx: number, dy: number) => void,
   preview: MovePreviewController,
+  targets: Array<{ x: number; y: number; w: number; h: number }>,
+  guidePreview: AlignmentGuidePreviewController,
 ) {
   const start = { x: event.clientX, y: event.clientY };
   const origin = { x: rect.x, y: rect.y };
@@ -1911,22 +2037,32 @@ function beginMove(
   let rawDy = 0;
   let dx = 0;
   let dy = 0;
+  let previewDx = 0;
+  let previewDy = 0;
+  let guides: AlignmentGuide[] = [];
   let frame = 0;
-  const threshold = 4;
+  const thresholdPx = 3;
 
   const move = (next: PointerEvent) => {
     rawDx = (next.clientX - start.x) / zoom;
     rawDy = (next.clientY - start.y) / zoom;
-    if (!dragging && Math.hypot(rawDx, rawDy) < threshold) return;
-    dragging = true;
-    const nextX = snapCoordinate(origin.x + rawDx, snapToGrid);
-    const nextY = snapCoordinate(origin.y + rawDy, snapToGrid);
-    dx = nextX - origin.x;
-    dy = nextY - origin.y;
+    if (Math.hypot(next.clientX - start.x, next.clientY - start.y) >= thresholdPx) {
+      dragging = true;
+    }
+    const snapped = snapDragDelta(rect, targets, rawDx, rawDy, snapToGrid, zoom);
+    dx = snapped.dx;
+    dy = snapped.dy;
+    guides = snapped.guides;
+    // Grid quantisation is committed on release, while peer alignment is a
+    // gentle magnetic constraint during the gesture. This preserves smooth
+    // pixel-level tracking without allowing an aligned drop to drift.
+    previewDx = guides.some((guide) => guide.axis === "x") ? dx : rawDx;
+    previewDy = guides.some((guide) => guide.axis === "y") ? dy : rawDy;
     if (!frame) {
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        preview.update(rawDx, rawDy);
+        preview.update(previewDx, previewDy);
+        guidePreview.update(guides);
       });
     }
   };
@@ -1934,19 +2070,22 @@ function beginMove(
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", cancel);
-    if (!dragging) return;
     if (frame) window.cancelAnimationFrame(frame);
-    preview.update(rawDx, rawDy);
+    guidePreview.finish();
+    if (!dragging) {
+      preview.finish();
+      return;
+    }
+    preview.update(dx, dy);
     onMove(origin.x + dx, origin.y + dy, dx, dy);
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => preview.finish());
-    });
+    preview.commit();
   };
   const cancel = () => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", cancel);
     if (frame) window.cancelAnimationFrame(frame);
+    guidePreview.finish();
     preview.finish();
   };
   window.addEventListener("pointermove", move);
@@ -1987,16 +2126,6 @@ function createFramePreview<T>(apply: (value: T) => void) {
     },
     flush,
   };
-}
-
-function placeOrigin(
-  place: { x?: number; y?: number; pin?: boolean } | undefined,
-  bounds: { x: number; y: number },
-): { x: number; y: number } {
-  if (place?.pin && place.x !== undefined && place.y !== undefined) {
-    return { x: place.x, y: place.y };
-  }
-  return { x: bounds.x, y: bounds.y };
 }
 
 function beginResize(

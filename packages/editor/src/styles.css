@@ -130,6 +130,66 @@ body {
   color: var(--ink);
 }
 
+.crash-recovery {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--app-bg, #f5f5f7);
+  color: var(--text-primary, #172033);
+}
+
+.crash-recovery-card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(23, 32, 51, 0.12);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(23, 32, 51, 0.12);
+}
+
+.crash-recovery-card h1 {
+  margin: 4px 0 10px;
+  font-size: 24px;
+}
+
+.crash-recovery-card p {
+  line-height: 1.55;
+}
+
+.crash-recovery-eyebrow {
+  margin: 0;
+  color: #51627a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crash-recovery-card details {
+  margin: 18px 0;
+}
+
+.crash-recovery-card pre {
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f0f2f5;
+  white-space: pre-wrap;
+}
+
+.crash-recovery-card button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: #244d91;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 button,
 input,
 select,
@@ -1710,6 +1770,22 @@ textarea:focus-visible {
   vector-effect: non-scaling-stroke;
   pointer-events: none;
   filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 26%, transparent));
+}
+
+.alignment-guide {
+  fill: none;
+  stroke: color-mix(in srgb, var(--highlight) 58%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  opacity: 0.72;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--artboard) 85%, transparent));
+}
+
+.alignment-guide.is-center {
+  stroke-opacity: 0.9;
+  stroke-dasharray: 2 3;
 }
 
 .selection-group {
@@ -6524,4 +6600,253 @@ textarea:focus-visible {
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Export dialog: keep the studio compact enough to scan without making the
+ * controls feel cramped. The dialog owns its surfaces so this remains legible
+ * in both the light and dark application themes. */
+.export-dialog {
+  width: min(720px, calc(100vw - 32px)) !important;
+  max-height: min(760px, calc(100vh - 28px));
+  border-color: color-mix(in srgb, var(--line-strong) 70%, var(--line));
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.export-dialog .modal-header {
+  padding: 15px 18px 11px;
+  background: var(--surface-elevated);
+}
+
+.export-dialog .modal-header h2 {
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.export-dialog .modal-header p {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.export-dialog .modal-header .icon-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.export-dialog .modal-header .icon-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 68%, transparent);
+  outline-offset: 2px;
+}
+
+.export-dialog .modal-body {
+  padding: 10px 12px 12px;
+  background: var(--surface);
+  scrollbar-gutter: stable;
+}
+
+.export-dialog-form {
+  gap: 8px;
+}
+
+.export-dialog-section,
+.export-advanced {
+  border-color: color-mix(in srgb, var(--line-strong) 72%, var(--line));
+  border-radius: 11px;
+  background: var(--surface-elevated);
+}
+
+.export-dialog-section {
+  gap: 9px;
+  padding: 11px 12px;
+}
+
+.export-section-heading {
+  gap: 10px;
+}
+
+.export-section-heading h3 {
+  font-size: 12px;
+}
+
+.export-section-heading p {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.export-file-extension {
+  padding: 3px 7px;
+  font-size: 9px;
+}
+
+.export-select-label,
+.export-input-label {
+  gap: 5px;
+  font-size: 10px;
+}
+
+.export-select-label select,
+.export-input-label select,
+.export-input-label input {
+  min-height: 32px;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+
+.export-dialog .export-select-label select:focus,
+.export-dialog .export-input-label select:focus,
+.export-dialog .export-input-label input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.export-scope-grid {
+  gap: 8px;
+}
+
+.export-choice-card {
+  min-height: 66px;
+  gap: 3px;
+  padding: 10px 11px;
+  border-radius: 9px;
+}
+
+.export-choice-card strong {
+  font-size: 12px;
+}
+
+.export-choice-card > span:last-child {
+  font-size: 9px;
+}
+
+.export-choice-kicker {
+  font-size: 8px;
+}
+
+.export-appearance-row {
+  gap: 8px 12px;
+}
+
+.export-segmented {
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.export-segmented button {
+  min-width: 56px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+.export-segmented button.selected {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.export-check-row {
+  gap: 6px;
+  font-size: 10px;
+}
+
+.export-check-row input {
+  width: 14px;
+  height: 14px;
+}
+
+.export-advanced summary {
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.export-advanced summary::before {
+  border-top-width: 4px;
+  border-right-width: 4px;
+  border-bottom-width: 4px;
+  border-left-width: 5px;
+}
+
+.export-advanced-summary {
+  font-size: 9px;
+}
+
+.export-advanced-grid {
+  gap: 9px;
+  padding: 0 12px 11px;
+}
+
+.export-advanced-grid .export-input-label {
+  padding-top: 10px;
+}
+
+.export-input-with-suffix input {
+  padding-right: 28px;
+}
+
+.export-input-with-suffix b {
+  right: 9px;
+  font-size: 9px;
+}
+
+.export-advanced-checks {
+  gap: 12px;
+  padding: 0 12px 11px;
+}
+
+.export-dialog-footer {
+  gap: 10px;
+  padding: 2px 2px 0;
+}
+
+.export-dimension-note {
+  font-size: 9px;
+}
+
+.export-dialog-footer .modal-actions {
+  gap: 6px;
+  margin-top: 0;
+}
+
+.export-dialog-footer .modal-actions .text-button,
+.export-dialog-footer .modal-actions .primary-button {
+  min-height: 34px;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.export-dialog-footer .modal-actions .primary-button {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.export-dialog-footer .modal-actions .primary-button:hover {
+  background: color-mix(in srgb, var(--accent) 86%, var(--ink));
+}
+
+@media (max-width: 700px) {
+  .export-dialog .modal-body {
+    padding: 8px;
+  }
+
+  .export-scope-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .export-appearance-row,
+  .export-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .export-dialog-footer,
+  .export-dialog-footer .modal-actions {
+    width: 100%;
+  }
+
+  .export-dialog-footer .modal-actions {
+    justify-content: flex-end;
+  }
 }

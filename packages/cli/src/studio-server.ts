@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   existsSync,
   readdirSync,
@@ -64,7 +64,9 @@ export async function startStudioServer(
   options: StudioServerOptions,
 ): Promise<StudioServerHandle> {
   const host = options.host ?? "127.0.0.1";
+  const urlHost = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
   const port = options.port ?? 4788;
+  const accessToken = isLoopbackHost(host) ? null : randomBytes(24).toString("base64url");
   let documentPath = resolve(options.filePath);
   ensureDocument(documentPath);
   const projectDirectory = dirname(documentPath);
@@ -174,6 +176,7 @@ export async function startStudioServer(
   startWatcher();
 
   const server = createServer(async (request, response) => {
+    applySecurityHeaders(response);
     try {
       await routeRequest(request, response);
     } catch (error) {
@@ -195,7 +198,9 @@ export async function startStudioServer(
     throw error;
   }
   const resolvedPort = typeof address === "object" && address ? address.port : port;
-  const url = `http://${host}:${resolvedPort}/`;
+  const browserUrl = new URL(`http://${urlHost}:${resolvedPort}/`);
+  if (accessToken) browserUrl.searchParams.set("token", accessToken);
+  const url = browserUrl.toString();
 
   server.on("close", () => {
     shuttingDown = true;
@@ -216,8 +221,36 @@ export async function startStudioServer(
   };
 
   async function routeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
-    const requestUrl = new URL(request.url ?? "/", `http://${host}`);
+    const requestUrl = new URL(request.url ?? "/", `http://${urlHost}`);
     const pathname = requestUrl.pathname;
+
+    if (pathname.startsWith("/api/")) {
+      const requestOrigin = `http://${request.headers.host ?? `${urlHost}:${resolvedPort}`}`;
+      const requestHost = new URL(requestOrigin).hostname;
+      if (
+        (!accessToken && !isLoopbackHost(requestHost)) ||
+        (request.headers.origin !== undefined && request.headers.origin !== requestOrigin) ||
+        request.headers["sec-fetch-site"] === "cross-site"
+      ) {
+        sendJson(response, 403, {
+          error: "forbidden_origin",
+          message: "Studio API requests must come from this Studio origin.",
+        } satisfies StudioErrorPayload);
+        return;
+      }
+    }
+
+    if (
+      accessToken &&
+      pathname.startsWith("/api/") &&
+      requestUrl.searchParams.get("token") !== accessToken
+    ) {
+      sendJson(response, 401, {
+        error: "unauthorized",
+        message: "This Studio session requires the access token from its launch URL.",
+      } satisfies StudioErrorPayload);
+      return;
+    }
 
     if (pathname === "/api/session" && request.method === "GET") {
       if (!syncFromDisk(false)) {
@@ -589,6 +622,27 @@ function sendJson(response: ServerResponse, status: number, payload: unknown): v
     "Content-Length": Buffer.byteLength(body),
   });
   response.end(body);
+}
+
+export function isLoopbackHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  return normalized === "localhost" ||
+    normalized === "::1" ||
+    normalized === "0:0:0:0:0:0:0:1" ||
+    /^127(?:\.\d{1,3}){3}$/.test(normalized);
+}
+
+function applySecurityHeaders(response: ServerResponse): void {
+  response.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self' data:; " +
+      "frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; " +
+      "script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:",
+  );
+  response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  response.setHeader("Referrer-Policy", "no-referrer");
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("X-Frame-Options", "DENY");
 }
 
 function listen(server: Server, host: string, port: number): Promise<ReturnType<Server["address"]>> {

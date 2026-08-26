@@ -233,6 +233,26 @@ describe("editor commands", () => {
     expect(afterNode.obstacle.y).toBe(place.y);
   });
 
+  it("moves from rendered geometry when an unpinned place has stale hints", () => {
+    const doc = createAsyncDocsFixture();
+    getDefaultView(doc).places.apiA = { x: 8, y: 8, pin: false };
+    const before = layoutDocument(doc);
+    const beforeNode = before.nodes.find((node) => node.id === "apiA")!;
+    const next = moveSelection(
+      doc,
+      [{ kind: "resource", id: "apiA" }],
+      48,
+      24,
+      before,
+    );
+
+    expect(getDefaultView(next).places.apiA).toMatchObject({
+      x: Math.round(beforeNode.obstacle.x + 48),
+      y: Math.round(beforeNode.obstacle.y + 24),
+      pin: true,
+    });
+  });
+
   it("pastes nested groups without duplicating child ids", () => {
     const doc = createAsyncDocsFixture();
     const payload = serializeClipboard(doc, [{ kind: "group", id: "appA" }]);

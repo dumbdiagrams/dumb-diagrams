@@ -18,8 +18,20 @@ const formats = [
 
 test("downloads a structurally valid artifact for every advertised export format", async ({ page }) => {
   await page.goto("/");
+  const supportsWebp = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.toDataURL("image/webp").startsWith("data:image/webp");
+  });
 
   for (const format of formats) {
+    if (format.value === "webp" && !supportsWebp) {
+      await page.getByRole("button", { name: "More export formats", exact: true }).click();
+      await expect(page.getByRole("menuitem", { name: /WebP/ })).toHaveCount(0);
+      await page.getByRole("button", { name: "More export formats", exact: true }).click();
+      continue;
+    }
     await test.step(format.label, async () => {
       await page.getByRole("button", { name: "More export formats", exact: true }).click();
       const picker = page.getByRole("menu", { name: "Export as", exact: true });

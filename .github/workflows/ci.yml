@@ -57,6 +57,12 @@ jobs:
       - name: Check reviewed routing warnings
         run: pnpm check:routing
 
+      - name: Enforce compilation performance budget
+        run: pnpm check:performance
+
+      - name: Check editor asset budgets
+        run: pnpm check:assets
+
       - name: Smoke test publishable CLI package
         run: pnpm smoke:package
 
@@ -78,8 +84,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install chromium --with-deps
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium webkit --with-deps
 
       - name: Build editor assets
         run: pnpm build

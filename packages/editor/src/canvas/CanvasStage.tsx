@@ -11,6 +11,7 @@ import {
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
 const VIEWPORT_COMMIT_DELAY_MS = 120;
+const WHEEL_ZOOM_SENSITIVITY = 0.002;
 
 /** The first frame leaves the app chrome and some of the surrounding canvas visible. */
 export const DEFAULT_VIEWPORT_ZOOM = 0.9;
@@ -33,6 +34,16 @@ export interface ViewportChangeOptions {
 
 export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+}
+
+export function normalizedWheelDelta(
+  value: number,
+  deltaMode: number,
+  pageSize: number,
+): number {
+  if (deltaMode === 1) return value * 16;
+  if (deltaMode === 2) return value * pageSize;
+  return value;
 }
 
 /**
@@ -104,12 +115,14 @@ export function CanvasStage({
   const pendingViewportRef = useRef<Viewport | null>(null);
   const pendingViewportOptionsRef = useRef<ViewportChangeOptions | undefined>(undefined);
   const viewportCommitTimerRef = useRef<number | null>(null);
+  const wheelFrameRef = useRef<number | null>(null);
+  const wheelTargetRef = useRef<Viewport | null>(null);
 
   const applyViewport = useCallback((next: Viewport) => {
     viewportRef.current = next;
     if (worldRef.current) {
       worldRef.current.style.transform =
-        `translate(${next.panX}px, ${next.panY}px) scale(${next.zoom})`;
+        `translate3d(${next.panX}px, ${next.panY}px, 0) scale(${next.zoom})`;
     }
   }, []);
 
@@ -156,23 +169,10 @@ export function CanvasStage({
     viewportCommitTimerRef.current = null;
     pendingViewportRef.current = null;
     pendingViewportOptionsRef.current = undefined;
+    if (wheelFrameRef.current !== null) window.cancelAnimationFrame(wheelFrameRef.current);
+    wheelFrameRef.current = null;
+    wheelTargetRef.current = null;
   }, []);
-
-  const setZoomAt = useCallback((nextZoom: number, anchor?: { x: number; y: number }) => {
-    const el = ref.current;
-    const cur = viewportRef.current;
-    const k = clampZoom(nextZoom);
-    if (!el || !anchor) {
-      enqueueViewportChange({ ...cur, zoom: k });
-      return;
-    }
-    const rect = el.getBoundingClientRect();
-    const cx = anchor.x - rect.left;
-    const cy = anchor.y - rect.top;
-    const panX = cx - ((cx - cur.panX) * k) / cur.zoom;
-    const panY = cy - ((cy - cur.panY) * k) / cur.zoom;
-    enqueueViewportChange({ panX, panY, zoom: k });
-  }, [enqueueViewportChange]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -247,22 +247,40 @@ export function CanvasStage({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const cur = viewportRef.current;
+      const cur = wheelTargetRef.current ?? viewportRef.current;
+      const deltaX = normalizedWheelDelta(e.deltaX, e.deltaMode, el.clientWidth);
+      const deltaY = normalizedWheelDelta(e.deltaY, e.deltaMode, el.clientHeight);
+      let next: Viewport;
       if (e.ctrlKey || e.metaKey) {
-        const factor = Math.exp(-e.deltaY * 0.01);
-        setZoomAt(cur.zoom * factor, { x: e.clientX, y: e.clientY });
-        return;
+        const rect = el.getBoundingClientRect();
+        const zoom = clampZoom(cur.zoom * Math.exp(-deltaY * WHEEL_ZOOM_SENSITIVITY));
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+        next = {
+          panX: cx - ((cx - cur.panX) * zoom) / cur.zoom,
+          panY: cy - ((cy - cur.panY) * zoom) / cur.zoom,
+          zoom,
+        };
+      } else {
+        next = {
+          ...cur,
+          panX: cur.panX - deltaX,
+          panY: cur.panY - deltaY,
+        };
       }
-      enqueueViewportChange({
-        ...cur,
-        panX: cur.panX - e.deltaX,
-        panY: cur.panY - e.deltaY,
+      wheelTargetRef.current = next;
+      if (wheelFrameRef.current !== null) return;
+      wheelFrameRef.current = window.requestAnimationFrame(() => {
+        wheelFrameRef.current = null;
+        const target = wheelTargetRef.current;
+        wheelTargetRef.current = null;
+        if (target) enqueueViewportChange(target, { userInitiated: true });
       });
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [enqueueViewportChange, setZoomAt]);
+  }, [enqueueViewportChange]);
 
   useEffect(() => {
     const onNav = (e: WheelEvent) => {
@@ -296,14 +314,11 @@ export function CanvasStage({
         if (!target.closest("[data-interactive]")) onBackgroundClick();
       }}
       onPointerDownCapture={(event) => {
+        // Keep this through the corresponding click. Some engines dispatch
+        // click after zero-delay timers, and selection can replace its target.
         interactivePointerRef.current = Boolean(
           (event.target as Element).closest("[data-interactive]"),
         );
-      }}
-      onPointerUpCapture={() => {
-        window.setTimeout(() => {
-          interactivePointerRef.current = false;
-        }, 0);
       }}
       onPointerDown={(e) => {
         const shouldPan = e.button === 1 || (e.button === 0 && spaceRef.current);
@@ -314,21 +329,35 @@ export function CanvasStage({
         const startY = e.clientY;
         const origin = viewportRef.current;
         let dragged = false;
+        let frame = 0;
+        let latest: Viewport | null = null;
+        const paint = () => {
+          frame = 0;
+          if (!latest) return;
+          const next = latest;
+          latest = null;
+          previewViewportChange(next, { userInitiated: true });
+        };
         const move = (ev: PointerEvent) => {
           const dx = ev.clientX - startX;
           const dy = ev.clientY - startY;
-          if (Math.hypot(dx, dy) > 3) {
+          if (!dragged && (dx !== 0 || dy !== 0)) {
             dragged = true;
             setPanning(true);
+            interactivePointerRef.current = true;
           }
           if (!dragged) return;
-          previewViewportChange({
+          latest = {
             ...origin,
             panX: origin.panX + dx,
             panY: origin.panY + dy,
-          });
+          };
+          if (!frame) frame = window.requestAnimationFrame(paint);
         };
         const cancel = () => {
+          if (frame) window.cancelAnimationFrame(frame);
+          frame = 0;
+          latest = null;
           flushViewportChange();
           setPanning(false);
           window.removeEventListener("pointermove", move);
@@ -336,6 +365,10 @@ export function CanvasStage({
           window.removeEventListener("pointercancel", cancel);
         };
         const up = () => {
+          if (frame) window.cancelAnimationFrame(frame);
+          if (latest) previewViewportChange(latest, { userInitiated: true });
+          frame = 0;
+          latest = null;
           flushViewportChange();
           setPanning(false);
           window.removeEventListener("pointermove", move);
@@ -351,7 +384,7 @@ export function CanvasStage({
         ref={worldRef}
         className="canvas-world"
         style={{
-          transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
+          transform: `translate3d(${viewport.panX}px, ${viewport.panY}px, 0) scale(${viewport.zoom})`,
         }}
       >
         {children}

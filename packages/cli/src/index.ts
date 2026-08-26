@@ -21,7 +21,7 @@ import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
 import { displayNameForDirectory, resolveInitOptions } from "./init-options.js";
 import { browserLaunchCommand, editorLaunchCandidates } from "./platform-launch.js";
-import { resolveStudioEditorRoot, startStudioServer } from "./studio-server.js";
+import { isLoopbackHost, resolveStudioEditorRoot, startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -167,6 +167,9 @@ async function cmdStudio(args: ParsedArgs): Promise<void> {
   console.log(ui.info("local", ui.command(handle.url)));
   console.log(ui.info("file", handle.filePath));
   console.log(ui.info("edit", "changes save directly to the .dgm source"));
+  if (!isLoopbackHost(host)) {
+    console.log(ui.warning("remote access is protected by the unguessable token in the launch URL"));
+  }
   console.log(ui.info("stop", "Ctrl+C"));
 
   if (!hasFlag(args, "no-open")) openBrowser(handle.url);

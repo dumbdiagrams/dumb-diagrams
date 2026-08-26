@@ -1,11 +1,34 @@
 # Dumb Diagrams: technical overview
 
-This guide is the programmer’s map of Dumb Diagrams. It explains how to get a
-development environment running, where responsibilities live, and how a line of
-`.dgm` source becomes an editable architecture diagram.
+This guide is the map for someone joining the project or changing something
+outside their usual corner of it. It explains the important decisions, where
+each responsibility lives, and how a line of `.dgm` source becomes an editable
+architecture diagram. It intentionally stays above the code: the source is the
+place to learn exact algorithms and APIs; this page explains why the pieces are
+arranged the way they are.
 
 If you only want to create diagrams, start with the [project README](../README.md).
 If you are preparing a release, use [RELEASE.md](./RELEASE.md).
+
+## How to use this guide
+
+This is one long page on purpose. It is easy to search today, and it gives a
+future documentation site a sensible set of sections to turn into navigation:
+
+| Section | What it answers |
+| --- | --- |
+| System shape | What the runtime, Studio, and CLI share |
+| Package guide | Which package owns a behavior and where to start reading |
+| Document and compile pipeline | How source moves through parsing, validation, layout, routing, and rendering |
+| Routing and rendering decisions | Why connectors and output behave the way they do |
+| Studio and local file bridge | How browser editing differs from editing a real file |
+| Catalog and asset strategy | Where provider icons come from and how browser assets are handled |
+| Build, tests, and packaging | Which checks protect the workspace and the published package |
+
+The section names are part of the information architecture, not just editorial
+formatting. New technical material should fit under the package or subsystem it
+describes, with a short explanation here and the exact contract in a focused
+file when one exists.
 
 ## The short mental model
 
@@ -36,6 +59,31 @@ flowchart LR
   studio --> overrides["View positions and manual routes"]
   overrides --> source
 ```
+
+## Design principles and boundaries
+
+There are a few ideas worth keeping in mind before diving into individual
+modules:
+
+1. **The source file is the product.** A diagram should remain understandable,
+   reviewable, and editable even when nobody opens Studio. The visual editor is
+   a helpful view of the source, not a replacement for it.
+2. **Defaults are deterministic.** Given the same valid document, catalog, and
+   view overrides, the engine should make the same layout, routes, and SVG. That
+   makes examples stable and makes changes much easier to review.
+3. **Meaning comes before placement.** The document describes resources,
+   containment, and relationships. Coordinates and manual routes are useful
+   overrides, but they should not be required for a useful first render.
+4. **The browser is optional.** Studio is convenient, but validation and
+   rendering also work from the CLI. A local project does not depend on a
+   hosted service to stay usable.
+5. **Exports use the same geometry.** PNG, PDF, HTML, and SVG are different
+   delivery formats for the same compiled diagram. Export code should not invent
+   a second layout system.
+
+The project is not trying to be a general-purpose freeform drawing board. It is
+an architecture diagram engine with a small, opinionated language and enough
+manual control for the cases where a human has a better answer than a default.
 
 ## Getting started as a contributor
 
@@ -193,6 +241,11 @@ The main gap for manual spot-checking: browser UX through **workspace** `dev:cli
 after editor changes (`pnpm build && pnpm dev:cli …`). Packed E2E covers the
 tarball path; Vite E2E covers editor UI without the CLI bundle.
 
+## Technology choices
+
+The stack is intentionally small. Each tool solves a concrete problem, and
+there is no extra orchestration layer hiding how the packages fit together.
+
 
 | Technology | What it does here |
 | --- | --- |
@@ -203,7 +256,7 @@ tarball path; Vite E2E covers editor UI without the CLI bundle.
 | Vite 6 | Editor development server and production browser bundle |
 | CodeMirror 6 | `.dgm` source editing inside Studio |
 | Vitest with V8 coverage | Runtime, editor-logic, CLI, and Studio-server tests |
-| Playwright with Chromium | Full browser behavior, exports, and the packed CLI-to-Studio journey |
+| Playwright with Chromium and WebKit | Cross-engine browser behavior and exports; Chromium also covers the packed CLI-to-Studio journey |
 | esbuild | Produces the standalone CLI bundle placed in the npm tarball |
 | GitHub Actions and Pages | Linux/Windows verification, exact-tag release checks, and static Studio deployment |
 
@@ -256,6 +309,53 @@ The CLI imports the compiled runtime. During editor development, Vite aliases
 runtime subpaths directly to TypeScript source so a runtime edit appears in the
 browser without publishing or relinking a package.
 
+#### `core`: the shared vocabulary and safety checks
+
+`core` defines the document types used by every consumer: resources, groups,
+edges, annotations, views, geometry, and validation issues. It also owns the
+small limits and helpers that stop an invalid or unexpectedly large document
+from making its way into the rest of the pipeline. Keeping this vocabulary in
+one place prevents the editor and CLI from quietly inventing different meanings
+for the same source.
+
+#### `dsl`: the source language
+
+`dsl` turns `.dgm` text into a document and can print that document back in a
+canonical form. The parser is deliberately narrow and readable. It is meant to
+make architecture intent easy for people and language models to author, not to
+become a second general-purpose drawing format.
+
+#### `catalog` and `grammar-aws`: provider knowledge
+
+`catalog` is the generated inventory of provider resources, groups, labels,
+parent rules, and icon paths. `grammar-aws` contains the visual conventions and
+style defaults used by the current AWS-oriented grammar. The catalog is data;
+the grammar is the set of presentation rules that make that data feel
+consistent in a diagram.
+
+#### `layout`: turning structure into space
+
+`layout` measures cards and group headers, walks containment, and gives the
+document a useful initial arrangement. It knows about the different group kinds
+and flow directions, but it does not decide how connectors should travel. View
+overrides are applied after the authored structure has been laid out, so a
+manual move stays meaningful without making every other item manual.
+
+#### `route`: keeping relationships readable
+
+`route` is the connector planner. It works from the geometry produced by
+`layout`, reserves space for constrained connections, and chooses orthogonal
+paths that avoid content and unnecessary visual noise. Its public result is
+just route geometry; the policy and scoring details live in the dedicated
+[`ROUTING.md`](../packages/runtime/ROUTING.md) contract.
+
+#### `render`: one compiled result for many consumers
+
+`render` coordinates the pipeline, checks geometry invariants, and produces
+SVG. It also contains the browser/portable asset boundary: Studio can point at
+catalog files while a standalone export can inline the same icons and sanitize
+embedded SVG before it leaves the runtime.
+
 ### `@dumb-diagrams/editor`
 
 The editor is the React application called Studio. Important internal
@@ -273,6 +373,36 @@ boundaries are:
 Keep new domain behavior out of `main.tsx` when it can live in one of those
 testable modules. See [MAINTAINING.md](./MAINTAINING.md) for the ownership map.
 
+#### UI shell and editor model
+
+`main.tsx` is the coordinator. It connects menus, panels, the active workspace,
+compilation status, and local-mode capabilities. It should not become the place
+where document rules accumulate. Mutations belong in `editor-model.ts`, while
+small UI surfaces belong in panels or focused components.
+
+#### Workspace state and persistence
+
+`state/workspace.ts` treats tabs, undo/redo, saved state, and browser persistence
+as one workspace concern. A browser session can hold several diagrams without
+changing their source format. Local mode adds disk synchronization around that
+same state rather than creating a second editor model.
+
+#### Canvas and interactions
+
+`canvas/` owns the viewport: pan, zoom, fit-to-content, and catalog drops. The
+diagram itself is still the runtime’s SVG output. `interactions/` translates
+pointer intent into document operations such as selecting an item, moving it,
+choosing a connector, or pinning a route. Keeping these operations separate
+from the viewport makes the same model usable by keyboard actions and tests.
+
+#### Compilation and exports
+
+`diagram-compiler.ts` gives the browser the same runtime stages as the CLI and
+keeps a small cache for repeated edits. `state/export-actions.ts` is the final
+adapter layer: it takes the compiled SVG and produces the formats the browser
+can support. Export buttons should stay here instead of growing special cases
+inside the runtime renderer.
+
 ### `dumbdiagrams` CLI
 
 This is the publishable package and exposes both `dumbdiagrams` and `dgm`.
@@ -288,6 +418,30 @@ This is the publishable package and exposes both `dumbdiagrams` and `dgm`.
 OS-specific browser/editor launch commands are isolated in
 `platform-launch.ts` so Windows, macOS, and Linux syntax can be tested without
 opening GUI applications in CI.
+
+#### Commands and local files
+
+The CLI is the user-facing entry point for projects that want files on disk. It
+creates a starter project, validates and formats source, renders portable SVG,
+and starts Studio when a visual view is useful. The command layer should remain
+thin: parsing and document behavior belong to the runtime, while browser state
+belongs to the editor.
+
+#### The local Studio bridge
+
+`studio-server.ts` serves the compiled editor and a small same-origin API. It is
+deliberately a local file bridge, not a general-purpose application server. The
+server owns file reads/writes, revisions, directory watching, and the capability
+token used when a non-loopback host is requested. Studio owns how conflicts and
+connection state are explained to the person editing.
+
+#### The published boundary
+
+The package preparation step makes the CLI self-contained: it bundles the
+runtime, copies the compiled Studio and templates, includes the reviewed
+catalog, and adds the corresponding source required by the AGPL. A change that
+works in the workspace but is missing from the tarball is still a broken user
+experience, which is why packed tests are part of the normal release path.
 
 ## The `.dgm` document model
 
@@ -385,6 +539,33 @@ through the generated catalog, and embedded SVG is sanitized before use.
 Studio’s export layer can then keep the vector output or derive PNG, JPEG, WebP,
 GIF, PDF, standalone HTML, XML, URL payloads, JSON, and canonical `.dgm` source.
 
+### Why SVG over Canvas for now
+
+The word “canvas” can be a little confusing here. Studio has a canvas-like
+viewport for panning and zooming, but the diagram inside that viewport is an SVG
+tree. We chose that split deliberately:
+
+- **The output stays portable.** The same SVG can be displayed in Studio,
+  downloaded directly, embedded in standalone HTML, or used as the source for
+  other export formats.
+- **Text and icons stay sharp.** Architecture diagrams are mostly labels,
+  connector lines, badges, and provider icons. SVG keeps them crisp at any zoom
+  level without maintaining separate raster resolutions.
+- **The browser can understand the scene.** SVG elements can carry stable IDs
+  and data attributes, which makes selection, hit testing, previews, and
+  debugging much simpler than mapping every pointer coordinate back to a
+  painted bitmap.
+- **The renderer has one geometry contract.** The runtime can produce the same
+  shape tree for the CLI and the browser. A Canvas renderer would need a second
+  drawing implementation and a separate story for portable exports.
+
+There are real trade-offs. Very large diagrams can put pressure on the DOM, and
+Canvas could become attractive for a dense overview or a high-frequency visual
+effect. That is a future option, not a current requirement. The runtime keeps
+layout and routing independent from SVG, so a later Canvas or hybrid renderer
+can be added if measurements show that it solves an actual problem. Until then,
+SVG gives us the clearest path from source to screen to export.
+
 ## Browser Studio versus local Studio
 
 The same editor bundle runs in two modes:
@@ -421,6 +602,14 @@ state. A low-frequency heartbeat helps detect a half-open connection; browser
 internet-status events are intentionally ignored because Studio only needs
 localhost.
 
+Loopback remains the default bind. When `--host` exposes Studio beyond
+loopback, the CLI generates a per-process capability token, includes it in the
+launch URL, and requires it on every API and SSE request. The server also emits
+a restrictive content-security policy and anti-framing/content-sniffing
+headers. Treat the launch URL as a secret while that Studio process is running.
+This remains a local-development bridge, not a public hosting server: use a
+trusted network or a TLS/authenticated reverse proxy for remote access.
+
 ## Catalog pipeline
 
 `assets/catalog/` contains reviewed upstream inputs, source locks, collision
@@ -438,6 +627,57 @@ pnpm icons:check
 pnpm icons:update   # only when deliberately updating catalog inputs
 pnpm icons:build
 ```
+
+## Asset and image strategy
+
+There are three different kinds of image in this project, and treating them
+the same would make the result worse:
+
+| Asset | Current format | Why |
+| --- | --- | --- |
+| Provider and group catalog icons | SVG | They are small vector symbols, need to remain sharp at different display sizes, and are sometimes inlined into portable SVG exports |
+| Dumb Diagrams branding | Optimized PNG, plus a small PNG favicon | The logo is used in the app shell and README; keeping a compact PNG makes the standalone CLI and static deployment predictable |
+| User-embedded diagram assets | Sanitized SVG inside `.dgm` | Embedded assets are part of the document and need to travel with it; the runtime limits their size and removes unsafe SVG content before rendering |
+
+The catalog’s PNG files are upstream inputs, not browser payloads. The generated
+manifest selects the reviewed SVG variants and the staging script copies only
+those variants into `packages/editor/public/catalog-icons/`. Do not bulk-convert
+the catalog to WebP: that would give vector icons a raster ceiling and would
+break the clean path to self-contained SVG exports.
+
+Vite’s `public` directory is copied to the build output as-is, while imported
+assets participate in the build graph and can be processed. That distinction is
+why the branding derivatives are explicit files rather than an assumption that
+Vite will automatically create modern formats. The generated Studio and the
+CLI’s static server both need to serve the same named files, so stable paths are
+useful for these small app-shell assets.
+
+### What we checked for Vite image optimization
+
+There are good tools in the Vite ecosystem, but they solve slightly different
+problems:
+
+- [`vite-imagetools`](https://github.com/JonasKruckenberg/imagetools/tree/main/packages/vite)
+  is the nicest fit for responsive images and compile-time format conversion.
+  Its current major release is Sharp-backed, but it requires Vite 8 or newer;
+  this repository currently uses Vite 6.
+- [`vite-plugin-image-optimizer`](https://github.com/FatehAK/vite-plugin-image-optimizer)
+  supports Vite 3+ and can process public assets with Sharp and SVGO. It is a
+  reasonable option for a site with many owned raster images, but its broad
+  public-directory mode would also process the curated catalog and adds native
+  image-tooling dependencies to every install.
+- [`Sharp`](https://sharp.pixelplumbing.com/) is the underlying production-grade
+  image library used by both approaches. It is a good foundation when the
+  future docs site has real photos, screenshots, responsive widths, or many
+  content images.
+
+For the current app, the measured scope is one small branding raster and a
+large vector catalog. We therefore keep the asset pipeline intentionally
+scoped: ship a smaller logo and favicon now, keep catalog SVG untouched, and
+revisit `vite-imagetools` or a narrowly configured optimizer when the docs site
+actually introduces enough raster content to justify it. This avoids adding a
+large build dependency for a single 19 KB source image while leaving a clear
+upgrade path.
 
 ## Build and packaging
 
@@ -466,10 +706,12 @@ resolution.
 | Gate | Boundary covered |
 | --- | --- |
 | `pnpm test` | Runtime, editor logic, CLI, and local Studio HTTP integration |
-| `pnpm test:coverage` | The same tests with CLI, all runtime subsystems, and non-React editor source measured against enforced thresholds |
+| `pnpm test:coverage` | CLI, runtime subsystems, editor logic, and crash recovery measured against enforced thresholds; other React surfaces are exercised by the browser suites |
 | `pnpm check` | Every checked-in example through the compiled CLI |
 | `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings |
-| `pnpm test:e2e` | Static/browser Studio interactions and all 11 export formats |
+| `pnpm check:performance` | Median compile time for the representative examples against a 250 ms CI ceiling |
+| `pnpm check:assets` | Branding image dimensions and byte budgets |
+| `pnpm test:e2e` | Chromium and WebKit Studio interactions and every format supported by each engine (WebP is hidden where encoding is unavailable) |
 | `pnpm test:e2e:packed` | Real tarball → CLI server → bundled Studio → disk lifecycle |
 | `pnpm smoke:package` | Local `npx` consumer flows, tarball contents, aliases, failure codes, and clean corresponding-source rebuild |
 | `pnpm check:release` | Aggregate local Linux/macOS release gate |
@@ -488,3 +730,19 @@ without assuming it contains the newest test scripts.
   connector-routing contract.
 - [`assets/catalog/README.md`](../assets/catalog/README.md) explains catalog
   provenance and updates.
+
+## Future documentation site
+
+When the single-page site is introduced, this guide can become its technical
+content rather than being rewritten from scratch. Keep the same top-level
+shape and turn the package/subsystem headings into anchor navigation:
+
+1. Start with the mental model and design principles.
+2. Give each package a short “what it owns” page section.
+3. Put deeper explanations under the relevant subsystem: document model,
+   layout, routing, rendering, Studio state, local files, catalog, and exports.
+4. Keep exact command references, route costs, and legal/provenance details in
+   focused reference pages linked from those explanations.
+
+That split lets the site stay friendly to people who are learning the project
+without hiding the details that maintainers need when they change behavior.

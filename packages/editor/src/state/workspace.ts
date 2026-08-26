@@ -55,7 +55,9 @@ const DB_VERSION = 1;
 const STORE_NAME = "workspace";
 const WORKSPACE_KEY = "current";
 const FALLBACK_KEY = "dumb-diagrams:workspace";
+const PENDING_WORKSPACE_KEY = "dumb-diagrams:workspace-pending";
 const MAX_HISTORY = 100;
+const WORKSPACE_PERSIST_DEBOUNCE_MS = 350;
 export const MAX_RECENTLY_CLOSED = 10;
 export const MAX_RECYCLED_PREVIEW_BYTES = 96 * 1024;
 
@@ -252,6 +254,24 @@ export function useWorkspace(options: WorkspaceOptions) {
     return next;
   }, []);
 
+  const flushPendingPersist = useCallback(() => {
+    if (persistTimerRef.current !== null) {
+      window.clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    const next = pendingPersistRef.current;
+    pendingPersistRef.current = null;
+    if (!next) return;
+    const serialized = serializeWorkspace(next);
+    if (utf8ByteLength(serialized) > DIAGRAM_LIMITS.workspaceBytes) return;
+    // Keep a synchronous write-ahead snapshot so an immediate reload cannot
+    // outrun the debounced IndexedDB transaction (notably in WebKit).
+    persistWorkspaceJournal(serialized);
+    persistQueueRef.current = persistQueueRef.current
+      .catch(() => undefined)
+      .then(() => persistWorkspace(next, serialized));
+  }, []);
+
   const updateWorkspace = useCallback(
     (change: (current: WorkspaceState) => WorkspaceState) => {
       setWorkspace((current) => {
@@ -286,17 +306,10 @@ export function useWorkspace(options: WorkspaceOptions) {
     if (persistTimerRef.current !== null) {
       window.clearTimeout(persistTimerRef.current);
     }
-    persistTimerRef.current = window.setTimeout(() => {
-      persistTimerRef.current = null;
-      const next = pendingPersistRef.current;
-      pendingPersistRef.current = null;
-      if (!next) return;
-      // Keep writes ordered while still collapsing the many intermediate
-      // workspace snapshots produced by pan, zoom, and drag gestures.
-      persistQueueRef.current = persistQueueRef.current
-        .catch(() => undefined)
-        .then(() => persistWorkspace(next));
-    }, 0);
+    persistTimerRef.current = window.setTimeout(
+      flushPendingPersist,
+      WORKSPACE_PERSIST_DEBOUNCE_MS,
+    );
 
     return () => {
       if (persistTimerRef.current !== null) {
@@ -304,13 +317,20 @@ export function useWorkspace(options: WorkspaceOptions) {
         persistTimerRef.current = null;
       }
     };
-  }, [ready, workspace]);
+  }, [flushPendingPersist, ready, workspace]);
 
-  useEffect(() => () => {
-    if (persistTimerRef.current !== null) {
-      window.clearTimeout(persistTimerRef.current);
-    }
-  }, []);
+  useEffect(() => {
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flushPendingPersist();
+    };
+    window.addEventListener("pagehide", flushPendingPersist);
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", flushPendingPersist);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+      flushPendingPersist();
+    };
+  }, [flushPendingPersist]);
 
   const activeTab = workspace.tabs.find((tab) => tab.id === workspace.activeTabId) ?? workspace.tabs[0]!;
 
@@ -724,6 +744,13 @@ function isDocumentOrigin(value: unknown): value is DocumentOrigin {
 
 async function loadPersistedWorkspace(): Promise<WorkspaceState | null> {
   try {
+    const normalized = deserializeWorkspace(localStorage.getItem(PENDING_WORKSPACE_KEY) ?? "");
+    const validated = normalized ? validateRestoredWorkspace(normalized) : null;
+    if (validated) return validated;
+  } catch {
+    // Continue to IndexedDB when synchronous recovery storage is unavailable.
+  }
+  try {
     const db = await openDatabase();
     try {
       const value = await readWorkspaceValue(db);
@@ -744,8 +771,20 @@ async function loadPersistedWorkspace(): Promise<WorkspaceState | null> {
   }
 }
 
-async function persistWorkspace(workspace: WorkspaceState): Promise<void> {
-  if (utf8ByteLength(serializeWorkspace(workspace)) > DIAGRAM_LIMITS.workspaceBytes) return;
+function persistWorkspaceJournal(serialized: string): void {
+  try {
+    localStorage.setItem(PENDING_WORKSPACE_KEY, serialized);
+  } catch {
+    // Private browsing and storage quota failures degrade to IndexedDB-only mode.
+    try {
+      localStorage.removeItem(PENDING_WORKSPACE_KEY);
+    } catch {
+      // Storage may be completely disabled.
+    }
+  }
+}
+
+async function persistWorkspace(workspace: WorkspaceState, serialized: string): Promise<void> {
   try {
     const db = await openDatabase();
     try {
@@ -753,13 +792,19 @@ async function persistWorkspace(workspace: WorkspaceState): Promise<void> {
     } finally {
       db.close();
     }
+    try {
+      // A later edit may already have replaced the journal while this queued
+      // write was in flight. Only clear the snapshot that just reached disk.
+      if (localStorage.getItem(PENDING_WORKSPACE_KEY) === serialized) {
+        localStorage.removeItem(PENDING_WORKSPACE_KEY);
+      }
+    } catch {
+      // A valid journal can safely remain if storage becomes unavailable.
+    }
     return;
   } catch {
-    try {
-      localStorage.setItem(FALLBACK_KEY, serializeWorkspace(workspace));
-    } catch {
-      // Private browsing and storage quota failures degrade to memory-only mode.
-    }
+    // The latest synchronous recovery snapshot was written before this queued
+    // transaction. Do not replace it with an older snapshot if this write fails.
   }
 }
 

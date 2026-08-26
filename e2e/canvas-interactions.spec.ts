@@ -98,7 +98,7 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
   // nested group hit layer in the SVG stack.
   const regionBox = await region.boundingBox();
   expect(regionBox).not.toBeNull();
-  await region.click({ position: { x: regionBox!.width / 2, y: 8 } });
+  await page.mouse.click(regionBox!.x + regionBox!.width / 2, regionBox!.y + 8);
   await expect(region).toHaveAttribute("aria-selected", "true");
 
   const edge = page.locator('[data-entity-kind="edge"][data-entity-id="e3"]');
@@ -194,14 +194,18 @@ test("anchors a group display label at the selected corner", async ({ page }) =>
 
   const inspector = page.getByRole("dialog", { name: "Async Queue Tier", exact: true });
   await expect(inspector).toHaveCount(1);
-  await inspector.locator("#group-label-position").selectOption("top-right");
-
   const renderedLabel = page.locator("#group-queues text");
-  await expect(renderedLabel).toHaveAttribute("text-anchor", "end");
+  const beforeY = await renderedLabel.getAttribute("y");
+  await inspector.locator("#group-label-position").selectOption("bottom-left");
+
+  await expect.poll(() => renderedLabel.getAttribute("y")).not.toBe(beforeY);
+  expect(await renderedLabel.getAttribute("text-anchor") ?? "start").toBe("start");
   const labelX = Number(await renderedLabel.getAttribute("x"));
   const groupX = Number(await queues.getAttribute("x"));
-  const groupWidth = Number(await queues.getAttribute("width"));
-  expect(labelX).toBeCloseTo(groupX + groupWidth - 8, 5);
+  expect(labelX).toBeCloseTo(groupX + 8, 5);
+  const labelY = Number(await renderedLabel.getAttribute("y"));
+  const groupBottom = Number(await queues.getAttribute("y")) + Number(await queues.getAttribute("height"));
+  expect(labelY).toBeGreaterThan(groupBottom - 32);
 });
 
 test("exposes draggable turn points and moves a connector bend", async ({ page }) => {
@@ -279,6 +283,30 @@ test("previews resource movement without rerouting the document until release", 
   expect(afterBox).not.toBeNull();
   expect(afterBox!.x).toBeGreaterThan(beforeBox!.x + 80);
   expect(afterBox!.y).toBeGreaterThan(beforeBox!.y + 40);
+});
+
+test("shows a gentle centre guide while aligning icons", async ({ page }) => {
+  await page.goto("/");
+  const moving = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
+  const target = page.locator('[data-entity-kind="resource"][data-entity-id="workerA"]');
+  const movingBox = await moving.boundingBox();
+  const targetBox = await target.boundingBox();
+  expect(movingBox).not.toBeNull();
+  expect(targetBox).not.toBeNull();
+
+  const startX = movingBox!.x + movingBox!.width / 2;
+  const startY = movingBox!.y + movingBox!.height / 2;
+  const targetCenterX = targetBox!.x + targetBox!.width / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(targetCenterX + 3, startY + 82, { steps: 16 });
+
+  await expect(page.locator('[data-alignment-guide="x"][data-alignment-anchor="center"]')).toHaveCount(1);
+  await page.mouse.up();
+
+  await expect.poll(async () => (await moving.boundingBox())?.x ?? 0)
+    .toBeGreaterThan(movingBox!.x + 50);
+  await expect(page.locator("[data-alignment-guide]")).toHaveCount(0);
 });
 
 test("keeps a connected resource draggable from beneath its connector endpoint", async ({ page }) => {
@@ -513,7 +541,7 @@ test("applies the dark palette to the canvas and grid", async ({ page }) => {
   });
 
   expect(colors.canvas).not.toBe("rgb(255, 255, 255)");
-  expect(colors.atmosphere).toContain("radial-gradient");
+  expect(colors.atmosphere).toBe("none");
   expect(colors.artboard).not.toBe("rgb(255, 255, 255)");
   expect(colors.grid).toContain("linear-gradient");
   expect(colors.text).not.toBe("rgb(35, 47, 62)");
@@ -542,7 +570,6 @@ test("keeps the canvas zoom controls ordered and padded", async ({ page }) => {
   await expect(controls.getByRole("button")).toHaveText(["", "100%", "−", "+"]);
   await expect(controls.getByRole("button", { name: "Zoom out", exact: true })).toHaveCount(1);
   await expect(controls.getByRole("button", { name: "Zoom in", exact: true })).toHaveCount(1);
-  await expect(controls.locator(".status-capsule-mode")).toHaveText("Opinionated layout");
   const initialZoom = Number((await controls.locator(".status-capsule-readout").textContent())?.replace("%", ""));
   expect(initialZoom).toBeGreaterThanOrEqual(80);
   expect(initialZoom).toBeLessThanOrEqual(90);

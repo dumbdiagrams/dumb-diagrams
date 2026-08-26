@@ -253,7 +253,7 @@ Other maintainer references:
 v0.1 is deliberately focused: local, desktop-first, AWS-first, and built around
 the architect-plus-coding-agent workflow. The repository’s release gate covers
 the engine, CLI, Studio, all export formats, the packed npm consumer journey,
-and a clean rebuild of the AGPL corresponding source. Linux is the full browser
+and a clean rebuild of the AGPL corresponding source. Linux runs Chromium and WebKit as the full browser
 release platform; Windows additionally runs the publishable CLI smoke in CI.
 
 ## License

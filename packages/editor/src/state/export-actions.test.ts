@@ -1,10 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
 
-import { filenameWithExtension, getExportBounds, sanitizeFilename } from "./export-actions";
+import { filenameWithExtension, getExportBounds, isExportFormatSupported, sanitizeFilename } from "./export-actions";
 
 describe("export filenames", () => {
+  it("does not advertise WebP when the browser silently encodes PNG", () => {
+    const toDataURL = vi.fn(() => "data:image/png;base64,placeholder");
+    vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, toDataURL }) });
+    try {
+      expect(isExportFormatSupported("webp")).toBe(false);
+      expect(isExportFormatSupported("webp")).toBe(false);
+      expect(isExportFormatSupported("png")).toBe(true);
+      expect(toDataURL).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("removes path-like and unsupported filename characters", () => {
     expect(sanitizeFilename("../My Diagram: v2.dgm")).toBe("My-Diagram-v2.dgm");
     expect(sanitizeFilename("...")).toBe("diagram");

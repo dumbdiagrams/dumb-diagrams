@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 
-import { GRID_SIZE, outsideCanvasInsertionPoint, snapLayoutToGrid } from "./grid.js";
+import {
+  GRID_SIZE,
+  outsideCanvasInsertionPoint,
+  snapDragDelta,
+  snapLayoutToGrid,
+} from "./grid.js";
 
 describe("editor grid", () => {
   it("snaps top-level anchors without changing nested geometry or centering", () => {
@@ -55,6 +60,49 @@ describe("editor grid", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);
     expect(snapLayoutToGrid(layout, false, doc)).toBe(layout);
+  });
+
+  it("snaps root resources by their visible icon instead of label-sized obstacles", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const before = layout.nodes.find((node) => node.id === "client")!;
+    const after = snapLayoutToGrid(layout, true, doc).nodes.find((node) => node.id === "client")!;
+
+    expect(after.icon.x % GRID_SIZE).toBe(0);
+    expect(after.icon.y % GRID_SIZE).toBe(0);
+    expect(after.icon.x - after.obstacle.x).toBeCloseTo(before.icon.x - before.obstacle.x);
+    expect(after.label.x - after.icon.x).toBeCloseTo(before.label.x - before.icon.x);
+  });
+
+  it("magnetically aligns matching centres ahead of the grid", () => {
+    const snapped = snapDragDelta(
+      { x: 20, y: 20, w: 48, h: 48 },
+      [{ x: 100, y: 120, w: 48, h: 48 }],
+      77,
+      101,
+      true,
+      1,
+    );
+
+    expect(snapped.dx).toBe(80);
+    expect(snapped.dy).toBe(100);
+    expect(snapped.guides).toEqual([
+      expect.objectContaining({ axis: "x", position: 124, anchor: "center" }),
+      expect.objectContaining({ axis: "y", position: 144, anchor: "center" }),
+    ]);
+  });
+
+  it("keeps grid snapping when no peer alignment is nearby", () => {
+    const snapped = snapDragDelta(
+      { x: 10, y: 10, w: 48, h: 48 },
+      [{ x: 300, y: 300, w: 48, h: 48 }],
+      51,
+      37,
+      true,
+      1,
+    );
+
+    expect(snapped).toEqual({ dx: 62, dy: 38, guides: [] });
   });
 
   it("places new root objects in an open lane outside the existing canvas", () => {

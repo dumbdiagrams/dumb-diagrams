@@ -1,12 +1,13 @@
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import { request as httpRequest } from "node:http";
 
 import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
 import { printDgm } from "@dumb-diagrams/runtime/dsl";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { startStudioServer, type StudioServerHandle } from "./studio-server.js";
+import { isLoopbackHost, startStudioServer, type StudioServerHandle } from "./studio-server.js";
 
 const handles: StudioServerHandle[] = [];
 
@@ -15,6 +16,49 @@ afterEach(async () => {
 });
 
 describe("local Studio server", () => {
+  it("recognizes loopback hosts without treating wildcard binds as local", () => {
+    expect(isLoopbackHost("127.0.0.1")).toBe(true);
+    expect(isLoopbackHost("127.12.34.56")).toBe(true);
+    expect(isLoopbackHost("::1")).toBe(true);
+    expect(isLoopbackHost("localhost")).toBe(true);
+    expect(isLoopbackHost("0.0.0.0")).toBe(false);
+    expect(isLoopbackHost("192.168.1.12")).toBe(false);
+  });
+
+  it("protects a non-loopback bind with a capability token and security headers", async () => {
+    const { handle } = await createTestServer("0.0.0.0");
+    const launchUrl = new URL(handle.url);
+    const token = launchUrl.searchParams.get("token");
+    expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
+    const origin = `http://127.0.0.1:${launchUrl.port}`;
+
+    const rejected = await fetch(`${origin}/api/session`);
+    expect(rejected.status).toBe(401);
+
+    const accepted = await fetch(`${origin}/api/session?token=${token}`);
+    expect(accepted.status).toBe(200);
+    expect(accepted.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(accepted.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("rejects cross-origin and rebound-host access to the loopback API", async () => {
+    const { handle } = await createTestServer();
+    const endpoint = `${handle.url}api/session`;
+    const crossOrigin = await fetch(endpoint, { headers: { Origin: "https://untrusted.example" } });
+    expect(crossOrigin.status).toBe(403);
+    const reboundStatus = await new Promise<number>((resolve, reject) => {
+      const request = httpRequest(endpoint, { headers: { Host: "untrusted.example" } }, (response) => {
+        response.resume();
+        resolve(response.statusCode ?? 0);
+      });
+      request.on("error", reject);
+      request.end();
+    });
+    expect(reboundStatus).toBe(403);
+    const sameOrigin = await fetch(endpoint, { headers: { Origin: new URL(handle.url).origin } });
+    expect(sameOrigin.status).toBe(200);
+  });
+
   it("loads and writes a .dgm file through the revision-safe API", async () => {
     const created = await createTestServer();
     const { handle, filePath } = created;
@@ -99,13 +143,13 @@ describe("local Studio server", () => {
   });
 });
 
-async function createTestServer(): Promise<{ handle: StudioServerHandle; filePath: string }> {
+async function createTestServer(host?: string): Promise<{ handle: StudioServerHandle; filePath: string }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
   mkdirSync(editorRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
   const filePath = join(root, "architecture.dgm");
-  const handle = await startStudioServer({ filePath, editorRoot, port: 0 });
+  const handle = await startStudioServer({ filePath, editorRoot, host, port: 0 });
   handles.push(handle);
   return { handle, filePath };
 }

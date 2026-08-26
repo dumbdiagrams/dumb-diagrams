@@ -312,10 +312,15 @@ export function moveSelection(
       const bounds = group
         ? layout?.groups.find((candidate) => candidate.id === id)?.bounds
         : layout?.nodes.find((candidate) => candidate.id === id)?.obstacle;
+      // Unpinned x/y values can be stale layout hints. A drag starts from the
+      // geometry the user can actually see; only an already pinned placement
+      // is authoritative on subsequent moves.
+      const pinnedX = place.pin ? place.x : undefined;
+      const pinnedY = place.pin ? place.y : undefined;
       view.places[id] = {
         ...place,
-        x: Math.max(0, Math.round((place.x ?? bounds?.x ?? 0) + dx)),
-        y: Math.max(0, Math.round((place.y ?? bounds?.y ?? 0) + dy)),
+        x: Math.max(0, Math.round((pinnedX ?? bounds?.x ?? 0) + dx)),
+        y: Math.max(0, Math.round((pinnedY ?? bounds?.y ?? 0) + dy)),
         pin: true,
         manual: true,
       };
