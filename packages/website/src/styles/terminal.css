@@ -1,0 +1,10 @@
+@layer components {
+  .mac-window { background: #0c0c0c; border: 1px solid #373739; border-radius: 11px; overflow: hidden; box-shadow: 0 16px 36px -24px #10172580; }
+  .mac-titlebar { position: relative; display: flex; align-items: center; gap: 16px; height: 40px; padding: 0 16px; background: linear-gradient(#303032, #252527); border-bottom: 1px solid #070707; color: #bcbcc2; }
+  .mac-window-title { position: absolute; left: 50%; transform: translateX(-50%); font: 11px var(--sans); white-space: nowrap; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+  .window-controls { display: flex; gap: 7px; flex-shrink: 0; }
+  .window-controls i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; box-shadow: inset 0 0 0 1px #00000018; }
+  .window-controls i:nth-child(2) { background: #febc2e; }
+  .window-controls i:nth-child(3) { background: #28c840; }
+  @media (max-width: 540px) { .mac-titlebar { padding: 0 12px; } .mac-window-title { font-size: 9px; max-width: 36%; } .window-controls { gap: 5px; } .window-controls i { width: 8px; height: 8px; } }
+}

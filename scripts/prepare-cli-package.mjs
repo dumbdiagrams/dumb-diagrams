@@ -146,6 +146,10 @@ function buildSourceSnapshot() {
     "packages/website/astro.config.mjs",
     "packages/website/tsconfig.json",
     "packages/website/README.md",
+    "packages/brand/package.json",
+    "packages/brand/styles.css",
+    "packages/brand/README.md",
+    "packages/brand/FONT-LICENSES.txt",
   ];
   const directories = [
     "assets/catalog",

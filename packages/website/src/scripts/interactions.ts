@@ -7,7 +7,7 @@ async function copyText(button: HTMLButtonElement, text: string) {
     if (status) status.textContent = 'Command copied to clipboard.';
   } catch {
     button.textContent = 'Select text';
-    const code = button.closest('[data-install], pre, .source-pane')?.querySelector('code');
+    const code = button.dataset.copyTarget ? document.getElementById(button.dataset.copyTarget) : button.closest('[data-install], pre, .source-pane')?.querySelector('code');
     if (code) {
       const range = document.createRange();
       range.selectNodeContents(code);
@@ -18,8 +18,8 @@ async function copyText(button: HTMLButtonElement, text: string) {
   window.setTimeout(() => { button.innerHTML = original; }, 1800);
 }
 
-document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach(button => {
-  button.addEventListener('click', () => copyText(button, button.dataset.copy || ''));
+document.querySelectorAll<HTMLButtonElement>('[data-copy], [data-copy-target]').forEach(button => {
+  button.addEventListener('click', () => copyText(button, button.dataset.copyTarget ? document.getElementById(button.dataset.copyTarget)?.textContent || '' : button.dataset.copy || ''));
 });
 
 document.querySelectorAll<HTMLElement>('[data-install]').forEach(install => {
@@ -33,14 +33,17 @@ document.querySelectorAll<HTMLElement>('[data-install]').forEach(install => {
   }));
 });
 
-document.querySelectorAll<HTMLElement>('[data-demo]').forEach(demo => {
-  const tabs = [...demo.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+document.querySelectorAll<HTMLElement>('[data-tabs]').forEach(tablist => {
+  const tabs = [...tablist.querySelectorAll<HTMLButtonElement>(':scope > [role="tab"]')];
   function select(tab: HTMLButtonElement) {
     tabs.forEach(button => {
       button.setAttribute('aria-selected', String(button === tab));
       button.tabIndex = button === tab ? 0 : -1;
       const panel = document.getElementById(button.getAttribute('aria-controls') || '');
-      if (panel) panel.hidden = button !== tab;
+      if (panel) {
+        panel.hidden = button !== tab;
+        if (!panel.hidden) panel.querySelectorAll('[data-diagram-preview]').forEach(preview => preview.dispatchEvent(new Event('preview:visible')));
+      }
     });
   }
   tabs.forEach((tab, index) => {
@@ -71,14 +74,30 @@ document.querySelectorAll<HTMLElement>('.prose pre').forEach(pre => {
   pre.append(button);
 });
 
-document.querySelectorAll<HTMLButtonElement>('[data-source-toggle]').forEach(button => {
-  button.addEventListener('click', () => {
-    const source = document.getElementById(button.getAttribute('aria-controls') || '');
-    const expanded = button.getAttribute('aria-expanded') !== 'true';
-    button.setAttribute('aria-expanded', String(expanded));
-    button.textContent = expanded ? 'Hide .dgm source ↑' : 'Show .dgm source ↓';
-    source?.classList.toggle('is-visible', expanded);
-  });
+document.querySelectorAll<HTMLElement>('[data-diagram-preview]').forEach(preview => {
+  const viewport = preview.querySelector<HTMLElement>('.diagram-viewport')!;
+  const image = viewport.querySelector('img')!;
+  const zoomOut = preview.querySelector<HTMLButtonElement>('[data-zoom="out"]')!;
+  const zoomIn = preview.querySelector<HTMLButtonElement>('[data-zoom="in"]')!;
+  const fit = preview.querySelector<HTMLButtonElement>('[data-zoom="fit"]')!;
+  let zoom = 1;
+  function center() {
+    viewport.scrollLeft = (viewport.scrollWidth - viewport.clientWidth) / 2;
+    viewport.scrollTop = (viewport.scrollHeight - viewport.clientHeight) / 2;
+  }
+  function update() {
+    viewport.style.setProperty('--diagram-zoom', String(zoom));
+    fit.textContent = `${Math.round(zoom * 100)}%`;
+    zoomOut.disabled = zoom <= 1;
+    zoomIn.disabled = zoom >= 2.5;
+    center();
+  }
+  zoomOut.addEventListener('click', () => { zoom = Math.max(1, zoom - .25); update(); });
+  zoomIn.addEventListener('click', () => { zoom = Math.min(2.5, zoom + .25); update(); });
+  fit.addEventListener('click', () => { zoom = 1; update(); });
+  image.addEventListener('load', center);
+  preview.addEventListener('preview:visible', center);
+  update();
 });
 
 const docsNavigation = document.querySelector<HTMLDetailsElement>('.docs-navigation');

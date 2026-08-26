@@ -1,6 +1,6 @@
 ---
 title: Using Studio
-description: Edit the source and the picture together, with a clear distinction between browser storage and files on disk.
+description: Edit source and diagram together, with a clear distinction between browser storage and files on disk.
 section: Make diagrams
 order: 4
 ---
@@ -49,12 +49,12 @@ The local server watches the diagram’s directory and notices external changes.
 
 If another editor changes the file before Studio saves, the server rejects the stale write. Studio asks whether to reload the disk version or keep the browser version. Read the choice carefully: preserving the wrong version can discard the other edit.
 
-Writes are atomic, and reconnecting after sleep refreshes the document and connection state. A dropped internet connection alone is not a problem—local Studio only needs the server on your machine.
+Writes are atomic, and reconnecting after sleep refreshes the document and connection state. A dropped internet connection does not affect local Studio. It only needs the server on your machine.
 
 ## Keep the local server local
 
-The default loopback address is the normal choice. If you deliberately expose Studio with `--host`, the CLI adds a per-process capability token to its launch URL and requires it for API access.
+Use the loopback address by default. If you expose Studio with `--host`, the CLI adds a per-process capability token to the launch URL and requires it for API access.
 
 Treat that URL as a secret. The bridge is a development tool, not a public hosting service. Remote access needs a trusted network or a properly authenticated TLS proxy.
 
-Studio is desktop-focused. These docs work on a phone, but detailed diagram editing is more comfortable in a wide desktop window.
+Studio is designed for desktop use. The site works on a phone, but detailed diagram editing is more comfortable in a wide window.

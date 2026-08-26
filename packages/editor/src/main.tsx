@@ -1912,7 +1912,7 @@ function App() {
         <div className="studio-tabbar">
           <nav className="studio-tabbar-leading" aria-label="File menu">
             <TopMenu label="File" Icon={IconMenu} iconOnly items={fileMenuItems} />
-            <div className="studio-brand" aria-label="DumbDiagrams">
+            <div className="studio-brand" role="img" aria-label="Dumb Diagrams">
               <img
                 className="brand-logo"
                 src="./logo_dumbdiagrams.png"
@@ -1920,7 +1920,7 @@ function App() {
                 width="128"
                 height="77"
               />
-              <span className="brand-name">Dumb Diagrams</span>
+              <span className="dd-wordmark" aria-hidden="true">dumb<span className="dd-wordmark__light">diagrams</span><span className="dd-wordmark__dot">.</span></span>
             </div>
           </nav>
           <WorkspaceTabs

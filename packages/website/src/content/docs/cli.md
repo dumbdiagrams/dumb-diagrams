@@ -1,12 +1,12 @@
 ---
 title: Command reference
-description: The commands you will use to create projects, open Studio, check source, and export a diagram.
+description: Create projects, open Studio, validate source, and export diagrams from the command line.
 section: Make diagrams
 order: 6
 ---
 Use `npx create-dumb-diagrams@latest` followed by a command. A global install also provides the aliases `dumbdiagrams` and `dgm`.
 
-The installed version is the final authority for its flags:
+Use the installed version for the current flag list:
 
 ```bash
 npx create-dumb-diagrams@latest help
@@ -19,7 +19,7 @@ npx create-dumb-diagrams@latest --version
 npx create-dumb-diagrams@latest init my-architecture --name "My architecture" --yes
 ```
 
-`npm create dumb-diagrams@latest` is the convenient initializer entry point. Use `init` when you prefer the command-style form.
+`npm create dumb-diagrams@latest` is a shortcut for initialization. Use `init` when you want the command-style form.
 
 | Option | What it controls |
 | --- | --- |

@@ -7,6 +7,12 @@ const ROOT = join(import.meta.dirname, "..");
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");
 
+  const wordmark = page.locator(".studio-brand .dd-wordmark");
+  await expect(wordmark).toHaveText("dumbdiagrams.");
+  await expect(wordmark).toHaveCSS("font-family", /Manrope/);
+  await expect(wordmark).toHaveCSS("font-weight", "800");
+  await expect(wordmark.locator(".dd-wordmark__light")).toHaveCSS("font-weight", "450");
+
   const privacyFooter = page.locator(".privacy-footer");
   await expect(privacyFooter).toContainText("© 2026 DumbDiagrams");
   await expect(privacyFooter).toContainText("Your data stays on your device");

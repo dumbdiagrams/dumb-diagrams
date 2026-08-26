@@ -36,6 +36,7 @@ const PALETTE = {
   amber: [248, 162, 63],
   orange: [230, 98, 49],
   navy: [36, 64, 104],
+  command: [248, 162, 63],
   red: [255, 99, 112],
 } as const;
 
@@ -61,7 +62,7 @@ export function createCliUi(options: CliUiOptions = {}) {
       return bold(paint(value, PALETTE.orange));
     },
     command(value: string): string {
-      return paint(value, PALETTE.navy);
+      return paint(value, PALETTE.command);
     },
     muted: dim,
     info(label: string, value: string): string {

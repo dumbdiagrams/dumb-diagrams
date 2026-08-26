@@ -1,6 +1,6 @@
 ---
 title: The .dgm format
-description: Describe the services, boundaries, and connections. Save visual decisions separately inside the same file.
+description: Describe services, boundaries, and connections. Save visual decisions in the same file.
 section: Make diagrams
 order: 3
 ---
@@ -41,7 +41,7 @@ aws.aws-lambda handler "Payment handler"
 
 The type selects the icon and rules. The ID is how other parts of the document refer to the resource. The label is what people see. Changing the label does not change the service type.
 
-Groups use braces to contain resources or other groups. Provider groups such as regions, VPCs, and subnets carry architecture meaning. A plain `group` is useful for a logical boundary.
+Groups use braces to contain resources or other groups. Provider groups such as regions, VPCs, and subnets carry architecture meaning. A plain `group` defines a logical boundary.
 
 Not every resource belongs inside every boundary. The catalog includes containment rules, and validation checks them before layout.
 
@@ -67,9 +67,9 @@ At the document level, `flow lr` asks for left-to-right layout; `flow tb` asks f
 
 ## Saved views
 
-You do not need a `view` block to get a useful first diagram. Start with automatic layout.
+A first diagram does not need a `view` block. Start with automatic layout.
 
-When you move or resize an item, or pin a route in Studio, those overrides can be stored in a view. The runtime applies authored positions after the automatic structure is laid out. A human choice survives the next render.
+When you move or resize an item, or pin a route in Studio, those overrides can be stored in a view. The runtime applies authored positions after the automatic structure is laid out. Manual choices survive the next render.
 
 If an agent changes the architecture, ask it to preserve existing view information. Visual overrides are part of the document, not disposable editor cache.
 

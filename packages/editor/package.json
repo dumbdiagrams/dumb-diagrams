@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dumb-diagrams/brand": "workspace:*",
     "@codemirror/commands": "^6.11.0",
     "@codemirror/search": "^6.7.1",
     "@codemirror/theme-one-dark": "^6.1.3",

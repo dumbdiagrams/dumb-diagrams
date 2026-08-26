@@ -4,10 +4,10 @@
 
 # Dumb Diagrams
 
-**Architecture diagrams for LLMs to start, and humans to finish.**
+**Plain-text architecture diagrams for coding agents and people.**
 
-An opinionated, source-first diagram engine with deterministic layout, a local
-Studio, and enough guardrails to keep an AI-generated sketch understandable.
+A source-first diagram engine with deterministic layout, a local Studio, and
+validation for agent-generated drafts.
 
 <br />
 
@@ -20,46 +20,47 @@ Studio, and enough guardrails to keep an AI-generated sketch understandable.
 
 ---
 
+For fonts, colors, the official wordmark, and UI component conventions, see the
+[style guide](./docs/STYLE_GUIDE.md).
+
 ## The idea
 
-LLMs are surprisingly good at understanding an architecture conversation.
-They know the services, the boundaries, and the flow. The awkward part begins
-when we ask them to turn that understanding into a diagram that is consistent,
-editable, and actually pleasant to read.
+Coding agents can follow an architecture conversation. They can identify the
+services, boundaries, and flow. The difficult part is turning that understanding
+into a diagram that is consistent, editable, and easy to review.
 
-Dumb Diagrams gives the model a small `.dgm` language and a strongly
-opinionated rendering engine. The model describes *what the architecture is*;
-the engine decides where things should go, how groups should nest, where
-connectors should travel, and whether the result is structurally valid. Then a
-human can open Studio, move things around, adjust a route, and keep those edits
-in the same source file.
+Dumb Diagrams gives the agent a small `.dgm` language and a rendering engine
+with defined layout rules. The agent describes *what the architecture is*;
+the engine decides where resources go, how groups nest, where connectors travel,
+and whether the result is structurally valid. A person can then open Studio,
+move items, adjust a route, and keep those edits in the source file.
 
-The visual opinion starts with AWS architecture guidance and official examples,
-filtered through what I—the creator 🙂—believe makes a diagram pretty, clear,
-and quick to digest. This is not a neutral canvas. That is rather the point.
+The visual conventions start with AWS architecture guidance and official
+examples. The layout favors readable grouping, explicit boundaries, and short
+paths over a neutral canvas.
 
 ## Why another diagram tool?
 
 [draw.io](https://www.drawio.com/),
 [Lucidchart](https://www.lucidchart.com/), and
 [Mermaid](https://mermaid.js.org/) are great tools. This project is not here to
-pretend otherwise. They simply optimize for somewhat different jobs.
+pretend otherwise. Each one serves a different job.
 
-| Tool or approach | Excellent when… | Where Dumb Diagrams takes a different bet |
+| Tool or approach | Best when | Where Dumb Diagrams takes a different approach |
 | --- | --- | --- |
-| draw.io / diagrams.net | You want a flexible visual canvas and full manual control | A general canvas gives an LLM many tiny visual decisions to get wrong; Dumb Diagrams starts from architecture meaning and applies one layout opinion |
-| Lucidchart | A team needs a mature collaborative diagramming workspace | Dumb Diagrams keeps plain files beside the code and focuses on the agent-to-architect loop rather than becoming another hosted workspace |
+| draw.io / diagrams.net | You want a flexible visual canvas and full manual control | A general canvas leaves many small visual decisions to the author; Dumb Diagrams starts from architecture meaning and applies one layout opinion |
+| Lucidchart | A team needs a mature collaborative diagramming workspace | Dumb Diagrams keeps plain files beside the code and focuses on the agent-to-architect loop instead of adding another hosted workspace |
 | Mermaid | You want lightweight diagrams-as-code in documentation | Dumb Diagrams spends more of its complexity on nested cloud boundaries, provider icons, resource cards, ports, and editable connector routes |
-| MCP in front of an existing canvas | You need an agent to operate a tool your team already uses | MCP can be genuinely useful, but a model driving a general-purpose canvas can still produce mixed results between runs; here the model writes a constrained document and a deterministic engine does the drawing |
+| MCP in front of an existing canvas | You need an agent to operate a tool your team already uses | MCP can be useful, but a model driving a general-purpose canvas can produce different results between runs; here the model writes a constrained document and a deterministic engine does the drawing |
 
-The goal is not to replace every diagram. It is to make one particular moment
-much better: an architect has an idea, asks an LLM for the first pass, and gets
-an opinionated diagram that is already useful enough to discuss and refine.
+The goal is not to replace every diagram tool. It is to improve one particular
+moment: an architect has an idea, asks an agent for a first pass, and gets a
+diagram that is ready to discuss and refine.
 
-## What you get
+## Included
 
-- **A tiny, agent-friendly source format.** `.dgm` is readable, reviewable, and
-  easy for an LLM to edit without moving hundreds of canvas objects.
+- **A compact source format for agents.** `.dgm` is readable, reviewable, and
+  straightforward to edit without moving hundreds of canvas objects.
 - **Deterministic results.** The same source and saved view produce the same
   layout, connector routes, and SVG.
 - **Architecture-aware structure.** Resources, groups, containment, numbered
@@ -72,25 +73,25 @@ an opinionated diagram that is already useful enough to discuss and refine.
   with Git, and can be edited by Cursor, Codex, Claude, or another coding agent.
 - **Guardrails.** The CLI validates source and reports layout/routing problems
   before a broken diagram quietly becomes the new reference.
-- **Useful outputs.** Export PNG, JPEG, WebP, GIF, SVG, PDF, standalone HTML,
+- **Several output formats.** Export PNG, JPEG, WebP, GIF, SVG, PDF, standalone HTML,
   XML, URL payloads, JSON, or canonical `.dgm` source.
 
 ## Honest tradeoffs
 
-Dumb Diagrams is a good fit when you want an LLM-assisted architecture diagram
+Dumb Diagrams fits when you want an agent-assisted architecture diagram
 with a strong default style. It is intentionally less suitable when you want:
 
 - a general illustration, free-form whiteboard, or pixel-perfect design tool;
 - real-time multi-user collaboration hosted by a SaaS vendor;
 - live discovery of cloud resources or a replacement for infrastructure
   inventory;
-- a completely unopinionated renderer that accepts any visual arrangement;
-- a mobile editor—v0.1 is desktop-focused, with roughly 1280px as the comfortable
+- a renderer with no preset visual model that accepts any arrangement;
+- a mobile editor. v0.1 is desktop-focused, with roughly 1280px as the comfortable
   baseline.
 
 AWS is the strongest grammar, example, and visual-guidance path today. The
 catalog also contains cloud-agnostic and other provider assets, but the product
-should currently be evaluated as AWS-first rather than magically universal.
+should currently be evaluated as AWS-first rather than provider-neutral.
 Very dense diagrams can still force connector compromises; Studio exposes
 manual routes for the cases where the architect knows better than the router.
 
@@ -107,7 +108,7 @@ and agent instructions, and can open it in your editor. If you accept the defaul
 the name is derived from the current directory and a timestamp. Run the printed `Next:`
 command to open the project’s diagrams in Studio.
 
-Prefer a fully explicit command?
+For an explicit setup:
 
 ```bash
 npm create dumb-diagrams@latest payments-platform -- \
@@ -134,7 +135,7 @@ overwriting a newer revision.
 - a `diagrams/` directory with its own guidance;
 - curated source/prompt examples that show the expected style.
 
-That means the useful prompt can stay pleasantly short:
+The prompt can stay short:
 
 ```text
 Read DUMB_DIAGRAMS.md and the closest example. Create a new diagram for our
@@ -264,7 +265,7 @@ Other maintainer references:
 
 ## Project status
 
-v0.1 is deliberately focused: local, desktop-first, AWS-first, and built around
+v0.1 is focused: local, desktop-first, AWS-first, and built around
 the architect-plus-coding-agent workflow. The repository’s release gate covers
 the engine, CLI, Studio, all export formats, the packed npm consumer journey,
 and a clean rebuild of the AGPL corresponding source. Linux runs Chromium and WebKit as the full browser

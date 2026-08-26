@@ -1,15 +1,21 @@
-import { readFile, writeFile, mkdir, copyFile, readdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, copyFile, readdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { parseDgm } from '@dumb-diagrams/runtime/dsl';
 import { compileDiagram, inlineCatalogIcons } from '@dumb-diagrams/runtime/render';
 import { getCatalogEntryByBrowserPath } from '@dumb-diagrams/runtime/catalog';
+import { loadExamples } from '../src/lib/examples.mjs';
 
 const root = new URL('../../../', import.meta.url);
 const site = new URL('../', import.meta.url);
+// This directory contains only build outputs, never authored diagrams.
+await rm(new URL('public/diagrams/', site), { recursive: true, force: true });
 await mkdir(new URL('public/diagrams/', site), { recursive: true });
+const examples = loadExamples();
 for (const filename of await readdir(new URL('src/examples/', site))) {
-  if (!filename.endsWith('.dgm')) continue;
-  const source = await readFile(new URL(`src/examples/${filename}`, site), 'utf8');
+  if (filename.endsWith('.dgm')) examples.push({ id: filename.slice(0, -4), source: await readFile(new URL(`src/examples/${filename}`, site), 'utf8') });
+}
+for (const { id, source, prompt } of examples) {
+  const filename = `${id}.dgm`;
   const result = compileDiagram(parseDgm(source));
   if (!result.ok) throw new Error(`${filename}: ${JSON.stringify(result.issues)}`);
   const svg = await inlineCatalogIcons(result.svg, {
@@ -37,14 +43,11 @@ for (const filename of await readdir(new URL('src/examples/', site))) {
   const preview = svg.replace(/<svg\b[^>]*>/, `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}">`);
   await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '-preview.svg')}`, site), preview);
   await writeFile(new URL(`public/diagrams/${filename}`, site), source);
+  if (prompt) await writeFile(new URL(`public/diagrams/${id}-prompt.txt`, site), prompt);
 }
 await copyFile(new URL('packages/editor/public/logo_dumbdiagrams.png', root), new URL('public/logo.png', site));
 await copyFile(new URL('packages/editor/public/favicon.png', root), new URL('public/favicon.png', site));
 await copyFile(new URL('LICENSE', root), new URL('public/LICENSE.txt', site));
 await copyFile(new URL('ICON-NOTICES.md', root), new URL('public/ICON-NOTICES.txt', site));
-const fontNotices = await Promise.all([
-  ['Manrope', '@fontsource-variable/manrope'],
-  ['IBM Plex Mono', '@fontsource/ibm-plex-mono'],
-].map(async ([name, packageName]) => `${name}\n${await readFile(new URL(`node_modules/${packageName}/LICENSE`, site), 'utf8')}`));
-await writeFile(new URL('public/FONT-LICENSES.txt', site), fontNotices.join('\n\n---\n\n'));
+await copyFile(new URL('packages/brand/FONT-LICENSES.txt', root), new URL('public/FONT-LICENSES.txt', site));
 console.log(`Prepared real engine-rendered examples in ${fileURLToPath(new URL('public/', site))}`);

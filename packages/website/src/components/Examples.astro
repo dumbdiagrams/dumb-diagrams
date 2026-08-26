@@ -1,0 +1,49 @@
+---
+import { Code } from 'astro:components';
+import { exampleIds } from '../lib/examples.mjs';
+import { DIAGRAM_EXAMPLES } from '../../../editor/src/examples';
+import { dgmLanguage } from '../lib/dgm-language.mjs';
+import { url } from '../lib/site';
+import WindowControls from './WindowControls.astro';
+import '../styles/terminal.css';
+import '../styles/examples.css';
+const examples = exampleIds.map(id => {
+  const example = DIAGRAM_EXAMPLES.find(example => example.id === id);
+  if (!example) throw new Error(`Missing Studio example: ${id}`);
+  return example;
+});
+---
+<section class="examples section" id="how-it-works" aria-labelledby="examples-title">
+  <div class="section-heading examples-heading" data-reveal><div><span class="eyebrow">01 / FROM SOURCE TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">Review the result.</span></h2></div><p>Start with a prompt, let the agent write the .dgm source, then compare the result with the examples in Studio.</p></div>
+  <div class="example-tabs" role="tablist" aria-label="Example diagram" data-tabs>
+    {examples.map((example, index) => <button id={`tab-${example.id}`} type="button" role="tab" aria-selected={index === 0 ? 'true' : 'false'} aria-controls={`example-${example.id}`} tabindex={index === 0 ? 0 : -1}><span class="mono">0{index + 1}</span>{example.title}</button>)}
+  </div>
+  {examples.map((example, index) => <div id={`example-${example.id}`} role="tabpanel" aria-labelledby={`tab-${example.id}`} hidden={index !== 0} class="example-panel">
+    <div class="example-description"><p>{example.description}</p><span class="mono">PROMPT / SOURCE <span aria-hidden="true">→</span> OUTPUT</span></div>
+    <div class="example-workspace">
+      <div class="example-input">
+        <div class="input-tabs" role="tablist" aria-label={`${example.title} input`} data-tabs>
+          <button id={`prompt-tab-${example.id}`} type="button" role="tab" data-mode="prompt" aria-selected="true" aria-controls={`prompt-${example.id}`} tabindex="0">Prompt</button>
+          <button id={`source-tab-${example.id}`} type="button" role="tab" data-mode="source" aria-selected="false" aria-controls={`source-${example.id}`} tabindex="-1">.dgm code</button>
+          <span aria-hidden="true">↗</span>
+        </div>
+        <div id={`prompt-${example.id}`} role="tabpanel" aria-labelledby={`prompt-tab-${example.id}`} class="prompt-pane">
+          <div class="input-caption"><span>GIVE THIS TO YOUR AGENT</span><button type="button" data-copy-target={`prompt-text-${example.id}`} aria-label={`Copy ${example.title} prompt`}>Copy ⧉</button></div>
+          <pre id={`prompt-text-${example.id}`} class="prompt-text" tabindex="0" aria-label={`${example.title} original prompt`}>{example.prompt}</pre>
+          <div class="input-footer"><span>ORIGINAL PROMPT</span><a href={url(`diagrams/${example.id}-prompt.txt`)} download>Save prompt ↓</a></div>
+        </div>
+        <div id={`source-${example.id}`} role="tabpanel" aria-labelledby={`source-tab-${example.id}`} class="source-pane" hidden>
+          <div class="mac-titlebar"><WindowControls /><span class="mac-window-title">{example.id}.dgm</span><button class="source-copy" type="button" data-copy-target={`source-text-${example.id}`} aria-label={`Copy ${example.title} source`}>Copy ⧉</button></div>
+          <div id={`source-text-${example.id}`} class="source-code" tabindex="0" aria-label={`${example.title} generated source`}><Code code={example.source.trimEnd()} lang={dgmLanguage} theme="github-dark" /></div>
+          <div class="input-footer"><span>REVIEWABLE SOURCE</span><a href={url(`diagrams/${example.id}.dgm`)} download>Save .dgm ↓</a></div>
+        </div>
+      </div>
+      <div class="example-output" data-diagram-preview>
+        <div class="output-bar"><span class="mono">THE OUTPUT</span><div class="preview-controls" aria-label={`${example.title} preview controls`}><button type="button" data-zoom="out" aria-label={`Zoom out ${example.title}`}>−</button><button type="button" data-zoom="fit" aria-label={`Fit ${example.title} to preview`}>Fit</button><button type="button" data-zoom="in" aria-label={`Zoom in ${example.title}`}>+</button></div><a href={url(`diagrams/${example.id}-preview.svg`)} target="_blank" rel="noopener" aria-label={`Open ${example.title} full size`}>Full size ↗</a></div>
+        <div class="diagram-viewport" tabindex="0" aria-label={`${example.title} diagram; scroll to pan when zoomed`}><img src={url(`diagrams/${example.id}-preview.svg`)} alt={example.description} width="1500" height="750" loading={index === 0 ? 'eager' : 'lazy'} /></div>
+        <div class="output-footer"><span>Rendered from the Studio source.</span><a href={url(`diagrams/${example.id}.svg`)} download>Download SVG ↓</a></div>
+      </div>
+    </div>
+  </div>)}
+  <div class="examples-footnote"><span>These prompts and diagrams are references. Different agents may produce different drafts.</span><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a></div>
+</section>

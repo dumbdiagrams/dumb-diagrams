@@ -1,0 +1,51 @@
+@layer pages {
+  .examples-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 48px; margin-bottom: 44px; }
+  .examples-heading > p { margin: 0 0 6px; max-width: 310px; color: var(--muted); font-size: 13px; line-height: 1.85; }
+  .example-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .example-tabs button { display: flex; align-items: center; gap: 14px; min-height: 70px; padding: 16px 18px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; text-align: left; font-size: 12px; line-height: 1.5; }
+  .example-tabs button + button { border-left: 1px solid var(--line); }
+  .example-tabs .mono { color: var(--muted); font-size: 9px; }
+  .example-tabs button[aria-selected='true'] { background: var(--brand-navy-soft); border-bottom-color: var(--orange); }
+  .example-tabs button[aria-selected='true'] .mono { color: var(--orange-dark); }
+  .example-description { display: flex; justify-content: space-between; align-items: center; gap: 28px; padding: 22px 0; }
+  .example-description p { max-width: 660px; font-size: 12px; color: var(--muted); }
+  .example-description > .mono { flex-shrink: 0; font-size: 8px; letter-spacing: .04em; }
+  .example-description > .mono > span { padding: 0 12px; color: var(--orange); }
+  .example-workspace { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 2fr); gap: 18px; }
+  .example-input { min-width: 0; border: 1px solid #344d69; border-radius: 10px; overflow: hidden; background: var(--brand-navy-deep); color: #eff3fa; display: flex; flex-direction: column; }
+  .example-input:has([data-mode='source'][aria-selected='true']) { background: #0c0c0c; border-color: #373739; }
+  .input-tabs { display: flex; gap: 22px; align-items: stretch; height: 45px; padding: 0 18px; border-bottom: 1px solid #ffffff20; flex-shrink: 0; }
+  .input-tabs button { background: transparent; color: #bccbe0; border: 0; border-bottom: 2px solid transparent; padding: 0; font-size: 11px; }
+  .input-tabs button[aria-selected='true'] { color: white; border-color: var(--orange); }
+  .input-tabs > span { color: #a9bdd8; margin-left: auto; align-self: center; }
+  .prompt-pane, .source-pane { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+  .input-caption { padding: 0 18px; height: 43px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font: 7px var(--mono); color: #b9cbe3; }
+  .input-caption button, .source-copy { border: 0; padding: 8px 0; background: transparent; color: inherit; font: 9px var(--mono); }
+  .prompt-text { white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; flex: 1; height: 412px; max-height: 412px; margin: 0; padding: 5px 18px 22px; font: 12px/1.85 var(--sans); scrollbar-color: #5c7391 transparent; }
+  .input-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 44px; padding: 12px 18px; font: 7px var(--mono); color: #a9bdd8; border-top: 1px solid #ffffff18; }
+  .input-footer a:hover { color: white; }
+  .source-pane .mac-titlebar { height: 43px; flex-shrink: 0; padding: 0 13px; }
+  .source-pane .mac-window-title { font-size: 8px; max-width: 53%; }
+  .source-copy { margin-left: auto; color: #c7c7cd; z-index: 1; }
+  .source-code { overflow: auto; height: 412px; max-height: 412px; flex: 1; scrollbar-color: #56565a transparent; }
+  .source-code pre { margin: 0; padding: 16px; background: transparent !important; font: 10px/1.8 var(--mono); width: max-content; min-width: 100%; }
+  .example-output { min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fffefa; }
+  .output-bar { height: 45px; display: flex; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line); }
+  .output-bar > .mono { font-size: 8px; letter-spacing: .05em; }
+  .output-bar > a { margin-left: auto; font-size: 9px; }
+  .preview-controls { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .preview-controls button { background: transparent; border: 1px solid var(--line); color: var(--ink); min-width: 27px; height: 25px; padding: 0 7px; font: 10px var(--mono); border-radius: 3px; }
+  .preview-controls button:disabled { opacity: .4; cursor: default; }
+  .diagram-viewport { height: 455px; padding: 10px; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; background: radial-gradient(#becbd8 .6px,transparent .6px) 0 0 / 16px 16px, #fffefa; }
+  .diagram-viewport img { width: calc(100% * var(--diagram-zoom, 1)); max-width: none; height: auto; flex-shrink: 0; margin: auto 0; mix-blend-mode: multiply; }
+  .output-footer { min-height: 44px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); font-size: 9px; color: var(--muted); }
+  .output-footer a { color: var(--ink); }
+  .examples-footnote { display: flex; justify-content: space-between; gap: 30px; padding-top: 20px; color: var(--muted); font-size: 10px; }
+  .examples-footnote span { max-width: 600px; }
+  .examples-footnote a { flex-shrink: 0; color: var(--ink); }
+}
+@layer responsive {
+  @media (max-width: 1100px) { .example-workspace { grid-template-columns: minmax(0,1fr) minmax(0,1.8fr); gap: 12px; } .example-tabs button { padding: 16px 12px; gap: 10px; font-size: 11px; } .example-description > .mono { display: none; } }
+  @media (max-width: 800px) { .examples-heading { display: block; } .examples-heading > p { margin-top: 22px; max-width: 460px; } .example-workspace { grid-template-columns: 1fr; gap: 16px; } .prompt-text, .source-code { height: 240px; max-height: 240px; } .diagram-viewport { height: 400px; } .examples-footnote { flex-direction: column; gap: 12px; } }
+  @media (max-width: 540px) { .example-tabs { display: flex; overflow-x: auto; } .example-tabs button { min-width: 185px; flex: 1 0 185px; } .example-description { padding: 18px 0; } .example-description p { font-size: 11px; } .prompt-text { font-size: 12px; } .diagram-viewport { height: 320px; padding: 6px; } .output-bar { padding: 0 12px; gap: 8px; } .output-footer { padding: 12px; font-size: 8px; } .output-footer > span { max-width: 55%; } }
+}

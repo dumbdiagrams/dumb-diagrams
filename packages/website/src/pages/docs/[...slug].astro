@@ -20,7 +20,7 @@ const docUrl = (id: string) => url(`docs/${id === 'index' ? '' : `${id}/`}`);
   <div class="docs-layout">
     <aside class="docs-sidebar" aria-label="Documentation navigation">
       <details class="docs-navigation" open><summary>Explore the docs <span aria-hidden="true">↓</span></summary><nav>{sections.map(section => <div class="nav-group"><h2>{section}</h2>{allDocs.filter(doc => doc.data.section === section).map(doc => <a href={docUrl(doc.id)} aria-current={doc.id === entry.id ? 'page' : undefined}>{doc.data.title}</a>)}</div>)}</nav></details>
-      <div class="sidebar-note"><span class="mono">PLAIN TEXT. CLEAR THINKING.</span><p>Good diagrams begin with a good understanding.</p><a href={url('llms.txt')}>Docs for your agent ↗</a></div>
+      <div class="sidebar-note"><span class="mono">SOURCE YOU CAN REVIEW</span><p>Start with the system, then draw the diagram.</p><a href={url('llms.txt')}>Agent reference ↗</a></div>
     </aside>
     <main id="main" class="doc-main" data-pagefind-body>
       <header class="doc-header"><span class="eyebrow">{entry.data.section}</span><h1 data-pagefind-meta="title">{entry.data.title}</h1><p>{entry.data.description}</p></header>

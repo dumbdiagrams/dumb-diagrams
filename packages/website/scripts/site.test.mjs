@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { parseDgm } from '@dumb-diagrams/runtime/dsl';
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
+import { createCliUi } from '../../cli/src/cli-ui.ts';
+import { stripVTControlCharacters } from 'node:util';
+import { loadExamples } from '../src/lib/examples.mjs';
+import { ansiToHtml } from '../src/lib/ansi.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const dist = join(site, 'dist');
@@ -60,15 +64,30 @@ test('complete documentation and homepage examples compile through the actual ru
       checked++;
     }
   }
-  assert.ok(checked >= 3);
+  for (const example of loadExamples()) {
+    const result = compileDiagram(parseDgm(example.source));
+    assert.equal(result.ok, true, `${example.id}: original Studio source compiles`);
+    // These are the app's existing examples, including any existing routing
+    // notes. The website must not rewrite their geometry to hide those notes.
+    checked++;
+  }
+  assert.ok(checked >= 5);
 });
 
 test('downloadable diagrams have embedded icons and matching source files', async () => {
-  for (const name of ['payments', 'events']) {
+  for (const file of (await readdir(join(site, 'src/examples'))).filter(file => file.endsWith('.dgm'))) {
+    const name = file.slice(0, -4);
     const svg = await readFile(join(dist, 'diagrams', `${name}.svg`), 'utf8');
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
     assert.equal(await readFile(join(dist, 'diagrams', `${name}.dgm`), 'utf8'), await readFile(join(site, 'src/examples', `${name}.dgm`), 'utf8'));
+  }
+  for (const example of loadExamples()) {
+    assert.equal(await readFile(join(dist, 'diagrams', `${example.id}.dgm`), 'utf8'), example.source);
+    assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-prompt.txt`), 'utf8'), example.prompt);
+    const svg = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
+    assert.match(svg, /data:image\/svg\+xml/);
+    assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
   }
 });
 
@@ -87,4 +106,34 @@ test('landing page stays small and loads no third-party scripts by default', asy
   }
   assert.ok(scriptBytes < 8_000, 'initial homepage JavaScript under 8 KB compressed');
   assert.ok((await stat(join(dist, 'pagefind/pagefind.js'))).size > 0);
+});
+
+test('terminal fallback contains the real CLI banner and runnable package commands', async () => {
+  const html = await readFile(join(dist, 'index.html'), 'utf8');
+  const cli = createCliUi({ color: false, columns: 80 });
+  const demo = JSON.parse(await readFile(join(site, '.astro/cli-demo.json'), 'utf8'));
+  const plain = stripVTControlCharacters(demo.output);
+  const banner = html.match(/<pre\b[^>]*class="terminal-banner"[^>]*>([\s\S]*?)<\/pre>/)?.[1];
+  assert.ok(banner);
+  assert.equal(banner.replace(/<[^>]+>/g, ''), cli.banner(), 'the full CLI banner survives ANSI rendering');
+  assert.ok(banner.includes('color:rgb(248,162,63)'), 'CLI amber starting color');
+  assert.ok(banner.includes('color:rgb(36,64,104)'), 'CLI navy ending color');
+  assert.ok(plain.includes(cli.summary('Project ready').trim()));
+  assert.ok(plain.indexOf('Creating diagram space') < plain.indexOf('Created my-system/diagrams/architecture.dgm'));
+  assert.ok(plain.indexOf('Created my-system/CATALOG.json') < plain.indexOf('Project ready'));
+  assert.equal(await readFile(join(dist, 'cli-transcript.txt'), 'utf8'), `$ ${demo.command}\n${plain}`);
+  assert.ok(html.includes('npm create dumb-diagrams@latest my-system'));
+  assert.match(
+    html,
+    /color:rgb\(248,162,63\)">npx create-dumb-diagrams@latest studio my-system\/diagrams<\/span>/,
+    'next command uses the high-contrast CLI command color',
+  );
+  assert.match(html, /<div\b[^>]*class="terminal-controls"[^>]*hidden/, 'controls stay hidden without JavaScript');
+  assert.doesNotMatch(html, /\x1b/);
+});
+
+test('ANSI conversion preserves CLI text while escaping markup', () => {
+  assert.equal(ansiToHtml('<script>"&'), '&lt;script&gt;&quot;&amp;');
+  assert.equal(ansiToHtml('\x1b[38;2;36;64;104mnavy\x1b[0m plain'), '<span style="color:rgb(36,64,104)">navy</span> plain');
+  assert.equal(ansiToHtml('\x1b[1mbold\x1b[22m normal'), '<span style="font-weight:700">bold</span> normal');
 });

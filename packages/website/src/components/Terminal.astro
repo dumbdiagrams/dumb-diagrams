@@ -1,0 +1,46 @@
+---
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { ansiToHtml } from '../lib/ansi.mjs';
+import WindowControls from './WindowControls.astro';
+import '../styles/terminal.css';
+// Workspace scripts run Astro from this package; import.meta.url moves when
+// Astro bundles its prerender chunks, so use the package working directory.
+const demo = JSON.parse(readFileSync(resolve('.astro/cli-demo.json'), 'utf8')) as { command: string; output: string };
+// Preserve the exact banner and every line printed by the CLI. Only playback
+// timing is illustrative; capture-cli.mjs normalizes the temporary home path.
+const lines = demo.output.trimEnd().split('\n');
+const banner = lines.slice(0, 13).join('\n');
+const rest = lines.slice(13);
+---
+<div class="terminal mac-window" data-terminal>
+  <div class="mac-titlebar"><WindowControls /><span class="mac-window-title">my-system / zsh</span><div class="terminal-controls" hidden><button data-terminal-pause aria-label="Pause terminal animation">Pause</button><button data-terminal-replay aria-label="Replay terminal animation">↻ Replay</button></div></div>
+  <div class="terminal-viewport" role="region" tabindex="0" aria-label="Recorded CLI output. Scroll to read the transcript." data-terminal-viewport>
+    <div class="terminal-log" aria-hidden="true">
+      <div class="terminal-command"><span class="shell-prompt">you@MacBook projects %</span> <code data-terminal-command>{demo.command}</code><b class="terminal-cursor"></b></div>
+      <pre class="terminal-banner" data-terminal-row data-at="1300" set:html={ansiToHtml(banner)} />
+      {rest.map((line, index) => <div class="terminal-row" data-terminal-row data-at={1700 + index * 100} set:html={ansiToHtml(line) || '&#8203;'} />)}
+    </div>
+  </div>
+  <div class="terminal-caption"><span>CAPTURED FROM THE CLI · EXAMPLE PATH</span></div>
+</div>
+<style>
+  .terminal { margin-top: 32px; }
+  .terminal-controls { display: flex; gap: 16px; margin-left: auto; z-index: 1; }
+  .terminal-controls button { border: 0; padding: 8px 0; background: transparent; color: #c9c9cd; font: 10px var(--mono); }
+  .terminal-controls button:hover { color: white; }
+  .terminal-viewport { height: 380px; overflow: auto; overscroll-behavior: contain; scrollbar-color: #56565a #0c0c0c; }
+  .terminal-log { padding: 24px 28px; font: 11px/1.7 var(--mono); color: #ececef; }
+  .terminal-command { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 9px; min-height: 20px; margin-bottom: 16px; }
+  .shell-prompt { color: #a9a9ae; }
+  .terminal-command code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .terminal-banner { font: 10px/1.1 var(--mono); white-space: pre; margin: 0; }
+  .terminal-row { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.7em; }
+  .terminal-cursor { display: inline-block; width: 6px; height: 12px; background: #e2e2e7; margin-left: -5px; }
+  .terminal-caption { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-top: 1px solid #252527; color: #a4a4ac; font: 8px var(--mono); letter-spacing: .035em; }
+  .terminal-caption a:hover { color: white; }
+  @media (max-width: 540px) { .terminal-log { padding: 20px 12px; font-size: 9px; } .terminal-banner { font-size: clamp(6px, 2vw, 10px); } .terminal-viewport { height: 330px; } .terminal-caption { padding: 12px; font-size: 6px; gap: 8px; } .terminal-controls { gap: 12px; } .terminal-controls button { font-size: 8px; } }
+</style>
+<script>
+  import '../scripts/motion';
+</script>

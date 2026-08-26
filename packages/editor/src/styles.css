@@ -1,8 +1,9 @@
+@import '@dumb-diagrams/brand/styles.css';
+
 /* ── Adaptive tokens ─────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
-    system-ui, sans-serif;
+  font-family: var(--font-brand);
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
 
@@ -15,15 +16,7 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 
-  /* DumbDiagrams brand palette sampled from the logo asset. */
-  --brand-navy: #244068;
-  --brand-navy-deep: #183452;
-  --brand-coral: #e66231;
-  --brand-coral-deep: #c94f2c;
-  --brand-coral-soft: #fbe4da;
-  --brand-orange: #f8a23f;
-  --brand-orange-deep: #a96816;
-  --brand-orange-soft: #fff0d5;
+  /* Brand palette and fonts come from @dumb-diagrams/brand. */
 
   --ink: var(--brand-navy);
   --muted: #5e6975;
@@ -5580,11 +5573,7 @@ textarea:focus-visible {
   object-position: center;
 }
 
-.studio-brand .brand-name {
-  font-size: 13px;
-  font-weight: 750;
-  letter-spacing: -0.025em;
-}
+.studio-brand { --wordmark-size: 20px; }
 
 .studio-tabbar-actions {
   padding-right: 10px;

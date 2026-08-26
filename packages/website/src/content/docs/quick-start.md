@@ -1,10 +1,12 @@
 ---
 title: Quick start
-description: Go from an empty folder to a diagram you can edit, validate, and keep in Git.
+description: Create a diagram project you can edit, validate, and keep in Git.
 section: Start here
 order: 1
 ---
 You need **Node.js 24 or newer**. Check your version with `node --version`. The commands below use npm, which comes with Node.js.
+
+The **agent workflow** also requires a separate coding agent, such as **Codex, Claude Code, Cursor, Antigravity**, or an **open-source alternative**. Configure its model access separately. Dumb Diagrams does not bundle an agent. Studio and the CLI work without one.
 
 ## Create a project
 
@@ -16,7 +18,7 @@ npm create dumb-diagrams@latest
 
 The initializer asks for a diagram space name, then creates a project folder. It adds a starter diagram, a catalog, examples, and instructions for coding agents. Follow the `Next:` command printed in your terminal to open the right folder in Studio.
 
-If you prefer a predictable folder name and no prompt:
+For a fixed folder name without a prompt:
 
 ```bash
 npm create dumb-diagrams@latest my-architecture -- --yes
@@ -30,7 +32,7 @@ Studio opens in your browser. The CLI process stays in the terminal and connects
 
 ## Know what was created
 
-The project is deliberately ordinary:
+The generated project uses ordinary files:
 
 ```text
 my-architecture/
@@ -44,6 +46,12 @@ my-architecture/
 ```
 
 Put new diagrams under `diagrams/`. Keep `examples/` as a reference rather than overwriting an example with your own system.
+
+## Create the first draft with an agent
+
+Open the generated project folder in your coding agent. Ask it to read `DUMB_DIAGRAMS.md` and `examples/README.md`, describe your architecture, and have it create a `.dgm` file under `diagrams/`. Ask it to validate the result, then open that file in Studio to review and refine it.
+
+[Work with an agent](../agent-workflow/) walks through the setup and includes a prompt you can adapt. If you are working manually, continue with the source editor in Studio.
 
 ## Make the first change
 
@@ -79,4 +87,4 @@ dgm validate diagrams
 
 `dumbdiagrams` and `dgm` are aliases for the same CLI. You do not need a global install to use the `npx` commands elsewhere in these docs.
 
-Next, [give an agent the first draft](../agent-workflow/) or [learn the source format](../source-format/).
+Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).

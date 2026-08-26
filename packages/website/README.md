@@ -69,3 +69,11 @@ Keep tracking code out of the diagram runtime and Studio packages. Use the integ
 Dependencies are pinned in this package and locked in the workspace. Astro 7.2.6 was the newest stable version satisfying the repository’s 24-hour minimum release age when this site was added. Keep that safety window intact during upgrades.
 
 Fonts are self-hosted through Fontsource. Diagrams use the project’s existing renderer and reviewed provider assets. No illustration generation, remote icon CDN, or client-side diagram compiler is needed.
+
+## Visual identity and motion
+
+See [the shared style guide](../../docs/STYLE_GUIDE.md). Both Studio and the website import the CSS-only `@dumb-diagrams/brand` package. The site uses `motion/mini` for one-time section entrances and a small frame-based playback controller for the terminal. Reduced-motion preferences show a static transcript; no animation is required to read content.
+
+`prepare:assets` compiles the runtime and CLI, then `scripts/capture-cli.mjs` runs the local CLI in a temporary directory. It captures the actual creation log with ANSI colors, normalizes the example home path, and removes the temporary project. No npm package is fetched, no Studio server is started, and no commands run in the visitor's browser. `src/lib/ansi.mjs` escapes text before rendering the CLI styles.
+
+The homepage imports the three selected examples from Studio's example list. Asset preparation reads the same canonical files in `examples/diagrams/` and `examples/prompts/`. Keep those sources intact: the website is a view of the app examples, not a separate set of lookalikes. Output controls enlarge the SVG without changing its geometry.

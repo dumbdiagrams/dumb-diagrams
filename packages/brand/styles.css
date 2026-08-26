@@ -1,0 +1,37 @@
+@import '@fontsource-variable/manrope/wght.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+
+/* Canonical identity. Surface-specific tokens belong in each consumer.
+   See docs/STYLE_GUIDE.md before changing this contract. */
+:root {
+  --font-brand: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+  --font-code: 'IBM Plex Mono', ui-monospace, monospace;
+  --brand-navy: #244068;
+  --brand-navy-deep: #183452;
+  --brand-navy-soft: #e7eef7;
+  --brand-coral: #e66231;
+  --brand-coral-deep: #c94f2c;
+  --brand-coral-soft: #fbe4da;
+  --brand-orange: #f8a23f;
+  --brand-orange-deep: #a96816;
+  --brand-orange-soft: #fff0d5;
+  --brand-paper: #f7f6f2;
+  --brand-wordmark-color: var(--brand-navy);
+}
+
+:root[data-theme='dark'] { --brand-wordmark-color: #edf2f8; }
+
+.dd-wordmark {
+  display: inline-block;
+  font-family: var(--font-brand);
+  font-size: var(--wordmark-size, 23px);
+  font-weight: 800;
+  font-style: normal;
+  font-synthesis: none;
+  line-height: 1.15;
+  letter-spacing: -.065em;
+  white-space: nowrap;
+  color: var(--brand-wordmark-color);
+}
+.dd-wordmark__light { font-weight: 450; }
+.dd-wordmark__dot { color: var(--brand-coral); }

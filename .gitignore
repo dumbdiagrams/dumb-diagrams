@@ -13,6 +13,7 @@ fixtures/golden/
 /packages/editor/public/catalog-icons/
 /packages/editor/public/catalog-manifest.json
 /packages/editor/public/.catalog-icons-*/
+/packages/editor/public/FONT-LICENSES.txt
 .astro/
 /packages/website/.env
 /packages/website/.env.local
@@ -22,3 +23,4 @@ fixtures/golden/
 /packages/website/public/LICENSE.txt
 /packages/website/public/ICON-NOTICES.txt
 /packages/website/public/FONT-LICENSES.txt
+/packages/website/public/cli-transcript.txt

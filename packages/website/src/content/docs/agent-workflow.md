@@ -1,18 +1,28 @@
 ---
 title: Work with an agent
-description: Give your coding agent the architecture and a few useful constraints. Let the engine handle the layout.
+description: Provide the architecture and constraints. Let the engine handle placement and routing.
 section: Start here
 order: 2
 ---
-An agent is useful here because it can turn an architecture conversation into a structured file. It does not need to move hundreds of shapes around a canvas.
+A coding agent can turn an architecture discussion into a structured file. It does not need to place hundreds of shapes on a canvas by hand.
 
-The initializer prepares the context: `DUMB_DIAGRAMS.md`, agent entry points, a catalog, and example diagrams paired with their original prompts. Use those files with your existing coding agent. Dumb Diagrams does not include a hosted model or automatically send it your project.
+The initializer creates the project context: `DUMB_DIAGRAMS.md`, agent entry points, a catalog, and example diagrams paired with their original prompts. Use those files with a coding agent you already have. Dumb Diagrams does not include a hosted model or send your project anywhere automatically.
+
+## Use a coding agent
+
+The agent workflow requires a separate coding agent, such as **Codex, Claude Code, Cursor, Antigravity**, or an **open-source alternative**. Choose a tool that can read project instructions, edit local `.dgm` files, and run the CLI validation command. These are examples, not built-in integrations.
+
+Open the generated project folder in the agent's working environment. Configure its account, model access, or local model there. Dumb Diagrams provides the diagram language, reference files, and Studio. It does not install an agent or provide model access.
+
+The agent's settings determine which files it can access and whether it sends them to a model provider. Review those settings before giving it a private project.
+
+You can also [write the source yourself](../source-format/) or [edit in Studio](../studio/).
 
 ## Start with the project instructions
 
-Ask the agent to read `DUMB_DIAGRAMS.md` and `examples/README.md`, then choose the closest example and prompt. The catalog is the reference for exact service types. A familiar service name is not always the type identifier the engine expects.
+Have the agent read `DUMB_DIAGRAMS.md` and `examples/README.md`, then choose the closest example and prompt. The catalog is the reference for service types. A familiar service name is not always the identifier the engine expects.
 
-Here is a useful first request:
+For example:
 
 ```text
 Read DUMB_DIAGRAMS.md and the closest example.
@@ -28,7 +38,7 @@ Use automatic layout. Validate the result when you are done.
 
 ## Describe meaning before placement
 
-A good prompt tells the agent what the diagram must communicate:
+Describe what the diagram needs to communicate:
 
 - The title and provider context.
 - The services and boundaries that actually exist.
@@ -36,7 +46,7 @@ A good prompt tells the agent what the diagram must communicate:
 - Supporting relationships that should be visually quieter.
 - Any labels that must appear exactly as written.
 
-You usually do not need coordinates. Let the engine create an initial layout, then make visual decisions in Studio once you can see the result.
+Coordinates are usually unnecessary. Let the engine create an initial layout, then make visual decisions in Studio once you can see the result.
 
 ## Refine an existing diagram
 
@@ -51,10 +61,10 @@ Validate diagrams/ after the edit.
 
 The source and visual overrides share one file. An agent that rewrites the entire document carelessly can discard your manual work, so preservation should be part of the request.
 
-## Review the result together
+## Review the result
 
-Validation catches structural mistakes, but it cannot tell whether the system matches reality. Check the boundaries, service choices, and direction of each connection yourself.
+Validation finds structural mistakes, but it cannot tell whether the diagram matches the real system. Check the boundaries, service choices, and direction of each connection yourself.
 
 Open the file in Studio, look for routing warnings, and refine a dense connection if needed. Then commit the diagram with the implementation or proposal it explains.
 
-For repeatable automation, pin the CLI version you have tested instead of resolving `@latest` on every run.
+For automation, pin the CLI version you have tested instead of resolving `@latest` on every run.

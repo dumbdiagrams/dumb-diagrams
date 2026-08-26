@@ -297,6 +297,7 @@ measurements.
 │   ├── runtime/                Model, DSL, catalog, layout, routing, rendering
 │   ├── editor/                 React Studio and browser export surface
 │   ├── cli/                    Published command and local Studio server
+│   ├── brand/                  Shared fonts, palette, and wordmark (see STYLE_GUIDE.md)
 │   └── website/                Static Astro website and public documentation
 ├── scripts/                    Build, catalog, package, policy, and release tools
 ├── playwright.config.ts        Static browser test configuration
@@ -782,3 +783,7 @@ source is included in the corresponding-source snapshot to keep the workspace
 complete. Self-hosted fonts and static HTML keep the initial browser work small.
 Partytown is installed but opt-in; no analytics code is enabled. Hosting and
 base-path configuration are documented in `packages/website/README.md`.
+
+### Shared visual identity
+
+Studio and the website import `@dumb-diagrams/brand/styles.css` for the Manrope and IBM Plex Mono fonts, logo palette, and official `dumbdiagrams.` wordmark. App layout and component styles remain local. The exact typography, color roles, existing component inventory, and motion/accessibility conventions are documented in [STYLE_GUIDE.md](./STYLE_GUIDE.md). Diagram label typography remains an independent renderer concern.

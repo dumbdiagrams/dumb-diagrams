@@ -23,6 +23,11 @@ describe("CLI presentation", () => {
     expect(ui.brand()).toContain("\u001B[38;2;230;98;49m");
   });
 
+  it("uses a high-contrast amber for commands", () => {
+    expect(createCliUi({ color: true }).command("npx create-dumb-diagrams@latest studio diagrams"))
+      .toBe("\u001B[38;2;248;162;63mnpx create-dumb-diagrams@latest studio diagrams\u001B[0m");
+  });
+
   it("uses consistent status glyphs and indentation", () => {
     const ui = createCliUi({ color: false });
     expect(ui.success("Created architecture.dgm")).toBe("  ◆ Created architecture.dgm");

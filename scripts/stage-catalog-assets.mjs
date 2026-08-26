@@ -19,6 +19,7 @@ const manifestPath = join(ROOT, "packages/runtime/src/catalog/generated/manifest
 const publicRoot = join(ROOT, "packages/editor/public");
 const assetRoot = join(publicRoot, "catalog-icons");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+cpSync(join(ROOT, "packages/brand/FONT-LICENSES.txt"), join(publicRoot, "FONT-LICENSES.txt"));
 
 // Build outside the served directory, then swap the complete tree into place.
 // This keeps a running Vite server from observing a half-populated catalog and

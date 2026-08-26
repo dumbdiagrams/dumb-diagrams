@@ -5,7 +5,7 @@
   "type": "module",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "prepare:assets": "pnpm --filter @dumb-diagrams/runtime build && node scripts/prepare-assets.mjs",
+    "prepare:assets": "pnpm --filter @dumb-diagrams/runtime build && pnpm --filter create-dumb-diagrams build && node scripts/capture-cli.mjs && node scripts/prepare-assets.mjs",
     "predev": "pnpm prepare:assets",
     "dev": "astro dev --host 127.0.0.1",
     "prebuild": "pnpm prepare:assets",
@@ -15,11 +15,11 @@
     "test": "node --test scripts/site.test.mjs"
   },
   "dependencies": {
+    "@dumb-diagrams/brand": "workspace:*",
     "@astrojs/partytown": "2.1.7",
     "@astrojs/sitemap": "3.7.3",
-    "@fontsource-variable/manrope": "5.3.0",
-    "@fontsource/ibm-plex-mono": "5.3.0",
-    "astro": "7.2.6"
+    "astro": "7.2.6",
+    "motion": "13.1.1"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
