@@ -19,8 +19,8 @@ const examples = exampleIds.map(id => {
   return { ...example, previewWidth: Number(dimensions[1]), previewHeight: Number(dimensions[2]) };
 });
 ---
-<section class="examples section" id="how-it-works" aria-labelledby="examples-title">
-  <div class="section-heading examples-heading" data-reveal><div><span class="eyebrow">01 / FROM SOURCE TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">Review the result.</span></h2></div><p>Start with a prompt, let the agent write the .dgm source, then compare the result with the examples in Studio.</p></div>
+<section class="examples section" aria-labelledby="examples-title">
+  <div class="section-heading examples-heading" id="how-it-works"><div><span class="eyebrow">01 / FROM SOURCE TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">Review the result.</span></h2></div><p>Start with a prompt, let the agent write the .dgm source, then compare the result with the examples in Studio.</p></div>
   <div class="example-tabs" role="tablist" aria-label="Example diagram" data-tabs>
     {examples.map((example, index) => <button id={`tab-${example.id}`} type="button" role="tab" aria-selected={index === 0 ? 'true' : 'false'} aria-controls={`example-${example.id}`} tabindex={index === 0 ? 0 : -1}><span class="mono">0{index + 1}</span>{example.title}</button>)}
   </div>
@@ -53,5 +53,5 @@ const examples = exampleIds.map(id => {
     </div>
   </div>)}
   </div>
-  <div class="examples-footnote"><span>These prompts and diagrams are references. Different agents may produce different drafts.</span><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a></div>
+  <div class="examples-footnote"><span>Generated with GPT 5.6 Luna (max). In our testing, agents in the same capability class tended to produce the same or nearly the same output from these prompts. Tested with Composer 2.5, GPT 5.6 Luna (high &amp; max), and Claude Sonnet 5. Results can still vary.</span><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a></div>
 </section>

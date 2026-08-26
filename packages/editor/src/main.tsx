@@ -16,7 +16,6 @@ import type {
   TextFontFamily,
 } from "@dumb-diagrams/runtime/core";
 import {
-  createAsyncDocsFixture,
   createEmptyDocument,
   characterLength,
   DIAGRAM_LIMITS,
@@ -153,11 +152,12 @@ import {
   snapLayoutToGrid,
   snapPoint,
 } from "./grid.js";
+import asyncDocsSource from "../../../examples/diagrams/async-docs.dgm?raw";
 import "./styles.css";
 
 initTheme();
 
-const DEFAULT_SOURCE = printDgm(createAsyncDocsFixture());
+const DEFAULT_SOURCE = asyncDocsSource;
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
@@ -224,6 +224,14 @@ type CatalogPlacement = {
   at: Point;
   manual: boolean;
 };
+
+function canvasInteractionTool(tool: Tool): Tool {
+  // These drawers are non-modal: browsing them should not turn off normal
+  // selection, movement, and canvas gestures behind the drawer.
+  return tool === "groups" || tool === "resources" || tool === "code" || tool === "layers"
+    ? "select"
+    : tool;
+}
 
 function waitForPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -297,6 +305,7 @@ function App() {
     blankSource: BLANK_SOURCE,
   });
   const [tool, setTool] = useState<Tool>("select");
+  const interactionTool = canvasInteractionTool(tool);
   const [selection, setSelection] = useState<Selection>([]);
   const [textEditRequest, setTextEditRequest] = useState<SelectionItem | null>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
@@ -348,6 +357,7 @@ function App() {
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState("");
   const [closeRequest, setCloseRequest] = useState<string | null>(null);
+  const [resetExampleOpen, setResetExampleOpen] = useState(false);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
   const closeAnimationTimerRef = useRef<number | null>(null);
   const pendingClosePreviewsRef = useRef<WorkspacePreviewMap>({});
@@ -683,6 +693,27 @@ function App() {
     setTool("select");
   };
 
+  const resetExample = () => {
+    if (activeTab.origin !== "example") {
+      setResetExampleOpen(false);
+      return;
+    }
+    if (sourceCommitTimerRef.current !== null) {
+      window.clearTimeout(sourceCommitTimerRef.current);
+      sourceCommitTimerRef.current = null;
+    }
+    resetActive(activeTab.initialSource, activeTab.initialSource, {
+      initialSource: activeTab.initialSource,
+      origin: "example",
+      filename: activeTab.filename,
+    });
+    clearDraft();
+    resetTransientState();
+    setDefaultFrameKey((current) => current + 1);
+    setResetExampleOpen(false);
+    setToast("Example reset");
+  };
+
   const tabLimitMessage = `You can have up to ${MAX_WORKSPACE_TABS} open diagrams. Close a tab to create another.`;
 
   const renderTabPreview = useCallback((tab: WorkspaceTab): string | undefined => {
@@ -932,6 +963,7 @@ function App() {
     setOpeningExampleId(example.id);
     startExampleOpening(() => {
       if (!openTab(example.source, {
+        initialSource: example.source,
         filename: `${example.id}.dgm`,
         origin: "example",
       })) {
@@ -1679,7 +1711,7 @@ function App() {
                 key={activeTabId}
                 doc={compiled.doc}
                 layout={compiled.layout}
-                tool={tool}
+                tool={interactionTool}
                 zoom={viewport.zoom}
                 snapToGrid={snapToGrid}
                 selection={selection}
@@ -2157,13 +2189,7 @@ function App() {
                     setToast("Cannot format invalid source");
                   }
                 }}
-                onReset={() => {
-                  resetActive(DEFAULT_SOURCE, DEFAULT_SOURCE, { origin: "fixture", filename: undefined });
-                  clearDraft();
-                  resetTransientState();
-                  setDefaultFrameKey((current) => current + 1);
-                  setToast("Draft cleared");
-                }}
+                onReset={activeTab.origin === "example" ? () => setResetExampleOpen(true) : undefined}
               />
             </Suspense>
           </FloatingPanel>
@@ -2515,6 +2541,27 @@ function App() {
               <button type="button" className="text-button" onClick={() => setBulkCloseRequest(null)}>Cancel</button>
               <button type="button" className="danger-button" onClick={() => void confirmBulkClose()}>
                 {bulkCloseRequest?.dirtyCount ? "Discard and close" : "Close tabs"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal
+          open={resetExampleOpen}
+          title="Reset example?"
+          subtitle="Restore the original example diagram"
+          onClose={() => setResetExampleOpen(false)}
+          className="confirm-dialog"
+          width={440}
+        >
+          <div className="confirm-modal">
+            <p>Your current source will be replaced with the original example from the repository. Any unsaved edits will be discarded.</p>
+            <div className="modal-actions modal-actions-spread">
+              <button type="button" className="text-button" onClick={() => setResetExampleOpen(false)}>
+                Cancel
+              </button>
+              <button type="button" className="danger-button" data-autofocus onClick={resetExample}>
+                Reset example
               </button>
             </div>
           </div>

@@ -62,7 +62,7 @@ export function SourceDrawer({
   issues: Array<{ message: string }>;
   onChange: (source: string) => void;
   onCommit: () => void;
-  onReset: () => void;
+  onReset?: () => void;
   onFormat: () => void;
 }) {
   const resolvedTheme = useResolvedTheme();
@@ -74,7 +74,7 @@ export function SourceDrawer({
         <button type="button" onClick={() => navigator.clipboard.writeText(source)}>
           Copy
         </button>
-        <button type="button" onClick={onReset}>Reset example</button>
+        {onReset && <button type="button" onClick={onReset}>Reset example</button>}
       </div>
       {issues.length > 0 && (
         <div className="issues" role="status">

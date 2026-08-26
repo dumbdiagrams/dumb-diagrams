@@ -1,6 +1,6 @@
 ---
 title: Welcome to Dumb Diagrams
-description: A plain-text language for architecture diagrams, a deterministic engine, and a local editor.
+description: LLM-first architecture diagrams as code, with readable .dgm files, deterministic layout, and a local visual editor.
 section: Start here
 order: 0
 ---
@@ -12,7 +12,7 @@ Dumb Diagrams gives you a readable `.dgm` file to describe the system. The engin
 
 If you want to use a coding agent, set it up separately. Codex, Claude Code, Cursor, Antigravity, and open-source alternatives can all work with the project. [Work with an agent](./agent-workflow/) explains how to provide the project context.
 
-## The file comes first
+## Diagrams as code: the file comes first
 
 A diagram is a normal text file. It describes resources, the groups they belong to, and the connections between them. When you make a visual adjustment in Studio, that decision can be saved in the same file.
 

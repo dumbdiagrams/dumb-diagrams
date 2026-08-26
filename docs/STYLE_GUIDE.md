@@ -120,9 +120,8 @@ Escape path. Don't communicate errors or selection through color alone.
 
 ## Motion
 
-The website uses the small `motion/mini` entry point from
-[Motion](https://motion.dev/docs/animate), backed by browser animations. Studio
-does not import it. The terminal replays a real CLI project-creation run captured
+The website uses the native Web Animations API for section entrances, with no
+animation-library download. The terminal replays a real CLI project-creation run captured
 at build time in a temporary directory. The capture uses 80 columns and truecolor,
 and converts the CLI's ANSI styling into escaped HTML. Preserve its orange-to-navy
 gradient and full stacked banner; scale the characters on narrow screens rather
@@ -134,13 +133,14 @@ files, and next command in order. It runs once for about six seconds with
 pause/resume and replay. Output scrolls inside the terminal, never the page;
 scrolling or touching the terminal pauses playback so the reader stays in control.
 It also pauses while the page is hidden. Section entrances run once, move at most
-8px, and last 700ms. Hero elements can stagger by up to 160ms. Use the shared
+8px, and last 700ms. Keep the hero visible immediately without entrance animation. Use the shared
 `cubic-bezier(.22, 1, .36, 1)` easing. Small hover color changes use 180ms transitions.
 
 The website's `src/styles/motion.css` defines the motion tokens and `trace-border`
-treatment: one 1px orange/amber/navy sweep along an existing border over 2200ms.
+treatment: one 1px orange/amber/navy accent along an existing border over 2200ms.
+Animate only its opacity, not background position, to avoid continuous repaints.
 Use it on the install panel and primary header/closing actions. `data-trace`
-adds one entrance sweep; hover or keyboard focus can replay it. The border is
+adds one entrance accent; hover or keyboard focus can replay it. The border is
 decorative and cannot intercept clicks. Keep arrows stationary; avoid translating
 buttons, rotating glows, or continuously animated frames. Reduced motion removes
 the sweep completely and preserves the ordinary border and keyboard focus ring.

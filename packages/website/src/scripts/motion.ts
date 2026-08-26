@@ -1,5 +1,3 @@
-import { animate } from 'motion/mini';
-
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 document.querySelectorAll<HTMLDetailsElement>('.faq-list details').forEach(details => {
@@ -98,7 +96,8 @@ if (terminal) {
     if (!running || userPaused || document.hidden) return;
     if (previousTime !== null) elapsed += time - previousTime;
     previousTime = time;
-    command.textContent = fullCommand.slice(0, Math.floor(Math.min(1, elapsed / 1100) * fullCommand.length));
+    const nextCommand = fullCommand.slice(0, Math.floor(Math.min(1, elapsed / 1100) * fullCommand.length));
+    if (command.textContent !== nextCommand) command.textContent = nextCommand;
     let revealed = false;
     rows.forEach(row => {
       if (row.hidden && elapsed >= Number(row.dataset.at)) {
@@ -155,19 +154,19 @@ if (terminal) {
 
 // Content is visible without JS. Entrances and border accents run once in view;
 // hover/focus can replay a border sweep, but nothing loops while the page idles.
-const entrances = new Set<ReturnType<typeof animate>>();
+const entrances = new Set<Animation>();
 if ('IntersectionObserver' in window) {
-  const duration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-reveal')) / 1000 || .7;
+  const duration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-reveal')) || 700;
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       observer.unobserve(entry.target);
-      if (reduced.matches) return;
-      const animation = animate(entry.target as HTMLElement,
+      if (reduced.matches || typeof (entry.target as HTMLElement).animate !== 'function') return;
+      const animation = (entry.target as HTMLElement).animate(
         { opacity: [.8, 1], transform: ['translateY(8px)', 'translateY(0px)'] },
-        { duration, ease: [.22, 1, .36, 1], delay: Number((entry.target as HTMLElement).dataset.revealDelay || 0) / 1000 });
+        { duration, easing: 'cubic-bezier(.22, 1, .36, 1)', delay: Number((entry.target as HTMLElement).dataset.revealDelay || 0) });
       entrances.add(animation);
-      animation.then(() => entrances.delete(animation));
+      animation.onfinish = () => entrances.delete(animation);
     });
   }, { threshold: .12 });
   document.querySelectorAll('[data-reveal]').forEach(element => observer.observe(element));
@@ -186,7 +185,7 @@ if ('IntersectionObserver' in window) {
   });
   reduced.addEventListener('change', () => {
     if (reduced.matches) {
-      entrances.forEach(animation => animation.complete());
+      entrances.forEach(animation => animation.finish());
       document.querySelectorAll('[data-tracing]').forEach(element => element.removeAttribute('data-tracing'));
     }
   });

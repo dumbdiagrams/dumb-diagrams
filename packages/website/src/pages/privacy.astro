@@ -1,0 +1,49 @@
+---
+import Base from '../layouts/Base.astro';
+import { analyticsConfig } from '../lib/analytics-config.mjs';
+import { privacyConfig } from '../lib/privacy-config.mjs';
+import '../styles/docs.css';
+const privacy = privacyConfig();
+const { measurementId } = analyticsConfig();
+const enabled = Boolean(import.meta.env.PROD && measurementId);
+---
+<Base title="Privacy & cookies" description="How Dumb Diagrams handles website analytics, cookie choices, local diagram files, and privacy requests." noindex={!privacy.ready}>
+  <main id="main" class="privacy-page">
+    <header class="doc-header"><span class="eyebrow">YOUR DATA, YOUR CHOICE</span><h1>Privacy &amp; cookies.</h1><p>A local-first tool. Optional website analytics. Controls you can come back to.</p></header>
+    <article class="prose">
+      {!privacy.ready && <aside class="privacy-draft"><strong>Pre-launch notice.</strong> The site operator, privacy contact, and analytics retention period still need to be supplied. Analytics cannot be enabled until those details are configured. This notice also needs a final review against the production hosting and Google Analytics settings.</aside>}
+      <h2>Who is responsible?</h2>
+      {privacy.operator ? <p>The operator responsible for this website is <strong>{privacy.operator}</strong>.{privacy.email && <> For privacy questions or requests, email <a href={`mailto:${privacy.email}`}>{privacy.email}</a>.</>}</p> : <p>The operator’s identity and privacy contact will be published here before launch.</p>}
+      <h2 id="cookie-settings">Your cookie settings</h2>
+      <p>{enabled ? 'Google Analytics is available on this website, but stays off until you accept analytics cookies.' : 'Google Analytics is not enabled on this version of the website. No optional analytics cookies are set.'}</p>
+      {enabled && <div class="privacy-controls"><a href="#cookie-settings" data-analytics-settings>Change cookie settings</a><button type="button" data-analytics-revoke hidden>Revoke analytics consent</button><p role="status" data-analytics-status></p></div>}
+      <p>You can reject optional cookies and keep using the site. Accepting is optional, and you can withdraw just as easily using the footer’s <strong>Revoke analytics consent</strong> control. Withdrawal stops future collection and removes this site’s analytics cookies; it does not automatically delete data already sent to Google. Contact the operator about a deletion request.</p>
+      <noscript><p>JavaScript is disabled, so this website’s analytics does not run. You can remove previously stored cookies through your browser’s site-data settings.</p></noscript>
+      <h2>What is stored in your browser?</h2>
+      <table><thead><tr><th>Storage</th><th>Purpose</th><th>Duration</th></tr></thead><tbody>
+        <tr><td><code>dumb-diagrams:analytics-consent:v1</code><br />Local storage, not a cookie</td><td>Remembers your acceptance or rejection so we can respect it. It is not sent to Google.</td><td>Honoured for 180 days, then we ask again. The browser record remains until replaced or cleared.</td></tr>
+        <tr><td><code>_ga</code> and <code>_ga_…</code><br />Only after acceptance</td><td>Google Analytics identifiers used to understand visits and sessions.</td><td>Configured to expire after 180 days without renewal. Your browser may shorten this.</td></tr>
+      </tbody></table>
+      <h2>Optional Google Analytics</h2>
+      <p>With your consent, we use Google Analytics to understand which pages people visit and improve the website. This can include page URLs and titles, referring websites, visit times, browser and device information, interactions supported by the configured Google tag, and cookie identifiers. Requests also expose network information to Google. Do not put personal or confidential information in page URLs.</p>
+      <p>No Google tag, analytics request, or cookieless analytics ping is sent before acceptance. Advertising storage, advertising personalisation, and Google signals are disabled in our integration. Partytown runs the tag in a worker for performance; it does not anonymise the data or remove the need for consent.</p>
+      <p>{privacy.retentionMonths ? <>The operator’s declared GA4 event-level retention period is <strong>{privacy.retentionMonths} months</strong>. The GA4 property must be configured to match; this website cannot change that setting.</> : 'The operator must publish the configured GA4 event-level retention period before enabling analytics.'} Aggregated reports may have different retention. See <a href="https://policies.google.com/privacy">Google’s privacy policy</a> and <a href="https://support.google.com/analytics/answer/7667196">Google Analytics retention information</a>.</p>
+      <h2>Hosting and other services</h2>
+      <p>The planned production host is Cloudflare Pages. Delivering and securing the website involves processing request information such as IP addresses, URLs, and browser headers. Optional analytics consent does not control the network processing needed to serve a page. The operator must confirm the production logging, retention, and applicable legal basis before launch. See <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare’s privacy policy</a>.</p>
+      <p>Google and the hosting provider may process data outside your country, including outside the European Economic Area. Applicable transfer safeguards depend on the operator’s agreements and the providers’ arrangements; contact the operator for details. Following an external link opens a service with its own privacy practices.</p>
+      <h2>Your diagrams stay separate</h2>
+      <p>This website does not upload your diagram files, prompts, or source code to Google Analytics. The local CLI and Studio workflow is separate from website analytics. If you choose a coding agent, its handling of the context you provide is governed by that agent’s settings and terms.</p>
+      <h2>Your rights and requests</h2>
+      <p>Depending on applicable law, you may have rights to access, correct, erase, or obtain a copy of personal data, restrict processing, or object to certain processing. You may withdraw analytics consent at any time and lodge a complaint with a data-protection authority. Contact the operator using the details above; some requests depend on whether the relevant data can be identified.</p>
+      <p>Last updated: 26 August 2026.</p>
+    </article>
+  </main>
+</Base>
+<style>
+  .privacy-page { max-width: 820px; margin: 64px auto 90px; }
+  .privacy-draft { padding: 20px; margin-bottom: 28px; border-left: 3px solid var(--orange); background: var(--brand-navy-soft); }
+  .privacy-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-bottom: 24px; }
+  .privacy-controls button { border: 1px solid var(--ink); background: transparent; padding: 10px 14px; font-size: 12px; }
+  .privacy-controls p { width: 100%; margin: 0; font-size: 12px; }
+  @media (max-width: 540px) { .privacy-page { margin-top: 36px; } .doc-header h1 { font-size: 38px; } }
+</style>

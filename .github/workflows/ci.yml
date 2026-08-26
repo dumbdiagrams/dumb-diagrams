@@ -31,12 +31,15 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Check website, links, documentation examples, and payload budget
         run: pnpm check:website
-      - name: Check static subdirectory deployment with Partytown enabled
+      - name: Check static subdirectory deployment with consent-gated GA4 and Partytown
         run: pnpm build:website && pnpm --filter @dumb-diagrams/website test
         env:
           SITE_URL: https://website.test
           BASE_PATH: /diagrams/
-          ENABLE_PARTYTOWN: "true"
+          PUBLIC_GA_MEASUREMENT_ID: G-TEST12345
+          PUBLIC_SITE_OPERATOR: Website test operator
+          PUBLIC_PRIVACY_EMAIL: privacy@example.test
+          PUBLIC_ANALYTICS_RETENTION_MONTHS: "2"
 
   verify:
     runs-on: ubuntu-latest

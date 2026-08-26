@@ -50,8 +50,10 @@ styling.
 
 ## The components behind the interface
 
-Studio uses **React 19 and custom components**, with CodeMirror 6 for the source
-editor. Its menus, modals, floating panels, tool dock, theme control, and SVG
+Studio uses **React 19 and custom components**. **CodeMirror 6 is the embedded
+code editor**, not a UI component library: it powers the `.dgm` source drawer,
+including line numbers, bracket matching, selection, and editing shortcuts.
+The menus, modals, floating panels, tool dock, theme control, and SVG
 icons live in `packages/editor/src/ui/`. We do not use shadcn/ui, Radix, or
 Tailwind.
 
@@ -65,8 +67,8 @@ and font licenses. The apps keep their own layout and interaction styles.
 
 ## Motion and accessibility
 
-The landing page uses Motion's lightweight animation entry point for gentle section
-entrances. Key actions share a fine border sweep on arrival, hover, or keyboard
+The landing page uses the browser's native animation API for gentle section
+entrances; the hero is visible immediately. Key actions share a fine border accent on arrival, hover, or keyboard
 focus. These accents run once; the arrows and button positions stay still.
 Reduced motion turns the sweeps and entrances off.
 

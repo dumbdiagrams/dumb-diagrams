@@ -2347,23 +2347,54 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
   min-height: 0;
   padding: 0 12px 12px;
 }
 
+.source-drawer {
+  flex: 1 1 0;
+  min-width: 0;
+  height: auto;
+  overflow: hidden;
+}
+
+.layers-panel {
+  height: 100%;
+}
+
 .code-actions {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
+  min-height: 0;
   padding: 0 12px;
 }
 
 .source-editor-shell {
-  flex: 1;
+  display: flex;
+  flex: 1 1 0;
   min-height: 0;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+.source-drawer .cm-editor {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.source-drawer .cm-scroller {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .asset-browser {
@@ -6837,5 +6868,25 @@ textarea:focus-visible {
 
   .export-dialog-footer .modal-actions {
     justify-content: flex-end;
+  }
+}
+
+/* Left drawers align directly with the bottom edge of the two-row studio
+ * chrome, matching the right-side panels. They remain non-modal, so the
+ * canvas stays interactive wherever the drawer is not covering it. */
+.tool-dock,
+.floating-panel.drawer-sheet:not(.edge-sheet),
+.note-composer-sheet {
+  top: 96px;
+}
+
+.floating-panel.drawer-sheet:not(.edge-sheet) {
+  height: calc(100% - 96px);
+}
+
+@media (max-width: 900px) {
+  .tool-dock {
+    top: auto;
+    bottom: 52px;
   }
 }

@@ -1,10 +1,12 @@
 ---
 import { url, npmUrl, repository } from '../lib/site';
+import { Image } from 'astro:assets';
+import logo from '../../../editor/public/logo_dumbdiagrams.png';
 const { docs = false } = Astro.props;
 ---
 <header class="site-header">
   <a class="brand" href={url()} aria-label="Dumb Diagrams home">
-    <img src={url('logo.png')} width="45" height="32" alt="" />
+    <Image src={logo} width={52} widths={[52, 104]} sizes="52px" format="webp" alt="" loading="eager" />
     <span class="dd-wordmark">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span>
   </a>
   <nav class="desktop-nav" aria-label="Main navigation">

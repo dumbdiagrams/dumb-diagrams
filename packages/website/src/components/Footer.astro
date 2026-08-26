@@ -4,12 +4,17 @@ import { url, npmUrl } from '../lib/site';
 <footer class="site-footer">
   <div class="footer-top">
     <a class="brand" href={url()} aria-label="Dumb Diagrams home"><span class="dd-wordmark">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span></a>
-    <p>Architecture diagrams that stay close to the source.</p>
+    <p class="footer-motto"><strong>A little opinionated.</strong><br /><strong>A lot clearer.</strong></p>
     <a href={url('docs/')}>Read the docs <span aria-hidden="true">↗</span></a>
   </div>
   <div class="footer-bottom">
     <span>© {new Date().getFullYear()} Dumb Diagrams contributors</span>
     <div><a href={url('LICENSE.txt')}>AGPL-3.0</a><a href={url('ICON-NOTICES.txt')}>Icon credits</a><a href={url('FONT-LICENSES.txt')}>Font credits</a><a href={npmUrl}>npm ↗</a></div>
     <span class="local-note"><span></span> Local files. Yours to keep.</span>
+  </div>
+  <div class="footer-privacy">
+    <span class="footer-privacy-label">PRIVACY</span>
+    <nav aria-label="Privacy controls"><a href={url('privacy/')}>Privacy &amp; cookies</a><a class="footer-cookie-settings" href={url('privacy/#cookie-settings')} data-analytics-settings>Cookie preferences</a><button class="footer-cookie-revoke" type="button" data-analytics-revoke hidden>Revoke analytics consent</button></nav>
+    <span class="footer-consent-status" role="status" data-analytics-status>Optional analytics are not enabled.</span>
   </div>
 </footer>

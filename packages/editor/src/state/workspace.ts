@@ -19,6 +19,8 @@ export type DocumentOrigin =
 export interface WorkspaceTab {
   id: string;
   source: string;
+  /** The source used when this tab was first opened, kept for example resets. */
+  initialSource: string;
   savedSource: string;
   filename?: string;
   /** A bounded render snapshot used only while the tab is in the recycle bin. */
@@ -80,6 +82,7 @@ export function normalizeWorkspacePreview(value: unknown): string | undefined {
 export function createWorkspaceTab(
   source: string,
   options: {
+    initialSource?: string;
     savedSource?: string;
     filename?: string;
     origin?: DocumentOrigin;
@@ -91,6 +94,7 @@ export function createWorkspaceTab(
   return {
     id: options.id ?? createTabId(),
     source,
+    initialSource: options.initialSource ?? source,
     savedSource: options.savedSource ?? source,
     filename: options.filename,
     origin: options.origin ?? "new",
@@ -167,6 +171,7 @@ export function restoreWorkspaceTab(
 
 export function createWorkspaceState(options: WorkspaceOptions): WorkspaceState {
   const tab = createWorkspaceTab(options.initialSource, {
+    initialSource: options.initialSource,
     savedSource: options.initialSavedSource ?? options.initialSource,
     filename: options.initialFilename,
     origin: options.initialOrigin ?? "fixture",
@@ -366,14 +371,17 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const resetTab = useCallback(
-    (tabId: string, source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin">> = {}) => {
-      if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes || utf8ByteLength(savedSource) > DIAGRAM_LIMITS.sourceBytes) return;
+    (tabId: string, source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin" | "initialSource">> = {}) => {
+      const initialSource = metadata.initialSource ?? source;
+      if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
+          utf8ByteLength(savedSource) > DIAGRAM_LIMITS.sourceBytes ||
+          utf8ByteLength(initialSource) > DIAGRAM_LIMITS.sourceBytes) return;
       if (!workspaceRef.current.tabs.some((tab) => tab.id === tabId)) return;
       historiesRef.current.set(tabId, createHistory());
       updateWorkspace((current) => ({
         ...current,
         tabs: current.tabs.map((tab) => tab.id === tabId
-          ? { ...tab, source, savedSource, ...metadata }
+          ? { ...tab, source, initialSource, savedSource, ...metadata }
           : tab),
       }));
       touchHistory();
@@ -382,7 +390,7 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const resetActive = useCallback(
-    (source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin">> = {}) => {
+    (source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin" | "initialSource">> = {}) => {
       resetTab(workspaceRef.current.activeTabId, source, savedSource, metadata);
     },
     [resetTab],
@@ -465,11 +473,13 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const openTab = useCallback(
-    (source: string, tabOptions: Partial<Pick<WorkspaceTab, "savedSource" | "filename" | "origin" | "viewport">> = {}) => {
+    (source: string, tabOptions: Partial<Pick<WorkspaceTab, "initialSource" | "savedSource" | "filename" | "origin" | "viewport">> = {}) => {
       if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
+          (tabOptions.initialSource !== undefined && utf8ByteLength(tabOptions.initialSource) > DIAGRAM_LIMITS.sourceBytes) ||
           (tabOptions.savedSource !== undefined && utf8ByteLength(tabOptions.savedSource) > DIAGRAM_LIMITS.sourceBytes)) return null;
       if (workspaceRef.current.tabs.length >= MAX_WORKSPACE_TABS) return null;
       const tab = createWorkspaceTab(source, {
+        initialSource: tabOptions.initialSource ?? source,
         savedSource: tabOptions.savedSource ?? source,
         filename: tabOptions.filename,
         origin: tabOptions.origin ?? "new",
@@ -705,7 +715,13 @@ function normalizeTab(input: unknown): WorkspaceTab | null {
   const tab = input as Partial<WorkspaceTab>;
   if (typeof tab.id !== "string" || !tab.id || characterLength(tab.id) > DIAGRAM_LIMITS.idCharacters || typeof tab.source !== "string") return null;
   if (utf8ByteLength(tab.source) > DIAGRAM_LIMITS.sourceBytes) return null;
+  if (typeof tab.initialSource === "string" && utf8ByteLength(tab.initialSource) > DIAGRAM_LIMITS.sourceBytes) return null;
   if (typeof tab.savedSource === "string" && utf8ByteLength(tab.savedSource) > DIAGRAM_LIMITS.sourceBytes) return null;
+  const savedSource = typeof tab.savedSource === "string" ? tab.savedSource : tab.source;
+  const origin = isDocumentOrigin(tab.origin) ? tab.origin : "new";
+  const initialSource = typeof tab.initialSource === "string"
+    ? tab.initialSource
+    : origin === "example" ? savedSource : tab.source;
   const previewSvg = normalizeWorkspacePreview(tab.previewSvg);
   const viewport = tab.viewport;
   if (!viewport || !finiteCoordinate(viewport.panX) || !finiteCoordinate(viewport.panY) ||
@@ -715,10 +731,11 @@ function normalizeTab(input: unknown): WorkspaceTab | null {
   return {
     id: tab.id,
     source: tab.source,
-    savedSource: typeof tab.savedSource === "string" ? tab.savedSource : tab.source,
+    initialSource,
+    savedSource,
     filename: normalizeSourceFilename(typeof tab.filename === "string" ? tab.filename : undefined),
     ...(previewSvg ? { previewSvg } : {}),
-    origin: isDocumentOrigin(tab.origin) ? tab.origin : "new",
+    origin,
     viewport: { panX: viewport.panX, panY: viewport.panY, zoom: viewport.zoom },
     viewportCustomized: tab.viewportCustomized === true,
   };

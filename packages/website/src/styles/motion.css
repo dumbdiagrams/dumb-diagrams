@@ -14,7 +14,7 @@
     .prompt-pane:not([hidden]), .source-pane:not([hidden]) { animation: panel-enter 180ms var(--motion-ease); }
   }
 
-  /* One fine sweep along the existing rule. The content and arrow stay still. */
+  /* Composite a static gradient with opacity; never repaint its position. */
   .trace-border { position: relative; isolation: isolate; }
   .trace-border::after {
     content: '';
@@ -25,7 +25,6 @@
     pointer-events: none;
     opacity: 0;
     background: linear-gradient(110deg, transparent 38%, var(--brand-coral) 48%, var(--brand-orange) 51%, var(--brand-navy) 56%, transparent 66%) border-box;
-    background-size: 300% 100%;
     mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
   }
@@ -33,10 +32,10 @@
     animation: border-trace var(--motion-border) var(--motion-ease) both;
   }
   @keyframes border-trace {
-    0% { background-position: 100% 0; opacity: 0; }
+    0% { opacity: 0; }
     12% { opacity: .85; }
     80% { opacity: .85; }
-    100% { background-position: 0% 0; opacity: 0; }
+    100% { opacity: 0; }
   }
 }
 

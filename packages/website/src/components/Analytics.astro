@@ -1,0 +1,42 @@
+---
+import { url } from '../lib/site';
+interface Props { measurementId: string; enabled: boolean; preview?: boolean }
+const { measurementId, enabled, preview = false } = Astro.props;
+---
+{enabled && <script is:inline type="text/partytown">
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { window.dataLayer.push(arguments); };
+</script>}
+<section class="analytics-consent" data-analytics-id={measurementId} data-analytics-enabled={String(enabled)} role="dialog" aria-modal="false" aria-labelledby="analytics-title" aria-describedby="analytics-description" hidden>
+  <button class="consent-close" type="button" data-analytics-close hidden aria-label="Close cookie preferences">×</button>
+  <div>
+    <span class="consent-eyebrow">{preview ? 'LOCAL PREVIEW · ANALYTICS IS DISABLED' : 'YOUR PRIVACY, YOUR CHOICE'}</span>
+    <h2 id="analytics-title">Cookies, on your terms.</h2>
+    <p id="analytics-description">We use optional Google Analytics cookies to understand visits and make Dumb Diagrams better. No advertising cookies and no diagram content.</p>
+    <p class="consent-detail">Your choice is honoured for 180 days and can be changed at any time. <a href={url('privacy/')}>Privacy &amp; cookie details</a>.</p>
+  </div>
+  <div class="analytics-actions"><button class="consent-secondary" type="button" data-analytics-choice="denied">Necessary only</button><button class="consent-primary" type="button" data-analytics-choice="granted">Accept all</button></div>
+</section>
+<button class="cookie-preferences-fab" type="button" data-analytics-settings data-cookie-preferences-floating hidden><span aria-hidden="true">◉</span> Cookie preferences</button>
+<script>
+  import { initAnalytics } from '../scripts/analytics';
+  initAnalytics();
+</script>
+<style>
+  .analytics-consent { position: fixed; z-index: 50; bottom: 20px; right: 20px; left: 20px; max-width: 620px; max-height: calc(100dvh - 40px); overflow-y: auto; margin-left: auto; padding: 26px; background: var(--paper); color: var(--ink); border: 1px solid var(--ink); border-top: 4px solid var(--orange); box-shadow: 0 12px 45px #18345238; }
+  .consent-close { position: absolute; top: 13px; right: 14px; width: 36px; height: 36px; border: 0; background: transparent; color: var(--ink); font-size: 24px; line-height: 1; }
+  .consent-eyebrow { display: block; color: var(--muted); font: 8px var(--mono); letter-spacing: .08em; margin-bottom: 13px; }
+  .analytics-consent h2 { font-size: 25px; letter-spacing: -.045em; margin-bottom: 12px; }
+  .analytics-consent p { font-size: 12px; line-height: 1.6; }
+  .analytics-consent .consent-detail { font-size: 11px; color: var(--muted); margin-top: 12px; }
+  .analytics-consent a { text-decoration: underline; color: var(--ink); }
+  .analytics-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+  .analytics-actions button { border: 1px solid var(--ink); padding: 12px 10px; font-size: 12px; font-weight: 650; min-height: 46px; }
+  .consent-secondary { background: transparent; color: var(--ink); }
+  .consent-secondary:hover { background: var(--brand-navy-soft); }
+  .consent-primary { background: var(--ink); color: white; box-shadow: inset 0 3px var(--orange); }
+  .consent-primary:hover { background: var(--brand-navy); }
+  .cookie-preferences-fab { position: fixed; z-index: 45; left: 18px; bottom: 18px; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 9px 13px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 0 4px 18px #18345225; font: 11px var(--sans); }
+  .cookie-preferences-fab span { color: var(--orange-dark); font-size: 10px; }
+  @media (max-width: 540px) { .analytics-consent { bottom: 10px; right: 10px; left: 10px; padding: 20px; } .analytics-actions { gap: 8px; } .analytics-actions button { font-size: 11px; } .cookie-preferences-fab { left: 10px; bottom: 10px; } }
+</style>

@@ -1,10 +1,12 @@
 ---
-title: Work with an agent
-description: Provide the architecture and constraints. Let the engine handle placement and routing.
+title: LLM-first diagram workflow
+description: Draft architecture diagrams as code with a coding agent, validate the .dgm source, and refine the result locally in Studio.
 section: Start here
 order: 2
 ---
 A coding agent can turn an architecture discussion into a structured file. It does not need to place hundreds of shapes on a canvas by hand.
+
+That is what **LLM-first** means here: the large language model works with readable source and explicit constraints, while the diagram engine handles deterministic placement and routing. The workflow is diagrams as code, with a visual editor when you need one. You stay in control of both the source and the final result.
 
 The initializer creates the project context: `DUMB_DIAGRAMS.md`, agent entry points, a catalog, and example diagrams paired with their original prompts. Use those files with a coding agent you already have. Dumb Diagrams does not include a hosted model or send your project anywhere automatically.
 

@@ -18,7 +18,7 @@ pnpm check:website
 pnpm preview:website
 ```
 
-The check runs Astro diagnostics, a production build, and tests for local links/anchors/assets, valid diagram examples, portable downloads, and a small initial payload. Search needs the production index; test it in preview, not the dev server. Astro 7 preview runs in the background; use `pnpm --filter @dumb-diagrams/website exec astro preview stop` to stop it.
+The check runs Astro diagnostics, a production build, and tests for local links/anchors/assets, valid diagram examples, portable downloads, metadata, analytics consent, worker assets, and a small initial payload. Search needs the production index; test it in preview, not the dev server. Astro 7 preview runs in the background; use `pnpm --filter @dumb-diagrams/website exec astro preview stop` to stop it.
 
 ## Edit content and design
 
@@ -51,18 +51,62 @@ BASE_PATH=/diagrams/ pnpm --filter @dumb-diagrams/website test
 
 `SITE_URL` is the origin, `BASE_PATH` is the pathname. Set them as build environment variables. Canonical URLs and the sitemap are emitted only when the actual site origin is supplied. The repository has no configured Git remote, so source links are optional: set `PUBLIC_REPOSITORY_URL` to a verified repository URL when available. Until then, navigation links to the npm package instead of an invented GitHub URL.
 
-## Partytown and future analytics
+### Cloudflare Pages (when you are ready to deploy)
 
-The official [Astro Partytown integration](https://docs.astro.build/en/guides/integrations-guide/partytown/) is installed but disabled by default. No Google tag, measurement ID, cookies, or analytics requests are shipped.
+Use the repository root as the build root, **not** `packages/website`: asset preparation needs the other workspace packages. Set the build command to `pnpm build:website` and the output directory to `packages/website/dist`. This is static output; no Cloudflare adapter or server function is needed.
 
-When analytics are ready:
+In Pages build variables, set `NODE_VERSION=24.15.0`, `PNPM_VERSION=11.23.0` (matching the repository's pinned toolchain), and `SITE_URL` to the real HTTPS origin. Leave `BASE_PATH` unset for a root-domain deployment. Cloudflare supports these [build-tool version overrides](https://developers.cloudflare.com/pages/configuration/build-image/). Add the analytics/privacy variables below to **production only**; omit the GA ID on preview deployments so test traffic does not enter your production property. These instructions do not create or deploy a Pages project.
 
-1. Decide the consent and privacy behavior before loading the tracker.
-2. Enable `ENABLE_PARTYTOWN=true` in the build environment.
-3. Add the approved scripts with `type="text/partytown"`; the integration already forwards `dataLayer.push` and respects the configured base path.
-4. Verify consent, worker loading, CSP, and measurement on the actual host. Partytown changes where scripts execute; it does not supply consent management.
+## Google Analytics 4 through Partytown
 
-Keep tracking code out of the diagram runtime and Studio packages. Use the integration’s official documentation for the provider’s required worker/proxy behavior rather than adding an untested tag snippet.
+Set your actual GA4 **measurement ID** (`G-…`, not a `GTM-…` container ID) in the build environment. The ID is public, not a secret. Setting it enables the official [Astro Partytown integration](https://docs.astro.build/en/guides/integrations-guide/partytown/) automatically:
+
+```bash
+SITE_URL=https://your-domain.example \
+PUBLIC_GA_MEASUREMENT_ID=G-YOURMEASUREMENTID \
+PUBLIC_SITE_OPERATOR='Your legal name or company' \
+PUBLIC_PRIVACY_EMAIL=privacy@your-domain.example \
+PUBLIC_ANALYTICS_RETENTION_MONTHS=2 \
+pnpm check:website
+pnpm preview:website
+```
+
+Use shell/hosting build variables for this configuration; Astro config does not load `.env` files here. Without an ID, no analytics UI or Partytown bootstrap is rendered. `ENABLE_PARTYTOWN=true` remains available for integration-only testing. Development pages never render the GA4 component; use a production preview to test it.
+
+The first-layer consent panel is deliberately concise. **Accept all** is the primary action; **Necessary only** remains a visible, adjacent, one-click alternative, and the full details are linked. No Google script, request, or cookieless ping is made before an explicit opt-in. The choice is honored for 180 days; advertising storage, ad personalization, and Google signals stay disabled. The local Partytown worker can initialize before consent, but the Google tag runs in it only after consent. [Partytown’s GA4 setup](https://partytown.qwik.dev/google-tag-manager/) uses `text/partytown` and forwards `dataLayer.push`; no analytics proxy is needed.
+
+Every footer has a visually distinct **Cookie preferences** control, the current consent status, and a **Revoke analytics consent** button whenever analytics is allowed. A persistent preferences button also appears at the lower left after the panel closes. Both reopen the same panel; revocation is one click. The privacy page offers the same controls. Withdrawal deletes this integration’s host-only `_ga` cookies and reloads to unload the tracker; it does not erase data already sent to Google. GA cookies expire after 180 days without extending expiry on activity. Blocked storage fails closed on the next visit. Back/forward restoration is preserved unless consent changed while the page was away. Tracking applies only to this website, never the diagram runtime or Studio.
+
+In `astro dev`, the panel is always available as a clearly labelled local preview—even without a measurement ID—so its layout and choices can be reviewed without sending anything to Google. Production builds still omit the panel when analytics is not configured, because asking for consent to processing that does not occur would be misleading.
+
+`/privacy/` is a pre-launch draft until the operator, contact email, and retention are configured; an incomplete draft is excluded from the sitemap and marked `noindex`. A build with a GA ID **fails** if those details are missing. `PUBLIC_ANALYTICS_RETENTION_MONTHS` accepts `2` or `14` for standard GA4. It only updates the notice: separately choose the same retention in Google Analytics Admin and review its reset-on-new-activity setting. [Google explains the retention controls and aggregate-report exceptions](https://support.google.com/analytics/answer/7667196?hl=en).
+
+Before launch, review `src/pages/privacy.astro` for your actual operator, hosting/access-log purposes and retention, legal basis, provider arrangements, international transfers, and rights/contact process. The proposed host is Cloudflare Pages; the hosting paragraph is deliberately identified as pre-launch. Do not treat completed environment variables as legal approval of the notice.
+
+Before production activation, review the consent copy and your privacy disclosures, then verify with your actual property:
+
+1. Fresh visit: no requests to Google before accepting; declining survives navigation.
+2. Accept: `~partytown/partytown-sw.js` and the worker load successfully; `gtag/js` runs through Partytown; the GA4 `g/collect` request succeeds. Check the page view in GA4 Realtime (or enable DebugView for a test session).
+3. Use the footer's revoke button: the page reloads, GA cookies are removed, and future pages send no analytics. Reopen settings and check that accepting again works.
+4. Repeat on the real host and any `BASE_PATH`; serve worker files as JavaScript over HTTPS (localhost also works). Review the host’s CSP if present. Worker/ad-blocker behavior can differ from local testing.
+
+Partytown and this consent UI are implementation details, not a guarantee of regulatory compliance. Google’s [consent documentation](https://developers.google.com/tag-platform/security/guides/consent) describes the available consent signals.
+
+## SEO and performance verification
+
+The homepage positions the product as **LLM-first architecture diagrams as code**. The page title, description, visible copy, agent guide, and `llms.txt` use the same language. SoftwareApplication structured data describes the actual product; docs have matching visible breadcrumbs and BreadcrumbList data. Canonicals, robots sitemap links, and the sitemap require `SITE_URL`; no production domain is invented. `llms.txt` is a convenience for agents, not a search-ranking guarantee.
+
+Audit the **production preview**, not `astro dev`: the dev server sends unminified modules and a live-reload WebSocket, which can cause minification and back/forward-cache diagnostics. Production output is minified by Astro/Vite. The primary font is preloaded, the logo is generated at responsive sizes, the hero is visible without an entrance animation, and border accents animate opacity instead of background position.
+
+```bash
+pnpm check:website
+pnpm preview:website
+# Use the URL printed by preview (the port may differ if one is occupied).
+pnpm dlx lighthouse http://localhost:4321/ --preset=desktop --view
+pnpm dlx lighthouse http://localhost:4321/ --view
+```
+
+Test both desktop and mobile, plus a returning visitor who has allowed analytics. Lighthouse is a lab result: network, CPU, consent state, and hosting affect it. Repeat on the deployed domain before treating a local 100 as a production result. Keep compression enabled on the host and cache hashed `/_astro/` files long-term; allow HTML and Partytown files to revalidate on deployments.
 
 ## Dependency policy
 
@@ -72,7 +116,7 @@ Fonts are self-hosted through Fontsource. Diagrams use the project’s existing 
 
 ## Visual identity and motion
 
-See [the shared style guide](../../docs/STYLE_GUIDE.md). Both Studio and the website import the CSS-only `@dumb-diagrams/brand` package. The site uses `motion/mini` for one-time section entrances and a small frame-based playback controller for the terminal. Reduced-motion preferences show a static transcript; no animation is required to read content.
+See [the shared style guide](../../docs/STYLE_GUIDE.md). Both Studio and the website import the CSS-only `@dumb-diagrams/brand` package. The site uses the native Web Animations API for one-time section entrances and a small frame-based playback controller for the terminal, without an animation-library download. Reduced-motion preferences show a static transcript; no animation is required to read content.
 
 `prepare:assets` compiles the runtime and CLI, then `scripts/capture-cli.mjs` runs the local CLI in a temporary directory. It captures the actual creation log with ANSI colors, normalizes the example home path, and removes the temporary project. No npm package is fetched, no Studio server is started, and no commands run in the visitor's browser. `src/lib/ansi.mjs` escapes text before rendering the CLI styles.
 

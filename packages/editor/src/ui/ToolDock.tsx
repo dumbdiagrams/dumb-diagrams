@@ -22,10 +22,10 @@ const TOOLS: Array<{
   { id: "select", label: "Select", shortcut: "V", Icon: IconSelect },
   { id: "groups", label: "Groups", Icon: IconGroups },
   { id: "resources", label: "Resources", Icon: IconResources },
-  { id: "connector", label: "Connector", shortcut: "C", Icon: IconConnector },
-  { id: "layers", label: "Layers", Icon: IconLayers },
   { id: "text", label: "Text", shortcut: "T", Icon: IconText },
   { id: "note", label: "Add note", Icon: IconNote },
+  { id: "connector", label: "Connector", shortcut: "C", Icon: IconConnector },
+  { id: "layers", label: "Layers", Icon: IconLayers },
   { id: "code", label: "Source", Icon: IconCode },
 ];
 

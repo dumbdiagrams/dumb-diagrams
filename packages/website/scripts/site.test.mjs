@@ -10,6 +10,8 @@ import { createCliUi } from '../../cli/src/cli-ui.ts';
 import { stripVTControlCharacters } from 'node:util';
 import { loadExamples } from '../src/lib/examples.mjs';
 import { ansiToHtml } from '../src/lib/ansi.mjs';
+import { analyticsConfig } from '../src/lib/analytics-config.mjs';
+import { privacyConfig } from '../src/lib/privacy-config.mjs';
 
 const site = fileURLToPath(new URL('../', import.meta.url));
 const dist = join(site, 'dist');
@@ -104,8 +106,10 @@ test('landing page stays small and loads no third-party scripts by default', asy
   const html = await readFile(join(dist, 'index.html'), 'utf8');
   assert.doesNotMatch(html, /<astro-island/);
   assert.doesNotMatch(html, /<script[^>]*src="https?:/);
-  if (process.env.ENABLE_PARTYTOWN !== 'true') assert.doesNotMatch(html, /partytown/);
-  assert.ok(gzipSync(html).byteLength < 15_000, 'homepage HTML under 15 KB compressed');
+  if (!analyticsConfig().measurementId && process.env.ENABLE_PARTYTOWN !== 'true') assert.doesNotMatch(html, /partytown/);
+  // The optional consent UI and inline Partytown bootstrap add a bounded 3 KB.
+  const htmlBudget = analyticsConfig().measurementId ? 18_000 : 15_000;
+  assert.ok(gzipSync(html).byteLength < htmlBudget, `homepage HTML under ${htmlBudget} bytes compressed`);
   let scriptBytes = 0;
   for (const [, script] of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {
     scriptBytes += gzipSync(script).byteLength;
@@ -115,6 +119,88 @@ test('landing page stays small and loads no third-party scripts by default', asy
   }
   assert.ok(scriptBytes < 8_000, 'initial homepage JavaScript under 8 KB compressed');
   assert.ok((await stat(join(dist, 'pagefind/pagefind.js'))).size > 0);
+});
+
+test('LLM-first metadata, structured data, and production rendering stay intact', async () => {
+  const html = await readFile(join(dist, 'index.html'), 'utf8');
+  assert.match(html, /<title>LLM-first architecture diagrams as code \| Dumb Diagrams<\/title>/);
+  assert.match(html, /Architecture diagrams as code, built for an LLM-first workflow/);
+  assert.doesNotMatch(html, /AI-first/i);
+  const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(schema['@type'], 'SoftwareApplication');
+  assert.equal(schema.name, 'Dumb Diagrams');
+  assert.match(html, /<link rel="preload"[^>]+as="font"[^>]+crossorigin/);
+  assert.doesNotMatch(html, /<h1[^>]+data-reveal/);
+  assert.doesNotMatch(html, /@vite\/client/);
+  if (process.env.SITE_URL) {
+    const canonical = new URL(base, process.env.SITE_URL).href;
+    assert.ok(html.includes(`rel="canonical" href="${canonical}"`));
+    assert.equal(schema.url, canonical);
+    assert.ok((await readFile(join(dist, 'robots.txt'), 'utf8')).includes(`${canonical}sitemap-index.xml`));
+    const sitemap = await readFile(join(dist, 'sitemap-0.xml'), 'utf8');
+    assert.ok(sitemap.includes(`${canonical}docs/agent-workflow/`));
+    assert.ok(!sitemap.includes('/404'));
+    const docs = await readFile(join(dist, 'docs/agent-workflow/index.html'), 'utf8');
+    const breadcrumbs = JSON.parse(docs.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+    assert.equal(breadcrumbs.itemListElement[2].item, `${canonical}docs/agent-workflow/`);
+  }
+});
+
+test('GA4 is opt-in and Partytown worker files resolve at the configured base', async () => {
+  const { measurementId } = analyticsConfig();
+  const html = await readFile(join(dist, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /<script[^>]+src="https:\/\/www.googletagmanager.com/);
+  if (measurementId) {
+    assert.ok(html.includes(`data-analytics-id="${measurementId}"`));
+    assert.match(html, /data-analytics-choice="denied"/);
+    assert.match(html, /data-analytics-choice="granted"/);
+    assert.match(html, /type="text\/partytown"/);
+  } else {
+    assert.doesNotMatch(html, /data-analytics-id=/);
+  }
+  if (measurementId || process.env.ENABLE_PARTYTOWN === 'true') {
+    assert.ok(html.includes(`${base}~partytown/`));
+    for (const file of ['partytown-sw.js', 'partytown.js', 'partytown-atomics.js']) {
+      assert.ok((await stat(join(dist, '~partytown', file))).size > 0, `${base}~partytown/${file} must resolve`);
+    }
+  }
+});
+
+test('analytics configuration rejects invalid IDs and permits an unconfigured build', () => {
+  assert.deepEqual(analyticsConfig({}), { measurementId: '' });
+  const privacy = { PUBLIC_SITE_OPERATOR: 'Test operator', PUBLIC_PRIVACY_EMAIL: 'privacy@example.test', PUBLIC_ANALYTICS_RETENTION_MONTHS: '2' };
+  assert.deepEqual(analyticsConfig({ ...privacy, PUBLIC_GA_MEASUREMENT_ID: ' G-TEST12345 ' }), { measurementId: 'G-TEST12345' });
+  assert.throws(() => analyticsConfig({ PUBLIC_GA_MEASUREMENT_ID: 'GTM-12345' }), /GA4 measurement ID/);
+  assert.throws(() => analyticsConfig({ PUBLIC_GA_MEASUREMENT_ID: '</script>' }), /GA4 measurement ID/);
+  assert.throws(() => analyticsConfig({ PUBLIC_GA_MEASUREMENT_ID: 'G-TEST12345' }), /review the privacy notice/);
+  assert.throws(() => privacyConfig({ PUBLIC_PRIVACY_EMAIL: 'invalid' }), /valid contact email/);
+  assert.throws(() => privacyConfig({ PUBLIC_ANALYTICS_RETENTION_MONTHS: 'forever' }), /2 or 14/);
+});
+
+test('privacy notice and footer controls are available with and without analytics', async () => {
+  const html = await readFile(join(dist, 'index.html'), 'utf8');
+  const privacy = await readFile(join(dist, 'privacy/index.html'), 'utf8');
+  assert.ok(html.includes(`href="${base}privacy/"`));
+  assert.ok(html.includes(`href="${base}privacy/#cookie-settings"`));
+  assert.match(html, /class="footer-privacy"/);
+  assert.match(html, /data-analytics-revoke hidden/);
+  assert.match(html, /<strong>A little opinionated\.<\/strong><br\s*\/?><strong>A lot clearer\.<\/strong>/);
+  assert.match(privacy, /id="cookie-settings"/);
+  assert.match(privacy, /does not automatically delete data already sent to Google/);
+  if (!privacyConfig().ready) assert.match(privacy, /Pre-launch notice/);
+  if (analyticsConfig().measurementId) {
+    assert.match(html, /Necessary only/);
+    assert.match(html, /Accept all/);
+  } else assert.match(privacy, /Google Analytics is not enabled/);
+});
+
+test('homepage explains the engine and attributes examples without altering their sources', async () => {
+  const html = await readFile(join(dist, 'index.html'), 'utf8');
+  assert.match(html, /Generated with GPT 5\.6 Luna \(max\)/);
+  for (const name of ['Composer 2.5', 'Claude Sonnet 5', 'A* search', 'manual route', 'lighter models']) assert.ok(html.includes(name), name);
+  assert.match(html, /<div class="section-heading examples-heading" id="how-it-works"/);
+  assert.doesNotMatch(html, /<section[^>]+id="how-it-works"/);
+  assert.match(html, /class="faq-brand"/);
 });
 
 test('terminal fallback contains the real CLI banner and runnable package commands', async () => {

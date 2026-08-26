@@ -38,6 +38,7 @@ describe("workspace state", () => {
 
   it("round-trips persisted tabs, active selection, and recently closed tabs", () => {
     const tab = createWorkspaceTab("source", {
+      initialSource: "original source",
       filename: "diagram.dgm",
       origin: "import",
       viewport,
@@ -50,6 +51,7 @@ describe("workspace state", () => {
     };
     const restored = deserializeWorkspace(serializeWorkspace(workspace));
     expect(restored).toEqual(workspace);
+    expect(restored?.tabs[0]?.initialSource).toBe("original source");
   });
 
   it("normalizes malformed snapshots without accepting empty workspaces", () => {
@@ -71,6 +73,23 @@ describe("workspace state", () => {
       activeTabId: "tab-1",
       recentlyClosed: [],
     });
+  });
+
+  it("uses the last saved example source when migrating older tabs", () => {
+    const restored = normalizeWorkspaceState({
+      version: 1,
+      tabs: [{
+        id: "example-tab",
+        source: "changed source",
+        savedSource: "original source",
+        origin: "example",
+        viewport,
+      }],
+      activeTabId: "example-tab",
+      recentlyClosed: [],
+    });
+
+    expect(restored?.tabs[0]?.initialSource).toBe("original source");
   });
 
   it("migrates persisted source filenames to dgm", () => {

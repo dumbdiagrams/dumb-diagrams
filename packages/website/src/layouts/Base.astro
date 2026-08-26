@@ -1,12 +1,18 @@
 ---
 import '@dumb-diagrams/brand/styles.css';
+import { brandFont } from '@dumb-diagrams/brand/fonts';
 import '../styles/global.css';
 import '../styles/motion.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Analytics from '../components/Analytics.astro';
+import { analyticsConfig } from '../lib/analytics-config.mjs';
 import { url } from '../lib/site';
-interface Props { title?: string; description?: string; docs?: boolean; noindex?: boolean }
-const { title = 'Architecture diagrams from plain text.', description = 'Use a coding agent for the first draft, refine the result in Studio, and keep the source beside your code.', docs = false, noindex = false } = Astro.props;
+interface Props { title?: string; description?: string; docs?: boolean; noindex?: boolean; structuredData?: Record<string, unknown> }
+const { title = 'LLM-first architecture diagrams as code', description = 'Create architecture diagrams as code with an LLM-first workflow. Draft plain-text .dgm files with a coding agent, refine locally in Studio, and version in Git.', docs = false, noindex = false, structuredData } = Astro.props;
+const { measurementId } = analyticsConfig();
+const analyticsEnabled = Boolean(import.meta.env.PROD && measurementId);
+const consentPreview = Boolean(import.meta.env.DEV && !analyticsEnabled);
 const pageTitle = `${title} | Dumb Diagrams`;
 const canonical = Astro.site && !noindex ? new URL(Astro.url.pathname, Astro.site) : undefined;
 ---
@@ -16,6 +22,7 @@ const canonical = Astro.site && !noindex ? new URL(Astro.url.pathname, Astro.sit
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f7f6f2" />
+    <link rel="preload" href={brandFont} as="font" type="font/woff2" crossorigin />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
@@ -24,14 +31,19 @@ const canonical = Astro.site && !noindex ? new URL(Astro.url.pathname, Astro.sit
     <meta property="og:site_name" content="Dumb Diagrams" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
+    <meta property="og:locale" content="en_US" />
     {canonical && <meta property="og:url" content={canonical} />}
     <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
     <link rel="icon" type="image/png" href={url('favicon.png')} />
     <link rel="alternate" type="text/plain" title="Documentation for agents" href={url('llms.txt')} />
+    {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData).replaceAll('<', '\\u003c')} />}
   </head>
   <body class:list={[docs && 'docs-page']}>
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="page-shell"><Header docs={docs} /><slot /><Footer /></div>
+    {(analyticsEnabled || consentPreview) && <Analytics measurementId={measurementId} enabled={analyticsEnabled} preview={consentPreview} />}
     <script src="../scripts/interactions.ts"></script>
   </body>
 </html>
