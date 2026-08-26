@@ -11,6 +11,10 @@ const EXAMPLES = [
   "transfer-hub.dgm",
   "aws-data-transfer-hub.dgm",
   "aws-high-availability-web-app.dgm",
+  "simple-serverless-web-application.dgm",
+  "image-thumbnail-pipeline.dgm",
+  "asynchronous-report-generation.dgm",
+  "event-driven-order-fulfillment.dgm",
 ];
 const ITERATIONS = 5;
 const PER_DIAGRAM_BUDGET_MS = 250;

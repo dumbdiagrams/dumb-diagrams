@@ -10,7 +10,7 @@ const artifactsRoot = join(root, ".artifacts/packed-studio-e2e");
 const packagesRoot = join(root, ".artifacts/packages");
 const projectRoot = join(artifactsRoot, "project");
 const diagramsRoot = join(projectRoot, "diagrams");
-const tarball = join(packagesRoot, `dumbdiagrams-${manifest.version}.tgz`);
+const tarball = join(packagesRoot, `create-dumb-diagrams-${manifest.version}.tgz`);
 const npx = process.platform === "win32" ? "npx.cmd" : "npx";
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
@@ -22,7 +22,7 @@ execFileSync(pnpm, ["--dir", cliRoot, "pack", "--pack-destination", packagesRoot
 });
 execFileSync(
   npx,
-  ["--yes", `--package=${tarball}`, "dumbdiagrams", "init", projectRoot, "--yes", "--name", "Packed Studio E2E"],
+  ["--yes", `--package=${tarball}`, "create-dumb-diagrams", projectRoot, "--yes", "--name", "Packed Studio E2E"],
   { cwd: root, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
 );
 copyFileSync(join(root, "examples/diagrams/async-docs.dgm"), join(diagramsRoot, "async-docs.dgm"));
@@ -32,7 +32,7 @@ const child = spawn(
   [
     "--yes",
     `--package=${tarball}`,
-    "dumbdiagrams",
+    "create-dumb-diagrams",
     "studio",
     diagramsRoot,
     "--no-open",

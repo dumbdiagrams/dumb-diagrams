@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -43,9 +43,17 @@ const PROJECT_REFERENCE_FILES = [
   "aws-high-availability-web-app.dgm",
   "aws-data-transfer-hub.dgm",
   "bedrock-claims-processing.dgm",
+  "simple-serverless-web-application.dgm",
+  "image-thumbnail-pipeline.dgm",
+  "asynchronous-report-generation.dgm",
+  "event-driven-order-fulfillment.dgm",
   "prompts/aws-high-availability-web-app.md",
   "prompts/aws-data-transfer-hub.md",
   "prompts/bedrock-claims-processing.md",
+  "prompts/simple-serverless-web-application.md",
+  "prompts/image-thumbnail-pipeline.md",
+  "prompts/asynchronous-report-generation.md",
+  "prompts/event-driven-order-fulfillment.md",
 ] as const;
 
 const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open", "yes"]);
@@ -104,7 +112,8 @@ function printHelp(): void {
 ${ui.brand()}
 
 ${ui.heading("Usage")}
-  ${ui.command("dumbdiagrams <command> [options]")}
+  ${ui.command("npm create dumb-diagrams@latest [directory] [options]")}
+  ${ui.command("dumbdiagrams <command> [options]")} ${ui.muted("(after installation or via the package alias)")}
 
 ${ui.heading("Commands")}
   ${ui.command("studio [file-or-folder]")} Open Studio for a diagram or project folder
@@ -120,7 +129,7 @@ ${ui.heading("Studio options")}
   --no-open               Start the server without opening a browser
 
 ${ui.heading("Init options")}
-  --name <name>           Project display name; also names the default folder
+  --name <name>           Diagram space name; also names the default folder
   --directory <path>      Output folder (alternative to the positional argument)
   --diagram <name>        Starter diagram filename (default: architecture)
   --description <text>    Short project description for the generated README
@@ -132,20 +141,20 @@ ${ui.heading("Render options")}
   --output <file.svg>     Output path (default: output.svg)
 
 ${ui.heading("Quick start")}
-  ${ui.command("npx dumbdiagrams@latest init")}
-  ${ui.command("npx dumbdiagrams@latest init --name payments-platform --diagram system-overview")}
+  ${ui.command("npm create dumb-diagrams@latest")}
+  ${ui.command("npm create dumb-diagrams@latest payments-platform -- --diagram system-overview")}
   ${ui.command("cd payments-platform")}
-  ${ui.command("npx dumbdiagrams@latest studio diagrams")}
+  ${ui.command("npx create-dumb-diagrams@latest studio diagrams")}
 
 ${ui.muted("Tip: run dumbdiagrams help whenever you need this command reference.")}
 `);
 }
 
-async function promptProjectName(defaultName: string): Promise<string> {
+async function promptDiagramSpaceName(defaultName: string): Promise<string> {
   const readline = createInterface({ input: process.stdin, output: process.stdout });
   try {
     return await readline.question(
-      `  ${ui.command("?")} ${ui.heading("What will your project be called?")} ${ui.muted(`(${defaultName})`)} `,
+      `  ${ui.command("?")} ${ui.heading("What will your diagram space be called?")} ${ui.muted(`(${defaultName})`)} `,
     );
   } finally {
     readline.close();
@@ -261,7 +270,8 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   try {
     options = await resolveInitOptions(args, {
       interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
-      askProjectName: promptProjectName,
+      askDiagramSpaceName: promptDiagramSpaceName,
+      currentName: basename(process.cwd()),
     });
   } catch (error) {
     console.error(ui.error(error instanceof Error ? error.message : "Invalid init options."));
@@ -285,7 +295,7 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   const starterDocument = createEmptyDocument(diagramName);
   starterDocument.title = displayNameForDirectory(diagramName);
   const diagramSource = printDgm(starterDocument);
-  console.log(ui.heading("Creating project"));
+  console.log(ui.heading("Creating diagram space"));
   console.log(ui.info("name", projectName));
   console.log(ui.info("folder", projectRoot));
   console.log(ui.info("diagram", `diagrams/${diagramFile}`));
@@ -328,7 +338,7 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   }
 
   console.log(ui.summary(created ? "Project ready" : "Project already exists"));
-  console.log(ui.info("next", ui.command(`npx dumbdiagrams@latest studio ${relativeForLog(diagramsRoot)}`)));
+  console.log(ui.info("next", ui.command(`npx create-dumb-diagrams@latest studio ${relativeForLog(diagramsRoot)}`)));
   return 0;
 }
 

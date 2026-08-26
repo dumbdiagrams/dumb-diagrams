@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 
 const registry = "https://registry.npmjs.org";
-const packageName = "dumbdiagrams";
+const packageName = "create-dumb-diagrams";
 
 const packageInfo = npm(["view", packageName, "maintainers", "--json"]);
 const identity = npm(["whoami"]);

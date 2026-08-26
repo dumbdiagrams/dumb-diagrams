@@ -13,7 +13,7 @@
     "catalog:generate": "node scripts/generate-catalog.mjs",
     "catalog:stage": "node scripts/stage-catalog-assets.mjs",
     "icons:build": "pnpm catalog:generate && pnpm catalog:stage",
-    "build": "pnpm catalog:generate && pnpm --filter @dumb-diagrams/runtime build && pnpm --filter @dumb-diagrams/editor build && pnpm --filter dumbdiagrams build",
+    "build": "pnpm catalog:generate && pnpm --filter @dumb-diagrams/runtime build && pnpm --filter @dumb-diagrams/editor build && pnpm --filter create-dumb-diagrams build",
     "pretest": "pnpm catalog:stage",
     "test": "vitest run",
     "pretest:coverage": "pnpm catalog:stage",

@@ -9,7 +9,7 @@ const artifactsDir = join(root, ".artifacts/packages");
 const cliPackageRoot = join(root, "packages/cli");
 const cliManifest = JSON.parse(readFileSync(join(cliPackageRoot, "package.json"), "utf8"));
 const version = cliManifest.version;
-const tarballName = `dumbdiagrams-${version}.tgz`;
+const tarballName = `create-dumb-diagrams-${version}.tgz`;
 const tarballPath = join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
@@ -28,6 +28,7 @@ if (!existsSync(tarballPath)) {
 const entries = listTarballEntries(tarballPath);
 const required = [
   "package/dist/index.js",
+  "package/dist/create.js",
   "package/dist/studio/index.html",
   "package/dist/templates/project/DUMB_DIAGRAMS.md",
   "package/dist/templates/examples/README.md",
@@ -65,13 +66,13 @@ verifyCorrespondingSource(tarballPath);
 const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-smoke-"));
 const projectDir = join(workRoot, "smoke-project");
 try {
-  runNpx(tarballPath, ["init", projectDir, "--yes", "--name", "Smoke Test"]);
+  runNpx(tarballPath, [projectDir, "--yes", "--name", "Smoke Test"], "create-dumb-diagrams");
   const diagramPath = join(projectDir, "diagrams", "architecture.dgm");
   if (!existsSync(diagramPath)) {
     throw new Error("init did not create starter diagram");
   }
 
-  const validateCode = runNpx(tarballPath, ["validate", join(projectDir, "diagrams")]);
+  const validateCode = runNpx(tarballPath, ["validate", join(projectDir, "diagrams")], "create-dumb-diagrams");
   if (validateCode !== 0) {
     throw new Error(`validate failed with exit code ${validateCode}`);
   }
@@ -82,7 +83,7 @@ try {
     diagramPath,
     "--output",
     outputSvg,
-  ]);
+  ], "create-dumb-diagrams");
   if (renderCode !== 0) {
     throw new Error(`render failed with exit code ${renderCode}`);
   }
@@ -90,7 +91,7 @@ try {
     throw new Error("render did not create output.svg");
   }
 
-  const formatted = runNpxCapture(tarballPath, ["format", diagramPath]);
+  const formatted = runNpxCapture(tarballPath, ["format", diagramPath], "create-dumb-diagrams");
   if (!formatted.startsWith("diagram ")) {
     throw new Error("format did not print canonical .dgm source");
   }
@@ -98,18 +99,18 @@ try {
   const invalidPath = join(projectDir, "diagrams", "invalid.dgm");
   writeFileSync(invalidPath, "this is not a diagram\n", "utf8");
   console.log("Expecting validate to reject invalid.dgm (non-zero exit is success):");
-  const invalidCode = runNpx(tarballPath, ["validate", invalidPath]);
+  const invalidCode = runNpx(tarballPath, ["validate", invalidPath], "create-dumb-diagrams");
   if (invalidCode === 0) {
     throw new Error("validate accepted invalid source");
   }
   console.log(`OK validate rejected invalid source (exit ${invalidCode})`);
 
-  const helpOut = runNpxCapture(tarballPath, ["help"]);
+  const helpOut = runNpxCapture(tarballPath, ["help"], "create-dumb-diagrams");
   if (!helpOut.includes("studio")) {
     throw new Error("help output missing studio command");
   }
 
-  const versionOut = runNpxCapture(tarballPath, ["--version"]);
+  const versionOut = runNpxCapture(tarballPath, ["--version"], "create-dumb-diagrams");
   if (!versionOut.includes(version)) {
     throw new Error(`--version output missing ${version}: ${versionOut}`);
   }

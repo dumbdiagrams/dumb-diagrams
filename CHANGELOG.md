@@ -7,6 +7,10 @@ the versioning policy in [docs/VERSIONING.md](./docs/VERSIONING.md).
 
 ### Changed
 
+- The public initializer is now `npm create dumb-diagrams@latest`; the package
+  exposes `dumbdiagrams` and `dgm` aliases for command-style usage.
+- Interactive initialization asks for a diagram space name and uses a
+  current-name-plus-timestamp default when no name is supplied.
 - Vendored catalog assets grouped under `assets/catalog/` with documented
   generation and staging lifecycle.
 - Repository examples moved to `examples/diagrams/`; generated editor catalog
@@ -25,7 +29,7 @@ the versioning policy in [docs/VERSIONING.md](./docs/VERSIONING.md).
 
 ### Added
 
-- First public `dumbdiagrams` npm package with bundled CLI runtime, Studio assets,
+- First public `create-dumb-diagrams` npm package with bundled CLI runtime, Studio assets,
   catalog icons, and example templates.
 - CLI integration tests, package tarball smoke checks, and Playwright coverage in CI.
 - Init project templates and release documentation for private tarball testing.

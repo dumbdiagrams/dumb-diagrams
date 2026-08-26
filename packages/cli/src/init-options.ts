@@ -7,8 +7,11 @@ export interface InitArgs {
 
 export interface InitOptionsContext {
   interactive: boolean;
+  askDiagramSpaceName?: (defaultName: string) => Promise<string>;
+  /** @deprecated Use askDiagramSpaceName. */
   askProjectName?: (defaultName: string) => Promise<string>;
   now?: Date;
+  currentName?: string;
 }
 
 export interface ResolvedInitOptions {
@@ -18,14 +21,14 @@ export interface ResolvedInitOptions {
   description?: string;
 }
 
-const INTERACTIVE_DEFAULT_NAME = "my-diagram-project";
+const DEFAULT_DIAGRAM_SPACE_NAME = "dumb-diagrams";
 
 export async function resolveInitOptions(
   args: InitArgs,
   context: InitOptionsContext,
 ): Promise<ResolvedInitOptions> {
   if (args.positionals.length > 1) {
-    throw new Error("init accepts at most one directory. Use --name for the project display name.");
+    throw new Error("init accepts at most one directory. Use --name for the diagram space name.");
   }
 
   const positionalDirectory = args.positionals[0];
@@ -34,18 +37,20 @@ export async function resolveInitOptions(
     throw new Error("Choose either the positional directory or --directory, not both.");
   }
 
-  let projectName = cleanDisplayText(optionalValueFlag(args, "name"), "project name", 120);
+  let projectName = cleanDisplayText(optionalValueFlag(args, "name"), "diagram space name", 120);
   let projectDirectory = positionalDirectory ?? flaggedDirectory;
 
   if (!projectDirectory && !projectName && context.interactive && !args.flags.has("yes")) {
-    const answer = await context.askProjectName?.(INTERACTIVE_DEFAULT_NAME);
-    projectName = cleanDisplayText(answer?.trim() || INTERACTIVE_DEFAULT_NAME, "project name", 120);
+    const defaultName = defaultDiagramSpaceName(context.now ?? new Date(), context.currentName);
+    const askName = context.askDiagramSpaceName ?? context.askProjectName;
+    const answer = await askName?.(defaultName);
+    projectName = cleanDisplayText(answer?.trim() || defaultName, "diagram space name", 120);
   }
 
   if (!projectDirectory) {
     projectDirectory = projectName
-      ? slugify(projectName, "project name")
-      : defaultProjectDirectory(context.now ?? new Date());
+      ? slugify(projectName, "diagram space name")
+      : defaultDiagramSpaceName(context.now ?? new Date(), context.currentName);
   }
 
   const diagramFlag = optionalValueFlag(args, "diagram") ?? "architecture";
@@ -71,7 +76,10 @@ export function displayNameForDirectory(path: string): string {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-export function defaultProjectDirectory(now = new Date()): string {
+export function defaultDiagramSpaceName(
+  now = new Date(),
+  currentName = DEFAULT_DIAGRAM_SPACE_NAME,
+): string {
   const pad = (value: number): string => String(value).padStart(2, "0");
   const timestamp = [
     now.getFullYear(),
@@ -81,7 +89,15 @@ export function defaultProjectDirectory(now = new Date()): string {
     pad(now.getMinutes()),
     pad(now.getSeconds()),
   ].join("-");
-  return `dumb-diagrams-${timestamp}`;
+  return `${slugify(currentName, "current name")}-${timestamp}`;
+}
+
+/** @deprecated Use defaultDiagramSpaceName. */
+export function defaultProjectDirectory(
+  now = new Date(),
+  currentName = DEFAULT_DIAGRAM_SPACE_NAME,
+): string {
+  return defaultDiagramSpaceName(now, currentName);
 }
 
 function optionalValueFlag(args: InitArgs, name: string): string | undefined {

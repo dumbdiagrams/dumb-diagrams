@@ -12,7 +12,7 @@ DumbDiagrams uses Semantic Versioning for its workspace packages:
 The packages are versioned and released together so a parsed document, layout,
 router, renderer, CLI, and editor always share one compatibility line. The
 editor package remains private for distribution purposes, while the public
-`dumbdiagrams` package is the end-user distribution. The repository root is a
+`create-dumb-diagrams` package is the end-user distribution. The repository root is a
 workspace container and is not independently versioned.
 
 Release requirements:

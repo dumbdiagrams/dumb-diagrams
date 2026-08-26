@@ -159,9 +159,9 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".example-card")).toHaveCount(3);
-  await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(3);
-  await expect(examples.locator(".example-prompt pre")).toHaveCount(3);
+  await expect(examples.locator(".example-card")).toHaveCount(7);
+  await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(7);
+  await expect(examples.locator(".example-prompt pre")).toHaveCount(7);
   await expect(examples.locator(".example-prompt pre").nth(0)).toContainText(
     'Create a diagram titled "Claims processing with Amazon Bedrock"',
   );
@@ -170,6 +170,18 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   );
   await expect(examples.locator(".example-prompt pre").nth(2)).toContainText(
     'Create a diagram titled "Highly available AWS web application"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(3)).toContainText(
+    'Create a diagram titled "Simple serverless web application"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(4)).toContainText(
+    'Create a diagram titled "Image thumbnail pipeline"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(5)).toContainText(
+    'Create a diagram titled "Asynchronous report generation"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(6)).toContainText(
+    'Create a diagram titled "Event-driven order fulfillment"',
   );
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);

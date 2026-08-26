@@ -26,7 +26,7 @@ export function HelpModal({
             import it from a repository, or let an LLM update it and then reload the visual result.
           </p>
           <p>
-            Run <code>dumbdiagrams studio diagrams</code> for a local project workflow, or pass one
+            Run <code>npx create-dumb-diagrams@latest studio diagrams</code> for a local project workflow, or pass one
             `.dgm` path directly. Studio lets you select among files in that folder, writes the
             selected file directly, watches for edits from an agent or another editor, and asks
             before replacing a newer disk revision.

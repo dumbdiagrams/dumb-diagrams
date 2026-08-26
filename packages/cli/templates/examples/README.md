@@ -31,6 +31,10 @@ Available reference pairs:
 - `prompts/aws-high-availability-web-app.md` + `aws-high-availability-web-app.dgm`
 - `prompts/aws-data-transfer-hub.md` + `aws-data-transfer-hub.dgm`
 - `prompts/bedrock-claims-processing.md` + `bedrock-claims-processing.dgm`
+- `prompts/simple-serverless-web-application.md` + `simple-serverless-web-application.dgm`
+- `prompts/image-thumbnail-pipeline.md` + `image-thumbnail-pipeline.dgm`
+- `prompts/asynchronous-report-generation.md` + `asynchronous-report-generation.dgm`
+- `prompts/event-driven-order-fulfillment.md` + `event-driven-order-fulfillment.dgm`
 
 The examples intentionally use a defined prompt style: title and grammar first,
 composition and hierarchy next, then numbered connections and routing constraints.

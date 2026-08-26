@@ -19,7 +19,7 @@ Playwright journeys, and the publishable package smoke test.
 Build the standalone npm artifact from the compiled workspace:
 
 ```bash
-pnpm --filter dumbdiagrams run prepare:standalone
+pnpm --filter create-dumb-diagrams run prepare:standalone
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 ```
@@ -29,8 +29,8 @@ Studio assets, and the AGPL corresponding-source snapshot. Publishing it makes
 the end-user flow work without requiring a repository checkout:
 
 ```bash
-npx dumbdiagrams@0.1.0 init --open-editor
-npx dumbdiagrams@latest init --open-editor
+npm create dumb-diagrams@0.1.0 -- --open-editor
+npm create dumb-diagrams@latest -- --open-editor
 ```
 
 ### Private testing before publish
@@ -42,16 +42,16 @@ pnpm build
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 VERSION="$(node -p 'require("./packages/cli/package.json").version')"
-ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-$VERSION.tgz"
-npx --yes --package="$ARTIFACT" dumbdiagrams init ./preview-project --yes
-npx --yes --package="$ARTIFACT" dumbdiagrams validate ./preview-project/diagrams
+ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
+npx --yes --package="$ARTIFACT" create-dumb-diagrams ./preview-project --yes
+npx --yes --package="$ARTIFACT" create-dumb-diagrams validate ./preview-project/diagrams
 ```
 
 This never uploads anything to npm.
 
-The unscoped `dumbdiagrams` package name is always public on npm. For a
+The unscoped `create-dumb-diagrams` package name is always public on npm. For a
 registry-only private preview you need a paid npm account and a scoped package
-such as `@your-name/dumbdiagrams-preview` published with `--access restricted`.
+such as `@your-name/create-dumb-diagrams-preview` published with `--access restricted`.
 
 Before the first publish, authenticate to the public npm registry and run the
 repository preflight. It rejects an existing package owned by another account:
@@ -72,20 +72,20 @@ Confirm the new version is visible before moving the `latest` documentation and
 deployment forward:
 
 ```bash
-npm view "dumbdiagrams@$VERSION" version --registry=https://registry.npmjs.org/
+npm view "create-dumb-diagrams@$VERSION" version --registry=https://registry.npmjs.org/
 ```
 
 ### Public usage after publish
 
 ```bash
 # One-off commands
-npx dumbdiagrams@latest init --open-editor
-npx dumbdiagrams@latest studio diagrams
-npx dumbdiagrams@latest validate diagrams
-npx dumbdiagrams@latest render diagrams/my-diagram.dgm --output renders/my-diagram.svg
+npm create dumb-diagrams@latest -- --open-editor
+npx create-dumb-diagrams@latest studio diagrams
+npx create-dumb-diagrams@latest validate diagrams
+npx create-dumb-diagrams@latest render diagrams/my-diagram.dgm --output renders/my-diagram.svg
 
 # Optional global install (exposes dumbdiagrams and dgm)
-npm install -g dumbdiagrams
+npm install -g create-dumb-diagrams
 dumbdiagrams init --yes
 dgm studio diagrams
 ```

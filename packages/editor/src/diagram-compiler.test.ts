@@ -11,12 +11,16 @@ import { needsAutoFix } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
 
 describe("diagram compilation canvas bounds", () => {
-  it("keeps the three core examples with their full prompts", () => {
-    expect(DIAGRAM_EXAMPLES).toHaveLength(3);
+  it("keeps the bundled examples with their full prompts", () => {
+    expect(DIAGRAM_EXAMPLES).toHaveLength(7);
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
       "bedrock-claims-processing",
       "aws-data-transfer-hub",
       "aws-high-availability-web-app",
+      "simple-serverless-web-application",
+      "image-thumbnail-pipeline",
+      "asynchronous-report-generation",
+      "event-driven-order-fulfillment",
     ]);
     for (const example of DIAGRAM_EXAMPLES) {
       expect(example.prompt.trim().length).toBeGreaterThan(500);

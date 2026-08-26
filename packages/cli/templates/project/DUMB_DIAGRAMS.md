@@ -41,10 +41,10 @@ under `diagrams/`; do not edit the examples to satisfy a new request.
 2. For a new diagram, create a new descriptive `.dgm` file in `diagrams/`;
    do not overwrite `{{diagramFile}}` or another existing file by default.
 3. For a requested revision, edit only the named existing file.
-4. Run `npx dumbdiagrams@latest validate diagrams` to validate every project diagram.
-5. Run `npx dumbdiagrams@latest studio diagrams/<name>.dgm` to inspect one file,
-   or `npx dumbdiagrams@latest studio diagrams` to choose a project file.
-6. Render a review artifact with `npx dumbdiagrams@latest render diagrams/<name>.dgm --output renders/<name>.svg`.
+4. Run `npx create-dumb-diagrams@latest validate diagrams` to validate every project diagram.
+5. Run `npx create-dumb-diagrams@latest studio diagrams/<name>.dgm` to inspect one file,
+   or `npx create-dumb-diagrams@latest studio diagrams` to choose a project file.
+6. Render a review artifact with `npx create-dumb-diagrams@latest render diagrams/<name>.dgm --output renders/<name>.svg`.
 
 ## Source conventions
 

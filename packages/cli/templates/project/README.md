@@ -17,7 +17,7 @@ and prompt references for coding agents.
 Open the visual editor with:
 
 ```bash
-npx dumbdiagrams@latest studio diagrams
+npx create-dumb-diagrams@latest studio diagrams
 ```
 
 Ask your coding agent to read `DUMB_DIAGRAMS.md` and `diagrams/README.md`

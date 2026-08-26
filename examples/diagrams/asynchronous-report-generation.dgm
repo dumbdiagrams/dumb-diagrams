@@ -1,0 +1,49 @@
+diagram asynchronous-report-generation {
+  grammar aws
+  flow lr
+  title "Asynchronous report generation"
+
+  generic.client web_client "Web client"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    group frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service report_ui "Report web UI"
+    }
+
+    aws.api-gateway gateway
+
+    group report_api "Report API" {
+      aws.aws-lambda report_handler "Report request handler"
+    }
+
+    group async_queue "Async Queue Tier" {
+      aws.simple-queue-service report_jobs "Report jobs"
+      aws.simple-queue-service dead_letter_queue "Dead-letter queue" { role secondary }
+    }
+
+    group worker_tier "Worker Tier" {
+      aws.aws-fargate report_worker "Report worker"
+    }
+
+    group storage_tier "Storage Tier" {
+      aws.simple-storage-service generated_reports "Generated reports"
+      aws.dynamodb job_status "Job status"
+    }
+
+    aws.simple-notification-service notifications "Report notifications"
+    aws.simple-notification-service-email-notification email "Email Notification"
+  }
+
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> report_ui { id cdn_to_report_ui label "static content" }
+  cdn -> gateway { id cdn_to_api step 2 }
+  gateway -> report_handler { id api_to_report_handler step 3 }
+  report_handler -> report_jobs { id enqueue_report step 4 label "enqueue report" }
+  report_jobs -> report_worker { id jobs_to_worker step 5 }
+  report_worker -> generated_reports { id worker_to_reports step 6 }
+  report_worker -> job_status { id worker_to_status step 7 }
+  report_worker -> notifications { id worker_to_notifications step 8 }
+  notifications -> email { id notifications_to_email step 9 }
+  report_jobs -> dead_letter_queue { id failed_jobs label "failed jobs" style dashed kind fail }
+}

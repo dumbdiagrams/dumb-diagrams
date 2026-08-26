@@ -1,5 +1,5 @@
 {
-  "name": "dumbdiagrams",
+  "name": "create-dumb-diagrams",
   "version": "0.1.0",
   "license": "AGPL-3.0-only",
   "description": "LLM-first architecture diagrams that are hard to get wrong: local CLI and Studio for .dgm source files",
@@ -25,6 +25,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
+    "create-dumb-diagrams": "./dist/create.js",
     "dumbdiagrams": "./dist/index.js",
     "dgm": "./dist/index.js"
   },

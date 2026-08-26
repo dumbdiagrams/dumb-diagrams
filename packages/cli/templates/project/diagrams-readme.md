@@ -17,5 +17,5 @@ This is the writable output folder for the project. Keep one independent
 Open the folder in Studio to choose among the project diagrams:
 
 ```bash
-npx dumbdiagrams@latest studio diagrams
+npx create-dumb-diagrams@latest studio diagrams
 ```

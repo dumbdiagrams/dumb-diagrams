@@ -1,11 +1,11 @@
-# dumbdiagrams
+# create-dumb-diagrams
 
 **LLM-first architecture diagrams that are hard to get wrong.**
 
 Local CLI and Studio for agent-generated `.dgm` source files — deterministic layout, validated catalog types, human controls when you need them.
 
-[![npm version](https://img.shields.io/npm/v/dumbdiagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/dumbdiagrams)
-[![Node.js](https://img.shields.io/node/v/dumbdiagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![npm version](https://img.shields.io/npm/v/create-dumb-diagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-dumb-diagrams)
+[![Node.js](https://img.shields.io/node/v/create-dumb-diagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 
 Requires Node.js 24 or newer.
@@ -23,16 +23,16 @@ a substantially cleaner path.
 ## Quick start
 
 ```bash
-npx dumbdiagrams@latest init --open-editor
+npm create dumb-diagrams@latest -- --open-editor
 ```
 
-When no directory or name is supplied in an interactive terminal, `init` asks what the project should be called. For scripted use, pass values explicitly or use `--yes` for a timestamped fallback:
+When no directory or name is supplied in an interactive terminal, the initializer asks what the diagram space should be called. The default is based on the current directory and a timestamp. For scripted use, pass values explicitly or use `--yes` for the same timestamped fallback:
 
 ```bash
-dumbdiagrams init --name "Payments Platform" --diagram system-overview
-dumbdiagrams init --directory ./projects/payments --name "Payments Platform"
-dumbdiagrams init --name payments --description "Event-driven billing system."
-dumbdiagrams init --yes
+npm create dumb-diagrams@latest payments -- --name "Payments Platform" --diagram system-overview
+npx create-dumb-diagrams@latest init --directory ./projects/payments --name "Payments Platform"
+npx create-dumb-diagrams@latest init --name payments --description "Event-driven billing system."
+npm create dumb-diagrams@latest -- --yes
 ```
 
 ## What `init` creates
@@ -47,14 +47,14 @@ Use `--editor cursor` or `--editor code` to pick an editor. Without `--editor`, 
 ## Commands
 
 ```bash
-dumbdiagrams help                         # full command reference
-dumbdiagrams studio diagrams              # local Studio
-dumbdiagrams validate diagrams            # check every .dgm in a folder
-dumbdiagrams render diagrams/foo.dgm --output foo.svg
-dumbdiagrams format diagrams/foo.dgm      # print canonical source
+npx create-dumb-diagrams@latest help                         # full command reference
+npx create-dumb-diagrams@latest studio diagrams              # local Studio
+npx create-dumb-diagrams@latest validate diagrams            # check every .dgm in a folder
+npx create-dumb-diagrams@latest render diagrams/foo.dgm --output foo.svg
+npx create-dumb-diagrams@latest format diagrams/foo.dgm      # print canonical source
 ```
 
-Run `dumbdiagrams help` for init, studio, and render flags.
+Run `npx create-dumb-diagrams@latest help` for init, studio, and render flags.
 
 ## Maintainer tarball test
 
@@ -67,9 +67,9 @@ mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 
 VERSION="$(node -p 'require("./packages/cli/package.json").version')"
-ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-$VERSION.tgz"
-npx --yes --package="$ARTIFACT" dumbdiagrams init ./preview-project --yes
-npx --yes --package="$ARTIFACT" dumbdiagrams validate ./preview-project/diagrams
+ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
+npx --yes --package="$ARTIFACT" create-dumb-diagrams ./preview-project --yes
+npx --yes --package="$ARTIFACT" create-dumb-diagrams validate ./preview-project/diagrams
 ```
 
 `pnpm smoke:package` from the repository root exercises the same artifact and

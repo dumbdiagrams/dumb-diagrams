@@ -1,10 +1,18 @@
 import awsHighAvailabilityWebAppSource from "../../../examples/diagrams/aws-high-availability-web-app.dgm?raw";
 import awsDataTransferHubSource from "../../../examples/diagrams/aws-data-transfer-hub.dgm?raw";
 import bedrockClaimsProcessingSource from "../../../examples/diagrams/bedrock-claims-processing.dgm?raw";
+import simpleServerlessWebApplicationSource from "../../../examples/diagrams/simple-serverless-web-application.dgm?raw";
+import imageThumbnailPipelineSource from "../../../examples/diagrams/image-thumbnail-pipeline.dgm?raw";
+import asynchronousReportGenerationSource from "../../../examples/diagrams/asynchronous-report-generation.dgm?raw";
+import eventDrivenOrderFulfillmentSource from "../../../examples/diagrams/event-driven-order-fulfillment.dgm?raw";
 
 import DATA_TRANSFER_HUB_PROMPT from "../../../examples/prompts/aws-data-transfer-hub.md?raw";
 import HIGH_AVAILABILITY_PROMPT from "../../../examples/prompts/aws-high-availability-web-app.md?raw";
 import BEDROCK_CLAIMS_PROMPT from "../../../examples/prompts/bedrock-claims-processing.md?raw";
+import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/prompts/simple-serverless-web-application.md?raw";
+import IMAGE_THUMBNAIL_PIPELINE_PROMPT from "../../../examples/prompts/image-thumbnail-pipeline.md?raw";
+import ASYNCHRONOUS_REPORT_GENERATION_PROMPT from "../../../examples/prompts/asynchronous-report-generation.md?raw";
+import EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT from "../../../examples/prompts/event-driven-order-fulfillment.md?raw";
 
 export interface DiagramExample {
   id: string;
@@ -39,5 +47,37 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "high availability", "multi-AZ"],
     source: awsHighAvailabilityWebAppSource,
     prompt: HIGH_AVAILABILITY_PROMPT,
+  },
+  {
+    id: "simple-serverless-web-application",
+    title: "Simple serverless web application",
+    description: "A minimal serverless web path from a client through CloudFront and API Gateway to Lambda and DynamoDB.",
+    tags: ["AWS", "serverless", "beginner"],
+    source: simpleServerlessWebApplicationSource,
+    prompt: SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT,
+  },
+  {
+    id: "image-thumbnail-pipeline",
+    title: "Image thumbnail pipeline",
+    description: "A direct-upload image flow that uses an S3 event to invoke Lambda and persist thumbnails and metadata.",
+    tags: ["AWS", "S3", "events"],
+    source: imageThumbnailPipelineSource,
+    prompt: IMAGE_THUMBNAIL_PIPELINE_PROMPT,
+  },
+  {
+    id: "asynchronous-report-generation",
+    title: "Asynchronous report generation",
+    description: "An API-driven report workflow with SQS, a Fargate worker, storage, job status, and email notification.",
+    tags: ["AWS", "async", "SQS"],
+    source: asynchronousReportGenerationSource,
+    prompt: ASYNCHRONOUS_REPORT_GENERATION_PROMPT,
+  },
+  {
+    id: "event-driven-order-fulfillment",
+    title: "Event-driven order fulfillment",
+    description: "An order service that persists state and fans OrderCreated events out to inventory, payment, shipping, and notifications.",
+    tags: ["AWS", "events", "fulfillment"],
+    source: eventDrivenOrderFulfillmentSource,
+    prompt: EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT,
   },
 ];

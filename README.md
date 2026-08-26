@@ -11,8 +11,8 @@ Studio, and enough guardrails to keep an AI-generated sketch understandable.
 
 <br />
 
-[![npm version](https://img.shields.io/npm/v/dumbdiagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/dumbdiagrams)
-[![Node.js](https://img.shields.io/node/v/dumbdiagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![npm version](https://img.shields.io/npm/v/create-dumb-diagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-dumb-diagrams)
+[![Node.js](https://img.shields.io/node/v/create-dumb-diagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
@@ -99,24 +99,25 @@ manual routes for the cases where the architect knows better than the router.
 Requires Node.js 24 or newer.
 
 ```bash
-npx dumbdiagrams@latest init --open-editor
+npm create dumb-diagrams@latest -- --open-editor
 ```
 
-The command asks for a project name, creates a folder with a starter diagram and
-agent instructions, and can open it in your editor. Run the printed `Next:`
+The command asks for a diagram space name, creates a folder with a starter diagram
+and agent instructions, and can open it in your editor. If you accept the default,
+the name is derived from the current directory and a timestamp. Run the printed `Next:`
 command to open the project’s diagrams in Studio.
 
 Prefer a fully explicit command?
 
 ```bash
-npx dumbdiagrams@latest init \
+npm create dumb-diagrams@latest payments-platform -- \
   --name "Payments Platform" \
   --diagram system-overview \
   --description "Event-driven billing architecture." \
   --open-editor
 
 cd payments-platform
-npx dumbdiagrams@latest studio diagrams
+npx create-dumb-diagrams@latest studio diagrams
 ```
 
 Every diagram is a normal file under `diagrams/`. Studio watches the selected
@@ -177,22 +178,22 @@ on the next render.
 
 ```bash
 # Start or open a project
-npx dumbdiagrams@latest init
-npx dumbdiagrams@latest studio diagrams
-npx dumbdiagrams@latest studio diagrams/system-overview.dgm
+npm create dumb-diagrams@latest
+npx create-dumb-diagrams@latest studio diagrams
+npx create-dumb-diagrams@latest studio diagrams/system-overview.dgm
 
 # Check and normalize source
-npx dumbdiagrams@latest validate diagrams
-npx dumbdiagrams@latest format diagrams/system-overview.dgm --write
+npx create-dumb-diagrams@latest validate diagrams
+npx create-dumb-diagrams@latest format diagrams/system-overview.dgm --write
 
 # Produce a portable SVG without opening Studio
-npx dumbdiagrams@latest render diagrams/system-overview.dgm --output architecture.svg
+npx create-dumb-diagrams@latest render diagrams/system-overview.dgm --output architecture.svg
 ```
 
 An optional global install exposes both command names:
 
 ```bash
-npm install -g dumbdiagrams
+npm install -g create-dumb-diagrams
 dumbdiagrams studio diagrams
 dgm validate diagrams
 ```
@@ -220,7 +221,7 @@ node packages/cli/dist/index.js studio ../my-diagram-project/diagrams
 
 To skip the name prompt in scripts, add `--yes`.
 
-To test the **exact npm tarball** (what `npx dumbdiagrams` runs), use:
+To test the **exact npm tarball** (what `npm create dumb-diagrams@latest` runs), use:
 
 ```bash
 pnpm smoke:package

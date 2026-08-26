@@ -129,7 +129,8 @@ Nothing is published by those commands. The generated tarball lives under
 
 ## Testing the CLI
 
-The CLI is the publishable `dumbdiagrams` package (`dgm` is an alias). Use three
+The CLI is the publishable `create-dumb-diagrams` package (`dumbdiagrams` and
+`dgm` are command aliases). Use three
 loops depending on what you need to verify.
 
 | Loop | When to use it | What it proves |
@@ -168,8 +169,8 @@ pnpm build
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 
-export ARTIFACT="$(pwd)/.artifacts/packages/dumbdiagrams-0.1.0.tgz"
-export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
+export ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
+export CLI="npx --yes --package=$ARTIFACT create-dumb-diagrams"
 ```
 
 `pnpm smoke:package` runs the same pack + `npx` checks automatically (including
@@ -178,7 +179,7 @@ log is expected).
 
 ### Command reference
 
-Run `dumbdiagrams help` (or `$CLI help` from a tarball) for the live list. Summary:
+Run `npx create-dumb-diagrams@latest help` (or `$CLI help` from a tarball) for the live list. Summary:
 
 | Command | Purpose | Positional args | Notable flags |
 | --- | --- | --- | --- |
@@ -223,7 +224,7 @@ node packages/cli/dist/index.js fixtures async-docs
 node packages/cli/dist/index.js validate examples/diagrams
 ```
 
-After publishing, replace `$CLI` with `npx dumbdiagrams@latest` or a pinned
+After publishing, replace `$CLI` with `npx create-dumb-diagrams@latest` or a pinned
 version (`@0.1.0`).
 
 ### What automated tests cover
@@ -422,9 +423,10 @@ adapter layer: it takes the compiled SVG and produces the formats the browser
 can support. Export buttons should stay here instead of growing special cases
 inside the runtime renderer.
 
-### `dumbdiagrams` CLI
+### `create-dumb-diagrams` CLI
 
-This is the publishable package and exposes both `dumbdiagrams` and `dgm`.
+This is the publishable package and exposes `create-dumb-diagrams` for the
+initializer plus `dumbdiagrams` and `dgm` for command-style usage.
 
 - `init` creates an agent-ready project, examples, catalog references, and a
   starter diagram.
