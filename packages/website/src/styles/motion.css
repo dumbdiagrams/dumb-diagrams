@@ -1,0 +1,40 @@
+@layer base {
+  :root {
+    --motion-ease: cubic-bezier(.22, 1, .36, 1);
+    --motion-reveal: 700ms;
+    --motion-border: 2200ms;
+  }
+}
+
+@layer components {
+  /* One fine sweep along the existing rule. The content and arrow stay still. */
+  .trace-border { position: relative; isolation: isolate; }
+  .trace-border::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid transparent;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(110deg, transparent 38%, var(--brand-coral) 48%, var(--brand-orange) 51%, var(--brand-navy) 56%, transparent 66%) border-box;
+    background-size: 300% 100%;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+  .trace-border:is(:hover, :focus-visible, :focus-within, [data-tracing])::after {
+    animation: border-trace var(--motion-border) var(--motion-ease) both;
+  }
+  @keyframes border-trace {
+    0% { background-position: 100% 0; opacity: 0; }
+    12% { opacity: .85; }
+    80% { opacity: .85; }
+    100% { background-position: 0% 0; opacity: 0; }
+  }
+}
+
+@layer responsive {
+  @media (prefers-reduced-motion: reduce) {
+    .trace-border::after { animation: none !important; opacity: 0; }
+  }
+}

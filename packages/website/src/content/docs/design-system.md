@@ -66,7 +66,11 @@ and font licenses. The apps keep their own layout and interaction styles.
 ## Motion and accessibility
 
 The landing page uses Motion's lightweight animation entry point for gentle section
-entrances. Its terminal replays output captured from a real CLI project-creation
+entrances. Key actions share a fine border sweep on arrival, hover, or keyboard
+focus. These accents run once; the arrows and button positions stay still.
+Reduced motion turns the sweeps and entrances off.
+
+The terminal replays output captured from a real CLI project-creation
 run, including the original banner colors, created files, and next command.
 The local path is an example, and nothing runs in your browser. You can pause,
 replay, or scroll through the output. With reduced motion enabled, you see the

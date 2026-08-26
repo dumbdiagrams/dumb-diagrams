@@ -9,12 +9,18 @@ import { url } from '../lib/site';
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-eyebrow"><span class="eyebrow"><i></i> ARCHITECTURE DIAGRAMS FOR DEVELOPERS</span><span class="version mono">OPEN SOURCE / v0.1</span></div>
-      <h1 id="hero-title">A little opinionated.<br /><span>A lot clearer<span class="hero-period">.</span></span></h1>
-      <div class="hero-bottom">
-        <div class="hero-description"><p>Use a coding agent for the first draft.<br class="desktop-break" /> Refine it in Studio. Keep the source in a plain text file.</p><p class="agent-note">Use Codex, Claude Code, Cursor, Antigravity, or another coding agent. Set it up separately.</p><a class="text-link" href={url('docs/')}>See how it works <span aria-hidden="true">↗</span></a></div>
-        <div class="hero-start"><Install /></div>
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1 id="hero-title" data-reveal>A little opinionated.<br /><span>A lot clearer<span class="hero-period">.</span></span></h1>
+          <div class="hero-description" data-reveal data-reveal-delay="80"><p>Use a coding agent for the first draft. Refine it in Studio. Keep the source in a plain text file.</p></div>
+          <div class="hero-start" data-reveal data-reveal-delay="160"><Install /></div>
+        </div>
+        <div class="hero-terminal" data-reveal data-reveal-delay="120"><Terminal /></div>
       </div>
-      <Terminal />
+      <div class="hero-footnote">
+        <p class="agent-note">Bring your own agent: Codex, Claude Code, Cursor, Antigravity, or an open-source alternative. Set it up separately.</p>
+        <a class="text-link" href={url('docs/')}>See how it works <span aria-hidden="true">↗</span></a>
+      </div>
     </section>
 
     <div class="principles-strip" aria-label="Product principles"><span>WHAT YOU GET</span><p>Agent-compatible</p><b aria-hidden="true">+</b><p>Local by default</p><b aria-hidden="true">+</b><p>Versioned with Git</p><b aria-hidden="true">+</b><p>Open source</p></div>
@@ -27,13 +33,13 @@ import { url } from '../lib/site';
     </section>
 
     <section class="faq section" aria-labelledby="faq-title"><div class="section-heading"><span class="eyebrow">03 / PRACTICAL QUESTIONS</span><h2 id="faq-title">What to expect.</h2><p>A focused tool with defined boundaries.</p></div><div class="faq-list">
-      <details><summary>Do I need a coding agent?<span aria-hidden="true">+</span></summary><p>No. A coding agent is optional. If you use one, choose Codex, Claude Code, Cursor, Antigravity, or another tool that fits your workflow. Dumb Diagrams provides project instructions and examples, not an agent or model access. You can write .dgm files yourself or edit them in Studio.</p></details>
-      <details><summary>Where do my diagrams live?<span aria-hidden="true">+</span></summary><p>On your machine, as .dgm files. Start Studio through the CLI to read and save those files directly. The standalone browser editor uses browser storage and explicit downloads instead. <a href={url('docs/studio/')}>Read about the two modes.</a></p></details>
-      <details><summary>Can I use it for clouds other than AWS?<span aria-hidden="true">+</span></summary><p>The catalog also includes Azure, Google Cloud, and cloud-agnostic assets. AWS currently has the strongest grammar, examples, and visual guidance. Support and coverage vary by provider.</p></details>
-      <details><summary>How is this different from a whiteboard?<span aria-hidden="true">+</span></summary><p>Dumb Diagrams models services, boundaries, and connections, then applies a defined layout that you can refine. It is not a general illustration tool, live infrastructure inventory, or hosted multiplayer workspace.</p></details>
+      <details><summary>Do I need a coding agent?<span aria-hidden="true">+</span></summary><p>No, but we strongly recommend one for the first draft. Dumb Diagrams was designed around an agent-first workflow. Give your model the generated project context, especially <code>DUMB_DIAGRAMS.md</code>, <code>examples/README.md</code>, <code>CATALOG.md</code>, <code>CATALOG.json</code>, and a relevant example. With that context and a description of your system, Codex, Claude Code, Cursor, Antigravity, or another coding agent should produce a solid starting point. You can also write <code>.dgm</code> files yourself or edit them in Studio.</p></details>
+      <details><summary>Where do my diagrams live?<span aria-hidden="true">+</span></summary><p>In normal CLI use, your files never leave your device. Diagrams stay on your machine as <code>.dgm</code> files, and Studio runs at <code>127.0.0.1</code> to read and save them directly. We do not upload or store your diagrams on our servers, and you own the project files on your machine. The standalone browser editor is a separate mode that keeps work in browser storage and uses explicit downloads. The optional <code>--host</code> flag exposes the local server to a trusted network; with a non-loopback address, you are deliberately allowing another device to access that local session. <a href={url('docs/studio/')}>Read about the two modes.</a></p></details>
+      <details><summary>Can I use it for clouds other than AWS?<span aria-hidden="true">+</span></summary><p>The catalog was built primarily with AWS in mind. Support has been extended to Azure, Google Cloud, and cloud-agnostic assets, but those paths may be less refined than the AWS workflow. If you find missing provider functionality, contributions are welcome. See <a href={url('docs/contributing/')}>how to work on the project</a>.</p></details>
+      <details><summary>How is this different from a whiteboard?<span aria-hidden="true">+</span></summary><p>Dumb Diagrams models services, boundaries, and connections, then applies a defined layout that you can refine. Its deterministic engine keeps placement, icon alignment, and connector routing consistent, so a model’s draft does not leave icons drifting or arrows taking arbitrary paths. A model may produce different drafts, but once the <code>.dgm</code> source is in place, the engine renders that source the same way each time. The rules draw mainly on AWS architecture guidance, with some choices based on the project’s design direction. It is not a general illustration tool, live infrastructure inventory, or hosted multiplayer workspace.</p></details>
       <details><summary>Is it free and open source?<span aria-hidden="true">+</span></summary><p>Yes. The project is released under AGPL-3.0-only. Provider icons retain their own upstream terms. You can read the <a href={url('LICENSE.txt')}>project license</a> and <a href={url('ICON-NOTICES.txt')}>icon notices</a>.</p></details>
     </div></section>
 
-    <section class="closing" data-reveal><div><span class="eyebrow">START WITH ONE DIAGRAM</span><h2>Put the architecture<br /><em>on the page.</em></h2></div><a href={url('docs/quick-start/')} class="closing-cta">Create your first diagram <span aria-hidden="true">↗</span></a></section>
+    <section class="closing" data-reveal><div><span class="eyebrow">START WITH ONE DIAGRAM</span><h2>Put the architecture<br /><em>on the page.</em></h2></div><a href={url('docs/quick-start/')} class="closing-cta trace-border" data-trace>Create your first diagram <span aria-hidden="true">↗</span></a></section>
   </main>
 </Base>

@@ -45,7 +45,7 @@ npx create-dumb-diagrams@latest studio diagrams/payments.dgm --no-open
 | Flag | Default | Purpose |
 | --- | --- | --- |
 | `--port` | `4788` | Port for the local server |
-| `--host` | `127.0.0.1` | Bind address; changing it may expose the server |
+| `--host` | `127.0.0.1` | Bind address; use a non-loopback address only for a trusted network |
 | `--no-open` | Off | Do not open the browser automatically |
 
 See [Using Studio](../studio/) before changing the host binding.

@@ -39,7 +39,7 @@ Start with automatic layout, then move the items that need attention. For dense 
 | Local Studio | The CLI’s `studio` command | Real `.dgm` files through the local server |
 | Standalone browser Studio | A static deployment or the editor dev server | Browser workspace storage and explicit downloads |
 
-The same editor bundle supports both modes. At startup it checks for the local API. Without that API, it stays in browser mode.
+The same editor bundle supports both modes. At startup it checks for the local API. With the API, it connects to the CLI’s file-backed Studio; without it, the editor stays in browser mode. Neither mode sends your diagrams to a Dumb Diagrams service or stores them on our servers.
 
 > A static browser page cannot silently save into your repository. If you want an agent and Studio to edit the same file on disk, start Studio through the CLI.
 
@@ -53,7 +53,7 @@ Writes are atomic, and reconnecting after sleep refreshes the document and conne
 
 ## Keep the local server local
 
-Use the loopback address by default. If you expose Studio with `--host`, the CLI adds a per-process capability token to the launch URL and requires it for API access.
+Use the loopback address by default. The `--host` flag exists for trusted-network and development setups that need to open the local Studio from another device. When the address is not loopback, the CLI adds a per-process capability token to the launch URL and requires it for API access. This still runs on your machine; it is not a hosted Studio service. Anyone with access to the launch URL may be able to work with the exposed project, so use the flag only when you intend to share that session.
 
 Treat that URL as a secret. The bridge is a development tool, not a public hosting service. Remote access needs a trusted network or a properly authenticated TLS proxy.
 

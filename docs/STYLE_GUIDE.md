@@ -58,7 +58,7 @@ package; app styles should alias them into semantic roles.
 | Token | Value | Use |
 | --- | --- | --- |
 | `--brand-navy` | `#244068` | Main identity, headings, actions, diagram UI ink |
-| `--brand-navy-deep` | `#183452` | Terminal, dark editorial sections, action hover |
+| `--brand-navy-deep` | `#183452` | Prompt panels, dark editorial sections, action hover |
 | `--brand-navy-soft` | `#e7eef7` | Quiet selected states and supporting surfaces |
 | `--brand-coral` | `#e66231` | Orange wordmark dot, small highlights and indicators |
 | `--brand-coral-deep` | `#c94f2c` | Existing Studio danger role; use its semantic token |
@@ -104,6 +104,11 @@ buttons into Studio or introduce a second modal implementation for one feature.
 
 Use an underlying 4px spacing rhythm, with optical adjustments for typography.
 The website has a 1440px maximum shell and responsive gutters (64, 36, 24, 20px).
+The desktop hero puts the headline and install command beside the terminal, with
+the agent requirement underneath. Keep the complete composition visible at
+1280 × 720 and 1440 × 900. Its terminal height adapts to the viewport; only the
+transcript scrolls. Below 900px, stack the terminal underneath. On phones, allow
+normal page scrolling instead of shrinking the text to force a single screen.
 Docs use a navigation/article/contents layout that collapses on small screens.
 Studio is a desktop editing surface; do not imply a mobile editor experience.
 
@@ -129,7 +134,16 @@ files, and next command in order. It runs once for about six seconds with
 pause/resume and replay. Output scrolls inside the terminal, never the page;
 scrolling or touching the terminal pauses playback so the reader stays in control.
 It also pauses while the page is hidden. Section entrances run once, move at most
-16px, and last 550ms. Small hover color changes use 180ms transitions.
+8px, and last 700ms. Hero elements can stagger by up to 160ms. Use the shared
+`cubic-bezier(.22, 1, .36, 1)` easing. Small hover color changes use 180ms transitions.
+
+The website's `src/styles/motion.css` defines the motion tokens and `trace-border`
+treatment: one 1px orange/amber/navy sweep along an existing border over 2200ms.
+Use it on the install panel and primary header/closing actions. `data-trace`
+adds one entrance sweep; hover or keyboard focus can replay it. The border is
+decorative and cannot intercept clicks. Keep arrows stationary; avoid translating
+buttons, rotating glows, or continuously animated frames. Reduced motion removes
+the sweep completely and preserves the ordinary border and keyboard focus ring.
 
 Respect `prefers-reduced-motion`, including changes while the page is open.
 Show the complete terminal when motion is reduced or JavaScript is unavailable.

@@ -90,24 +90,41 @@ if (terminal) {
   }
 }
 
-// Content is visible without JS. Only animate when a section enters the viewport;
-// no scroll listeners, sticky timelines, or perpetual animation loops.
+// Content is visible without JS. Entrances and border accents run once in view;
+// hover/focus can replay a border sweep, but nothing loops while the page idles.
 const entrances = new Set<ReturnType<typeof animate>>();
 if ('IntersectionObserver' in window) {
+  const duration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-reveal')) / 1000 || .7;
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       observer.unobserve(entry.target);
       if (reduced.matches) return;
       const animation = animate(entry.target as HTMLElement,
-        { opacity: [.45, 1], transform: ['translateY(16px)', 'translateY(0px)'] },
-        { duration: .55, ease: 'easeOut' });
+        { opacity: [.8, 1], transform: ['translateY(8px)', 'translateY(0px)'] },
+        { duration, ease: [.22, 1, .36, 1], delay: Number((entry.target as HTMLElement).dataset.revealDelay || 0) / 1000 });
       entrances.add(animation);
       animation.then(() => entrances.delete(animation));
     });
   }, { threshold: .12 });
   document.querySelectorAll('[data-reveal]').forEach(element => observer.observe(element));
+  const borders = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      borders.unobserve(entry.target);
+      if (!reduced.matches) entry.target.setAttribute('data-tracing', '');
+    });
+  }, { threshold: .65 });
+  document.querySelectorAll<HTMLElement>('[data-trace]').forEach(element => {
+    borders.observe(element);
+    element.addEventListener('animationend', event => {
+      if (event.animationName === 'border-trace') element.removeAttribute('data-tracing');
+    });
+  });
   reduced.addEventListener('change', () => {
-    if (reduced.matches) entrances.forEach(animation => animation.complete());
+    if (reduced.matches) {
+      entrances.forEach(animation => animation.complete());
+      document.querySelectorAll('[data-tracing]').forEach(element => element.removeAttribute('data-tracing'));
+    }
   });
 }

@@ -25,21 +25,22 @@ const rest = lines.slice(13);
   <div class="terminal-caption"><span>CAPTURED FROM THE CLI · EXAMPLE PATH</span></div>
 </div>
 <style>
-  .terminal { margin-top: 32px; }
+  .terminal { display: flex; flex-direction: column; height: var(--hero-window-height, 450px); container-type: inline-size; }
   .terminal-controls { display: flex; gap: 16px; margin-left: auto; z-index: 1; }
   .terminal-controls button { border: 0; padding: 8px 0; background: transparent; color: #c9c9cd; font: 10px var(--mono); }
   .terminal-controls button:hover { color: white; }
-  .terminal-viewport { height: 380px; overflow: auto; overscroll-behavior: contain; scrollbar-color: #56565a #0c0c0c; }
-  .terminal-log { padding: 24px 28px; font: 11px/1.7 var(--mono); color: #ececef; }
+  .terminal :global(.mac-titlebar), .terminal-caption { flex-shrink: 0; }
+  .terminal-viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-color: #56565a #0c0c0c; }
+  .terminal-log { padding: 22px 24px; font: 10px/1.7 var(--mono); color: #ececef; }
   .terminal-command { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 9px; min-height: 20px; margin-bottom: 16px; }
   .shell-prompt { color: #a9a9ae; }
   .terminal-command code { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .terminal-banner { font: 10px/1.1 var(--mono); white-space: pre; margin: 0; }
+  .terminal-banner { font: clamp(6px, 1.75cqi, 10px)/1.1 var(--mono); white-space: pre; margin: 0; }
   .terminal-row { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.7em; }
   .terminal-cursor { display: inline-block; width: 6px; height: 12px; background: #e2e2e7; margin-left: -5px; }
   .terminal-caption { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-top: 1px solid #252527; color: #a4a4ac; font: 8px var(--mono); letter-spacing: .035em; }
   .terminal-caption a:hover { color: white; }
-  @media (max-width: 540px) { .terminal-log { padding: 20px 12px; font-size: 9px; } .terminal-banner { font-size: clamp(6px, 2vw, 10px); } .terminal-viewport { height: 330px; } .terminal-caption { padding: 12px; font-size: 6px; gap: 8px; } .terminal-controls { gap: 12px; } .terminal-controls button { font-size: 8px; } }
+  @media (max-width: 540px) { .terminal-log { padding: 20px 12px; font-size: 9px; } .terminal-banner { font-size: clamp(6px, 1.9cqi, 10px); } .terminal-caption { padding: 12px; font-size: 6px; gap: 8px; } .terminal-controls { gap: 12px; } .terminal-controls button { font-size: 8px; } }
 </style>
 <script>
   import '../scripts/motion';
