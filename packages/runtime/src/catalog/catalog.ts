@@ -1,5 +1,5 @@
 import type { CatalogRule } from "../core/index.js";
-import manifest from "./generated/manifest.json" with { type: "json" };
+import manifest from "./generated/runtime-manifest.js";
 
 export type UserCloudProvider = "aws" | "azure" | "gcp" | "cloud-agnostic";
 /** Legacy provider names remain accepted for document compatibility only. */

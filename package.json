@@ -37,10 +37,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@vitest/coverage-v8": "^3.0.5",
+    "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.25.12",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.5"
+    "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@11.23.0",
   "description": "LLM-first architecture diagrams that are hard to get wrong: deterministic layout, validated source, local Studio.",

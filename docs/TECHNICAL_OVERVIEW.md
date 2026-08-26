@@ -253,15 +253,34 @@ there is no extra orchestration layer hiding how the packages fit together.
 | Node.js 24 | CLI, local Studio HTTP server, packaging, catalog generation, and repository tooling |
 | pnpm workspaces | Links the three packages and enforces the locked dependency graph |
 | React 19 | Studio UI and interactive editor composition |
-| Vite 6 | Editor development server and production browser bundle |
+| Vite 8 | Editor development server and production browser bundle, using Rolldown/Oxc |
 | CodeMirror 6 | `.dgm` source editing inside Studio |
-| Vitest with V8 coverage | Runtime, editor-logic, CLI, and Studio-server tests |
+| Vitest 4 with V8 coverage | Runtime, editor-logic, CLI, and Studio-server tests |
 | Playwright with Chromium and WebKit | Cross-engine browser behavior and exports; Chromium also covers the packed CLI-to-Studio journey |
 | esbuild | Produces the standalone CLI bundle placed in the npm tarball |
 | GitHub Actions and Pages | Linux/Windows verification, exact-tag release checks, and static Studio deployment |
 
 There is deliberately no monorepo task framework. Three packages and a small
 set of root scripts are still easier to understand directly through pnpm.
+
+### Why Vite 8, and what React has to do with it
+
+React and Vite solve different problems. React 19 is the UI library; Vite is
+the development server and browser build tool around it. The old setup was
+already on React 19, but still had Vite 6 and the older React plugin as a
+stable, pinned tooling choice. That was not a React compatibility requirement,
+and there was no product reason to stay on Vite 6 once the rest of the
+repository was ready for the current toolchain.
+
+Vite 8 moves the production bundling path to Rolldown and uses Oxc for several
+transforms. In practice, the main benefit we expect is a shorter edit/build
+loop and less bundler work in CI. It does not automatically make the code run
+faster in a user's browser, and it is not a reason to upgrade React by itself.
+Browser performance still depends on the JavaScript and assets we ship, so the
+catalog chunk and the editor entry remain explicit, measured boundaries. See
+the [Vite 8 announcement](https://vite.dev/blog/announcing-vite8) for the
+upstream rationale and the repository's build and asset checks for the local
+measurements.
 
 ## Repository structure
 
@@ -652,6 +671,14 @@ Vite will automatically create modern formats. The generated Studio and the
 CLI’s static server both need to serve the same named files, so stable paths are
 useful for these small app-shell assets.
 
+The generated catalog is a special case. Generation keeps the full JSON
+manifest for audits and tooling, and also writes a smaller runtime manifest
+containing only the aliases and entries needed by the catalog module. The
+runtime version is loaded through `JSON.parse` so Vite can ship it as a compact
+string instead of turning every catalog entry into JavaScript object source.
+This keeps the catalog chunk cacheable without making the browser bundle carry
+metadata used only by repository checks.
+
 ### What we checked for Vite image optimization
 
 There are good tools in the Vite ecosystem, but they solve slightly different
@@ -659,8 +686,9 @@ problems:
 
 - [`vite-imagetools`](https://github.com/JonasKruckenberg/imagetools/tree/main/packages/vite)
   is the nicest fit for responsive images and compile-time format conversion.
-  Its current major release is Sharp-backed, but it requires Vite 8 or newer;
-  this repository currently uses Vite 6.
+  Its current major release is Sharp-backed and requires Vite 8 or newer, so it
+  is compatible with the current toolchain. It is still more useful once the
+  docs site has many owned raster images than it is for this small app shell.
 - [`vite-plugin-image-optimizer`](https://github.com/FatehAK/vite-plugin-image-optimizer)
   supports Vite 3+ and can process public assets with Sharp and SVGO. It is a
   reasonable option for a site with many owned raster images, but its broad
@@ -706,7 +734,7 @@ resolution.
 | Gate | Boundary covered |
 | --- | --- |
 | `pnpm test` | Runtime, editor logic, CLI, and local Studio HTTP integration |
-| `pnpm test:coverage` | CLI, runtime subsystems, editor logic, and crash recovery measured against enforced thresholds; other React surfaces are exercised by the browser suites |
+| `pnpm test:coverage` | Node-focused CLI, runtime, editor-model, and crash-recovery coverage against enforced thresholds; browser-bound canvas, workspace, drag/drop, and worker orchestration are exercised by the Playwright suites |
 | `pnpm check` | Every checked-in example through the compiled CLI |
 | `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings |
 | `pnpm check:performance` | Median compile time for the representative examples against a 250 ms CI ceiling |

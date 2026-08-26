@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const OUT = join(ROOT, "packages/runtime/src/catalog/generated/manifest.json");
+const RUNTIME_OUT = join(ROOT, "packages/runtime/src/catalog/generated/runtime-manifest.ts");
 const CATALOG_ROOT = join(ROOT, "assets/catalog");
 const LOCK_PATH = join(CATALOG_ROOT, "sources.lock.json");
 const COLLISION_PATH = join(CATALOG_ROOT, "collisions.json");
@@ -761,4 +762,12 @@ if (missing.length) {
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, `${JSON.stringify(manifest, null, 2)}\n`);
+const runtimeManifest = JSON.stringify({ aliases: legacyAliases, entries: manifest.entries });
+writeFileSync(
+  RUNTIME_OUT,
+  `const manifest = JSON.parse(${JSON.stringify(runtimeManifest)}) as {\n` +
+    `  aliases: Record<string, string>;\n` +
+    `  entries: unknown[];\n` +
+    `};\n\nexport default manifest;\n`,
+);
 console.log(`Wrote ${entries.length} canonical catalog entries and ${assetFiles.length} browser assets to ${OUT}`);

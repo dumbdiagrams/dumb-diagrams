@@ -22,6 +22,29 @@ describe("sanitizeSvg", () => {
     expect(() => sanitizeSvg('<svg width="10001" height="10"><rect width="1" height="1"/></svg>')).toThrow(/width/i);
   });
 
+  it("rejects malformed markup and non-local SVG references", () => {
+    expect(() => sanitizeSvg("<!doctype svg><svg/>")).toThrow(/forbidden declarations/i);
+    expect(() => sanitizeSvg("<div/>")).toThrow(/root element/i);
+    expect(() => sanitizeSvg("<svg><foreignObject/></svg>")).toThrow(/element/i);
+    expect(() => sanitizeSvg("<svg malformed></svg>")).toThrow(/malformed attributes/i);
+    expect(() => sanitizeSvg('<svg><rect fill="https://example.com/color"/></svg>')).toThrow(/external/i);
+    expect(() => sanitizeSvg('<svg><use clip-path="url(external)"/></svg>')).toThrow(/local fragment/i);
+    expect(() => sanitizeSvg('<svg><use href="icon"/></svg>')).toThrow(/local fragment/i);
+    expect(() => sanitizeSvg("plain text")).toThrow(/Invalid SVG/);
+    expect(() => sanitizeSvg('<svg width="-1" height="10"/>')).toThrow(/width/i);
+    expect(() => sanitizeSvg('<svg><rect fill="url(#paint0)"/></svg>')).not.toThrow();
+  });
+
+  it("uses explicit dimensions and safe local references when the DOM parser is unavailable", () => {
+    const explicit = sanitizeSvg('<svg width="20" height="24"><defs><clipPath id="clip"/></defs><rect clip-path="url(#clip)"/></svg>');
+    expect(explicit.intrinsicW).toBe(20);
+    expect(explicit.intrinsicH).toBe(24);
+
+    const defaults = sanitizeSvg("<svg></svg>");
+    expect(defaults.intrinsicW).toBe(64);
+    expect(defaults.intrinsicH).toBe(64);
+  });
+
   it("re-sanitizes embedded document assets before inserting SVG markup", () => {
     const doc = createEmptyDocument("unsafe-asset");
     doc.assets = [{

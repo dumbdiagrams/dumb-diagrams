@@ -11,14 +11,18 @@ import {
   addGroup,
   addResource,
   alignSelection,
+  annotationSize,
+  annotationStyle,
   canPlaceCatalogEntry,
   clearView,
   deleteSelection,
   importSvgAsset,
+  isSelected,
   MAX_EDGE_STEP,
   moveSelection,
   needsAutoFix,
   nudgeSelection,
+  primarySelection,
   pasteClipboard,
   reconnectEdge,
   renameResource,
@@ -29,19 +33,58 @@ import {
   setEdgeBadgePosition,
   setEdgeLabelPosition,
   setAnnotationStyle,
+  setGroupLabelPosition,
+  setPlace,
+  setResourceLabelPosition,
+  setSize,
+  toggleSelectionItem,
   updateTextFormat,
   setGroupPlace,
   setRoute,
-  setSize,
   setResourceIconSize,
-  setResourceLabelPosition,
-  setGroupLabelPosition,
   setTitle,
   swapEdgeDirection,
   updateEdge,
 } from "./editor-model.js";
 
 describe("editor commands", () => {
+  it("keeps selection helpers and missing-target edits predictable", () => {
+    const doc = createAsyncDocsFixture();
+    const item = { kind: "resource" as const, id: "client" };
+    const selection = [item];
+
+    expect(annotationStyle({})).toBe("paper");
+    expect(annotationStyle({ style: "code" })).toBe("code");
+    expect(annotationSize("callout")).toMatchObject({ w: 280, h: 104 });
+    expect(annotationSize("unknown" as never)).toMatchObject({ w: 220, h: 96 });
+    expect(primarySelection([])).toBeNull();
+    expect(primarySelection(selection)).toEqual(item);
+    expect(isSelected(selection, "resource", "client")).toBe(true);
+    expect(isSelected(selection, "resource", "missing")).toBe(false);
+    expect(toggleSelectionItem(selection, item, false)).toBe(selection);
+    expect(toggleSelectionItem(selection, { kind: "group", id: "main" }, false)).toEqual([
+      { kind: "group", id: "main" },
+    ]);
+    expect(toggleSelectionItem(selection, item, true)).toEqual([]);
+    expect(toggleSelectionItem(selection, { kind: "group", id: "main" }, true)).toHaveLength(2);
+
+    const locked = structuredClone(doc);
+    getDefaultView(locked).places.client = { locked: true };
+    getDefaultView(locked).places.main = { locked: true };
+    expect(setPlace(locked, "client", 10, 20)).toBe(locked);
+    expect(setResourceIconSize(doc, "missing", "small")).toBe(doc);
+    expect(setResourceLabelPosition(doc, "missing", "top")).toBe(doc);
+    expect(setGroupLabelPosition(doc, "missing", "top-left")).toBe(doc);
+    expect(setSize(doc, "client", 160, 160)).toBe(doc);
+    expect(setSize(locked, "main", 160, 160)).toBe(locked);
+    expect(setGroupPlace(doc, "main", 10, 20, 8, 8)).not.toBe(doc);
+    expect(sendToFront(doc, "missing")).toBe(doc);
+    expect(sendToBack(doc, "missing")).toBe(doc);
+    expect(nudgeSelection(doc, [{ kind: "resource", id: "missing" }], 8, 8)).toBe(doc);
+    expect(reconnectEdge(doc, "missing", {})).toBe(doc);
+    expect(swapEdgeDirection(doc, "missing")).toBe(doc);
+  });
+
   it("limits arrow numbers to the supported 0-99 range", () => {
     const doc = createAsyncDocsFixture();
 
