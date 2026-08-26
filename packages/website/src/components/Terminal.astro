@@ -29,6 +29,7 @@ const rest = lines.slice(13);
   .terminal-controls { display: flex; gap: 16px; margin-left: auto; z-index: 1; }
   .terminal-controls button { border: 0; padding: 8px 0; background: transparent; color: #c9c9cd; font: 10px var(--mono); }
   .terminal-controls button:hover { color: white; }
+  .terminal-controls [data-terminal-pause] { min-width: 6ch; }
   .terminal :global(.mac-titlebar), .terminal-caption { flex-shrink: 0; }
   .terminal-viewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-color: #56565a #0c0c0c; }
   .terminal-log { padding: 22px 24px; font: 10px/1.7 var(--mono); color: #ececef; }

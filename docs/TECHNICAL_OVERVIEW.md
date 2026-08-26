@@ -183,7 +183,7 @@ Run `npx create-dumb-diagrams@latest help` (or `$CLI help` from a tarball) for t
 
 | Command | Purpose | Positional args | Notable flags |
 | --- | --- | --- | --- |
-| `studio` / `open` | Local Studio + file bridge | `[file-or-folder]` — defaults to `diagrams/architecture.dgm` | `--port` (default 4788), `--host` (default 127.0.0.1), `--no-open` |
+| `studio` / `open` | Local Studio + file bridge | `[file-or-folder]` — defaults to `diagrams/architecture.dgm` | `--port` (default 4788), `--no-open` |
 | `render` | Portable SVG export | `<file.dgm>` | `--output <path>` (default `output.svg`) |
 | `validate` / `check` | Parse, validate, compile; report routing notes | `<file.dgm>` or directory | — |
 | `format` / `fmt` | Print canonical `.dgm` | `<file.dgm>` | `--write` to update the file |
@@ -455,9 +455,9 @@ belongs to the editor.
 
 `studio-server.ts` serves the compiled editor and a small same-origin API. It is
 deliberately a local file bridge, not a general-purpose application server. The
-server owns file reads/writes, revisions, directory watching, and the capability
-token used when a non-loopback host is requested. Studio owns how conflicts and
-connection state are explained to the person editing.
+server owns file reads/writes, revisions, directory watching, and local-origin
+protections. Studio owns how conflicts and connection state are explained to the
+person editing.
 
 #### The published boundary
 
@@ -626,13 +626,9 @@ state. A low-frequency heartbeat helps detect a half-open connection; browser
 internet-status events are intentionally ignored because Studio only needs
 localhost.
 
-Loopback remains the default bind. When `--host` exposes Studio beyond
-loopback, the CLI generates a per-process capability token, includes it in the
-launch URL, and requires it on every API and SSE request. The server also emits
-a restrictive content-security policy and anti-framing/content-sniffing
-headers. Treat the launch URL as a secret while that Studio process is running.
-This remains a local-development bridge, not a public hosting server: use a
-trusted network or a TLS/authenticated reverse proxy for remote access.
+Studio binds to `127.0.0.1` and is intended for local use. The server also emits
+a restrictive content-security policy and anti-framing/content-sniffing headers;
+it is a local-development bridge, not a public hosting server.
 
 ## Catalog pipeline
 

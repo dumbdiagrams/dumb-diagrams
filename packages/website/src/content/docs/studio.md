@@ -51,10 +51,6 @@ If another editor changes the file before Studio saves, the server rejects the s
 
 Writes are atomic, and reconnecting after sleep refreshes the document and connection state. A dropped internet connection does not affect local Studio. It only needs the server on your machine.
 
-## Keep the local server local
-
-Use the loopback address by default. The `--host` flag exists for trusted-network and development setups that need to open the local Studio from another device. When the address is not loopback, the CLI adds a per-process capability token to the launch URL and requires it for API access. This still runs on your machine; it is not a hosted Studio service. Anyone with access to the launch URL may be able to work with the exposed project, so use the flag only when you intend to share that session.
-
-Treat that URL as a secret. The bridge is a development tool, not a public hosting service. Remote access needs a trusted network or a properly authenticated TLS proxy.
+Studio binds to `127.0.0.1` and is intended for local use. It is not a hosted service or a public server.
 
 Studio is designed for desktop use. The site works on a phone, but detailed diagram editing is more comfortable in a wide window.

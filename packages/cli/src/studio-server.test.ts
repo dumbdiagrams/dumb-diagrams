@@ -7,7 +7,7 @@ import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
 import { printDgm } from "@dumb-diagrams/runtime/dsl";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { isLoopbackHost, startStudioServer, type StudioServerHandle } from "./studio-server.js";
+import { startStudioServer, type StudioServerHandle } from "./studio-server.js";
 
 const handles: StudioServerHandle[] = [];
 
@@ -16,29 +16,15 @@ afterEach(async () => {
 });
 
 describe("local Studio server", () => {
-  it("recognizes loopback hosts without treating wildcard binds as local", () => {
-    expect(isLoopbackHost("127.0.0.1")).toBe(true);
-    expect(isLoopbackHost("127.12.34.56")).toBe(true);
-    expect(isLoopbackHost("::1")).toBe(true);
-    expect(isLoopbackHost("localhost")).toBe(true);
-    expect(isLoopbackHost("0.0.0.0")).toBe(false);
-    expect(isLoopbackHost("192.168.1.12")).toBe(false);
-  });
-
-  it("protects a non-loopback bind with a capability token and security headers", async () => {
-    const { handle } = await createTestServer("0.0.0.0");
+  it("binds the Studio URL to loopback without a remote-access token", async () => {
+    const { handle } = await createTestServer();
     const launchUrl = new URL(handle.url);
-    const token = launchUrl.searchParams.get("token");
-    expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
-    const origin = `http://127.0.0.1:${launchUrl.port}`;
-
-    const rejected = await fetch(`${origin}/api/session`);
-    expect(rejected.status).toBe(401);
-
-    const accepted = await fetch(`${origin}/api/session?token=${token}`);
-    expect(accepted.status).toBe(200);
-    expect(accepted.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
-    expect(accepted.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(launchUrl.hostname).toBe("127.0.0.1");
+    expect(launchUrl.search).toBe("");
+    const session = await fetch(`${handle.url}api/session`);
+    expect(session.status).toBe(200);
+    expect(session.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(session.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
   it("rejects cross-origin and rebound-host access to the loopback API", async () => {
@@ -143,13 +129,13 @@ describe("local Studio server", () => {
   });
 });
 
-async function createTestServer(host?: string): Promise<{ handle: StudioServerHandle; filePath: string }> {
+async function createTestServer(): Promise<{ handle: StudioServerHandle; filePath: string }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
   mkdirSync(editorRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
   const filePath = join(root, "architecture.dgm");
-  const handle = await startStudioServer({ filePath, editorRoot, host, port: 0 });
+  const handle = await startStudioServer({ filePath, editorRoot, port: 0 });
   handles.push(handle);
   return { handle, filePath };
 }

@@ -1,6 +1,69 @@
 import { animate } from 'motion/mini';
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+document.querySelectorAll<HTMLDetailsElement>('.faq-list details').forEach(details => {
+  const summary = details.querySelector('summary')!;
+  const answer = details.querySelector('p')!;
+  let expanded = details.open;
+  let unfolding: Animation | undefined;
+  let fading: Animation | undefined;
+
+  function cancel() {
+    if (unfolding) {
+      unfolding.onfinish = null;
+      unfolding.cancel();
+    }
+    fading?.cancel();
+    unfolding = fading = undefined;
+  }
+
+  function finish() {
+    details.open = expanded;
+    cancel();
+    details.style.removeProperty('height');
+    details.style.removeProperty('overflow');
+    delete details.dataset.faqExpanded;
+  }
+
+  summary.addEventListener('click', event => {
+    // Leave the native disclosure behavior intact without animation support.
+    if (typeof details.animate !== 'function') return;
+    event.preventDefault();
+    expanded = unfolding ? !expanded : !details.open;
+    if (reduced.matches) {
+      finish();
+      return;
+    }
+
+    // Capture the current frame so repeated clicks reverse without jumping.
+    const height = details.getBoundingClientRect().height;
+    const opacity = details.open ? getComputedStyle(answer).opacity : '0';
+    cancel();
+    details.style.removeProperty('height');
+    details.open = true;
+    details.dataset.faqExpanded = String(expanded);
+    const border = details.offsetHeight - details.clientHeight;
+    const target = expanded ? details.getBoundingClientRect().height : summary.getBoundingClientRect().height + border;
+    details.style.height = `${height}px`;
+    details.style.overflow = 'hidden';
+    const timing = { duration: expanded ? 380 : 280, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' as const };
+    unfolding = details.animate({ height: [`${height}px`, `${target}px`] }, timing);
+    fading = answer.animate({ opacity: [opacity, expanded ? '1' : '0'] }, timing);
+    unfolding.onfinish = finish;
+  });
+
+  summary.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    if (!event.repeat) summary.click();
+  });
+
+  reduced.addEventListener('change', () => {
+    if (reduced.matches && unfolding) finish();
+  });
+});
+
 const terminal = document.querySelector<HTMLElement>('[data-terminal]');
 if (terminal) {
   const command = terminal.querySelector<HTMLElement>('[data-terminal-command]')!;
@@ -28,7 +91,7 @@ if (terminal) {
     running = false;
     command.textContent = fullCommand;
     rows.forEach(row => { row.hidden = false; });
-    pause.hidden = true;
+    pause.style.visibility = 'hidden';
     viewport.scrollTop = showBeginning ? 0 : viewport.scrollHeight;
   }
   function tick(time: number) {
@@ -61,7 +124,7 @@ if (terminal) {
     userPaused = false;
     command.textContent = '';
     rows.forEach(row => { row.hidden = true; });
-    pause.hidden = false;
+    pause.style.removeProperty('visibility');
     syncPlayback();
   }
   function preferenceChanged() {

@@ -7,6 +7,13 @@
 }
 
 @layer components {
+  @keyframes panel-enter { from { opacity: .55; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: no-preference) {
+    .example-panel:not([hidden]) > .example-description,
+    .example-panel:not([hidden]) > .example-workspace { animation: panel-enter 240ms var(--motion-ease); }
+    .prompt-pane:not([hidden]), .source-pane:not([hidden]) { animation: panel-enter 180ms var(--motion-ease); }
+  }
+
   /* One fine sweep along the existing rule. The content and arrow stay still. */
   .trace-border { position: relative; isolation: isolate; }
   .trace-border::after {

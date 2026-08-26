@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   readdirSync,
@@ -22,11 +22,11 @@ import { compileDiagram } from "@dumb-diagrams/runtime/render";
 const MAX_REQUEST_BYTES = 1_250_000;
 const STUDIO_EXTENSION = ".dgm";
 const SSE_HEARTBEAT_INTERVAL_MS = 15_000;
+const STUDIO_HOST = "127.0.0.1";
 
 export interface StudioServerOptions {
   filePath: string;
   editorRoot?: string;
-  host?: string;
   port?: number;
 }
 
@@ -63,10 +63,7 @@ interface StudioErrorPayload {
 export async function startStudioServer(
   options: StudioServerOptions,
 ): Promise<StudioServerHandle> {
-  const host = options.host ?? "127.0.0.1";
-  const urlHost = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
   const port = options.port ?? 4788;
-  const accessToken = isLoopbackHost(host) ? null : randomBytes(24).toString("base64url");
   let documentPath = resolve(options.filePath);
   ensureDocument(documentPath);
   const projectDirectory = dirname(documentPath);
@@ -189,7 +186,7 @@ export async function startStudioServer(
 
   let address: ReturnType<Server["address"]>;
   try {
-    address = await listen(server, host, port);
+    address = await listen(server, port);
   } catch (error) {
     shuttingDown = true;
     clearInterval(heartbeat);
@@ -198,8 +195,7 @@ export async function startStudioServer(
     throw error;
   }
   const resolvedPort = typeof address === "object" && address ? address.port : port;
-  const browserUrl = new URL(`http://${urlHost}:${resolvedPort}/`);
-  if (accessToken) browserUrl.searchParams.set("token", accessToken);
+  const browserUrl = new URL(`http://${STUDIO_HOST}:${resolvedPort}/`);
   const url = browserUrl.toString();
 
   server.on("close", () => {
@@ -221,14 +217,14 @@ export async function startStudioServer(
   };
 
   async function routeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
-    const requestUrl = new URL(request.url ?? "/", `http://${urlHost}`);
+    const requestUrl = new URL(request.url ?? "/", `http://${STUDIO_HOST}`);
     const pathname = requestUrl.pathname;
 
     if (pathname.startsWith("/api/")) {
-      const requestOrigin = `http://${request.headers.host ?? `${urlHost}:${resolvedPort}`}`;
+      const requestOrigin = `http://${request.headers.host ?? `${STUDIO_HOST}:${resolvedPort}`}`;
       const requestHost = new URL(requestOrigin).hostname;
       if (
-        (!accessToken && !isLoopbackHost(requestHost)) ||
+        !isLoopbackHost(requestHost) ||
         (request.headers.origin !== undefined && request.headers.origin !== requestOrigin) ||
         request.headers["sec-fetch-site"] === "cross-site"
       ) {
@@ -238,18 +234,6 @@ export async function startStudioServer(
         } satisfies StudioErrorPayload);
         return;
       }
-    }
-
-    if (
-      accessToken &&
-      pathname.startsWith("/api/") &&
-      requestUrl.searchParams.get("token") !== accessToken
-    ) {
-      sendJson(response, 401, {
-        error: "unauthorized",
-        message: "This Studio session requires the access token from its launch URL.",
-      } satisfies StudioErrorPayload);
-      return;
     }
 
     if (pathname === "/api/session" && request.method === "GET") {
@@ -624,7 +608,7 @@ function sendJson(response: ServerResponse, status: number, payload: unknown): v
   response.end(body);
 }
 
-export function isLoopbackHost(host: string): boolean {
+function isLoopbackHost(host: string): boolean {
   const normalized = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
   return normalized === "localhost" ||
     normalized === "::1" ||
@@ -645,7 +629,7 @@ function applySecurityHeaders(response: ServerResponse): void {
   response.setHeader("X-Frame-Options", "DENY");
 }
 
-function listen(server: Server, host: string, port: number): Promise<ReturnType<Server["address"]>> {
+function listen(server: Server, port: number): Promise<ReturnType<Server["address"]>> {
   return new Promise((resolvePromise, rejectPromise) => {
     const onError = (error: Error) => {
       server.off("listening", onListening);
@@ -657,6 +641,6 @@ function listen(server: Server, host: string, port: number): Promise<ReturnType<
     };
     server.once("error", onError);
     server.once("listening", onListening);
-    server.listen(port, host);
+    server.listen(port, STUDIO_HOST);
   });
 }

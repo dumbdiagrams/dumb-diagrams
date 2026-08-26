@@ -74,7 +74,8 @@ test('complete documentation and homepage examples compile through the actual ru
   assert.ok(checked >= 5);
 });
 
-test('downloadable diagrams have embedded icons and matching source files', async () => {
+test('downloadable diagrams are portable and previews reserve their actual dimensions', async () => {
+  const homepage = await readFile(join(dist, 'index.html'), 'utf8');
   for (const file of (await readdir(join(site, 'src/examples'))).filter(file => file.endsWith('.dgm'))) {
     const name = file.slice(0, -4);
     const svg = await readFile(join(dist, 'diagrams', `${name}.svg`), 'utf8');
@@ -88,6 +89,14 @@ test('downloadable diagrams have embedded icons and matching source files', asyn
     const svg = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
+    const previewName = `${example.id}-preview.svg`;
+    const preview = await readFile(join(dist, 'diagrams', previewName), 'utf8');
+    const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
+    assert.ok(dimensions, `${example.id}: generated preview dimensions`);
+    const image = [...homepage.matchAll(/<img\b[^>]*>/g)].find(([tag]) => tag.includes(`/diagrams/${previewName}`))?.[0];
+    assert.ok(image, `${example.id}: homepage preview image`);
+    assert.ok(image.includes(`width="${dimensions[1]}"`), `${example.id}: reserved preview width matches the SVG`);
+    assert.ok(image.includes(`height="${dimensions[2]}"`), `${example.id}: reserved preview height matches the SVG`);
   }
 });
 

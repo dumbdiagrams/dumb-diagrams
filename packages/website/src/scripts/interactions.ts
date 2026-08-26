@@ -1,12 +1,19 @@
+const copyResets = new WeakMap<HTMLButtonElement, number>();
+const copyLabels = new WeakMap<HTMLButtonElement, string>();
+
 async function copyText(button: HTMLButtonElement, text: string) {
-  const original = button.innerHTML;
+  const original = copyLabels.get(button) ?? button.innerHTML;
+  copyLabels.set(button, original);
+  window.clearTimeout(copyResets.get(button));
+  const compact = button.classList.contains('copy-button');
+  const status = button.closest('[data-install]')?.querySelector('[data-copy-status]');
   try {
     await navigator.clipboard.writeText(text);
-    button.textContent = 'Copied';
-    const status = button.closest('[data-install]')?.querySelector('[data-copy-status]');
+    button.textContent = compact ? '✓' : 'Copied';
     if (status) status.textContent = 'Command copied to clipboard.';
   } catch {
-    button.textContent = 'Select text';
+    button.textContent = compact ? '!' : 'Select text';
+    if (status) status.textContent = 'Could not copy. Select the command to copy it manually.';
     const code = button.dataset.copyTarget ? document.getElementById(button.dataset.copyTarget) : button.closest('[data-install], pre, .source-pane')?.querySelector('code');
     if (code) {
       const range = document.createRange();
@@ -15,7 +22,7 @@ async function copyText(button: HTMLButtonElement, text: string) {
       window.getSelection()?.addRange(range);
     }
   }
-  window.setTimeout(() => { button.innerHTML = original; }, 1800);
+  copyResets.set(button, window.setTimeout(() => { button.innerHTML = original; }, 1800));
 }
 
 document.querySelectorAll<HTMLButtonElement>('[data-copy], [data-copy-target]').forEach(button => {
@@ -28,7 +35,10 @@ document.querySelectorAll<HTMLElement>('[data-install]').forEach(install => {
     methods.forEach(method => method.setAttribute('aria-pressed', String(method === button)));
     const code = install.querySelector('[data-command-text]');
     const copy = install.querySelector<HTMLButtonElement>('[data-copy]');
-    if (code) code.textContent = button.dataset.command || '';
+    if (code) {
+      code.textContent = button.dataset.command || '';
+      code.scrollLeft = 0;
+    }
     if (copy) copy.dataset.copy = button.dataset.command;
   }));
 });
@@ -36,15 +46,22 @@ document.querySelectorAll<HTMLElement>('[data-install]').forEach(install => {
 document.querySelectorAll<HTMLElement>('[data-tabs]').forEach(tablist => {
   const tabs = [...tablist.querySelectorAll<HTMLButtonElement>(':scope > [role="tab"]')];
   function select(tab: HTMLButtonElement) {
+    if (tab.getAttribute('aria-selected') === 'true') return;
     tabs.forEach(button => {
       button.setAttribute('aria-selected', String(button === tab));
       button.tabIndex = button === tab ? 0 : -1;
       const panel = document.getElementById(button.getAttribute('aria-controls') || '');
       if (panel) {
         panel.hidden = button !== tab;
+        panel.inert = button !== tab;
         if (!panel.hidden) panel.querySelectorAll('[data-diagram-preview]').forEach(preview => preview.dispatchEvent(new Event('preview:visible')));
       }
     });
+    // Reveal an offscreen mobile tab without scrolling the whole page.
+    const listBounds = tablist.getBoundingClientRect();
+    const tabBounds = tab.getBoundingClientRect();
+    if (tabBounds.left < listBounds.left) tablist.scrollLeft += tabBounds.left - listBounds.left;
+    else if (tabBounds.right > listBounds.right) tablist.scrollLeft += tabBounds.right - listBounds.right;
   }
   tabs.forEach((tab, index) => {
     tab.addEventListener('click', () => select(tab));
@@ -57,7 +74,7 @@ document.querySelectorAll<HTMLElement>('[data-tabs]').forEach(tablist => {
       else return;
       event.preventDefault();
       select(tabs[next]);
-      tabs[next].focus();
+      tabs[next].focus({ preventScroll: true });
     });
   });
 });

@@ -36,8 +36,6 @@ const child = spawn(
     "studio",
     diagramsRoot,
     "--no-open",
-    "--host",
-    "127.0.0.1",
     "--port",
     "5175",
   ],

@@ -51,9 +51,10 @@
   .install-tabs button[aria-pressed="true"] { border-color: var(--orange); color: var(--ink); }
   .install-tabs > span { margin-left: auto; color: var(--muted); font-size: 9px; align-self: center; letter-spacing: .04em; }
   .install-command { padding: 17px; display: flex; align-items: center; gap: 11px; }
-  .install-command code { font-size: 13px; letter-spacing: -.035em; }
+  .install-command code { min-width: 0; flex: 1; white-space: nowrap; overflow-x: auto; scrollbar-width: none; font-size: 13px; letter-spacing: -.035em; }
+  .install-command code::-webkit-scrollbar { display: none; }
   .prompt { color: var(--orange); font-family: var(--mono); }
-  .copy-button { background: transparent; border: 0; min-width: 28px; min-height: 30px; font-size: 20px; margin-left: auto; padding: 0; }
+  .copy-button { background: transparent; border: 0; width: 28px; min-width: 28px; min-height: 30px; flex-shrink: 0; font-size: 20px; margin-left: auto; padding: 0; }
   .copy-button:hover { color: var(--orange); }
   .install-caption { display: flex; justify-content: space-between; gap: 10px; font-size: 9px; color: var(--muted); padding: 0 17px 12px; }
   .install-caption span span { padding: 0 5px; }
@@ -107,8 +108,8 @@
   .faq-list details { border-bottom: 1px solid var(--line); }
   .faq-list summary { padding: 23px 0; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 14px; font-weight: 600; }
   summary::-webkit-details-marker { display: none; }
-  .faq-list summary span { font: 23px var(--mono); font-weight: 400; color: var(--muted); }
-  .faq-list details[open] summary span { transform: rotate(45deg); }
+  .faq-list summary span { font: 23px var(--mono); font-weight: 400; color: var(--muted); transition: transform 280ms var(--motion-ease); }
+  .faq-list details[open]:not([data-faq-expanded="false"]) summary span { transform: rotate(45deg); }
   .faq-list details p { padding: 0 28px 24px 0; font-size: 13px; color: var(--muted); line-height: 1.9; }
   .faq-list details a { text-decoration: underline; }
   .closing { display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: 48px; background: var(--brand-navy-soft); border-top: 3px solid var(--brand-coral); }
