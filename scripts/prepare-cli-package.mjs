@@ -142,6 +142,10 @@ function buildSourceSnapshot() {
     "packages/cli/README.md",
     "packages/cli/package.json",
     "packages/cli/tsconfig.json",
+    "packages/website/package.json",
+    "packages/website/astro.config.mjs",
+    "packages/website/tsconfig.json",
+    "packages/website/README.md",
   ];
   const directories = [
     "assets/catalog",
@@ -154,6 +158,8 @@ function buildSourceSnapshot() {
     "packages/cli/templates",
     "packages/editor/src",
     "packages/runtime/src",
+    "packages/website/src",
+    "packages/website/scripts",
     "scripts",
   ];
 

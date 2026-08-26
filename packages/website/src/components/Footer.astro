@@ -1,0 +1,15 @@
+---
+import { url, npmUrl } from '../lib/site';
+---
+<footer class="site-footer">
+  <div class="footer-top">
+    <a class="brand" href={url()}>dumb<span class="brand-light">diagrams</span><span class="brand-period">.</span></a>
+    <p>Less arranging boxes. More understanding systems.</p>
+    <a href={url('docs/')}>Read the docs <span aria-hidden="true">↗</span></a>
+  </div>
+  <div class="footer-bottom">
+    <span>© {new Date().getFullYear()} Dumb Diagrams contributors</span>
+    <div><a href={url('LICENSE.txt')}>AGPL-3.0</a><a href={url('ICON-NOTICES.txt')}>Icon credits</a><a href={url('FONT-LICENSES.txt')}>Font credits</a><a href={npmUrl}>npm ↗</a></div>
+    <span class="local-note"><span></span> Local files. Yours to keep.</span>
+  </div>
+</footer>

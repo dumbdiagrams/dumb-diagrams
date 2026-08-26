@@ -234,11 +234,24 @@ That packs the CLI and runs `init` for you automatically.
 | What you changed | Command |
 | --- | --- |
 | Studio UI only | `pnpm dev` |
+| Website and public docs | `pnpm dev:website` |
 | CLI or how Studio is served | `pnpm build && pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm` |
 | Full release check | `pnpm check:release` |
 
 For commands, flags, and deeper CLI testing, see
 **[docs/TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md)**.
+
+### Website and documentation
+
+The static Astro website lives in `packages/website`, separate from Studio and
+the published CLI. Run `pnpm dev:website` to work on it, `pnpm check:website` to
+typecheck, build, and validate it, or `pnpm preview:website` to preview the
+production build with documentation search. Static output goes to
+`packages/website/dist/`.
+
+See [the website guide](./packages/website/README.md) for content editing,
+static hosting, base paths, and the optional Partytown integration. Analytics
+are disabled by default.
 
 Other maintainer references:
 

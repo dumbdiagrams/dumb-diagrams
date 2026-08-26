@@ -1,0 +1,13 @@
+---
+import { createCommand, installCommand, url } from '../lib/site';
+---
+<div class="install" data-install>
+  <div class="install-tabs" role="group" aria-label="Installation method">
+    <button type="button" aria-pressed="true" data-command={createCommand}>Create a project</button>
+    <button type="button" aria-pressed="false" data-command={installCommand}>Global install</button>
+    <span class="mono">TERMINAL</span>
+  </div>
+  <div class="install-command"><span class="prompt" aria-hidden="true">$</span><code data-command-text>{createCommand}</code><button class="copy-button" data-copy={createCommand} aria-label="Copy installation command" title="Copy command"><span aria-hidden="true">⧉</span></button></div>
+  <div class="install-caption"><span>Node.js 24+ <span aria-hidden="true">·</span> No account needed</span><a href={url('docs/quick-start/')}>Quick start ↗</a></div>
+  <span class="sr-only" role="status" data-copy-status></span>
+</div>

@@ -252,7 +252,8 @@ there is no extra orchestration layer hiding how the packages fit together.
 | --- | --- |
 | TypeScript and native ESM | Shared language and module format across the runtime, CLI, editor, tests, and scripts |
 | Node.js 24 | CLI, local Studio HTTP server, packaging, catalog generation, and repository tooling |
-| pnpm workspaces | Links the three packages and enforces the locked dependency graph |
+| pnpm workspaces | Links the application and website packages and enforces the locked dependency graph |
+| Astro 7 and Pagefind | Static website, Markdown documentation, and local full-text search |
 | React 19 | Studio UI and interactive editor composition |
 | Vite 8 | Editor development server and production browser bundle, using Rolldown/Oxc |
 | CodeMirror 6 | `.dgm` source editing inside Studio |
@@ -261,7 +262,7 @@ there is no extra orchestration layer hiding how the packages fit together.
 | esbuild | Produces the standalone CLI bundle placed in the npm tarball |
 | GitHub Actions and Pages | Linux/Windows verification, exact-tag release checks, and static Studio deployment |
 
-There is deliberately no monorepo task framework. Three packages and a small
+There is deliberately no monorepo task framework. Four packages and a small
 set of root scripts are still easier to understand directly through pnpm.
 
 ### Why Vite 8, and what React has to do with it
@@ -295,7 +296,8 @@ measurements.
 ├── packages/
 │   ├── runtime/                Model, DSL, catalog, layout, routing, rendering
 │   ├── editor/                 React Studio and browser export surface
-│   └── cli/                    Published command and local Studio server
+│   ├── cli/                    Published command and local Studio server
+│   └── website/                Static Astro website and public documentation
 ├── scripts/                    Build, catalog, package, policy, and release tools
 ├── playwright.config.ts        Static browser test configuration
 ├── playwright.packed.config.ts Packed Studio test configuration
@@ -761,18 +763,22 @@ without assuming it contains the newest test scripts.
 - [`assets/catalog/README.md`](../assets/catalog/README.md) explains catalog
   provenance and updates.
 
-## Future documentation site
+## Website and public documentation
 
-When the single-page site is introduced, this guide can become its technical
-content rather than being rewritten from scratch. Keep the same top-level
-shape and turn the package/subsystem headings into anchor navigation:
+`packages/website` is an independent static Astro package. Its public articles
+adapt this guide into three sections: Start here, Make diagrams, and Under the
+hood. Exact contracts such as `packages/runtime/ROUTING.md` remain the source
+for detailed implementation rules. Update the relevant public article when
+those behaviors change.
 
-1. Start with the mental model and design principles.
-2. Give each package a short “what it owns” page section.
-3. Put deeper explanations under the relevant subsystem: document model,
-   layout, routing, rendering, Studio state, local files, catalog, and exports.
-4. Keep exact command references, route costs, and legal/provenance details in
-   focused reference pages linked from those explanations.
+Run `pnpm dev:website` for development or `pnpm check:website` for diagnostics,
+a production build, and link/example/payload checks. Pagefind search is built
+after Astro and tested using `pnpm preview:website`. Homepage diagrams are
+compiled from real `.dgm` files at build time; the runtime is not shipped to
+website visitors.
 
-That split lets the site stay friendly to people who are learning the project
-without hiding the details that maintainers need when they change behavior.
+The site stays out of `pnpm build` and the existing Studio deployment. Its
+source is included in the corresponding-source snapshot to keep the workspace
+complete. Self-hosted fonts and static HTML keep the initial browser work small.
+Partytown is installed but opt-in; no analytics code is enabled. Hosting and
+base-path configuration are documented in `packages/website/README.md`.

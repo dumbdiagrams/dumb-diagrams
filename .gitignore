@@ -13,3 +13,12 @@ fixtures/golden/
 /packages/editor/public/catalog-icons/
 /packages/editor/public/catalog-manifest.json
 /packages/editor/public/.catalog-icons-*/
+.astro/
+/packages/website/.env
+/packages/website/.env.local
+/packages/website/public/diagrams/
+/packages/website/public/logo.png
+/packages/website/public/favicon.png
+/packages/website/public/LICENSE.txt
+/packages/website/public/ICON-NOTICES.txt
+/packages/website/public/FONT-LICENSES.txt

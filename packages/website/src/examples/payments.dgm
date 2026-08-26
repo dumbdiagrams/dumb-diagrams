@@ -1,0 +1,16 @@
+diagram payments {
+  grammar aws
+  flow lr
+  title "Payments platform"
+
+  generic.user customer "Customer"
+  aws.region region "AWS Region" {
+    aws.api-gateway api "Payments API"
+    aws.aws-lambda handler "Payment handler"
+    aws.dynamodb ledger "Payment ledger"
+  }
+
+  customer -> api { id request step 1 }
+  api -> handler { id invoke step 2 }
+  handler -> ledger { id persist step 3 }
+}

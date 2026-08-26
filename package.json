@@ -33,7 +33,11 @@
     "check": "node packages/cli/dist/index.js check examples/diagrams",
     "render": "node packages/cli/dist/index.js render",
     "dev": "pnpm --filter @dumb-diagrams/editor dev",
-    "dev:cli": "node packages/cli/dist/index.js studio"
+    "dev:cli": "node packages/cli/dist/index.js studio",
+    "dev:website": "pnpm --filter @dumb-diagrams/website dev",
+    "build:website": "pnpm --filter @dumb-diagrams/website build",
+    "preview:website": "pnpm --filter @dumb-diagrams/website preview",
+    "check:website": "pnpm --filter @dumb-diagrams/website check && pnpm build:website && pnpm --filter @dumb-diagrams/website test"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

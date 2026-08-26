@@ -1,0 +1,33 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Search from '../../components/Search.astro';
+import { sections, url, repository } from '../../lib/site';
+import '../../styles/docs.css';
+export async function getStaticPaths() {
+  return (await getCollection('docs')).map(entry => ({ params: { slug: entry.id === 'index' ? undefined : entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const allDocs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order);
+const { Content, headings } = await render(entry);
+const index = allDocs.findIndex(doc => doc.id === entry.id);
+const previous = allDocs[index - 1];
+const next = allDocs[index + 1];
+const docUrl = (id: string) => url(`docs/${id === 'index' ? '' : `${id}/`}`);
+---
+<Base title={entry.data.title} description={entry.data.description} docs>
+  <div class="docs-topbar"><span><a href={url('docs/')}>Documentation</a><span aria-hidden="true"> / </span>{entry.data.section}</span><Search /></div>
+  <div class="docs-layout">
+    <aside class="docs-sidebar" aria-label="Documentation navigation">
+      <details class="docs-navigation" open><summary>Explore the docs <span aria-hidden="true">↓</span></summary><nav>{sections.map(section => <div class="nav-group"><h2>{section}</h2>{allDocs.filter(doc => doc.data.section === section).map(doc => <a href={docUrl(doc.id)} aria-current={doc.id === entry.id ? 'page' : undefined}>{doc.data.title}</a>)}</div>)}</nav></details>
+      <div class="sidebar-note"><span class="mono">PLAIN TEXT. CLEAR THINKING.</span><p>Good diagrams begin with a good understanding.</p><a href={url('llms.txt')}>Docs for your agent ↗</a></div>
+    </aside>
+    <main id="main" class="doc-main" data-pagefind-body>
+      <header class="doc-header"><span class="eyebrow">{entry.data.section}</span><h1 data-pagefind-meta="title">{entry.data.title}</h1><p>{entry.data.description}</p></header>
+      <article class="prose"><Content /></article>
+      <div class="doc-source" data-pagefind-ignore>Based on the project’s technical overview and source contracts.{repository && <a href={`${repository.replace(/\/$/, '')}/blob/main/packages/website/src/content/docs/${entry.id}.md`}>Edit this page ↗</a>}</div>
+      <nav class="doc-pagination" aria-label="More documentation" data-pagefind-ignore>{previous ? <a href={docUrl(previous.id)}><span>← Previous</span><strong>{previous.data.title}</strong></a> : <div />}{next && <a href={docUrl(next.id)}><span>Next →</span><strong>{next.data.title}</strong></a>}</nav>
+    </main>
+    <aside class="docs-toc" aria-label="On this page"><span class="mono">ON THIS PAGE</span><nav>{headings.filter(heading => heading.depth === 2).map(heading => <a href={`#${heading.slug}`}>{heading.text}</a>)}</nav><a class="toc-top" href="#main">Back to top ↑</a></aside>
+  </div>
+</Base>

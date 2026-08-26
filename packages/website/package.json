@@ -1,0 +1,31 @@
+{
+  "name": "@dumb-diagrams/website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "prepare:assets": "pnpm --filter @dumb-diagrams/runtime build && node scripts/prepare-assets.mjs",
+    "predev": "pnpm prepare:assets",
+    "dev": "astro dev --host 127.0.0.1",
+    "prebuild": "pnpm prepare:assets",
+    "build": "astro build && pagefind --site dist --glob 'docs/**/*.html'",
+    "preview": "astro preview --host 127.0.0.1",
+    "check": "astro check",
+    "test": "node --test scripts/site.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/partytown": "2.1.7",
+    "@astrojs/sitemap": "3.7.3",
+    "@fontsource-variable/manrope": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "astro": "7.2.6"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@dumb-diagrams/runtime": "workspace:*",
+    "@types/node": "^24.13.3",
+    "pagefind": "1.5.2",
+    "typescript": "^5.7.3"
+  }
+}
