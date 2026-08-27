@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +8,7 @@ import {
   nearestPortAnchor,
   portPoint,
 } from "../core/index.js";
+import { parseDgm } from "../dsl/index.js";
 import type { DiagramDocument, LayoutResult, NodeGeom } from "../core/index.js";
 import { layoutDocument } from "../layout/index.js";
 import {
@@ -139,6 +142,32 @@ describe("routeEdgePreview", () => {
     expect(resolve.badgeSide).toBe("bottom");
     expect(resolve.badge!.y).toBeGreaterThan(144);
     expect(distanceToPath(resolve.badge!, request.points)).toBeGreaterThan(14);
+  });
+
+  it("keeps Azure step badges clear of resource cards and subnet headers", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/diagrams/azure-private-app-service.dgm", import.meta.url),
+      "utf8",
+    ));
+    const layout = layoutDocument(doc);
+    const routes = routeEdges(doc, layout);
+    const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
+    const groups = new Map(layout.groups.map((group) => [group.id, group]));
+    const gatewayBadge = routes.find((edge) => edge.id === "private_app_request")!.badge!;
+    const integrationBadge = routes.find((edge) => edge.id === "database_private_link")!.badge!;
+
+    expect(circleIntersectsRectForTest(
+      gatewayBadge,
+      10,
+      nodes.get("gateway")!.obstacle,
+      4,
+    )).toBe(false);
+    expect(circleIntersectsRectForTest(
+      integrationBadge,
+      10,
+      groups.get("integration_subnet")!.labelRect!,
+      4,
+    )).toBe(false);
   });
 
   it("places connector labels at an explicit path position and side", () => {
@@ -356,6 +385,25 @@ describe("routeEdgePreview", () => {
     const e3 = routes.find((route) => route.id === "e3");
     const e5 = routes.find((route) => route.id === "e5");
     expect(e3 && e5 ? sharedLength(e3.points, e5.points) : 1).toBe(0);
+  });
+
+  it("nudges a safe automatic route clear of a group boundary stroke", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const route = routeEdges(doc, layout).find((edge) => edge.id === "e3")!;
+    const group = layout.groups.find((candidate) => candidate.id === "appA")!;
+
+    for (let index = 0; index < route.points.length - 1; index++) {
+      expect(
+        segmentBoundaryOverlap(
+          route.points[index]!,
+          route.points[index + 1]!,
+          group.bounds,
+          4,
+        ),
+        `e3 segment ${index} follows appA boundary`,
+      ).toBe(0);
+    }
   });
 
   it("separates source fan-out stems as well as converging routes", () => {
@@ -707,6 +755,41 @@ function sharedLength(
   return total;
 }
 
+function segmentBoundaryOverlap(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  bounds: { x: number; y: number; w: number; h: number },
+  clearance: number,
+) {
+  if (a.x === b.x) {
+    const gap = Math.min(
+      Math.abs(a.x - bounds.x),
+      Math.abs(a.x - (bounds.x + bounds.w)),
+    );
+    return gap < clearance
+      ? Math.max(
+          0,
+          Math.min(Math.max(a.y, b.y), bounds.y + bounds.h) -
+            Math.max(Math.min(a.y, b.y), bounds.y),
+        )
+      : 0;
+  }
+  if (a.y === b.y) {
+    const gap = Math.min(
+      Math.abs(a.y - bounds.y),
+      Math.abs(a.y - (bounds.y + bounds.h)),
+    );
+    return gap < clearance
+      ? Math.max(
+          0,
+          Math.min(Math.max(a.x, b.x), bounds.x + bounds.w) -
+            Math.max(Math.min(a.x, b.x), bounds.x),
+        )
+      : 0;
+  }
+  return 0;
+}
+
 function distanceToPath(
   point: { x: number; y: number },
   path: Array<{ x: number; y: number }>,
@@ -727,6 +810,17 @@ function distanceToPath(
     );
   }
   return distance;
+}
+
+function circleIntersectsRectForTest(
+  center: { x: number; y: number },
+  radius: number,
+  rect: { x: number; y: number; w: number; h: number },
+  margin: number,
+) {
+  const x = Math.max(rect.x, Math.min(center.x, rect.x + rect.w));
+  const y = Math.max(rect.y, Math.min(center.y, rect.y + rect.h));
+  return Math.hypot(center.x - x, center.y - y) < radius + margin;
 }
 
 function pathsCross(

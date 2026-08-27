@@ -12,6 +12,7 @@ test("moves an Azure boundary where a connector crosses its stroke", async ({ pa
   await expect(boundary).toHaveCount(1);
   const boundaryId = await boundary.getAttribute("data-entity-id");
   expect(boundaryId).toBeTruthy();
+  const azureCanvas = boundary.locator("xpath=..");
 
   const crossing = await boundary.evaluate((element) => {
     const rect = {
@@ -63,7 +64,7 @@ test("moves an Azure boundary where a connector crosses its stroke", async ({ pa
     throw new Error("Expected a connector to cross the Platform services boundary");
   });
 
-  const edge = page.locator(`[data-entity-kind="edge"][data-entity-id="${crossing.edgeId}"]`);
+  const edge = azureCanvas.locator(`[data-entity-kind="edge"][data-entity-id="${crossing.edgeId}"]`);
   await edge.dispatchEvent("pointermove", {
     bubbles: true,
     pointerId: 7,

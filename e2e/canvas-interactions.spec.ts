@@ -232,9 +232,21 @@ test("exposes draggable turn points and moves a connector bend", async ({ page }
   await page.mouse.up();
 
   await expect.poll(async () => edge.getAttribute("points")).not.toBe(beforePoints);
+  const movedPoints = (await edge.getAttribute("points"))!
+    .trim()
+    .split(/\s+/)
+    .map((value) => value.split(",").map(Number));
+  const expectedPath = movedPoints
+    .map(([x, y], index) => `${index === 0 ? "M" : "L"} ${x} ${y}`)
+    .join(" ");
+  await expect(page.locator(".diagram-svg #edge-e3 > path").first()).toHaveAttribute(
+    "d",
+    expectedPath,
+  );
+  await expect(page.locator(".ghost-route")).toHaveCount(0);
 });
 
-test("opens the connector panel without rerouting an automatic edge", async ({ page }) => {
+test("keeps a single visible route when an automatic edge is pinned", async ({ page }) => {
   await page.goto("/");
   await selectE3(page);
 
@@ -244,7 +256,7 @@ test("opens the connector panel without rerouting an automatic edge", async ({ p
 
   await connector.getByRole("button", { name: "Pin current route" }).click();
   await expect(connector.getByRole("button", { name: "Use automatic route", exact: false })).toBeVisible();
-  await expect(page.locator(".ghost-route")).toHaveCount(1);
+  await expect(page.locator(".ghost-route")).toHaveCount(0);
 });
 
 test("keeps the connector inspector open alongside a left drawer", async ({ page }) => {

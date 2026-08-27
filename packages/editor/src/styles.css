@@ -3068,14 +3068,6 @@ textarea:focus-visible {
   gap: 6px;
 }
 
-.ghost-route {
-  fill: none;
-  stroke: color-mix(in srgb, var(--accent) 70%, transparent);
-  stroke-width: 2;
-  stroke-dasharray: 6 4;
-  pointer-events: none;
-}
-
 .connector-drag-preview {
   fill: none;
   stroke: color-mix(in srgb, var(--accent) 72%, transparent);
@@ -3163,7 +3155,6 @@ textarea:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ghost-route,
   .connector-drag-preview,
   .connector-drag-cursor {
     stroke-dasharray: none;

@@ -1770,7 +1770,6 @@ function App() {
                 snapToGrid={snapToGrid}
                 selection={selection}
                 pendingPort={pendingPort}
-                ghostRoute={null}
                 onSelect={selectItem}
                 onEditText={requestTextEdit}
                 onMarquee={selectMarquee}

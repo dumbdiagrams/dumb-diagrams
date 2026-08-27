@@ -67,6 +67,7 @@ diagram azure-private-app-service {
   gateway -> app_pe { id private_app_request step 2 from e to w kind flow }
   app_pe -> app_service { id app_service_request step 3 from e to w kind flow }
   app_service -> virtual_interface { id vnet_integration step 4 label "VNet integration · outbound" kind flow }
+  app_service -> identity { id managed_identity_use label "managed identity" style dashed kind peer }
   identity -> entra { id entra_token label "token issuance" style dashed kind peer }
   virtual_interface -> sql_pe { id database_private_link step 5 label "private link" kind flow }
   sql_pe -> sql { id database_connection step 6 from e to w kind flow }

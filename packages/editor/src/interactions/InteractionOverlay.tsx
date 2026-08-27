@@ -64,50 +64,6 @@ type LabelDrag = {
   side: EdgeLabelSide;
 } | null;
 
-type DeferredRoutePreview = {
-  doc: DiagramDocument;
-  edgeId: string;
-  layout: LayoutResult;
-  points: Point[];
-};
-
-function useDeferredAutoRoutePreview(
-  doc: DiagramDocument,
-  layout: LayoutResult,
-  edgeId: string | undefined,
-  enabled: boolean,
-): Point[] | undefined {
-  const [preview, setPreview] = useState<DeferredRoutePreview | null>(null);
-
-  useEffect(() => {
-    if (!edgeId || !enabled) return;
-    let cancelled = false;
-    const calculate = () => {
-      if (cancelled) return;
-      const points = routeEdgePreview(doc, layout, edgeId);
-      if (!cancelled && points) setPreview({ doc, edgeId, layout, points });
-    };
-    const idleId = window.requestIdleCallback?.(calculate, { timeout: 300 });
-    const timerId = idleId === undefined
-      ? window.setTimeout(calculate, 0)
-      : undefined;
-
-    return () => {
-      cancelled = true;
-      if (idleId !== undefined) window.cancelIdleCallback(idleId);
-      if (timerId !== undefined) window.clearTimeout(timerId);
-    };
-  }, [doc, edgeId, enabled, layout]);
-
-  return preview &&
-    preview.doc === doc &&
-    preview.edgeId === edgeId &&
-    preview.layout === layout &&
-    enabled
-    ? preview.points
-    : undefined;
-}
-
 function InteractionOverlayComponent({
   doc,
   layout,
@@ -116,7 +72,6 @@ function InteractionOverlayComponent({
   snapToGrid,
   selection,
   pendingPort,
-  ghostRoute,
   onSelect,
   onEditText,
   onMarquee,
@@ -140,7 +95,6 @@ function InteractionOverlayComponent({
   snapToGrid: boolean;
   selection: Selection;
   pendingPort: { nodeId: string; side: Side; offset: number } | null;
-  ghostRoute: Point[] | null;
   onSelect: (item: SelectionItem, additive: boolean) => void;
   onEditText: (item: SelectionItem) => void;
   onMarquee: (rect: { x: number; y: number; w: number; h: number }) => void;
@@ -278,15 +232,6 @@ function InteractionOverlayComponent({
   const edgeModel = selectedEdge
     ? doc.edges.find((edge) => edge.id === selectedEdge.id)
     : undefined;
-  const selectedRoutePinned = Boolean(
-    selectedEdge && view.routes[selectedEdge.id]?.pin,
-  );
-  const deferredAutoRoutePreview = useDeferredAutoRoutePreview(
-    doc,
-    layout,
-    selectedEdge?.id,
-    selectedRoutePinned && ghostRoute === null,
-  );
   const showEdgeHandles = Boolean(edgeGeom && tool === "select");
   const showBendHandles = showEdgeHandles;
   const editableEdgePoints = edgeGeom && routeEditPreview?.edgeId === edgeGeom.id
@@ -386,11 +331,6 @@ function InteractionOverlayComponent({
     );
   };
 
-  // An auto-routed edge is already showing the route that a preview would
-  // calculate, so selecting it must not clone and reroute the whole diagram.
-  // Manual routes retain the useful auto-route comparison, computed during an
-  // idle period so the connector panel can paint first.
-  const predicted = ghostRoute ?? deferredAutoRoutePreview;
   const activePortTarget = rewireTarget ?? connectorDrag?.target;
 
   const portTargetAt = (
@@ -937,13 +877,6 @@ function InteractionOverlayComponent({
           }}
         />;
       })}
-
-      {predicted && (
-        <polyline
-          className="ghost-route"
-          points={predicted.map((point) => `${point.x},${point.y}`).join(" ")}
-        />
-      )}
 
       {connectorDrag && (
         <g data-connector-drag-preview>
@@ -1619,8 +1552,7 @@ export const InteractionOverlay = memo(
     previous.zoom === next.zoom &&
     previous.snapToGrid === next.snapToGrid &&
     previous.selection === next.selection &&
-    previous.pendingPort === next.pendingPort &&
-    previous.ghostRoute === next.ghostRoute,
+    previous.pendingPort === next.pendingPort,
 );
 
 function nearestEdgeAt(
@@ -1761,12 +1693,17 @@ function distanceToRectBorder(point: Point, rect: { x: number; y: number; w: num
     point.y >= rect.y &&
     point.y <= rect.y + rect.h;
   if (inside) {
-    return Math.min(
+    const borderDistance = Math.min(
       point.x - rect.x,
       rect.x + rect.w - point.x,
       point.y - rect.y,
       rect.y + rect.h - point.y,
     );
+    // Client-to-SVG conversion can leave an exact border hit a few floating
+    // point ulps inside the group. Treat that as the same zero-distance
+    // boundary hit as the corresponding connector, so the boundary priority
+    // remains deterministic at crossings.
+    return borderDistance <= 1e-6 ? 0 : borderDistance;
   }
   return distanceToRect(point, rect);
 }
