@@ -6,7 +6,7 @@ diagram aws-high-availability-web-app {
   generic.client browser "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
-    group public_edge "Frontend services" {
+    cloud-agnostic.boundary public_edge "Frontend services" {
       aws.route-53 dns
       aws.cognito identity "User authentication"
       aws.cloudfront cdn
@@ -39,7 +39,7 @@ diagram aws-high-availability-web-app {
       }
     }
 
-    group platform_services "Shared platform services" {
+    cloud-agnostic.boundary platform_services "Shared platform services" {
       aws.elastic-container-registry registry "Container images"
       aws.cloudwatch monitoring "Application + database monitoring"
     }

@@ -3,10 +3,12 @@ import type {
   DiagramAsset,
   Edge,
   EdgeBadgeSide,
+  EdgeColor,
   EdgeLabelSide,
   EdgeKind,
   EdgeStyle,
   AnnotationStyle,
+  BoundaryFill,
   GroupKind,
   GroupLabelPosition,
   LayoutResult,
@@ -184,6 +186,42 @@ export function setGroupLabelPosition(
   const group = next.groups.find((candidate) => candidate.id === id);
   if (!group) return doc;
   group.labelPosition = position;
+  return next;
+}
+
+export function setGroupIconHidden(
+  doc: DiagramDocument,
+  id: string,
+  hidden: boolean,
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const group = next.groups.find((candidate) => candidate.id === id);
+  if (!group) return doc;
+  if (hidden) group.hideIcon = true;
+  else delete group.hideIcon;
+  return next;
+}
+
+export function setBoundaryAppearance(
+  doc: DiagramDocument,
+  id: string,
+  patch: { style?: EdgeStyle; color?: EdgeColor; fill?: BoundaryFill },
+): DiagramDocument {
+  const next = cloneDocument(doc);
+  const group = next.groups.find((candidate) => candidate.id === id);
+  if (!group) return doc;
+  if ("style" in patch) {
+    if (patch.style) group.style = patch.style;
+    else delete group.style;
+  }
+  if ("color" in patch) {
+    if (patch.color) group.color = patch.color;
+    else delete group.color;
+  }
+  if ("fill" in patch) {
+    if (patch.fill) group.fill = patch.fill;
+    else delete group.fill;
+  }
   return next;
 }
 
@@ -1393,6 +1431,10 @@ function validGroup(value: unknown): boolean {
     Array.isArray(value.children) && value.children.every((id) => typeof id === "string") &&
     (value.parent === undefined || typeof value.parent === "string") &&
     (value.labelPosition === undefined || value.labelPosition === "top-left" || value.labelPosition === "top-right" || value.labelPosition === "bottom-left" || value.labelPosition === "bottom-right") &&
+    (value.hideIcon === undefined || typeof value.hideIcon === "boolean") &&
+    (value.style === undefined || value.style === "solid" || value.style === "dashed") &&
+    (value.color === undefined || value.color === "graphite" || value.color === "blue" || value.color === "teal" || value.color === "purple" || value.color === "amber" || value.color === "red" || value.color === "green") &&
+    (value.fill === undefined || value.fill === "subtle" || value.fill === "none") &&
     (value.step === undefined || (typeof value.step === "number" && Number.isInteger(value.step) && value.step >= 0 && value.step <= MAX_EDGE_STEP));
 }
 

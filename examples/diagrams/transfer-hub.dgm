@@ -6,10 +6,10 @@ diagram transfer-hub {
   aws.cloud cloud "AWS Cloud" {
     aws.account customer "Customer's AWS Account" {
       generic.client ui
-      group auth "Authentication" { aws.cognito cognito }
+      cloud-agnostic.boundary auth "Authentication" { aws.cognito cognito }
       aws.aws-appsync appsync
       aws.cloudfront cloudfront
-      group workflow "AWS Step Functions workflow" {
+      cloud-agnostic.boundary workflow "AWS Step Functions workflow" {
         aws.aws-step-functions sfn
         aws.aws-lambda lambda1 "Workflow task"
         aws.aws-cloudformation cfn

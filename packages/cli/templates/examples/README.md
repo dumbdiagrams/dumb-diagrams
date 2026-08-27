@@ -25,6 +25,8 @@ Before creating or editing a project diagram:
    manual node positions, or manual edge routes.
 7. Adapt the composition to the requested architecture instead of adding
    plausible services that were not requested.
+8. Author general logical containers only as `cloud-agnostic.boundary`; the
+   examples deliberately avoid the legacy `group` shorthand.
 
 Available reference pairs:
 
@@ -35,6 +37,7 @@ Available reference pairs:
 - `prompts/image-thumbnail-pipeline.md` + `image-thumbnail-pipeline.dgm`
 - `prompts/asynchronous-report-generation.md` + `asynchronous-report-generation.dgm`
 - `prompts/event-driven-order-fulfillment.md` + `event-driven-order-fulfillment.dgm`
+- `prompts/azure-private-app-service.md` + `azure-private-app-service.dgm`
 
 The examples intentionally use a defined prompt style: title and grammar first,
 composition and hierarchy next, then numbered connections and routing constraints.
@@ -56,7 +59,7 @@ Use automatic layout only: do not add a view block, manual node positions, or
 manual edge routes.
 
 Composition and hierarchy:
-- Describe the actors, cloud/account/region/network boundaries, groups, and
+- Describe the actors, cloud/account/region/network boundaries, logical boundaries, and
   resources in their intended visual order.
 - State exact labels, nesting, repeated zones, and any compact layout goals.
 

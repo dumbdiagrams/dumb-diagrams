@@ -44,6 +44,11 @@
   .header-cta { border: 1px solid var(--ink); padding: 8px 15px; font-size: 12px; font-weight: 650; display: flex; align-items: center; gap: 30px; }
   .header-cta:hover { background: var(--brand-navy-soft); color: var(--ink); }
   .header-cta span { font-size: 17px; }
+  .github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink); color: var(--ink); font-size: 12px; font-weight: 650; white-space: nowrap; }
+  .github-link:hover, .github-link:focus-visible { background: var(--brand-navy-soft); color: var(--ink); }
+  .github-link[aria-disabled='true'] { cursor: not-allowed; opacity: .58; }
+  .github-link[aria-disabled='true']:hover { background: transparent; }
+  .github-link__icon { width: 16px; height: 16px; fill: currentColor; }
   .mobile-nav { display: none; }
   .install { width: 480px; max-width: 100%; border: 1px solid var(--line); background: #fcfbf7; }
   .install-tabs { display: flex; align-items: stretch; gap: 19px; padding: 0 17px; border-bottom: 1px solid var(--line); height: 36px; }
@@ -197,6 +202,8 @@
     .page-shell { padding: 0 20px; }
     .brand { --wordmark-size: 21px; }
     .brand > img { width: 38px; margin-right: 10px; }
+    .github-link { padding: 7px 9px; }
+    .github-link__label { display: none; }
     .desktop-nav { display: none; }
     .mobile-nav { display: block; }
     .mobile-nav > summary { list-style: none; font-size: 20px; cursor: pointer; padding: 7px; }

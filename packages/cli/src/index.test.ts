@@ -46,8 +46,15 @@ describe("runCli", () => {
       expect(code).toBe(0);
       expect(readFileSync(join(projectDir, "README.md"), "utf8")).toContain("Payments");
       expect(readFileSync(join(projectDir, "diagrams/system-overview.dgm"), "utf8")).toContain("system-overview");
-      expect(readFileSync(join(projectDir, "DUMB_DIAGRAMS.md"), "utf8")).toContain("system-overview.dgm");
-      expect(readFileSync(join(projectDir, "CATALOG.json"), "utf8")).toContain("\"entries\"");
+      const instructions = readFileSync(join(projectDir, "DUMB_DIAGRAMS.md"), "utf8");
+      expect(instructions).toContain("system-overview.dgm");
+      expect(instructions).toContain("cloud-agnostic.boundary");
+      expect(instructions).toContain("Do not author the legacy `group` shorthand");
+      const catalog = readFileSync(join(projectDir, "CATALOG.json"), "utf8");
+      expect(catalog).toContain("\"entries\"");
+      expect(catalog).toContain("\"type\": \"cloud-agnostic.boundary\"");
+      expect(catalog).not.toContain("cloud-agnostic.logical");
+      expect(catalog).not.toContain("neutral.logical");
     } finally {
       rmSync(workRoot, { recursive: true, force: true });
     }

@@ -7,14 +7,14 @@ diagram aws-data-transfer-hub {
 
   aws.cloud cloud "AWS Cloud" {
     aws.account customer "Customer's AWS Account" {
-      group auth "Authentication" {
+      cloud-agnostic.boundary auth "Authentication" {
         aws.cognito cognito "Amazon Cognito" { label-position top }
         cloud-agnostic.identity oidc "OpenID Connect" { label-position top }
       }
 
       aws.dynamodb state "Data transfer task information"
 
-      group frontend "Public web UI" {
+      cloud-agnostic.boundary frontend "Public web UI" {
         label-position top-right
         cloud-agnostic.client ui "Data Transfer Hub UI"
         aws.cloudfront cloudfront "Amazon CloudFront"
@@ -24,12 +24,12 @@ diagram aws-data-transfer-hub {
       aws.aws-appsync appsync "GraphQL backend API"
       aws.aws-lambda api_lambda "API Lambda"
 
-      group workflow "AWS Step Functions workflow" {
+      cloud-agnostic.boundary workflow "AWS Step Functions workflow" {
         aws.aws-lambda workflow_lambda "Workflow Lambda"
         aws.aws-cloudformation cloudformation "Plugin deployment"
       }
 
-      group workloads "Application workloads" {
+      cloud-agnostic.boundary workloads "Application workloads" {
         aws.aws-fargate fargate "Plugin transfer tasks"
       }
     }

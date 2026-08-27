@@ -415,6 +415,7 @@ function layoutSubnetGroup(
   );
   const contentW = Math.max(
     140,
+    groupLabelContentWidth(group, style),
     children.reduce(
       (width, item, index) => width + item.w + (index > 0 ? RESOURCE_GAP : 0),
       0,
@@ -454,12 +455,13 @@ function layoutLogicalGroup(
   const contentW = horizontal
     ? Math.max(
         120,
+        groupLabelContentWidth(group, style),
         children.reduce(
           (width, item, index) => width + item.w + (index > 0 ? childGaps[index - 1]! : 0),
           0,
         ),
       )
-    : Math.max(120, Math.max(0, ...children.map((item) => item.w)));
+    : Math.max(120, groupLabelContentWidth(group, style), Math.max(0, ...children.map((item) => item.w)));
   const contentH = horizontal
     ? Math.max(60, Math.max(0, ...children.map((item) => item.h)))
     : Math.max(
@@ -571,6 +573,7 @@ function layoutGenericGroup(
   const children = measureChildren(doc, group.children, state);
   const contentW = Math.max(
     100,
+    groupLabelContentWidth(group, style),
     children.reduce(
       (width, item, index) => width + item.w + (index > 0 ? H_GAP : 0),
       0,
@@ -1397,6 +1400,22 @@ function unionBounds(rects: Rect[]): Rect {
 
 function estimateTextWidth(text: string, fontSize: number): number {
   return text.length * fontSize * 0.55;
+}
+
+/**
+ * Keep a long group header inside its boundary. Resource cards already grow
+ * from their measured labels, but group headers used to stop at a small
+ * content minimum and let the text paint past the right edge.
+ */
+function groupLabelContentWidth(
+  group: Group,
+  style: (typeof GROUP_STYLES)[Group["kind"]],
+): number {
+  const iconSpace = group.type === "cloud-agnostic.boundary" || group.hideIcon
+    ? 0
+    : style.iconSize + 12;
+  const labelWidth = Math.max(80, iconSpace + estimateTextWidth(group.label, style.fontSize) + 16);
+  return Math.max(0, labelWidth - style.padding * 2);
 }
 
 function wrapResourceLabel(text: string, fontSize: number, maxWidth: number): string[] {

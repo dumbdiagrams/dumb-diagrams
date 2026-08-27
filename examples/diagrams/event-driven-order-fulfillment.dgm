@@ -6,23 +6,23 @@ diagram event-driven-order-fulfillment {
   generic.user customer "Customer"
 
   aws.cloud aws_cloud "AWS Cloud" {
-    group customer_experience "Customer experience" {
+    cloud-agnostic.boundary customer_experience "Customer experience" {
       aws.cloudfront storefront_delivery "Storefront delivery"
       aws.simple-storage-service storefront "Storefront"
     }
 
     aws.api-gateway gateway
 
-    group order_domain "Order domain" {
+    cloud-agnostic.boundary order_domain "Order domain" {
       aws.aws-lambda order_service "Order service"
       aws.dynamodb orders_database "Orders database"
     }
 
-    group event_backbone "Event backbone" {
+    cloud-agnostic.boundary event_backbone "Event backbone" {
       aws.eventbridge order_events "Order events"
     }
 
-    group fulfillment_services "Fulfillment services" {
+    cloud-agnostic.boundary fulfillment_services "Fulfillment services" {
       aws.aws-lambda inventory_service "Inventory service"
       aws.aws-lambda payment_service "Payment service"
       aws.aws-fargate shipping_service "Shipping service"

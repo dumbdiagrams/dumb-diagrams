@@ -24,9 +24,12 @@ describe("parseDgm / printDgm round-trip", () => {
     ]);
     expect(doc.groups[0]?.children).toEqual(["storage"]);
     expect(doc.groups[0]?.step).toBe(3);
+    expect(doc.groups[0]?.type).toBe("cloud-agnostic.boundary");
     expect(doc.groups[1]?.children).toEqual(["bucket"]);
     expect(doc.resources[0]?.parent).toBe("storage");
     expect(doc.resources[0]?.label.role).toBeUndefined();
+    expect(printDgm(doc)).toContain('cloud-agnostic.boundary account "Account" {');
+    expect(printDgm(doc)).not.toContain("  group account");
     expect(printDgm(doc)).toContain("aws.s3 bucket\n");
     expect(parseDgm(printDgm(doc))).toEqual(doc);
   });
@@ -96,6 +99,40 @@ ${declarations}
       service: "Amazon SNS",
       role: "Claims notification",
       position: "left",
+    });
+    expect(parseDgm(printDgm(doc))).toEqual(doc);
+  });
+
+  it("round-trips hidden icons on typed groups", () => {
+    const doc = parseDgm(`diagram hidden_icon {
+  grammar aws
+  cloud-agnostic.boundary boundary "Boundary" { hide-icon }
+}`);
+
+    expect(doc.groups[0]?.hideIcon).toBe(true);
+    expect(parseDgm(printDgm(doc))).toEqual(doc);
+  });
+
+  it("round-trips boundary appearance options", () => {
+    const doc = parseDgm(`diagram styled_boundary {
+  grammar aws
+  cloud-agnostic.boundary platform "Platform" {
+    label-position bottom-right
+    style solid
+    color purple
+    fill none
+    step 4
+    aws.lambda worker
+  }
+}`);
+
+    expect(doc.groups[0]).toMatchObject({
+      type: "cloud-agnostic.boundary",
+      labelPosition: "bottom-right",
+      style: "solid",
+      color: "purple",
+      fill: "none",
+      step: 4,
     });
     expect(parseDgm(printDgm(doc))).toEqual(doc);
   });

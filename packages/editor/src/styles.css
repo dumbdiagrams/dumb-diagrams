@@ -1731,6 +1731,10 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
+.interaction-overlay.is-select-tool.has-group-hover .hit-edge {
+  cursor: move;
+}
+
 .interaction-overlay.is-select-tool .hit-edge-label {
   cursor: grab;
 }
@@ -2518,6 +2522,39 @@ textarea:focus-visible {
 .asset-browser-toolbar {
   display: flex;
   gap: 8px;
+}
+
+.add-boundary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 100%;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.groups-toolbar {
+  flex-direction: column;
+}
+
+.add-boundary-button__mark {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 1.5px dashed currentColor;
+  border-radius: 3px;
+}
+
+.add-boundary-button__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groups-toolbar .drawer-search-input {
+  flex: 0 0 auto;
+  width: 100%;
 }
 
 .drawer-search-input,

@@ -35,6 +35,9 @@ const JUNCTION_COST = 20_000;
 const OVERLAP_COST = 4_000;
 const NEAR_PARALLEL_COST = 160;
 const MIN_CONNECTOR_GAP = CELL;
+const GROUP_BOUNDARY_COST = 40_000;
+const GROUP_BOUNDARY_OVERLAP_COST = 40;
+const MAX_GROUP_BOUNDARY_LENGTH_COST = 10_000;
 const PORT_SIDE_FALLBACK_COST = 900;
 const PORT_OFFSET_FALLBACK_COST = 120;
 const LABEL_SIDE_FALLBACK_COST = 6_000;
@@ -87,12 +90,19 @@ interface Obstacle extends Rect {
   kind: "node" | "header";
 }
 
+interface GroupBoundary {
+  a: Point;
+  b: Point;
+  clearance: number;
+}
+
 interface Grid {
   originX: number;
   originY: number;
   cols: number;
   rows: number;
   blocked: Uint8Array;
+  boundaries: GroupBoundary[];
 }
 
 export function routeEdges(
@@ -101,9 +111,10 @@ export function routeEdges(
 ): RoutedEdge[] {
   const nodeMap = new Map(layout.nodes.map((n) => [n.id, n]));
   const obstacles = buildObstacles(layout);
+  const boundaries = buildGroupBoundaries(layout);
   const vGutters = verticalGutters(layout, obstacles);
   const hGutters = horizontalGutters(layout, obstacles);
-  const grid = buildGrid(layout, obstacles);
+  const grid = buildGrid(layout, obstacles, boundaries);
   const routed: RoutedEdge[] = [];
   const existing: ExistingRoute[] = [];
   const view = getDefaultView(doc);
@@ -198,6 +209,7 @@ export function routeEdges(
           context,
           existing,
           bestScore - port.preferenceCost,
+          boundaries,
         ) + port.preferenceCost;
         if (s < bestScore) {
           bestScore = s;
@@ -231,13 +243,20 @@ export function routeEdges(
           conflictCostCache,
         );
         if (!astarPath) continue;
-        const smoothed = shortcut(simplify(astarPath), obstacles, context, existing);
+        const smoothed = shortcut(
+          simplify(astarPath),
+          obstacles,
+          context,
+          existing,
+          boundaries,
+        );
         const s = scorePath(
           smoothed,
           obstacles,
           context,
           existing,
           bestScore - port.preferenceCost,
+          boundaries,
         ) + port.preferenceCost;
         if (s < bestScore) {
           bestScore = s;
@@ -257,6 +276,7 @@ export function routeEdges(
       obstacles,
       createRouteContext(source, target, bestPort, edge.style),
       existing,
+      boundaries,
     );
     points = simplify(points);
     const routeOverride = view.routes[edge.id];
@@ -460,6 +480,23 @@ function buildObstacles(layout: LayoutResult): Obstacle[] {
     out.push({ ...headerLabelRect(g), id: g.id, kind: "header" });
   }
   return out;
+}
+
+function buildGroupBoundaries(layout: LayoutResult): GroupBoundary[] {
+  return layout.groups.flatMap((group) => {
+    const { x, y, w, h } = group.bounds;
+    const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
+    // Leave enough room for both strokes plus a small visibility gap. Unlike
+    // an obstacle rectangle, these segments only reject parallel travel, so
+    // a connector may still cross a boundary to enter or leave its group.
+    const clearance = (style.strokeWidth + GRAMMAR.edgeStroke) / 2 + 2;
+    return [
+      { a: { x, y }, b: { x: x + w, y }, clearance },
+      { a: { x, y: y + h }, b: { x: x + w, y: y + h }, clearance },
+      { a: { x, y }, b: { x, y: y + h }, clearance },
+      { a: { x: x + w, y }, b: { x: x + w, y: y + h }, clearance },
+    ];
+  });
 }
 
 function headerLabelRect(group: GroupGeom): Rect {
@@ -1035,6 +1072,7 @@ function scorePath(
   context: RouteContext,
   existing: ExistingRoute[],
   scoreCeiling = Infinity,
+  boundaries: GroupBoundary[] = [],
 ): number {
   if (points.length < 2) return Infinity;
   if (
@@ -1073,6 +1111,12 @@ function scorePath(
       ) continue;
       if (!segmentHits(a, b, obs)) continue;
       score += obs.kind === "header" ? HEADER_COST : COLLISION_COST;
+      if (score >= scoreCeiling) return score;
+    }
+    for (const boundary of boundaries) {
+      const overlap = boundaryParallelOverlapLength(a, b, boundary);
+      if (!overlap) continue;
+      score += groupBoundaryConflictCost(overlap);
       if (score >= scoreCeiling) return score;
     }
     for (const other of existing) {
@@ -1174,6 +1218,30 @@ function nearParallelLength(
   return 0;
 }
 
+function boundaryParallelOverlapLength(
+  a: Point,
+  b: Point,
+  boundary: GroupBoundary,
+): number {
+  const { a: c, b: d, clearance } = boundary;
+  if (a.x === b.x && c.x === d.x) {
+    if (Math.abs(a.x - c.x) >= clearance) return 0;
+    return intervalOverlap(a.y, b.y, c.y, d.y);
+  }
+  if (a.y === b.y && c.y === d.y) {
+    if (Math.abs(a.y - c.y) >= clearance) return 0;
+    return intervalOverlap(a.x, b.x, c.x, d.x);
+  }
+  return 0;
+}
+
+function groupBoundaryConflictCost(overlap: number): number {
+  return GROUP_BOUNDARY_COST + Math.min(
+    overlap * GROUP_BOUNDARY_OVERLAP_COST,
+    MAX_GROUP_BOUNDARY_LENGTH_COST,
+  );
+}
+
 function intervalOverlap(a: number, b: number, c: number, d: number): number {
   return Math.max(
     0,
@@ -1187,6 +1255,7 @@ function shortcut(
   obstacles: Obstacle[],
   context: RouteContext,
   existing: ExistingRoute[] = [],
+  boundaries: GroupBoundary[] = [],
 ): Point[] {
   let path = simplify(points);
   for (let iter = 0; iter < 12; iter++) {
@@ -1211,11 +1280,11 @@ function shortcut(
           ) {
             continue;
           }
-          if (!pathClear(next, obstacles, context, existing)) continue;
+          if (!pathClear(next, obstacles, context, existing, boundaries)) continue;
           const candidate = simplify([...path.slice(0, i), ...next, ...path.slice(j + 1)]);
           if (
-            scorePath(candidate, obstacles, context, existing) >
-            scorePath(path, obstacles, context, existing)
+            scorePath(candidate, obstacles, context, existing, Infinity, boundaries) >
+            scorePath(path, obstacles, context, existing, Infinity, boundaries)
           ) continue;
           path = candidate;
           changed = true;
@@ -1233,8 +1302,9 @@ function pathClear(
   obstacles: Obstacle[],
   context: RouteContext,
   existing: ExistingRoute[] = [],
+  boundaries: GroupBoundary[] = [],
 ): boolean {
-  return scorePath(points, obstacles, context, existing) < HEADER_COST;
+  return scorePath(points, obstacles, context, existing, Infinity, boundaries) < HEADER_COST;
 }
 
 function samePoint(a: Point, b: Point): boolean {
@@ -1284,14 +1354,18 @@ function stepOut(node: NodeGeom, p: Point, side: Side): Point {
   }
 }
 
-function buildGrid(layout: LayoutResult, obstacles: Obstacle[]): Grid {
+function buildGrid(
+  layout: LayoutResult,
+  obstacles: Obstacle[],
+  boundaries: GroupBoundary[],
+): Grid {
   const margin = 64;
   const originX = -margin;
   const originY = -margin;
   const cols = Math.ceil((layout.width + margin * 2) / CELL) + 2;
   const rows = Math.ceil((layout.height + margin * 2) / CELL) + 2;
   const blocked = new Uint8Array(cols * rows);
-  const grid: Grid = { originX, originY, cols, rows, blocked };
+  const grid: Grid = { originX, originY, cols, rows, blocked, boundaries };
   for (const obs of obstacles) markRect(grid, obs);
   return grid;
 }
@@ -1358,7 +1432,12 @@ function astar(
       const segmentKey = Math.min(current, ni) * size + Math.max(current, ni);
       let conflictCost = conflictCostCache?.get(segmentKey);
       if (conflictCost === undefined) {
-        conflictCost = segmentRouteConflictCost(currentPoint, nextPoint, existing);
+        conflictCost = segmentRouteConflictCost(
+          currentPoint,
+          nextPoint,
+          existing,
+          grid.boundaries,
+        );
         conflictCostCache?.set(segmentKey, conflictCost);
       }
       const tentative = gScore[current] + CELL + (turned ? TURN_COST : 0) +
@@ -1376,8 +1455,13 @@ function segmentRouteConflictCost(
   a: Point,
   b: Point,
   existing: ExistingRoute[],
+  boundaries: GroupBoundary[],
 ): number {
   let cost = 0;
+  for (const boundary of boundaries) {
+    const overlap = boundaryParallelOverlapLength(a, b, boundary);
+    if (overlap) cost += groupBoundaryConflictCost(overlap);
+  }
   for (const route of existing) {
     for (let i = 0; i < route.points.length - 1; i++) {
       const c = route.points[i]!;
@@ -2032,9 +2116,10 @@ export function routeConnectionPreview(
   if (!source || !target) return null;
 
   const obstacles = buildObstacles(layout);
+  const boundaries = buildGroupBoundaries(layout);
   const vGutters = verticalGutters(layout, obstacles);
   const hGutters = horizontalGutters(layout, obstacles);
-  const grid = buildGrid(layout, obstacles);
+  const grid = buildGrid(layout, obstacles, boundaries);
   const isFailure = options.kind === "fail" || options.style === "dashed";
   const ports = alignNearOpposingPorts(
     candidatePorts(
@@ -2059,7 +2144,14 @@ export function routeConnectionPreview(
     const context = createRouteContext(source, target, port);
     for (const candidate of templates(port, vGutters, hGutters, source, target)) {
       const path = simplify(candidate);
-      const s = scorePath(path, obstacles, context, []) + port.preferenceCost;
+      const s = scorePath(
+        path,
+        obstacles,
+        context,
+        [],
+        Infinity,
+        boundaries,
+      ) + port.preferenceCost;
       if (s < bestScore) {
         bestScore = s;
         best = path;
@@ -2072,8 +2164,15 @@ export function routeConnectionPreview(
       const context = createRouteContext(source, target, port);
       const astarPath = routeAStar(grid, port, source, target, []);
       if (!astarPath) continue;
-      const smoothed = shortcut(simplify(astarPath), obstacles, context);
-      const s = scorePath(smoothed, obstacles, context, []) + port.preferenceCost;
+      const smoothed = shortcut(simplify(astarPath), obstacles, context, [], boundaries);
+      const s = scorePath(
+        smoothed,
+        obstacles,
+        context,
+        [],
+        Infinity,
+        boundaries,
+      ) + port.preferenceCost;
       if (s < bestScore) {
         bestScore = s;
         best = smoothed;
@@ -2083,7 +2182,13 @@ export function routeConnectionPreview(
   }
 
   let points = best ?? [ports[0]!.src, ports[0]!.tgt];
-  points = shortcut(points, obstacles, createRouteContext(source, target, bestPort));
+  points = shortcut(
+    points,
+    obstacles,
+    createRouteContext(source, target, bestPort),
+    [],
+    boundaries,
+  );
   points = simplify(points);
   if (options.waypoints?.length) {
     points = normalizeOrthogonalRoute([points[0]!, ...options.waypoints, points.at(-1)!]);

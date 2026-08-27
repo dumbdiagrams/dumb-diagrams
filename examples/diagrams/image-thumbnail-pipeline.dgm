@@ -6,20 +6,20 @@ diagram image-thumbnail-pipeline {
   generic.client image_uploader "Image uploader"
 
   aws.cloud aws_cloud "AWS Cloud" {
-    group upload_experience "Upload experience" {
+    cloud-agnostic.boundary upload_experience "Upload experience" {
       aws.cloudfront cdn "Web delivery"
       aws.simple-storage-service upload_ui "Upload UI"
     }
 
-    group upload_storage "Upload storage" {
+    cloud-agnostic.boundary upload_storage "Upload storage" {
       aws.simple-storage-service original_images "Original images"
     }
 
-    group processing "Processing" {
+    cloud-agnostic.boundary processing "Processing" {
       aws.aws-lambda thumbnail_processor "Thumbnail processor"
     }
 
-    group processed_assets "Processed assets" {
+    cloud-agnostic.boundary processed_assets "Processed assets" {
       aws.simple-storage-service thumbnail_images "Thumbnail images"
       aws.dynamodb image_metadata "Image metadata"
     }

@@ -153,10 +153,11 @@ motion inside the diagram editor.
 
 ## Example windows
 
-The section labeled “01 / A SHORTER PATH TO CLARITY” shows Image thumbnail
-pipeline, AWS Data Transfer Hub, and Claims processing with Amazon Bedrock, in
-that order. Import the same prompt/source pairs as Studio; do not simplify them
-or invent a substitute. Keep the original renderer output and any routing notes.
+The section labeled “01 / FROM SOURCE TO DIAGRAM” shows Image thumbnail
+pipeline, AWS Data Transfer Hub, Claims processing with Amazon Bedrock, and
+Private Azure App Service, in that order. Import the same prompt/source pairs as
+Studio; do not simplify them or invent a substitute. Keep the original renderer
+output and any routing notes.
 
 Prompt panels use deep navy. Generated-source panels and the CLI use a black
 `#0c0c0c` terminal surface, dark title bar, and decorative macOS traffic lights.

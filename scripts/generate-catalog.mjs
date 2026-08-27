@@ -658,7 +658,7 @@ function cloudAgnosticEntries(used, collisionLog) {
     const file = join(ROOT, relativeIcon);
     if (used.has(type)) throw new Error(`Duplicate curated group type: ${type}`);
     used.add(type);
-    return entry({
+    const group = entry({
       type,
       provider: "cloud-agnostic",
       assetKind: "group",
@@ -672,6 +672,11 @@ function cloudAgnosticEntries(used, collisionLog) {
       allowRoot: ["cloud", "account", "region"].includes(kind),
       scope: "global",
     });
+    // `cloud-agnostic.boundary` is the single general-purpose logical
+    // container exposed to Studio and generated project instructions. Keep
+    // the older logical type resolvable for compatibility without teaching it
+    // to agents or offering it as a second creation path.
+    return type === "cloud-agnostic.logical" ? { ...group, browsable: false } : group;
   });
   const resources = CLOUD_RESOURCES.map(([type, name, category, iconPath, aliases]) => {
     const file = join(ROOT, iconPath);

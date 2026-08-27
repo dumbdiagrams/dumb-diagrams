@@ -70,6 +70,15 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
     if (group.labelPosition !== undefined && !isGroupLabelPosition(group.labelPosition)) {
       issues.push({ level: "error", code: "invalid-label-position", message: `Invalid group label position: ${group.labelPosition}`, id: group.id });
     }
+    if (group.style !== undefined && group.style !== "solid" && group.style !== "dashed") {
+      issues.push({ level: "error", code: "invalid-boundary-style", message: `Invalid boundary style: ${group.style}`, id: group.id });
+    }
+    if (group.color !== undefined && !isDiagramColor(group.color)) {
+      issues.push({ level: "error", code: "invalid-boundary-color", message: `Invalid boundary color: ${group.color}`, id: group.id });
+    }
+    if (group.fill !== undefined && group.fill !== "subtle" && group.fill !== "none") {
+      issues.push({ level: "error", code: "invalid-boundary-fill", message: `Invalid boundary fill: ${group.fill}`, id: group.id });
+    }
     checkOptionalNumber(issues, group.step, "group step", group.id, 0, 99);
     if (group.parent) checkText(issues, "parent id", group.parent, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
     for (const child of group.children) checkText(issues, "child id", child, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
@@ -148,6 +157,11 @@ function isResourceLabelPosition(value: string): boolean {
 
 function isGroupLabelPosition(value: string): boolean {
   return value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right";
+}
+
+function isDiagramColor(value: string): boolean {
+  return value === "graphite" || value === "blue" || value === "teal" || value === "purple" ||
+    value === "amber" || value === "red" || value === "green";
 }
 
 function checkCount(issues: ValidationIssue[], name: string, values: unknown[], limit: number): void {

@@ -113,4 +113,21 @@ describe("logical group layout", () => {
     expect(first.y).toBe(second.y);
     expect(second.y).toBe(third.y);
   });
+
+  it("gives long subnet headers enough width for the full label", () => {
+    const doc = createEmptyDocument("long-subnet-label");
+    doc.resources = [resource("interface", "integration")];
+    doc.groups = [{
+      id: "integration",
+      kind: "subnet",
+      type: "azure.subnet",
+      label: "App Service integration subnet",
+      children: ["interface"],
+    }];
+
+    const integration = layoutDocument(doc).groups.find((group) => group.id === "integration")!;
+    expect(integration.labelRect!.x + integration.labelRect!.w).toBeLessThanOrEqual(
+      integration.bounds.x + integration.bounds.w,
+    );
+  });
 });

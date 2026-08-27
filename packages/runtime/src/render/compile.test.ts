@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   createAsyncDocsFixture,
   createTransferHubFixture,
+  createEmptyDocument,
   getDefaultView,
 } from "../core/index.js";
 import type { LayoutResult } from "../core/index.js";
@@ -20,6 +21,22 @@ describe("async-docs fixture", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);
     expect(result.svg).toContain("<svg");
+  });
+
+  it("renders authored boundary appearance and keeps the canonical boundary iconless", () => {
+    const doc = createAsyncDocsFixture();
+    const group = doc.groups[0]!;
+    group.type = "cloud-agnostic.boundary";
+    group.style = "dashed";
+    group.color = "purple";
+    group.fill = "none";
+
+    const svg = renderSvg(doc, layoutDocument(doc));
+    const renderedGroup = svg.match(new RegExp(`<g id="group-${group.id}">([\\s\\S]*?)</g>`))?.[1] ?? "";
+    expect(renderedGroup).toContain('stroke="#7C3AED"');
+    expect(renderedGroup).toContain('fill="transparent"');
+    expect(renderedGroup).toContain('stroke-dasharray=');
+    expect(renderedGroup).not.toContain("<image");
   });
 
   it("renders each note style as an explicit SVG variant", () => {
@@ -130,6 +147,38 @@ describe("async-docs fixture", () => {
     expect(svg).toMatch(
       new RegExp(`id="group-queues"[\\s\\S]*text-anchor="end"[\\s\\S]*>${queues.label}<\\/text>`),
     );
+  });
+
+  it("does not add a catalog icon to shorthand logical groups", () => {
+    const doc = createEmptyDocument("iconless-group");
+    doc.groups = [{
+      id: "boundary",
+      kind: "logical",
+      label: "Logical boundary",
+      children: [],
+    }];
+
+    const svg = renderSvg(doc, layoutDocument(doc));
+
+    expect(svg).toContain('id="group-boundary"');
+    expect(svg).not.toContain("<image");
+  });
+
+  it("can hide the icon on a typed cloud-agnostic group", () => {
+    const doc = createEmptyDocument("hidden-group-icon");
+    doc.groups = [{
+      id: "boundary",
+      kind: "logical",
+      type: "cloud-agnostic.boundary",
+      label: "Boundary",
+      hideIcon: true,
+      children: [],
+    }];
+
+    const svg = renderSvg(doc, layoutDocument(doc));
+
+    expect(svg).toContain('id="group-boundary"');
+    expect(svg).not.toContain("<image");
   });
 
   it("uses the compact AWS hierarchy orientation", () => {

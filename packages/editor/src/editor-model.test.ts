@@ -34,6 +34,8 @@ import {
   setEdgeLabelPosition,
   setAnnotationStyle,
   setGroupLabelPosition,
+  setGroupIconHidden,
+  setBoundaryAppearance,
   setPlace,
   setResourceLabelPosition,
   setSize,
@@ -75,6 +77,7 @@ describe("editor commands", () => {
     expect(setResourceIconSize(doc, "missing", "small")).toBe(doc);
     expect(setResourceLabelPosition(doc, "missing", "top")).toBe(doc);
     expect(setGroupLabelPosition(doc, "missing", "top-left")).toBe(doc);
+    expect(setGroupIconHidden(doc, "missing", true)).toBe(doc);
     expect(setSize(doc, "client", 160, 160)).toBe(doc);
     expect(setSize(locked, "main", 160, 160)).toBe(locked);
     expect(setGroupPlace(doc, "main", 10, 20, 8, 8)).not.toBe(doc);
@@ -138,6 +141,33 @@ describe("editor commands", () => {
 
     expect(group.resources.find((candidate) => candidate.id === "client")?.label.position).toBe("top");
     expect(group.groups.find((candidate) => candidate.id === "use1")?.labelPosition).toBe("top-right");
+  });
+
+  it("persists group icon visibility independently of its catalog type", () => {
+    const doc = createAsyncDocsFixture();
+    doc.groups[0]!.type = "cloud-agnostic.boundary";
+
+    const hidden = setGroupIconHidden(doc, "use1", true);
+    expect(hidden.groups.find((group) => group.id === "use1")?.hideIcon).toBe(true);
+
+    const shown = setGroupIconHidden(hidden, "use1", false);
+    expect(shown.groups.find((group) => group.id === "use1")?.hideIcon).toBeUndefined();
+  });
+
+  it("persists boundary line, color, and fill customization", () => {
+    const doc = createAsyncDocsFixture();
+    const next = setBoundaryAppearance(doc, "use1", {
+      style: "solid",
+      color: "purple",
+      fill: "none",
+    });
+
+    expect(next.groups.find((group) => group.id === "use1")).toMatchObject({
+      style: "solid",
+      color: "purple",
+      fill: "none",
+    });
+    expect(setBoundaryAppearance(doc, "missing", { color: "red" })).toBe(doc);
   });
 
   it("sets diagram title independently from id", () => {

@@ -20,7 +20,7 @@ const TOOLS: Array<{
   Icon: ComponentType;
 }> = [
   { id: "select", label: "Select", shortcut: "V", Icon: IconSelect },
-  { id: "groups", label: "Groups", Icon: IconGroups },
+  { id: "groups", label: "Boundaries", Icon: IconGroups },
   { id: "resources", label: "Resources", Icon: IconResources },
   { id: "text", label: "Text", shortcut: "T", Icon: IconText },
   { id: "note", label: "Add note", Icon: IconNote },

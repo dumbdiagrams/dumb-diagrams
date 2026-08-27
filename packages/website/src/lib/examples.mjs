@@ -5,6 +5,7 @@ export const exampleIds = [
   'image-thumbnail-pipeline',
   'aws-data-transfer-hub',
   'bedrock-claims-processing',
+  'azure-private-app-service',
 ];
 export function loadExamples() {
   return exampleIds.map(id => {

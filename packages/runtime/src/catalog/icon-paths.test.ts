@@ -52,8 +52,13 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
-    // The legacy custom glyph is intentionally not a browsable catalog entry.
-    excluded: ["assets/catalog/sources/cloud-agnostic/custom.svg"],
+    // Legacy generic glyphs remain resolvable but are intentionally absent
+    // from the agent/Studio-facing catalog. `cloud-agnostic.boundary` is the
+    // only general-purpose logical container exposed for new diagrams.
+    excluded: [
+      "assets/catalog/sources/cloud-agnostic/custom.svg",
+      "assets/catalog/sources/cloud-agnostic/logical.svg",
+    ],
   },
 ] as const;
 

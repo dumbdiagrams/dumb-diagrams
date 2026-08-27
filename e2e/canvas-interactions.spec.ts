@@ -247,6 +247,27 @@ test("opens the connector panel without rerouting an automatic edge", async ({ p
   await expect(page.locator(".ghost-route")).toHaveCount(1);
 });
 
+test("keeps the connector inspector open alongside a left drawer", async ({ page }) => {
+  await page.goto("/");
+
+  const groups = page.getByRole("dialog", { name: "Boundaries", exact: true });
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
+  await expect(groups).toBeVisible();
+
+  await selectE3(page);
+
+  const connector = page.getByRole("dialog", { name: "Connector", exact: true });
+  await expect(groups).toBeVisible();
+  await expect(connector).toBeVisible();
+  await expect(page.locator(".floating-panel.edge-sheet")).toHaveCount(1);
+
+  const groupsBox = await groups.boundingBox();
+  const connectorBox = await connector.boundingBox();
+  expect(groupsBox).not.toBeNull();
+  expect(connectorBox).not.toBeNull();
+  expect(groupsBox!.x + groupsBox!.width).toBeLessThanOrEqual(connectorBox!.x);
+});
+
 test("previews resource movement without rerouting the document until release", async ({ page }) => {
   await page.goto("/");
   const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');

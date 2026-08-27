@@ -14,7 +14,7 @@ import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
   it("keeps the bundled examples with their full prompts", () => {
-    expect(DIAGRAM_EXAMPLES).toHaveLength(7);
+    expect(DIAGRAM_EXAMPLES).toHaveLength(8);
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
       "bedrock-claims-processing",
       "aws-data-transfer-hub",
@@ -23,6 +23,7 @@ describe("diagram compilation canvas bounds", () => {
       "image-thumbnail-pipeline",
       "asynchronous-report-generation",
       "event-driven-order-fulfillment",
+      "azure-private-app-service",
     ]);
     for (const example of DIAGRAM_EXAMPLES) {
       expect(example.prompt.trim().length).toBeGreaterThan(500);

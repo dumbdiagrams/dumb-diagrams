@@ -97,11 +97,13 @@ export function AssetBrowser({
   mode,
   onAddService,
   onAddGroup,
+  onAddBoundary,
   onImportSvg,
 }: {
   mode: "resources" | "groups";
   onAddService: (entry: CatalogEntry) => void;
   onAddGroup: (entry: CatalogEntry, kind: GroupKind) => void;
+  onAddBoundary?: () => void;
   onImportSvg: (file: File) => void;
 }) {
   const [provider, setProvider] = useState<CatalogProviderFilter>("all");
@@ -119,7 +121,9 @@ export function AssetBrowser({
     [provider, mode],
   );
   const allEntries = useMemo(
-    () => listBrowsableAssets(provider, mode),
+    () => listBrowsableAssets(provider, mode).filter(
+      (entry) => mode !== "groups" || entry.type !== "cloud-agnostic.boundary",
+    ),
     [provider, mode],
   );
 
@@ -133,7 +137,9 @@ export function AssetBrowser({
     if (query.trim()) {
         entries = searchAssets(query, provider)
         .filter((entry) =>
-          mode === "groups" ? entry.assetKind === "group" : entry.assetKind === "resource",
+          mode === "groups"
+            ? entry.assetKind === "group" && entry.type !== "cloud-agnostic.boundary"
+            : entry.assetKind === "resource",
         )
         .sort((a, b) => a.serviceName.localeCompare(b.serviceName));
     } else {
@@ -164,7 +170,18 @@ export function AssetBrowser({
 
   return (
     <div className="asset-browser">
-      <div className="asset-browser-toolbar">
+      <div className={`asset-browser-toolbar${mode === "groups" ? " groups-toolbar" : ""}`}>
+        {mode === "groups" && onAddBoundary && (
+          <button
+            type="button"
+            className="secondary-button add-boundary-button"
+            onClick={onAddBoundary}
+            title="Add a movable boundary"
+          >
+            <span className="add-boundary-button__mark" aria-hidden="true" />
+            <span className="add-boundary-button__label">Add boundary</span>
+          </button>
+        )}
         <input
           className="drawer-search-input"
           value={query}
@@ -172,7 +189,7 @@ export function AssetBrowser({
           onChange={(event) => setQuery(event.target.value)}
           placeholder={
             mode === "groups"
-              ? "Search groups across providers"
+              ? "Search boundaries across providers"
               : "Search services across providers"
           }
           aria-label="Search catalog"
@@ -249,7 +266,7 @@ export function AssetBrowser({
 
         {mode === "groups" && (
           <p className="asset-browser-count">
-            {allEntries.length} group{allEntries.length === 1 ? "" : "s"} available
+            {allEntries.length + 1} boundaries available
           </p>
         )}
         {(favorites.length > 0 || recents.length > 0) && (

@@ -165,9 +165,9 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".example-card")).toHaveCount(7);
-  await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(7);
-  await expect(examples.locator(".example-prompt pre")).toHaveCount(7);
+  await expect(examples.locator(".example-card")).toHaveCount(8);
+  await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(8);
+  await expect(examples.locator(".example-prompt pre")).toHaveCount(8);
   await expect(examples.locator(".example-prompt pre").nth(0)).toContainText(
     'Create a diagram titled "Claims processing with Amazon Bedrock"',
   );
@@ -188,6 +188,9 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   );
   await expect(examples.locator(".example-prompt pre").nth(6)).toContainText(
     'Create a diagram titled "Event-driven order fulfillment"',
+  );
+  await expect(examples.locator(".example-prompt pre").nth(7)).toContainText(
+    'Create a diagram titled "Private Azure App Service"',
   );
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);

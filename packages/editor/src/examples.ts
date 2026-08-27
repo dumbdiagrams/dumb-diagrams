@@ -5,6 +5,7 @@ import simpleServerlessWebApplicationSource from "../../../examples/diagrams/sim
 import imageThumbnailPipelineSource from "../../../examples/diagrams/image-thumbnail-pipeline.dgm?raw";
 import asynchronousReportGenerationSource from "../../../examples/diagrams/asynchronous-report-generation.dgm?raw";
 import eventDrivenOrderFulfillmentSource from "../../../examples/diagrams/event-driven-order-fulfillment.dgm?raw";
+import azurePrivateAppServiceSource from "../../../examples/diagrams/azure-private-app-service.dgm?raw";
 
 import DATA_TRANSFER_HUB_PROMPT from "../../../examples/prompts/aws-data-transfer-hub.md?raw";
 import HIGH_AVAILABILITY_PROMPT from "../../../examples/prompts/aws-high-availability-web-app.md?raw";
@@ -13,6 +14,7 @@ import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/prompts/
 import IMAGE_THUMBNAIL_PIPELINE_PROMPT from "../../../examples/prompts/image-thumbnail-pipeline.md?raw";
 import ASYNCHRONOUS_REPORT_GENERATION_PROMPT from "../../../examples/prompts/asynchronous-report-generation.md?raw";
 import EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT from "../../../examples/prompts/event-driven-order-fulfillment.md?raw";
+import AZURE_PRIVATE_APP_SERVICE_PROMPT from "../../../examples/prompts/azure-private-app-service.md?raw";
 
 export interface DiagramExample {
   id: string;
@@ -79,5 +81,13 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "events", "fulfillment"],
     source: eventDrivenOrderFulfillmentSource,
     prompt: EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT,
+  },
+  {
+    id: "azure-private-app-service",
+    title: "Private Azure App Service",
+    description: "A secure Azure App Service path with Application Gateway WAF, VNet private endpoints, managed identity, SQL, Key Vault, Storage, and observability.",
+    tags: ["Azure", "App Service", "private endpoints", "VNet"],
+    source: azurePrivateAppServiceSource,
+    prompt: AZURE_PRIVATE_APP_SERVICE_PROMPT,
   },
 ];

@@ -6,7 +6,7 @@ diagram simple-serverless-web-application {
   generic.client web_client "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
-    group frontend "Frontend services" {
+    cloud-agnostic.boundary frontend "Frontend services" {
       aws.cloudfront cdn "Web delivery"
       aws.simple-storage-service static_assets "Static web assets"
     }

@@ -8,13 +8,13 @@ diagram bedrock-claims-processing {
 
   aws.cloud aws_cloud "AWS Cloud" {
     aws.region region "Region" {
-      group blueprint_creation "Blueprints Creation" {
+      cloud-agnostic.boundary blueprint_creation "Blueprints Creation" {
         aws.simple-storage-service sample_docs "Sample documents bucket" { service "Amazon S3" }
         aws.bedrock blueprint_generation "Blueprints generation" { service "Amazon Bedrock Data Automation" }
         step 3
       }
 
-      group claims_processing "Claims Processing" {
+      cloud-agnostic.boundary claims_processing "Claims Processing" {
         aws.simple-storage-service claims_docs "Claims document bucket" { service "Amazon S3" }
 
         aws.account workflow "AWS Step Functions Workflow · Claims Processing" {

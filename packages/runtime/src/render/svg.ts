@@ -89,7 +89,15 @@ function renderGroup(
   resolveHref: (p: string) => string,
 ): string {
   const style = GROUP_STYLES[group.kind];
-  const dash = style.dash ? `stroke-dasharray="${style.dash}"` : "";
+  const model = doc.groups.find((candidate) => candidate.id === group.id);
+  const stroke = model?.color ? EDGE_COLOR_VALUES[model.color] : style.stroke;
+  const fill = model?.fill === "none"
+    ? "transparent"
+    : model?.color
+      ? colorWithAlpha(stroke, 0.045)
+      : style.fill;
+  const dashed = model?.style ? model.style === "dashed" : Boolean(style.dash);
+  const dash = dashed ? `stroke-dasharray="${style.dash ?? GRAMMAR.edgeDash}"` : "";
   const iconPath = groupIconPath(doc, group);
   const labelRect = group.labelRect ?? group.header;
   const labelPosition = group.labelPosition ?? "top-left";
@@ -100,7 +108,7 @@ function renderGroup(
     ? `<image href="${escapeAttr(resolveHref(iconPath))}" x="${iconX}" y="${iconY}" width="${style.iconSize}" height="${style.iconSize}" preserveAspectRatio="none"/>`
     : "";
 
-  // Iconless source groups still carry the legacy full-header rect (which
+  // Iconless boundaries still carry the full-header rect (which
   // reserves room for a possible icon). Anchor the visible text itself to the
   // right edge so that "top-right" and "bottom-right" are actual corners.
   const textOnRight = !iconPath && labelPosition.endsWith("right");
@@ -110,8 +118,7 @@ function renderGroup(
       ? labelRect.x + labelRect.w - 8
       : labelRect.x + 8;
   const textY = (bottom ? group.bounds.y + group.bounds.h - (iconPath ? style.iconSize / 2 : style.headerHeight / 2) : iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2)) + style.fontSize * 0.35;
-  const model = doc.groups.find((candidate) => candidate.id === group.id);
-  const badgeOnLeft = (group.labelPosition ?? model?.labelPosition ?? "top-left") === "top-right";
+  const badgeOnLeft = (group.labelPosition ?? model?.labelPosition ?? "top-left").endsWith("right");
   const badgeX = badgeOnLeft ? group.bounds.x + 14 : group.bounds.x + group.bounds.w - 14;
   const badge = model?.step === undefined ? "" : `
   <circle class="group-badge-circle" cx="${badgeX}" cy="${group.bounds.y + 12}" r="10" fill="${GRAMMAR.badgeFill}"/>
@@ -120,7 +127,7 @@ function renderGroup(
   return `
 <g id="group-${group.id}">
   <rect x="${group.bounds.x}" y="${group.bounds.y}" width="${group.bounds.w}" height="${group.bounds.h}"
-    fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokeWidth}" ${dash} rx="${style.cornerRadius}"/>
+    fill="${fill}" stroke="${stroke}" stroke-width="${style.strokeWidth}" ${dash} rx="${style.cornerRadius}"/>
   ${iconTag}
   <text x="${textX}" y="${textY}"
     font-size="${style.fontSize}" font-weight="${style.fontWeight}" dominant-baseline="alphabetic"${textOnRight ? ' text-anchor="end"' : ""}>${escapeXml(group.label)}</text>
@@ -347,12 +354,24 @@ function groupIconPath(
   group: LayoutResult["groups"][number],
 ): string | null {
   const model = doc.groups.find((candidate) => candidate.id === group.id);
+  if (model?.type === "cloud-agnostic.boundary") return null;
+  if (model?.hideIcon) return null;
   if (model?.type) {
     const entry = getCatalogEntry(model.type);
     if (entry?.browserPath) return entry.browserPath;
   }
+  // Legacy shorthand logical/overlay groups are intentionally iconless.
+  // Keep the historical AWS icon fallback for infrastructure groups authored
+  // without an explicit catalog type.
+  if (group.kind === "logical" || group.kind === "overlay") return null;
   const fallbackType = `aws.${group.kind === "subnet-public" ? "subnet.public" : group.kind === "subnet-private" ? "subnet.private" : group.kind}`;
   return getCatalogEntry(fallbackType)?.browserPath ?? null;
+}
+
+function colorWithAlpha(color: string, alpha: number): string {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
+  if (!match) return color;
+  return `rgba(${Number.parseInt(match[1]!, 16)},${Number.parseInt(match[2]!, 16)},${Number.parseInt(match[3]!, 16)},${alpha})`;
 }
 
 function isEntityVisible(

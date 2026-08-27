@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import type {
   AnnotationStyle,
+  BoundaryFill,
   DiagramDocument,
+  EdgeColor,
   EdgeKind,
   EdgeStyle,
   GroupKind,
@@ -19,6 +21,7 @@ import {
   createEmptyDocument,
   characterLength,
   DIAGRAM_LIMITS,
+  EDGE_COLOR_VALUES,
   hasErrors,
   normalizeMultilineText,
   normalizeSingleLineText,
@@ -64,6 +67,8 @@ import {
   setResourceIconSize,
   setResourceLabelPosition,
   setGroupLabelPosition,
+  setGroupIconHidden,
+  setBoundaryAppearance,
   setRoute,
   setSize,
   setPlace,
@@ -1236,6 +1241,34 @@ function App() {
     }
   };
 
+  const addBoundary = () => {
+    if (!compiled.ok) return;
+    const parent = primarySelection(selection)?.kind === "group"
+      ? primarySelection(selection)!.id
+      : undefined;
+    const at = snapPoint(
+      parent
+        ? insertionPoint(compiled.layout, parent)
+        : leftStagingInsertionPoint(compiled.layout, 360),
+      snapToGrid,
+    );
+    try {
+      const result = addGroup(
+        compiled.doc,
+        "logical",
+        "Boundary",
+        parent,
+        at,
+        "cloud-agnostic.boundary",
+      );
+      if (!updateDocument(result.doc)) return;
+      setSelection([{ kind: "group", id: result.id }]);
+      setTool("select");
+    } catch (error) {
+      setToast((error as Error).message);
+    }
+  };
+
   const catalogGroupAt = (point: Point): string | undefined => {
     if (!compiled.ok) return undefined;
     return [...compiled.layout.groups]
@@ -2096,8 +2129,8 @@ function App() {
         {tool === "groups" && (
           <FloatingPanel
             className="drawer-sheet asset-sheet"
-            title="Groups"
-            subtitle="Infrastructure boundaries by provider"
+            title="Boundaries"
+            subtitle="Logical and infrastructure scopes by provider"
             onClose={() => setTool("select")}
             width={380}
           >
@@ -2105,6 +2138,7 @@ function App() {
               mode="groups"
               onAddService={() => {}}
               onAddGroup={addCatalogGroup}
+              onAddBoundary={addBoundary}
               onImportSvg={() => {}}
             />
           </FloatingPanel>
@@ -2123,12 +2157,8 @@ function App() {
         )}
 
         {compiled.ok &&
-          selection.some((item) => item.kind === "edge") &&
-          tool !== "resources" &&
-          tool !== "groups" &&
-          tool !== "code" &&
-          tool !== "layers" && (
-          <FloatingPanel
+          selection.some((item) => item.kind === "edge") && (
+            <FloatingPanel
             className="drawer-sheet edge-sheet"
             title="Connector"
             subtitle="Meaning, appearance, and routing"
@@ -2296,6 +2326,16 @@ function App() {
               const group = selection.find((item) => item.kind === "group");
               if (!group) return;
               mutateCurrent((doc) => setGroupLabelPosition(doc, group.id, position));
+            }}
+            onSetGroupIconHidden={(hidden) => {
+              const group = selection.find((item) => item.kind === "group");
+              if (!group) return;
+              mutateCurrent((doc) => setGroupIconHidden(doc, group.id, hidden));
+            }}
+            onSetBoundaryAppearance={(patch) => {
+              const group = selection.find((item) => item.kind === "group");
+              if (!group) return;
+              mutateCurrent((doc) => setBoundaryAppearance(doc, group.id, patch));
             }}
             onSetAnnotationStyle={(style) => {
               const annotation = selection.find((item) => item.kind === "annotation");
@@ -2910,6 +2950,16 @@ const INSPECTOR_KIND_LABELS: Record<SelectionItem["kind"], string> = {
   annotation: "Note",
 };
 
+const BOUNDARY_COLOR_OPTIONS: Array<{ id: EdgeColor; label: string }> = [
+  { id: "graphite", label: "Navy" },
+  { id: "blue", label: "Slate" },
+  { id: "teal", label: "Teal" },
+  { id: "purple", label: "Purple" },
+  { id: "amber", label: "Orange" },
+  { id: "red", label: "Coral" },
+  { id: "green", label: "Green" },
+];
+
 function Inspector({
   doc,
   layout,
@@ -2921,6 +2971,8 @@ function Inspector({
   onSetIconSize,
   onSetResourceLabelPosition,
   onSetGroupLabelPosition,
+  onSetGroupIconHidden,
+  onSetBoundaryAppearance,
   onSetAnnotationStyle,
   onSetTextFormat,
   onUpdateGroupStep,
@@ -2940,6 +2992,8 @@ function Inspector({
   onSetIconSize: (size: ResourceIconSize) => void;
   onSetResourceLabelPosition: (position: ResourceLabelPosition) => void;
   onSetGroupLabelPosition: (position: GroupLabelPosition) => void;
+  onSetGroupIconHidden: (hidden: boolean) => void;
+  onSetBoundaryAppearance: (patch: { style?: EdgeStyle; color?: EdgeColor; fill?: BoundaryFill }) => void;
   onSetAnnotationStyle: (style: AnnotationStyle) => void;
   onSetTextFormat: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
   onUpdateGroupStep: (step?: number) => void;
@@ -2959,6 +3013,11 @@ function Inspector({
   const group = item?.kind === "group"
     ? doc.groups.find((candidate) => candidate.id === item.id)
     : undefined;
+  const canHideGroupIcon = Boolean(
+    group?.type &&
+    group.type !== "cloud-agnostic.boundary" &&
+    getCatalogEntry(group.type)?.provider === "cloud-agnostic",
+  );
   const annotation = item?.kind === "annotation"
     ? doc.annotations.find((candidate) => candidate.id === item.id)
     : undefined;
@@ -3145,17 +3204,112 @@ function Inspector({
             }}
           >
             <option value="top-left">Top left</option>
+            <option value="top-right">Top right</option>
             <option value="bottom-left">Bottom left</option>
+            <option value="bottom-right">Bottom right</option>
           </select>
         </div>
       )}
       {group && (
+        <div className="property-section boundary-appearance-section">
+          <label>Boundary line</label>
+          <div className="button-pair" role="radiogroup" aria-label="Boundary line style">
+            {(["solid", "dashed"] as EdgeStyle[]).map((style) => {
+              const inheritedStyle = ["region", "az", "logical", "overlay"].includes(group.kind)
+                ? "dashed"
+                : "solid";
+              const selected = (group.style ?? inheritedStyle) === style;
+              return (
+                <button
+                  key={style}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  className={selected ? "is-active" : ""}
+                  onClick={() => onSetBoundaryAppearance({ style })}
+                >
+                  {style === "solid" ? "Solid" : "Dashed"}
+                </button>
+              );
+            })}
+          </div>
+          <label>Boundary color</label>
+          <div className="edge-color-options boundary-color-options" role="radiogroup" aria-label="Boundary color">
+            <button
+              className={`edge-color-option edge-color-auto${group.color === undefined ? " is-active" : ""}`}
+              type="button"
+              role="radio"
+              aria-checked={group.color === undefined}
+              onClick={() => onSetBoundaryAppearance({ color: undefined })}
+              title="Use the boundary type's automatic color"
+            >
+              <span className="edge-color-swatch is-auto" aria-hidden="true" />
+              <span>Auto</span>
+            </button>
+            {BOUNDARY_COLOR_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                className={`edge-color-option${group.color === option.id ? " is-active" : ""}`}
+                type="button"
+                role="radio"
+                aria-checked={group.color === option.id}
+                onClick={() => onSetBoundaryAppearance({ color: option.id })}
+                title={option.label}
+              >
+                <span className="edge-color-swatch" style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }} aria-hidden="true" />
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+          <label>Interior fill</label>
+          <div className="button-pair" role="radiogroup" aria-label="Boundary fill">
+            {(["subtle", "none"] as BoundaryFill[]).map((fill) => {
+              const selected = (group.fill ?? "subtle") === fill;
+              return (
+                <button
+                  key={fill}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  className={selected ? "is-active" : ""}
+                  onClick={() => onSetBoundaryAppearance({ fill })}
+                >
+                  {fill === "subtle" ? "Subtle" : "None"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {group && canHideGroupIcon && (
         <div className="property-section">
-          <label htmlFor="group-step">Group number</label>
+          <label>Boundary icon</label>
+          <div className="button-pair">
+            <button
+              type="button"
+              className={group.hideIcon ? "" : "is-active"}
+              onClick={() => onSetGroupIconHidden(false)}
+            >
+              Show icon
+            </button>
+            <button
+              type="button"
+              className={group.hideIcon ? "is-active" : ""}
+              onClick={() => onSetGroupIconHidden(true)}
+            >
+              Hide icon
+            </button>
+          </div>
+          <p className="property-hint">Hide the semantic icon while keeping this boundary type.</p>
+        </div>
+      )}
+      {group && (
+        <div className="property-section">
+          <label htmlFor="group-step">Boundary number</label>
           <div className="edge-badge-editor">
             <input
               id="group-step"
-              aria-label="Group number"
+              aria-label="Boundary number"
               type="number"
               inputMode="numeric"
               min={0}
@@ -3187,7 +3341,7 @@ function Inspector({
           <summary>Advanced details</summary>
           <div className="inspector-advanced-body">
             <div className="inspector-detail">
-              <span className="inspector-detail-label">Group kind</span>
+              <span className="inspector-detail-label">Boundary kind</span>
               <div className="readonly-value">{group.kind}</div>
             </div>
             <div className="inspector-detail">

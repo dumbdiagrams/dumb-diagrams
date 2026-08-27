@@ -111,7 +111,9 @@ test('landing page stays small and loads no third-party scripts by default', asy
   assert.doesNotMatch(html, /<script[^>]*src="https?:/);
   if (!analyticsConfig().measurementId && process.env.ENABLE_PARTYTOWN !== 'true') assert.doesNotMatch(html, /partytown/);
   // The optional consent UI and inline Partytown bootstrap add a bounded 3 KB.
-  const htmlBudget = analyticsConfig().measurementId ? 18_000 : 15_000;
+  // The homepage includes four curated prompt/source pairs, including the
+  // Azure example, so the base budget grows with the fourth pair.
+  const htmlBudget = analyticsConfig().measurementId ? 20_500 : 17_500;
   assert.ok(gzipSync(html).byteLength < htmlBudget, `homepage HTML under ${htmlBudget} bytes compressed`);
   let scriptBytes = 0;
   for (const [, script] of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {

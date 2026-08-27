@@ -230,6 +230,29 @@ class Parser {
             if (isGroupLabelPosition(position)) group.labelPosition = position;
             continue;
           }
+          if (t.type === "id" && t.value === "hide-icon") {
+            this.pos++;
+            group.hideIcon = true;
+            continue;
+          }
+          if (t.type === "id" && t.value === "style") {
+            this.pos++;
+            const style = this.expect("id").value;
+            if (style === "solid" || style === "dashed") group.style = style;
+            continue;
+          }
+          if (t.type === "id" && t.value === "color") {
+            this.pos++;
+            const color = this.expect("id").value;
+            if (isEdgeColor(color)) group.color = color;
+            continue;
+          }
+          if (t.type === "id" && t.value === "fill") {
+            this.pos++;
+            const fill = this.expect("id").value;
+            if (fill === "subtle" || fill === "none") group.fill = fill;
+            continue;
+          }
           if (t.type === "id" && t.value === "group") {
             this.parseLogicalGroup();
             continue;
@@ -303,6 +326,7 @@ class Parser {
     const group: Group = {
       id: idTok.value,
       kind: "logical",
+      type: "cloud-agnostic.boundary",
       parent: this.currentGroupStack.at(-1),
       label,
       children: [],
@@ -336,6 +360,29 @@ class Parser {
           this.pos++;
           const position = this.expect("id").value;
           if (isGroupLabelPosition(position)) group.labelPosition = position;
+          continue;
+        }
+        if (t.type === "id" && t.value === "hide-icon") {
+          this.pos++;
+          group.hideIcon = true;
+          continue;
+        }
+        if (t.type === "id" && t.value === "style") {
+          this.pos++;
+          const style = this.expect("id").value;
+          if (style === "solid" || style === "dashed") group.style = style;
+          continue;
+        }
+        if (t.type === "id" && t.value === "color") {
+          this.pos++;
+          const color = this.expect("id").value;
+          if (isEdgeColor(color)) group.color = color;
+          continue;
+        }
+        if (t.type === "id" && t.value === "fill") {
+          this.pos++;
+          const fill = this.expect("id").value;
+          if (fill === "subtle" || fill === "none") group.fill = fill;
           continue;
         }
         if (t.type === "id" && t.value === "group") {
@@ -889,6 +936,10 @@ function printNode(
     lines.push(`${pad}${type} ${group.id} "${escapeString(group.label)}" {`);
     if (group.step !== undefined) lines.push(`${pad}  step ${group.step}`);
     if (group.labelPosition) lines.push(`${pad}  label-position ${group.labelPosition}`);
+    if (group.hideIcon) lines.push(`${pad}  hide-icon`);
+    if (group.style) lines.push(`${pad}  style ${group.style}`);
+    if (group.color) lines.push(`${pad}  color ${group.color}`);
+    if (group.fill) lines.push(`${pad}  fill ${group.fill}`);
     for (const child of group.children) {
       printNode(doc, child, indent + 1, lines);
     }
@@ -917,8 +968,8 @@ function groupKindToType(kind: Group["kind"]): string {
     subnet: "aws.subnet",
     "subnet-public": "aws.subnet.public",
     "subnet-private": "aws.subnet.private",
-    logical: "group",
-    overlay: "group",
+    logical: "cloud-agnostic.boundary",
+    overlay: "cloud-agnostic.trust-boundary",
   };
   return map[kind];
 }

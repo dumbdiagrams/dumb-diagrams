@@ -41,7 +41,21 @@ aws.aws-lambda handler "Payment handler"
 
 The type selects the icon and rules. The ID is how other parts of the document refer to the resource. The label is what people see. Changing the label does not change the service type.
 
-Groups use braces to contain resources or other groups. Provider groups such as regions, VPCs, and subnets carry architecture meaning. A plain `group` defines a logical boundary.
+Boundaries use braces to contain resources or nested boundaries. Provider boundaries such as regions, VPCs, and subnets carry architecture meaning. Use `cloud-agnostic.boundary` for a general logical container; it is inherently iconless and remains movable and resizable in Studio.
+
+```text
+cloud-agnostic.boundary workflow "Workflow" {
+  style dashed
+  color purple
+  fill none
+  aws.aws-lambda handler "Handler"
+}
+```
+
+The legacy `group` shorthand is accepted when opening older documents, but new
+diagrams should use `cloud-agnostic.boundary`. Boundaries can set `style`,
+`color`, `fill`, `label-position`, and `step` in the source or the Studio
+inspector.
 
 Not every resource belongs inside every boundary. The catalog includes containment rules, and validation checks them before layout.
 

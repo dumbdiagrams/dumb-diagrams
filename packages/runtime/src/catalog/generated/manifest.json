@@ -62307,7 +62307,7 @@
       "column": "edge",
       "sizeTier": "primary",
       "canonical": true,
-      "browsable": true
+      "browsable": false
     },
     {
       "type": "cloud-agnostic.network",

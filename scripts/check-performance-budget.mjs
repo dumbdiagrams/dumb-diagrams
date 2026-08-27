@@ -15,6 +15,7 @@ const EXAMPLES = [
   "image-thumbnail-pipeline.dgm",
   "asynchronous-report-generation.dgm",
   "event-driven-order-fulfillment.dgm",
+  "azure-private-app-service.dgm",
 ];
 const ITERATIONS = 5;
 const PER_DIAGRAM_BUDGET_MS = 250;

@@ -737,9 +737,33 @@ function InteractionOverlayComponent({
     window.addEventListener("pointercancel", cancel);
   };
 
+  const beginGroupMove = (
+    event: React.PointerEvent<SVGElement>,
+    targetId: string,
+  ) => {
+    if (tool !== "select") return;
+    const target = { kind: "group" as const, id: targetId };
+    const targetGroup = layout.groups.find((candidate) => candidate.id === target.id);
+    const targetPlace = targetGroup ? view.places[targetGroup.id] : undefined;
+    if (!targetGroup || targetPlace?.locked) return;
+    const active = selection.some(
+      (candidate) => candidate.kind === target.kind && candidate.id === target.id,
+    ) ? selection : [target];
+    beginMove(
+      event,
+      zoom,
+      snapToGrid,
+      targetGroup.bounds,
+      (x, y, dx, dy) => onMove("group", target.id, x, y, dx, dy),
+      createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
+      alignmentTargets(layout, doc, active),
+      createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+    );
+  };
+
   return (
     <svg
-      className={`interaction-overlay${tool === "select" ? " is-select-tool" : ""}${tool === "text" ? " is-text-tool" : ""}`}
+      className={`interaction-overlay${tool === "select" ? " is-select-tool" : ""}${tool === "text" ? " is-text-tool" : ""}${hoveredItem?.kind === "group" ? " has-group-hover" : ""}`}
       data-testid="canvas-interaction-overlay"
       width={canvas.w}
       height={canvas.h}
@@ -823,25 +847,7 @@ function InteractionOverlayComponent({
               const target = closestTargetAt(event.clientX, event.clientY)
                 ?? { kind: "group" as const, id: group.id };
               onSelect(target, event.shiftKey);
-              if (tool === "select" && target.kind !== "edge") {
-                const targetGroup = layout.groups.find((candidate) => candidate.id === target.id);
-                const targetPlace = targetGroup ? view.places[targetGroup.id] : undefined;
-                if (target.kind === "group" && targetGroup && !targetPlace?.locked) {
-                  const active = selection.some(
-                    (candidate) => candidate.kind === target.kind && candidate.id === target.id,
-                  ) ? selection : [target];
-                  beginMove(
-                    event,
-                    zoom,
-                    snapToGrid,
-                    targetGroup.bounds,
-                    (x, y, dx, dy) => onMove("group", target.id, x, y, dx, dy),
-                    createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
-                    alignmentTargets(layout, doc, active),
-                    createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
-                  );
-                }
-              }
+              if (target.kind === "group") beginGroupMove(event, target.id);
             }}
             onContextMenu={(event) => {
               event.preventDefault();
@@ -907,10 +913,18 @@ function InteractionOverlayComponent({
               event.clientY,
               zoom,
             );
-            onSelect(
-              nearestEdgeAt(point, layout, doc, view, edge.id) ?? { kind: "edge", id: edge.id },
-              event.shiftKey,
+            const overlapTarget = closestInteractiveTarget(
+              point,
+              layout,
+              doc,
+              view,
+              interactionIndex.at(point),
             );
+            const target = overlapTarget?.kind === "group"
+              ? overlapTarget
+              : nearestEdgeAt(point, layout, doc, view, edge.id) ?? { kind: "edge" as const, id: edge.id };
+            onSelect(target, event.shiftKey);
+            if (target.kind === "group") beginGroupMove(event, target.id);
           }}
           onContextMenu={(event) => {
             event.preventDefault();
@@ -1626,7 +1640,7 @@ function nearestEdgeAt(
   return id ? { kind: "edge", id } : null;
 }
 
-function closestInteractiveTarget(
+export function closestInteractiveTarget(
   point: Point,
   layout: LayoutResult,
   doc: DiagramDocument,
@@ -1718,7 +1732,10 @@ function closestInteractiveTarget(
       candidates.push({
         item: { kind: "group", id: group.id },
         distance,
-        priority: 2,
+        // The visible boundary is the user's move handle. When a connector is
+        // routed directly along it, the boundary must remain draggable instead
+        // of becoming unreachable behind the widened connector hit stroke.
+        priority: -2,
       });
     }
   }

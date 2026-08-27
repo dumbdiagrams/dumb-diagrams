@@ -47,6 +47,7 @@ const PROJECT_REFERENCE_FILES = [
   "image-thumbnail-pipeline.dgm",
   "asynchronous-report-generation.dgm",
   "event-driven-order-fulfillment.dgm",
+  "azure-private-app-service.dgm",
   "prompts/aws-high-availability-web-app.md",
   "prompts/aws-data-transfer-hub.md",
   "prompts/bedrock-claims-processing.md",
@@ -54,6 +55,7 @@ const PROJECT_REFERENCE_FILES = [
   "prompts/image-thumbnail-pipeline.md",
   "prompts/asynchronous-report-generation.md",
   "prompts/event-driven-order-fulfillment.md",
+  "prompts/azure-private-app-service.md",
 ] as const;
 
 const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open", "yes"]);
@@ -352,10 +354,10 @@ function createCatalogReference(): { markdown: string; json: string } {
     });
   const canonicalByIcon = new Map(entries.map((entry) => [entry.icon.sourceId, entry]));
   const legacyAliases = listAssets("all", { includeAliases: true })
-    .filter((entry) => !entry.canonical)
+    .filter((entry) => !entry.canonical && canonicalByIcon.has(entry.icon.sourceId))
     .map((entry) => ({
       alias: entry.type,
-      canonicalType: canonicalByIcon.get(entry.icon.sourceId)?.type ?? entry.type,
+      canonicalType: canonicalByIcon.get(entry.icon.sourceId)!.type,
       name: entry.name,
       provider: entry.provider,
       assetKind: entry.assetKind,
@@ -411,11 +413,13 @@ function createCatalogReference(): { markdown: string; json: string } {
     "",
     "## Icon rules for agents",
     "",
-    "- Use the exact `type` value as the first token of a resource or group line.",
+    "- Use the exact `type` value as the first token of a resource or boundary line.",
     "  Example: `aws.api-gateway gateway \"Public API\"`.",
     "- The quoted label changes display text only; it does not select the icon.",
-    "- Use `assetKind: group` entries for cloud/account/region/network/group",
+    "- Use `assetKind: group` entries for cloud/account/region/network/subnet",
     "  boundaries. Use `assetKind: resource` entries for service/resource nodes.",
+    "- For a general logical container, always use `cloud-agnostic.boundary`.",
+    "  Never author the legacy `group` shorthand or `cloud-agnostic.logical`.",
     "- Check `allowedParents` before nesting a node. Check `allowRoot` before",
     "  placing it outside a boundary.",
     "- Prefer canonical types. Aliases are listed for recognition, but should not",

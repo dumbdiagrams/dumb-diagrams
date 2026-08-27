@@ -42,7 +42,7 @@ test("keeps groups before resources in the left tool dock", async ({ page }) => 
     .getByRole("navigation", { name: "Diagram tools" })
     .getByRole("button")
     .evaluateAll((buttons) => buttons.slice(0, 3).map((button) => button.getAttribute("aria-label")));
-  expect(labels).toEqual(["Select", "Groups", "Resources"]);
+  expect(labels).toEqual(["Select", "Boundaries", "Resources"]);
 });
 
 test("progressively renders real catalog icons in the all-provider view", async ({ page }) => {
@@ -171,7 +171,7 @@ test("places root resources in the open lane and allows manual compatibility ove
 
 test("opens the group library and keeps provider group icons available", async ({ page }) => {
   await page.goto("/");
-  const groups = page.getByRole("button", { name: "Groups", exact: true });
+  const groups = page.getByRole("button", { name: "Boundaries", exact: true });
   await expect(groups).toHaveCount(1);
   await groups.click();
 
@@ -197,7 +197,7 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   const groups = page.locator('[data-entity-kind="group"]');
   const beforeCount = await groups.count();
 
-  await page.getByRole("button", { name: "Groups", exact: true }).click();
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
   await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
 
   const cloud = page.locator('[data-catalog-type="cloud-agnostic.cloud"]');
@@ -208,8 +208,8 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   await expect(cluster).toHaveCount(1);
   await expect(cluster).toHaveAttribute("data-asset-kind", "group");
   const boundary = page.locator('[data-catalog-type="cloud-agnostic.boundary"]');
-  await expect(boundary).toHaveCount(1);
-  await expect(boundary).toHaveAttribute("data-asset-kind", "group");
+  await expect(boundary).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add boundary", exact: true })).toBeVisible();
   await cluster.locator(".palette-item").click();
 
   await expect(groups).toHaveCount(beforeCount + 1);
@@ -220,9 +220,45 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   await expect(page.locator('[data-resize-kind="group"][data-resize-handle="s"]')).toHaveCount(1);
 });
 
+test("creates and customizes an iconless boundary and hides icons on semantic boundaries", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
+
+  const boundaryAction = page.getByRole("button", { name: "Add boundary", exact: true });
+  await expect(boundaryAction).toBeVisible();
+  await boundaryAction.click();
+
+  const boundaryGroup = page.locator('[data-entity-kind="group"][aria-label="Group Boundary"]');
+  await expect(boundaryGroup).toHaveCount(1);
+  const boundaryId = await boundaryGroup.getAttribute("data-entity-id");
+  expect(boundaryId).toBeTruthy();
+  await expect(page.locator(`#group-${boundaryId} image`)).toHaveCount(0);
+
+  const boundaryInspector = page.getByRole("dialog", { name: "Boundary", exact: true });
+  await boundaryInspector.locator(".boundary-color-options").getByRole("radio", { name: "Purple" }).click();
+  await boundaryInspector.getByRole("radio", { name: "None" }).click();
+  const renderedBoundary = page.locator(`#group-${boundaryId} rect`).first();
+  await expect(renderedBoundary).toHaveAttribute("stroke", "#7C3AED");
+  await expect(renderedBoundary).toHaveAttribute("fill", "transparent");
+
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
+  await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
+  await page.locator('[data-catalog-type="cloud-agnostic.cluster"] .palette-item').click();
+
+  const inspector = page.getByRole("dialog", { name: "Cluster", exact: true });
+  await expect(inspector.getByRole("button", { name: "Hide icon", exact: true })).toBeVisible();
+  await inspector.getByRole("button", { name: "Hide icon", exact: true }).click();
+
+  const cloudGroup = page.locator('[data-entity-kind="group"][aria-label="Group Cluster"]');
+  const cloudGroupId = await cloudGroup.getAttribute("data-entity-id");
+  expect(cloudGroupId).toBeTruthy();
+  await expect(page.locator(`#group-${cloudGroupId} image`)).toHaveCount(0);
+  await expect(inspector.getByRole("button", { name: "Hide icon", exact: true })).toHaveClass(/is-active/);
+});
+
 test("drags a catalog group onto the canvas", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Groups", exact: true }).click();
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
   await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
 
   const card = page.locator('[data-catalog-type="cloud-agnostic.cluster"]');
@@ -253,7 +289,7 @@ test("places a new root group outside the tiled canvas with resize controls", as
     )),
   );
 
-  await page.getByRole("button", { name: "Groups", exact: true }).click();
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
   await page.locator('[data-catalog-type="aws.account"] .palette-item').click();
 
   await expect(existingGroups).toHaveCount(beforeCount + 1);

@@ -50,12 +50,21 @@ under `diagrams/`; do not edit the examples to satisfy a new request.
 
 - Start with `diagram <id>`, `grammar`, `flow`, and `title`.
 - Declare actors and resources inside explicit cloud, account, region, network,
-  group, zone, and subnet boundaries.
-- Use stable ids for resources, groups, and edges. Use exact labels when the
+  zone, subnet, and logical boundaries.
+- Use stable ids for resources, boundaries, and edges. Use exact labels when the
   request specifies them; do not invent plausible services or relationships.
-- The resource/group type is the icon identity. The quoted label is display
+- The resource/boundary type is the icon identity. The quoted label is display
   text only. Use an exact canonical type from `CATALOG.md`; do not use a
   guessed type, a display name, or a legacy alias when a canonical type exists.
+- Use `cloud-agnostic.boundary <id> "<label>" { ... }` for every general-purpose
+  logical container. It is inherently iconless, fully movable/resizable in
+  Studio, and is the only general logical-boundary form agents should author.
+- Do not author the legacy `group` shorthand, `cloud-agnostic.logical`,
+  `neutral.logical`, or `hide-icon` to simulate a boundary. Those forms exist
+  only for reading older documents.
+- Boundary options are `label-position top-left|top-right|bottom-left|bottom-right`,
+  `style solid|dashed`, `color graphite|blue|teal|purple|amber|red|green`,
+  `fill subtle|none`, and `step 0..99`.
 - Use `icon ...` only for an explicitly embedded/custom asset. It is not how
   normal AWS, Azure, GCP, or cloud-agnostic catalog icons are selected.
 - Number the primary flow with `step` edge metadata. Use `from` and `to` hints

@@ -8,6 +8,7 @@ export type GroupLabelPosition = "top-left" | "top-right" | "bottom-left" | "bot
 export type EdgeStyle = "solid" | "dashed";
 export type EdgeKind = "flow" | "bidirectional" | "peer" | "fail";
 export type EdgeColor = "graphite" | "blue" | "teal" | "purple" | "amber" | "red" | "green";
+export type BoundaryFill = "subtle" | "none";
 
 /** Curated connector colors keep authored diagrams portable and predictable. */
 export const EDGE_COLOR_VALUES: Record<EdgeColor, string> = {
@@ -93,8 +94,16 @@ export interface Group {
   type?: string;
   parent?: ID;
   label: string;
-  /** Corner used for the boundary icon and display label. */
+  /** Corner used for the boundary icon, when present, and display label. */
   labelPosition?: GroupLabelPosition;
+  /** Hide a catalog icon while retaining the group's semantic type. */
+  hideIcon?: boolean;
+  /** Optional authored boundary line style; group-kind styling is the default. */
+  style?: EdgeStyle;
+  /** Optional authored boundary color from the portable diagram palette. */
+  color?: EdgeColor;
+  /** Optional authored boundary fill treatment. */
+  fill?: BoundaryFill;
   children: ID[];
   borderChildren?: BorderChild[];
   overlayTargets?: ID[];

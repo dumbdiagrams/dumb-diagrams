@@ -34,6 +34,7 @@ const exampleFiles = [
   "image-thumbnail-pipeline.dgm",
   "asynchronous-report-generation.dgm",
   "event-driven-order-fulfillment.dgm",
+  "azure-private-app-service.dgm",
   "prompts/aws-high-availability-web-app.md",
   "prompts/aws-data-transfer-hub.md",
   "prompts/bedrock-claims-processing.md",
@@ -41,6 +42,7 @@ const exampleFiles = [
   "prompts/image-thumbnail-pipeline.md",
   "prompts/asynchronous-report-generation.md",
   "prompts/event-driven-order-fulfillment.md",
+  "prompts/azure-private-app-service.md",
 ];
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");

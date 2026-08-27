@@ -1,0 +1,82 @@
+diagram azure-private-app-service {
+  grammar aws
+  flow lr
+  title "Private Azure App Service"
+
+  cloud-agnostic.client browser "Web client"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region · West Europe" {
+      azure.vnet vnet "Virtual network" {
+        azure.subnet gateway_subnet "Application Gateway subnet" {
+          azure.application-gateways gateway { service "Application Gateway + WAF" }
+        }
+        azure.subnet integration_subnet "App Service integration subnet" {
+          azure.network-interfaces virtual_interface { service "Virtual interface" }
+        }
+        azure.subnet private_endpoint_subnet "Private endpoint subnet" {
+          azure.private-endpoints app_pe { service "App Service private endpoint" }
+          azure.private-endpoints sql_pe { service "SQL private endpoint" }
+          azure.private-endpoints key_vault_pe { service "Key Vault private endpoint" }
+          azure.private-endpoints storage_pe { service "Storage private endpoint" }
+        }
+      }
+
+      cloud-agnostic.boundary platform_services "Platform services" {
+        style dashed
+        color blue
+        fill none
+        cloud-agnostic.boundary app_platform "Application platform" {
+          color purple
+          azure.app-services app_service { service "App Service" }
+          azure.application-insights insights { service "Application Insights" }
+          azure.monitor monitor { service "Azure Monitor" }
+          cloud-agnostic.boundary app_service_instances "Zone-redundant instances" {
+            style solid
+            color purple
+            fill none
+            azure.app-services app_instance_zone_1 "Zone 1" { service "App Service instance" }
+            azure.app-services app_instance_zone_2 "Zone 2" { service "App Service instance" }
+            azure.app-services app_instance_zone_3 "Zone 3" { service "App Service instance" }
+          }
+        }
+
+        cloud-agnostic.boundary identity_services "Identity" {
+          color amber
+          azure.entra-managed-identities identity { service "Managed identity" }
+          cloud-agnostic.identity entra { service "Microsoft Entra ID" }
+        }
+
+        cloud-agnostic.boundary data_services "Private dependencies" {
+          color teal
+          azure.sql-database sql { service "Azure SQL Database" }
+          azure.key-vaults key_vault { service "Azure Key Vault" }
+          azure.storage-accounts storage { service "Storage for deployment" }
+        }
+
+        cloud-agnostic.boundary network_controls "Network controls" {
+          color blue
+          azure.ddos-protection-plans ddos { service "DDoS protection" }
+          azure.dns-zones private_dns { service "Private DNS zones" }
+        }
+      }
+    }
+  }
+
+  browser -> gateway { id user_request step 1 from e to w kind flow }
+  gateway -> app_pe { id private_app_request step 2 from e to w kind flow }
+  app_pe -> app_service { id app_service_request step 3 from e to w kind flow }
+  app_service -> virtual_interface { id vnet_integration step 4 label "VNet integration · outbound" kind flow }
+  identity -> entra { id entra_token label "token issuance" style dashed kind peer }
+  virtual_interface -> sql_pe { id database_private_link step 5 label "private link" kind flow }
+  sql_pe -> sql { id database_connection step 6 from e to w kind flow }
+  virtual_interface -> key_vault_pe { id key_vault_private_link label "private link" kind flow }
+  key_vault_pe -> key_vault { id key_vault_connection kind flow }
+  virtual_interface -> storage_pe { id storage_private_link label "private link" kind flow }
+  storage_pe -> storage { id storage_connection kind flow }
+  gateway -> key_vault_pe { id gateway_certificate label "TLS certificate" style dashed kind flow }
+  app_service -> insights { id app_telemetry style dashed kind peer }
+  insights -> monitor { id monitor_telemetry style dashed kind peer }
+  private_dns -> app_pe { id private_dns_resolution label "private resolution" style dashed kind flow }
+  ddos -> gateway { id ddos_gateway style dashed kind peer }
+}

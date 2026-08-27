@@ -480,7 +480,7 @@ diagram payments {
 
   generic.user customer "Customer"
   aws.region use1 "AWS Region" {
-    group app "Application" {
+    cloud-agnostic.boundary app "Application" {
       aws.api-gateway gateway "Payments API"
       aws.aws-lambda handler "Payment handler"
     }
