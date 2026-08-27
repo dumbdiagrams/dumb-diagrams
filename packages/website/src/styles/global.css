@@ -114,8 +114,8 @@
   .manifesto-notes h3 { font-size: 18px; margin: 10px 0; }
   .manifesto-notes p { font-size: 12px; color: #bdcde0; }
   .faq { display: grid; grid-template-columns: 1fr 1.3fr; gap: 90px; }
-  .faq-brand { margin: 54px 0 0; width: min(100%, 320px); display: flex; justify-content: center; }
-  .faq-brand img { width: 256px; height: auto; }
+  .faq-brand { margin: 54px 0 0; width: min(100%, 384px); display: flex; justify-content: flex-start; }
+  .faq-brand img { width: 384px; height: auto; }
   .faq-list { border-top: 1px solid var(--line); }
   .faq-list details { border-bottom: 1px solid var(--line); }
   .faq-list summary { padding: 23px 0; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 14px; font-weight: 600; }
@@ -183,8 +183,8 @@
     .manifesto { margin: 0 -24px; padding: 50px 24px; gap: 40px; }
     .manifesto h2 { font-size: 37px; }
     .faq { grid-template-columns: 1fr; gap: 35px; }
-    .faq-brand { margin-top: 26px; width: 160px; }
-    .faq-brand img { width: 160px; }
+    .faq-brand { margin: 26px 0 0; width: min(100%, 280px); }
+    .faq-brand img { width: 280px; }
     .closing { flex-direction: column; align-items: flex-start; gap: 20px; }
     .footer-top { flex-wrap: wrap; gap: 12px; }
     .footer-top > p { order: 3; width: 100%; }

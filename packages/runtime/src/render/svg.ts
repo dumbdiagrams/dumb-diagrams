@@ -17,9 +17,15 @@ export function renderSvg(
   options: RenderOptions = {},
 ): string {
   const resolveHref = options.resolveIconHref ?? defaultResolve;
+  const canvas = layout.canvasBounds ?? {
+    x: 0,
+    y: 0,
+    w: layout.width,
+    h: layout.height,
+  };
   const parts: string[] = [];
   parts.push(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${layout.width}" height="${layout.height}" viewBox="0 0 ${layout.width} ${layout.height}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.w}" height="${canvas.h}" viewBox="${canvas.x} ${canvas.y} ${canvas.w} ${canvas.h}">`,
   );
   parts.push(
     `<rect width="100%" height="100%" fill="${GRAMMAR.canvasFill}"/>`,

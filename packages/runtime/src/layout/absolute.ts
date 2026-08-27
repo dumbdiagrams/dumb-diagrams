@@ -1,4 +1,4 @@
-import { getGroup, getResource } from "../core/index.js";
+import { getDefaultView, getGroup, getResource } from "../core/index.js";
 import type {
   DiagramDocument,
   GroupGeom,
@@ -21,9 +21,15 @@ export function finalizeAbsoluteLayout(
   const groups: GroupGeom[] = [];
 
   const roots = findPositionRoots(doc);
+  const view = getDefaultView(doc);
+  const flowingRoots = roots.filter((id) => {
+    const place = view.places[id];
+    return !place?.pin || !place.manual;
+  });
+  const stagedRoots = roots.filter((id) => !flowingRoots.includes(id));
   const rootHeight = Math.max(
     0,
-    ...roots.map((rootId) => {
+    ...flowingRoots.map((rootId) => {
       const group = getGroup(doc, rootId);
       if (group) return state.groupGeoms.get(group.id)?.bounds.h ?? 0;
       const resource = getResource(doc, rootId);
@@ -32,7 +38,7 @@ export function finalizeAbsoluteLayout(
   );
   let cursorX = canvasX;
 
-  for (const rootId of roots) {
+  for (const rootId of flowingRoots) {
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
     const height = group
@@ -51,6 +57,20 @@ export function finalizeAbsoluteLayout(
         nodes.push(abs);
         cursorX += abs.obstacle.w + LAYOUT_METRICS.rootGap;
       }
+    }
+  }
+
+  // Authored root objects already have explicit absolute coordinates. Measure
+  // and emit them so pinned overrides can place them, but do not let them take
+  // a slot in the automatic root row or displace existing diagram geometry.
+  for (const rootId of stagedRoots) {
+    const group = getGroup(doc, rootId);
+    const resource = getResource(doc, rootId);
+    if (group) {
+      positionGroupTree(doc, state, group.id, canvasX, canvasY, nodes, groups);
+    } else if (resource) {
+      const node = state.nodeGeoms.get(resource.id);
+      if (node) nodes.push(translateNode(node, canvasX, canvasY));
     }
   }
 

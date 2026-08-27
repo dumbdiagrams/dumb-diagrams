@@ -154,6 +154,7 @@ test('GA4 is opt-in and Partytown worker files resolve at the configured base', 
     assert.ok(html.includes(`data-analytics-id="${measurementId}"`));
     assert.match(html, /data-analytics-choice="denied"/);
     assert.match(html, /data-analytics-choice="granted"/);
+    assert.match(html, /Reject/);
     assert.match(html, /type="text\/partytown"/);
   } else {
     assert.doesNotMatch(html, /data-analytics-id=/);
@@ -183,12 +184,14 @@ test('privacy notice and footer controls are available with and without analytic
   assert.ok(html.includes(`href="${base}privacy/"`));
   assert.ok(html.includes(`href="${base}privacy/#cookie-settings"`));
   assert.match(html, /class="footer-privacy"/);
+  assert.doesNotMatch(html, /cookie-preferences-fab/);
   assert.match(html, /data-analytics-revoke hidden/);
   assert.match(html, /<strong>A little opinionated\.<\/strong><br\s*\/?><strong>A lot clearer\.<\/strong>/);
   assert.match(privacy, /id="cookie-settings"/);
   assert.match(privacy, /does not automatically delete data already sent to Google/);
   if (!privacyConfig().ready) assert.match(privacy, /Pre-launch notice/);
   if (analyticsConfig().measurementId) {
+    assert.match(html, /Reject/);
     assert.match(html, /Necessary only/);
     assert.match(html, /Accept all/);
   } else assert.match(privacy, /Google Analytics is not enabled/);

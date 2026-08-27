@@ -188,6 +188,12 @@ function InteractionOverlayComponent({
   ) => void;
 }) {
   const view = useMemo(() => getDefaultView(doc), [doc]);
+  const canvas = layout.canvasBounds ?? {
+    x: 0,
+    y: 0,
+    w: layout.width,
+    h: layout.height,
+  };
   const [marquee, setMarquee] = useState<{
     x: number;
     y: number;
@@ -735,18 +741,16 @@ function InteractionOverlayComponent({
     <svg
       className={`interaction-overlay${tool === "select" ? " is-select-tool" : ""}${tool === "text" ? " is-text-tool" : ""}`}
       data-testid="canvas-interaction-overlay"
-      width={layout.width}
-      height={layout.height}
-      viewBox={`0 0 ${layout.width} ${layout.height}`}
+      width={canvas.w}
+      height={canvas.h}
+      viewBox={`${canvas.x} ${canvas.y} ${canvas.w} ${canvas.h}`}
       aria-label="Diagram editing layer"
       onPointerDown={(event) => {
         if (tool !== "select" || event.button !== 0) return;
         if ((event.target as Element).closest("[data-interactive]")) return;
-        const svgRect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
-        const toSvg = (clientX: number, clientY: number): Point => ({
-          x: (clientX - svgRect.left) / zoom,
-          y: (clientY - svgRect.top) / zoom,
-        });
+        const overlay = event.currentTarget as SVGSVGElement;
+        const toSvg = (clientX: number, clientY: number): Point =>
+          pointFromClient(overlay, clientX, clientY, zoom);
         const start = toSvg(event.clientX, event.clientY);
         const move = (next: PointerEvent) => {
           const current = toSvg(next.clientX, next.clientY);
@@ -1780,6 +1784,7 @@ function boundsFor(
     return group?.bounds ?? null;
   }
   if (item.kind === "annotation") {
+    if (!doc.annotations.some((candidate) => candidate.id === item.id)) return null;
     const place = getDefaultView(doc).annotations?.[item.id];
     return {
       x: place?.x ?? 48,
@@ -2326,8 +2331,8 @@ function pointFromClient(
   const width = viewBox?.width || Number(svg?.getAttribute("width")) || rect.width / zoom;
   const height = viewBox?.height || Number(svg?.getAttribute("height")) || rect.height / zoom;
   return {
-    x: ((clientX - rect.left) / rect.width) * width,
-    y: ((clientY - rect.top) / rect.height) * height,
+    x: (viewBox?.x ?? 0) + ((clientX - rect.left) / rect.width) * width,
+    y: (viewBox?.y ?? 0) + ((clientY - rect.top) / rect.height) * height,
   };
 }
 

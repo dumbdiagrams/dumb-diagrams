@@ -123,7 +123,7 @@ export function getExportBounds(
   scope: ExportScope,
 ): Rect {
   if (scope === "all" || selection.length === 0) {
-    return { x: 0, y: 0, w: layout.width, h: layout.height };
+    return layout.canvasBounds ?? { x: 0, y: 0, w: layout.width, h: layout.height };
   }
 
   const included = collectSelectionEntities(doc, selection);
@@ -158,17 +158,19 @@ export function getExportBounds(
     });
   }
 
-  if (!rects.length) return { x: 0, y: 0, w: layout.width, h: layout.height };
+  if (!rects.length) {
+    return layout.canvasBounds ?? { x: 0, y: 0, w: layout.width, h: layout.height };
+  }
   const padding = 24;
   const left = Math.min(...rects.map((rect) => rect.x)) - padding;
   const top = Math.min(...rects.map((rect) => rect.y)) - padding;
   const right = Math.max(...rects.map((rect) => rect.x + rect.w)) + padding;
   const bottom = Math.max(...rects.map((rect) => rect.y + rect.h)) + padding;
   return {
-    x: Math.max(0, left),
-    y: Math.max(0, top),
-    w: Math.max(1, right - Math.max(0, left)),
-    h: Math.max(1, bottom - Math.max(0, top)),
+    x: left,
+    y: top,
+    w: Math.max(1, right - left),
+    h: Math.max(1, bottom - top),
   };
 }
 

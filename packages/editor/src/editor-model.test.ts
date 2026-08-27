@@ -296,6 +296,32 @@ describe("editor commands", () => {
     });
   });
 
+  it("preserves negative drop positions so the canvas can expand on every side", () => {
+    const doc = createAsyncDocsFixture();
+    doc.annotations.push({ id: "note", text: "Move me", style: "text" });
+    getDefaultView(doc).annotations = {
+      note: { x: 48, y: 48, w: 240, h: 48, pin: true },
+    };
+    const layout = layoutDocument(doc);
+    const node = layout.nodes.find((candidate) => candidate.id === "client")!;
+    const next = moveSelection(
+      doc,
+      [
+        { kind: "resource", id: "client" },
+        { kind: "annotation", id: "note" },
+      ],
+      -Math.max(node.obstacle.x, 48) - 72,
+      -Math.max(node.obstacle.y, 48) - 48,
+      layout,
+    );
+    const view = getDefaultView(next);
+
+    expect(view.places.client!.x).toBeLessThan(0);
+    expect(view.places.client!.y).toBeLessThan(0);
+    expect(view.annotations!.note!.x).toBeLessThan(0);
+    expect(view.annotations!.note!.y).toBeLessThan(0);
+  });
+
   it("pastes nested groups without duplicating child ids", () => {
     const doc = createAsyncDocsFixture();
     const payload = serializeClipboard(doc, [{ kind: "group", id: "appA" }]);

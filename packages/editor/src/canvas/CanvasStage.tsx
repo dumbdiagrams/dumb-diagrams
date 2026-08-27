@@ -100,7 +100,7 @@ export function CanvasStage({
   onFitRequest?: (fit: () => void) => void;
   onCatalogDragOver?: (event: DragEvent<HTMLDivElement>) => void;
   onCatalogDrop?: (event: DragEvent<HTMLDivElement>, point: { x: number; y: number }) => void;
-  contentSize?: { width: number; height: number };
+  contentSize?: { x?: number; y?: number; width: number; height: number };
   defaultFrameKey?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -199,15 +199,17 @@ export function CanvasStage({
       if (!width) return;
 
       framedKeyRef.current = defaultFrameKey;
-      onViewportChange(
-        defaultViewportForContent(
-          width,
-          contentSize.width,
-          el.getBoundingClientRect().height,
-          contentSize.height,
-        ),
-        { userInitiated: false },
+      const framed = defaultViewportForContent(
+        width,
+        contentSize.width,
+        el.getBoundingClientRect().height,
+        contentSize.height,
       );
+      onViewportChange({
+        ...framed,
+        panX: framed.panX - (contentSize.x ?? 0) * framed.zoom,
+        panY: framed.panY - (contentSize.y ?? 0) * framed.zoom,
+      }, { userInitiated: false });
     };
 
     frameIfNeeded();
@@ -223,7 +225,7 @@ export function CanvasStage({
       if (!el) return;
       const world = el.querySelector(".canvas-world") as HTMLElement | null;
       if (!world) return;
-      const content = world.querySelector(".diagram-svg, .empty-canvas") as HTMLElement | null;
+      const content = world.querySelector(".canvas-artboard, .empty-canvas") as HTMLElement | null;
       if (!content) return;
       const rect = el.getBoundingClientRect();
       const cw = content.scrollWidth || parseInt(content.getAttribute("width") ?? "800", 10);
@@ -233,8 +235,8 @@ export function CanvasStage({
         Math.min((rect.width - padding * 2) / cw, (rect.height - padding * 2) / ch),
       );
       onViewportChange({
-        panX: (rect.width - cw * scale) / 2,
-        panY: (rect.height - ch * scale) / 2,
+        panX: (rect.width - cw * scale) / 2 - content.offsetLeft * scale,
+        panY: (rect.height - ch * scale) / 2 - content.offsetTop * scale,
         zoom: scale,
       });
     });

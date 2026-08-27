@@ -123,23 +123,40 @@ function closestAlignment(
 }
 
 /**
- * Return a safe starting point for a new root-level object. New groups are
- * intentional additions to the diagram, so keep them out of the existing
- * auto-tiled canvas and place them in the first open lane to its right.
+ * Return a staging position wholly before the existing diagram. Keeping a
+ * full gutter between the new item and every current object/route prevents a
+ * newly spawned root object from becoming an obstacle inside existing paths.
  */
-export function outsideCanvasInsertionPoint(
+export function leftStagingInsertionPoint(
   layout: LayoutResult,
-  gap = 48,
+  itemWidth = 240,
+  gap = 72,
 ): { x: number; y: number } {
   const rects = [
     ...layout.groups.map((group) => group.bounds),
     ...layout.nodes.map((node) => node.obstacle),
+    ...layout.edges.flatMap((edge) => {
+      const xs = edge.points.map((point) => point.x);
+      const ys = edge.points.map((point) => point.y);
+      const route = xs.length && ys.length
+        ? [{
+            x: Math.min(...xs),
+            y: Math.min(...ys),
+            w: Math.max(...xs) - Math.min(...xs),
+            h: Math.max(...ys) - Math.min(...ys),
+          }]
+        : [];
+      return edge.labelRect ? [...route, edge.labelRect] : route;
+    }),
   ];
   if (!rects.length) return { x: 48, y: 48 };
 
-  const right = Math.max(...rects.map((rect) => rect.x + rect.w));
-  const top = Math.max(48, Math.min(...rects.map((rect) => rect.y)));
-  return { x: right + gap, y: top };
+  const left = Math.min(...rects.map((rect) => rect.x));
+  const top = Math.min(...rects.map((rect) => rect.y));
+  return {
+    x: left - gap - itemWidth,
+    y: top,
+  };
 }
 
 /**

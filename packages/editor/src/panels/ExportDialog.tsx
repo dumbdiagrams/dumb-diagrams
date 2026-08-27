@@ -50,8 +50,10 @@ export function ExportDialog({
   const [transparentBackground, setTransparentBackground] = useState(false);
   const [includeSource, setIncludeSource] = useState(true);
   const [zoom, setZoom] = useState(100);
-  const [customWidth, setCustomWidth] = useState(Math.ceil(layout.width));
-  const [customHeight, setCustomHeight] = useState(Math.ceil(layout.height));
+  const canvasWidth = layout.canvasBounds?.w ?? layout.width;
+  const canvasHeight = layout.canvasBounds?.h ?? layout.height;
+  const [customWidth, setCustomWidth] = useState(Math.ceil(canvasWidth));
+  const [customHeight, setCustomHeight] = useState(Math.ceil(canvasHeight));
   const [dpi, setDpi] = useState(100);
   const [borderWidth, setBorderWidth] = useState(0);
   const [shadow, setShadow] = useState(false);
@@ -69,13 +71,13 @@ export function ExportDialog({
     setTransparentBackground(false);
     setIncludeSource(true);
     setZoom(100);
-    setCustomWidth(Math.ceil(layout.width));
-    setCustomHeight(Math.ceil(layout.height));
+    setCustomWidth(Math.ceil(canvasWidth));
+    setCustomHeight(Math.ceil(canvasHeight));
     setDpi(100);
     setBorderWidth(0);
     setShadow(false);
     setGrid(false);
-  }, [initialFormat, layout.height, layout.width, open, selection.length]);
+  }, [canvasHeight, canvasWidth, initialFormat, open, selection.length]);
 
   const bounds = useMemo(
     () => getExportBounds(doc, layout, selection, scope),
@@ -182,7 +184,7 @@ export function ExportDialog({
             >
               <span className="export-choice-kicker">Canvas</span>
               <strong>Entire diagram</strong>
-              <span>{Math.ceil(layout.width)} × {Math.ceil(layout.height)} px</span>
+              <span>{Math.ceil(canvasWidth)} × {Math.ceil(canvasHeight)} px</span>
             </button>
             <button
               type="button"

@@ -128,8 +128,8 @@ export function setPlace(
   if (place.locked) return doc;
   view.places[id] = {
     ...place,
-    x: Math.max(0, Math.round(x)),
-    y: Math.max(0, Math.round(y)),
+    x: Math.round(x),
+    y: Math.round(y),
     pin: true,
     manual: true,
   };
@@ -252,8 +252,8 @@ export function setGroupPlace(
     if (!place || place.locked || place.x === undefined || place.y === undefined) {
       continue;
     }
-    place.x = Math.max(0, Math.round(place.x + dx));
-    place.y = Math.max(0, Math.round(place.y + dy));
+    place.x = Math.round(place.x + dx);
+    place.y = Math.round(place.y + dy);
   }
   return next;
 }
@@ -319,8 +319,8 @@ export function moveSelection(
       const pinnedY = place.pin ? place.y : undefined;
       view.places[id] = {
         ...place,
-        x: Math.max(0, Math.round((pinnedX ?? bounds?.x ?? 0) + dx)),
-        y: Math.max(0, Math.round((pinnedY ?? bounds?.y ?? 0) + dy)),
+        x: Math.round((pinnedX ?? bounds?.x ?? 0) + dx),
+        y: Math.round((pinnedY ?? bounds?.y ?? 0) + dy),
         pin: true,
         manual: true,
       };
@@ -333,8 +333,8 @@ export function moveSelection(
       if (!view.annotations) view.annotations = {};
       view.annotations[id] = {
         ...place,
-        x: Math.max(0, Math.round((place.x ?? 0) + dx)),
-        y: Math.max(0, Math.round((place.y ?? 0) + dy)),
+        x: Math.round((place.x ?? 0) + dx),
+        y: Math.round((place.y ?? 0) + dy),
         pin: true,
       };
     }
@@ -399,8 +399,8 @@ export function nudgeSelection(
       if (!place || place.locked) continue;
       const previousX = place.x ?? 0;
       const previousY = place.y ?? 0;
-      const x = Math.max(0, snapCoordinate(previousX + dx, Boolean(options.snapToGrid)));
-      const y = Math.max(0, snapCoordinate(previousY + dy, Boolean(options.snapToGrid)));
+      const x = snapCoordinate(previousX + dx, Boolean(options.snapToGrid));
+      const y = snapCoordinate(previousY + dy, Boolean(options.snapToGrid));
       const actualDx = x - previousX;
       const actualDy = y - previousY;
       next =
@@ -413,14 +413,8 @@ export function nudgeSelection(
       const place = view.annotations?.[item.id];
       if (!place || place.locked) continue;
       if (!view.annotations) view.annotations = {};
-      const x = Math.max(
-        0,
-        snapCoordinate((place.x ?? 0) + dx, Boolean(options.snapToGrid)),
-      );
-      const y = Math.max(
-        0,
-        snapCoordinate((place.y ?? 0) + dy, Boolean(options.snapToGrid)),
-      );
+      const x = snapCoordinate((place.x ?? 0) + dx, Boolean(options.snapToGrid));
+      const y = snapCoordinate((place.y ?? 0) + dy, Boolean(options.snapToGrid));
       view.annotations[item.id] = {
         ...place,
         x: Math.round(x),
@@ -716,6 +710,7 @@ export function addResource(
     x: Math.round(at.x),
     y: Math.round(at.y),
     pin: true,
+    manual: true,
   };
   return { doc: next, id };
 }
@@ -745,6 +740,7 @@ export function addGroup(
     x: Math.round(at.x),
     y: Math.round(at.y),
     pin: true,
+    manual: true,
   };
   return { doc: next, id };
 }
@@ -808,8 +804,8 @@ export function setAnnotationPlace(
   if (place.locked) return doc;
   view.annotations[id] = {
     ...place,
-    x: Math.max(0, Math.round(x)),
-    y: Math.max(0, Math.round(y)),
+    x: Math.round(x),
+    y: Math.round(y),
     pin: true,
   };
   return next;
@@ -929,6 +925,7 @@ export function addCustomResource(
     x: Math.round(at.x),
     y: Math.round(at.y),
     pin: true,
+    manual: true,
   };
   return { doc: next, id };
 }

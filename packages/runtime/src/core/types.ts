@@ -240,6 +240,12 @@ export interface LayoutResult {
   edges: RoutedEdge[];
   width: number;
   height: number;
+  /**
+   * Visible artboard bounds in diagram coordinates. This differs from the
+   * layout's original 0-based extent after authored content is moved above or
+   * to the left of the initial canvas.
+   */
+  canvasBounds?: Rect;
   symmetries: ID[][];
 }
 

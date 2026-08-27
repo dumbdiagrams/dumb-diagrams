@@ -41,6 +41,7 @@ import {
   addAnnotation,
   addText,
   ANNOTATION_STYLES,
+  annotationSize,
   annotationStyle,
   addEdge,
   addGroup,
@@ -148,7 +149,7 @@ import { initTheme } from "./ui/theme";
 import { useDiagramCompilation } from "./use-diagram-compilation";
 import {
   GRID_SIZE,
-  outsideCanvasInsertionPoint,
+  leftStagingInsertionPoint,
   snapLayoutToGrid,
   snapPoint,
 } from "./grid.js";
@@ -226,11 +227,9 @@ type CatalogPlacement = {
 };
 
 function canvasInteractionTool(tool: Tool): Tool {
-  // These drawers are non-modal: browsing them should not turn off normal
-  // selection, movement, and canvas gestures behind the drawer.
-  return tool === "groups" || tool === "resources" || tool === "code" || tool === "layers"
-    ? "select"
-    : tool;
+  // Drawers are non-modal: opening one should not turn off selection, movement,
+  // or canvas gestures. Connector is the only tool with its own canvas mode.
+  return tool === "connector" ? "connector" : "select";
 }
 
 function waitForPaint(): Promise<void> {
@@ -1008,6 +1007,14 @@ function App() {
   }, [activeTab.origin, workspaceReady]);
 
   const displayCompiled = compiled.ok ? compiled : lastGoodRef.current;
+  const displayCanvas = displayCompiled
+    ? displayCompiled.layout.canvasBounds ?? {
+        x: 0,
+        y: 0,
+        w: displayCompiled.layout.width,
+        h: displayCompiled.layout.height,
+      }
+    : null;
 
   useEffect(() => {
     if (!toast) return;
@@ -1176,7 +1183,7 @@ function App() {
     const at = requestedPlacement?.at ?? snapPoint(
       parent
         ? insertionPoint(compiled.layout, parent)
-        : outsideCanvasInsertionPoint(compiled.layout),
+        : leftStagingInsertionPoint(compiled.layout, 240),
       snapToGrid,
     );
     try {
@@ -1206,7 +1213,7 @@ function App() {
     const at = requestedPlacement?.at ?? snapPoint(
       parent
         ? insertionPoint(compiled.layout, parent)
-        : outsideCanvasInsertionPoint(compiled.layout),
+        : leftStagingInsertionPoint(compiled.layout, 360),
       snapToGrid,
     );
     try {
@@ -1277,7 +1284,8 @@ function App() {
 
   const createNote = (style: AnnotationStyle) => {
     if (!compiled.ok) return;
-    const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
+    const size = annotationSize(style);
+    const at = snapPoint(leftStagingInsertionPoint(compiled.layout, size.w), snapToGrid);
     const result = addAnnotation(compiled.doc, "Note", at, undefined, style);
     if (!updateDocument(result.doc)) return;
     setSelection([{ kind: "annotation", id: result.id }]);
@@ -1300,7 +1308,7 @@ function App() {
       setToast("Enter some text before placing it");
       return;
     }
-    const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
+    const at = snapPoint(leftStagingInsertionPoint(compiled.layout, 240), snapToGrid);
     const result = addText(compiled.doc, text, at, {
       font: textFont,
       fontSize: textFontSize,
@@ -1692,7 +1700,12 @@ function App() {
         <CanvasStage
           viewport={viewport}
           onViewportChange={updateViewport}
-          contentSize={displayCompiled?.layout}
+          contentSize={displayCanvas ? {
+            x: displayCanvas.x,
+            y: displayCanvas.y,
+            width: displayCanvas.w,
+            height: displayCanvas.h,
+          } : undefined}
           defaultFrameKey={defaultFrameKey}
           onFitRequest={(fit) => {
             fitRef.current = fit;
@@ -1705,7 +1718,15 @@ function App() {
           }}
         >
           {displayCompiled?.svg ? (
-            <>
+            <div
+              className="canvas-artboard"
+              style={{
+                left: displayCanvas?.x ?? 0,
+                top: displayCanvas?.y ?? 0,
+                width: displayCanvas?.w ?? displayCompiled.layout.width,
+                height: displayCanvas?.h ?? displayCompiled.layout.height,
+              }}
+            >
               <RenderedDiagram svg={displayCompiled.svg} />
               {compiled.ok && <InteractionOverlay
                 key={activeTabId}
@@ -1783,7 +1804,7 @@ function App() {
                   });
                 }}
               />}
-            </>
+            </div>
           ) : (
             <div className="empty-canvas">
               No valid diagram to preview yet.
@@ -2057,7 +2078,7 @@ function App() {
                     snapPoint(
                       importParent
                         ? insertionPoint(compiled.layout, importParent)
-                        : outsideCanvasInsertionPoint(compiled.layout),
+                        : leftStagingInsertionPoint(compiled.layout, 240),
                       snapToGrid,
                     ),
                   );

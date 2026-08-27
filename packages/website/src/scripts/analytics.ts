@@ -15,10 +15,8 @@ export function initAnalytics() {
   const settings = document.querySelectorAll<HTMLElement>('[data-analytics-settings]');
   const revoke = document.querySelectorAll<HTMLButtonElement>('[data-analytics-revoke]');
   const statuses = document.querySelectorAll<HTMLElement>('[data-analytics-status]');
-  const floatingSettings = document.querySelectorAll<HTMLButtonElement>('[data-cookie-preferences-floating]');
   const close = banner?.querySelector<HTMLButtonElement>('[data-analytics-close]');
   if (!banner) return;
-  const panel = banner;
   const id = banner.dataset.analyticsId!;
   const enabled = banner.dataset.analyticsEnabled === 'true';
   let started = false;
@@ -27,7 +25,6 @@ export function initAnalytics() {
 
   function syncControls() {
     revoke.forEach(button => { button.hidden = choice !== 'granted'; });
-    floatingSettings.forEach(button => { button.hidden = !panel.hidden; });
     if (close) close.hidden = choice === undefined;
     const prefix = enabled ? '' : 'Local preview · ';
     statuses.forEach(status => { status.textContent = choice === 'granted' ? `${prefix}analytics allowed.` : choice === 'denied' ? `${prefix}necessary cookies only.` : `${prefix}no cookie preference saved yet.`; });

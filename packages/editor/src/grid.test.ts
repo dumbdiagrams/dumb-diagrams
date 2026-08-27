@@ -5,7 +5,7 @@ import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 
 import {
   GRID_SIZE,
-  outsideCanvasInsertionPoint,
+  leftStagingInsertionPoint,
   snapDragDelta,
   snapLayoutToGrid,
 } from "./grid.js";
@@ -105,15 +105,21 @@ describe("editor grid", () => {
     expect(snapped).toEqual({ dx: 62, dy: 38, guides: [] });
   });
 
-  it("places new root objects in an open lane outside the existing canvas", () => {
+  it("places new root objects in a safe staging lane before the diagram", () => {
     const layout = layoutDocument(createAsyncDocsFixture());
-    const right = Math.max(
-      ...layout.groups.map((group) => group.bounds.x + group.bounds.w),
-      ...layout.nodes.map((node) => node.obstacle.x + node.obstacle.w),
+    const left = Math.min(
+      ...layout.groups.map((group) => group.bounds.x),
+      ...layout.nodes.map((node) => node.obstacle.x),
+      ...layout.edges.flatMap((edge) => edge.points.map((point) => point.x)),
     );
-    const point = outsideCanvasInsertionPoint(layout);
+    const top = Math.min(
+      ...layout.groups.map((group) => group.bounds.y),
+      ...layout.nodes.map((node) => node.obstacle.y),
+      ...layout.edges.flatMap((edge) => edge.points.map((point) => point.y)),
+    );
+    const point = leftStagingInsertionPoint(layout, 240);
 
-    expect(point.x).toBeGreaterThanOrEqual(right + 48);
-    expect(point.y).toBeGreaterThanOrEqual(48);
+    expect(point).toEqual({ x: left - 72 - 240, y: top });
+    expect(point.x + 240).toBeLessThan(left);
   });
 });

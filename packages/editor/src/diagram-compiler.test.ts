@@ -2,13 +2,15 @@ import {
   createAsyncDocsFixture,
   getDefaultView,
 } from "@dumb-diagrams/runtime/core";
+import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
 import { compileDiagramSource } from "./diagram-compiler";
-import { needsAutoFix } from "./editor-model";
+import { addResource, needsAutoFix } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
+import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
   it("keeps the bundled examples with their full prompts", () => {
@@ -118,6 +120,53 @@ describe("diagram compilation canvas bounds", () => {
     if (!result.ok) return;
     expect(result.layout.width).toBeGreaterThanOrEqual(2_400 + 220 + 32);
     expect(result.layout.height).toBeGreaterThanOrEqual(1_500 + 96 + 32);
+  });
+
+  it("grows the artboard above and to the left of the initial layout", () => {
+    const doc = createAsyncDocsFixture();
+    doc.annotations.push({ id: "far-note", text: "Moved note", style: "paper" });
+    const view = getDefaultView(doc);
+    view.annotations = {
+      ...view.annotations,
+      "far-note": { x: -240, y: -144, w: 220, h: 96, pin: true },
+    };
+
+    const result = compileDiagramSource(printDgm(doc), false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.layout.canvasBounds).toEqual(expect.objectContaining({
+      x: -272,
+      y: -176,
+    }));
+    expect(result.layout.canvasBounds!.w).toBe(result.layout.width + 272);
+    expect(result.layout.canvasBounds!.h).toBe(result.layout.height + 176);
+    expect(result.svg).toContain(
+      `viewBox="-272 -176 ${result.layout.canvasBounds!.w} ${result.layout.canvasBounds!.h}"`,
+    );
+  });
+
+  it("keeps existing routes stable when a new root resource enters the left staging lane", () => {
+    const doc = createAsyncDocsFixture();
+    const before = compileDiagramSource(printDgm(doc), false);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+    const entry = getCatalogEntry("aws.simple-storage-service")!;
+    const at = leftStagingInsertionPoint(before.layout, 240);
+    const added = addResource(doc, entry, undefined, at);
+    const after = compileDiagramSource(printDgm(added.doc), false);
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+
+    const routesBefore = new Map(before.layout.edges.map((edge) => [edge.id, edge.points]));
+    for (const edge of after.layout.edges) {
+      expect(edge.points, edge.id).toEqual(routesBefore.get(edge.id));
+    }
+    expect(after.layout.nodes.find((node) => node.id === added.id)!.obstacle.x)
+      .toBeLessThan(Math.min(
+        ...before.layout.groups.map((group) => group.bounds.x),
+        ...before.layout.nodes.map((node) => node.obstacle.x),
+        ...before.layout.edges.flatMap((edge) => edge.points.map((point) => point.x)),
+      ));
   });
 });
 

@@ -107,27 +107,51 @@ export function compileDiagramSource(source: string, snapToGrid: boolean): Diagr
 /** Keep the visible artboard large enough for authored moves, notes, and long routes. */
 function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): LayoutResult {
   const view = getDefaultView(doc);
-  const right: number[] = [layout.width];
-  const bottom: number[] = [layout.height];
-  const includeIfOutside = (x: number, y: number, w = 0, h = 0) => {
-    if (x + w > layout.width) right.push(x + w + 32);
-    if (y + h > layout.height) bottom.push(y + h + 32);
+  const padding = 32;
+  let left = 0;
+  let top = 0;
+  let right = layout.width;
+  let bottom = layout.height;
+  const include = (x: number, y: number, w = 0, h = 0) => {
+    if (x < 0) left = Math.min(left, x - padding);
+    if (y < 0) top = Math.min(top, y - padding);
+    if (x + w > right) right = x + w + padding;
+    if (y + h > bottom) bottom = y + h + padding;
   };
 
+  for (const group of layout.groups) include(
+    group.bounds.x,
+    group.bounds.y,
+    group.bounds.w,
+    group.bounds.h,
+  );
+  for (const node of layout.nodes) include(
+    node.obstacle.x,
+    node.obstacle.y,
+    node.obstacle.w,
+    node.obstacle.h,
+  );
+
   for (const edge of layout.edges) {
-    for (const point of edge.points) includeIfOutside(point.x, point.y);
-    if (edge.labelPoint) includeIfOutside(edge.labelPoint.x - 48, edge.labelPoint.y - 16, 96, 32);
-    if (edge.labelRect) includeIfOutside(edge.labelRect.x, edge.labelRect.y, edge.labelRect.w, edge.labelRect.h);
+    for (const point of edge.points) include(point.x, point.y);
+    if (edge.labelPoint) include(edge.labelPoint.x - 48, edge.labelPoint.y - 16, 96, 32);
+    if (edge.labelRect) include(edge.labelRect.x, edge.labelRect.y, edge.labelRect.w, edge.labelRect.h);
   }
 
   for (const annotation of doc.annotations) {
     const place = view.annotations?.[annotation.id];
     const dimensions = annotationDimensions(annotation.style);
-    includeIfOutside(place?.x ?? 48, place?.y ?? 48, place?.w ?? dimensions.w, place?.h ?? dimensions.h);
+    include(place?.x ?? 48, place?.y ?? 48, place?.w ?? dimensions.w, place?.h ?? dimensions.h);
   }
 
-  layout.width = Math.max(layout.width, Math.ceil(Math.max(...right)));
-  layout.height = Math.max(layout.height, Math.ceil(Math.max(...bottom)));
+  layout.width = Math.max(layout.width, Math.ceil(right));
+  layout.height = Math.max(layout.height, Math.ceil(bottom));
+  layout.canvasBounds = {
+    x: Math.floor(left),
+    y: Math.floor(top),
+    w: Math.max(1, Math.ceil(right) - Math.floor(left)),
+    h: Math.max(1, Math.ceil(bottom) - Math.floor(top)),
+  };
   return layout;
 }
 

@@ -19,11 +19,11 @@ function harness(t, saved, blocked = false) {
   const close = element();
   banner.querySelectorAll = () => [decline, allow];
   banner.querySelector = selector => selector === '[data-analytics-close]' ? close : decline;
-  const settings = element(), extraSettings = element(), floatingSettings = element(), status = element(), revoke = element();
+  const settings = element(), extraSettings = element(), status = element(), revoke = element();
   settings.hidden = extraSettings.hidden = false;
   const doc = {
     querySelector: selector => ({ '[data-analytics-id]': banner, '[data-analytics-settings]': settings, '[data-analytics-status]': status })[selector],
-    querySelectorAll: selector => ({ '[data-analytics-settings]': [settings, extraSettings, floatingSettings], '[data-analytics-revoke]': [revoke], '[data-analytics-status]': [status], '[data-cookie-preferences-floating]': [floatingSettings] })[selector] || [],
+    querySelectorAll: selector => ({ '[data-analytics-settings]': [settings, extraSettings], '[data-analytics-revoke]': [revoke], '[data-analytics-status]': [status] })[selector] || [],
     createElement: () => ({}),
     head: { append: (...scripts) => appended.push(...scripts) },
     cookie: '_ga=visitor; _ga_TEST12345=session; unrelated=keep',
@@ -45,20 +45,18 @@ function harness(t, saved, blocked = false) {
     t.after(() => previous ? Object.defineProperty(globalThis, name, previous) : delete globalThis[name]);
   }
   initAnalytics();
-  return { allow, decline, banner, close, settings, extraSettings, floatingSettings, status, revoke, appended, events, storage, cookiesRemoved, windowEvents, reloads: () => reloads };
+  return { allow, decline, banner, close, settings, extraSettings, status, revoke, appended, events, storage, cookiesRemoved, windowEvents, reloads: () => reloads };
 }
 
 test('fresh and declined visits never insert a Google script', t => {
   const app = harness(t);
   assert.equal(app.banner.hidden, false);
   assert.equal(app.settings.hidden, false);
-  assert.equal(app.floatingSettings.hidden, true);
   assert.equal(app.appended.length, 0);
   app.decline.click();
   assert.equal(app.appended.length, 0);
   assert.equal(JSON.parse(app.storage.get(key)).choice, 'denied');
   assert.equal(app.banner.hidden, true);
-  assert.equal(app.floatingSettings.hidden, false);
   app.settings.click();
   assert.equal(app.banner.hidden, false);
   assert.equal(app.decline.focused, true);
@@ -66,13 +64,12 @@ test('fresh and declined visits never insert a Google script', t => {
 
 test('a saved choice can close reopened preferences without changing it', t => {
   const app = harness(t, { choice: 'denied', at: Date.now() });
-  app.floatingSettings.click();
+  app.settings.click();
   assert.equal(app.banner.hidden, false);
   assert.equal(app.close.hidden, false);
   app.close.click();
   assert.equal(app.banner.hidden, true);
-  assert.equal(app.floatingSettings.hidden, false);
-  assert.equal(app.floatingSettings.focused, true);
+  assert.equal(app.settings.focused, true);
   assert.equal(JSON.parse(app.storage.get(key)).choice, 'denied');
 });
 
