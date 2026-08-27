@@ -446,11 +446,16 @@ function layoutLogicalGroup(
   // axis instead, which keeps fan-out tiers compact and avoids implying that
   // the siblings call one another.
   const horizontal = doc.flow === "lr" && hasHorizontalChildFlow(doc, group);
+  const childGaps = horizontal
+    ? children.slice(1).map((child, index) =>
+        horizontalChildGap(doc, children[index]!, child, state)
+      )
+    : [];
   const contentW = horizontal
     ? Math.max(
         120,
         children.reduce(
-          (width, item, index) => width + item.w + (index > 0 ? H_GAP : 0),
+          (width, item, index) => width + item.w + (index > 0 ? childGaps[index - 1]! : 0),
           0,
         ),
       )
@@ -466,17 +471,53 @@ function layoutLogicalGroup(
       );
 
   let cursor = 0;
-  for (const item of children) {
+  for (const [index, item] of children.entries()) {
     const x = horizontal ? cursor : (contentW - item.w) / 2;
     const y = horizontal ? (contentH - item.h) / 2 : cursor;
     placeLayoutChild(state, item, x, y, doc);
-    cursor += (horizontal ? item.w : item.h) + (horizontal ? H_GAP : V_GAP);
+    cursor += (horizontal ? item.w : item.h) +
+      (horizontal ? childGaps[index] ?? 0 : V_GAP);
   }
 
   const w = Math.max(contentW, 120) + style.padding * 2;
   const h = Math.max(contentH, 60) + style.headerHeight + style.padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
+}
+
+/**
+ * Give a labelled connector between adjacent resources enough visible run to
+ * carry its copy. Resource cards are wider than their icons, so the ordinary
+ * child gap can leave a perfectly valid route whose label sits under both
+ * endpoints (for example, "static content" between CloudFront and S3).
+ */
+function horizontalChildGap(
+  doc: DiagramDocument,
+  left: LayoutChild,
+  right: LayoutChild,
+  state: LayoutState,
+): number {
+  if (!left.resource || !right.resource) return H_GAP;
+  const edge = doc.edges.find((candidate) =>
+    candidate.label && (
+      (candidate.source === left.id && candidate.target === right.id) ||
+      (candidate.source === right.id && candidate.target === left.id)
+    )
+  );
+  if (!edge?.label) return H_GAP;
+
+  const leftNode = state.nodeGeoms.get(left.id);
+  const rightNode = state.nodeGeoms.get(right.id);
+  if (!leftNode || !rightNode) return H_GAP;
+
+  const labelWidth = Math.max(16, estimateTextWidth(edge.label, 11));
+  const requiredIconGap = labelWidth + 16;
+  const iconGapAtBaseline =
+    left.w - (leftNode.icon.x + leftNode.icon.w) +
+    H_GAP +
+    rightNode.icon.x;
+  const extra = Math.max(0, requiredIconGap - iconGapAtBaseline);
+  return H_GAP + Math.ceil(extra / GRAMMAR.grid) * GRAMMAR.grid;
 }
 
 function hasHorizontalChildFlow(doc: DiagramDocument, group: Group): boolean {

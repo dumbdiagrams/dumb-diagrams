@@ -254,6 +254,38 @@ describe("routeEdgePreview", () => {
     expect(route.points[0]!.y).toBe(route.points[1]!.y);
   });
 
+  it("straightens near-aligned opposing ports across a full routing cell", () => {
+    const doc = createEmptyDocument("near-aligned-ports");
+    doc.resources = [
+      routingResource("source", "aws.simple-storage-service", "Source"),
+      routingResource("target", "aws.bedrock", "Target"),
+    ];
+    doc.edges = [{
+      id: "source_to_target",
+      source: "source",
+      target: "target",
+      sourcePort: "e",
+      targetPort: "w",
+      style: "solid",
+      kind: "flow",
+    }];
+    const layout: LayoutResult = {
+      nodes: [
+        routingNode("source", 100, 100, 96),
+        routingNode("target", 300, 105, 96),
+      ],
+      groups: [],
+      edges: [],
+      width: 480,
+      height: 260,
+      symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!;
+    expect(route.points).toHaveLength(2);
+    expect(route.points[0]!.y).toBe(route.points[1]!.y);
+  });
+
   it("previews a new connection without adding it to the document", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);

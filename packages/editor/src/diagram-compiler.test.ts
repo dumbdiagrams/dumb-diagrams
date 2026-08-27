@@ -8,7 +8,7 @@ import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
 import { compileDiagramSource } from "./diagram-compiler";
-import { addResource, needsAutoFix } from "./editor-model";
+import { addResource, moveSelection, needsAutoFix, setRoute } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
 
@@ -167,6 +167,50 @@ describe("diagram compilation canvas bounds", () => {
         ...before.layout.nodes.map((node) => node.obstacle.x),
         ...before.layout.edges.flatMap((edge) => edge.points.map((point) => point.x)),
       ));
+  });
+
+  it("keeps routes stable when an unrelated staged resource moves", () => {
+    const example = DIAGRAM_EXAMPLES.find(
+      (candidate) => candidate.id === "simple-serverless-web-application",
+    )!;
+    const doc = parseDgm(example.source);
+    const entry = getCatalogEntry("azure.abs-member")!;
+    const added = addResource(doc, entry, undefined, { x: -320, y: 720 });
+    // Documents authored before explicit editor placements were marked as
+    // manual still contain pinned root items in this form.
+    delete getDefaultView(added.doc).places[added.id]!.manual;
+    const legacy = compileDiagramSource(printDgm(added.doc), false);
+    expect(legacy.ok).toBe(true);
+    if (!legacy.ok) return;
+    const autoRoute = legacy.layout.edges.find((edge) => edge.id === "cdn_to_api")!;
+    const start = autoRoute.points[0]!;
+    const target = autoRoute.points.at(-1)!;
+    const detourY = Math.max(start.y, target.y) + 480;
+    const adjusted = setRoute(added.doc, autoRoute.id, [
+      start,
+      { x: start.x + 32, y: start.y },
+      { x: start.x + 32, y: detourY },
+      { x: target.x - 32, y: detourY },
+      { x: target.x - 32, y: target.y },
+      target,
+    ]);
+    const before = compileDiagramSource(printDgm(adjusted), false);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+
+    const moved = moveSelection(
+      adjusted,
+      [{ kind: "resource", id: added.id }],
+      0,
+      -560,
+      before.layout,
+    );
+    const after = compileDiagramSource(printDgm(moved), false);
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+
+    expect(new Map(after.layout.edges.map((edge) => [edge.id, edge.points])))
+      .toEqual(new Map(before.layout.edges.map((edge) => [edge.id, edge.points])));
   });
 });
 

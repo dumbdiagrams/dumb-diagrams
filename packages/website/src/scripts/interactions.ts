@@ -97,7 +97,10 @@ document.querySelectorAll<HTMLElement>('[data-diagram-preview]').forEach(preview
   const zoomOut = preview.querySelector<HTMLButtonElement>('[data-zoom="out"]')!;
   const zoomIn = preview.querySelector<HTMLButtonElement>('[data-zoom="in"]')!;
   const fit = preview.querySelector<HTMLButtonElement>('[data-zoom="fit"]')!;
-  let zoom = 1;
+  const requestedZoom = Number(preview.dataset.initialZoom);
+  let zoom = Number.isFinite(requestedZoom)
+    ? Math.min(2.5, Math.max(1, requestedZoom))
+    : 1;
   function center() {
     viewport.scrollLeft = (viewport.scrollWidth - viewport.clientWidth) / 2;
     viewport.scrollTop = (viewport.scrollHeight - viewport.clientHeight) / 2;

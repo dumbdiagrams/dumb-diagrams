@@ -24,7 +24,7 @@ export function finalizeAbsoluteLayout(
   const view = getDefaultView(doc);
   const flowingRoots = roots.filter((id) => {
     const place = view.places[id];
-    return !place?.pin || !place.manual;
+    return !place?.pin || (place.x === undefined && place.y === undefined);
   });
   const stagedRoots = roots.filter((id) => !flowingRoots.includes(id));
   const rootHeight = Math.max(

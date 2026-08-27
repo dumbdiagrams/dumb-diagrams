@@ -73,6 +73,26 @@ describe("logical group layout", () => {
     expect(second.y).toBe(third.y);
   });
 
+  it("reserves a readable run for labels between adjacent resources", () => {
+    const doc = logicalGroupDocument();
+    doc.edges = [{
+      id: "first-second",
+      source: "first",
+      target: "second",
+      label: "static content",
+      style: "solid",
+      kind: "flow",
+    }];
+
+    const nodes = new Map(layoutDocument(doc).nodes.map((node) => [node.id, node]));
+    const first = nodes.get("first")!.icon;
+    const second = nodes.get("second")!.icon;
+    const visibleRun = second.x - (first.x + first.w);
+    const labelWidth = "static content".length * 11 * 0.55;
+
+    expect(visibleRun).toBeGreaterThanOrEqual(labelWidth + 16);
+  });
+
   it("keeps explicit external peer alternatives horizontal", () => {
     const doc = logicalGroupDocument();
     doc.edges = ["first", "second", "third"].map((target, index) => ({

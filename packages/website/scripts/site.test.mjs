@@ -78,6 +78,9 @@ test('complete documentation and homepage examples compile through the actual ru
 
 test('downloadable diagrams are portable and previews reserve their actual dimensions', async () => {
   const homepage = await readFile(join(dist, 'index.html'), 'utf8');
+  const initialZooms = [...homepage.matchAll(/data-diagram-preview data-initial-zoom="([^"]+)"/g)].map(([, zoom]) => zoom);
+  assert.ok(initialZooms.length >= 3, 'homepage renders all example previews with an initial zoom');
+  assert.deepEqual(new Set(initialZooms), new Set(['1']), 'all example previews open at 100%');
   for (const file of (await readdir(join(site, 'src/examples'))).filter(file => file.endsWith('.dgm'))) {
     const name = file.slice(0, -4);
     const svg = await readFile(join(dist, 'diagrams', `${name}.svg`), 'utf8');

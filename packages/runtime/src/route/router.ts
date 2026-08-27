@@ -40,7 +40,11 @@ const PORT_OFFSET_FALLBACK_COST = 120;
 const LABEL_SIDE_FALLBACK_COST = 6_000;
 const VISIBLE_PORTS_PER_FACE = 3;
 const TURN_COST = 140;
-const MICRO_JOG_THRESHOLD = CELL / 2;
+// A near-aligned pair of opposing ports should read as one straight
+// connector. Anything shorter than a full routing cell is visual noise: at
+// normal zoom it looks like a broken arrow rather than a deliberate lane
+// change.
+const MICRO_JOG_THRESHOLD = CELL;
 const VERTICAL_BADGE_TARGET_T = 0.75;
 const MINIMUM_BADGE_RUN = CELL * 2;
 const BADGE_CONNECTOR_CLEARANCE = GRAMMAR.badgeRadius + 6;
