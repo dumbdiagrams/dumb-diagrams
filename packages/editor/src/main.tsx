@@ -82,6 +82,7 @@ import {
   swapEdgeDirection,
   toggleSelectionItem,
   updateEdge,
+  updateEdgePreservingLayout,
   addCustomResource,
   canPlaceCatalogEntry,
   duplicateSelection,
@@ -2181,7 +2182,9 @@ function App() {
                       mutateCurrent((doc) => renameEdge(doc, edge.id, normalizeSingleLineText(label)))
                     }
                     onUpdateEdge={(patch) =>
-                      mutateCurrent((doc) => updateEdge(doc, edge.id, patch))
+                      mutateCurrent((doc) =>
+                        updateEdgePreservingLayout(doc, edge.id, patch, compiled.layout)
+                      )
                     }
                     onUpdateColor={(color) =>
                       mutateCurrent((doc) => updateEdge(doc, edge.id, { color }))
@@ -2354,7 +2357,14 @@ function App() {
             onUpdateEdge={(style, kind) => {
               const edge = selection.find((item) => item.kind === "edge");
               if (!edge) return;
-              mutateCurrent((doc) => updateEdge(doc, edge.id, { style, kind }));
+              mutateCurrent((doc) =>
+                updateEdgePreservingLayout(
+                  doc,
+                  edge.id,
+                  { style, kind },
+                  compiled.layout,
+                )
+              );
             }}
             onPinRoute={() => {
               const edgeItem = selection.find((item) => item.kind === "edge");

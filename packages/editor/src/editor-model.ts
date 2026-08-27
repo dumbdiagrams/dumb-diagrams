@@ -1035,6 +1035,47 @@ export function updateEdge(
   return next;
 }
 
+/**
+ * Change connector semantics without letting kind-sensitive automatic layout
+ * rotate the composition that is already on screen. The saved coordinates are
+ * the same geometry the user approved immediately before the edit; routing is
+ * still recalculated against those stable nodes and boundaries.
+ */
+export function updateEdgePreservingLayout(
+  doc: DiagramDocument,
+  id: string,
+  patch: Parameters<typeof updateEdge>[2],
+  layout: LayoutResult,
+): DiagramDocument {
+  const edge = doc.edges.find((candidate) => candidate.id === id);
+  const changesKind = patch.kind !== undefined && patch.kind !== edge?.kind;
+  const next = updateEdge(doc, id, patch);
+  if (next === doc || !changesKind) return next;
+
+  const view = getDefaultView(next);
+  for (const group of layout.groups) {
+    view.places[group.id] = {
+      ...view.places[group.id],
+      x: Math.round(group.bounds.x),
+      y: Math.round(group.bounds.y),
+      w: Math.round(group.bounds.w),
+      h: Math.round(group.bounds.h),
+      pin: true,
+      manual: true,
+    };
+  }
+  for (const node of layout.nodes) {
+    view.places[node.id] = {
+      ...view.places[node.id],
+      x: Math.round(node.obstacle.x),
+      y: Math.round(node.obstacle.y),
+      pin: true,
+      manual: true,
+    };
+  }
+  return next;
+}
+
 export function duplicateSelection(
   doc: DiagramDocument,
   selection: Selection,

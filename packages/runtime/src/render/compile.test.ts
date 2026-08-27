@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, it, expect } from "vitest";
 import {
   createAsyncDocsFixture,
@@ -8,6 +10,7 @@ import {
 import type { LayoutResult } from "../core/index.js";
 import { compileDiagram, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
+import { parseDgm } from "../dsl/index.js";
 import {
   eraseOrthogonalRouteLoops,
   normalizeOrthogonalRoute,
@@ -107,6 +110,63 @@ describe("async-docs fixture", () => {
       code: "edge-crossing",
       message: "Edges horizontal and vertical cross",
     });
+  });
+
+  it("compiles the Azure reference flow without routing or decoration violations", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/diagrams/azure-private-app-service.dgm", import.meta.url),
+      "utf8",
+    ));
+    const result = compileDiagram(doc);
+
+    expect(result.ok).toBe(true);
+    expect(result.invariantFailures).toEqual([]);
+  });
+
+  it("reports collisions among edge decorations, resources, and connectors", () => {
+    const layout = {
+      nodes: [{
+        id: "service",
+        type: "resource",
+        icon: { x: 40, y: 40, w: 48, h: 48 },
+        label: { x: 20, y: 92, w: 88, h: 20 },
+        obstacle: { x: 20, y: 40, w: 88, h: 72 },
+        role: "primary",
+        resourceType: "generic.server",
+        serviceLabel: "Service",
+      }],
+      groups: [],
+      edges: [
+        {
+          id: "first",
+          source: "a",
+          target: "b",
+          points: [{ x: 0, y: 60 }, { x: 160, y: 60 }],
+          label: "first",
+          labelRect: { x: 44, y: 48, w: 52, h: 14 },
+          badge: { x: 52, y: 52 },
+          style: "solid",
+        },
+        {
+          id: "second",
+          source: "c",
+          target: "d",
+          points: [{ x: 70, y: 0 }, { x: 70, y: 140 }],
+          label: "second",
+          labelRect: { x: 48, y: 50, w: 60, h: 14 },
+          badge: { x: 56, y: 54 },
+          style: "solid",
+        },
+      ],
+      width: 180,
+      height: 160,
+      symmetries: [],
+    } satisfies LayoutResult;
+
+    const codes = new Set(checkInvariants(layout).map((failure) => failure.code));
+    expect(codes.has("edge-label-node-collision")).toBe(true);
+    expect(codes.has("edge-label-overlap")).toBe(true);
+    expect(codes.has("edge-badge-overlap")).toBe(true);
   });
 
   it("equalizes AZ dimensions", () => {

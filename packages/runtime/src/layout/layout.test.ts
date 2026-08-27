@@ -130,4 +130,62 @@ describe("logical group layout", () => {
       integration.bounds.x + integration.bounds.w,
     );
   });
+
+  it("places Azure application boundaries before their private endpoint bank", () => {
+    const doc = createEmptyDocument("azure-vnet-order");
+    doc.resources = [
+      resource("app", "application"),
+      resource("redis_endpoint", "vnet"),
+      resource("sql_endpoint", "vnet"),
+    ];
+    doc.groups = [
+      {
+        id: "vnet",
+        kind: "vpc",
+        type: "azure.vnet",
+        label: "Virtual network",
+        children: ["application", "redis_endpoint", "sql_endpoint"],
+      },
+      {
+        id: "application",
+        kind: "logical",
+        label: "Application tier",
+        parent: "vnet",
+        children: ["app"],
+      },
+    ];
+
+    const layout = layoutDocument(doc);
+    const application = layout.groups.find((group) => group.id === "application")!;
+    const redis = layout.nodes.find((node) => node.id === "redis_endpoint")!;
+    const sql = layout.nodes.find((node) => node.id === "sql_endpoint")!;
+
+    expect(application.bounds.x + application.bounds.w).toBeLessThan(redis.obstacle.x);
+    expect(redis.obstacle.x).toBe(sql.obstacle.x);
+    expect(redis.obstacle.y).toBeLessThan(sql.obstacle.y);
+  });
+
+  it("places dashed observability sinks below the primary logical flow", () => {
+    const doc = createEmptyDocument("supporting-sink-layout");
+    doc.resources = [
+      resource("service", "architecture"),
+      resource("database", "architecture"),
+      resource("monitor", "architecture"),
+    ];
+    doc.groups = [{
+      id: "architecture",
+      kind: "logical",
+      label: "Architecture",
+      children: ["service", "database", "monitor"],
+    }];
+    doc.edges = [
+      { id: "data", source: "service", target: "database", style: "solid", kind: "flow" },
+      { id: "service-metrics", source: "service", target: "monitor", style: "dashed", kind: "peer" },
+      { id: "database-metrics", source: "database", target: "monitor", style: "dashed", kind: "peer" },
+    ];
+
+    const nodes = new Map(layoutDocument(doc).nodes.map((node) => [node.id, node]));
+    expect(nodes.get("service")!.obstacle.x).toBeLessThan(nodes.get("database")!.obstacle.x);
+    expect(nodes.get("monitor")!.obstacle.y).toBeGreaterThan(nodes.get("database")!.obstacle.y);
+  });
 });

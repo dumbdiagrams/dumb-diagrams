@@ -2,49 +2,9 @@
   "description": "Reviewed routing warnings for checked-in examples. New or removed warnings fail check:routing and require a visual review before this file changes.",
   "warnings": [
     {
-      "file": "asynchronous-report-generation.dgm",
-      "code": "edge-crossing",
-      "message": "Edges worker_to_reports and worker_to_notifications cross"
-    },
-    {
-      "file": "aws-data-transfer-hub.dgm",
-      "code": "edge-crossing",
-      "message": "Edges ui-appsync and ui-cognito cross"
-    },
-    {
-      "file": "aws-data-transfer-hub.dgm",
-      "code": "edge-crossing",
-      "message": "Edges ui-cognito and ui-oidc cross"
-    },
-    {
       "file": "aws-high-availability-web-app.dgm",
       "code": "edge-crossing",
-      "message": "Edges pull_image_a and monitor_data_a cross"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges pull_image_b and monitor_data_a cross"
-    },
-    {
-      "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-crossing",
-      "message": "Edges authorize_payment and create_shipment cross"
-    },
-    {
-      "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-crossing",
-      "message": "Edges authorize_payment and send_confirmation cross"
-    },
-    {
-      "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-crossing",
-      "message": "Edges create_shipment and send_confirmation cross"
-    },
-    {
-      "file": "transfer-hub.dgm",
-      "code": "edge-crossing",
-      "message": "Edges s6 and s7 cross"
+      "message": "Edges monitor_app_a and monitor_data_a cross"
     }
   ]
 }

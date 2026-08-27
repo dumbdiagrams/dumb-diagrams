@@ -1367,7 +1367,6 @@ textarea:focus-visible {
   vector-effect: non-scaling-stroke;
 }
 
-.hit-edge:hover,
 .hit-edge.is-selected {
   stroke: color-mix(in srgb, var(--highlight) 18%, transparent);
 }
@@ -3882,7 +3881,8 @@ textarea:focus-visible {
 }
 
 .hover-outline,
-.hover-edge {
+.hover-edge,
+.hover-edge-badge {
   pointer-events: none;
   vector-effect: non-scaling-stroke;
 }
@@ -3924,6 +3924,14 @@ textarea:focus-visible {
   animation: hover-target-pulse 1.6s ease-in-out infinite;
 }
 
+.hover-edge-badge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--highlight) 76%, white);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--highlight) 28%, transparent));
+  animation: hover-target-pulse 1.6s ease-in-out infinite;
+}
+
 @keyframes hover-target-pulse {
   0%,
   100% {
@@ -3937,6 +3945,15 @@ textarea:focus-visible {
 
 .edge-badge-handle {
   cursor: grab;
+  pointer-events: all;
+}
+
+.edge-badge-hit {
+  pointer-events: all;
+}
+
+.edge-badge-hit circle {
+  fill: rgba(255, 255, 255, 0.001);
   pointer-events: all;
 }
 
@@ -4025,7 +4042,8 @@ textarea:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .hover-outline,
-  .hover-edge {
+  .hover-edge,
+  .hover-edge-badge {
     animation: none;
   }
 }

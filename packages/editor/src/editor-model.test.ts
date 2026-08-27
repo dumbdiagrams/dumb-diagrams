@@ -47,6 +47,7 @@ import {
   setTitle,
   swapEdgeDirection,
   updateEdge,
+  updateEdgePreservingLayout,
 } from "./editor-model.js";
 
 describe("editor commands", () => {
@@ -95,6 +96,28 @@ describe("editor commands", () => {
       .toBe(MAX_EDGE_STEP);
     expect(updateEdge(doc, "e1", { step: MAX_EDGE_STEP + 1 })).toBe(doc);
     expect(updateEdge(doc, "e1", { step: -1 })).toBe(doc);
+  });
+
+  it("changes connector meaning without rotating the approved layout", () => {
+    const doc = createAsyncDocsFixture();
+    const edge = doc.edges[0]!;
+    edge.kind = "peer";
+    const before = layoutDocument(doc);
+    const next = updateEdgePreservingLayout(doc, edge.id, { kind: "flow" }, before);
+    const after = layoutDocument(next);
+
+    expect(after.groups.map((group) => ({ x: group.bounds.x, y: group.bounds.y }))).toEqual(
+      before.groups.map((group) => ({
+        x: Math.round(group.bounds.x),
+        y: Math.round(group.bounds.y),
+      })),
+    );
+    expect(after.nodes.map((node) => ({ x: node.obstacle.x, y: node.obstacle.y }))).toEqual(
+      before.nodes.map((node) => ({
+        x: Math.round(node.obstacle.x),
+        y: Math.round(node.obstacle.y),
+      })),
+    );
   });
 
   it("allows manual catalog items to be staged outside generated containment rules", () => {

@@ -153,19 +153,19 @@ describe("routeEdgePreview", () => {
     const routes = routeEdges(doc, layout);
     const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
     const groups = new Map(layout.groups.map((group) => [group.id, group]));
-    const gatewayBadge = routes.find((edge) => edge.id === "private_app_request")!.badge!;
-    const integrationBadge = routes.find((edge) => edge.id === "database_private_link")!.badge!;
+    const requestBadge = routes.find((edge) => edge.id === "https_requests")!.badge!;
+    const readBadge = routes.find((edge) => edge.id === "read_requests")!.badge!;
 
     expect(circleIntersectsRectForTest(
-      gatewayBadge,
+      requestBadge,
       10,
-      nodes.get("gateway")!.obstacle,
+      nodes.get("client")!.obstacle,
       4,
     )).toBe(false);
     expect(circleIntersectsRectForTest(
-      integrationBadge,
+      readBadge,
       10,
-      groups.get("integration_subnet")!.labelRect!,
+      groups.get("vnet")!.labelRect!,
       4,
     )).toBe(false);
   });
@@ -201,6 +201,38 @@ describe("routeEdgePreview", () => {
 
     expect(route?.points[0]).toEqual(portPoint(source.icon, "e", 0.25));
     expect(route?.points.at(-1)).toEqual(portPoint(target.icon, "w", 0.75));
+  });
+
+  it("rejects a face-only hint that would approach a target from the far side", () => {
+    const doc = createEmptyDocument("short-side-routing");
+    doc.resources = [
+      routingResource("source", "generic.client", "Source"),
+      routingResource("target", "azure.sql-database", "Target"),
+    ];
+    doc.edges = [{
+      id: "source-target",
+      source: "source",
+      target: "target",
+      sourcePort: "e",
+      targetPort: "w",
+      style: "solid",
+      kind: "flow",
+    }];
+    const source = routingNode("source", 500, 100, 96);
+    const target = routingNode("target", 100, 100, 96);
+    const layout: LayoutResult = {
+      nodes: [source, target],
+      groups: [],
+      edges: [],
+      width: 680,
+      height: 300,
+      symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!;
+    expect(route.points[0]).toEqual(portPoint(source.icon, "w", 0.5));
+    expect(route.points.at(-1)).toEqual(portPoint(target.icon, "e", 0.5));
+    expect(pathManhattanLength(route.points)).toBeLessThan(500);
   });
 
   it("moves automatic attachments away from the side occupied by a display label", () => {

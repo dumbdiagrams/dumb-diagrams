@@ -297,8 +297,11 @@ function InteractionOverlayComponent({
 
   const updateHover = (event: React.PointerEvent<SVGElement>) => {
     if (tool !== "select") return;
-    const kind = event.currentTarget.getAttribute("data-entity-kind") as SelectionItem["kind"] | null;
-    const id = event.currentTarget.getAttribute("data-entity-id");
+    const badgeId = event.currentTarget.getAttribute("data-edge-badge-hit")
+      ?? event.currentTarget.getAttribute("data-edge-badge");
+    const kind = (event.currentTarget.getAttribute("data-entity-kind")
+      ?? (badgeId ? "edge" : null)) as SelectionItem["kind"] | null;
+    const id = event.currentTarget.getAttribute("data-entity-id") ?? badgeId;
     if (!kind || !id) return;
     pendingHoverRef.current = {
       clientX: event.clientX,
@@ -318,6 +321,20 @@ function InteractionOverlayComponent({
         current?.kind === next?.kind && current?.id === next?.id ? current : next
       );
     });
+  };
+
+  const highlightEdge = (edgeId: string) => {
+    if (tool !== "select") return;
+    pendingHoverRef.current = null;
+    if (hoverFrameRef.current !== null) {
+      window.cancelAnimationFrame(hoverFrameRef.current);
+      hoverFrameRef.current = null;
+    }
+    setHoveredItem((current) =>
+      current?.kind === "edge" && current.id === edgeId
+        ? current
+        : { kind: "edge", id: edgeId },
+    );
   };
 
   const clearHover = (kind: SelectionItem["kind"], id: string) => {
@@ -1126,6 +1143,16 @@ function InteractionOverlayComponent({
                 .map((point) => `${point.x},${point.y}`)
                 .join(" ")}
             />
+            {hoveredEdge.badge && (
+              <circle
+                data-hover-kind="edge-badge"
+                data-hover-id={hoveredItem.id}
+                className="hover-edge-badge"
+                cx={stableBadgePoint(hoveredEdge.badge).x}
+                cy={stableBadgePoint(hoveredEdge.badge).y}
+                r={15}
+              />
+            )}
             {hoveredEdge.labelRect && (
               <rect
                 data-hover-kind="edge-label"
@@ -1322,6 +1349,43 @@ function InteractionOverlayComponent({
         );
       })}
 
+      {edges.map((edge) => {
+        if (
+          edge.step === undefined ||
+          !edge.badge ||
+          view.places[edge.id]?.visible === false ||
+          !isEntityVisible(doc, view, edge.source) ||
+          !isEntityVisible(doc, view, edge.target)
+        ) return null;
+        const point = stableBadgePoint(edge.badge);
+        return (
+          <g
+            key={`${edge.id}-badge-hit`}
+            data-interactive
+            data-edge-badge-hit={edge.id}
+            data-edge-id={edge.id}
+            aria-label={`Select connector ${edge.id} via number ${edge.step}`}
+            className="edge-badge-hit"
+            transform={`translate(${point.x} ${point.y})`}
+            onPointerEnter={() => highlightEdge(edge.id)}
+            onPointerMove={() => highlightEdge(edge.id)}
+            onPointerLeave={() => clearHover("edge", edge.id)}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
+            }}
+            onClick={(event) => event.stopPropagation()}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onContextMenu(event.clientX, event.clientY, { kind: "edge", id: edge.id });
+            }}
+          >
+            <circle r={15} />
+          </g>
+        );
+      })}
+
       {edgeGeom && edgeModel?.step !== undefined && edgeGeom.badge && (() => {
         const dragging = badgeDrag?.edgeId === edgeGeom.id ? badgeDrag : null;
         const current = dragging
@@ -1363,6 +1427,9 @@ function InteractionOverlayComponent({
               aria-label={`Move number ${edgeModel.step}`}
               className="edge-badge-handle"
               transform={`translate(${currentPoint.x} ${currentPoint.y})`}
+              onPointerEnter={() => highlightEdge(edgeGeom.id)}
+              onPointerMove={() => highlightEdge(edgeGeom.id)}
+              onPointerLeave={() => clearHover("edge", edgeGeom.id)}
               onPointerDown={(event) => {
                 event.stopPropagation();
                 if (view.places[edgeGeom.id]?.locked) return;

@@ -20,7 +20,9 @@ Before creating or editing a project diagram:
 4. For a new request, create a new descriptive `.dgm` under `../diagrams/`.
    Edit an existing project file only when the user names it explicitly.
 5. Preserve the example's explicit composition, hierarchy, labels, stable ids,
-   numbered `step` edges, `from`/`to` direction hints, and dashed peer edges.
+   numbered `step` edges, intentional `from`/`to` direction hints, and dashed
+   peer edges. Do not copy a direction hint when automatic layout puts the
+   target on the opposite side and the hint would cause backtracking.
 6. Use automatic layout unless the request explicitly calls for a `view` block,
    manual node positions, or manual edge routes.
 7. Adapt the composition to the requested architecture instead of adding

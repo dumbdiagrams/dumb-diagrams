@@ -84,9 +84,9 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   },
   {
     id: "azure-private-app-service",
-    title: "Private Azure App Service",
-    description: "A secure Azure App Service path with Application Gateway WAF, VNet private endpoints, managed identity, SQL, Key Vault, Storage, and observability.",
-    tags: ["Azure", "App Service", "private endpoints", "VNet"],
+    title: "Write-through caching with Azure Managed Redis",
+    description: "An Azure App Service read path with Managed Redis cache-aside reads, Functions-coordinated write-through updates, SQL as the system of record, private endpoints, and Azure Monitor.",
+    tags: ["Azure", "Managed Redis", "SQL Database", "write-through caching"],
     source: azurePrivateAppServiceSource,
     prompt: AZURE_PRIVATE_APP_SERVICE_PROMPT,
   },

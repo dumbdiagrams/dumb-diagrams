@@ -21,12 +21,6 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         message: `Edge ${edge.id} does not start on icon ${source.id}`,
       });
     }
-    if (edge.badge && edge.labelRect && circleHitsRect(edge.badge, 10, edge.labelRect)) {
-      failures.push({
-        code: "edge-badge-label-collision",
-        message: `Edge ${edge.id} has an overlapping number and label`,
-      });
-    }
     if (
       target &&
       edge.points.length > 0 &&
@@ -81,10 +75,90 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
     }
   }
 
+  for (const edge of layout.edges) {
+    if (edge.labelRect) {
+      if (edge.badge && circleHitsRect(edge.badge, 10, edge.labelRect)) {
+        failures.push({
+          code: "edge-badge-label-collision",
+          message: `Edge ${edge.id} has an overlapping number and label`,
+        });
+      }
+      for (const node of layout.nodes) {
+        if (
+          !rectsOverlap(edge.labelRect, node.icon, 2) &&
+          !rectsOverlap(edge.labelRect, node.label, 2)
+        ) continue;
+        failures.push({
+          code: "edge-label-node-collision",
+          message: `Label of edge ${edge.id} overlaps resource ${node.id}`,
+        });
+      }
+      for (const group of layout.groups) {
+        const labelRect = group.labelRect ?? group.header;
+        if (!rectsOverlap(edge.labelRect, labelRect, 2)) continue;
+        failures.push({
+          code: "edge-label-group-collision",
+          message: `Label of edge ${edge.id} overlaps boundary label ${group.id}`,
+        });
+      }
+    }
+    if (edge.badge) {
+      for (const node of layout.nodes) {
+        if (
+          !circleHitsRect(edge.badge, 10, node.icon) &&
+          !circleHitsRect(edge.badge, 10, node.label)
+        ) continue;
+        failures.push({
+          code: "edge-badge-node-collision",
+          message: `Number of edge ${edge.id} overlaps resource ${node.id}`,
+        });
+      }
+      for (const group of layout.groups) {
+        const labelRect = group.labelRect ?? group.header;
+        if (!circleHitsRect(edge.badge, 10, labelRect)) continue;
+        failures.push({
+          code: "edge-badge-group-collision",
+          message: `Number of edge ${edge.id} overlaps boundary label ${group.id}`,
+        });
+      }
+      for (const other of layout.edges) {
+        if (other.id === edge.id || !circleHitsPath(edge.badge, 12, other.points)) continue;
+        failures.push({
+          code: "edge-badge-connector-collision",
+          message: `Number of edge ${edge.id} overlaps connector ${other.id}`,
+        });
+      }
+    }
+  }
+
   for (let i = 0; i < layout.edges.length; i++) {
     for (let j = i + 1; j < layout.edges.length; j++) {
       const a = layout.edges[i]!;
       const b = layout.edges[j]!;
+      if (a.labelRect && b.labelRect && rectsOverlap(a.labelRect, b.labelRect, 4)) {
+        failures.push({
+          code: "edge-label-overlap",
+          message: `Labels of edges ${a.id} and ${b.id} overlap`,
+        });
+      }
+      if (a.badge && b.badge && Math.hypot(a.badge.x - b.badge.x, a.badge.y - b.badge.y) < 24) {
+        failures.push({
+          code: "edge-badge-overlap",
+          message: `Numbers of edges ${a.id} and ${b.id} overlap`,
+        });
+      }
+      if (a.badge && b.labelRect && circleHitsRect(a.badge, 10, b.labelRect)) {
+        failures.push({
+          code: "edge-badge-label-collision",
+          message: `Number of edge ${a.id} overlaps label of edge ${b.id}`,
+        });
+      }
+      if (b.badge && a.labelRect && circleHitsRect(b.badge, 10, a.labelRect)) {
+        failures.push({
+          code: "edge-badge-label-collision",
+          message: `Number of edge ${b.id} overlaps label of edge ${a.id}`,
+        });
+      }
       if (pathsReverseOverlap(a.points, b.points)) {
         failures.push({
           code: "edge-reverse-overlap",
@@ -119,6 +193,45 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
   }
 
   return failures;
+}
+
+function rectsOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+  margin: number,
+): boolean {
+  return !(
+    a.x + a.w + margin <= b.x ||
+    b.x + b.w + margin <= a.x ||
+    a.y + a.h + margin <= b.y ||
+    b.y + b.h + margin <= a.y
+  );
+}
+
+function pathHitsRect(
+  points: Array<{ x: number; y: number }>,
+  rect: { x: number; y: number; w: number; h: number },
+  margin: number,
+): boolean {
+  const obstacle = inflate(rect, margin);
+  for (let index = 0; index < points.length - 1; index++) {
+    if (segmentHitsObstacle(points[index]!, points[index + 1]!, obstacle)) return true;
+  }
+  return false;
+}
+
+function circleHitsPath(
+  center: { x: number; y: number },
+  radius: number,
+  points: Array<{ x: number; y: number }>,
+): boolean {
+  const rect = {
+    x: center.x - radius,
+    y: center.y - radius,
+    w: radius * 2,
+    h: radius * 2,
+  };
+  return pathHitsRect(points, rect, 0);
 }
 
 function pathsCross(

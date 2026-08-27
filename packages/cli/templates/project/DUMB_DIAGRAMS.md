@@ -68,8 +68,12 @@ under `diagrams/`; do not edit the examples to satisfy a new request.
 - Use `icon ...` only for an explicitly embedded/custom asset. It is not how
   normal AWS, Azure, GCP, or cloud-agnostic catalog icons are selected.
 - Number the primary flow with `step` edge metadata. Use `from` and `to` hints
-  when the intended connector sides matter, and use dashed peer edges for
-  supporting relationships.
+  only when the intended connector sides are unambiguous in the requested
+  composition; do not add blanket east-to-west hints to an automatic layout.
+  A face hint is a preference, while an exact port dragged in Studio is a
+  constraint. Use dashed peer edges for supporting relationships.
+- Keep edge labels short and unique. Label one representative observability
+  edge and omit duplicate telemetry copy when several edges share a corridor.
 - Preserve the document's view and layout information when making semantic
   changes so manual placement survives.
 - Prefer automatic layout: do not add a `view` block, manual node positions,

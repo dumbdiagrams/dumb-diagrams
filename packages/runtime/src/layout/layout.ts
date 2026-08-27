@@ -353,6 +353,34 @@ function layoutVpcGroup(
   const azSize = stackSize(availabilityZones);
   const leftSize = stackSize(leftRail);
   const rightSize = stackSize(rightRail);
+
+  // Azure VNets commonly put an application/subnet boundary first and a
+  // vertical bank of Private Endpoint resources after it. Reusing the AWS
+  // VPC rail convention reversed that topology (direct resources on the
+  // left, child boundaries on the right), forcing every data path to double
+  // back across the application tier. Keep the Azure no-AZ composition in
+  // source/flow order: child boundaries on the left, endpoints on the right.
+  if (
+    group.type === "azure.vnet" &&
+    availabilityZones.length === 0 &&
+    leftRail.length > 0 &&
+    rightRail.length > 0
+  ) {
+    const endpointOffset = leftRail.length > 1 ? 72 : 0;
+    const contentH = Math.max(leftSize.h + endpointOffset, rightSize.h, 40);
+    const resourceX = rightSize.w + azureVnetRailGap(doc, group);
+    const contentW = Math.max(
+      LAYOUT_METRICS.minVpcContentWidth,
+      resourceX + leftSize.w,
+    );
+    placeStack(state, rightRail, 0, 0, doc);
+    placeStack(state, leftRail, resourceX, endpointOffset, doc);
+    const w = contentW + style.padding * 2;
+    const h = contentH + style.headerHeight + style.padding * 2;
+    storeGroupGeom(state, group, 0, 0, w, h);
+    return { w, h };
+  }
+
   const contentH = Math.max(azSize.h, leftSize.h, rightSize.h, 40);
   const hasAzs = availabilityZones.length > 0;
   const azX = leftRail.length ? leftSize.w + H_GAP : 0;
@@ -371,6 +399,32 @@ function layoutVpcGroup(
   const h = contentH + style.headerHeight + style.padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
+}
+
+function azureVnetRailGap(doc: DiagramDocument, group: Group): number {
+  const ownerByResource = new Map<ID, ID>();
+  const collect = (id: ID, owner: ID): void => {
+    const resource = getResource(doc, id);
+    if (resource) {
+      ownerByResource.set(id, owner);
+      return;
+    }
+    const child = getGroup(doc, id);
+    if (!child) return;
+    for (const childId of child.children) collect(childId, owner);
+  };
+  for (const childId of group.children) collect(childId, childId);
+
+  let gap: number = H_GAP;
+  for (const edge of doc.edges) {
+    const sourceOwner = ownerByResource.get(edge.source);
+    const targetOwner = ownerByResource.get(edge.target);
+    if (!sourceOwner || !targetOwner || sourceOwner === targetOwner) continue;
+    const labelWidth = edge.label ? estimateTextWidth(edge.label, 11) : 0;
+    const badgeWidth = edge.step === undefined ? 0 : GRAMMAR.badgeRadius * 2 + 16;
+    gap = Math.max(gap, labelWidth + badgeWidth + 40);
+  }
+  return Math.ceil(gap / GRAMMAR.grid) * GRAMMAR.grid;
 }
 
 function layoutAzGroup(
@@ -447,6 +501,52 @@ function layoutLogicalGroup(
   // axis instead, which keeps fan-out tiers compact and avoids implying that
   // the siblings call one another.
   const horizontal = doc.flow === "lr" && hasHorizontalChildFlow(doc, group);
+  const connectorLane = horizontal ? horizontalConnectorLane(doc, group) : 0;
+  const supporting = horizontal
+    ? children.filter((child) => child.resource && isSupportingSink(doc, child.id))
+    : [];
+  const mainChildren = supporting.length
+    ? children.filter((child) => !supporting.includes(child))
+    : children;
+  if (supporting.length && mainChildren.length) {
+    const mainGaps = mainChildren.slice(1).map((child, index) =>
+      horizontalChildGap(doc, mainChildren[index]!, child, state)
+    );
+    const mainW = mainChildren.reduce(
+      (width, item, index) => width + item.w + (index > 0 ? mainGaps[index - 1]! : 0),
+      0,
+    );
+    const mainH = connectorLane + Math.max(60, ...mainChildren.map((item) => item.h));
+    const supportW = supporting.reduce(
+      (width, item, index) => width + item.w + (index > 0 ? H_GAP : 0),
+      0,
+    );
+    const supportH = Math.max(...supporting.map((item) => item.h));
+    const contentW = Math.max(120, groupLabelContentWidth(group, style), mainW, supportW);
+    const contentH = mainH + V_GAP + supportH;
+
+    let x = 0;
+    for (const [index, item] of mainChildren.entries()) {
+      placeLayoutChild(
+        state,
+        item,
+        x,
+        connectorLane + (mainH - connectorLane - item.h) / 2,
+        doc,
+      );
+      x += item.w + (mainGaps[index] ?? 0);
+    }
+    x = (contentW - supportW) / 2;
+    for (const item of supporting) {
+      placeLayoutChild(state, item, x, mainH + V_GAP, doc);
+      x += item.w + H_GAP;
+    }
+
+    const w = contentW + style.padding * 2;
+    const h = contentH + style.headerHeight + style.padding * 2;
+    storeGroupGeom(state, group, 0, 0, w, h);
+    return { w, h };
+  }
   const childGaps = horizontal
     ? children.slice(1).map((child, index) =>
         horizontalChildGap(doc, children[index]!, child, state)
@@ -463,7 +563,7 @@ function layoutLogicalGroup(
       )
     : Math.max(120, groupLabelContentWidth(group, style), Math.max(0, ...children.map((item) => item.w)));
   const contentH = horizontal
-    ? Math.max(60, Math.max(0, ...children.map((item) => item.h)))
+    ? connectorLane + Math.max(60, Math.max(0, ...children.map((item) => item.h)))
     : Math.max(
         60,
         children.reduce(
@@ -475,7 +575,9 @@ function layoutLogicalGroup(
   let cursor = 0;
   for (const [index, item] of children.entries()) {
     const x = horizontal ? cursor : (contentW - item.w) / 2;
-    const y = horizontal ? (contentH - item.h) / 2 : cursor;
+    const y = horizontal
+      ? connectorLane + (contentH - connectorLane - item.h) / 2
+      : cursor;
     placeLayoutChild(state, item, x, y, doc);
     cursor += (horizontal ? item.w : item.h) +
       (horizontal ? childGaps[index] ?? 0 : V_GAP);
@@ -485,6 +587,39 @@ function layoutLogicalGroup(
   const h = Math.max(contentH, 60) + style.headerHeight + style.padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
+}
+
+function isSupportingSink(doc: DiagramDocument, id: ID): boolean {
+  const incident = doc.edges.filter((edge) => edge.source === id || edge.target === id);
+  return incident.length > 0 && incident.every((edge) =>
+    edge.target === id && edge.style === "dashed"
+  );
+}
+
+function horizontalConnectorLane(doc: DiagramDocument, group: Group): number {
+  const ownerByResource = new Map<ID, ID>();
+  const collect = (id: ID, owner: ID): void => {
+    const resource = getResource(doc, id);
+    if (resource) {
+      ownerByResource.set(id, owner);
+      return;
+    }
+    const childGroup = getGroup(doc, id);
+    if (!childGroup) return;
+    for (const childId of childGroup.children) collect(childId, owner);
+  };
+  for (const childId of group.children) collect(childId, childId);
+
+  const hasDecoratedInternalConnector = doc.edges.some((edge) => {
+    if (!edge.label && edge.step === undefined) return false;
+    const sourceOwner = ownerByResource.get(edge.source);
+    const targetOwner = ownerByResource.get(edge.target);
+    return Boolean(sourceOwner && targetOwner && sourceOwner !== targetOwner);
+  });
+  // A label is 14px high and automatic badges use a 10px radius. Forty-eight
+  // pixels leaves a real lane between the boundary heading and the icon row,
+  // including the renderer's content clearances on both sides.
+  return hasDecoratedInternalConnector ? 48 : 0;
 }
 
 /**
@@ -513,7 +648,8 @@ function horizontalChildGap(
   if (!leftNode || !rightNode) return H_GAP;
 
   const labelWidth = Math.max(16, estimateTextWidth(edge.label, 11));
-  const requiredIconGap = labelWidth + 16;
+  const badgeWidth = edge.step === undefined ? 0 : GRAMMAR.badgeRadius * 2 + 16;
+  const requiredIconGap = labelWidth + badgeWidth + 16;
   const iconGapAtBaseline =
     left.w - (leftNode.icon.x + leftNode.icon.w) +
     H_GAP +

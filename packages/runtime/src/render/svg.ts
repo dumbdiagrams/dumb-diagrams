@@ -214,7 +214,10 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   let label = "";
   if (edge.label && edge.points.length >= 2) {
     const point = edge.labelPoint ?? edge.points[Math.floor(edge.points.length / 2)]!;
-    label = `<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${color}">${escapeXml(edge.label)}</text>`;
+    const background = edge.labelRect
+      ? `<rect class="edge-label-background" x="${edge.labelRect.x - 2}" y="${edge.labelRect.y - 1}" width="${edge.labelRect.w + 4}" height="${edge.labelRect.h + 2}" rx="3" fill="${GRAMMAR.canvasFill}" fill-opacity="0.94"/>`
+      : "";
+    label = `${background}<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${color}">${escapeXml(edge.label)}</text>`;
   }
 
   return `

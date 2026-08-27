@@ -85,6 +85,56 @@ test("keeps rendered arrow numbers readable in light and dark themes", async ({ 
   }
 });
 
+test("selects the owning connector when its numbered badge is clicked", async ({ page }) => {
+  await page.goto("/");
+
+  const edge = page.locator('[data-entity-kind="edge"][data-entity-id="e1"]');
+  const badge = page.locator('[data-edge-badge-hit="e1"]');
+  await expect(edge).toHaveCount(1);
+  await expect(edge).toHaveAttribute("aria-selected", "false");
+  await expect(badge).toHaveCount(1);
+  await badge.click();
+
+  await expect(edge).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("dialog", { name: "Connector", exact: true })).toHaveCount(1);
+});
+
+test("highlights the connector and badge together on badge hover", async ({ page }) => {
+  await page.goto("/");
+
+  const badge = page.locator('[data-edge-badge-hit="e1"]');
+  await expect(badge).toHaveCount(1);
+  await badge.hover();
+
+  await expect(page.locator('[data-hover-kind="edge"][data-hover-id="e1"]')).toHaveCount(1);
+  await expect(page.locator('[data-hover-kind="edge-badge"][data-hover-id="e1"]')).toHaveCount(1);
+});
+
+test("shows only the resolved connector hover when wide hit strokes overlap", async ({ page }) => {
+  await page.goto("/");
+
+  const edge = page.locator('[data-entity-kind="edge"][data-entity-id="e3"]');
+  const hover = page.locator(".hover-edge");
+  for (const point of await canvasPointsForE3(page)) {
+    await edge.dispatchEvent("pointermove", {
+      bubbles: true,
+      clientX: point.x,
+      clientY: point.y,
+    });
+    await page.waitForTimeout(20);
+    if (await hover.count()) break;
+  }
+
+  await expect(hover).toHaveCount(1);
+  const browserHitHighlights = await page.locator(".hit-edge").evaluateAll((elements) =>
+    elements.filter((element) => {
+      const stroke = getComputedStyle(element).stroke;
+      return stroke !== "none" && stroke !== "rgba(0, 0, 0, 0)" && stroke !== "transparent";
+    }).length
+  );
+  expect(browserHitHighlights).toBe(0);
+});
+
 test("highlights the nearest canvas target and edits a movable numbered edge badge", async ({ page }) => {
   await page.goto("/");
 
