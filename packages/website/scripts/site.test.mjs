@@ -111,9 +111,9 @@ test('landing page stays small and loads no third-party scripts by default', asy
   assert.doesNotMatch(html, /<script[^>]*src="https?:/);
   if (!analyticsConfig().measurementId && process.env.ENABLE_PARTYTOWN !== 'true') assert.doesNotMatch(html, /partytown/);
   // The optional consent UI and inline Partytown bootstrap add a bounded 3 KB.
-  // The homepage includes four curated prompt/source pairs, including the
-  // Azure example, so the base budget grows with the fourth pair.
-  const htmlBudget = analyticsConfig().measurementId ? 20_500 : 17_500;
+  // The homepage includes four curated prompt/source pairs plus the canonical
+  // hero journey's compact agent and Studio views.
+  const htmlBudget = analyticsConfig().measurementId ? 22_500 : 19_500;
   assert.ok(gzipSync(html).byteLength < htmlBudget, `homepage HTML under ${htmlBudget} bytes compressed`);
   let scriptBytes = 0;
   for (const [, script] of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {
@@ -219,8 +219,8 @@ test('terminal fallback contains the real CLI banner and runnable package comman
   const banner = html.match(/<pre\b[^>]*class="terminal-banner"[^>]*>([\s\S]*?)<\/pre>/)?.[1];
   assert.ok(banner);
   assert.equal(banner.replace(/<[^>]+>/g, ''), cli.banner(), 'the full CLI banner survives ANSI rendering');
-  assert.ok(banner.includes('color:rgb(248,162,63)'), 'CLI amber starting color');
-  assert.ok(banner.includes('color:rgb(36,64,104)'), 'CLI navy ending color');
+  assert.ok(banner.includes('color:rgb(247,152,44)'), 'CLI light orange starting color');
+  assert.ok(banner.includes('color:rgb(22,57,100)'), 'CLI navy ending color');
   assert.ok(plain.includes(cli.summary('Project ready').trim()));
   assert.ok(plain.indexOf('Creating diagram space') < plain.indexOf('Created my-system/diagrams/architecture.dgm'));
   assert.ok(plain.indexOf('Created my-system/CATALOG.json') < plain.indexOf('Project ready'));
@@ -228,15 +228,31 @@ test('terminal fallback contains the real CLI banner and runnable package comman
   assert.ok(html.includes('npm create dumb-diagrams@latest my-system'));
   assert.match(
     html,
-    /color:rgb\(248,162,63\)">npx create-dumb-diagrams@latest studio my-system\/diagrams<\/span>/,
+    /color:rgb\(247,152,44\)">npx create-dumb-diagrams@latest studio my-system\/diagrams<\/span>/,
     'next command uses the high-contrast CLI command color',
   );
   assert.match(html, /<div\b[^>]*class="terminal-controls"[^>]*hidden/, 'controls stay hidden without JavaScript');
   assert.doesNotMatch(html, /\x1b/);
 });
 
+test('hero journey preserves the canonical CLI, agent prompt, and Studio result', async () => {
+  const html = await readFile(join(dist, 'index.html'), 'utf8');
+  const prompt = await readFile(resolve(site, '../../examples/prompts/image-thumbnail-pipeline.md'), 'utf8');
+  const escapedPrompt = prompt.trimEnd().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+  assert.match(html, /data-hero-journey/);
+  assert.match(html, /Init project/);
+  assert.match(html, /Open with agent/);
+  assert.match(html, /See it in Studio/);
+  assert.match(html, /Initializing project…/);
+  assert.ok(html.includes(escapedPrompt), 'agent stage contains the canonical prompt');
+  assert.match(html, /data-terminal-final="true"/);
+  assert.match(html, /image-thumbnail-pipeline-preview\.svg/);
+  assert.match(html, /width="\d+" height="\d+" loading="lazy"/);
+  assert.match(html, /aria-live="polite"/);
+});
+
 test('ANSI conversion preserves CLI text while escaping markup', () => {
   assert.equal(ansiToHtml('<script>"&'), '&lt;script&gt;&quot;&amp;');
-  assert.equal(ansiToHtml('\x1b[38;2;36;64;104mnavy\x1b[0m plain'), '<span style="color:rgb(36,64,104)">navy</span> plain');
+  assert.equal(ansiToHtml('\x1b[38;2;22;57;100mnavy\x1b[0m plain'), '<span style="color:rgb(22,57,100)">navy</span> plain');
   assert.equal(ansiToHtml('\x1b[1mbold\x1b[22m normal'), '<span style="font-weight:700">bold</span> normal');
 });

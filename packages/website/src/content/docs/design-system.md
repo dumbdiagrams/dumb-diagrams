@@ -4,9 +4,9 @@ description: The typography, colors, and components shared by the website and St
 section: Under the hood
 order: 11
 ---
-The visual system uses a short palette: navy, orange, and restrained typography.
-The website uses open spacing; Studio keeps its controls compact so the diagram
-remains central. The two surfaces share the same brand while serving different
+The visual system uses four brand colors and restrained typography. The website
+uses open spacing; Studio keeps its controls compact so the diagram remains
+central. The two surfaces share the same brand while serving different
 purposes.
 
 ## One name, one wordmark
@@ -24,12 +24,14 @@ it. Both the site and Studio import this treatment from the same brand package.
 
 ## Navy first, orange for emphasis
 
-<div class="brand-swatches"><div class="swatch swatch-navy"><strong>Navy</strong><code>#244068</code></div><div class="swatch swatch-deep"><strong>Deep navy</strong><code>#183452</code></div><div class="swatch swatch-orange"><strong>Orange</strong><code>#e66231</code></div><div class="swatch swatch-paper"><strong>Paper</strong><code>#f7f6f2</code></div></div>
+<div class="brand-swatches"><div class="swatch swatch-navy"><strong>Primary navy</strong><code>#163964</code></div><div class="swatch swatch-deep"><strong>Navy shadow blue</strong><code>#112d51</code></div><div class="swatch swatch-orange-dark"><strong>Dark orange</strong><code>#f0531e</code></div><div class="swatch swatch-orange-light"><strong>Light orange</strong><code>#f7982c</code></div></div>
 
-Navy comes from the logo and carries the headings, primary actions, and dark
-sections. Orange marks accents such as a dot, selected tab, arrow, or
-focus indicator. Paper keeps reading comfortable. Small orange links use a
-darker shade so they stay readable; the bright logo color is for accents.
+Primary navy comes from the logo and carries headings, primary actions, and
+dark sections. Navy shadow blue supports depth and contrast in dark surfaces.
+Dark orange marks readable emphasis such as links and selected states. Light
+orange is the brighter accent for logo details, dots, arrows, and focus
+indicators. Neutral paper and ink colors support reading but are not brand
+colors.
 
 Studio has light and dark themes. The wordmark becomes light on dark surfaces,
 but its orange period stays. Cloud-provider icons keep their own colors.

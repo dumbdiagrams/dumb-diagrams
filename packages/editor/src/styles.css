@@ -29,7 +29,7 @@
   --canvas-tint: #ddd3c7;
   --accent: var(--brand-navy);
   --accent-strong: var(--brand-navy-deep);
-  --accent-soft: #e7eef7;
+  --accent-soft: var(--brand-navy-soft);
   /* Keep interaction feedback light blue, independent of the brand accent. */
   --highlight: #3154d4;
   --highlight-soft: #e5eaff;
@@ -176,7 +176,7 @@ body {
   padding: 0 16px;
   border: 0;
   border-radius: 9px;
-  background: #244d91;
+  background: var(--action-fill);
   color: #fff;
   font: inherit;
   font-weight: 700;
@@ -3417,12 +3417,12 @@ textarea:focus-visible {
   fill: var(--diagram-ink);
 }
 
-.diagram-svg svg path[stroke="#244068"] {
+.diagram-svg svg path[stroke="#163964"] {
   stroke: var(--diagram-edge);
 }
 
-.diagram-svg svg path[fill="#244068"],
-.diagram-svg svg circle[fill="#244068"] {
+.diagram-svg svg path[fill="#163964"],
+.diagram-svg svg circle[fill="#163964"] {
   fill: var(--diagram-edge);
 }
 

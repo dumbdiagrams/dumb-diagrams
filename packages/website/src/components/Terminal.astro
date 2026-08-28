@@ -19,7 +19,7 @@ const rest = lines.slice(13);
     <div class="terminal-log" aria-hidden="true">
       <div class="terminal-command"><span class="shell-prompt">you@MacBook projects %</span> <code data-terminal-command>{demo.command}</code><b class="terminal-cursor"></b></div>
       <pre class="terminal-banner" data-terminal-row data-at="1300" set:html={ansiToHtml(banner)} />
-      {rest.map((line, index) => <div class="terminal-row" data-terminal-row data-at={1700 + index * 100} set:html={ansiToHtml(line) || '&#8203;'} />)}
+      {rest.map((line, index) => <div class="terminal-row" data-terminal-row data-at={1700 + index * 100} data-terminal-final={index === rest.length - 1 ? 'true' : undefined} set:html={ansiToHtml(line) || '&#8203;'} />)}
     </div>
   </div>
   <div class="terminal-caption"><span>CAPTURED FROM THE CLI · EXAMPLE PATH</span></div>
@@ -38,6 +38,7 @@ const rest = lines.slice(13);
   .terminal-command code { white-space: pre-wrap; overflow-wrap: anywhere; }
   .terminal-banner { font: clamp(6px, 1.75cqi, 10px)/1.1 var(--mono); white-space: pre; margin: 0; }
   .terminal-row { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.7em; }
+  .terminal-row[data-terminal-final="true"] { margin-top: 8px; padding: 7px 9px; border-left: 2px solid var(--brand-orange); background: #f7982c1f; border-radius: 0 4px 4px 0; }
   .terminal-cursor { display: inline-block; width: 6px; height: 12px; background: #e2e2e7; margin-left: -5px; }
   .terminal-caption { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-top: 1px solid #252527; color: #a4a4ac; font: 8px var(--mono); letter-spacing: .035em; }
   .terminal-caption a:hover { color: white; }

@@ -12,12 +12,12 @@ export type BoundaryFill = "subtle" | "none";
 
 /** Curated connector colors keep authored diagrams portable and predictable. */
 export const EDGE_COLOR_VALUES: Record<EdgeColor, string> = {
-  graphite: "#244068",
+  graphite: "#163964",
   blue: "#526B8D",
   teal: "#0F766E",
   purple: "#7C3AED",
-  amber: "#F8A23F",
-  red: "#C94F2C",
+  amber: "#f7982c",
+  red: "#f0531e",
   green: "#2F855A",
 };
 

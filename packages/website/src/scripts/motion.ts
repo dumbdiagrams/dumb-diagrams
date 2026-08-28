@@ -64,6 +64,7 @@ document.querySelectorAll<HTMLDetailsElement>('.faq-list details').forEach(detai
 
 const terminal = document.querySelector<HTMLElement>('[data-terminal]');
 if (terminal) {
+  const terminalElement = terminal;
   const command = terminal.querySelector<HTMLElement>('[data-terminal-command]')!;
   const fullCommand = command.textContent || '';
   const rows = [...terminal.querySelectorAll<HTMLElement>('[data-terminal-row]')];
@@ -84,13 +85,15 @@ if (terminal) {
     frame = 0;
     previousTime = null;
   }
-  function finish(showBeginning = false) {
+  function finish(showBeginning = false, announce = false) {
     stopFrame();
     running = false;
     command.textContent = fullCommand;
     rows.forEach(row => { row.hidden = false; });
+    terminalElement.dataset.terminalComplete = 'true';
     pause.style.visibility = 'hidden';
     viewport.scrollTop = showBeginning ? 0 : viewport.scrollHeight;
+    if (announce) terminalElement.dispatchEvent(new CustomEvent('terminal:complete', { bubbles: true }));
   }
   function tick(time: number) {
     if (!running || userPaused || document.hidden) return;
@@ -106,7 +109,7 @@ if (terminal) {
       }
     });
     if (revealed) viewport.scrollTop = viewport.scrollHeight;
-    if (elapsed >= duration) finish();
+    if (elapsed >= duration) finish(false, true);
     else frame = requestAnimationFrame(tick);
   }
   function syncPlayback() {
@@ -117,6 +120,7 @@ if (terminal) {
   }
   function play() {
     finish(true);
+    delete terminalElement.dataset.terminalComplete;
     if (reduced.matches) return;
     elapsed = 0;
     running = true;
@@ -128,7 +132,7 @@ if (terminal) {
   }
   function preferenceChanged() {
     controls.hidden = reduced.matches;
-    if (reduced.matches) finish(true);
+    if (reduced.matches) finish(true, true);
     else play();
   }
   function pauseForReading() {

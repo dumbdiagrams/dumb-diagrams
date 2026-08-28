@@ -31,12 +31,12 @@ const COMPACT_LOGO = [
   "═╩╝╚═╝╩ ╩╚═╝  ═╩╝╩╩ ╩╚═╝╩╚═╩ ╩╩ ╩╚═╝",
 ] as const;
 
-// Core brand colors sampled from packages/editor/public/logo_dumbdiagrams.png.
+// Core Dumb Diagrams brand colors.
 const PALETTE = {
-  amber: [248, 162, 63],
-  orange: [230, 98, 49],
-  navy: [36, 64, 104],
-  command: [248, 162, 63],
+  amber: [247, 152, 44],
+  orange: [240, 83, 30],
+  navy: [22, 57, 100],
+  command: [247, 152, 44],
   red: [255, 99, 112],
 } as const;
 

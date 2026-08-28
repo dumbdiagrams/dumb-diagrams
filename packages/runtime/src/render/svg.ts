@@ -258,11 +258,11 @@ ${groupStart}
   if (style === "code") {
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#183452" stroke="#244068" stroke-width="1.5"/>
-  <rect x="${x}" y="${y}" width="${w}" height="28" rx="10" fill="#244068"/>
-  <rect x="${x}" y="${y + 18}" width="${w}" height="10" fill="#244068"/>
-  <circle cx="${x + 14}" cy="${y + 14}" r="4" fill="#E66231"/>
-  <circle cx="${x + 28}" cy="${y + 14}" r="4" fill="#F8A23F"/>
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#112d51" stroke="#163964" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="${w}" height="28" rx="10" fill="#163964"/>
+  <rect x="${x}" y="${y + 18}" width="${w}" height="10" fill="#163964"/>
+  <circle cx="${x + 14}" cy="${y + 14}" r="4" fill="#f0531e"/>
+  <circle cx="${x + 28}" cy="${y + 14}" r="4" fill="#f7982c"/>
   <circle cx="${x + 42}" cy="${y + 14}" r="4" fill="#7BC4A0"/>
   ${renderAnnotationLines(annotation.text, x + 14, y + 50, Math.max(12, Math.floor((w - 28) / 8.1)), 17, 10, "#d1fae5", "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace")}
 </g>`;
@@ -271,11 +271,11 @@ ${groupStart}
   if (style === "callout") {
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#FBE4DA" stroke="#E3A489" stroke-width="1.5"/>
-  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="#C94F2C"/>
-  <circle cx="${x + 28}" cy="${y + 28}" r="12" fill="#C94F2C"/>
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#fde3db" stroke="#f8b29a" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="#f0531e"/>
+  <circle cx="${x + 28}" cy="${y + 28}" r="12" fill="#f0531e"/>
   <text x="${x + 28}" y="${y + 33}" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">i</text>
-  ${renderAnnotationLines(annotation.text, x + 50, y + 27, Math.max(12, Math.floor((w - 64) / 7.1)), 18, 4, "#244068")}
+  ${renderAnnotationLines(annotation.text, x + 50, y + 27, Math.max(12, Math.floor((w - 64) / 7.1)), 18, 4, "#163964")}
 </g>`;
   }
 
@@ -299,10 +299,10 @@ ${groupStart}
 
   return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#FFF0D5" stroke="#F8A23F" stroke-width="1.5"/>
-  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="#F7D391"/>
-  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="#F8A23F" stroke-width="1"/>
-  ${renderAnnotationLines(annotation.text, x + 14, y + 25, Math.max(12, Math.floor((w - 28) / 7.1)), 18, 5, "#244068")}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#feefdd" stroke="#f7982c" stroke-width="1.5"/>
+  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="#fbc68b"/>
+  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="#f7982c" stroke-width="1"/>
+  ${renderAnnotationLines(annotation.text, x + 14, y + 25, Math.max(12, Math.floor((w - 28) / 7.1)), 18, 5, "#163964")}
 </g>`;
 }
 

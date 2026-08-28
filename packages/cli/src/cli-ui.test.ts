@@ -18,14 +18,14 @@ describe("CLI presentation", () => {
 
   it("uses the logo palette when color is enabled", () => {
     const ui = createCliUi({ color: true, columns: 100 });
-    expect(ui.banner()).toContain("\u001B[38;2;248;162;63m");
-    expect(ui.banner()).toContain("\u001B[38;2;36;64;104m");
-    expect(ui.brand()).toContain("\u001B[38;2;230;98;49m");
+    expect(ui.banner()).toContain("\u001B[38;2;247;152;44m");
+    expect(ui.banner()).toContain("\u001B[38;2;22;57;100m");
+    expect(ui.brand()).toContain("\u001B[38;2;240;83;30m");
   });
 
-  it("uses a high-contrast amber for commands", () => {
+  it("uses a high-contrast light orange for commands", () => {
     expect(createCliUi({ color: true }).command("npx create-dumb-diagrams@latest studio diagrams"))
-      .toBe("\u001B[38;2;248;162;63mnpx create-dumb-diagrams@latest studio diagrams\u001B[0m");
+      .toBe("\u001B[38;2;247;152;44mnpx create-dumb-diagrams@latest studio diagrams\u001B[0m");
   });
 
   it("uses consistent status glyphs and indentation", () => {

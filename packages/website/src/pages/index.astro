@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Install from '../components/Install.astro';
-import Terminal from '../components/Terminal.astro';
+import HeroJourney from '../components/HeroJourney.astro';
 import Examples from '../components/Examples.astro';
 import { Image } from 'astro:assets';
 import cloudLogo from '../assets/logo_dumbdiagrams_faq.png';
@@ -27,7 +27,7 @@ const structuredData = {
           <div class="hero-description"><p>Architecture diagrams as code, built for an LLM-first workflow. Draft with a coding agent, refine locally in Studio, and keep your <code>.dgm</code> source in Git.</p></div>
           <div class="hero-start"><Install /></div>
         </div>
-        <div class="hero-terminal"><Terminal /></div>
+        <div class="hero-terminal"><HeroJourney /></div>
       </div>
       <div class="hero-footnote">
         <p class="agent-note">Bring your own agent: Codex, Claude Code, Cursor, Antigravity, or an open-source alternative. Set it up separately.</p>

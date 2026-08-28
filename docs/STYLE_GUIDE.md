@@ -11,9 +11,13 @@ The logo reads **dumbdiagrams.**: lowercase, no space, with an orange full stop.
 names, write **Dumb Diagrams**. The editor is **Dumb Diagrams Studio**, or Studio
 when the context is clear. Package names and CLI commands stay unchanged.
 
-Use the existing illustrated logo beside the wordmark where space allows. Do
-not stretch it, recolor provider icons to match it, or substitute an icon from a
-UI library. Leave at least half the wordmark's height clear around the lockup.
+Use the supplied illustrated logo beside the wordmark where space allows. The
+transparent high-resolution source is kept at
+`packages/brand/assets/logo-dumb-diagrams-source.png`;
+the smaller PNGs in the Studio and website public directories are derivatives
+of that source. Do not stretch the derivatives, recolor provider icons to match
+them, or substitute an icon from a UI library. Leave at least half the
+wordmark's height clear around the lockup.
 
 The implementation lives in `packages/brand/styles.css`, consumed by both apps
 through `@dumb-diagrams/brand/styles.css`. Do not recreate the weights or tracking
@@ -52,27 +56,29 @@ instructions into faint, tiny captions.
 
 ## Color
 
-The logo is the source of the core palette. Shared values belong in the brand
-package; app styles should alias them into semantic roles.
+The supplied logo is the source of the four core palette values. Shared values
+belong in the brand package; app styles should alias them into semantic roles.
+Soft and deep supporting values are derived from those core colors in CSS.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--brand-navy` | `#244068` | Main identity, headings, actions, diagram UI ink |
-| `--brand-navy-deep` | `#183452` | Prompt panels, dark editorial sections, action hover |
-| `--brand-navy-soft` | `#e7eef7` | Quiet selected states and supporting surfaces |
-| `--brand-coral` | `#e66231` | Orange wordmark dot, small highlights and indicators |
-| `--brand-coral-deep` | `#c94f2c` | Existing Studio danger role; use its semantic token |
-| `--brand-coral-soft` | `#fbe4da` | Supporting warm tint |
-| `--brand-orange` | `#f8a23f` | Amber from the illustration; secondary accent |
-| `--brand-orange-deep` | `#a96816` | Supporting darker amber |
-| `--brand-orange-soft` | `#fff0d5` | Supporting amber tint |
+| `--brand-navy` | `#163964` | Primary navy for identity, headings, actions, and diagram UI ink |
+| `--brand-navy-deep` | `#112d51` | Navy shadow for prompt panels, dark editorial sections, and action hover |
+| `--brand-navy-soft` | Derived from `#163964` | Quiet selected states and supporting surfaces |
+| `--brand-coral` | `#f0531e` | Dark orange for the wordmark dot, emphasis, and indicators |
+| `--brand-coral-deep` | Derived from `#f0531e` and `#112d51` | Studio danger role; use its semantic token |
+| `--brand-coral-soft` | Derived from `#f0531e` | Supporting warm tint |
+| `--brand-orange` | `#f7982c` | Light orange accent for secondary emphasis and highlights |
+| `--brand-orange-deep` | Derived from `#f7982c` and `#112d51` | Supporting darker light-orange accent |
+| `--brand-orange-soft` | Derived from `#f7982c` | Supporting amber tint |
 | `--brand-paper` | `#f7f6f2` | Website canvas |
 
-The website uses `#586a7f` for secondary text and `#d3dbe3` for rules. For small
-orange links on paper, it uses the darker `#a63f20`: the bright logo orange is
-not the body-link color. Orange should punctuate a predominantly navy-and-paper
-composition, not fill every heading or large section. Provider colors remain
-part of the diagrams; they are not interface colors.
+The website uses a separate muted value for secondary text and rules. For small
+orange links on paper, use a sufficiently dark semantic orange for readable
+contrast rather than the bright logo orange. Orange should punctuate a
+predominantly navy-and-paper composition, not fill every heading or large
+section. Provider colors remain part of the diagrams; they are not interface
+colors.
 
 Studio retains its existing warm light surfaces and dark navy surfaces. Its
 semantic tokens (`--ink`, `--surface`, `--action-fill`, `--focus`, and others)

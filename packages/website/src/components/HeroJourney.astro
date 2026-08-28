@@ -1,0 +1,123 @@
+---
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Image } from 'astro:assets';
+import Terminal from './Terminal.astro';
+import WindowControls from './WindowControls.astro';
+import logo from '../assets/logo_dumbdiagrams_highres.png';
+import { url } from '../lib/site';
+import '../styles/hero-journey.css';
+
+function readExample(relativePath: string) {
+  const candidates = [resolve(relativePath), resolve('../..', relativePath)];
+  const match = candidates.find(path => existsSync(path));
+  if (!match) throw new Error(`Could not find ${relativePath}`);
+  return readFileSync(match, 'utf8').trimEnd();
+}
+
+const prompt = readExample('examples/prompts/image-thumbnail-pipeline.md');
+const source = readExample('examples/diagrams/image-thumbnail-pipeline.dgm');
+const preview = readFileSync(resolve('public/diagrams/image-thumbnail-pipeline-preview.svg'), 'utf8');
+const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
+if (!dimensions) throw new Error('Missing Image thumbnail pipeline preview dimensions');
+const previewWidth = Number(dimensions[1]);
+const previewHeight = Number(dimensions[2]);
+---
+
+<div class="hero-journey" data-hero-journey>
+  <div class="journey-stage-nav" role="tablist" aria-label="Workflow stages">
+    <button id="journey-stage-tab-0" type="button" role="tab" aria-selected="true" aria-controls="journey-stage-cli" data-stage-tab="0">
+      <span class="journey-stage-number">01</span><span>Init project</span>
+    </button>
+    <span class="journey-stage-line" aria-hidden="true"></span>
+    <button id="journey-stage-tab-1" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-editor" data-stage-tab="1" disabled>
+      <span class="journey-stage-number">02</span><span>Open with agent</span>
+    </button>
+    <span class="journey-stage-line" aria-hidden="true"></span>
+    <button id="journey-stage-tab-2" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-studio" data-stage-tab="2" disabled>
+      <span class="journey-stage-number">03</span><span>See it in Studio</span>
+    </button>
+  </div>
+
+  <div class="journey-window">
+    <section id="journey-stage-cli" class="journey-stage-panel" role="tabpanel" aria-labelledby="journey-stage-tab-0" data-stage-panel="0" data-active>
+      <Terminal />
+    </section>
+
+    <section id="journey-stage-editor" class="journey-stage-panel" role="tabpanel" aria-labelledby="journey-stage-tab-1" data-stage-panel="1" aria-hidden="true">
+      <div class="cursor-window" aria-label="Cursor-style coding agent preview">
+        <div class="cursor-titlebar">
+          <WindowControls />
+          <span class="cursor-window-title">my-system</span>
+          <span class="cursor-title-actions" aria-hidden="true">⌘  P&nbsp;&nbsp; · &nbsp;&nbsp;•••</span>
+        </div>
+        <div class="cursor-body">
+          <div class="cursor-activity" aria-hidden="true"><span class="is-active">▱</span><span>⌕</span><span>⑂</span><span>▷</span><span>▦</span><i></i><span>◎</span><span>⚙</span></div>
+          <aside class="cursor-explorer" aria-label="Project explorer">
+            <div class="cursor-pane-label">EXPLORER <span aria-hidden="true">•••</span></div>
+            <div class="cursor-project"><span aria-hidden="true">⌄</span> MY-SYSTEM</div>
+            <ul>
+              <li class="cursor-folder"><span aria-hidden="true">⌄</span><b aria-hidden="true">▰</b> diagrams</li>
+              <li class="cursor-file cursor-selected"><span aria-hidden="true">·</span><b aria-hidden="true">◇</b> architecture.dgm</li>
+              <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">M</b> README.md</li>
+              <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">◎</b> AGENTS.md</li>
+              <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">{}</b> CATALOG.json</li>
+            </ul>
+            <div class="cursor-explorer-footer"><span>⌄</span> OUTLINE</div>
+            <div class="cursor-explorer-footer"><span>⌄</span> TIMELINE</div>
+          </aside>
+          <div class="cursor-workbench" aria-label="Editor workspace">
+            <div class="cursor-workbench-mark" aria-hidden="true">◇</div>
+            <div class="cursor-shortcuts" aria-hidden="true"><span>Show Terminal</span><kbd>⌘ J</kbd><span>Search Files</span><kbd>⌘ P</kbd><span>Open Agent</span><kbd>⇧⌘ L</kbd></div>
+          </div>
+          <div class="cursor-editor" aria-label="Agent workspace">
+            <div class="cursor-tabs"><span class="cursor-tab-active">New Agent <b aria-hidden="true">×</b></span><span>architecture.dgm <b aria-hidden="true">×</b></span><span aria-hidden="true">＋</span></div>
+            <div class="cursor-agent-heading"><span class="cursor-agent-icon" aria-hidden="true">⌁</span><span>New Agent</span><span class="cursor-agent-mode">Agent⌄ &nbsp; auto-smart⌄</span></div>
+            <div class="cursor-agent-card">
+              <div class="cursor-agent-label">IMAGE THUMBNAIL PIPELINE <span aria-hidden="true">· drafting</span></div>
+              <pre class="cursor-prompt" data-editor-prompt aria-label="Prompt sent to the coding agent">{prompt}<b class="cursor-prompt-caret" aria-hidden="true"></b></pre>
+              <div class="cursor-agent-tools"><span>＋ Add context</span><span>⌘ ↵ Send</span></div>
+            </div>
+            <div class="cursor-agent-output" aria-hidden="true"><span class="cursor-output-dot"></span><span>Agent will write the diagram source in your project</span></div>
+          </div>
+        </div>
+        <div class="cursor-statusbar"><span>⌁ main*</span><span>Ln 1, Col 1</span><span>Spaces: 2</span><span>UTF-8</span><span>Cursor Tab</span></div>
+      </div>
+    </section>
+
+    <section id="journey-stage-studio" class="journey-stage-panel" role="tabpanel" aria-labelledby="journey-stage-tab-2" data-stage-panel="2" aria-hidden="true">
+      <div class="studio-window" aria-label="Dumb Diagrams Studio preview">
+        <div class="studio-titlebar">
+          <span class="studio-brand"><Image src={logo} width={28} alt="" loading="lazy" decoding="async" /> <span class="dd-wordmark">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span></span>
+          <span class="studio-tabs"><span>Async Docs</span><span class="studio-tab-active">Image thumbnail pipeline</span><span aria-hidden="true">＋</span></span>
+          <span class="studio-title-actions" aria-hidden="true">☼ &nbsp;? Help</span>
+        </div>
+        <div class="studio-toolbar"><strong>Image thumbnail pipeline</strong><span class="studio-file-name">image-thumbnail-pipeline.dgm</span><span class="studio-toolbar-spacer"></span><span class="studio-edit-tools"><span>⌁ Auto-fix</span><span>▦ Snap to grid</span></span><span class="studio-valid">● Valid</span><span class="studio-export">↓ Export⌄</span></div>
+        <div class="studio-body">
+          <div class="studio-tools" aria-label="Studio editing tools"><span class="is-active" title="Select">↖</span><span title="Boundaries">▭</span><span title="Resources">▦</span><span title="Text">T</span><span title="Notes">▤</span><span title="Styles">⌁</span><span title="Layers">▱</span><i></i><span class="studio-source-tool" title="Source">‹›</span></div>
+          <aside class="studio-source" aria-label="Diagram source">
+            <div class="studio-source-head"><strong>Source</strong><span aria-hidden="true">×</span></div>
+            <div class="studio-source-actions"><span>Format</span><span>Copy</span><span>Reset example</span></div>
+            <pre class="studio-code"><code>{source}</code></pre>
+          </aside>
+          <div class="studio-canvas" aria-label="Rendered image thumbnail pipeline diagram">
+            <div class="studio-canvas-grid"></div>
+            <div class="studio-canvas-label">Image thumbnail pipeline <span>·</span> automatic layout</div>
+            <img src={url('diagrams/image-thumbnail-pipeline-preview.svg')} alt="Rendered AWS image thumbnail pipeline diagram" width={previewWidth} height={previewHeight} loading="lazy" decoding="async" />
+            <div class="studio-zoom" aria-hidden="true"><span>⌗</span><span>100%</span><span>−</span><span>＋</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="journey-action-row">
+    <p class="journey-status" data-journey-status aria-live="polite">Running the CLI… the next step unlocks when the project is ready.</p>
+    <button type="button" class="journey-next" data-next-step disabled><span class="journey-next-step" data-next-step-number>STEP 01</span><span data-next-label>Initializing project…</span><span class="journey-next-arrow" aria-hidden="true">→</span></button>
+  </div>
+  <noscript><p class="journey-noscript">Follow the complete workflow above: initialize a project, ask your coding agent to draft the diagram, then refine the result in Studio.</p></noscript>
+</div>
+
+<script>
+  import '../scripts/heroJourney';
+</script>

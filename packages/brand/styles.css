@@ -6,15 +6,15 @@
 :root {
   --font-brand: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
   --font-code: 'IBM Plex Mono', ui-monospace, monospace;
-  --brand-navy: #244068;
-  --brand-navy-deep: #183452;
-  --brand-navy-soft: #e7eef7;
-  --brand-coral: #e66231;
-  --brand-coral-deep: #c94f2c;
-  --brand-coral-soft: #fbe4da;
-  --brand-orange: #f8a23f;
-  --brand-orange-deep: #a96816;
-  --brand-orange-soft: #fff0d5;
+  --brand-navy: #163964;
+  --brand-navy-deep: #112d51;
+  --brand-navy-soft: color-mix(in srgb, var(--brand-navy) 12%, white);
+  --brand-coral: #f0531e;
+  --brand-coral-deep: color-mix(in srgb, var(--brand-coral) 78%, var(--brand-navy-deep));
+  --brand-coral-soft: color-mix(in srgb, var(--brand-coral) 16%, white);
+  --brand-orange: #f7982c;
+  --brand-orange-deep: color-mix(in srgb, var(--brand-orange) 78%, var(--brand-navy-deep));
+  --brand-orange-soft: color-mix(in srgb, var(--brand-orange) 16%, white);
   --brand-paper: #f7f6f2;
   --brand-wordmark-color: var(--brand-navy);
 }

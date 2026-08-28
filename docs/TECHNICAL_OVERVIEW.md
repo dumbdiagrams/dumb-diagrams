@@ -656,8 +656,19 @@ the same would make the result worse:
 | Asset | Current format | Why |
 | --- | --- | --- |
 | Provider and group catalog icons | SVG | They are small vector symbols, need to remain sharp at different display sizes, and are sometimes inlined into portable SVG exports |
-| Dumb Diagrams branding | Optimized PNG, plus a small PNG favicon | The logo is used in the app shell and README; keeping a compact PNG makes the standalone CLI and static deployment predictable |
+| Dumb Diagrams branding | Canonical transparent PNG plus optimized PNG derivatives and a small PNG favicon | The logo is used in the app shell, website, and README; keeping compact named derivatives makes the standalone CLI and static deployment predictable |
 | User-embedded diagram assets | Sanitized SVG inside `.dgm` | Embedded assets are part of the document and need to travel with it; the runtime limits their size and removes unsafe SVG content before rendering |
+
+The supplied high-resolution logo is stored as the canonical source at
+`packages/brand/assets/logo-dumb-diagrams-source.png`. The checked-in, stable
+consumer derivatives are kept at
+`packages/editor/public/logo_dumbdiagrams.png`,
+`packages/editor/public/favicon.png`,
+`packages/website/src/assets/logo_dumbdiagrams_faq.png`, and
+`packages/website/src/assets/logo_dumbdiagrams_highres.png`. The website build
+also copies the compact Studio assets to ignored `public/` outputs. Each file is
+intentionally sized for its app-shell or documentation surface rather than
+reused at source dimensions.
 
 The catalog’s PNG files are upstream inputs, not browser payloads. The generated
 manifest selects the reviewed SVG variants and the staging script copies only
