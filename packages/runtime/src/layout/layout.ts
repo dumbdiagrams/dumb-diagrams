@@ -853,40 +853,21 @@ function measureResource(
     (roleLines.length ? roleLines.length * GRAMMAR.labelLineHeight + 6 : 0) +
     GRAMMAR.labelPad;
   const labelPosition = resource.label.position ?? "bottom";
-  const verticalLabel = labelPosition === "top" || labelPosition === "bottom";
   const gap = 4;
-  const w = verticalLabel
-    ? Math.max(iconSize, labelWidth) + 16
-    : iconSize + labelWidth + gap + 16;
-  const h = verticalLabel
-    ? iconSize + labelHeight
-    : Math.max(iconSize, labelHeight);
-  const icon: Rect = verticalLabel
-    ? {
-        x: Math.round((w - iconSize) / 2),
-        y: labelPosition === "top" ? labelHeight + gap : 0,
-        w: iconSize,
-        h: iconSize,
-      }
-    : {
-        x: labelPosition === "left" ? labelWidth + gap + 8 : 8,
-        y: Math.round((h - iconSize) / 2),
-        w: iconSize,
-        h: iconSize,
-      };
-  const label: Rect = verticalLabel
-    ? {
-        x: (w - labelWidth) / 2,
-        y: labelPosition === "top" ? 0 : iconSize + gap,
-        w: labelWidth,
-        h: labelHeight,
-      }
-    : {
-        x: labelPosition === "left" ? 8 : iconSize + gap + 8,
-        y: Math.round((h - labelHeight) / 2),
-        w: labelWidth,
-        h: labelHeight,
-      };
+  const w = Math.max(iconSize, labelWidth) + 16;
+  const h = iconSize + labelHeight;
+  const icon: Rect = {
+    x: Math.round((w - iconSize) / 2),
+    y: labelPosition === "top" ? labelHeight + gap : 0,
+    w: iconSize,
+    h: iconSize,
+  };
+  const label: Rect = {
+    x: (w - labelWidth) / 2,
+    y: labelPosition === "top" ? 0 : iconSize + gap,
+    w: labelWidth,
+    h: labelHeight,
+  };
   const obstacle: Rect = {
     x: 0,
     y: 0,
@@ -968,16 +949,15 @@ function storeGroupGeom(
   const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
   const bounds: Rect = { x, y, w, h };
   const labelPosition = group.labelPosition ?? "top-left";
-  const bottom = labelPosition.startsWith("bottom");
   const header: Rect = {
     x,
-    y: bottom ? y + h - style.headerHeight : y,
+    y,
     w,
     h: style.headerHeight,
   };
   const content: Rect = {
     x: x + style.padding,
-    y: y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
+    y: y + style.headerHeight + style.padding / 2,
     w: w - style.padding * 2,
     h: h - style.headerHeight - style.padding * 1.5,
   };
@@ -985,7 +965,7 @@ function storeGroupGeom(
   const labelW = Math.min(w, Math.max(80, style.iconSize + 12 + textW + 12));
   const labelRect: Rect = {
     x: labelPosition.endsWith("right") ? x + w - labelW : x,
-    y: bottom ? header.y - 10 : header.y,
+    y: header.y,
     w: labelW,
     h: style.headerHeight + 10,
   };
@@ -1114,17 +1094,16 @@ function isSubnetGroup(group: Group): boolean {
 function resizeGroupGeom(geom: GroupGeom, w: number, h: number): void {
   const style = GROUP_STYLES[geom.kind] ?? GROUP_STYLES.logical;
   const labelPosition = geom.labelPosition ?? "top-left";
-  const bottom = labelPosition.startsWith("bottom");
   geom.bounds = { ...geom.bounds, w, h };
   geom.header = {
     x: geom.bounds.x,
-    y: bottom ? geom.bounds.y + h - style.headerHeight : geom.bounds.y,
+    y: geom.bounds.y,
     w,
     h: style.headerHeight,
   };
   geom.content = {
     x: geom.bounds.x + style.padding,
-    y: geom.bounds.y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
+    y: geom.bounds.y + style.headerHeight + style.padding / 2,
     w: Math.max(24, w - style.padding * 2),
     h: Math.max(24, h - style.headerHeight - style.padding * 1.5),
   };
@@ -1132,7 +1111,7 @@ function resizeGroupGeom(geom: GroupGeom, w: number, h: number): void {
     geom.labelRect = {
       ...geom.labelRect,
       x: labelPosition.endsWith("right") ? geom.bounds.x + w - geom.labelRect.w : geom.bounds.x,
-      y: bottom ? geom.header.y - 10 : geom.header.y,
+      y: geom.header.y,
     };
   }
 }
@@ -1225,24 +1204,23 @@ function applyPinnedViewOverrides(
     if (place.h) group.bounds.h = Math.max(48, snap(place.h));
     const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
     const labelPosition = group.labelPosition ?? "top-left";
-    const bottom = labelPosition.startsWith("bottom");
     group.header = {
       ...group.header,
       x: group.bounds.x,
-      y: bottom ? group.bounds.y + group.bounds.h - style.headerHeight : group.bounds.y,
+      y: group.bounds.y,
       w: group.bounds.w,
       h: style.headerHeight,
     };
     group.content = {
       x: group.bounds.x + style.padding,
-      y: group.bounds.y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
+      y: group.bounds.y + style.headerHeight + style.padding / 2,
       w: Math.max(24, group.bounds.w - style.padding * 2),
       h: Math.max(24, group.bounds.h - style.headerHeight - style.padding * 1.5),
     };
     const labelW = Math.min(group.bounds.w, group.labelRect?.w ?? 80);
     group.labelRect = {
       x: labelPosition.endsWith("right") ? group.bounds.x + group.bounds.w - labelW : group.bounds.x,
-      y: bottom ? group.header.y - 10 : group.header.y,
+      y: group.header.y,
       w: labelW,
       h: style.headerHeight + 10,
     };
@@ -1425,10 +1403,6 @@ function growGroupToContain(
   group.bounds.h += growthY;
   group.header.w += growthX;
   const labelPosition = group.labelPosition ?? model.labelPosition ?? "top-left";
-  if (labelPosition.startsWith("bottom")) {
-    group.header.y += growthY;
-    if (group.labelRect) group.labelRect.y += growthY;
-  }
   if (labelPosition.endsWith("right") && group.labelRect) group.labelRect.x += growthX;
   if (!model.parent) return;
   const parent = doc.groups.find((candidate) => candidate.id === model.parent);
@@ -1605,8 +1579,7 @@ function groupOffset(
     : { x: 0, y: 0 };
   return {
     x: parentOffset.x + group.bounds.x + style.padding,
-    y: parentOffset.y + group.bounds.y +
-      (parentGroup?.labelPosition?.startsWith("bottom") ? style.padding / 2 : style.headerHeight + style.padding / 2),
+    y: parentOffset.y + group.bounds.y + style.headerHeight + style.padding / 2,
   };
 }
 

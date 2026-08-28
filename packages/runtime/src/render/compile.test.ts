@@ -11,6 +11,7 @@ import type { LayoutResult } from "../core/index.js";
 import { compileDiagram, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
 import { parseDgm } from "../dsl/index.js";
+import { GROUP_STYLES } from "../grammar-aws/index.js";
 import {
   eraseOrthogonalRouteLoops,
   normalizeOrthogonalRoute,
@@ -40,6 +41,16 @@ describe("async-docs fixture", () => {
     expect(renderedGroup).toContain('fill="transparent"');
     expect(renderedGroup).toContain('stroke-dasharray=');
     expect(renderedGroup).not.toContain("<image");
+  });
+
+  it("renders connector labels without an opaque backing box", () => {
+    const doc = createAsyncDocsFixture();
+    doc.edges[0]!.label = "authorize payment";
+
+    const svg = compileDiagram(doc).svg;
+
+    expect(svg).toContain('class="edge-label"');
+    expect(svg).not.toContain('class="edge-label-background"');
   });
 
   it("renders each note style as an explicit SVG variant", () => {
@@ -178,12 +189,12 @@ describe("async-docs fixture", () => {
     expect(azs[0]!.bounds.h).toBe(azs[1]!.bounds.h);
   });
 
-  it("lays out resource labels on every icon side and group labels in alternate corners", () => {
+  it("lays out resource labels above icons and group labels at the top right", () => {
     const doc = createAsyncDocsFixture();
     const client = doc.resources.find((resource) => resource.id === "client")!;
     const region = doc.groups.find((group) => group.id === "use1")!;
     client.label.position = "top";
-    region.labelPosition = "bottom-right";
+    region.labelPosition = "top-right";
 
     const layout = layoutDocument(doc);
     const node = layout.nodes.find((candidate) => candidate.id === "client")!;
@@ -191,7 +202,7 @@ describe("async-docs fixture", () => {
 
     expect(node.label.y + node.label.h).toBeLessThanOrEqual(node.icon.y);
     expect(group.labelRect!.x + group.labelRect!.w).toBe(group.bounds.x + group.bounds.w);
-    expect(group.labelRect!.y).toBeGreaterThan(group.bounds.y + group.bounds.h / 2);
+    expect(group.labelRect!.y).toBe(group.bounds.y);
   });
 
   it("anchors iconless group labels to the selected corner", () => {
@@ -207,6 +218,24 @@ describe("async-docs fixture", () => {
     expect(svg).toMatch(
       new RegExp(`id="group-queues"[\\s\\S]*text-anchor="end"[\\s\\S]*>${queues.label}<\\/text>`),
     );
+  });
+
+  it("mirrors icon-bearing group labels flush against the right boundary", () => {
+    const doc = createAsyncDocsFixture();
+    const region = doc.groups.find((group) => group.id === "use1")!;
+    region.labelPosition = "top-right";
+
+    const layout = layoutDocument(doc);
+    const group = layout.groups.find((candidate) => candidate.id === region.id)!;
+    const svg = renderSvg(doc, layout);
+    const renderedGroup = svg.match(
+      new RegExp(`<g id="group-${region.id}">([\\s\\S]*?)<\\/g>`),
+    )?.[1] ?? "";
+
+    expect(renderedGroup).toContain(
+      `x="${group.bounds.x + group.bounds.w - GROUP_STYLES[group.kind].iconSize}"`,
+    );
+    expect(renderedGroup).toContain('text-anchor="end"');
   });
 
   it("does not add a catalog icon to shorthand logical groups", () => {

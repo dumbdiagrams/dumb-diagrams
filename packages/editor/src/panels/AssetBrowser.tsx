@@ -12,6 +12,7 @@ import {
 import { DIAGRAM_LIMITS, type GroupKind } from "@dumb-diagrams/runtime/core";
 
 import { CatalogAssetCard } from "./CatalogAssetCard";
+import { ProviderMark } from "./ProviderMark";
 
 const PROVIDER_LABELS: Record<"all" | UserCloudProvider, string> = {
   all: "All",
@@ -65,19 +66,27 @@ function AssetGrid({
   variant,
   onActivate,
   onToggleFavorite,
+  onNearEnd,
 }: {
   entries: CatalogEntry[];
   favorites: string[];
   variant: "service" | "group";
   onActivate: (entry: CatalogEntry) => void;
   onToggleFavorite: (type: string) => void;
+  onNearEnd: () => void;
 }) {
   if (!entries.length) {
     return <div className="palette-empty">No matching assets for this view.</div>;
   }
 
   return (
-    <div className={`palette-grid asset-grid${variant === "group" ? " is-group-grid" : ""}`}>
+    <div
+      className={`palette-grid asset-grid${variant === "group" ? " is-group-grid" : ""}`}
+      onScroll={(event) => {
+        const scroller = event.currentTarget;
+        if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <= 280) onNearEnd();
+      }}
+    >
       {entries.map((entry) => (
         <CatalogAssetCard
           key={entry.type}
@@ -114,7 +123,11 @@ export function AssetBrowser({
   const [recents, setRecents] = useState<string[]>(() => readIds(RECENT_KEY));
   const [importingSvg, setImportingSvg] = useState(false);
   const [visibleCount, setVisibleCount] = useState(ASSET_PAGE_SIZE);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLDivElement>(null);
+  const categoryTypeahead = useRef("");
+  const categoryTypeaheadTimer = useRef<number | undefined>(undefined);
 
   const categories = useMemo(
     () => listCategories(provider, mode),
@@ -152,10 +165,42 @@ export function AssetBrowser({
     return entries;
   }, [allEntries, category, filter, favorites, mode, provider, query, recents]);
   const visibleEntries = filteredEntries.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredEntries.length;
 
   useEffect(() => {
     setVisibleCount(ASSET_PAGE_SIZE);
   }, [category, filter, mode, provider, query]);
+
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const close = (event: PointerEvent) => {
+      if (!categoryRef.current?.contains(event.target as Node)) setCategoryOpen(false);
+    };
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [categoryOpen]);
+
+  useEffect(() => () => {
+    if (categoryTypeaheadTimer.current !== undefined) {
+      window.clearTimeout(categoryTypeaheadTimer.current);
+    }
+  }, []);
+
+  const selectCategoryByTyping = (key: string) => {
+    if (key.length !== 1 || !/[\p{L}\p{N}]/u.test(key)) return false;
+    if (categoryTypeaheadTimer.current !== undefined) {
+      window.clearTimeout(categoryTypeaheadTimer.current);
+    }
+    categoryTypeahead.current += key.toLocaleLowerCase();
+    categoryTypeaheadTimer.current = window.setTimeout(() => {
+      categoryTypeahead.current = "";
+    }, 700);
+    const typed = categoryTypeahead.current;
+    const match = categories.find((item) => item.toLocaleLowerCase().startsWith(typed))
+      ?? categories.find((item) => item.toLocaleLowerCase().startsWith(key.toLocaleLowerCase()));
+    if (match) setCategory(match);
+    return true;
+  };
 
   const activate = (entry: CatalogEntry) => {
     const next = [entry.type, ...recents.filter((id) => id !== entry.type)];
@@ -187,6 +232,7 @@ export function AssetBrowser({
           value={query}
           maxLength={DIAGRAM_LIMITS.searchCharacters}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => event.stopPropagation()}
           placeholder={
             mode === "groups"
               ? "Search boundaries across providers"
@@ -239,29 +285,73 @@ export function AssetBrowser({
                 setCategory("");
               }}
             >
-              {PROVIDER_LABELS[item]}
+              <ProviderMark provider={item} />
+              <span>{item === "cloud-agnostic" ? "Cloud" : PROVIDER_LABELS[item]}</span>
             </button>
           ))}
         </div>
 
-        {categories.length > 0 && (
-          <label className="category-select">
-            <span className="sr-only">Category</span>
-            <select
-              value={category}
-              onChange={(event) => {
-                setCategory(event.target.value);
+        {mode === "resources" && categories.length > 0 && (
+          <div className="category-picker" ref={categoryRef}>
+            <button
+              type="button"
+              className="category-picker__trigger"
+              aria-haspopup="listbox"
+              aria-expanded={categoryOpen}
+              onClick={() => setCategoryOpen((open) => !open)}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setCategoryOpen(true);
+                  return;
+                }
+                if (event.key === "Escape") {
+                  setCategoryOpen(false);
+                  return;
+                }
+                if (selectCategoryByTyping(event.key)) event.preventDefault();
               }}
             >
-              {mode === "resources" && <option value="">All categories</option>}
-              {categories.map((item) => (
-                <option key={item} value={item}>
-                  {item} (
-                  {allEntries.filter((entry) => entry.categories.includes(item)).length})
-                </option>
-              ))}
-            </select>
-          </label>
+              <span>
+                {category || (mode === "resources" ? "All categories" : categories[0])}
+                <small>
+                  {category
+                    ? allEntries.filter((entry) => entry.categories.includes(category)).length
+                    : allEntries.length}
+                </small>
+              </span>
+              <span className="category-picker__chevron" aria-hidden="true" />
+            </button>
+            {categoryOpen && (
+              <div className="category-picker__menu" role="listbox" aria-label="Category">
+                {mode === "resources" && (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={!category}
+                    className={!category ? "is-selected" : ""}
+                    onClick={() => { setCategory(""); setCategoryOpen(false); }}
+                  >
+                    <span>All categories</span><small>{allEntries.length}</small>
+                  </button>
+                )}
+                {categories.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    role="option"
+                    aria-selected={category === item}
+                    className={category === item ? "is-selected" : ""}
+                    onClick={() => { setCategory(item); setCategoryOpen(false); }}
+                  >
+                    <span>{item}</span>
+                    <small>{allEntries.filter((entry) => entry.categories.includes(item)).length}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {mode === "groups" && (
@@ -285,17 +375,23 @@ export function AssetBrowser({
           variant={mode === "groups" ? "group" : "service"}
           onActivate={activate}
           onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
+          onNearEnd={() => {
+            if (hasMore) {
+              setVisibleCount((current) => Math.min(current + ASSET_PAGE_SIZE, filteredEntries.length));
+            }
+          }}
         />
-        {visibleCount < filteredEntries.length && (
-          <div className="asset-browser-more">
-            <span>Showing {visibleEntries.length} of {filteredEntries.length}</span>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setVisibleCount((current) => current + ASSET_PAGE_SIZE)}
-            >
-              Load more
-            </button>
+        {filteredEntries.length > ASSET_PAGE_SIZE && (
+          <div
+            className="asset-browser-more"
+            aria-live="polite"
+            aria-label={hasMore ? "Loading more catalog items" : "All catalog items loaded"}
+          >
+            <span>
+              {hasMore
+                ? `Showing ${visibleEntries.length} of ${filteredEntries.length} · scroll for more`
+                : `All ${filteredEntries.length} items loaded`}
+            </span>
           </div>
         )}
       </div>

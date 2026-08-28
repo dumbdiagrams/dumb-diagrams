@@ -152,11 +152,11 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
 }
 
 function isResourceLabelPosition(value: string): boolean {
-  return value === "top" || value === "bottom" || value === "left" || value === "right";
+  return value === "top" || value === "bottom";
 }
 
 function isGroupLabelPosition(value: string): boolean {
-  return value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right";
+  return value === "top-left" || value === "top-right";
 }
 
 function isDiagramColor(value: string): boolean {

@@ -25,6 +25,7 @@ const ALLOWED_TAGS = new Set([
   "stop",
   "title",
   "desc",
+  "image",
   "use",
   "symbol",
 ]);
@@ -40,6 +41,7 @@ const ALLOWED_ATTRS = new Set([
 ]);
 const LOCAL_REFERENCE_ATTRS = new Set(["clip-path", "mask", "marker-start", "marker-mid", "marker-end"]);
 const MAX_INTRINSIC_SIZE = 10_000;
+const EMBEDDED_RASTER_DATA = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 export interface SanitizedSvg {
   content: string;
@@ -125,11 +127,16 @@ function validateMarkupSafety(input: string): void {
       if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") {
         throw new Error(`SVG attribute ${name} is not allowed`);
       }
-      if (name === "href" && !/^#[A-Za-z_][\w:.-]*$/.test(value)) throw new Error("SVG href must be a local fragment reference");
+      const embeddedRaster = name === "href" && EMBEDDED_RASTER_DATA.test(value);
+      if (name === "href" && !embeddedRaster && !/^#[A-Za-z_][\w:.-]*$/.test(value)) {
+        throw new Error("SVG href must be a local fragment or embedded raster image");
+      }
       if (LOCAL_REFERENCE_ATTRS.has(name) && !/^url\(#[A-Za-z_][\w:.-]*\)$/.test(value)) {
         throw new Error(`SVG ${name} must use a local fragment reference`);
       }
-      if (/javascript:|data:|https?:|\/\//i.test(value)) throw new Error("SVG contains an external or executable reference");
+      if (!embeddedRaster && /javascript:|data:|https?:|\/\//i.test(value)) {
+        throw new Error("SVG contains an external or executable reference");
+      }
       consumed = attributePattern.lastIndex;
     }
     if (rawAttributes.slice(consumed).trim()) throw new Error("SVG contains malformed attributes");

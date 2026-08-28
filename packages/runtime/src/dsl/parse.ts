@@ -227,7 +227,10 @@ class Parser {
           if (t.type === "id" && t.value === "label-position") {
             this.pos++;
             const position = this.expect("id").value;
-            if (isGroupLabelPosition(position)) group.labelPosition = position;
+            if (!isGroupLabelPosition(position)) {
+              throw new Error(`Invalid group label position ${position}; expected top-left or top-right`);
+            }
+            group.labelPosition = position;
             continue;
           }
           if (t.type === "id" && t.value === "hide-icon") {
@@ -300,7 +303,10 @@ class Parser {
         } else if (t.type === "id" && t.value === "label-position") {
           this.pos++;
           const position = this.expect("id").value;
-          if (isResourceLabelPosition(position)) resource.label.position = position;
+          if (!isResourceLabelPosition(position)) {
+            throw new Error(`Invalid resource label position ${position}; expected top or bottom`);
+          }
+          resource.label.position = position;
         } else {
           this.pos++;
         }
@@ -359,7 +365,10 @@ class Parser {
         if (t.type === "id" && t.value === "label-position") {
           this.pos++;
           const position = this.expect("id").value;
-          if (isGroupLabelPosition(position)) group.labelPosition = position;
+          if (!isGroupLabelPosition(position)) {
+            throw new Error(`Invalid group label position ${position}; expected top-left or top-right`);
+          }
+          group.labelPosition = position;
           continue;
         }
         if (t.type === "id" && t.value === "hide-icon") {
@@ -872,11 +881,11 @@ function isAnnotationStyle(value: string): value is AnnotationStyle {
 }
 
 function isResourceLabelPosition(value: string): value is NonNullable<Resource["label"]["position"]> {
-  return value === "top" || value === "bottom" || value === "left" || value === "right";
+  return value === "top" || value === "bottom";
 }
 
 function isGroupLabelPosition(value: string): value is NonNullable<Group["labelPosition"]> {
-  return value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right";
+  return value === "top-left" || value === "top-right";
 }
 
 function formatPlace(

@@ -23,7 +23,7 @@ diagram azure-private-app-service {
         }
 
         azure.azure-managed-redis redis { service "Azure Managed Redis distributed cache" }
-        azure.sql-database sql { service "Azure SQL Database system of record" label-position right }
+        azure.sql-database sql { service "Azure SQL Database system of record" label-position bottom }
         azure.monitor monitor { service "Azure Monitor" }
       }
     }

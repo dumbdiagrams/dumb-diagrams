@@ -89,18 +89,29 @@ ${declarations}
     const doc = parseDgm(`diagram labels {
   grammar aws
   group shell "Shell" {
-    label-position bottom-right
-    aws.sns notice "Claims notification" { service "Amazon SNS" label-position left }
+    label-position top-right
+    aws.sns notice "Claims notification" { service "Amazon SNS" label-position top }
   }
 }`);
 
-    expect(doc.groups[0]?.labelPosition).toBe("bottom-right");
+    expect(doc.groups[0]?.labelPosition).toBe("top-right");
     expect(doc.resources[0]?.label).toEqual({
       service: "Amazon SNS",
       role: "Claims notification",
-      position: "left",
+      position: "top",
     });
     expect(parseDgm(printDgm(doc))).toEqual(doc);
+  });
+
+  it("rejects deprecated resource and group label positions", () => {
+    expect(() => parseDgm(`diagram old_resource_label {
+  grammar aws
+  aws.sns notice { label-position right }
+}`)).toThrow(/Invalid resource label position right; expected top or bottom/);
+    expect(() => parseDgm(`diagram old_group_label {
+  grammar aws
+  group shell "Shell" { label-position bottom-left }
+}`)).toThrow(/Invalid group label position bottom-left; expected top-left or top-right/);
   });
 
   it("round-trips hidden icons on typed groups", () => {
@@ -117,7 +128,7 @@ ${declarations}
     const doc = parseDgm(`diagram styled_boundary {
   grammar aws
   cloud-agnostic.boundary platform "Platform" {
-    label-position bottom-right
+    label-position top-right
     style solid
     color purple
     fill none
@@ -128,7 +139,7 @@ ${declarations}
 
     expect(doc.groups[0]).toMatchObject({
       type: "cloud-agnostic.boundary",
-      labelPosition: "bottom-right",
+      labelPosition: "top-right",
       style: "solid",
       color: "purple",
       fill: "none",

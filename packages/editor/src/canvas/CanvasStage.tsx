@@ -90,6 +90,7 @@ export function CanvasStage({
   onFitRequest,
   onCatalogDragOver,
   onCatalogDrop,
+  onContextMenu,
   contentSize,
   defaultFrameKey = 0,
 }: {
@@ -100,6 +101,7 @@ export function CanvasStage({
   onFitRequest?: (fit: () => void) => void;
   onCatalogDragOver?: (event: DragEvent<HTMLDivElement>) => void;
   onCatalogDrop?: (event: DragEvent<HTMLDivElement>, point: { x: number; y: number }) => void;
+  onContextMenu?: (clientX: number, clientY: number, point: { x: number; y: number }) => void;
   contentSize?: { x?: number; y?: number; width: number; height: number };
   defaultFrameKey?: number;
 }) {
@@ -314,6 +316,20 @@ export function CanvasStage({
         }
         const target = event.target as Element;
         if (!target.closest("[data-interactive]")) onBackgroundClick();
+      }}
+      onContextMenu={(event) => {
+        if (event.defaultPrevented) return;
+        event.preventDefault();
+        const rect = event.currentTarget.getBoundingClientRect();
+        const current = viewportRef.current;
+        onContextMenu?.(
+          event.clientX,
+          event.clientY,
+          {
+            x: (event.clientX - rect.left - current.panX) / current.zoom,
+            y: (event.clientY - rect.top - current.panY) / current.zoom,
+          },
+        );
       }}
       onPointerDownCapture={(event) => {
         // Keep this through the corresponding click. Some engines dispatch

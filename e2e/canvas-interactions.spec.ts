@@ -244,18 +244,136 @@ test("anchors a group display label at the selected corner", async ({ page }) =>
 
   const inspector = page.getByRole("dialog", { name: "Async Queue Tier", exact: true });
   await expect(inspector).toHaveCount(1);
+  await expect(inspector.locator("#group-label-position option")).toHaveText([
+    "Top left",
+    "Top right",
+  ]);
   const renderedLabel = page.locator("#group-queues text");
-  const beforeY = await renderedLabel.getAttribute("y");
-  await inspector.locator("#group-label-position").selectOption("bottom-left");
+  const beforeX = await renderedLabel.getAttribute("x");
+  await inspector.locator("#group-label-position").selectOption("top-right");
 
-  await expect.poll(() => renderedLabel.getAttribute("y")).not.toBe(beforeY);
-  expect(await renderedLabel.getAttribute("text-anchor") ?? "start").toBe("start");
+  await expect.poll(() => renderedLabel.getAttribute("x")).not.toBe(beforeX);
+  expect(await renderedLabel.getAttribute("text-anchor")).toBe("end");
   const labelX = Number(await renderedLabel.getAttribute("x"));
   const groupX = Number(await queues.getAttribute("x"));
-  expect(labelX).toBeCloseTo(groupX + 8, 5);
-  const labelY = Number(await renderedLabel.getAttribute("y"));
-  const groupBottom = Number(await queues.getAttribute("y")) + Number(await queues.getAttribute("height"));
-  expect(labelY).toBeGreaterThan(groupBottom - 32);
+  const groupRight = groupX + Number(await queues.getAttribute("width"));
+  expect(labelX).toBeCloseTo(groupRight - 8, 5);
+});
+
+test("offers only above and below for resource display labels", async ({ page }) => {
+  await page.goto("/");
+
+  await page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]').click();
+
+  await expect(page.locator("#resource-label-position option")).toHaveText([
+    "Above icon",
+    "Below icon",
+  ]);
+});
+
+test("uses a custom branded boundary picker", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Boundaries", exact: true }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Boundaries", exact: true });
+  await expect(drawer.locator(".provider-tabs .provider-mark")).toHaveCount(5);
+  await expect(drawer.locator(".category-picker select")).toHaveCount(0);
+  await expect(drawer.locator(".category-picker")).toHaveCount(0);
+  await expect(drawer.locator(".palette-card.is-group .provider-mark").first()).toBeVisible();
+  await expect(drawer.locator(".palette-card.is-group").first()).toHaveCSS("min-height", "136px");
+  await expect(drawer.getByRole("tab", { name: "Cloud", exact: true })).toBeVisible();
+});
+
+test("supports category typeahead and aligned resource artwork", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Resources", exact: true });
+  const categoryTrigger = drawer.locator(".category-picker__trigger");
+  await categoryTrigger.focus();
+  await categoryTrigger.press("c");
+  await expect(categoryTrigger).toContainText(/^c/i);
+  await expect(drawer).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Connector", exact: true })).toHaveCount(0);
+
+  const cards = drawer.locator(".palette-card:not(.is-group)");
+  await expect(cards.first()).toBeVisible();
+  const artworkRows = await cards.locator(".palette-thumb").evaluateAll((thumbs) =>
+    thumbs.slice(0, 2).map((thumb) => {
+      const thumbBox = thumb.getBoundingClientRect();
+      const cardBox = thumb.closest(".palette-card")!.getBoundingClientRect();
+      return {
+        top: Math.round(thumbBox.top),
+        centerDelta: Math.round((thumbBox.left + thumbBox.width / 2) - (cardBox.left + cardBox.width / 2)),
+      };
+    }),
+  );
+  expect(new Set(artworkRows.map(({ top }) => top)).size).toBe(1);
+  expect(artworkRows.every(({ centerDelta }) => Math.abs(centerDelta) <= 1)).toBe(true);
+});
+
+test("loads the next catalog page automatically at the bottom", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Resources", exact: true });
+  await drawer.getByRole("tab", { name: "AWS", exact: true }).click();
+  const cards = drawer.locator(".palette-card:not(.is-group)");
+  await expect(cards).toHaveCount(80);
+  await expect(drawer.getByRole("button", { name: "Load more", exact: true })).toHaveCount(0);
+
+  await drawer.locator(".asset-browser-body").evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    const grid = element.querySelector<HTMLElement>(".asset-grid");
+    if (grid) grid.scrollTop = grid.scrollHeight;
+  });
+  await expect.poll(() => cards.count()).toBeGreaterThan(80);
+});
+
+test("keeps all left creation drawers the same width", async ({ page }) => {
+  await page.goto("/");
+  for (const tool of ["Resources", "Boundaries", "Text", "Layers"] as const) {
+    await page.getByRole("button", { name: tool, exact: true }).click();
+    const drawer = page.locator(".floating-panel.drawer-sheet:not(.edge-sheet)");
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toHaveCSS("width", "420px");
+  }
+});
+
+test("opens the board menu anywhere and pastes a clipboard image", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        read: async () => [{
+          types: ["image/png"],
+          getType: async () => new Promise<Blob>((resolve, reject) => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 2;
+            canvas.height = 2;
+            canvas.getContext("2d")!.fillRect(0, 0, 2, 2);
+            canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG encoding failed")), "image/png");
+          }),
+        }],
+        readText: async () => "",
+        writeText: async () => undefined,
+      },
+    });
+  });
+  await page.goto("/");
+
+  const stage = page.getByTestId("canvas-stage");
+  await stage.click({
+    button: "right",
+    position: { x: 80, y: 220 },
+    force: true,
+  });
+  const menu = page.getByRole("menu", { name: "Canvas context menu" });
+  await expect(menu).toBeVisible();
+  await menu.getByRole("menuitem", { name: "Paste image or selection" }).click();
+
+  await expect(page.getByRole("status")).toHaveText("Pasted image");
+  await expect(page.locator('.diagram-svg g[id^="res-custom"] use[href^="#asset-"]')).toHaveCount(1);
 });
 
 test("exposes draggable turn points and moves a connector bend", async ({ page }) => {

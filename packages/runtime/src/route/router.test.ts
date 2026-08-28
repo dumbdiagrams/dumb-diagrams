@@ -170,6 +170,20 @@ describe("routeEdgePreview", () => {
     )).toBe(false);
   });
 
+  it("keeps order-flow labels visibly attached to their connectors", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/diagrams/event-driven-order-fulfillment.dgm", import.meta.url),
+      "utf8",
+    ));
+    const routes = routeEdges(doc, layoutDocument(doc));
+
+    for (const id of ["authorize_payment", "persist_order"]) {
+      const edge = routes.find((candidate) => candidate.id === id)!;
+      expect(edge.labelPoint).toBeDefined();
+      expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(52);
+    }
+  });
+
   it("places connector labels at an explicit path position and side", () => {
     const points = [
       { x: 0, y: 100 },

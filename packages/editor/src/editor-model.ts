@@ -1471,7 +1471,7 @@ function validGroup(value: unknown): boolean {
   return isRecord(value) && typeof value.id === "string" && typeof value.kind === "string" && groupKinds.has(value.kind) && typeof value.label === "string" &&
     Array.isArray(value.children) && value.children.every((id) => typeof id === "string") &&
     (value.parent === undefined || typeof value.parent === "string") &&
-    (value.labelPosition === undefined || value.labelPosition === "top-left" || value.labelPosition === "top-right" || value.labelPosition === "bottom-left" || value.labelPosition === "bottom-right") &&
+    (value.labelPosition === undefined || value.labelPosition === "top-left" || value.labelPosition === "top-right") &&
     (value.hideIcon === undefined || typeof value.hideIcon === "boolean") &&
     (value.style === undefined || value.style === "solid" || value.style === "dashed") &&
     (value.color === undefined || value.color === "graphite" || value.color === "blue" || value.color === "teal" || value.color === "purple" || value.color === "amber" || value.color === "red" || value.color === "green") &&
@@ -1482,7 +1482,7 @@ function validGroup(value: unknown): boolean {
 function validResource(value: unknown): boolean {
   return isRecord(value) && typeof value.id === "string" && typeof value.type === "string" && isRecord(value.label) &&
     (value.label.service === undefined || typeof value.label.service === "string") && (value.label.role === undefined || typeof value.label.role === "string") &&
-    (value.label.position === undefined || value.label.position === "top" || value.label.position === "bottom" || value.label.position === "left" || value.label.position === "right") &&
+    (value.label.position === undefined || value.label.position === "top" || value.label.position === "bottom") &&
     (value.role === "primary" || value.role === "secondary" || value.role === "border") && isRecord(value.props) &&
     (value.parent === undefined || typeof value.parent === "string");
 }

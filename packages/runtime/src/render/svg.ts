@@ -101,23 +101,23 @@ function renderGroup(
   const iconPath = groupIconPath(doc, group);
   const labelRect = group.labelRect ?? group.header;
   const labelPosition = group.labelPosition ?? "top-left";
-  const bottom = labelPosition.startsWith("bottom");
-  const iconX = labelRect.x;
-  const iconY = bottom ? group.bounds.y + group.bounds.h - style.iconSize : group.bounds.y;
+  const onRight = labelPosition.endsWith("right");
+  const iconX = onRight
+    ? group.bounds.x + group.bounds.w - style.iconSize
+    : labelRect.x;
+  const iconY = group.bounds.y;
   const iconTag = iconPath
     ? `<image href="${escapeAttr(resolveHref(iconPath))}" x="${iconX}" y="${iconY}" width="${style.iconSize}" height="${style.iconSize}" preserveAspectRatio="none"/>`
     : "";
 
-  // Iconless boundaries still carry the full-header rect (which
-  // reserves room for a possible icon). Anchor the visible text itself to the
-  // right edge so that "top-right" and "bottom-right" are actual corners.
-  const textOnRight = !iconPath && labelPosition.endsWith("right");
-  const textX = iconPath
-    ? iconX + style.iconSize + 8
-    : textOnRight
-      ? labelRect.x + labelRect.w - 8
-      : labelRect.x + 8;
-  const textY = (bottom ? group.bounds.y + group.bounds.h - (iconPath ? style.iconSize / 2 : style.headerHeight / 2) : iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2)) + style.fontSize * 0.35;
+  // Mirror the complete icon-and-copy composition at the right edge. This
+  // keeps the group icon flush to that boundary and places its text directly
+  // to the left, just as the default puts the icon flush to the left edge.
+  const textOnRight = onRight;
+  const textX = textOnRight
+    ? iconPath ? iconX - 8 : group.bounds.x + group.bounds.w - 8
+    : iconPath ? iconX + style.iconSize + 8 : labelRect.x + 8;
+  const textY = iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2) + style.fontSize * 0.35;
   const badgeOnLeft = (group.labelPosition ?? model?.labelPosition ?? "top-left").endsWith("right");
   const badgeX = badgeOnLeft ? group.bounds.x + 14 : group.bounds.x + group.bounds.w - 14;
   const badge = model?.step === undefined ? "" : `
@@ -214,10 +214,7 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   let label = "";
   if (edge.label && edge.points.length >= 2) {
     const point = edge.labelPoint ?? edge.points[Math.floor(edge.points.length / 2)]!;
-    const background = edge.labelRect
-      ? `<rect class="edge-label-background" x="${edge.labelRect.x - 2}" y="${edge.labelRect.y - 1}" width="${edge.labelRect.w + 4}" height="${edge.labelRect.h + 2}" rx="3" fill="${GRAMMAR.canvasFill}" fill-opacity="0.94"/>`
-      : "";
-    label = `${background}<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${color}">${escapeXml(edge.label)}</text>`;
+    label = `<text class="edge-label" data-edge-label="${escapeXml(edge.id)}" x="${point.x}" y="${point.y}" text-anchor="middle" font-size="11" fill="${color}">${escapeXml(edge.label)}</text>`;
   }
 
   return `

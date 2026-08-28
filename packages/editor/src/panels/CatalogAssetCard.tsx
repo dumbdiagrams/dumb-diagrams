@@ -6,6 +6,7 @@ import {
   CATALOG_DRAG_MIME,
   serializeCatalogDragPayload,
 } from "../catalog-dnd";
+import { ProviderMark } from "./ProviderMark";
 
 const ICON_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000] as const;
 
@@ -108,7 +109,10 @@ export function CatalogAssetCard({
         </span>
         <span className="palette-label" title={entry.name}>{entry.name}</span>
         {variant === "group" && entry.groupKind && (
-          <span className="group-kind-badge">{entry.groupKind}</span>
+          <span className="group-card-meta">
+            <ProviderMark provider={entry.provider} />
+            <span className="group-kind-badge">{entry.groupKind}</span>
+          </span>
         )}
         {variant === "service" && (
           <span className="palette-meta">

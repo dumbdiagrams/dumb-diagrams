@@ -947,9 +947,7 @@ function headerLabelRect(group: GroupGeom): Rect {
     x: (group.labelPosition ?? "top-left").endsWith("right")
       ? group.bounds.x + group.bounds.w - w
       : group.bounds.x,
-    y: (group.labelPosition ?? "top-left").startsWith("bottom")
-      ? group.bounds.y + group.bounds.h - style.headerHeight - 10
-      : group.bounds.y,
+    y: group.bounds.y,
     w,
     h: style.headerHeight + 10,
   };
@@ -1139,8 +1137,6 @@ function avoidLabelPorts(
 function labelSide(node: NodeGeom): Side {
   const position = node.labelPosition ?? "bottom";
   if (position === "top") return "n";
-  if (position === "left") return "w";
-  if (position === "right") return "e";
   return "s";
 }
 
@@ -2487,7 +2483,10 @@ function getEdgeLabelPlacement(
       const baseClearance = candidateHorizontal
         ? side === "top" ? 8 : 20
         : textW / 2 + 12;
-      for (const extra of [0, 16, 32, 48, 64, 96, 128, 160, 192, 224, 256]) {
+      // A connector label should remain visually attached to its line. Prefer
+      // another point along the route over pushing the copy into a remote,
+      // seemingly unrelated lane.
+      for (const extra of [0, 16, 32]) {
         candidates.push(labelPlacementAt(
           candidateProjection,
           textW,
@@ -2559,9 +2558,8 @@ function labelCollisionScore(
   for (const edge of otherEdges) {
     for (let index = 0; index < edge.points.length - 1; index++) {
       if (segmentHits(edge.points[index]!, edge.points[index + 1]!, inflatedLabel)) {
-        // Connector copy renders on an opaque canvas-colored backing. A line
-        // behind that backing is a soft placement cost; moving the label far
-        // outside its owning corridor is usually harder to understand.
+        // Crossing copy is a soft placement cost; staying close to the owning
+        // connector is usually easier to understand than escaping its lane.
         score += 2_000;
         break;
       }

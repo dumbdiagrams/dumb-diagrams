@@ -62,9 +62,10 @@ under `diagrams/`; do not edit the examples to satisfy a new request.
 - Do not author the legacy `group` shorthand, `cloud-agnostic.logical`,
   `neutral.logical`, or `hide-icon` to simulate a boundary. Those forms exist
   only for reading older documents.
-- Boundary options are `label-position top-left|top-right|bottom-left|bottom-right`,
+- Boundary options are `label-position top-left|top-right`,
   `style solid|dashed`, `color graphite|blue|teal|purple|amber|red|green`,
   `fill subtle|none`, and `step 0..99`.
+- Resource display labels support `label-position top|bottom` only.
 - Use `icon ...` only for an explicitly embedded/custom asset. It is not how
   normal AWS, Azure, GCP, or cloud-agnostic catalog icons are selected.
 - Number the primary flow with `step` edge metadata. Use `from` and `to` hints

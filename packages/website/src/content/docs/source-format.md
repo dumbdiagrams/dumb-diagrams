@@ -55,7 +55,8 @@ cloud-agnostic.boundary workflow "Workflow" {
 The legacy `group` shorthand is accepted when opening older documents, but new
 diagrams should use `cloud-agnostic.boundary`. Boundaries can set `style`,
 `color`, `fill`, `label-position`, and `step` in the source or the Studio
-inspector.
+inspector. Boundary label positions are `top-left` and `top-right`; resource
+label positions are `top` and `bottom`.
 
 Not every resource belongs inside every boundary. The catalog includes containment rules, and validation checks them before layout.
 

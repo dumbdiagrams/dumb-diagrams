@@ -45,6 +45,16 @@ describe("sanitizeSvg", () => {
     expect(defaults.intrinsicH).toBe(64);
   });
 
+  it("allows only base64-embedded raster images", () => {
+    const safe = sanitizeSvg(
+      '<svg width="2" height="2"><image href="data:image/png;base64,iVBORw0KGgo=" x="0" y="0" width="2" height="2"/></svg>',
+    );
+    expect(safe.content).toContain("data:image/png;base64,iVBORw0KGgo=");
+    expect(() => sanitizeSvg(
+      '<svg><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>',
+    )).toThrow(/embedded raster/i);
+  });
+
   it("re-sanitizes embedded document assets before inserting SVG markup", () => {
     const doc = createEmptyDocument("unsafe-asset");
     doc.assets = [{

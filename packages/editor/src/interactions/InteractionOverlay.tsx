@@ -613,6 +613,8 @@ function InteractionOverlayComponent({
     label: string,
     initialT: number,
     initialSide: EdgeLabelSide,
+    initialPoint: Point,
+    initialRect: { x: number; y: number; w: number; h: number },
   ) => {
     const handle = event.currentTarget;
     const svg = handle.ownerSVGElement;
@@ -626,7 +628,7 @@ function InteractionOverlayComponent({
       ?.querySelector<SVGTextElement>("text.edge-label");
     let selectionOutlines: SVGRectElement[] | undefined;
 
-    const applyPlacement = (placement: ReturnType<typeof getEdgeLabelPlacementOnPath>) => {
+    const applyPlacement = (placement: { point: Point; rect: typeof initialRect } | undefined) => {
       if (!placement) return;
       labelText?.setAttribute("x", String(placement.point.x));
       labelText?.setAttribute("y", String(placement.point.y));
@@ -650,16 +652,19 @@ function InteractionOverlayComponent({
       }
     };
 
+    const restoreInitialPlacement = () => applyPlacement({
+      point: initialPoint,
+      rect: initialRect,
+    });
+
     handle.setPointerCapture(pointerId);
     onGestureBegin();
     setHoveredItem(null);
     labelDragRef.current = { edgeId, t: initialT, side: initialSide };
-    applyPlacement(getEdgeLabelPlacementOnPath(points, label, initialT, initialSide));
 
     const move = (next: PointerEvent) => {
-      if (Math.hypot(next.clientX - dragStart.x, next.clientY - dragStart.y) >= 3) {
-        didDrag = true;
-      }
+      if (!didDrag && Math.hypot(next.clientX - dragStart.x, next.clientY - dragStart.y) < 3) return;
+      didDrag = true;
       const pointer = pointFromClient(svg, next.clientX, next.clientY, zoom);
       const projection = projectPointToPolyline(pointer, points);
       if (!projection) return;
@@ -672,12 +677,12 @@ function InteractionOverlayComponent({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", cancel);
-      if (next) move(next);
+      if (next && didDrag) move(next);
       const final = labelDragRef.current;
       if (next && didDrag && final && (final.t !== initialT || final.side !== initialSide)) {
         onLabelMove(final.edgeId, final.t, final.side);
-      } else if (!next) {
-        applyPlacement(getEdgeLabelPlacementOnPath(points, label, initialT, initialSide));
+      } else if (!next && didDrag) {
+        restoreInitialPlacement();
       }
       labelDragRef.current = null;
       onGestureEnd();
@@ -758,9 +763,9 @@ function InteractionOverlayComponent({
         window.addEventListener("pointercancel", cancel);
       }}
       onContextMenu={(event) => {
-        event.preventDefault();
         if ((event.target as Element).closest("[data-interactive]")) return;
-        onContextMenu(event.clientX, event.clientY, null);
+        // CanvasStage owns empty-space menus so right-click also works beyond
+        // the artboard and retains the exact clicked world coordinate.
       }}
     >
       <defs>
@@ -1112,6 +1117,8 @@ function InteractionOverlayComponent({
                   label,
                   labelT,
                   labelSide,
+                  edge.labelPoint ?? { x: rect.x + rect.w / 2, y: rect.y + 11 },
+                  rect,
                 );
               }
             }}

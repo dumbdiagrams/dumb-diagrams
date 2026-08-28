@@ -168,6 +168,7 @@ const DEFAULT_SOURCE = asyncDocsSource;
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
+const LEFT_DRAWER_WIDTH = 420;
 const STUDIO_ACCESS_TOKEN = new URLSearchParams(window.location.search).get("token");
 
 function studioApiPath(pathname: string): string {
@@ -175,6 +176,22 @@ function studioApiPath(pathname: string): string {
   const url = new URL(pathname, window.location.origin);
   url.searchParams.set("token", STUDIO_ACCESS_TOKEN);
   return `${url.pathname}${url.search}`;
+}
+
+function blobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Unable to read clipboard image"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function rasterDimensions(blob: Blob): Promise<{ width: number; height: number }> {
+  const bitmap = await createImageBitmap(blob);
+  const dimensions = { width: bitmap.width, height: bitmap.height };
+  bitmap.close();
+  return dimensions;
 }
 
 const RenderedDiagram = memo(function RenderedDiagram({ svg }: { svg: string }) {
@@ -204,7 +221,7 @@ const RECOVERY = (() => {
 })();
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
-type ContextMenuState = { x: number; y: number; selection: Selection } | null;
+type ContextMenuState = { x: number; y: number; selection: Selection; canvasPoint?: Point } | null;
 type TabContextMenuState = { x: number; y: number; tabId: string } | null;
 type BulkCloseRequest = {
   kind: "all" | "right";
@@ -1433,8 +1450,46 @@ function App() {
     setToast("Cut selection");
   };
 
-  const pasteSelection = async () => {
+  const pasteSelection = async (requestedPoint?: Point) => {
     if (!compiled.ok) return;
+    const at = snapPoint(requestedPoint ?? insertionPoint(compiled.layout), snapToGrid);
+    try {
+      const clipboardItems = await navigator.clipboard?.read?.();
+      const imageItem = clipboardItems?.find((item) =>
+        item.types.some((type) => /^image\/(?:png|jpeg|webp|gif)$/.test(type)),
+      );
+      const imageType = imageItem?.types.find((type) =>
+        /^image\/(?:png|jpeg|webp|gif)$/.test(type),
+      );
+      if (imageItem && imageType) {
+        const blob = await imageItem.getType(imageType);
+        const [{ width, height }, dataUrl] = await Promise.all([
+          rasterDimensions(blob),
+          blobAsDataUrl(blob),
+        ]);
+        const rawSvg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><image href="${dataUrl}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/></svg>`;
+        const imported = importSvgAsset(compiled.doc, rawSvg);
+        const placed = addCustomResource(
+          imported.doc,
+          imported.assetId,
+          "Pasted image",
+          undefined,
+          at,
+        );
+        if (!updateDocument(placed.doc)) return;
+        setSelection([{ kind: "resource", id: placed.id }]);
+        setContextMenu(null);
+        setToast("Pasted image");
+        return;
+      }
+    } catch (error) {
+      const message = (error as Error).message;
+      if (message && !/permission|denied|not allowed/i.test(message)) {
+        setToast(message);
+        return;
+      }
+      // Clipboard image reads may be unavailable; continue with diagram text.
+    }
     let systemPayload: string | null = null;
     try {
       systemPayload = (await navigator.clipboard?.readText()) ?? null;
@@ -1444,7 +1499,6 @@ function App() {
     const payloads = [systemPayload, internalClipboardRef.current].filter(
       (payload, index, all): payload is string => Boolean(payload) && all.indexOf(payload) === index,
     );
-    const at = snapPoint(insertionPoint(compiled.layout), snapToGrid);
     for (const payload of payloads) {
       try {
         const result = pasteClipboard(compiled.doc, payload, at);
@@ -1746,6 +1800,17 @@ function App() {
           }}
           onCatalogDragOver={handleCatalogDragOver}
           onCatalogDrop={handleCatalogDrop}
+          onContextMenu={(clientX, clientY, point) => {
+            const canvasPoint = Number.isFinite(point.x) && Number.isFinite(point.y)
+              ? snapPoint(point, snapToGrid)
+              : snapPoint(insertionPoint(compiled.ok ? compiled.layout : displayCompiled!.layout), snapToGrid);
+            setContextMenu({
+              x: clientX,
+              y: clientY,
+              selection,
+              canvasPoint,
+            });
+          }}
           onBackgroundClick={() => {
             setSelection([]);
             if (tool !== "connector") setPendingPort(null);
@@ -2066,7 +2131,7 @@ function App() {
             title="Add text"
             subtitle="Place editable text on the canvas"
             onClose={() => setTool("select")}
-            width={320}
+            width={LEFT_DRAWER_WIDTH}
           >
             <TextComposer
               value={textDraft}
@@ -2088,7 +2153,7 @@ function App() {
             title="Resources"
             subtitle="Browse services by provider and category"
             onClose={() => setTool("select")}
-            width={420}
+            width={LEFT_DRAWER_WIDTH}
           >
             <AssetBrowser
               mode="resources"
@@ -2132,7 +2197,7 @@ function App() {
             title="Boundaries"
             subtitle="Logical and infrastructure scopes by provider"
             onClose={() => setTool("select")}
-            width={380}
+            width={LEFT_DRAWER_WIDTH}
           >
             <AssetBrowser
               mode="groups"
@@ -2150,7 +2215,7 @@ function App() {
             title="Connector"
             subtitle="Pick ports on two icons"
             onClose={() => setTool("select")}
-            width={280}
+            width={LEFT_DRAWER_WIDTH}
           >
             <ConnectorDrawer pendingPort={pendingPort} />
           </FloatingPanel>
@@ -2226,7 +2291,7 @@ function App() {
             title="Source"
             subtitle="Valid edits sync to the canvas"
             onClose={() => setTool("select")}
-            width={520}
+            width={LEFT_DRAWER_WIDTH}
           >
             <Suspense fallback={<div className="source-drawer"><div className="source-editor-shell source-drawer-loading">Loading source editor…</div></div>}>
               <SourceDrawer
@@ -2254,7 +2319,7 @@ function App() {
             title="Layers"
             subtitle="Hierarchy, visibility, and lock"
             onClose={() => setTool("select")}
-            width={320}
+            width={LEFT_DRAWER_WIDTH}
           >
             <LayersPanel
               doc={compiled.doc}
@@ -2670,7 +2735,7 @@ function App() {
               {
                 onCopy: () => void copySelection(contextMenu.selection),
                 onCut: () => void cutSelection(contextMenu.selection),
-                onPaste: () => void pasteSelection(),
+                onPaste: () => void pasteSelection(contextMenu.canvasPoint),
                 onDuplicate: () => duplicateCurrentSelection(contextMenu.selection),
                 onDelete: () => deleteCurrentSelection(contextMenu.selection),
                 onMutate: (change) => mutateCurrent(change),
@@ -3049,7 +3114,8 @@ function Inspector({
   const editableLabel = resource ? resource.label.role ?? "" : title;
   const [labelDraft, setLabelDraft] = useState(editableLabel);
   useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
-  const authoredResourceLabelPosition = resource?.label.position ?? "bottom";
+  const authoredResourceLabelPosition: ResourceLabelPosition =
+    resource?.label.position === "top" ? "top" : "bottom";
   const [resourceLabelPositionDraft, setResourceLabelPositionDraft] =
     useState<ResourceLabelPosition>(authoredResourceLabelPosition);
   useEffect(() => {
@@ -3061,7 +3127,8 @@ function Inspector({
   useEffect(() => {
     setResourceIconSizeDraft(authoredResourceIconSize);
   }, [resource?.id, authoredResourceIconSize]);
-  const authoredGroupLabelPosition = group?.labelPosition ?? "top-left";
+  const authoredGroupLabelPosition: GroupLabelPosition =
+    group?.labelPosition?.endsWith("right") ? "top-right" : "top-left";
   const [groupLabelPositionDraft, setGroupLabelPositionDraft] =
     useState<GroupLabelPosition>(authoredGroupLabelPosition);
   useEffect(() => {
@@ -3194,8 +3261,6 @@ function Inspector({
           >
             <option value="top">Above icon</option>
             <option value="bottom">Below icon</option>
-            <option value="left">Left of icon</option>
-            <option value="right">Right of icon</option>
           </select>
           <p className="property-hint">Automatic connectors avoid the side occupied by the label.</p>
         </div>
@@ -3214,8 +3279,6 @@ function Inspector({
           >
             <option value="top-left">Top left</option>
             <option value="top-right">Top right</option>
-            <option value="bottom-left">Bottom left</option>
-            <option value="bottom-right">Bottom right</option>
           </select>
         </div>
       )}
@@ -3509,7 +3572,7 @@ function buildContextMenuItems(
 
   items.push({
     id: "paste",
-    label: "Paste",
+    label: "Paste image or selection",
     shortcut: "⌘V / Ctrl+V",
     onSelect: actions.onPaste,
   });

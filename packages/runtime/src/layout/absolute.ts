@@ -111,13 +111,12 @@ function positionGroupTree(
   const w = local?.bounds.w ?? 200;
   const h = local?.bounds.h ?? 120;
   const labelPosition = group.labelPosition ?? "top-left";
-  const bottom = labelPosition.startsWith("bottom");
 
   const bounds = { x, y, w, h };
-  const header = { x, y: bottom ? y + h - style.headerHeight : y, w, h: style.headerHeight };
+  const header = { x, y, w, h: style.headerHeight };
   const content = {
     x: x + style.padding,
-    y: y + (bottom ? style.padding / 2 : style.headerHeight + style.padding / 2),
+    y: y + style.headerHeight + style.padding / 2,
     w: w - style.padding * 2,
     h: h - style.headerHeight - style.padding * 1.5,
   };
@@ -125,7 +124,7 @@ function positionGroupTree(
   const labelW = Math.min(w, Math.max(80, style.iconSize + 12 + textW + 12));
   const labelRect = {
     x: labelPosition.endsWith("right") ? x + w - labelW : x,
-    y: bottom ? header.y - 10 : header.y,
+    y: header.y,
     w: labelW,
     h: style.headerHeight + 10,
   };

@@ -62,6 +62,7 @@ export function ContextMenu({
             key={item.id}
             type="button"
             role="menuitem"
+            data-menu-item={item.id}
             className={`context-menu-item${item.danger ? " is-danger" : ""}`}
             disabled={item.disabled}
             aria-keyshortcuts={item.shortcut}
