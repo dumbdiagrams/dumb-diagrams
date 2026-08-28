@@ -119,8 +119,10 @@
   .manifesto-notes h3 { font-size: 18px; margin: 10px 0; }
   .manifesto-notes p { font-size: 12px; color: #bdcde0; }
   .faq { display: grid; grid-template-columns: 1fr 1.3fr; gap: 90px; }
-  .faq-brand { margin: 54px 0 0; width: min(100%, 384px); display: flex; justify-content: flex-start; }
-  .faq-brand img { width: 384px; height: auto; }
+  /* The canonical artwork has transparent padding; offset it so its visible
+     footprint matches the former FAQ derivative at the same alignment. */
+  .faq-brand { margin: 54px 0 0; width: min(100%, 384px); display: flex; justify-content: flex-start; overflow: hidden; }
+  .faq-brand img { width: 440px; max-width: none; height: auto; margin: -18px 0; transform: translateX(-30px); }
   .faq-list { border-top: 1px solid var(--line); }
   .faq-list details { border-bottom: 1px solid var(--line); }
   .faq-list summary { padding: 23px 0; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 14px; font-weight: 600; }
@@ -189,7 +191,7 @@
     .manifesto h2 { font-size: 37px; }
     .faq { grid-template-columns: 1fr; gap: 35px; }
     .faq-brand { margin: 26px 0 0; width: min(100%, 280px); }
-    .faq-brand img { width: 280px; }
+    .faq-brand img { width: 324px; margin: -13px 0; transform: translateX(-22px); }
     .closing { flex-direction: column; align-items: flex-start; gap: 20px; }
     .footer-top { flex-wrap: wrap; gap: 12px; }
     .footer-top > p { order: 3; width: 100%; }

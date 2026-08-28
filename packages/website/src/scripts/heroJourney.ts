@@ -52,9 +52,9 @@ journeys.forEach(journey => {
       nextLabelElement.textContent = unlocked < 1 ? 'Initializing project…' : 'Open in editor with agent';
       statusElement.textContent = unlocked < 1 ? 'Running the CLI… the next step unlocks when the project is ready.' : messages[0];
     } else if (current === 1) {
-      nextButton.disabled = false;
+      nextButton.disabled = !promptDone;
       nextStepNumberElement.textContent = 'NEXT · 03';
-      nextLabelElement.textContent = 'See the result in Studio';
+      nextLabelElement.textContent = promptDone ? 'See the result in Studio' : 'Agent is drafting…';
       statusElement.textContent = messages[1];
     } else {
       nextButton.disabled = false;
@@ -68,6 +68,7 @@ journeys.forEach(journey => {
     if (promptDone) return;
     promptDone = true;
     promptElement.textContent = fullPrompt;
+    promptElement.scrollTop = promptElement.scrollHeight;
     unlocked = Math.max(unlocked, 2);
     updateControls();
     journey.dispatchEvent(new CustomEvent('hero-journey:prompt-complete', { bubbles: true }));
@@ -78,10 +79,11 @@ journeys.forEach(journey => {
     promptStarted = true;
     if (reduced.matches) { finishPrompt(); return; }
     const started = performance.now();
-    const duration = Math.min(5200, Math.max(2200, fullPrompt.length * 1.65));
+    const duration = Math.min(4200, Math.max(2000, fullPrompt.length * 1.45));
     const frame = (now: number) => {
       const progress = Math.min(1, (now - started) / duration);
       promptElement.textContent = fullPrompt.slice(0, Math.floor(fullPrompt.length * progress));
+      promptElement.scrollTop = promptElement.scrollHeight;
       if (progress >= 1) finishPrompt();
       else typingFrame = requestAnimationFrame(frame);
     };
@@ -92,10 +94,7 @@ journeys.forEach(journey => {
     const target = Math.max(0, Math.min(2, stage));
     if (target > unlocked) return;
     current = target;
-    if (current === 1) {
-      unlocked = Math.max(unlocked, 2);
-      typePrompt();
-    }
+    if (current === 1) typePrompt();
     updateControls();
   }
 

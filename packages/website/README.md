@@ -120,4 +120,4 @@ See [the shared style guide](../../docs/STYLE_GUIDE.md). Both Studio and the web
 
 `prepare:assets` compiles the runtime and CLI, then `scripts/capture-cli.mjs` runs the local CLI in a temporary directory. It captures the actual creation log with ANSI colors, normalizes the example home path, and removes the temporary project. No npm package is fetched, no Studio server is started, and no commands run in the visitor's browser. `src/lib/ansi.mjs` escapes text before rendering the CLI styles.
 
-The homepage imports the four selected examples from Studio's example list. Asset preparation reads the same canonical files in `examples/diagrams/` and `examples/prompts/`. Keep those sources intact: the website is a view of the app examples, not a separate set of lookalikes. Output controls enlarge the SVG without changing its geometry.
+The homepage imports three selected examples from Studio's example list. Asset preparation reads the same canonical files in `examples/diagrams/` and `examples/prompts/`. Keep those sources intact: the website is a view of the app examples, not a separate set of lookalikes. Output controls enlarge the SVG without changing its geometry.

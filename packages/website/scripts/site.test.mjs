@@ -111,7 +111,7 @@ test('landing page stays small and loads no third-party scripts by default', asy
   assert.doesNotMatch(html, /<script[^>]*src="https?:/);
   if (!analyticsConfig().measurementId && process.env.ENABLE_PARTYTOWN !== 'true') assert.doesNotMatch(html, /partytown/);
   // The optional consent UI and inline Partytown bootstrap add a bounded 3 KB.
-  // The homepage includes four curated prompt/source pairs plus the canonical
+  // The homepage includes three curated prompt/source pairs plus the canonical
   // hero journey's compact agent and Studio views.
   const htmlBudget = analyticsConfig().measurementId ? 22_500 : 19_500;
   assert.ok(gzipSync(html).byteLength < htmlBudget, `homepage HTML under ${htmlBudget} bytes compressed`);
@@ -208,7 +208,8 @@ test('homepage explains the engine and attributes examples without altering thei
   for (const name of ['Composer 2.5', 'Claude Sonnet 5', 'A* search', 'manual route', 'lighter models']) assert.ok(html.includes(name), name);
   assert.match(html, /<div class="section-heading examples-heading" id="how-it-works"/);
   assert.doesNotMatch(html, /<section[^>]+id="how-it-works"/);
-  assert.match(html, /class="faq-brand"/);
+  assert.match(html, /class="faq-brand"[\s\S]*?logo_dumbdiagrams_highres\./, 'FAQ uses the canonical high-resolution logo derivative');
+  assert.doesNotMatch(html, /Write-through caching with Azure Managed Redis/, 'Azure caching example remains Studio-only');
 });
 
 test('terminal fallback contains the real CLI banner and runnable package commands', async () => {

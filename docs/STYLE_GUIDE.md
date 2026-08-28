@@ -160,8 +160,8 @@ motion inside the diagram editor.
 ## Example windows
 
 The section labeled “01 / FROM SOURCE TO DIAGRAM” shows Image thumbnail
-pipeline, AWS Data Transfer Hub, Claims processing with Amazon Bedrock, and
-Private Azure App Service, in that order. Import the same prompt/source pairs as
+pipeline, AWS Data Transfer Hub, and Claims processing with Amazon Bedrock, in
+that order. Import the same prompt/source pairs as
 Studio; do not simplify them or invent a substitute. Keep the original renderer
 output and any routing notes.
 
