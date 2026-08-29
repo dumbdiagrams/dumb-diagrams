@@ -40,7 +40,7 @@ npm create dumb-diagrams@latest -- --yes
 - `diagrams/` — starter `.dgm` source (one file per diagram)
 - `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` — small agent entrypoints
 - `.dumbdiagrams/` — canonical workflow, architecture, format, provider, and catalog knowledge
-- `.dumbdiagrams/examples/` — one four-role pilot plus legacy reference pairs
+- `.dumbdiagrams/examples/` — seven four-role AWS examples plus the legacy Azure pair
 
 Use `--editor cursor` or `--editor code` to pick an editor. Without `--editor`, `--open-editor` tries Cursor, VS Code, Codium, Windsurf, and Zed in that order.
 

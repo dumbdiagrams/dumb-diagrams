@@ -1,22 +1,28 @@
 import { readFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readdirSync, statSync } from "node:fs";
-
 import { parseDgm } from "../packages/runtime/dist/dsl/index.js";
 import { compileDiagram } from "../packages/runtime/dist/render/index.js";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const diagramsRoot = join(root, "examples/diagrams");
 const baselinePath = join(root, "examples/routing-warnings.json");
 const expected = JSON.parse(readFileSync(baselinePath, "utf8"));
-const actual = collectDgmFiles(diagramsRoot).flatMap((file) => {
+const curatedBaseline = JSON.parse(readFileSync(join(root, "examples/curated-baseline.json"), "utf8"));
+const diagramFiles = [
+  ...Object.entries(curatedBaseline.curated).map(([id, entry]) => ({
+    file: resolve(root, entry.diagram),
+    baselineName: `${id}.dgm`,
+  })),
+  { file: join(root, "examples/diagrams/async-docs.dgm") },
+  { file: join(root, "examples/diagrams/transfer-hub.dgm") },
+];
+const actual = diagramFiles.flatMap(({ file, baselineName }) => {
   const compiled = compileDiagram(parseDgm(readFileSync(file, "utf8")));
   if (!compiled.ok) {
     throw new Error(`${relative(root, file)} cannot be compiled while checking the routing baseline.`);
   }
   return compiled.invariantFailures.map((failure) => ({
-    file: relative(diagramsRoot, file).replaceAll("\\", "/"),
+    file: baselineName ?? basename(file),
     code: failure.code,
     message: failure.message,
   }));
@@ -35,17 +41,6 @@ if (JSON.stringify(actual) !== JSON.stringify(normalizedExpected)) {
   process.exitCode = 1;
 } else {
   console.log(`OK routing baseline: ${actual.length} reviewed warning${actual.length === 1 ? "" : "s"}`);
-}
-
-function collectDgmFiles(directory) {
-  return readdirSync(directory)
-    .flatMap((entry) => {
-      const path = join(directory, entry);
-      return statSync(path).isDirectory()
-        ? collectDgmFiles(path)
-        : path.endsWith(".dgm") ? [path] : [];
-    })
-    .sort();
 }
 
 function warningKey(warning) {

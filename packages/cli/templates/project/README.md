@@ -15,7 +15,7 @@ one diagram per file. Shared agent knowledge and read-only examples live under
 - `.dumbdiagrams/architecture.md` — prompt interpretation and architecture brief contract
 - `.dumbdiagrams/dgm.md` — source and layout conventions
 - `.dumbdiagrams/providers/` — provider-specific conventions
-- `.dumbdiagrams/examples/` — pilot and legacy references
+- `.dumbdiagrams/examples/` — curated four-role examples and remaining legacy references
 - `.dumbdiagrams/catalog.md` / `catalog.json` — canonical resource and group types
 
 Open the visual editor with:

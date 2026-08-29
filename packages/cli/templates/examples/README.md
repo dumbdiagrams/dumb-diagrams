@@ -4,27 +4,32 @@ These are read-only secondary references. Canonical instructions live in
 `../instructions.md`; examples complement those rules and never override the
 user's explicit architecture decisions.
 
-The migrated pilot has four distinct roles:
+Each migrated AWS example has four roles:
 
-- `simple-serverless-web-application/user-prompt.md` — a realistic user request.
-- `simple-serverless-web-application/architecture-brief.md` — normalized architecture semantics.
-- `simple-serverless-web-application/reference-spec.md` — the preserved expert reconstruction specification.
-- `simple-serverless-web-application/diagram.dgm` — the unchanged curated source.
+- `<name>/user-prompt.md` — a realistic architecture request.
+- `<name>/architecture-brief.md` — normalized explicit and inferred semantics.
+- `<name>/reference-spec.md` — the preserved expert reconstruction specification.
+- `<name>/diagram.dgm` — the unchanged curated source.
 
-The seven examples not yet migrated remain reference pairs under `legacy/`:
+Available migrated AWS examples:
 
-- `legacy/prompts/aws-high-availability-web-app.md` + `legacy/aws-high-availability-web-app.dgm`
-- `legacy/prompts/aws-data-transfer-hub.md` + `legacy/aws-data-transfer-hub.dgm`
-- `legacy/prompts/bedrock-claims-processing.md` + `legacy/bedrock-claims-processing.dgm`
-- `legacy/prompts/image-thumbnail-pipeline.md` + `legacy/image-thumbnail-pipeline.dgm`
-- `legacy/prompts/asynchronous-report-generation.md` + `legacy/asynchronous-report-generation.dgm`
-- `legacy/prompts/event-driven-order-fulfillment.md` + `legacy/event-driven-order-fulfillment.dgm`
-- `legacy/prompts/azure-private-app-service.md` + `legacy/azure-private-app-service.dgm`
+- `simple-serverless-web-application/`
+- `image-thumbnail-pipeline/`
+- `aws-data-transfer-hub/`
+- `bedrock-claims-processing/`
+- `aws-high-availability-web-app/`
+- `asynchronous-report-generation/`
+- `event-driven-order-fulfillment/`
 
-Those detailed prompts are reconstruction/reference specifications, not a
-prompt language users must learn. Read a prompt and `.dgm` as a pair when its
-architecture is relevant. Reuse conventions—not architecture—and inspect the
-source rather than only its rendered view.
+Azure is intentionally not migrated in this tranche. Its existing pair remains
+under `legacy/prompts/azure-private-app-service.md` and
+`legacy/azure-private-app-service.dgm`.
+
+The detailed reference specifications are regression and advanced-documentation
+material, not a prompt language users must learn. Start from `user-prompt.md`,
+use `architecture-brief.md` to understand the intended normalization, and read
+the reference specification only when exact composition or layout constraints
+matter.
 
 Before authoring:
 
@@ -36,7 +41,7 @@ Before authoring:
    an existing file to revise.
 6. Validate and visually inspect the result.
 
-Preserve a reference's stable IDs, nesting, explicit steps, labels, and routing
-hints only when those details are part of the requested architecture. Prefer
-automatic layout and never copy a direction hint that makes the new route
-backtrack.
+Reuse conventions—not architecture. Preserve stable IDs, nesting, explicit
+steps, labels, or routing hints from a reference only when those details are
+part of the requested architecture. Prefer automatic layout and never copy a
+direction hint that makes the new route backtrack.

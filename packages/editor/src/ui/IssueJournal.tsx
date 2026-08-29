@@ -46,11 +46,11 @@ export function IssueJournal({
 
   const errorCount = issues.filter((issue) => issue.severity === "error").length;
   const warningCount = issues.length - errorCount;
-  const countLabel = `${issues.length} issue${issues.length === 1 ? "" : "s"}`;
   const summary = [
     errorCount ? `${errorCount} error${errorCount === 1 ? "" : "s"}` : "",
     warningCount ? `${warningCount} warning${warningCount === 1 ? "" : "s"}` : "",
   ].filter(Boolean).join(", ");
+  const countLabel = errorCount && warningCount ? summary : errorCount ? `${errorCount} error${errorCount === 1 ? "" : "s"}` : `${warningCount} warning${warningCount === 1 ? "" : "s"}`;
 
   const handleIssueKeyDown = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
@@ -74,8 +74,8 @@ export function IssueJournal({
         className={`status-pill issue-journal-trigger${errorCount ? " has-errors" : " has-warnings"}`}
         aria-expanded={open}
         aria-controls={listId}
-        aria-label={`${countLabel}: ${summary}`}
-        title="Open diagram issues"
+        aria-label={countLabel}
+        title="Open diagram warnings and errors"
         onClick={() => setOpen((current) => !current)}
       >
         <span className="issue-journal-mark" aria-hidden="true">!</span>

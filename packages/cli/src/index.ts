@@ -39,29 +39,21 @@ interface CheckResult {
   messages: string[];
 }
 
-const PROJECT_REFERENCE_FILES = [
-  "aws-high-availability-web-app.dgm",
-  "aws-data-transfer-hub.dgm",
-  "bedrock-claims-processing.dgm",
-  "image-thumbnail-pipeline.dgm",
-  "asynchronous-report-generation.dgm",
-  "event-driven-order-fulfillment.dgm",
+const PROJECT_LEGACY_REFERENCE_FILES = [
   "azure-private-app-service.dgm",
-  "prompts/aws-high-availability-web-app.md",
-  "prompts/aws-data-transfer-hub.md",
-  "prompts/bedrock-claims-processing.md",
-  "prompts/image-thumbnail-pipeline.md",
-  "prompts/asynchronous-report-generation.md",
-  "prompts/event-driven-order-fulfillment.md",
   "prompts/azure-private-app-service.md",
 ] as const;
 
-const PROJECT_PILOT_FILES = [
-  "simple-serverless-web-application/user-prompt.md",
-  "simple-serverless-web-application/architecture-brief.md",
-  "simple-serverless-web-application/reference-spec.md",
-  "simple-serverless-web-application/diagram.dgm",
+const PROJECT_CURATED_EXAMPLE_IDS = [
+  "aws-high-availability-web-app",
+  "aws-data-transfer-hub",
+  "bedrock-claims-processing",
+  "simple-serverless-web-application",
+  "image-thumbnail-pipeline",
+  "asynchronous-report-generation",
+  "event-driven-order-fulfillment",
 ] as const;
+const PROJECT_CURATED_FILE_NAMES = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"] as const;
 
 const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open", "yes"]);
 
@@ -338,7 +330,7 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     console.log(ui.success(`Created ${relativeForLog(filePath)}`));
     created++;
   }
-  created += copyProjectExamples(projectRoot, examplesRoot);
+  created += copyProjectExamples(examplesRoot);
 
   const requestedEditor = flagString(args, "editor", "");
   if (hasFlag(args, "open-editor") || hasFlag(args, "open") || requestedEditor) {
@@ -472,9 +464,9 @@ function createCatalogReference(): { markdown: string; json: string } {
   };
 }
 
-function copyProjectExamples(projectRoot: string, examplesRoot: string): number {
+function copyProjectExamples(examplesRoot: string): number {
   mkdirSync(examplesRoot, { recursive: true });
-  const files = PROJECT_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
+  const files = PROJECT_LEGACY_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
   files.unshift("README.md");
   let created = 0;
 
@@ -495,10 +487,13 @@ function copyProjectExamples(projectRoot: string, examplesRoot: string): number 
     created++;
   }
 
-  for (const fileName of PROJECT_PILOT_FILES) {
+  const curatedFiles = PROJECT_CURATED_EXAMPLE_IDS.flatMap((id) =>
+    PROJECT_CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`),
+  );
+  for (const fileName of curatedFiles) {
     const sourcePath = resolveProjectExample(fileName);
     if (!sourcePath) {
-      console.warn(ui.warning(`Bundled pilot file not found: ${fileName}`));
+      console.warn(ui.warning(`Bundled curated example file not found: ${fileName}`));
       continue;
     }
     const targetPath = join(examplesRoot, fileName);
@@ -521,7 +516,7 @@ function resolveProjectExample(fileName: string): string | undefined {
     resolve(__dirname, "..", "templates", "examples", fileName),
     resolve(__dirname, "..", "..", "..", "examples", fileName),
     resolve(__dirname, "..", "..", "..", "examples", "diagrams", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", "pilots", fileName),
+    resolve(__dirname, "..", "..", "..", "examples", "curated", fileName),
   ];
   return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
 }

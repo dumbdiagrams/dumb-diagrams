@@ -26,25 +26,20 @@ const exampleSource = join(root, "examples/diagrams");
 const entry = join(cliDist, "index.js");
 const createEntry = join(cliDist, "create.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
+const curatedExampleIds = [
+  "aws-high-availability-web-app",
+  "aws-data-transfer-hub",
+  "bedrock-claims-processing",
+  "simple-serverless-web-application",
+  "image-thumbnail-pipeline",
+  "asynchronous-report-generation",
+  "event-driven-order-fulfillment",
+];
+const curatedExampleFileNames = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
 const exampleFiles = [
-  "aws-high-availability-web-app.dgm",
-  "aws-data-transfer-hub.dgm",
-  "bedrock-claims-processing.dgm",
-  "image-thumbnail-pipeline.dgm",
-  "asynchronous-report-generation.dgm",
-  "event-driven-order-fulfillment.dgm",
   "azure-private-app-service.dgm",
-  "prompts/aws-high-availability-web-app.md",
-  "prompts/aws-data-transfer-hub.md",
-  "prompts/bedrock-claims-processing.md",
-  "prompts/image-thumbnail-pipeline.md",
-  "prompts/asynchronous-report-generation.md",
-  "prompts/event-driven-order-fulfillment.md",
   "prompts/azure-private-app-service.md",
-  "simple-serverless-web-application/user-prompt.md",
-  "simple-serverless-web-application/architecture-brief.md",
-  "simple-serverless-web-application/reference-spec.md",
-  "simple-serverless-web-application/diagram.dgm",
+  ...curatedExampleIds.flatMap((id) => curatedExampleFileNames.map((fileName) => `${id}/${fileName}`)),
 ];
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
@@ -86,8 +81,8 @@ for (const fileName of exampleFiles) {
   mkdirSync(dirname(target), { recursive: true });
   const source = fileName.startsWith("prompts/")
     ? join(root, "examples", fileName)
-    : fileName.startsWith("simple-serverless-web-application/")
-      ? join(root, "examples", "pilots", fileName)
+    : curatedExampleIds.some((id) => fileName.startsWith(`${id}/`))
+      ? join(root, "examples", "curated", fileName)
       : join(exampleSource, fileName);
   cpSync(source, target);
 }
@@ -166,7 +161,7 @@ function buildSourceSnapshot() {
     "e2e-packed",
     "examples/prompts",
     "examples/diagrams",
-    "examples/pilots",
+    "examples/curated",
     "examples/evaluations",
     "packages/cli/src",
     "packages/cli/templates",

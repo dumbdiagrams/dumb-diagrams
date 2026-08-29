@@ -67,6 +67,9 @@ test('complete documentation and homepage examples compile through the actual ru
     }
   }
   for (const example of loadExamples()) {
+    assert.ok(example.prompt.trim(), `${example.id}: natural prompt`);
+    assert.ok(example.interpretation.trim(), `${example.id}: architecture interpretation`);
+    assert.ok(example.referenceSpec.trim(), `${example.id}: reference specification`);
     const result = compileDiagram(parseDgm(example.source));
     assert.equal(result.ok, true, `${example.id}: original Studio source compiles`);
     // These are the app's existing examples, including any existing routing
@@ -91,6 +94,7 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
   for (const example of loadExamples()) {
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}.dgm`), 'utf8'), example.source);
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-prompt.txt`), 'utf8'), example.prompt);
+    assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-reference-spec.md`), 'utf8'), example.referenceSpec);
     const svg = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
@@ -208,8 +212,14 @@ test('privacy notice and footer controls are available with and without analytic
 
 test('homepage explains the engine and attributes examples without altering their sources', async () => {
   const html = await readFile(join(dist, 'index.html'), 'utf8');
-  assert.match(html, /Generated with GPT 5\.6 Luna \(max\)/);
-  for (const name of ['Composer 2.5', 'Claude Sonnet 5', 'A* search', 'manual route', 'lighter models']) assert.ok(html.includes(name), name);
+  for (const name of ['plain-English request', 'architecture brief', 'A* search', 'manual route']) assert.ok(html.includes(name), name);
+  assert.match(html, /TRY THIS WITH YOUR AGENT/);
+  assert.match(html, /HUMAN PROMPT/);
+  assert.match(html, /ENGINE INTERPRETATION/);
+  assert.match(html, /\.DGM CODE/);
+  assert.match(html, /RESULT/);
+  assert.match(html, /Advanced: detailed specification/);
+  assert.doesNotMatch(html, /same or nearly the same output/);
   assert.match(html, /<div class="section-heading examples-heading" id="how-it-works"/);
   assert.doesNotMatch(html, /<section[^>]+id="how-it-works"/);
   assert.match(html, /class="faq-brand"[\s\S]*?logo_dumbdiagrams_highres\./, 'FAQ uses the canonical high-resolution logo derivative');
@@ -242,7 +252,7 @@ test('terminal fallback contains the real CLI banner and runnable package comman
 
 test('hero journey preserves the canonical CLI, agent prompt, and Studio result', async () => {
   const html = await readFile(join(dist, 'index.html'), 'utf8');
-  const prompt = await readFile(resolve(site, '../../examples/prompts/image-thumbnail-pipeline.md'), 'utf8');
+  const prompt = await readFile(resolve(site, '../../examples/curated/image-thumbnail-pipeline/user-prompt.md'), 'utf8');
   const escapedPrompt = prompt.trimEnd().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
   assert.match(html, /data-hero-journey/);
   assert.match(html, /Init project/);

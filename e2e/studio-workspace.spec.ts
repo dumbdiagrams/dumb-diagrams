@@ -34,22 +34,28 @@ test("opens File actions and creates a fresh document tab", async ({ page }) => 
   await expect(page.locator(".workspace-tab.is-active")).toContainText(/Untitled diagram/i);
 });
 
-test("closes the final tab and replaces it with a blank untitled draft", async ({ page }) => {
+test("protects the final untouched blank untitled draft", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("tab")).toHaveCount(1);
   await expect(page.locator(".workspace-tab-close")).toHaveCount(1);
+  await page.locator(".workspace-tab-close").click();
+
+  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Untitled Diagram");
+  await expect(page.locator(".workspace-tab.is-active")).not.toContainText("Async Docs");
+  await expect(page.locator(".workspace-tab-close")).toHaveCount(0);
 
   await page.locator(".workspace-tab").click({ button: "right" });
   const tabMenu = page.getByRole("menu", { name: "Tab context menu" });
   await expect(tabMenu).toBeVisible();
-  await expect(tabMenu.getByRole("menuitem", { name: /Close tab/ })).toHaveCount(1);
+  await expect(tabMenu.getByRole("menuitem", { name: /Close/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   await page.keyboard.press("Control+KeyW");
   await expect(page.getByRole("tab")).toHaveCount(1);
   await expect(page.locator(".workspace-tab.is-active")).toContainText("Untitled Diagram");
-  await expect(page.locator(".workspace-tab.is-active")).not.toContainText("Async Docs");
+  await expect(page.locator(".workspace-tab-close")).toHaveCount(0);
 });
 
 test("duplicates and closes a diagram from its tab context menu", async ({ page }) => {
@@ -219,32 +225,27 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await expect(examples).toBeVisible();
   await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 8…|Previews ready/);
   await expect(examples.locator(".example-card")).toHaveCount(8);
-  await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(8);
-  await expect(examples.locator(".example-prompt pre")).toHaveCount(8);
-  await expect(examples.locator(".example-prompt pre").nth(0)).toContainText(
+  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(8);
+  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(7);
+  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(8);
+  await expect(examples.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(7);
+
+  const claims = examples.locator(".example-card").filter({ hasText: "Claims processing with Amazon Bedrock" });
+  await expect(claims.locator(".example-prompt pre").first()).toContainText(
+    "Design an AWS claims-processing workflow for a web application",
+  );
+  await claims.getByText("How DumbDiagrams interprets it", { exact: true }).click();
+  await expect(claims.locator(".example-prompt pre").nth(1)).toContainText(
+    "separate blueprint-creation path",
+  );
+  await claims.getByText("Advanced · Detailed specification", { exact: true }).click();
+  await expect(claims.locator(".example-prompt pre").last()).toContainText(
     'Create a diagram titled "Claims processing with Amazon Bedrock"',
   );
-  await expect(examples.locator(".example-prompt pre").nth(1)).toContainText(
-    'Create a diagram titled "AWS Data Transfer Hub"',
-  );
-  await expect(examples.locator(".example-prompt pre").nth(2)).toContainText(
-    'Create a diagram titled "Highly available AWS web application"',
-  );
-  await expect(examples.locator(".example-prompt pre").nth(3)).toContainText(
-    'Create a diagram titled "Simple serverless web application"',
-  );
-  await expect(examples.locator(".example-prompt pre").nth(4)).toContainText(
-    'Create a diagram titled "Image thumbnail pipeline"',
-  );
-  await expect(examples.locator(".example-prompt pre").nth(5)).toContainText(
-    'Create a diagram titled "Asynchronous report generation"',
-  );
-  await expect(examples.locator(".example-prompt pre").nth(6)).toContainText(
-    'Create a diagram titled "Event-driven order fulfillment"',
-  );
-  await expect(examples.locator(".example-prompt pre").nth(7)).toContainText(
-    'Create a diagram titled "Write-through caching with Azure Managed Redis and Azure SQL Database"',
-  );
+
+  const azure = examples.locator(".example-card").filter({ hasText: "Write-through caching with Azure Managed Redis" });
+  await expect(azure.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(0);
+  await expect(azure.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(0);
   await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);

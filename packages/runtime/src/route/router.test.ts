@@ -172,7 +172,7 @@ describe("routeEdgePreview", () => {
 
   it("keeps order-flow labels visibly attached to their connectors", () => {
     const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/diagrams/event-driven-order-fulfillment.dgm", import.meta.url),
+      new URL("../../../../examples/curated/event-driven-order-fulfillment/diagram.dgm", import.meta.url),
       "utf8",
     ));
     const routes = routeEdges(doc, layoutDocument(doc));
@@ -186,7 +186,7 @@ describe("routeEdgePreview", () => {
 
   it("keeps cross-boundary labels visibly attached to their connectors", () => {
     const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/diagrams/aws-high-availability-web-app.dgm", import.meta.url),
+      new URL("../../../../examples/curated/aws-high-availability-web-app/diagram.dgm", import.meta.url),
       "utf8",
     ));
     const routes = routeEdges(doc, layoutDocument(doc));
@@ -194,6 +194,28 @@ describe("routeEdgePreview", () => {
 
     expect(edge.labelPoint).toBeDefined();
     expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(36);
+  });
+
+  it("routes the curated Bedrock workflow around extraction cards", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
+      "utf8",
+    ));
+    const layout = layoutDocument(doc);
+    const route = routeEdges(doc, layout).find((edge) => edge.id === "workflow_to_state")!;
+    const protectedNodes = layout.nodes.filter((node) =>
+      ["extractor", "fraud_model"].includes(node.id),
+    );
+
+    for (let index = 0; index < route.points.length - 1; index++) {
+      for (const node of protectedNodes) {
+        expect(
+          segmentIntersects(route.points[index]!, route.points[index + 1]!, inflate(node.obstacle, 8)),
+          `${route.id} segment ${index} intersects ${node.id}`,
+        ).toBe(false);
+      }
+    }
+    expect(route.points.length).toBeGreaterThan(2);
   });
 
   it("places connector labels at an explicit path position and side", () => {

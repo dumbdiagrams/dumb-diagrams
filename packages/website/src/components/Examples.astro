@@ -2,16 +2,14 @@
 import { Code } from 'astro:components';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { exampleIds } from '../lib/examples.mjs';
-import { DIAGRAM_EXAMPLES } from '../../../editor/src/examples';
+import { loadExamples } from '../lib/examples.mjs';
 import { dgmLanguage } from '../lib/dgm-language.mjs';
 import { url } from '../lib/site';
 import WindowControls from './WindowControls.astro';
 import '../styles/terminal.css';
 import '../styles/examples.css';
-const examples = exampleIds.map(id => {
-  const example = DIAGRAM_EXAMPLES.find(example => example.id === id);
-  if (!example) throw new Error(`Missing Studio example: ${id}`);
+const examples = loadExamples().map(example => {
+  const { id } = example;
   // Reserve the generated preview's actual aspect ratio before it loads.
   const preview = readFileSync(resolve('public/diagrams', `${id}-preview.svg`), 'utf8');
   const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
@@ -20,38 +18,49 @@ const examples = exampleIds.map(id => {
 });
 ---
 <section class="examples section" aria-labelledby="examples-title">
-  <div class="section-heading examples-heading" id="how-it-works"><div><span class="eyebrow">01 / FROM SOURCE TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">Review the result.</span></h2></div><p>Start with a prompt, let the agent write the .dgm source, then compare the result with the examples in Studio.</p></div>
+  <div class="section-heading examples-heading" id="how-it-works"><div><span class="eyebrow">01 / FROM REQUEST TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">See how it becomes a diagram.</span></h2></div><p>Write a normal technical request. The agent interprets the architecture, produces reviewable .dgm code, and Dumb Diagrams renders the result.</p></div>
   <div class="example-tabs" role="tablist" aria-label="Example diagram" data-tabs>
     {examples.map((example, index) => <button id={`tab-${example.id}`} type="button" role="tab" aria-selected={index === 0 ? 'true' : 'false'} aria-controls={`example-${example.id}`} tabindex={index === 0 ? 0 : -1}><span class="mono">0{index + 1}</span>{example.title}</button>)}
   </div>
   <div class="example-panels">
   {examples.map((example, index) => <div id={`example-${example.id}`} role="tabpanel" aria-labelledby={`tab-${example.id}`} hidden={index !== 0} inert={index !== 0} class="example-panel">
-    <div class="example-description"><p>{example.description}</p><span class="mono">PROMPT / SOURCE <span aria-hidden="true">→</span> OUTPUT</span></div>
+    <div class="example-description"><p>{example.description}</p><span class="mono">HUMAN PROMPT <span aria-hidden="true">→</span> ENGINE INTERPRETATION <span aria-hidden="true">→</span> .DGM CODE <span aria-hidden="true">→</span> RESULT</span></div>
     <div class="example-workspace">
       <div class="example-input">
         <div class="input-tabs" role="tablist" aria-label={`${example.title} input`} data-tabs>
           <button id={`prompt-tab-${example.id}`} type="button" role="tab" data-mode="prompt" aria-selected="true" aria-controls={`prompt-${example.id}`} tabindex="0">Prompt</button>
+          <button id={`interpretation-tab-${example.id}`} type="button" role="tab" data-mode="interpretation" aria-selected="false" aria-controls={`interpretation-${example.id}`} tabindex="-1">Engine interpretation</button>
           <button id={`source-tab-${example.id}`} type="button" role="tab" data-mode="source" aria-selected="false" aria-controls={`source-${example.id}`} tabindex="-1">.dgm code</button>
           <span aria-hidden="true">↗</span>
         </div>
         <div id={`prompt-${example.id}`} role="tabpanel" aria-labelledby={`prompt-tab-${example.id}`} class="prompt-pane">
-          <div class="input-caption"><span>GIVE THIS TO YOUR AGENT</span><button type="button" data-copy-target={`prompt-text-${example.id}`} aria-label={`Copy ${example.title} prompt`}>Copy ⧉</button></div>
-          <pre id={`prompt-text-${example.id}`} class="prompt-text" tabindex="0" aria-label={`${example.title} original prompt`}>{example.prompt}</pre>
-          <div class="input-footer"><span>ORIGINAL PROMPT</span><a href={url(`diagrams/${example.id}-prompt.txt`)} download>Save prompt ↓</a></div>
+          <div class="input-caption"><span>TRY THIS WITH YOUR AGENT</span><button type="button" data-copy-target={`prompt-text-${example.id}`} aria-label={`Copy ${example.title} prompt`}>Copy ⧉</button></div>
+          <pre id={`prompt-text-${example.id}`} class="prompt-text" tabindex="0" aria-label={`${example.title} natural prompt`}>{example.prompt}</pre>
+          <div class="input-footer"><span>NATURAL PROMPT</span><a href={url(`diagrams/${example.id}-prompt.txt`)} download>Save prompt ↓</a></div>
+        </div>
+        <div id={`interpretation-${example.id}`} role="tabpanel" aria-labelledby={`interpretation-tab-${example.id}`} class="interpretation-pane" hidden>
+          <div class="input-caption"><span>ENGINE INTERPRETATION</span><button type="button" data-copy-target={`interpretation-text-${example.id}`} aria-label={`Copy ${example.title} interpretation`}>Copy ⧉</button></div>
+          <pre id={`interpretation-text-${example.id}`} class="prompt-text interpretation-text" tabindex="0" aria-label={`${example.title} architecture interpretation`}>{example.interpretation}</pre>
+          <div class="input-footer"><span>ARCHITECTURE BRIEF</span></div>
         </div>
         <div id={`source-${example.id}`} role="tabpanel" aria-labelledby={`source-tab-${example.id}`} class="source-pane" hidden>
           <div class="mac-titlebar"><WindowControls /><span class="mac-window-title">{example.id}.dgm</span><button class="source-copy" type="button" data-copy-target={`source-text-${example.id}`} aria-label={`Copy ${example.title} source`}>Copy ⧉</button></div>
           <div id={`source-text-${example.id}`} class="source-code" tabindex="0" aria-label={`${example.title} generated source`}><Code code={example.source.trimEnd()} lang={dgmLanguage} theme="github-dark" /></div>
           <div class="input-footer"><span>REVIEWABLE SOURCE</span><a href={url(`diagrams/${example.id}.dgm`)} download>Save .dgm ↓</a></div>
         </div>
+        <details class="reference-spec">
+          <summary>Advanced: detailed specification</summary>
+          <p>The preserved reconstruction-level specification used to establish this reference diagram.</p>
+          <a href={url(`diagrams/${example.id}-reference-spec.md`)} download>View detailed specification ↓</a>
+        </details>
       </div>
       <div class="example-output" data-diagram-preview data-initial-zoom="1">
-        <div class="output-bar"><span class="mono">THE OUTPUT</span><div class="preview-controls" aria-label={`${example.title} preview controls`}><button type="button" data-zoom="out" aria-label={`Zoom out ${example.title}`}>−</button><button type="button" data-zoom="fit" aria-label={`Fit ${example.title} to preview`}>100%</button><button type="button" data-zoom="in" aria-label={`Zoom in ${example.title}`}>+</button></div><a href={url(`diagrams/${example.id}-preview.svg`)} target="_blank" rel="noopener" aria-label={`Open ${example.title} full size`}>Full size ↗</a></div>
+        <div class="output-bar"><span class="mono">RESULT</span><div class="preview-controls" aria-label={`${example.title} preview controls`}><button type="button" data-zoom="out" aria-label={`Zoom out ${example.title}`}>−</button><button type="button" data-zoom="fit" aria-label={`Fit ${example.title} to preview`}>100%</button><button type="button" data-zoom="in" aria-label={`Zoom in ${example.title}`}>+</button></div><a href={url(`diagrams/${example.id}-preview.svg`)} target="_blank" rel="noopener" aria-label={`Open ${example.title} full size`}>Full size ↗</a></div>
         <div class="diagram-viewport" tabindex="0" aria-label={`${example.title} diagram; scroll to pan when zoomed`}><img src={url(`diagrams/${example.id}-preview.svg`)} alt={example.description} width={example.previewWidth} height={example.previewHeight} loading={index === 0 ? 'eager' : 'lazy'} /></div>
         <div class="output-footer"><span>Rendered from the Studio source.</span><a href={url(`diagrams/${example.id}.svg`)} download>Download SVG ↓</a></div>
       </div>
     </div>
   </div>)}
   </div>
-  <div class="examples-footnote"><span>Generated with GPT 5.6 Luna (max). In our testing, agents in the same capability class tended to produce the same or nearly the same output from these prompts. Tested with Composer 2.5, GPT 5.6 Luna (high &amp; max), and Claude Sonnet 5. Results can still vary.</span><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a></div>
+  <div class="examples-footnote"><span>Turn a plain-English request into a clear, reviewable diagram. Follow the architecture brief, inspect the final <code>.dgm</code> source, then use Studio to validate, refine, and ship it.</span><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a></div>
 </section>

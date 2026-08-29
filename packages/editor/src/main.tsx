@@ -126,6 +126,7 @@ import {
 } from "./state/export-actions";
 import {
   isTabDirty,
+  isProtectedDefaultTab,
   MAX_WORKSPACE_TABS,
   normalizeWorkspacePreview,
   useWorkspace,
@@ -803,6 +804,7 @@ function App() {
     if (closingTabId) return;
     const tab = tabs.find((candidate) => candidate.id === tabId);
     if (!tab) return;
+    if (isProtectedDefaultTab(tabs, BLANK_SOURCE, tabId)) return;
     if (isTabDirty(tab)) {
       setCloseRequest(tabId);
       return;
@@ -1738,7 +1740,7 @@ function App() {
     { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !compiled.ok, onSelect: saveActive },
     { id: "command-save-as", label: "Save As", section: "File", shortcut: "⌘⇧S", disabled: !compiled.ok, onSelect: openSaveAs },
     { id: "command-duplicate-tab", label: "Duplicate tab", section: "Workspace", onSelect: duplicateActiveTab },
-    { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", onSelect: () => handleCloseTab(activeTab.id) },
+    { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", disabled: isProtectedDefaultTab(tabs, BLANK_SOURCE, activeTab.id), onSelect: () => handleCloseTab(activeTab.id) },
     { id: "command-reopen-tab", label: "Reopen closed tab", section: "Workspace", disabled: recentlyClosed.length === 0, onSelect: reopenLastTab },
     { id: "command-recycle-bin", label: `Open recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`, section: "Workspace", onSelect: () => setRecycleBinOpen(true) },
     { id: "command-examples", label: "Browse examples", section: "Help", onSelect: () => setExamplesOpen(true) },
@@ -1779,33 +1781,36 @@ function App() {
   const tabContextTarget = tabContextMenu
     ? tabs.find((tab) => tab.id === tabContextMenu.tabId)
     : undefined;
+  const isProtectedBlankTab = (tab: WorkspaceTab | undefined) => Boolean(tab && isProtectedDefaultTab(tabs, BLANK_SOURCE, tab.id));
   const tabContextMenuItems: ContextMenuItem[] = tabContextTarget ? [
     {
       id: "duplicate-tab",
       label: "Duplicate tab",
       onSelect: () => duplicateTabWithFeedback(tabContextTarget.id),
     },
-    {
-      id: "close-tab",
-      label: "Close tab",
-      shortcut: "⌘W / Ctrl+W",
-      danger: true,
-      onSelect: () => handleCloseTab(tabContextTarget.id),
-    },
-    { id: "tab-context-divider", label: "", separator: true },
-    {
-      id: "close-tabs-right",
-      label: "Close all to the right",
-      danger: true,
-      disabled: tabs.findIndex((tab) => tab.id === tabContextTarget.id) >= tabs.length - 1,
-      onSelect: () => requestBulkClose("right", tabContextTarget.id),
-    },
-    {
-      id: "close-all-tabs",
-      label: "Close all",
-      danger: true,
-      onSelect: () => requestBulkClose("all", tabContextTarget.id),
-    },
+    ...(!isProtectedBlankTab(tabContextTarget) ? [
+      {
+        id: "close-tab",
+        label: "Close tab",
+        shortcut: "⌘W / Ctrl+W",
+        danger: true,
+        onSelect: () => handleCloseTab(tabContextTarget.id),
+      },
+      { id: "tab-context-divider", label: "", separator: true },
+      {
+        id: "close-tabs-right",
+        label: "Close all to the right",
+        danger: true,
+        disabled: tabs.findIndex((tab) => tab.id === tabContextTarget.id) >= tabs.length - 1,
+        onSelect: () => requestBulkClose("right", tabContextTarget.id),
+      },
+      {
+        id: "close-all-tabs",
+        label: "Close all",
+        danger: true,
+        onSelect: () => requestBulkClose("all", tabContextTarget.id),
+      },
+    ] : []),
   ] : [];
 
   return (
@@ -2108,6 +2113,7 @@ function App() {
             onNew={handleNewTab}
             onReorder={reorderTabs}
             onContextMenu={handleTabContextMenu}
+            canCloseTab={(tab) => !isProtectedDefaultTab(tabs, BLANK_SOURCE, tab.id)}
           />
           <nav className="studio-tabbar-actions" aria-label="Studio menu">
             <ThemeControl />

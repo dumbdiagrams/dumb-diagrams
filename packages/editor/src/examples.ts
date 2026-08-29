@@ -1,20 +1,36 @@
-import awsHighAvailabilityWebAppSource from "../../../examples/diagrams/aws-high-availability-web-app.dgm?raw";
-import awsDataTransferHubSource from "../../../examples/diagrams/aws-data-transfer-hub.dgm?raw";
-import bedrockClaimsProcessingSource from "../../../examples/diagrams/bedrock-claims-processing.dgm?raw";
-import simpleServerlessWebApplicationSource from "../../../examples/pilots/simple-serverless-web-application/diagram.dgm?raw";
-import imageThumbnailPipelineSource from "../../../examples/diagrams/image-thumbnail-pipeline.dgm?raw";
-import asynchronousReportGenerationSource from "../../../examples/diagrams/asynchronous-report-generation.dgm?raw";
-import eventDrivenOrderFulfillmentSource from "../../../examples/diagrams/event-driven-order-fulfillment.dgm?raw";
+import awsHighAvailabilityWebAppSource from "../../../examples/curated/aws-high-availability-web-app/diagram.dgm?raw";
+import awsDataTransferHubSource from "../../../examples/curated/aws-data-transfer-hub/diagram.dgm?raw";
+import bedrockClaimsProcessingSource from "../../../examples/curated/bedrock-claims-processing/diagram.dgm?raw";
+import simpleServerlessWebApplicationSource from "../../../examples/curated/simple-serverless-web-application/diagram.dgm?raw";
+import imageThumbnailPipelineSource from "../../../examples/curated/image-thumbnail-pipeline/diagram.dgm?raw";
+import asynchronousReportGenerationSource from "../../../examples/curated/asynchronous-report-generation/diagram.dgm?raw";
+import eventDrivenOrderFulfillmentSource from "../../../examples/curated/event-driven-order-fulfillment/diagram.dgm?raw";
 import azurePrivateAppServiceSource from "../../../examples/diagrams/azure-private-app-service.dgm?raw";
 
-import DATA_TRANSFER_HUB_PROMPT from "../../../examples/prompts/aws-data-transfer-hub.md?raw";
-import HIGH_AVAILABILITY_PROMPT from "../../../examples/prompts/aws-high-availability-web-app.md?raw";
-import BEDROCK_CLAIMS_PROMPT from "../../../examples/prompts/bedrock-claims-processing.md?raw";
-import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/pilots/simple-serverless-web-application/user-prompt.md?raw";
-import IMAGE_THUMBNAIL_PIPELINE_PROMPT from "../../../examples/prompts/image-thumbnail-pipeline.md?raw";
-import ASYNCHRONOUS_REPORT_GENERATION_PROMPT from "../../../examples/prompts/asynchronous-report-generation.md?raw";
-import EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT from "../../../examples/prompts/event-driven-order-fulfillment.md?raw";
+import DATA_TRANSFER_HUB_PROMPT from "../../../examples/curated/aws-data-transfer-hub/user-prompt.md?raw";
+import HIGH_AVAILABILITY_PROMPT from "../../../examples/curated/aws-high-availability-web-app/user-prompt.md?raw";
+import BEDROCK_CLAIMS_PROMPT from "../../../examples/curated/bedrock-claims-processing/user-prompt.md?raw";
+import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/curated/simple-serverless-web-application/user-prompt.md?raw";
+import IMAGE_THUMBNAIL_PIPELINE_PROMPT from "../../../examples/curated/image-thumbnail-pipeline/user-prompt.md?raw";
+import ASYNCHRONOUS_REPORT_GENERATION_PROMPT from "../../../examples/curated/asynchronous-report-generation/user-prompt.md?raw";
+import EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT from "../../../examples/curated/event-driven-order-fulfillment/user-prompt.md?raw";
 import AZURE_PRIVATE_APP_SERVICE_PROMPT from "../../../examples/prompts/azure-private-app-service.md?raw";
+
+import DATA_TRANSFER_HUB_BRIEF from "../../../examples/curated/aws-data-transfer-hub/architecture-brief.md?raw";
+import HIGH_AVAILABILITY_BRIEF from "../../../examples/curated/aws-high-availability-web-app/architecture-brief.md?raw";
+import BEDROCK_CLAIMS_BRIEF from "../../../examples/curated/bedrock-claims-processing/architecture-brief.md?raw";
+import SIMPLE_SERVERLESS_WEB_APPLICATION_BRIEF from "../../../examples/curated/simple-serverless-web-application/architecture-brief.md?raw";
+import IMAGE_THUMBNAIL_PIPELINE_BRIEF from "../../../examples/curated/image-thumbnail-pipeline/architecture-brief.md?raw";
+import ASYNCHRONOUS_REPORT_GENERATION_BRIEF from "../../../examples/curated/asynchronous-report-generation/architecture-brief.md?raw";
+import EVENT_DRIVEN_ORDER_FULFILLMENT_BRIEF from "../../../examples/curated/event-driven-order-fulfillment/architecture-brief.md?raw";
+
+import DATA_TRANSFER_HUB_REFERENCE from "../../../examples/curated/aws-data-transfer-hub/reference-spec.md?raw";
+import HIGH_AVAILABILITY_REFERENCE from "../../../examples/curated/aws-high-availability-web-app/reference-spec.md?raw";
+import BEDROCK_CLAIMS_REFERENCE from "../../../examples/curated/bedrock-claims-processing/reference-spec.md?raw";
+import SIMPLE_SERVERLESS_WEB_APPLICATION_REFERENCE from "../../../examples/curated/simple-serverless-web-application/reference-spec.md?raw";
+import IMAGE_THUMBNAIL_PIPELINE_REFERENCE from "../../../examples/curated/image-thumbnail-pipeline/reference-spec.md?raw";
+import ASYNCHRONOUS_REPORT_GENERATION_REFERENCE from "../../../examples/curated/asynchronous-report-generation/reference-spec.md?raw";
+import EVENT_DRIVEN_ORDER_FULFILLMENT_REFERENCE from "../../../examples/curated/event-driven-order-fulfillment/reference-spec.md?raw";
 
 export interface DiagramExample {
   id: string;
@@ -23,6 +39,10 @@ export interface DiagramExample {
   tags: string[];
   source: string;
   prompt: string;
+  /** The normalized interpretation shown in Studio, when available. */
+  architectureBrief?: string;
+  /** The reconstruction-level specification, intentionally secondary in the UI. */
+  referenceSpec?: string;
 }
 
 export const DIAGRAM_EXAMPLES: DiagramExample[] = [
@@ -33,6 +53,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "Bedrock", "claims", "AI"],
     source: bedrockClaimsProcessingSource,
     prompt: BEDROCK_CLAIMS_PROMPT,
+    architectureBrief: BEDROCK_CLAIMS_BRIEF,
+    referenceSpec: BEDROCK_CLAIMS_REFERENCE,
   },
   {
     id: "aws-data-transfer-hub",
@@ -41,6 +63,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "cross-account", "Fargate", "replication"],
     source: awsDataTransferHubSource,
     prompt: DATA_TRANSFER_HUB_PROMPT,
+    architectureBrief: DATA_TRANSFER_HUB_BRIEF,
+    referenceSpec: DATA_TRANSFER_HUB_REFERENCE,
   },
   {
     id: "aws-high-availability-web-app",
@@ -49,6 +73,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "high availability", "multi-AZ"],
     source: awsHighAvailabilityWebAppSource,
     prompt: HIGH_AVAILABILITY_PROMPT,
+    architectureBrief: HIGH_AVAILABILITY_BRIEF,
+    referenceSpec: HIGH_AVAILABILITY_REFERENCE,
   },
   {
     id: "simple-serverless-web-application",
@@ -57,6 +83,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "serverless", "beginner"],
     source: simpleServerlessWebApplicationSource,
     prompt: SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT,
+    architectureBrief: SIMPLE_SERVERLESS_WEB_APPLICATION_BRIEF,
+    referenceSpec: SIMPLE_SERVERLESS_WEB_APPLICATION_REFERENCE,
   },
   {
     id: "image-thumbnail-pipeline",
@@ -65,6 +93,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "S3", "events"],
     source: imageThumbnailPipelineSource,
     prompt: IMAGE_THUMBNAIL_PIPELINE_PROMPT,
+    architectureBrief: IMAGE_THUMBNAIL_PIPELINE_BRIEF,
+    referenceSpec: IMAGE_THUMBNAIL_PIPELINE_REFERENCE,
   },
   {
     id: "asynchronous-report-generation",
@@ -73,6 +103,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "async", "SQS"],
     source: asynchronousReportGenerationSource,
     prompt: ASYNCHRONOUS_REPORT_GENERATION_PROMPT,
+    architectureBrief: ASYNCHRONOUS_REPORT_GENERATION_BRIEF,
+    referenceSpec: ASYNCHRONOUS_REPORT_GENERATION_REFERENCE,
   },
   {
     id: "event-driven-order-fulfillment",
@@ -81,6 +113,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     tags: ["AWS", "events", "fulfillment"],
     source: eventDrivenOrderFulfillmentSource,
     prompt: EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT,
+    architectureBrief: EVENT_DRIVEN_ORDER_FULFILLMENT_BRIEF,
+    referenceSpec: EVENT_DRIVEN_ORDER_FULFILLMENT_REFERENCE,
   },
   {
     id: "azure-private-app-service",

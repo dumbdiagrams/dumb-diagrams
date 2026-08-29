@@ -174,6 +174,15 @@ describe("workspace state", () => {
     expect(result.state.recentlyClosed.map((tab) => tab.id)).toEqual(["tab-d", "tab-c"]);
   });
 
+  it("protects the sole untouched blank default tab but closes other sole tabs", () => {
+    const blank = createWorkspaceTab("blank", { id: "blank", origin: "new", viewport });
+    const state = { version: 1 as const, tabs: [blank], activeTabId: blank.id, recentlyClosed: [] };
+    expect(closeWorkspaceTabs(state, [blank.id], { protectedBlankSource: "blank" }).closed).toHaveLength(0);
+    const named = createWorkspaceTab("blank", { id: "named", origin: "new", filename: "x.dgm", viewport });
+    const result = closeWorkspaceTabs({ ...state, tabs: [named], activeTabId: named.id }, [named.id], { protectedBlankSource: "blank" });
+    expect(result.closed).toHaveLength(1);
+  });
+
   it("attaches the latest render preview when tabs are archived", () => {
     const tab = createWorkspaceTab("source", { id: "tab-a", viewport });
     const replacement = createWorkspaceTab("blank", { id: "blank", viewport });

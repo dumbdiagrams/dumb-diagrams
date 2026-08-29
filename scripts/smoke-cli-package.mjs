@@ -13,6 +13,16 @@ const tarballName = `create-dumb-diagrams-${version}.tgz`;
 const tarballPath = join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+const curatedExampleIds = [
+  "simple-serverless-web-application",
+  "image-thumbnail-pipeline",
+  "aws-data-transfer-hub",
+  "bedrock-claims-processing",
+  "aws-high-availability-web-app",
+  "asynchronous-report-generation",
+  "event-driven-order-fulfillment",
+];
+const curatedExampleFiles = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
 
 mkdirSync(artifactsDir, { recursive: true });
 
@@ -35,19 +45,15 @@ const required = [
   "package/dist/templates/project/GEMINI.md",
   "package/dist/templates/project/.dumbdiagrams/instructions.md",
   "package/dist/templates/examples/README.md",
-  "package/dist/templates/examples/aws-high-availability-web-app.dgm",
-  "package/dist/templates/examples/simple-serverless-web-application/user-prompt.md",
-  "package/dist/templates/examples/simple-serverless-web-application/architecture-brief.md",
-  "package/dist/templates/examples/simple-serverless-web-application/reference-spec.md",
-  "package/dist/templates/examples/simple-serverless-web-application/diagram.dgm",
+  ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `package/dist/templates/examples/${id}/${file}`)),
   "package/dist/source/CORRESPONDING_SOURCE.md",
   "package/dist/source/packages/cli/src/index.ts",
   "package/dist/source/packages/editor/src/main.tsx",
   "package/dist/source/packages/runtime/src/core/types.ts",
   "package/dist/source/assets/catalog/sources.lock.json",
   "package/dist/source/assets/catalog/sources/cloud-agnostic/server.svg",
-  "package/dist/source/examples/diagrams/aws-high-availability-web-app.dgm",
-  "package/dist/source/examples/pilots/simple-serverless-web-application/diagram.dgm",
+  "package/dist/source/examples/curated/aws-high-availability-web-app/diagram.dgm",
+  "package/dist/source/examples/curated/simple-serverless-web-application/diagram.dgm",
   "package/dist/source/examples/curated-baseline.json",
   "package/dist/source/examples/routing-warnings.json",
   "package/dist/source/registry.npmrc",
@@ -86,10 +92,7 @@ try {
     "CLAUDE.md",
     "GEMINI.md",
     ".dumbdiagrams/instructions.md",
-    ".dumbdiagrams/examples/simple-serverless-web-application/user-prompt.md",
-    ".dumbdiagrams/examples/simple-serverless-web-application/architecture-brief.md",
-    ".dumbdiagrams/examples/simple-serverless-web-application/reference-spec.md",
-    ".dumbdiagrams/examples/simple-serverless-web-application/diagram.dgm",
+    ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `.dumbdiagrams/examples/${id}/${file}`)),
   ]) {
     if (!existsSync(join(projectDir, generated))) throw new Error(`init did not create ${generated}`);
   }

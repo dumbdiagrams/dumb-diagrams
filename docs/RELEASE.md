@@ -139,7 +139,9 @@ dynamic boundary instead of increasing the warning limit.
 
 - `assets/catalog/` — vendored provider SVGs, source locks, and collision policy.
   See [`assets/catalog/README.md`](../assets/catalog/README.md).
-- `examples/diagrams/` — repository `.dgm` examples validated by CI.
+- `examples/curated/` — canonical four-file bundles for curated AWS examples.
+- `examples/diagrams/` and `examples/prompts/` — development fixtures and the
+  not-yet-migrated Azure example, all validated by CI.
 - `packages/runtime`, `packages/editor`, and `packages/cli` — the only workspace
   packages.
 - `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed

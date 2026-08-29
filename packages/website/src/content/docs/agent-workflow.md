@@ -8,7 +8,7 @@ A coding agent can turn an architecture discussion into a structured file. It do
 
 That is what **LLM-first** means here: the large language model works with readable source and explicit constraints, while the diagram engine handles deterministic placement and routing. The workflow is diagrams as code, with a visual editor when you need one. You stay in control of both the source and the final result.
 
-The initializer creates the project context: `DUMB_DIAGRAMS.md`, agent entry points, a catalog, and example diagrams paired with their original prompts. Use those files with a coding agent you already have. Dumb Diagrams does not include a hosted model or send your project anywhere automatically.
+The initializer creates the project context: a small agent entrypoint, shared instructions under `.dumbdiagrams/`, a catalog, and example bundles containing natural prompts, architecture briefs, reference specifications, and diagrams. Use those files with a coding agent you already have. Dumb Diagrams does not include a hosted model or send your project anywhere automatically.
 
 ## Use a coding agent
 
@@ -22,12 +22,12 @@ You can also [write the source yourself](../source-format/) or [edit in Studio](
 
 ## Start with the project instructions
 
-Have the agent read `DUMB_DIAGRAMS.md` and `examples/README.md`, then choose the closest example and prompt. The catalog is the reference for service types. A familiar service name is not always the identifier the engine expects.
+Have the agent read `AGENTS.md`, then `.dumbdiagrams/instructions.md` and the closest example under `.dumbdiagrams/examples/`. The catalog is the reference for service types. A familiar service name is not always the identifier the engine expects.
 
 For example:
 
 ```text
-Read DUMB_DIAGRAMS.md and the closest example.
+Read AGENTS.md and the closest `.dumbdiagrams` instructions and example.
 
 Create diagrams/payments.dgm for our payments flow.
 A customer calls an API Gateway endpoint. A Lambda handler
@@ -35,7 +35,7 @@ processes the request and writes to a DynamoDB ledger.
 Keep the services inside an AWS Region and number the main
 request path. Use the catalog’s exact service types.
 
-Use automatic layout. Validate the result when you are done.
+Let the engine handle initial layout. Validate the result when you are done.
 ```
 
 ## Describe meaning before placement

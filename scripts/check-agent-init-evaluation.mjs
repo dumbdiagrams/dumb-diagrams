@@ -11,6 +11,8 @@ import { getCatalogEntry, listAssets } from "../packages/runtime/dist/catalog/in
 const DEFAULT_ROOT = resolve(
   fileURLToPath(new URL("../examples/evaluations/simple-serverless-web-application/", import.meta.url)),
 );
+const CURATED_ROOT = resolve(fileURLToPath(new URL("../examples/curated/", import.meta.url)));
+const CURATED_CONTRACT = resolve(fileURLToPath(new URL("../examples/evaluations/curated-aws.json", import.meta.url)));
 const canonicalTypeByIcon = new Map(
   listAssets("all", { includeAliases: false }).map((entry) => [entry.icon.sourceId, entry.type]),
 );
@@ -19,8 +21,8 @@ const LEVELS = {
   normal: { prompt: "normal.md", source: "normal.dgm" },
   detailed: { prompt: "detailed.md", source: "detailed.dgm" },
   expert: {
-    prompt: "../../pilots/simple-serverless-web-application/reference-spec.md",
-    source: "../../pilots/simple-serverless-web-application/diagram.dgm",
+    prompt: "../../curated/simple-serverless-web-application/reference-spec.md",
+    source: "../../curated/simple-serverless-web-application/diagram.dgm",
   },
 };
 
@@ -211,6 +213,53 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function validateCuratedBundle(root, contract) {
+  const failures = [];
+  const results = {};
+  const requiredFiles = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
+  if (!contract || contract.version !== 1 || !contract.examples || typeof contract.examples !== "object") {
+    return failure("curated contract must have version 1 and an examples object");
+  }
+
+  for (const [id, expected] of Object.entries(contract.examples)) {
+    const exampleRoot = resolve(root, id);
+    const exampleFailures = [];
+    const files = {};
+    for (const file of requiredFiles) {
+      const path = resolve(exampleRoot, file);
+      if (!existsSync(path)) {
+        const message = `missing ${file}`;
+        exampleFailures.push(message);
+        failures.push(`${id}: ${message}`);
+      } else if (readFileSync(path, "utf8").trim().length === 0) {
+        const message = `empty ${file}`;
+        exampleFailures.push(message);
+        failures.push(`${id}: ${message}`);
+      } else {
+        files[file] = true;
+      }
+    }
+    const sourcePath = resolve(exampleRoot, "diagram.dgm");
+    if (existsSync(sourcePath)) {
+      const result = evaluateSource(readFileSync(sourcePath, "utf8"), {
+        grammar: "aws",
+        noUnexpectedTypes: true,
+        noUnexpectedGroupTypes: true,
+        ...expected,
+      });
+      if (!result.ok) {
+        exampleFailures.push(result.message);
+        failures.push(`${id}: ${result.message}`);
+      }
+      results[id] = { ok: exampleFailures.length === 0, files, semantic: result };
+    } else {
+      results[id] = { ok: false, files, semantic: failure("missing diagram.dgm") };
+    }
+  }
+
+  return failures.length ? { ok: false, message: failures.join("; "), examples: results } : { ok: true, examples: results };
+}
+
 function run(root) {
   const expectedPath = resolve(root, "expected.json");
   const expected = readJson(expectedPath);
@@ -241,6 +290,11 @@ function run(root) {
   );
   results.negativeSelfTest = { ok: !negative.ok, observed: negative.message };
   if (negative.ok) ok = false;
+
+  const curatedContract = readJson(CURATED_CONTRACT);
+  const curated = validateCuratedBundle(CURATED_ROOT, curatedContract);
+  results.curated = curated;
+  if (!curated.ok) ok = false;
 
   console.log(JSON.stringify({ ok, root, results }, null, 2));
   return ok ? 0 : 1;

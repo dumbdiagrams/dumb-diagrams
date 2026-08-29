@@ -31,9 +31,15 @@ export function renderSvg(
     `<rect width="100%" height="100%" fill="${GRAMMAR.canvasFill}"/>`,
   );
   const arrowMarkers = Object.entries(EDGE_COLOR_VALUES)
-    .map(([name, color]) => `<marker id="${name === "graphite" ? "arrow" : `arrow-${name}`}" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    .map(([name, color]) => {
+      const markerId = name === "graphite" ? "arrow" : `arrow-${name}`;
+      return `<marker id="${markerId}" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="${color}"/>
-  </marker>`)
+  </marker>
+  <marker id="${markerId}-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="${color}"/>
+  </marker>`;
+    })
     .join("\n  ");
   parts.push(`<defs>
   ${arrowMarkers}
@@ -196,7 +202,7 @@ function renderEdge(edge: LayoutResult["edges"][number]): string {
   const dash =
     edge.style === "dashed" ? `stroke-dasharray="${GRAMMAR.edgeDash}"` : "";
   const marker = [
-    isBidirectional ? `marker-start="url(#${markerId})"` : "",
+    isBidirectional ? `marker-start="url(#${markerId}-start)"` : "",
     hasArrow ? `marker-end="url(#${markerId})"` : "",
   ].filter(Boolean).join(" ");
   const markerOverlay =

@@ -11,7 +11,7 @@ import type { LayoutResult } from "../core/index.js";
 import { compileDiagram, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
 import { parseDgm } from "../dsl/index.js";
-import { GROUP_STYLES } from "../grammar-aws/index.js";
+import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 import {
   eraseOrthogonalRouteLoops,
   normalizeOrthogonalRoute,
@@ -135,9 +135,74 @@ describe("async-docs fixture", () => {
     expect(result.invariantFailures).toEqual([]);
   });
 
+  it("keeps curated Bedrock automatic routes inside the rendered canvas", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
+      "utf8",
+    ));
+    const result = compileDiagram(doc);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const bounds = result.layout.canvasBounds ?? {
+      x: 0,
+      y: 0,
+      w: result.layout.width,
+      h: result.layout.height,
+    };
+    for (const edge of result.layout.edges) {
+      for (const point of edge.points) {
+        expect(point.x, `${edge.id} x`).toBeGreaterThanOrEqual(bounds.x);
+        expect(point.x, `${edge.id} x`).toBeLessThanOrEqual(bounds.x + bounds.w);
+        expect(point.y, `${edge.id} y`).toBeGreaterThanOrEqual(bounds.y);
+        expect(point.y, `${edge.id} y`).toBeLessThanOrEqual(bounds.y + bounds.h);
+      }
+    }
+    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "edge-icon-collision",
+        elementIds: expect.arrayContaining([
+          "workflow_to_state",
+          expect.stringMatching(/^(extractor|fraud_model)$/),
+        ]),
+      }),
+    ]));
+    expect(result.svg).toContain(
+      `viewBox="${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}"`,
+    );
+  });
+
+  it("expands runtime canvas bounds for perimeter route points", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const routed = routeEdges(doc, layout);
+    const first = routed[0]!;
+    const outside = {
+      ...first,
+      points: [
+        { x: -48, y: first.points[0]!.y },
+        { x: layout.width + 48, y: first.points.at(-1)!.y },
+      ],
+    };
+    const full = attachRoutes(layout, [outside]);
+    const svg = renderSvg(doc, full);
+    const padding = GRAMMAR.edgeStroke;
+
+    expect(full.canvasBounds).toEqual({
+      x: -48 - padding,
+      y: Math.min(0, first.points[0]!.y) - padding,
+      w: layout.width + 96 + padding * 2,
+      h: Math.max(layout.height, first.points[0]!.y, first.points.at(-1)!.y) -
+        Math.min(0, first.points[0]!.y) + padding * 2,
+    });
+    expect(svg).toContain(
+      `viewBox="${full.canvasBounds!.x} ${full.canvasBounds!.y} ${full.canvasBounds!.w} ${full.canvasBounds!.h}"`,
+    );
+  });
+
   it("keeps decorated cross-boundary labels clear in the thumbnail pipeline", () => {
     const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/diagrams/image-thumbnail-pipeline.dgm", import.meta.url),
+      new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
       "utf8",
     ));
     const result = compileDiagram(doc);
@@ -476,8 +541,22 @@ describe("async-docs fixture", () => {
     expect(bidirectionalResult.ok).toBe(true);
     const bidirectionalEdge = bidirectionalResult.svg?.match(/<g id="edge-e2"[\s\S]*?<\/g>/)?.[0] ?? "";
     expect(bidirectionalEdge).toContain('class="edge edge-bidirectional edge-solid"');
-    expect(bidirectionalEdge).toContain('marker-start="url(#arrow)"');
+    expect(bidirectionalEdge).toContain('marker-start="url(#arrow-start)"');
     expect(bidirectionalEdge).toContain('marker-end="url(#arrow)"');
+    expect(bidirectionalResult.svg).toContain('id="arrow-start"');
+    expect(bidirectionalResult.svg).toContain('orient="auto-start-reverse"');
+
+    doc.edges[1]!.kind = "bidirectional";
+    doc.edges[1]!.style = "dashed";
+    doc.edges[1]!.color = "teal";
+    const coloredDashedResult = compileDiagram(doc);
+    expect(coloredDashedResult.ok).toBe(true);
+    const coloredDashedEdge = coloredDashedResult.svg?.match(/<g id="edge-e2"[\s\S]*?<\/g>/)?.[0] ?? "";
+    expect(coloredDashedEdge).toContain('marker-start="url(#arrow-teal-start)"');
+    expect(coloredDashedEdge).toContain('marker-end="url(#arrow-teal)"');
+    expect(coloredDashedEdge).toContain('<path d="M');
+    expect(coloredDashedEdge.match(/marker-start="url\(#arrow-teal-start\)"/g)).toHaveLength(2);
+    expect(coloredDashedEdge.match(/marker-end="url\(#arrow-teal\)"/g)).toHaveLength(2);
   });
 
   it("repairs unsafe pinned places and removes loops from pinned routes", () => {

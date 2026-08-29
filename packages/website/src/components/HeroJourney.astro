@@ -15,8 +15,8 @@ function readExample(relativePath: string) {
   return readFileSync(match, 'utf8').trimEnd();
 }
 
-const prompt = readExample('examples/prompts/image-thumbnail-pipeline.md');
-const source = readExample('examples/diagrams/image-thumbnail-pipeline.dgm');
+const prompt = readExample('examples/curated/image-thumbnail-pipeline/user-prompt.md');
+const source = readExample('examples/curated/image-thumbnail-pipeline/diagram.dgm');
 const preview = readFileSync(resolve('public/diagrams/image-thumbnail-pipeline-preview.svg'), 'utf8');
 const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
 if (!dimensions) throw new Error('Missing Image thumbnail pipeline preview dimensions');
@@ -61,7 +61,7 @@ const previewHeight = Number(dimensions[2]);
               <li class="cursor-file cursor-selected"><span aria-hidden="true">·</span><b aria-hidden="true">◇</b> architecture.dgm</li>
               <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">M</b> README.md</li>
               <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">◎</b> AGENTS.md</li>
-              <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">{}</b> CATALOG.json</li>
+              <li class="cursor-file"><span aria-hidden="true">·</span><b aria-hidden="true">{}</b> .dumbdiagrams/catalog.json</li>
             </ul>
             <div class="cursor-explorer-footer"><span>⌄</span> OUTLINE</div>
             <div class="cursor-explorer-footer"><span>⌄</span> TIMELINE</div>

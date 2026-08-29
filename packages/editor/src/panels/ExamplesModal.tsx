@@ -221,9 +221,28 @@ export function ExamplesModal({
                   {example.tags.map((tag) => <span key={tag}>{tag}</span>)}
                 </div>
                 <details className="example-prompt">
-                  <summary>Creation prompt</summary>
+                  <summary>Prompt · Try this with your agent</summary>
                   <pre>{example.prompt}</pre>
                 </details>
+                {example.architectureBrief && (
+                  <details className="example-prompt">
+                    <summary>How DumbDiagrams interprets it</summary>
+                    <pre>{example.architectureBrief}</pre>
+                  </details>
+                )}
+                <details className="example-prompt">
+                  <summary>.dgm code</summary>
+                  <pre className="example-source">{example.source}</pre>
+                </details>
+                {example.referenceSpec && (
+                  <details className="example-prompt">
+                    <summary>Advanced · Detailed specification</summary>
+                    <pre>{example.referenceSpec}</pre>
+                    <p className="example-reference-note">
+                      This is the preserved reconstruction specification used to create and regression-test the diagram.
+                    </p>
+                  </details>
+                )}
               </div>
             </article>
           );

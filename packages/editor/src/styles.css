@@ -5245,6 +5245,10 @@ textarea:focus-visible {
   padding-top: 9px;
 }
 
+.example-prompt + .example-prompt {
+  margin-top: 9px;
+}
+
 .example-prompt summary {
   cursor: pointer;
   color: var(--accent);
@@ -5264,6 +5268,11 @@ textarea:focus-visible {
   color: var(--text);
   font: 10px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: pre-wrap;
+}
+
+.example-prompt pre.example-source {
+  max-height: 260px;
+  white-space: pre;
 }
 
 .example-reference-note {
@@ -7422,6 +7431,40 @@ textarea:focus-visible {
 
 .export-dialog-footer .modal-actions .primary-button:hover {
   background: color-mix(in srgb, var(--accent) 86%, var(--ink));
+}
+
+/* The default export surface is deliberately dense enough to fit the common
+ * laptop heights. Keep the body stable in that case; genuinely constrained
+ * windows and expanded Advanced options retain an accessible scroll region. */
+@media (min-width: 701px) and (min-height: 700px) {
+  .export-dialog .modal-body {
+    overflow: hidden;
+    padding: 8px 10px 10px;
+  }
+
+  .export-dialog-form {
+    gap: 6px;
+  }
+
+  .export-dialog-section {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .export-choice-card {
+    min-height: 58px;
+    padding: 8px 10px;
+  }
+
+  .export-dialog:has(.export-advanced[open]) .modal-body {
+    overflow: auto;
+  }
+}
+
+@media (max-height: 699px), (max-width: 700px) {
+  .export-dialog .modal-body {
+    overflow: auto;
+  }
 }
 
 @media (max-width: 700px) {

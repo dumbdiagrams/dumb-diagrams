@@ -112,7 +112,7 @@ When you need the compiled CLI and its local-file bridge:
 
 ```bash
 pnpm build
-pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm
+pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm
 ```
 
 When you change packaging, templates, bundled Studio assets, or corresponding
@@ -145,10 +145,10 @@ Build what changed, then invoke the dist entry directly or through `dev:cli`:
 
 ```bash
 pnpm build
-pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm
+pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm
 
 # equivalent:
-node packages/cli/dist/index.js studio examples/diagrams/aws-high-availability-web-app.dgm
+node packages/cli/dist/index.js studio examples/curated/aws-high-availability-web-app/diagram.dgm
 ```
 
 `dev:cli` serves Studio from `packages/editor/dist` after an editor build. UI
@@ -165,17 +165,38 @@ node packages/cli/dist/index.js -h
 ### Tarball CLI (consumer path)
 
 ```bash
+set -e
+cd "$(git rev-parse --show-toplevel)"
+# If you use nvm, run `nvm use` here before continuing.
+npm uninstall -g create-dumb-diagrams
+hash -r
+pnpm install --frozen-lockfile
+rm -rf packages/runtime/dist packages/editor/dist packages/cli/dist
+rm -f .artifacts/packages/create-dumb-diagrams-0.1.0.tgz
 pnpm build
-mkdir -p .artifacts/packages
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+pnpm smoke:package
+ARTIFACT="$PWD/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
+npm install -g "$ARTIFACT"
+create-dumb-diagrams --version
+dumbdiagrams --version
+dgm --version
+```
 
+This is the recommended local consumer test. `pnpm smoke:package` creates the
+tarball and runs the pack + consumer checks automatically, including a
+deliberate **invalid** `.dgm` that must fail validation—the red `✖` in the log
+is expected. It also verifies the `dgm` alias and the corresponding-source
+rebuild. The commands do not publish to npm. If the global install reports a
+permission problem or command conflict, stop; do not use `sudo` or `--force`.
+
+For a temporary one-off test without changing the global install, the tarball
+can still be invoked with `npx --package`, but use the artifact created by
+`pnpm smoke:package`, not `@latest`:
+
+```bash
 export ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
 export CLI="npx --yes --package=$ARTIFACT create-dumb-diagrams"
 ```
-
-`pnpm smoke:package` runs the same pack + `npx` checks automatically (including
-a deliberate **invalid** `.dgm` that must fail validation — the red `✖` in the
-log is expected).
 
 ### Command reference
 
@@ -192,8 +213,8 @@ Run `npx create-dumb-diagrams@latest help` (or `$CLI help` from a tarball) for t
 
 `init` writes `diagrams/`, small `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
 entrypoints, and canonical knowledge under `.dumbdiagrams/`: instructions,
-architecture/DGM/provider guidance, catalogs, one four-role pilot, and seven
-legacy prompt/source pairs.
+architecture/DGM/provider guidance, catalogs, seven four-role AWS examples, and
+the remaining legacy Azure prompt/source pair.
 
 ### Try each command manually
 
@@ -223,7 +244,7 @@ $CLI studio "$TMP/by-name/diagrams" --no-open --port 4799
 
 # Workspace-only fixture render (needs monorepo examples/catalog)
 node packages/cli/dist/index.js fixtures async-docs
-node packages/cli/dist/index.js validate examples/diagrams
+node packages/cli/dist/index.js validate examples
 ```
 
 After publishing, replace `$CLI` with `npx create-dumb-diagrams@latest` or a pinned

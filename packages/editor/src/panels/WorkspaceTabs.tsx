@@ -15,6 +15,7 @@ export function WorkspaceTabs({
   onNew,
   onReorder,
   onContextMenu,
+  canCloseTab = () => true,
 }: {
   tabs: WorkspaceTab[];
   activeTabId: string;
@@ -27,6 +28,7 @@ export function WorkspaceTabs({
   onNew: () => void;
   onReorder: (tabId: string, targetTabId: string) => void;
   onContextMenu: (tabId: string, x: number, y: number) => void;
+  canCloseTab?: (tab: WorkspaceTab) => boolean;
 }) {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -180,7 +182,7 @@ export function WorkspaceTabs({
                 <span className="workspace-tab-label">{label}</span>
                 {tab.filename && <span className="workspace-tab-filename">{tab.filename}</span>}
               </button>
-              <button
+              {canCloseTab(tab) && <button
                 type="button"
                 className="workspace-tab-close"
                 aria-label={`Close ${label}`}
@@ -191,7 +193,7 @@ export function WorkspaceTabs({
                 }}
               >
                 <IconClose />
-              </button>
+              </button>}
             </div>
           );
         })}

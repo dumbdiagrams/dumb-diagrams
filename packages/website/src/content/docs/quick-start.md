@@ -37,19 +37,17 @@ The generated project uses ordinary files:
 ```text
 my-architecture/
   diagrams/          Your editable .dgm files
-  examples/          Reference diagrams and prompts
-  DUMB_DIAGRAMS.md   The project’s diagram conventions
+  .dumbdiagrams/     Shared instructions, catalog, and reference examples
   AGENTS.md          Instructions for coding agents
   CLAUDE.md          Another agent entry point
-  CATALOG.md         Readable icon and type inventory
-  CATALOG.json       The same inventory for tools
+  GEMINI.md          Another agent entry point
 ```
 
-Put new diagrams under `diagrams/`. Keep `examples/` as a reference rather than overwriting an example with your own system.
+Put new diagrams under `diagrams/`. Keep `.dumbdiagrams/examples/` as a reference rather than overwriting an example with your own system.
 
 ## Create the first draft with an agent
 
-Open the generated project folder in your coding agent. Ask it to read `DUMB_DIAGRAMS.md` and `examples/README.md`, describe your architecture, and have it create a `.dgm` file under `diagrams/`. Ask it to validate the result, then open that file in Studio to review and refine it.
+Open the generated project folder in your coding agent. Ask it to read `AGENTS.md` and the relevant `.dumbdiagrams/` guidance, describe your architecture, and have it create a `.dgm` file under `diagrams/`. Ask it to validate the result, then open that file in Studio to review and refine it.
 
 [Work with an agent](../agent-workflow/) walks through the setup and includes a prompt you can adapt. If you are working manually, continue with the source editor in Studio.
 

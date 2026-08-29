@@ -200,11 +200,69 @@ dgm validate diagrams
 
 ## Working on this repository
 
-This repository uses the pinned pnpm workspace. Use `pnpm`, not `npm install`.
+This repository uses the pinned pnpm workspace. Use `pnpm` for workspace
+dependencies; use npm only for the global install of the local tarball below.
 
-### Try `init` locally (before publishing)
+### Test the CLI locally (before publishing)
 
-Build once, then run `init` like an end user would:
+Use this flow when CLI changes need to be tested through the same global
+commands an end user will run. It removes the old global package, rebuilds the
+workspace, creates and verifies a fresh local tarball, then installs that exact
+tarball globally. Run the commands in order and stop if any command fails.
+
+Use Node.js 24 or newer and pnpm 11.23.0. Stop any local Studio or dev server
+before removing build outputs.
+
+```bash
+set -e
+cd "$(git rev-parse --show-toplevel)"
+# If you use nvm, run `nvm use` here before continuing.
+node --version
+pnpm --version
+npm uninstall -g create-dumb-diagrams
+hash -r                         # refresh zsh's command lookup cache
+pnpm install --frozen-lockfile
+rm -rf packages/runtime/dist packages/editor/dist packages/cli/dist
+rm -f .artifacts/packages/create-dumb-diagrams-0.1.0.tgz
+pnpm build
+pnpm smoke:package
+ARTIFACT="$PWD/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
+npm install -g "$ARTIFACT"
+create-dumb-diagrams --version
+dumbdiagrams --version
+dgm --version
+```
+
+Confirm the version output is Node 24+ and pnpm 11.23.0 before continuing.
+
+All three version commands should report `0.1.0`. `pnpm smoke:package` creates
+the tarball, checks its contents, exercises the CLI (including the `dgm` alias),
+and verifies that the included source can rebuild. An expected validation error
+for the intentionally invalid test diagram may appear before the final
+`OK package smoke passed ...` message. These commands do not publish to npm.
+
+The fresh artifact is:
+`.artifacts/packages/create-dumb-diagrams-0.1.0.tgz` in the repository root.
+
+If npm reports a permission problem or command conflict during the global
+install, stop. Do not add `sudo` or `--force`.
+
+After the global install, prepare a separate demo directory:
+
+```bash
+mkdir -p ../diagram-demos
+cd ../diagram-demos
+create-dumb-diagrams my-system --open-editor
+dgm studio my-system/diagrams
+```
+
+Use an unused project name if `my-system` already exists. Use the local `dgm`
+command above instead of any printed `npx …@latest` suggestion until the
+package is published.
+
+### Try `init` locally (workspace path)
+
+Build once, then run `init` directly from the compiled workspace CLI:
 
 ```bash
 pnpm build
@@ -235,7 +293,7 @@ That packs the CLI and runs `init` for you automatically.
 | --- | --- |
 | Studio UI only | `pnpm dev` |
 | Website and public docs | `pnpm dev:website` |
-| CLI or how Studio is served | `pnpm build && pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm` |
+| CLI or how Studio is served | `pnpm build && pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm` |
 | Full release check | `pnpm check:release` |
 
 For commands, flags, and deeper CLI testing, see

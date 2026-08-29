@@ -1,59 +1,48 @@
 {
   "version": 1,
-  "description": "Reviewed byte baseline for the eight curated diagram sources and their detailed reconstruction/reference specifications.",
+  "description": "Reviewed byte baseline for seven canonical AWS bundles and the legacy Azure diagram/reference pair.",
   "routingBaseline": "examples/routing-warnings.json",
-  "compatibilityMirrors": [
-    {
-      "canonical": "examples/pilots/simple-serverless-web-application/diagram.dgm",
-      "mirror": "examples/diagrams/simple-serverless-web-application.dgm",
-      "reason": "Temporary website and tooling compatibility; remove only in a later reviewed migration."
-    },
-    {
-      "canonical": "examples/pilots/simple-serverless-web-application/reference-spec.md",
-      "mirror": "examples/prompts/simple-serverless-web-application.md",
-      "reason": "Temporary website and tooling compatibility; remove only in a later reviewed migration."
-    }
-  ],
+  "compatibilityMirrors": [],
   "curated": {
     "simple-serverless-web-application": {
-      "diagram": "examples/pilots/simple-serverless-web-application/diagram.dgm",
-      "referenceSpec": "examples/pilots/simple-serverless-web-application/reference-spec.md",
+      "diagram": "examples/curated/simple-serverless-web-application/diagram.dgm",
+      "referenceSpec": "examples/curated/simple-serverless-web-application/reference-spec.md",
       "diagramSha256": "d1ac54aa7ad6c6d1faad039b8da3efeeb8987de254e12176deb063c8411e4324",
       "referenceSpecSha256": "5353cc300e503d8fa30582fb40f4ad2937a5d6e9e66198c2f2e4d2d39d29115c"
     },
     "aws-high-availability-web-app": {
-      "diagram": "examples/diagrams/aws-high-availability-web-app.dgm",
-      "referenceSpec": "examples/prompts/aws-high-availability-web-app.md",
+      "diagram": "examples/curated/aws-high-availability-web-app/diagram.dgm",
+      "referenceSpec": "examples/curated/aws-high-availability-web-app/reference-spec.md",
       "diagramSha256": "10e812fc9f9f2479d86b7faad3b61abaabeac7a15afefd4e80a0e84b9b942db4",
       "referenceSpecSha256": "9fb2badb5359883c056ae5a9bcd5c24c0b88520abdfaa5c110d90c5b7742a18b"
     },
     "aws-data-transfer-hub": {
-      "diagram": "examples/diagrams/aws-data-transfer-hub.dgm",
-      "referenceSpec": "examples/prompts/aws-data-transfer-hub.md",
+      "diagram": "examples/curated/aws-data-transfer-hub/diagram.dgm",
+      "referenceSpec": "examples/curated/aws-data-transfer-hub/reference-spec.md",
       "diagramSha256": "eb56b338fd7adb2f265a77935b56661a1511dd5f74fd4af90fcbcbd1b97d98c1",
       "referenceSpecSha256": "a7d984109f6296912f693d4f2003ac305a965b6e1a50f6dc7fd3e9f90f7d8493"
     },
     "bedrock-claims-processing": {
-      "diagram": "examples/diagrams/bedrock-claims-processing.dgm",
-      "referenceSpec": "examples/prompts/bedrock-claims-processing.md",
+      "diagram": "examples/curated/bedrock-claims-processing/diagram.dgm",
+      "referenceSpec": "examples/curated/bedrock-claims-processing/reference-spec.md",
       "diagramSha256": "d2f28d1f2b17ab7da3825fc91320ba9e49974fadc7fb5d4654296503687f6a10",
       "referenceSpecSha256": "97c1d27883cb2a54bf9394b4bf3ebab2d1d5cc28ffceb69cf91b6eb1515e5165"
     },
     "image-thumbnail-pipeline": {
-      "diagram": "examples/diagrams/image-thumbnail-pipeline.dgm",
-      "referenceSpec": "examples/prompts/image-thumbnail-pipeline.md",
+      "diagram": "examples/curated/image-thumbnail-pipeline/diagram.dgm",
+      "referenceSpec": "examples/curated/image-thumbnail-pipeline/reference-spec.md",
       "diagramSha256": "8b78fae00aa92132519a6c1f7e633ec260efc1ef2aa062cb2a4c0a5c9e8ea169",
       "referenceSpecSha256": "338835bb3228020c033d5ab3c179f2dd26fe9284c5b2b1dcf66e7c32fbe5e913"
     },
     "asynchronous-report-generation": {
-      "diagram": "examples/diagrams/asynchronous-report-generation.dgm",
-      "referenceSpec": "examples/prompts/asynchronous-report-generation.md",
+      "diagram": "examples/curated/asynchronous-report-generation/diagram.dgm",
+      "referenceSpec": "examples/curated/asynchronous-report-generation/reference-spec.md",
       "diagramSha256": "da531f440aceab2ef43d6abf7d5666e60bbfd25dd8db51ce91a3c2ef6b7ae6ea",
       "referenceSpecSha256": "6fc0ade1fa825724ac967d5750f4f3bee04e112b20827215cffe2b4a249a1068"
     },
     "event-driven-order-fulfillment": {
-      "diagram": "examples/diagrams/event-driven-order-fulfillment.dgm",
-      "referenceSpec": "examples/prompts/event-driven-order-fulfillment.md",
+      "diagram": "examples/curated/event-driven-order-fulfillment/diagram.dgm",
+      "referenceSpec": "examples/curated/event-driven-order-fulfillment/reference-spec.md",
       "diagramSha256": "645b52bbedf725e92c3beb2c90fcfcf1cdc88394a24338a13270926f9302bad3",
       "referenceSpecSha256": "2af25c967f137a9b32b33788fe7261251b1cc5165b77fccf05970528726e098b"
     },

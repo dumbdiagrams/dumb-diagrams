@@ -27,12 +27,12 @@ for (const id of expectedIds) if (!actualIds.has(id)) failures.push(`missing cur
 for (const id of actualIds) if (!expectedIds.has(id)) failures.push(`unexpected curated id: ${id}`);
 
 for (const [id, entry] of entries) {
-  checkFile(id, "diagram", entry.diagram, entry.diagramSha256, ["examples/diagrams", "examples/pilots"]);
-  checkFile(id, "reference spec", entry.referenceSpec, entry.referenceSpecSha256, ["examples/prompts", "examples/pilots"]);
+  checkFile(id, "diagram", entry.diagram, entry.diagramSha256, ["examples/diagrams", "examples/curated"]);
+  checkFile(id, "reference spec", entry.referenceSpec, entry.referenceSpecSha256, ["examples/prompts", "examples/curated"]);
 }
 
 for (const mirror of baseline.compatibilityMirrors ?? []) {
-  const canonical = safePath(mirror.canonical, ["examples/pilots"]);
+  const canonical = safePath(mirror.canonical, ["examples/curated"]);
   const compatibility = safePath(mirror.mirror, ["examples/diagrams", "examples/prompts"]);
   if (!canonical || !compatibility) continue;
   if (!existsSync(canonical) || !existsSync(compatibility)) {
@@ -55,7 +55,7 @@ for (const file of readdirSync(resolve(root, "examples/diagrams"))) {
 for (const file of readdirSync(resolve(root, "examples/prompts"))) {
   if (file.endsWith(".md")) discoveredIds.add(file.replace(/\.md$/, ""));
 }
-for (const directory of readdirSync(resolve(root, "examples/pilots"), { withFileTypes: true })) {
+for (const directory of readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })) {
   if (directory.isDirectory()) discoveredIds.add(directory.name);
 }
 for (const id of discoveredIds) if (!actualIds.has(id)) failures.push(`uninventoried curated example: ${id}`);

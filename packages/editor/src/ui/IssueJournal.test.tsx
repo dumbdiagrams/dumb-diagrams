@@ -28,8 +28,14 @@ describe("Studio issue journal", () => {
     expect(html).toContain('type="button"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="studio-issue-journal"');
-    expect(html).toContain('aria-label="2 issues: 1 error, 1 warning"');
+    expect(html).toContain('aria-label="1 error, 1 warning"');
     expect(html).toContain("issue-journal-trigger has-errors");
-    expect(html).toContain(">2 issues</button>");
+    expect(html).toContain(">1 error, 1 warning</button>");
+  });
+
+  it("uses severity labels for homogeneous journals", () => {
+    const html = renderToStaticMarkup(<IssueJournal issues={[{ severity: "warning", message: "Crossing" }]} onIssueSelect={vi.fn()} />);
+    expect(html).toContain('aria-label="1 warning"');
+    expect(html).toContain(">1 warning</button>");
   });
 });

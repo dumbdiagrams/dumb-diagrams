@@ -107,6 +107,11 @@ export function isTabDirty(tab: WorkspaceTab | undefined): boolean {
   return Boolean(tab && tab.source !== tab.savedSource);
 }
 
+export function isProtectedDefaultTab(tabs: WorkspaceTab[], blankSource: string, tabId = tabs[0]?.id): boolean {
+  const tab = tabs.length === 1 ? tabs[0] : undefined;
+  return Boolean(tab && tab.id === tabId && tab.origin === "new" && !tab.filename && tab.source === blankSource);
+}
+
 export function closeWorkspaceTabs(
   current: WorkspaceState,
   tabIds: string[],
@@ -114,9 +119,11 @@ export function closeWorkspaceTabs(
     preferredActiveTabId?: string;
     replacementTab?: WorkspaceTab;
     previewByTabId?: WorkspacePreviewMap;
+    protectedBlankSource?: string;
   } = {},
 ): { state: WorkspaceState; closed: WorkspaceTab[] } {
   const closingIds = new Set(tabIds);
+  if (options.protectedBlankSource !== undefined && isProtectedDefaultTab(current.tabs, options.protectedBlankSource) && closingIds.has(current.activeTabId)) return { state: current, closed: [] };
   const closed = current.tabs
     .filter((tab) => closingIds.has(tab.id))
     .map((tab) => {
@@ -514,6 +521,7 @@ export function useWorkspace(options: WorkspaceOptions) {
         preferredActiveTabId,
         replacementTab,
         previewByTabId,
+        protectedBlankSource: options.blankSource,
       });
       if (!result.closed.length) return 0;
       if (replacementTab) historiesRef.current.set(replacementTab.id, createHistory());

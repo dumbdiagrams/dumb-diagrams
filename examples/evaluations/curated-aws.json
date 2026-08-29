@@ -1,0 +1,307 @@
+{
+  "version": 1,
+  "description": "Semantic contracts for the seven curated AWS examples. These contracts intentionally ignore IDs, labels, source ordering, and layout coordinates.",
+  "examples": {
+    "simple-serverless-web-application": {
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 1,
+        "aws.api-gateway": 1,
+        "aws.aws-lambda": 1,
+        "aws.dynamodb": 1
+      },
+      "exactGroupCounts": {
+        "aws.cloud": 1,
+        "cloud-agnostic.boundary": 1
+      },
+      "forbiddenTypes": ["aws.cognito", "aws.simple-queue-service", "aws.elasticache", "aws.cloudwatch", "aws.vpc", "aws.aws-waf", "aws.route-53", "aws.aws-cloudtrail", "aws.guardduty", "aws.aws-secrets-manager"],
+      "containment": [
+        { "childType": "aws.cloudfront", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-storage-service", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.api-gateway", "ancestorType": "aws.cloud" },
+        { "childType": "aws.aws-lambda", "ancestorType": "aws.cloud" },
+        { "childType": "aws.dynamodb", "ancestorType": "aws.cloud" }
+      ],
+      "groupContainment": [{ "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.cloud" }],
+      "outsideContainment": [{ "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" }],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.cloudfront" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.api-gateway" },
+        { "sourceType": "aws.api-gateway", "targetType": "aws.aws-lambda" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.dynamodb" }
+      ],
+      "relationshipMode": "exact",
+      "allowedRoutingWarnings": []
+    },
+    "image-thumbnail-pipeline": {
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 3,
+        "aws.aws-lambda": 1,
+        "aws.dynamodb": 1
+      },
+      "exactGroupCounts": { "aws.cloud": 1, "cloud-agnostic.boundary": 4 },
+      "forbiddenTypes": ["aws.api-gateway", "aws.simple-queue-service", "aws.eventbridge", "aws.simple-notification-service", "aws.cognito", "aws.aws-waf", "aws.route-53", "aws.vpc"],
+      "containment": [
+        { "childType": "aws.cloudfront", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-storage-service", "ancestorType": "aws.cloud" },
+        { "childType": "aws.aws-lambda", "ancestorType": "aws.cloud" },
+        { "childType": "aws.dynamodb", "ancestorType": "aws.cloud" }
+      ],
+      "groupContainment": [{ "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.cloud" }],
+      "outsideContainment": [{ "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" }],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.cloudfront" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.simple-storage-service", "targetType": "aws.aws-lambda" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.dynamodb" }
+      ],
+      "relationshipMode": "exact",
+      "allowedRoutingWarnings": []
+    },
+    "aws-data-transfer-hub": {
+      "exactCounts": {
+        "cloud-agnostic.actor": 1,
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.identity": 1,
+        "aws.cognito": 1,
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 2,
+        "aws.dynamodb": 1,
+        "aws.aws-appsync": 1,
+        "aws.aws-lambda": 2,
+        "aws.aws-cloudformation": 1,
+        "aws.aws-fargate": 1,
+        "aws.aws-cloudformation-template": 3,
+        "aws.elastic-container-registry": 1,
+        "aws.elastic-container-registry-image": 1
+      },
+      "exactGroupCounts": { "aws.cloud": 1, "aws.account": 2, "cloud-agnostic.boundary": 4 },
+      "forbiddenTypes": ["aws.eventbridge", "aws.simple-queue-service", "aws.simple-notification-service", "aws.vpc", "aws.route-53", "aws.aws-waf"],
+      "containment": [
+        { "childType": "aws.cognito", "ancestorType": "aws.account" },
+        { "childType": "aws.cloudfront", "ancestorType": "aws.account" },
+        { "childType": "aws.simple-storage-service", "ancestorType": "aws.account" },
+        { "childType": "aws.dynamodb", "ancestorType": "aws.account" },
+        { "childType": "aws.aws-appsync", "ancestorType": "aws.account" },
+        { "childType": "aws.aws-lambda", "ancestorType": "aws.account" },
+        { "childType": "aws.aws-cloudformation", "ancestorType": "aws.account" },
+        { "childType": "aws.aws-fargate", "ancestorType": "aws.account" },
+        { "childType": "aws.aws-cloudformation-template", "ancestorType": "aws.account" },
+        { "childType": "aws.elastic-container-registry", "ancestorType": "aws.account" },
+        { "childType": "aws.elastic-container-registry-image", "ancestorType": "aws.account" }
+      ],
+      "groupContainment": [
+        { "childGroupType": "aws.account", "ancestorType": "aws.cloud" },
+        { "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.account" }
+      ],
+      "outsideContainment": [{ "childType": "cloud-agnostic.actor", "ancestorType": "aws.cloud" }],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.actor", "targetType": "cloud-agnostic.client" },
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.cloudfront" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.aws-appsync" },
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.cognito" },
+        { "sourceType": "cloud-agnostic.client", "targetType": "cloud-agnostic.identity" },
+        { "sourceType": "aws.aws-appsync", "targetType": "aws.aws-lambda" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.aws-lambda" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.aws-cloudformation" },
+        { "sourceType": "aws.aws-cloudformation", "targetType": "aws.aws-fargate" },
+        { "sourceType": "aws.simple-storage-service", "targetType": "aws.aws-cloudformation" },
+        { "sourceType": "aws.elastic-container-registry", "targetType": "aws.aws-fargate" },
+        { "sourceType": "aws.aws-appsync", "targetType": "aws.dynamodb" }
+      ],
+      "relationshipMode": "exact",
+      "allowedRoutingWarnings": []
+    },
+    "bedrock-claims-processing": {
+      "exactCounts": {
+        "cloud-agnostic.actor": 1,
+        "cloud-agnostic.client": 1,
+        "aws.simple-storage-service": 2,
+        "aws.bedrock": 3,
+        "aws.sagemaker-ai": 1,
+        "aws.dynamodb": 1,
+        "aws.simple-notification-service": 1,
+        "aws.simple-notification-service-email-notification": 1
+      },
+      "exactGroupCounts": { "aws.cloud": 1, "aws.region": 1, "cloud-agnostic.boundary": 2, "aws.account": 1 },
+      "forbiddenTypes": ["aws.api-gateway", "aws.cloudfront", "aws.aws-lambda", "aws.simple-queue-service", "aws.eventbridge", "aws.cognito", "aws.vpc"],
+      "containment": [
+        { "childType": "aws.simple-storage-service", "ancestorType": "aws.region" },
+        { "childType": "aws.bedrock", "ancestorType": "aws.region" },
+        { "childType": "aws.sagemaker-ai", "ancestorType": "aws.region" },
+        { "childType": "aws.dynamodb", "ancestorType": "aws.region" },
+        { "childType": "aws.simple-notification-service", "ancestorType": "aws.region" },
+        { "childType": "aws.simple-notification-service-email-notification", "ancestorType": "aws.region" }
+      ],
+      "groupContainment": [
+        { "childGroupType": "aws.region", "ancestorType": "aws.cloud" },
+        { "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.region" },
+        { "childGroupType": "aws.account", "ancestorType": "cloud-agnostic.boundary" }
+      ],
+      "outsideContainment": [
+        { "childType": "cloud-agnostic.actor", "ancestorType": "aws.cloud" },
+        { "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" }
+      ],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.actor", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.simple-storage-service", "targetType": "aws.bedrock", "count": 2 },
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.simple-storage-service", "targetType": "aws.dynamodb" },
+        { "sourceType": "aws.bedrock", "targetType": "aws.sagemaker-ai" },
+        { "sourceType": "aws.sagemaker-ai", "targetType": "aws.dynamodb" },
+        { "sourceType": "aws.dynamodb", "targetType": "aws.bedrock" },
+        { "sourceType": "aws.bedrock", "targetType": "aws.simple-notification-service" },
+        { "sourceType": "aws.simple-notification-service", "targetType": "aws.simple-notification-service-email-notification" },
+        { "sourceType": "aws.simple-notification-service-email-notification", "targetType": "cloud-agnostic.client" }
+      ],
+      "relationshipMode": "exact",
+      "allowedRoutingWarnings": []
+    },
+    "aws-high-availability-web-app": {
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "aws.route-53": 1,
+        "aws.cognito": 1,
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 1,
+        "aws.api-gateway": 1,
+        "aws.elastic-load-balancing-application-load-balancer": 1,
+        "aws.elastic-container-service": 2,
+        "aws.aws-fargate": 2,
+        "aws.dynamodb": 2,
+        "aws.elastic-container-registry": 1,
+        "aws.cloudwatch": 1
+      },
+      "exactGroupCounts": { "aws.cloud": 1, "cloud-agnostic.boundary": 2, "aws.vpc": 1, "aws.az": 2, "aws.subnet.private": 4 },
+      "forbiddenTypes": ["aws.eventbridge", "aws.simple-queue-service", "aws.simple-notification-service", "aws.aws-secrets-manager"],
+      "containment": [
+        { "childType": "aws.route-53", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.cognito", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.cloudfront", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-storage-service", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.api-gateway", "ancestorType": "aws.cloud" },
+        { "childType": "aws.elastic-load-balancing-application-load-balancer", "ancestorType": "aws.vpc" },
+        { "childType": "aws.elastic-container-service", "ancestorType": "aws.subnet.private" },
+        { "childType": "aws.aws-fargate", "ancestorType": "aws.subnet.private" },
+        { "childType": "aws.dynamodb", "ancestorType": "aws.subnet.private" },
+        { "childType": "aws.elastic-container-registry", "ancestorType": "aws.cloud" },
+        { "childType": "aws.cloudwatch", "ancestorType": "aws.cloud" }
+      ],
+      "groupContainment": [
+        { "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.cloud" },
+        { "childGroupType": "aws.vpc", "ancestorType": "aws.cloud" },
+        { "childGroupType": "aws.az", "ancestorType": "aws.vpc" },
+        { "childGroupType": "aws.subnet.private", "ancestorType": "aws.az" }
+      ],
+      "outsideContainment": [{ "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" }],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.route-53" },
+        { "sourceType": "aws.route-53", "targetType": "aws.cognito" },
+        { "sourceType": "aws.cognito", "targetType": "aws.cloudfront" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.api-gateway" },
+        { "sourceType": "aws.cognito", "targetType": "aws.api-gateway" },
+        { "sourceType": "aws.api-gateway", "targetType": "aws.elastic-load-balancing-application-load-balancer" },
+        { "sourceType": "aws.elastic-load-balancing-application-load-balancer", "targetType": "aws.elastic-container-service", "count": 2 },
+        { "sourceType": "aws.elastic-container-service", "targetType": "aws.aws-fargate", "count": 2 },
+        { "sourceType": "aws.elastic-container-registry", "targetType": "aws.aws-fargate", "count": 2 },
+        { "sourceType": "aws.aws-fargate", "targetType": "aws.dynamodb", "count": 2 },
+        { "sourceType": "aws.aws-fargate", "targetType": "aws.cloudwatch", "count": 2 },
+        { "sourceType": "aws.dynamodb", "targetType": "aws.cloudwatch", "count": 2 }
+      ],
+      "relationshipMode": "exact",
+      "allowedValidationWarnings": ["regional-in-vpc"],
+      "allowedRoutingWarnings": ["edge-crossing"]
+    },
+    "event-driven-order-fulfillment": {
+      "exactCounts": {
+        "cloud-agnostic.actor": 1,
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 1,
+        "aws.api-gateway": 1,
+        "aws.aws-lambda": 3,
+        "aws.dynamodb": 1,
+        "aws.eventbridge": 1,
+        "aws.aws-fargate": 1,
+        "aws.simple-notification-service": 1
+      },
+      "exactGroupCounts": { "aws.cloud": 1, "cloud-agnostic.boundary": 4 },
+      "forbiddenTypes": ["aws.cognito", "aws.simple-queue-service", "aws.cloudwatch", "aws.vpc", "aws.route-53", "aws.aws-waf"],
+      "containment": [
+        { "childType": "aws.cloudfront", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-storage-service", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.aws-lambda", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.dynamodb", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.eventbridge", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.aws-fargate", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-notification-service", "ancestorType": "aws.cloud" }
+      ],
+      "groupContainment": [{ "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.cloud" }],
+      "outsideContainment": [{ "childType": "cloud-agnostic.actor", "ancestorType": "aws.cloud" }],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.actor", "targetType": "aws.cloudfront" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.api-gateway" },
+        { "sourceType": "aws.api-gateway", "targetType": "aws.aws-lambda" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.dynamodb" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.eventbridge" },
+        { "sourceType": "aws.eventbridge", "targetType": "aws.aws-lambda", "count": 2 },
+        { "sourceType": "aws.eventbridge", "targetType": "aws.aws-fargate" },
+        { "sourceType": "aws.eventbridge", "targetType": "aws.simple-notification-service" }
+      ],
+      "relationshipMode": "exact",
+      "allowedRoutingWarnings": ["edge-label-group-collision"]
+    },
+    "asynchronous-report-generation": {
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 2,
+        "aws.api-gateway": 1,
+        "aws.aws-lambda": 1,
+        "aws.simple-queue-service": 2,
+        "aws.aws-fargate": 1,
+        "aws.dynamodb": 1,
+        "aws.simple-notification-service": 1,
+        "aws.simple-notification-service-email-notification": 1
+      },
+      "exactGroupCounts": { "aws.cloud": 1, "cloud-agnostic.boundary": 5 },
+      "forbiddenTypes": ["aws.eventbridge", "aws.cognito", "aws.vpc", "aws.route-53", "aws.aws-waf"],
+      "containment": [
+        { "childType": "aws.cloudfront", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-storage-service", "ancestorType": "aws.cloud" },
+        { "childType": "aws.api-gateway", "ancestorType": "aws.cloud" },
+        { "childType": "aws.aws-lambda", "ancestorType": "aws.cloud" },
+        { "childType": "aws.simple-queue-service", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.aws-fargate", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.dynamodb", "ancestorType": "cloud-agnostic.boundary" },
+        { "childType": "aws.simple-notification-service", "ancestorType": "aws.cloud" },
+        { "childType": "aws.simple-notification-service-email-notification", "ancestorType": "aws.cloud" }
+      ],
+      "groupContainment": [{ "childGroupType": "cloud-agnostic.boundary", "ancestorType": "aws.cloud" }],
+      "outsideContainment": [{ "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" }],
+      "relationships": [
+        { "sourceType": "cloud-agnostic.client", "targetType": "aws.cloudfront" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.cloudfront", "targetType": "aws.api-gateway" },
+        { "sourceType": "aws.api-gateway", "targetType": "aws.aws-lambda" },
+        { "sourceType": "aws.aws-lambda", "targetType": "aws.simple-queue-service" },
+        { "sourceType": "aws.simple-queue-service", "targetType": "aws.aws-fargate" },
+        { "sourceType": "aws.aws-fargate", "targetType": "aws.simple-storage-service" },
+        { "sourceType": "aws.aws-fargate", "targetType": "aws.dynamodb" },
+        { "sourceType": "aws.aws-fargate", "targetType": "aws.simple-notification-service" },
+        { "sourceType": "aws.simple-notification-service", "targetType": "aws.simple-notification-service-email-notification" },
+        { "sourceType": "aws.simple-queue-service", "targetType": "aws.simple-queue-service" }
+      ],
+      "relationshipMode": "exact",
+      "allowedRoutingWarnings": []
+    }
+  }
+}

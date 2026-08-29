@@ -296,6 +296,9 @@ export function routeEdges(
     }
 
     if (!best) {
+      // The perimeter search is the last automatic escape hatch. It still
+      // scores every candidate against hard content obstacles; never replace
+      // an exhausted search with an unchecked direct elbow through a card.
       for (const port of representativePortChoices(ports, 8)) {
         const context = createRouteContext(source, target, port, edge.style);
         const candidate = perimeterFallback(
@@ -317,29 +320,36 @@ export function routeEdges(
         }
       }
       if (!best) {
-        const port = ports.find((candidate) =>
-          existing.every((route) =>
-            !samePoint(candidate.src, route.points[0]!) &&
-            !samePoint(candidate.src, route.points.at(-1)!) &&
-            !samePoint(candidate.tgt, route.points[0]!) &&
-            !samePoint(candidate.tgt, route.points.at(-1)!)
-          )
-        ) ?? ports[0]!;
-        const context = createRouteContext(source, target, port, edge.style);
-        best = perimeterFallback(
-          layout,
-          source,
-          target,
-          port,
-          obstacles,
-          context,
-          [],
-        );
-        bestPort = port;
+        // Connector conflicts are soft: if established routes surround the
+        // available lanes, retry the same hard-obstacle-safe perimeter search
+        // without them and allow this edge to cross a connector.
+        for (const port of representativePortChoices(ports, 8)) {
+          const context = createRouteContext(source, target, port, edge.style);
+          const candidate = perimeterFallback(
+            layout,
+            source,
+            target,
+            port,
+            obstacles,
+            context,
+            [],
+          );
+          if (!candidate) continue;
+          const score = scorePath(candidate, obstacles, context, []) +
+            port.preferenceCost;
+          if (score < bestScore) {
+            best = candidate;
+            bestScore = score;
+            bestPort = port;
+          }
+        }
       }
     }
 
-    let points = best ?? [ports[0]!.src, ports[0]!.tgt];
+    if (!best) {
+      throw new Error(`Unable to route automatic edge ${edge.id} without crossing content`);
+    }
+    let points = best;
     points = shortcut(
       points,
       obstacles,
@@ -639,23 +649,61 @@ function perimeterFallback(
 ): Point[] | null {
   const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
   const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
-  const lanes = {
-    top: 16,
-    right: Math.max(16, layout.width - 16),
-    bottom: Math.max(16, layout.height - 16),
-    left: 16,
-  };
+  // Route outside every hard obstacle, not merely inside the nominal layout
+  // bounds. Group headers can begin at y=0 and cards can extend beyond the
+  // layout's initial width/height, so fixed 16px lanes may still cut through
+  // visible content.
+  const margin = CELL * 2;
+  const minX = Math.min(...obstacles.map((obstacle) => obstacle.x), 0) - margin;
+  const maxX = Math.max(
+    ...obstacles.map((obstacle) => obstacle.x + obstacle.w),
+    layout.width,
+  ) + margin;
+  const minY = Math.min(...obstacles.map((obstacle) => obstacle.y), 0) - margin;
+  const maxY = Math.max(
+    ...obstacles.map((obstacle) => obstacle.y + obstacle.h),
+    layout.height,
+  ) + margin;
+  const lanes = { top: minY, right: maxX, bottom: maxY, left: minX };
   const candidates = [
     [portChoice.src, start, { x: start.x, y: lanes.top }, { x: goal.x, y: lanes.top }, goal, portChoice.tgt],
     [portChoice.src, start, { x: start.x, y: lanes.bottom }, { x: goal.x, y: lanes.bottom }, goal, portChoice.tgt],
     [portChoice.src, start, { x: lanes.left, y: start.y }, { x: lanes.left, y: goal.y }, goal, portChoice.tgt],
     [portChoice.src, start, { x: lanes.right, y: start.y }, { x: lanes.right, y: goal.y }, goal, portChoice.tgt],
-  ].map((points) => simplify(points));
+  ];
+  // A source's direct run to one outer lane may itself be blocked by another
+  // card. Try both turn orders through every outer corner before declaring
+  // the perimeter unavailable.
+  for (const laneX of [lanes.left, lanes.right]) {
+    for (const laneY of [lanes.top, lanes.bottom]) {
+      candidates.push(
+        [
+          portChoice.src,
+          start,
+          { x: laneX, y: start.y },
+          { x: laneX, y: laneY },
+          { x: goal.x, y: laneY },
+          goal,
+          portChoice.tgt,
+        ],
+        [
+          portChoice.src,
+          start,
+          { x: start.x, y: laneY },
+          { x: laneX, y: laneY },
+          { x: laneX, y: goal.y },
+          goal,
+          portChoice.tgt,
+        ],
+      );
+    }
+  }
+  const simplifiedCandidates = candidates.map((points) => simplify(points));
 
   const choose = (routes: ExistingRoute[]) => {
     let best: Point[] | null = null;
     let bestScore = Infinity;
-    for (const candidate of candidates) {
+    for (const candidate of simplifiedCandidates) {
       const score = scorePath(candidate, obstacles, context, routes);
       if (score < bestScore) {
         best = candidate;
@@ -1902,7 +1950,7 @@ function routeAStar(
   const start = stepOut(source, ports.src, ports.srcSide);
   const goal = stepOut(target, ports.tgt, ports.tgtSide);
   const mid = astar(grid, start, goal, existing, conflictCostCache);
-  if (!mid) return [ports.src, start, goal, ports.tgt];
+  if (!mid) return null;
   return [ports.src, ...mid, ports.tgt];
 }
 
@@ -2798,7 +2846,7 @@ export function routeConnectionPreview(
   let bestScore = Infinity;
   let bestPort = ports[0]!;
   for (const port of ports) {
-    const context = createRouteContext(source, target, port);
+    const context = createRouteContext(source, target, port, options.style);
     for (const candidate of templates(port, vGutters, hGutters, source, target)) {
       const path = simplify(candidate);
       const s = scorePath(path, obstacles, context, []) + port.preferenceCost;
@@ -2811,7 +2859,7 @@ export function routeConnectionPreview(
   }
   if (!best || bestScore >= CROSSING_COST) {
     for (const port of ports) {
-      const context = createRouteContext(source, target, port);
+      const context = createRouteContext(source, target, port, options.style);
       const astarPath = routeAStar(grid, port, source, target, []);
       if (!astarPath) continue;
       const smoothed = shortcut(simplify(astarPath), obstacles, context);
@@ -2824,8 +2872,30 @@ export function routeConnectionPreview(
     }
   }
 
-  let points = best ?? [ports[0]!.src, ports[0]!.tgt];
-  const context = createRouteContext(source, target, bestPort);
+  if (!best) {
+    for (const port of representativePortChoices(ports, 8)) {
+      const context = createRouteContext(source, target, port, options.style);
+      const candidate = perimeterFallback(
+        layout,
+        source,
+        target,
+        port,
+        obstacles,
+        context,
+        [],
+      );
+      if (!candidate) continue;
+      const score = scorePath(candidate, obstacles, context, []) + port.preferenceCost;
+      if (score < bestScore) {
+        best = candidate;
+        bestScore = score;
+        bestPort = port;
+      }
+    }
+  }
+  if (!best) return null;
+  let points = best;
+  const context = createRouteContext(source, target, bestPort, options.style);
   points = shortcut(points, obstacles, context);
   points = simplify(points);
   if (options.waypoints?.length) {
@@ -2841,5 +2911,37 @@ export function attachRoutes(
   layout: LayoutResult,
   edges: RoutedEdge[],
 ): LayoutResult {
-  return { ...layout, edges };
+  const current = layout.canvasBounds ?? {
+    x: 0,
+    y: 0,
+    w: layout.width,
+    h: layout.height,
+  };
+  let left = current.x;
+  let top = current.y;
+  let right = current.x + current.w;
+  let bottom = current.y + current.h;
+  for (const edge of edges) {
+    for (const point of edge.points) {
+      left = Math.min(left, point.x);
+      top = Math.min(top, point.y);
+      right = Math.max(right, point.x);
+      bottom = Math.max(bottom, point.y);
+    }
+  }
+  const expanded = left !== current.x || top !== current.y ||
+    right !== current.x + current.w || bottom !== current.y + current.h;
+  if (!expanded) return { ...layout, edges };
+
+  // Perimeter routing may legitimately leave the nominal 0..width/height
+  // layout extent. Keep those points renderable for runtime consumers too;
+  // Studio's content expansion adds its own larger padding afterward.
+  const padding = GRAMMAR.edgeStroke;
+  const canvasBounds: Rect = {
+    x: left - padding,
+    y: top - padding,
+    w: right - left + padding * 2,
+    h: bottom - top + padding * 2,
+  };
+  return { ...layout, edges, canvasBounds };
 }

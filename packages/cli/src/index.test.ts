@@ -10,7 +10,7 @@ import { runCli } from "./index.js";
 import { readCliVersion } from "./version.js";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
-const exampleDiagram = join(ROOT, "examples/diagrams/aws-high-availability-web-app.dgm");
+const exampleDiagram = join(ROOT, "examples/curated/aws-high-availability-web-app/diagram.dgm");
 
 describe("runCli", () => {
   it("prints help and version", async () => {
@@ -55,11 +55,14 @@ describe("runCli", () => {
       expect(catalog).toContain("\"entries\"");
       expect(catalog).toContain("\"type\": \"cloud-agnostic.boundary\"");
       const generatedPilot = join(projectDir, ".dumbdiagrams/examples/simple-serverless-web-application");
-      const sourcePilot = join(ROOT, "examples/pilots/simple-serverless-web-application");
+      const sourcePilot = join(ROOT, "examples/curated/simple-serverless-web-application");
       for (const file of ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"]) {
         expect(readFileSync(join(generatedPilot, file), "utf8")).toBe(readFileSync(join(sourcePilot, file), "utf8"));
       }
       expect(existsSync(join(projectDir, ".dumbdiagrams/examples/legacy/simple-serverless-web-application.dgm"))).toBe(false);
+      expect(existsSync(join(projectDir, ".dumbdiagrams/examples/legacy/aws-data-transfer-hub.dgm"))).toBe(false);
+      expect(readFileSync(join(projectDir, ".dumbdiagrams/examples/aws-data-transfer-hub/user-prompt.md"), "utf8")).toContain("AWS");
+      expect(existsSync(join(projectDir, ".dumbdiagrams/examples/legacy/azure-private-app-service.dgm"))).toBe(true);
       expect(existsSync(join(projectDir, "DUMB_DIAGRAMS.md"))).toBe(false);
       expect(existsSync(join(projectDir, "CATALOG.md"))).toBe(false);
     } finally {

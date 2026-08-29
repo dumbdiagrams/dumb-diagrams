@@ -54,7 +54,7 @@ describe("diagram compilation canvas bounds", () => {
     ]));
   });
 
-  it("keeps the bundled examples with their full prompts", () => {
+  it("uses the canonical prompt/brief/reference roles for AWS examples", () => {
     expect(DIAGRAM_EXAMPLES).toHaveLength(8);
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
       "bedrock-claims-processing",
@@ -66,16 +66,30 @@ describe("diagram compilation canvas bounds", () => {
       "event-driven-order-fulfillment",
       "azure-private-app-service",
     ]);
+    const awsIds = new Set([
+      "bedrock-claims-processing",
+      "aws-data-transfer-hub",
+      "aws-high-availability-web-app",
+      "simple-serverless-web-application",
+      "image-thumbnail-pipeline",
+      "asynchronous-report-generation",
+      "event-driven-order-fulfillment",
+    ]);
     for (const example of DIAGRAM_EXAMPLES) {
-      if (example.id === "simple-serverless-web-application") {
-        expect(example.prompt.trim().length).toBeGreaterThan(40);
-        expect(example.prompt.trim().length).toBeLessThan(500);
-      } else {
-        expect(example.prompt.trim().length).toBeGreaterThan(500);
-      }
+      expect(example.prompt.trim().length, example.id).toBeGreaterThan(40);
       expect(example.prompt).not.toMatch(
         /(?:replicate (?:it|this|from)|reference (?:image|screenshot)|attached (?:image|screenshot)|based on (?:the|this) image)/i,
       );
+      if (awsIds.has(example.id)) {
+        expect(example.architectureBrief?.trim().length, example.id).toBeGreaterThan(80);
+        expect(example.referenceSpec?.trim().length, example.id).toBeGreaterThan(500);
+        expect(example.prompt, example.id).not.toMatch(
+          /(?:connector sides?|exact (?:row|column|x|y)|automatic layout|routing instructions?|place .* (?:left|right|above|below))/i,
+        );
+      } else {
+        expect(example.architectureBrief, example.id).toBeUndefined();
+        expect(example.referenceSpec, example.id).toBeUndefined();
+      }
     }
   });
 
@@ -131,6 +145,19 @@ describe("diagram compilation canvas bounds", () => {
     const notification = edges.get("sns_to_email")!;
     expect(notification.points).toHaveLength(2);
     expect(notification.points[0]!.x).toBe(notification.points[1]!.x);
+
+    // The long workflow edge must route around the extraction cards. This is
+    // an automatic route in the curated source, so a content collision is a
+    // router regression rather than an intentional authored warning.
+    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "edge-icon-collision",
+        elementIds: expect.arrayContaining([
+          "workflow_to_state",
+          expect.stringMatching(/^(extractor|fraud_model)$/),
+        ]),
+      }),
+    ]));
   });
 
   it("keeps Data Transfer Hub compact and free of connector dead ends", () => {

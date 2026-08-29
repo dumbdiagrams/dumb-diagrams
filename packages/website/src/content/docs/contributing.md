@@ -35,7 +35,7 @@ For local-file behavior:
 
 ```bash
 pnpm build
-pnpm dev:cli examples/diagrams/aws-high-availability-web-app.dgm
+pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm
 ```
 
 For the website:

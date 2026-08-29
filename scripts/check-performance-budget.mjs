@@ -6,23 +6,23 @@ import { parseDgm } from "../packages/runtime/dist/dsl/index.js";
 import { compileDiagram } from "../packages/runtime/dist/render/index.js";
 
 const EXAMPLES = [
-  "async-docs.dgm",
-  "bedrock-claims-processing.dgm",
-  "transfer-hub.dgm",
-  "aws-data-transfer-hub.dgm",
-  "aws-high-availability-web-app.dgm",
-  "../pilots/simple-serverless-web-application/diagram.dgm",
-  "image-thumbnail-pipeline.dgm",
-  "asynchronous-report-generation.dgm",
-  "event-driven-order-fulfillment.dgm",
-  "azure-private-app-service.dgm",
+  "examples/diagrams/async-docs.dgm",
+  "examples/diagrams/transfer-hub.dgm",
+  "examples/diagrams/azure-private-app-service.dgm",
+  "examples/curated/bedrock-claims-processing/diagram.dgm",
+  "examples/curated/aws-data-transfer-hub/diagram.dgm",
+  "examples/curated/aws-high-availability-web-app/diagram.dgm",
+  "examples/curated/simple-serverless-web-application/diagram.dgm",
+  "examples/curated/image-thumbnail-pipeline/diagram.dgm",
+  "examples/curated/asynchronous-report-generation/diagram.dgm",
+  "examples/curated/event-driven-order-fulfillment/diagram.dgm",
 ];
 const ITERATIONS = 5;
 const PER_DIAGRAM_BUDGET_MS = 250;
 const failures = [];
 
 for (const filename of EXAMPLES) {
-  const path = resolve("examples/diagrams", filename);
+  const path = resolve(filename);
   const doc = parseDgm(readFileSync(path, "utf8"));
   compileDiagram(doc);
   const samples = [];
