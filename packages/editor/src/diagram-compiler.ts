@@ -3,7 +3,11 @@ import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/runt
 import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
-import { renderSvg } from "@dumb-diagrams/runtime/render";
+import {
+  checkInvariants,
+  renderSvg,
+  type InvariantFailure,
+} from "@dumb-diagrams/runtime/render";
 import { attachRoutes, routeEdges } from "@dumb-diagrams/runtime/route";
 
 import { snapLayoutToGrid } from "./grid";
@@ -12,14 +16,14 @@ export type DiagramCompilation = {
   ok: true;
   issues: ValidationIssue[];
   svg: string;
-  invariantFailures: Array<{ message: string }>;
+  invariantFailures: InvariantFailure[];
   doc: DiagramDocument;
   layout: LayoutResult;
 } | {
   ok: false;
   issues: ValidationIssue[];
   svg: null;
-  invariantFailures: Array<{ message: string }>;
+  invariantFailures: InvariantFailure[];
   parseError?: string;
   layout?: null;
 };
@@ -83,11 +87,12 @@ export function compileDiagramSource(source: string, snapToGrid: boolean): Diagr
       ? snapLayoutToGrid(layoutDocument(doc), true, doc)
       : layoutDocument(doc);
     const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routeEdges(doc, placedLayout)));
+    const invariantFailures = checkInvariants(layout);
     const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
     return remember(key, {
       ok: true,
       issues,
-      invariantFailures: [],
+      invariantFailures,
       doc,
       layout,
       svg,

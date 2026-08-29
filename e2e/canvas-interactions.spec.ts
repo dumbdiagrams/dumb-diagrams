@@ -486,6 +486,47 @@ test("previews resource movement without rerouting the document until release", 
   expect(afterBox!.y).toBeGreaterThan(beforeBox!.y + 40);
 });
 
+test("records a resource movement in undo history and restores its source position", async ({ page }) => {
+  await page.goto("/");
+
+  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
+  const rendered = page.locator("#res-apiA");
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  const redo = page.getByRole("button", { name: "Redo", exact: true });
+  await expect(hitTarget).toHaveCount(1);
+  await expect(rendered).toHaveCount(1);
+  await expect(undo).toBeDisabled();
+
+  const before = await rendered.boundingBox();
+  const targetBox = await hitTarget.boundingBox();
+  expect(before).not.toBeNull();
+  expect(targetBox).not.toBeNull();
+
+  const startX = targetBox!.x + targetBox!.width / 2;
+  const startY = targetBox!.y + targetBox!.height / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 96, startY + 54, { steps: 16 });
+  await page.mouse.up();
+
+  await expect.poll(async () => (await rendered.boundingBox())?.x ?? 0)
+    .toBeGreaterThan(before!.x + 80);
+  await expect.poll(async () => rendered.getAttribute("transform")).toBeNull();
+  const moved = await rendered.boundingBox();
+  expect(moved).not.toBeNull();
+  expect(moved!.x).toBeGreaterThan(before!.x + 80);
+  expect(moved!.y).toBeGreaterThan(before!.y + 40);
+  await expect(undo).toBeEnabled();
+
+  await undo.click();
+  await expect.poll(async () => {
+    const box = await rendered.boundingBox();
+    return box ? { x: Math.round(box.x), y: Math.round(box.y) } : null;
+  }).toEqual({ x: Math.round(before!.x), y: Math.round(before!.y) });
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeEnabled();
+});
+
 test("shows a gentle centre guide while aligning icons", async ({ page }) => {
   await page.goto("/");
   const moving = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');

@@ -3,6 +3,7 @@ import type { LayoutResult } from "../core/index.js";
 export interface InvariantFailure {
   code: string;
   message: string;
+  elementIds: string[];
 }
 
 export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
@@ -19,6 +20,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       failures.push({
         code: "edge-port-detached",
         message: `Edge ${edge.id} does not start on icon ${source.id}`,
+        elementIds: [edge.id, source.id],
       });
     }
     if (
@@ -29,6 +31,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       failures.push({
         code: "edge-port-detached",
         message: `Edge ${edge.id} does not end on icon ${target.id}`,
+        elementIds: [edge.id, target.id],
       });
     }
 
@@ -48,12 +51,14 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
               failures.push({
                 code: "edge-icon-collision",
                 message: `Edge ${edge.id} passes through icon of ${node.id}`,
+                elementIds: [edge.id, node.id],
               });
             }
             if (segmentHitsLabel(a, b, node)) {
               failures.push({
                 code: "edge-label-collision",
                 message: `Edge ${edge.id} intersects label of ${node.id}`,
+                elementIds: [edge.id, node.id],
               });
             }
           }
@@ -64,11 +69,13 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
           failures.push({
             code: "edge-icon-collision",
             message: `Edge ${edge.id} passes through icon of ${node.id}`,
+            elementIds: [edge.id, node.id],
           });
         } else if (segmentHitsObstacle(a, b, node.obstacle)) {
           failures.push({
             code: "edge-obstacle-collision",
             message: `Edge ${edge.id} intersects obstacle of ${node.id}`,
+            elementIds: [edge.id, node.id],
           });
         }
       }
@@ -81,6 +88,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-badge-label-collision",
           message: `Edge ${edge.id} has an overlapping number and label`,
+          elementIds: [edge.id],
         });
       }
       for (const node of layout.nodes) {
@@ -91,6 +99,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-label-node-collision",
           message: `Label of edge ${edge.id} overlaps resource ${node.id}`,
+          elementIds: [edge.id, node.id],
         });
       }
       for (const group of layout.groups) {
@@ -99,6 +108,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-label-group-collision",
           message: `Label of edge ${edge.id} overlaps boundary label ${group.id}`,
+          elementIds: [edge.id, group.id],
         });
       }
     }
@@ -111,6 +121,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-badge-node-collision",
           message: `Number of edge ${edge.id} overlaps resource ${node.id}`,
+          elementIds: [edge.id, node.id],
         });
       }
       for (const group of layout.groups) {
@@ -119,6 +130,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-badge-group-collision",
           message: `Number of edge ${edge.id} overlaps boundary label ${group.id}`,
+          elementIds: [edge.id, group.id],
         });
       }
       for (const other of layout.edges) {
@@ -126,6 +138,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-badge-connector-collision",
           message: `Number of edge ${edge.id} overlaps connector ${other.id}`,
+          elementIds: [edge.id, other.id],
         });
       }
     }
@@ -139,42 +152,49 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         failures.push({
           code: "edge-label-overlap",
           message: `Labels of edges ${a.id} and ${b.id} overlap`,
+          elementIds: [a.id, b.id],
         });
       }
       if (a.badge && b.badge && Math.hypot(a.badge.x - b.badge.x, a.badge.y - b.badge.y) < 24) {
         failures.push({
           code: "edge-badge-overlap",
           message: `Numbers of edges ${a.id} and ${b.id} overlap`,
+          elementIds: [a.id, b.id],
         });
       }
       if (a.badge && b.labelRect && circleHitsRect(a.badge, 10, b.labelRect)) {
         failures.push({
           code: "edge-badge-label-collision",
           message: `Number of edge ${a.id} overlaps label of edge ${b.id}`,
+          elementIds: [a.id, b.id],
         });
       }
       if (b.badge && a.labelRect && circleHitsRect(b.badge, 10, a.labelRect)) {
         failures.push({
           code: "edge-badge-label-collision",
           message: `Number of edge ${b.id} overlaps label of edge ${a.id}`,
+          elementIds: [b.id, a.id],
         });
       }
       if (pathsReverseOverlap(a.points, b.points)) {
         failures.push({
           code: "edge-reverse-overlap",
           message: `Edges ${a.id} and ${b.id} share a corridor in opposite directions`,
+          elementIds: [a.id, b.id],
         });
       }
       if (pathsShareExclusiveCorridor(a, b)) {
         failures.push({
           code: "edge-corridor-overlap",
           message: `Edges ${a.id} and ${b.id} share a corridor outside a fan-out stem`,
+          elementIds: [a.id, b.id],
         });
       }
       if (pathsCross(a.points, b.points)) {
         failures.push({
           code: "edge-crossing",
           message: `Edges ${a.id} and ${b.id} cross`,
+          elementIds: [a.id, b.id],
         });
       }
     }
@@ -188,6 +208,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       failures.push({
         code: "az-asymmetry",
         message: "Availability zones do not have equal dimensions",
+        elementIds: azGroups.map((group) => group.id),
       });
     }
   }

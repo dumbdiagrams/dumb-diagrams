@@ -720,6 +720,8 @@ function InteractionOverlayComponent({
       createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
       alignmentTargets(layout, doc, active),
       createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+      onGestureBegin,
+      onGestureEnd,
     );
   };
 
@@ -969,6 +971,8 @@ function InteractionOverlayComponent({
               createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
               alignmentTargets(layout, doc, active),
               createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+              onGestureBegin,
+              onGestureEnd,
             );
           }
         };
@@ -1051,6 +1055,8 @@ function InteractionOverlayComponent({
                   createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
                   alignmentTargets(layout, doc, active),
                   createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+                  onGestureBegin,
+                  onGestureEnd,
                 );
               }
             }}
@@ -2062,6 +2068,8 @@ function beginMove(
   preview: MovePreviewController,
   targets: Array<{ x: number; y: number; w: number; h: number }>,
   guidePreview: AlignmentGuidePreviewController,
+  onGestureBegin: () => void,
+  onGestureEnd: () => void,
 ) {
   const start = { x: event.clientX, y: event.clientY };
   const origin = { x: rect.x, y: rect.y };
@@ -2075,6 +2083,8 @@ function beginMove(
   let guides: AlignmentGuide[] = [];
   let frame = 0;
   const thresholdPx = 3;
+
+  onGestureBegin();
 
   const move = (next: PointerEvent) => {
     rawDx = (next.clientX - start.x) / zoom;
@@ -2107,11 +2117,13 @@ function beginMove(
     guidePreview.finish();
     if (!dragging) {
       preview.finish();
+      onGestureEnd();
       return;
     }
     preview.update(dx, dy);
     onMove(origin.x + dx, origin.y + dy, dx, dy);
     preview.commit();
+    onGestureEnd();
   };
   const cancel = () => {
     window.removeEventListener("pointermove", move);
@@ -2120,6 +2132,7 @@ function beginMove(
     if (frame) window.cancelAnimationFrame(frame);
     guidePreview.finish();
     preview.finish();
+    onGestureEnd();
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);

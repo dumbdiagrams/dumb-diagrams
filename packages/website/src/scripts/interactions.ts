@@ -1,5 +1,7 @@
 const copyResets = new WeakMap<HTMLButtonElement, number>();
 const copyLabels = new WeakMap<HTMLButtonElement, string>();
+const MIN_DIAGRAM_ZOOM = 0.25;
+const MAX_DIAGRAM_ZOOM = 2.5;
 
 async function copyText(button: HTMLButtonElement, text: string) {
   const original = copyLabels.get(button) ?? button.innerHTML;
@@ -99,7 +101,7 @@ document.querySelectorAll<HTMLElement>('[data-diagram-preview]').forEach(preview
   const fit = preview.querySelector<HTMLButtonElement>('[data-zoom="fit"]')!;
   const requestedZoom = Number(preview.dataset.initialZoom);
   let zoom = Number.isFinite(requestedZoom)
-    ? Math.min(2.5, Math.max(1, requestedZoom))
+    ? Math.min(MAX_DIAGRAM_ZOOM, Math.max(MIN_DIAGRAM_ZOOM, requestedZoom))
     : 1;
   function center() {
     viewport.scrollLeft = (viewport.scrollWidth - viewport.clientWidth) / 2;
@@ -108,12 +110,12 @@ document.querySelectorAll<HTMLElement>('[data-diagram-preview]').forEach(preview
   function update() {
     viewport.style.setProperty('--diagram-zoom', String(zoom));
     fit.textContent = `${Math.round(zoom * 100)}%`;
-    zoomOut.disabled = zoom <= 1;
-    zoomIn.disabled = zoom >= 2.5;
+    zoomOut.disabled = zoom <= MIN_DIAGRAM_ZOOM;
+    zoomIn.disabled = zoom >= MAX_DIAGRAM_ZOOM;
     center();
   }
-  zoomOut.addEventListener('click', () => { zoom = Math.max(1, zoom - .25); update(); });
-  zoomIn.addEventListener('click', () => { zoom = Math.min(2.5, zoom + .25); update(); });
+  zoomOut.addEventListener('click', () => { zoom = Math.max(MIN_DIAGRAM_ZOOM, zoom - .1); update(); });
+  zoomIn.addEventListener('click', () => { zoom = Math.min(MAX_DIAGRAM_ZOOM, zoom + .1); update(); });
   fit.addEventListener('click', () => { zoom = 1; update(); });
   image.addEventListener('load', center);
   preview.addEventListener('preview:visible', center);

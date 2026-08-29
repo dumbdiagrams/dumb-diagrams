@@ -120,12 +120,24 @@ describe("async-docs fixture", () => {
     expect(checkInvariants(layout)).toContainEqual({
       code: "edge-crossing",
       message: "Edges horizontal and vertical cross",
+      elementIds: ["horizontal", "vertical"],
     });
   });
 
   it("compiles the Azure reference flow without routing or decoration violations", () => {
     const doc = parseDgm(readFileSync(
       new URL("../../../../examples/diagrams/azure-private-app-service.dgm", import.meta.url),
+      "utf8",
+    ));
+    const result = compileDiagram(doc);
+
+    expect(result.ok).toBe(true);
+    expect(result.invariantFailures).toEqual([]);
+  });
+
+  it("keeps decorated cross-boundary labels clear in the thumbnail pipeline", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/diagrams/image-thumbnail-pipeline.dgm", import.meta.url),
       "utf8",
     ));
     const result = compileDiagram(doc);
@@ -174,10 +186,20 @@ describe("async-docs fixture", () => {
       symmetries: [],
     } satisfies LayoutResult;
 
-    const codes = new Set(checkInvariants(layout).map((failure) => failure.code));
+    const failures = checkInvariants(layout);
+    const codes = new Set(failures.map((failure) => failure.code));
     expect(codes.has("edge-label-node-collision")).toBe(true);
     expect(codes.has("edge-label-overlap")).toBe(true);
     expect(codes.has("edge-badge-overlap")).toBe(true);
+    expect(failures.every((failure) => failure.elementIds.length > 0)).toBe(true);
+    expect(failures).toContainEqual(expect.objectContaining({
+      code: "edge-label-node-collision",
+      elementIds: ["first", "service"],
+    }));
+    expect(failures).toContainEqual(expect.objectContaining({
+      code: "edge-label-overlap",
+      elementIds: ["first", "second"],
+    }));
   });
 
   it("equalizes AZ dimensions", () => {

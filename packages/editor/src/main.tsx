@@ -1,4 +1,4 @@
-import { lazy, memo, startTransition, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
+import { lazy, memo, startTransition, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
@@ -31,14 +31,12 @@ import {
 import {
   getCatalogMap,
   getCatalogEntry,
-  catalogIconUrl,
   type CatalogEntry,
 } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
-import { renderPortableSvg, renderSvg, sanitizeSvg } from "@dumb-diagrams/runtime/render";
-import { routeEdges, attachRoutes, normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+import { renderPortableSvg, sanitizeSvg } from "@dumb-diagrams/runtime/render";
+import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import {
   addAnnotation,
@@ -136,6 +134,7 @@ import {
 } from "./state/workspace";
 import { FloatingPanel } from "./ui/FloatingPanel";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
+import { IssueJournal, type StudioIssue } from "./ui/IssueJournal";
 import { Modal } from "./ui/Modal";
 import { TopMenu, type TopMenuItem } from "./ui/TopMenu";
 import {
@@ -153,6 +152,7 @@ import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
 import { useDiagramCompilation } from "./use-diagram-compilation";
+import { getCachedDiagramCompilation } from "./diagram-compiler";
 import {
   GRID_SIZE,
   leftStagingInsertionPoint,
@@ -229,7 +229,7 @@ type BulkCloseRequest = {
   tabCount: number;
   dirtyCount: number;
 } | null;
-type OperationState = { label: string } | null;
+type OperationState = { label: string; completed?: number; total?: number } | null;
 type LocalStudioPayload = {
   source: string;
   revision: string;
@@ -368,7 +368,6 @@ function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [openingExampleId, setOpeningExampleId] = useState<string | null>(null);
-  const [isExampleOpening, startExampleOpening] = useTransition();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [exportDialogFormat, setExportDialogFormat] = useState<ExportFormat | null>(null);
   const [projectFilesOpen, setProjectFilesOpen] = useState(false);
@@ -739,18 +738,8 @@ function App() {
   const tabLimitMessage = `You can have up to ${MAX_WORKSPACE_TABS} open diagrams. Close a tab to create another.`;
 
   const renderTabPreview = useCallback((tab: WorkspaceTab): string | undefined => {
-    try {
-      const doc = parseDgm(tab.source);
-      const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
-      if (hasErrors(issues)) return undefined;
-      const placedLayout = snapLayoutToGrid(layoutDocument(doc), snapToGrid, doc);
-      const layout = attachRoutes(placedLayout, routeEdges(doc, placedLayout));
-      return normalizeWorkspacePreview(renderSvg(doc, layout, {
-        resolveIconHref: (path) => catalogIconUrl(path),
-      }));
-    } catch {
-      return undefined;
-    }
+    const compilation = getCachedDiagramCompilation(tab.source, snapToGrid);
+    return compilation?.ok ? normalizeWorkspacePreview(compilation.svg) : undefined;
   }, [snapToGrid]);
 
   const previewsForTabs = useCallback((targetTabs: WorkspaceTab[]): WorkspacePreviewMap => {
@@ -766,7 +755,7 @@ function App() {
   };
 
   const beginTabClose = (tabId: string, previewByTabId: WorkspacePreviewMap = {}) => {
-    if (closingTabId || tabs.length <= 1 || !tabs.some((tab) => tab.id === tabId)) return;
+    if (closingTabId || !tabs.some((tab) => tab.id === tabId)) return;
     pendingClosePreviewsRef.current = previewByTabId;
     if (tabId === activeTabId) {
       const closingIndex = tabs.findIndex((tab) => tab.id === tabId);
@@ -811,7 +800,7 @@ function App() {
   };
 
   const handleCloseTab = (tabId: string) => {
-    if (closingTabId || tabs.length <= 1) return;
+    if (closingTabId) return;
     const tab = tabs.find((candidate) => candidate.id === tabId);
     if (!tab) return;
     if (isTabDirty(tab)) {
@@ -924,22 +913,27 @@ function App() {
 
   const confirmBulkClose = async () => {
     if (!bulkCloseRequest) return;
-    const tabIndex = tabs.findIndex((tab) => tab.id === bulkCloseRequest.tabId);
-    const targets = bulkCloseRequest.kind === "all"
+    const request = bulkCloseRequest;
+    const tabIndex = tabs.findIndex((tab) => tab.id === request.tabId);
+    const targets = request.kind === "all"
       ? tabs
       : tabIndex < 0 ? [] : tabs.slice(tabIndex + 1);
-    setOperation({ label: `Preparing ${targets.length} preview${targets.length === 1 ? "" : "s"}…` });
+    setOperation({ label: "Closing diagrams…", completed: 0, total: targets.length });
     setBulkCloseRequest(null);
     await waitForPaint();
     try {
       const previews: Record<string, string | undefined> = {};
-      for (const tab of targets) {
+      for (const [index, tab] of targets.entries()) {
+        // Recycle-bin thumbnails are optional. Reuse work the editor has
+        // already completed, but never block closing to lay out and route a
+        // diagram again just to create a thumbnail.
         previews[tab.id] = renderTabPreview(tab);
+        setOperation({ label: "Closing diagrams…", completed: index + 1, total: targets.length });
         await waitForPaint();
       }
-      const closedCount = bulkCloseRequest.kind === "all"
+      const closedCount = request.kind === "all"
         ? closeAllTabs(previews)
-        : closeTabsToRight(bulkCloseRequest.tabId, previews);
+        : closeTabsToRight(request.tabId, previews);
       resetTransientState();
       if (closedCount) {
         setToast(`${closedCount} diagram${closedCount === 1 ? "" : "s"} moved to the recycle bin`);
@@ -977,13 +971,15 @@ function App() {
     }
   };
 
-  const openExampleInTab = (example: DiagramExample) => {
+  const openExampleInTab = async (example: DiagramExample) => {
     if (tabs.length >= MAX_WORKSPACE_TABS) {
       setToast(tabLimitMessage);
       return;
     }
     setOpeningExampleId(example.id);
-    startExampleOpening(() => {
+    setOperation({ label: `Opening ${example.title}…` });
+    await waitForPaint();
+    try {
       if (!openTab(example.source, {
         initialSource: example.source,
         filename: `${example.id}.dgm`,
@@ -996,12 +992,11 @@ function App() {
       setHelpOpen(false);
       resetTransientState();
       setToast(`Opened ${example.title}`);
-    });
+    } finally {
+      setOpeningExampleId(null);
+      setOperation(null);
+    }
   };
-
-  useEffect(() => {
-    if (!isExampleOpening && openingExampleId !== null) setOpeningExampleId(null);
-  }, [isExampleOpening, openingExampleId]);
 
   const compiled = useDiagramCompilation(source, snapToGrid);
 
@@ -1080,15 +1075,46 @@ function App() {
     return () => window.cancelAnimationFrame(frame);
   }, [textEditRequest]);
 
-  const issues = useMemo(() => {
+  const journalIssues = useMemo<StudioIssue[]>(() => {
     if ("parseError" in compiled && compiled.parseError) {
-      return [{ message: compiled.parseError }];
+      return [{ severity: "error", message: compiled.parseError }];
     }
     if (!compiled.ok) {
-      return compiled.issues.map((i) => ({ message: i.message }));
+      return compiled.issues.map((issue) => ({ severity: "error", message: issue.message }));
     }
-    return compiled.invariantFailures;
+    return compiled.invariantFailures.map((failure) => ({
+      severity: "warning" as const,
+      message: failure.message,
+      elementIds: "elementIds" in failure && Array.isArray(failure.elementIds)
+        ? failure.elementIds
+        : undefined,
+    }));
   }, [compiled]);
+  const issues = useMemo(() => journalIssues.map(({ message }) => ({ message })), [journalIssues]);
+
+  const handleIssueSelect = (issue: StudioIssue) => {
+    if (issue.severity === "error") {
+      setTool("code");
+      return;
+    }
+    if (!compiled.ok) return;
+    const resourceIds = new Set(compiled.doc.resources.map((resource) => resource.id));
+    const groupIds = new Set(compiled.doc.groups.map((group) => group.id));
+    const edgeIds = new Set(compiled.doc.edges.map((edge) => edge.id));
+    const nextSelection: Selection = [];
+    for (const id of issue.elementIds ?? []) {
+      if (resourceIds.has(id)) nextSelection.push({ kind: "resource", id });
+      else if (groupIds.has(id)) nextSelection.push({ kind: "group", id });
+      else if (edgeIds.has(id)) nextSelection.push({ kind: "edge", id });
+    }
+    if (!nextSelection.length) return;
+    setSelection(nextSelection);
+    if (tool !== "select") {
+      setTool("select");
+      setPendingPort(null);
+    }
+    fitRef.current?.();
+  };
 
   const commitDocument = (doc: DiagramDocument): boolean => {
     const nextIssues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
@@ -1712,7 +1738,7 @@ function App() {
     { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !compiled.ok, onSelect: saveActive },
     { id: "command-save-as", label: "Save As", section: "File", shortcut: "⌘⇧S", disabled: !compiled.ok, onSelect: openSaveAs },
     { id: "command-duplicate-tab", label: "Duplicate tab", section: "Workspace", onSelect: duplicateActiveTab },
-    { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", disabled: tabs.length <= 1, onSelect: () => handleCloseTab(activeTab.id) },
+    { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", onSelect: () => handleCloseTab(activeTab.id) },
     { id: "command-reopen-tab", label: "Reopen closed tab", section: "Workspace", disabled: recentlyClosed.length === 0, onSelect: reopenLastTab },
     { id: "command-recycle-bin", label: `Open recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`, section: "Workspace", onSelect: () => setRecycleBinOpen(true) },
     { id: "command-examples", label: "Browse examples", section: "Help", onSelect: () => setExamplesOpen(true) },
@@ -1759,13 +1785,13 @@ function App() {
       label: "Duplicate tab",
       onSelect: () => duplicateTabWithFeedback(tabContextTarget.id),
     },
-    ...(tabs.length > 1 ? [{
+    {
       id: "close-tab",
       label: "Close tab",
       shortcut: "⌘W / Ctrl+W",
       danger: true,
       onSelect: () => handleCloseTab(tabContextTarget.id),
-    }] : []),
+    },
     { id: "tab-context-divider", label: "", separator: true },
     {
       id: "close-tabs-right",
@@ -2005,11 +2031,7 @@ function App() {
             </button>
           </div>
           <div className="topbar-right">
-            <span className={`status-pill ${issues.length ? "has-errors" : ""}`}>
-              {issues.length
-                ? `${issues.length} issue${issues.length === 1 ? "" : "s"}`
-                : "Valid"}
-            </span>
+            <IssueJournal issues={journalIssues} onIssueSelect={handleIssueSelect} />
             {isTabDirty(activeTab) && <span className="dirty-pill">Unsaved</span>}
             <div className="history-controls">
               <button
@@ -2521,6 +2543,12 @@ function App() {
           <div className="operation-status" role="status" aria-live="polite">
             <span className="loading-spinner is-small" aria-hidden="true" />
             <span>{operation.label}</span>
+            {operation.total !== undefined && operation.completed !== undefined && (
+              <>
+                <progress value={operation.completed} max={Math.max(1, operation.total)} aria-label={operation.label} />
+                <span className="mono">{operation.completed}/{operation.total}</span>
+              </>
+            )}
           </div>
         )}
         {!workspaceReady && (

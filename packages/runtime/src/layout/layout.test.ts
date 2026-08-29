@@ -131,6 +131,50 @@ describe("logical group layout", () => {
     );
   });
 
+  it("reserves decorated runs across mixed nested group kinds", () => {
+    const doc = createEmptyDocument("mixed-nested-decorated-gap");
+    doc.flow = "lr";
+    doc.resources = [resource("left", "left_boundary"), resource("right", "right_boundary")];
+    doc.groups = [
+      {
+        id: "cloud",
+        kind: "cloud",
+        label: "Cloud",
+        children: ["left_boundary", "right_boundary"],
+      },
+      {
+        id: "left_boundary",
+        kind: "logical",
+        label: "Left boundary",
+        parent: "cloud",
+        children: ["left"],
+      },
+      {
+        id: "right_boundary",
+        kind: "region",
+        label: "Right region",
+        parent: "cloud",
+        children: ["right"],
+      },
+    ];
+    doc.edges = [{
+      id: "mixed-decorated-edge",
+      source: "left",
+      target: "right",
+      label: "mixed nested route",
+      step: 1,
+      style: "solid",
+      kind: "flow",
+    }];
+
+    const nodes = new Map(layoutDocument(doc).nodes.map((node) => [node.id, node]));
+    const left = nodes.get("left")!.icon;
+    const right = nodes.get("right")!.icon;
+    const requiredRun = "mixed nested route".length * 11 * 0.55 + 36 + 16;
+
+    expect(right.x - (left.x + left.w)).toBeGreaterThanOrEqual(requiredRun);
+  });
+
   it("places Azure application boundaries before their private endpoint bank", () => {
     const doc = createEmptyDocument("azure-vnet-order");
     doc.resources = [

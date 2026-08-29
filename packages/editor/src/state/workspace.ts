@@ -279,11 +279,13 @@ export function useWorkspace(options: WorkspaceOptions) {
 
   const updateWorkspace = useCallback(
     (change: (current: WorkspaceState) => WorkspaceState) => {
-      setWorkspace((current) => {
-        const next = change(current);
-        workspaceRef.current = next;
-        return next;
-      });
+      // Keep the ref in lockstep with queued updates. Pointer gestures can
+      // commit a preview and finish their transaction in the same event; a
+      // functional React update may not run until after that event, leaving
+      // endTransaction() looking at the pre-gesture source.
+      const next = change(workspaceRef.current);
+      workspaceRef.current = next;
+      setWorkspace(next);
     },
     [],
   );
@@ -524,7 +526,6 @@ export function useWorkspace(options: WorkspaceOptions) {
 
   const closeTab = useCallback(
     (tabId = workspaceRef.current.activeTabId, previewByTabId?: WorkspacePreviewMap) => {
-      if (workspaceRef.current.tabs.length <= 1) return 0;
       return closeTabs([tabId], undefined, previewByTabId);
     },
     [closeTabs],

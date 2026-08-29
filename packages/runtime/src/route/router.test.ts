@@ -184,6 +184,18 @@ describe("routeEdgePreview", () => {
     }
   });
 
+  it("keeps cross-boundary labels visibly attached to their connectors", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/diagrams/aws-high-availability-web-app.dgm", import.meta.url),
+      "utf8",
+    ));
+    const routes = routeEdges(doc, layoutDocument(doc));
+    const edge = routes.find((candidate) => candidate.id === "pull_image_a")!;
+
+    expect(edge.labelPoint).toBeDefined();
+    expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(36);
+  });
+
   it("places connector labels at an explicit path position and side", () => {
     const points = [
       { x: 0, y: 100 },

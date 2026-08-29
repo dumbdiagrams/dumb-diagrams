@@ -356,6 +356,113 @@ textarea:focus-visible {
   color: var(--danger);
 }
 
+.issue-journal {
+  position: relative;
+}
+
+.issue-journal-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  cursor: pointer;
+}
+
+.issue-journal-trigger.has-warnings {
+  background: color-mix(in srgb, var(--warning, #c98200) 14%, transparent);
+  color: var(--warning, #a56500);
+}
+
+.issue-journal-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, currentColor 48%, transparent);
+  outline-offset: 2px;
+}
+
+.issue-journal-mark {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.issue-journal-popover {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, calc(100vw - 24px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+  animation: panel-in 0.16s ease;
+}
+
+.issue-journal-summary {
+  border-bottom: 1px solid var(--line);
+  padding: 9px 12px 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.issue-journal-list {
+  display: grid;
+  max-height: min(320px, 50vh);
+  overflow: auto;
+  padding: 4px;
+}
+
+.issue-journal-item {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 9px 8px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.issue-journal-item:hover,
+.issue-journal-item:focus-visible {
+  background: var(--surface-muted);
+  outline: none;
+}
+
+.issue-journal-item-kind {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.issue-journal-item.is-error .issue-journal-item-kind {
+  color: var(--danger);
+}
+
+.issue-journal-item.is-warning .issue-journal-item-kind {
+  color: var(--warning, #a56500);
+}
+
+.issue-journal-item-message {
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .icon-button {
   display: grid;
   width: 32px;
@@ -4937,6 +5044,22 @@ textarea:focus-visible {
   backdrop-filter: blur(12px);
 }
 
+.operation-status progress {
+  width: 84px;
+  height: 5px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-pill);
+  accent-color: var(--accent);
+}
+
+.operation-status .mono {
+  min-width: 28px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: right;
+}
+
 .workspace-loading {
   position: fixed;
   z-index: 80;
@@ -4991,6 +5114,14 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.examples-progress {
+  min-height: 18px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .examples-loading {

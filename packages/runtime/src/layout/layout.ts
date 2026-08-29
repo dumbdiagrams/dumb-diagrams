@@ -707,26 +707,135 @@ function layoutGenericGroup(
 ): Measured {
   const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
   const children = measureChildren(doc, group.children, state);
+  const childGaps = children.slice(1).map((child, index) =>
+    genericChildGap(doc, children[index]!, child, state),
+  );
   const contentW = Math.max(
     100,
     groupLabelContentWidth(group, style),
     children.reduce(
-      (width, item, index) => width + item.w + (index > 0 ? H_GAP : 0),
+      (width, item, index) => width + item.w + (index > 0 ? childGaps[index - 1]! : 0),
       0,
     ),
   );
   const contentH = Math.max(40, Math.max(0, ...children.map((item) => item.h)));
 
   let x = 0;
-  for (const item of children) {
+  for (const [index, item] of children.entries()) {
     placeLayoutChild(state, item, x, (contentH - item.h) / 2, doc);
-    x += item.w + H_GAP;
+    x += item.w + (childGaps[index] ?? 0);
   }
 
   const w = Math.max(contentW, 100) + padding * 2;
   const h = contentH + style.headerHeight + padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
+}
+
+/**
+ * Generic groups may put the two endpoints of a decorated edge in separate
+ * nested boundaries. Reserve a readable corridor between those immediate
+ * child owners, using the endpoint resources' measured offsets inside their
+ * cards rather than assuming the endpoints are direct children.
+ */
+function genericChildGap(
+  doc: DiagramDocument,
+  left: LayoutChild,
+  right: LayoutChild,
+  state: LayoutState,
+): number {
+  const leftResources = childResources(doc, left, state);
+  const rightResources = childResources(doc, right, state);
+  if (!leftResources.length || !rightResources.length) return H_GAP;
+
+  let gap: number = H_GAP;
+  for (const edge of doc.edges) {
+    if (!edge.label && edge.step === undefined) continue;
+    const leftResource = leftResources.find(({ id }) =>
+      edge.source === id || edge.target === id,
+    );
+    const rightResource = rightResources.find(({ id }) =>
+      edge.source === id || edge.target === id,
+    );
+    if (!leftResource || !rightResource) continue;
+
+    const labelWidth = edge.label ? Math.max(16, estimateTextWidth(edge.label, 11)) : 0;
+    const badgeWidth = edge.step === undefined ? 0 : GRAMMAR.badgeRadius * 2 + 16;
+    const requiredRun = labelWidth + badgeWidth + 16;
+    const iconGapAtBaseline =
+      left.w - (leftResource.icon.x + leftResource.icon.w) + H_GAP +
+      rightResource.icon.x;
+    const extra = Math.max(0, requiredRun - iconGapAtBaseline);
+    gap = Math.max(gap, H_GAP + Math.ceil(extra / GRAMMAR.grid) * GRAMMAR.grid);
+  }
+  return gap;
+}
+
+interface ChildResourceGeom {
+  id: ID;
+  icon: Rect;
+}
+
+function childResources(
+  doc: DiagramDocument,
+  child: LayoutChild,
+  state: LayoutState,
+): ChildResourceGeom[] {
+  if (child.resource) {
+    const node = state.nodeGeoms.get(child.resource.id);
+    return node ? [{ id: child.resource.id, icon: node.icon }] : [];
+  }
+  if (!child.group) return [];
+  return descendantResourceGeoms(doc, child.group.id, state);
+}
+
+function descendantResourceGeoms(
+  doc: DiagramDocument,
+  groupId: ID,
+  state: LayoutState,
+  offsetX = 0,
+  offsetY = 0,
+): ChildResourceGeom[] {
+  const group = getGroup(doc, groupId);
+  if (!group) return [];
+  const groupGeom = state.groupGeoms.get(groupId);
+  const contentOffsetX = groupGeom
+    ? groupGeom.content.x - groupGeom.bounds.x
+    : 0;
+  const contentOffsetY = groupGeom
+    ? groupGeom.content.y - groupGeom.bounds.y
+    : 0;
+  const resourceOffsetX = offsetX + contentOffsetX;
+  const resourceOffsetY = offsetY + contentOffsetY;
+  const out: ChildResourceGeom[] = [];
+  for (const childId of group.children) {
+    const resource = getResource(doc, childId);
+    if (resource) {
+      const node = state.nodeGeoms.get(resource.id);
+      if (node) {
+        out.push({
+          id: resource.id,
+          icon: {
+            ...node.icon,
+            x: node.icon.x + resourceOffsetX,
+            y: node.icon.y + resourceOffsetY,
+          },
+        });
+      }
+      continue;
+    }
+    const childGroup = getGroup(doc, childId);
+    if (!childGroup) continue;
+    const childGeom = state.groupGeoms.get(childGroup.id);
+    out.push(...descendantResourceGeoms(
+      doc,
+      childGroup.id,
+      state,
+      resourceOffsetX + (childGeom?.bounds.x ?? 0),
+      resourceOffsetY + (childGeom?.bounds.y ?? 0),
+    ));
+  }
+  return out;
 }
 
 function measureChildren(

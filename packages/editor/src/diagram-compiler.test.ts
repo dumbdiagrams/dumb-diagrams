@@ -13,6 +13,47 @@ import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
+  it("propagates invariant failures from the final expanded layout", () => {
+    const doc = createAsyncDocsFixture();
+    const baseline = compileDiagramSource(printDgm(doc), false);
+    expect(baseline.ok).toBe(true);
+    if (!baseline.ok) return;
+
+    const source = baseline.layout.nodes.find((node) => node.id === "apiA")!;
+    const target = baseline.layout.nodes.find((node) => node.id === "jobs")!;
+    const collision = baseline.layout.nodes.find((node) => node.id === "workerA")!;
+    const start = {
+      x: source.icon.x + source.icon.w,
+      y: source.icon.y + source.icon.h / 2,
+    };
+    const finish = {
+      x: target.icon.x,
+      y: target.icon.y + target.icon.h / 2,
+    };
+    const collisionX = collision.icon.x + collision.icon.w / 2;
+    const collisionY = collision.icon.y + collision.icon.h / 2;
+    getDefaultView(doc).routes.e3 = {
+      pin: true,
+      mode: "manual",
+      points: [
+        start,
+        { x: collisionX, y: start.y },
+        { x: collisionX, y: collisionY },
+        finish,
+      ],
+    };
+
+    const result = compileDiagramSource(printDgm(doc), false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invariantFailures).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "edge-icon-collision",
+        elementIds: expect.arrayContaining(["e3", "workerA"]),
+      }),
+    ]));
+  });
+
   it("keeps the bundled examples with their full prompts", () => {
     expect(DIAGRAM_EXAMPLES).toHaveLength(8);
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([

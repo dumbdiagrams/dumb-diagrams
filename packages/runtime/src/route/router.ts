@@ -2456,15 +2456,23 @@ function getEdgeLabelPlacement(
   const usefulSegments = [...segments]
     .filter((segment) => segment.len >= Math.max(MINIMUM_BADGE_RUN, textW / 2))
     .sort((a, b) => b.len - a.len || a.index - b.index);
+  // Probe long runs densely enough to find a nearby clear pocket before
+  // increasing the perpendicular clearance and visually detaching the label.
   const candidateTs = [...new Set([
     t,
     clamp01(t + tStep),
     clamp01(t - tStep),
     clamp01(t + tStep * 2),
     clamp01(t - tStep * 2),
-    ...usefulSegments.flatMap((segment) => [0.5, 0.25, 0.75].map(
-      (offset) => (segment.start + segment.len * offset) / total,
-    )),
+    ...usefulSegments.flatMap((segment) => [
+      0.5,
+      0.25,
+      0.75,
+      0.125,
+      0.375,
+      0.625,
+      0.875,
+    ].map((offset) => (segment.start + segment.len * offset) / total)),
   ])];
   const candidates: EdgeLabelPlacement[] = [];
 

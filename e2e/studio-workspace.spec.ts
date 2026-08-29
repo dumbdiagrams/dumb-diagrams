@@ -34,21 +34,22 @@ test("opens File actions and creates a fresh document tab", async ({ page }) => 
   await expect(page.locator(".workspace-tab.is-active")).toContainText(/Untitled diagram/i);
 });
 
-test("keeps the final default tab open without a close action", async ({ page }) => {
+test("closes the final tab and replaces it with a blank untitled draft", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("tab")).toHaveCount(1);
-  await expect(page.locator(".workspace-tab-close")).toHaveCount(0);
+  await expect(page.locator(".workspace-tab-close")).toHaveCount(1);
 
   await page.locator(".workspace-tab").click({ button: "right" });
   const tabMenu = page.getByRole("menu", { name: "Tab context menu" });
   await expect(tabMenu).toBeVisible();
-  await expect(tabMenu.getByRole("menuitem", { name: /Close tab/ })).toHaveCount(0);
+  await expect(tabMenu.getByRole("menuitem", { name: /Close tab/ })).toHaveCount(1);
   await page.keyboard.press("Escape");
 
   await page.keyboard.press("Control+KeyW");
   await expect(page.getByRole("tab")).toHaveCount(1);
-  await expect(page.locator(".workspace-tab.is-closing")).toHaveCount(0);
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Untitled Diagram");
+  await expect(page.locator(".workspace-tab.is-active")).not.toContainText("Async Docs");
 });
 
 test("duplicates and closes a diagram from its tab context menu", async ({ page }) => {
@@ -71,6 +72,57 @@ test("duplicates and closes a diagram from its tab context menu", async ({ page 
   await page.getByRole("menu", { name: "Tab context menu" }).getByRole("menuitem", { name: /Close tab/ }).click();
   await expect(page.locator(".workspace-tab.is-closing")).toHaveCount(1);
   await expect(page.getByRole("tab")).toHaveCount(2);
+});
+
+test("bulk closes tabs with visible progress and keeps them recoverable", async ({ page }) => {
+  await page.goto("/");
+  for (let index = 0; index < 4; index += 1) {
+    await page.getByRole("button", { name: "New diagram", exact: true }).click();
+  }
+  await expect(page.getByRole("tab")).toHaveCount(5);
+
+  await page.locator(".workspace-tab").first().click({ button: "right" });
+  await page.getByRole("menu", { name: "Tab context menu" })
+    .getByRole("menuitem", { name: "Close all to the right", exact: true })
+    .click();
+  const confirmation = page.getByRole("dialog", { name: "Close tabs to the right?" });
+  await expect(confirmation).toContainText("4 tabs will be closed");
+  await confirmation.getByRole("button", { name: "Close tabs", exact: true }).click();
+
+  const progress = page.locator(".operation-status");
+  await expect(progress).toContainText("Closing diagrams…");
+  await expect(progress.locator("progress")).toHaveAttribute("max", "4");
+  await expect(page.getByRole("tab")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Recycle bin (4)", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Recycle bin" }).locator(".recycle-bin-item")).toHaveCount(4);
+});
+
+test("close all replaces every diagram with one blank untitled tab", async ({ page }) => {
+  await page.goto("/");
+  const title = page.getByRole("textbox", { name: "Diagram name" });
+  await title.fill("Changed Async Docs");
+  await title.press("Enter");
+  await expect(page.locator(".dirty-pill")).toHaveText("Unsaved");
+  for (let index = 0; index < 3; index += 1) {
+    await page.getByRole("button", { name: "New diagram", exact: true }).click();
+  }
+  await expect(page.getByRole("tab")).toHaveCount(4);
+
+  await page.locator(".workspace-tab").first().click({ button: "right" });
+  await page.getByRole("menu", { name: "Tab context menu" })
+    .getByRole("menuitem", { name: "Close all", exact: true })
+    .click();
+  const confirmation = page.getByRole("dialog", { name: "Close all tabs?" });
+  await expect(confirmation).toContainText("4 tabs will be closed");
+  await expect(confirmation).toContainText("1 unsaved diagram will be discarded");
+  await confirmation.getByRole("button", { name: "Discard and close", exact: true }).click();
+
+  const onlyTab = page.getByRole("tab");
+  await expect(onlyTab).toHaveCount(1);
+  await expect(onlyTab).toContainText("Untitled Diagram");
+  await expect(onlyTab).not.toContainText("Async Docs");
 });
 
 test("frames a new diagram artboard with visible canvas surrounding it", async ({ page }) => {
@@ -165,6 +217,7 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
+  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 8…|Previews ready/);
   await expect(examples.locator(".example-card")).toHaveCount(8);
   await expect(examples.getByText("Creation prompt", { exact: true })).toHaveCount(8);
   await expect(examples.locator(".example-prompt pre")).toHaveCount(8);
@@ -190,8 +243,9 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
     'Create a diagram titled "Event-driven order fulfillment"',
   );
   await expect(examples.locator(".example-prompt pre").nth(7)).toContainText(
-    'Create a diagram titled "Private Azure App Service"',
+    'Create a diagram titled "Write-through caching with Azure Managed Redis and Azure SQL Database"',
   );
+  await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);
 

@@ -1,10 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { compileDiagramSource, getCachedDiagramCompilation } from "../diagram-compiler";
+import { catalogIconUrl } from "@dumb-diagrams/runtime/catalog";
+import { renderSvg } from "@dumb-diagrams/runtime/render";
+
+import {
+  cacheDiagramCompilation,
+  compileDiagramSource,
+  getCachedDiagramCompilation,
+  type DiagramCompilation,
+} from "../diagram-compiler";
 import { DIAGRAM_EXAMPLES, type DiagramExample } from "../examples";
 import { Modal } from "../ui/Modal";
 
 type Preview = { status: "ready"; svg: string } | { status: "error" };
+
+type CompilationResponse = {
+  id: number;
+  source: string;
+  snapToGrid: boolean;
+  compilation: DiagramCompilation;
+};
+
+function prepareForDisplay(
+  source: string,
+  snapToGrid: boolean,
+  compilation: DiagramCompilation,
+): Preview {
+  if (!compilation.ok) return { status: "error" };
+  try {
+    // The worker's document base URI is not the page's base URI. Re-rendering
+    // this final string on the UI thread keeps catalog icon URLs correct while
+    // parse, layout, and routing stay off-thread.
+    const prepared = {
+      ...compilation,
+      svg: renderSvg(compilation.doc, compilation.layout, {
+        resolveIconHref: catalogIconUrl,
+      }),
+    };
+    cacheDiagramCompilation(source, snapToGrid, prepared);
+    return { status: "ready", svg: prepared.svg };
+  } catch {
+    return { status: "error" };
+  }
+}
 
 export function ExamplesModal({
   open,
@@ -18,37 +56,111 @@ export function ExamplesModal({
   openingExampleId: string | null;
 }) {
   const [previews, setPreviews] = useState(() => new Map<string, Preview>());
+  const previewsRef = useRef(previews);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    let frame = 0;
+    let frame: number | null = null;
     let index = 0;
+    let requestId = 0;
+    let activeExample: DiagramExample | null = null;
+    let worker: Worker | null = null;
 
-    const prepareNext = () => {
-      if (cancelled || index >= DIAGRAM_EXAMPLES.length) return;
-      const example = DIAGRAM_EXAMPLES[index++]!;
-      const compilation = getCachedDiagramCompilation(example.source, true)
-        ?? compileDiagramSource(example.source, true);
+    const updatePreview = (example: DiagramExample, preview: Preview) => {
       if (cancelled) return;
       setPreviews((current) => {
         const next = new Map(current);
-        next.set(example.id, compilation.ok
-          ? { status: "ready", svg: compilation.svg }
-          : { status: "error" });
+        next.set(example.id, preview);
+        previewsRef.current = next;
         return next;
       });
-      frame = window.requestAnimationFrame(prepareNext);
     };
 
-    // Give the modal and its loading placeholders a frame to paint before the
-    // first layout/route/render pass, then prepare one card per frame.
-    frame = window.requestAnimationFrame(prepareNext);
+    // Reuse both the in-memory card result and the shared compilation cache.
+    // Reopening the modal therefore does not start another worker pass.
+    const initial = new Map(previewsRef.current);
+    for (const example of DIAGRAM_EXAMPLES) {
+      if (initial.has(example.id)) continue;
+      const cached = getCachedDiagramCompilation(example.source, true);
+      if (cached) initial.set(example.id, cached.ok
+        ? { status: "ready", svg: cached.svg }
+        : { status: "error" });
+    }
+    previewsRef.current = initial;
+    setPreviews(initial);
+    const pending = DIAGRAM_EXAMPLES.filter((example) => !initial.has(example.id));
+
+    let prepareNext: () => void;
+    const finish = (example: DiagramExample, compilation: DiagramCompilation) => {
+      if (cancelled) return;
+      activeExample = null;
+      updatePreview(example, prepareForDisplay(example.source, true, compilation));
+      prepareNext();
+    };
+
+    const fallbackNext = (example: DiagramExample) => {
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        if (cancelled) return;
+        finish(example, compileDiagramSource(example.source, true));
+      });
+    };
+
+    prepareNext = () => {
+      if (cancelled || index >= pending.length) return;
+      const example = pending[index++]!;
+      activeExample = example;
+      if (!worker) {
+        fallbackNext(example);
+        return;
+      }
+      requestId += 1;
+      try {
+        worker.postMessage({ id: requestId, source: example.source, snapToGrid: true });
+      } catch {
+        worker.terminate();
+        worker = null;
+        fallbackNext(example);
+      }
+    };
+
+    if (pending.length > 0 && typeof Worker !== "undefined") {
+      try {
+        worker = new Worker(
+          new URL("../diagram-compiler.worker.ts", import.meta.url),
+          { type: "module" },
+        );
+        worker.onmessage = (event: MessageEvent<CompilationResponse>) => {
+          if (cancelled || event.data.id !== requestId || !activeExample) return;
+          const example = activeExample;
+          finish(example, event.data.compilation);
+        };
+        worker.onerror = () => {
+          if (cancelled) return;
+          worker?.terminate();
+          worker = null;
+          if (activeExample) fallbackNext(activeExample);
+        };
+      } catch {
+        worker = null;
+      }
+    }
+
+    // Let the modal paint its placeholders before the synchronous fallback.
+    prepareNext();
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(frame);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      worker?.terminate();
+      worker = null;
     };
   }, [open]);
+
+  const preparedCount = DIAGRAM_EXAMPLES.reduce(
+    (count, example) => count + (previews.has(example.id) ? 1 : 0),
+    0,
+  );
 
   return (
     <Modal
@@ -59,6 +171,13 @@ export function ExamplesModal({
       className="examples-modal"
       width={820}
     >
+      {DIAGRAM_EXAMPLES.length > 0 && (
+        <div className="examples-progress" role="status" aria-live="polite">
+          {preparedCount < DIAGRAM_EXAMPLES.length
+            ? `Preparing previews ${preparedCount} of ${DIAGRAM_EXAMPLES.length}…`
+            : "Previews ready"}
+        </div>
+      )}
       <div className="examples-grid">
         {DIAGRAM_EXAMPLES.length === 0 ? (
           <div className="examples-empty" role="status">

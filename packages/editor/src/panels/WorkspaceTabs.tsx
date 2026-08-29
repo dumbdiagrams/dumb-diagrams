@@ -180,20 +180,18 @@ export function WorkspaceTabs({
                 <span className="workspace-tab-label">{label}</span>
                 {tab.filename && <span className="workspace-tab-filename">{tab.filename}</span>}
               </button>
-              {tabs.length > 1 && (
-                <button
-                  type="button"
-                  className="workspace-tab-close"
-                  aria-label={`Close ${label}`}
-                  title={`Close ${label}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onClose(tab.id);
-                  }}
-                >
-                  <IconClose />
-                </button>
-              )}
+              <button
+                type="button"
+                className="workspace-tab-close"
+                aria-label={`Close ${label}`}
+                title={`Close ${label}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onClose(tab.id);
+                }}
+              >
+                <IconClose />
+              </button>
             </div>
           );
         })}

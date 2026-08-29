@@ -128,8 +128,12 @@ test('landing page stays small and loads no third-party scripts by default', asy
 
 test('LLM-first metadata, structured data, and production rendering stay intact', async () => {
   const html = await readFile(join(dist, 'index.html'), 'utf8');
+  const websitePackage = JSON.parse(await readFile(join(site, 'package.json'), 'utf8'));
   assert.match(html, /<title>LLM-first architecture diagrams as code \| Dumb Diagrams<\/title>/);
   assert.match(html, /Architecture diagrams as code, built for an LLM-first workflow/);
+  assert.match(html, new RegExp(`OPEN SOURCE \/ v${websitePackage.version.replaceAll('.', '\\.')}`), 'homepage displays the canonical workspace release version');
+  assert.doesNotMatch(html, /class="hero-brand-mark"/, 'hero stays focused on the enlarged headline');
+  assert.doesNotMatch(html, /Bring your own agent:/, 'removed agent note stays out of the hero');
   assert.doesNotMatch(html, /AI-first/i);
   const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
   assert.equal(schema['@type'], 'SoftwareApplication');
