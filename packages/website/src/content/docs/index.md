@@ -8,7 +8,7 @@ You know the important parts of your architecture: which services exist, where t
 
 Dumb Diagrams gives you a readable `.dgm` file to describe the system. The engine places the resources, draws the connections, and checks the result. Studio lets you refine it visually without losing the source.
 
-**New here? [Make your first diagram](./quick-start/).** You need Node.js 24 or newer and a terminal. You do not need an account, hosted workspace, or AI subscription.
+**New here? [Make your first diagram](./quick-start/).** You need Node.js 24 or newer and a terminal. You do not need an account or a hosted workspace.
 
 If you want to use a coding agent, set it up separately. Codex, Claude Code, Cursor, Antigravity, and open-source alternatives can all work with the project. [Work with an agent](./agent-workflow/) explains how to provide the project context.
 
