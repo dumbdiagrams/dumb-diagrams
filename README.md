@@ -129,18 +129,17 @@ overwriting a newer revision.
 
 `init` creates more than an empty drawing. It adds:
 
-- `DUMB_DIAGRAMS.md`, the local architecture-diagram contract;
-- `AGENTS.md` and `CLAUDE.md`, entry points for common coding agents;
-- `CATALOG.md` and `CATALOG.json`, the available icon and type inventory;
+- a small `AGENTS.md` router plus tiny `CLAUDE.md` and `GEMINI.md` compatibility entrypoints;
+- `.dumbdiagrams/`, the shared architecture, source, provider, catalog, and example knowledge;
 - a `diagrams/` directory with its own guidance;
 - curated source/prompt examples that show the expected style.
 
 The prompt can stay short:
 
 ```text
-Read DUMB_DIAGRAMS.md and the closest example. Create a new diagram for our
-payments flow under diagrams/. Keep the public and private boundaries obvious,
-number the main request path, and validate the result when you are done.
+Create a highly available payments API on AWS using ECS Fargate and Aurora
+PostgreSQL. Keep the application and database private, show the main request
+path, and validate the result when you are done.
 ```
 
 The agent writes architecture, not SVG coordinates. A source file looks roughly

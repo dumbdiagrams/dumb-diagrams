@@ -1,0 +1,24 @@
+diagram app_flow {
+  grammar aws
+  flow lr
+  title "AWS serverless site"
+
+  generic.client visitor "Visitor"
+
+  aws.cloud aws "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront edge "Web delivery"
+      aws.simple-storage-service assets "Static assets"
+    }
+
+    aws.api-gateway api "Application API"
+    aws.aws-lambda worker "Request handler"
+    aws.dynamodb database "Application data"
+  }
+
+  visitor -> edge
+  edge -> assets { label "static content" }
+  edge -> api
+  api -> worker
+  worker -> database
+}

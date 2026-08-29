@@ -11,7 +11,7 @@ const EXAMPLES = [
   "transfer-hub.dgm",
   "aws-data-transfer-hub.dgm",
   "aws-high-availability-web-app.dgm",
-  "simple-serverless-web-application.dgm",
+  "../pilots/simple-serverless-web-application/diagram.dgm",
   "image-thumbnail-pipeline.dgm",
   "asynchronous-report-generation.dgm",
   "event-driven-order-fulfillment.dgm",

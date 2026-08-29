@@ -43,7 +43,6 @@ const PROJECT_REFERENCE_FILES = [
   "aws-high-availability-web-app.dgm",
   "aws-data-transfer-hub.dgm",
   "bedrock-claims-processing.dgm",
-  "simple-serverless-web-application.dgm",
   "image-thumbnail-pipeline.dgm",
   "asynchronous-report-generation.dgm",
   "event-driven-order-fulfillment.dgm",
@@ -51,11 +50,17 @@ const PROJECT_REFERENCE_FILES = [
   "prompts/aws-high-availability-web-app.md",
   "prompts/aws-data-transfer-hub.md",
   "prompts/bedrock-claims-processing.md",
-  "prompts/simple-serverless-web-application.md",
   "prompts/image-thumbnail-pipeline.md",
   "prompts/asynchronous-report-generation.md",
   "prompts/event-driven-order-fulfillment.md",
   "prompts/azure-private-app-service.md",
+] as const;
+
+const PROJECT_PILOT_FILES = [
+  "simple-serverless-web-application/user-prompt.md",
+  "simple-serverless-web-application/architecture-brief.md",
+  "simple-serverless-web-application/reference-spec.md",
+  "simple-serverless-web-application/diagram.dgm",
 ] as const;
 
 const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open", "yes"]);
@@ -285,11 +290,12 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   const diagramFile = `${diagramName}.dgm`;
   const diagramPath = join(diagramsRoot, diagramFile);
   const diagramsReadmePath = join(diagramsRoot, "README.md");
-  const instructionsPath = join(projectRoot, "DUMB_DIAGRAMS.md");
+  const knowledgeRoot = join(projectRoot, ".dumbdiagrams");
   const agentsPath = join(projectRoot, "AGENTS.md");
   const claudePath = join(projectRoot, "CLAUDE.md");
+  const geminiPath = join(projectRoot, "GEMINI.md");
   const readmePath = join(projectRoot, "README.md");
-  const examplesRoot = join(projectRoot, "examples");
+  const examplesRoot = join(knowledgeRoot, "examples");
   mkdirSync(diagramsRoot, { recursive: true });
   const starterDocument = createEmptyDocument(diagramName);
   starterDocument.title = displayNameForDirectory(diagramName);
@@ -301,20 +307,22 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   console.log("");
   const templateVars = { projectName, diagramFile, description };
   const diagramsReadme = renderInitTemplate("diagrams-readme.md", templateVars);
-  const instructions = renderInitTemplate("DUMB_DIAGRAMS.md", templateVars);
   const agentPointer = renderInitTemplate("AGENTS.md", templateVars);
   const readme = renderInitTemplate("README.md", templateVars);
 
   const catalogReference = createCatalogReference();
-  const catalogMarkdownPath = join(projectRoot, "CATALOG.md");
-  const catalogJsonPath = join(projectRoot, "CATALOG.json");
+  const catalogMarkdownPath = join(knowledgeRoot, "catalog.md");
+  const catalogJsonPath = join(knowledgeRoot, "catalog.json");
+  mkdirSync(knowledgeRoot, { recursive: true });
+  const knowledgeFiles = [".dumbdiagrams/instructions.md", ".dumbdiagrams/architecture.md", ".dumbdiagrams/dgm.md", ".dumbdiagrams/providers/aws.md"];
 
   const files = [
     [diagramsReadmePath, diagramsReadme],
     [diagramPath, diagramSource],
-    [instructionsPath, instructions],
+    ...knowledgeFiles.map((name) => [join(projectRoot, name), renderInitTemplate(name, templateVars)] as const),
     [agentsPath, agentPointer],
     [claudePath, renderInitTemplate("CLAUDE.md", templateVars)],
+    [geminiPath, renderInitTemplate("GEMINI.md", templateVars)],
     [readmePath, readme],
     [catalogMarkdownPath, catalogReference.markdown],
     [catalogJsonPath, catalogReference.json],
@@ -325,6 +333,7 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
       console.log(ui.skip(`Skipped ${relativeForLog(filePath)} (already exists)`));
       continue;
     }
+    mkdirSync(dirname(filePath), { recursive: true });
     writeFileSync(filePath, contents, "utf8");
     console.log(ui.success(`Created ${relativeForLog(filePath)}`));
     created++;
@@ -430,8 +439,8 @@ function createCatalogReference(): { markdown: string; json: string } {
     "Search examples:",
     "",
     "```bash",
-    "rg -n \"DynamoDB|aws\\.dynamodb\" CATALOG.md CATALOG.json",
-    "rg -n \"API Gateway|aws\\.api-gateway\" CATALOG.md CATALOG.json",
+    "rg -n \"DynamoDB|aws\\.dynamodb\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
+    "rg -n \"API Gateway|aws\\.api-gateway\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
     "```",
     "",
     "## Legacy aliases",
@@ -465,13 +474,31 @@ function createCatalogReference(): { markdown: string; json: string } {
 
 function copyProjectExamples(projectRoot: string, examplesRoot: string): number {
   mkdirSync(examplesRoot, { recursive: true });
-  const files = ["README.md", ...PROJECT_REFERENCE_FILES];
+  const files = PROJECT_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
+  files.unshift("README.md");
   let created = 0;
 
   for (const fileName of files) {
-    const sourcePath = resolveProjectExample(fileName);
+    const sourcePath = resolveProjectExample(fileName.replace(/^legacy\//, ""));
     if (!sourcePath) {
       console.warn(ui.warning(`Bundled example not found: ${fileName}`));
+      continue;
+    }
+    const targetPath = join(examplesRoot, fileName);
+    mkdirSync(dirname(targetPath), { recursive: true });
+    if (existsAsFileOrDirectory(targetPath)) {
+      console.log(ui.skip(`Skipped ${relativeForLog(targetPath)} (already exists)`));
+      continue;
+    }
+    copyFileSync(sourcePath, targetPath);
+    console.log(ui.success(`Created ${relativeForLog(targetPath)}`));
+    created++;
+  }
+
+  for (const fileName of PROJECT_PILOT_FILES) {
+    const sourcePath = resolveProjectExample(fileName);
+    if (!sourcePath) {
+      console.warn(ui.warning(`Bundled pilot file not found: ${fileName}`));
       continue;
     }
     const targetPath = join(examplesRoot, fileName);
@@ -494,6 +521,7 @@ function resolveProjectExample(fileName: string): string | undefined {
     resolve(__dirname, "..", "templates", "examples", fileName),
     resolve(__dirname, "..", "..", "..", "examples", fileName),
     resolve(__dirname, "..", "..", "..", "examples", "diagrams", fileName),
+    resolve(__dirname, "..", "..", "..", "examples", "pilots", fileName),
   ];
   return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
 }

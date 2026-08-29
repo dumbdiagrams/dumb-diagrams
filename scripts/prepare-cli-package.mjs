@@ -30,7 +30,6 @@ const exampleFiles = [
   "aws-high-availability-web-app.dgm",
   "aws-data-transfer-hub.dgm",
   "bedrock-claims-processing.dgm",
-  "simple-serverless-web-application.dgm",
   "image-thumbnail-pipeline.dgm",
   "asynchronous-report-generation.dgm",
   "event-driven-order-fulfillment.dgm",
@@ -38,11 +37,14 @@ const exampleFiles = [
   "prompts/aws-high-availability-web-app.md",
   "prompts/aws-data-transfer-hub.md",
   "prompts/bedrock-claims-processing.md",
-  "prompts/simple-serverless-web-application.md",
   "prompts/image-thumbnail-pipeline.md",
   "prompts/asynchronous-report-generation.md",
   "prompts/event-driven-order-fulfillment.md",
   "prompts/azure-private-app-service.md",
+  "simple-serverless-web-application/user-prompt.md",
+  "simple-serverless-web-application/architecture-brief.md",
+  "simple-serverless-web-application/reference-spec.md",
+  "simple-serverless-web-application/diagram.dgm",
 ];
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
@@ -84,7 +86,9 @@ for (const fileName of exampleFiles) {
   mkdirSync(dirname(target), { recursive: true });
   const source = fileName.startsWith("prompts/")
     ? join(root, "examples", fileName)
-    : join(exampleSource, fileName);
+    : fileName.startsWith("simple-serverless-web-application/")
+      ? join(root, "examples", "pilots", fileName)
+      : join(exampleSource, fileName);
   cpSync(source, target);
 }
 
@@ -122,6 +126,8 @@ function buildSourceSnapshot() {
     "ICON-NOTICES.md",
     "LICENSE",
     "README.md",
+    "examples/curated-baseline.json",
+    "examples/routing-warnings.json",
     "package.json",
     "playwright.config.ts",
     "playwright.packed.config.ts",
@@ -160,6 +166,8 @@ function buildSourceSnapshot() {
     "e2e-packed",
     "examples/prompts",
     "examples/diagrams",
+    "examples/pilots",
+    "examples/evaluations",
     "packages/cli/src",
     "packages/cli/templates",
     "packages/editor/src",

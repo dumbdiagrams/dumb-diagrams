@@ -30,9 +30,16 @@ const required = [
   "package/dist/index.js",
   "package/dist/create.js",
   "package/dist/studio/index.html",
-  "package/dist/templates/project/DUMB_DIAGRAMS.md",
+  "package/dist/templates/project/AGENTS.md",
+  "package/dist/templates/project/CLAUDE.md",
+  "package/dist/templates/project/GEMINI.md",
+  "package/dist/templates/project/.dumbdiagrams/instructions.md",
   "package/dist/templates/examples/README.md",
   "package/dist/templates/examples/aws-high-availability-web-app.dgm",
+  "package/dist/templates/examples/simple-serverless-web-application/user-prompt.md",
+  "package/dist/templates/examples/simple-serverless-web-application/architecture-brief.md",
+  "package/dist/templates/examples/simple-serverless-web-application/reference-spec.md",
+  "package/dist/templates/examples/simple-serverless-web-application/diagram.dgm",
   "package/dist/source/CORRESPONDING_SOURCE.md",
   "package/dist/source/packages/cli/src/index.ts",
   "package/dist/source/packages/editor/src/main.tsx",
@@ -40,6 +47,9 @@ const required = [
   "package/dist/source/assets/catalog/sources.lock.json",
   "package/dist/source/assets/catalog/sources/cloud-agnostic/server.svg",
   "package/dist/source/examples/diagrams/aws-high-availability-web-app.dgm",
+  "package/dist/source/examples/pilots/simple-serverless-web-application/diagram.dgm",
+  "package/dist/source/examples/curated-baseline.json",
+  "package/dist/source/examples/routing-warnings.json",
   "package/dist/source/registry.npmrc",
   "package/dist/source/scripts/prepare-cli-package.mjs",
   "package/LICENSE",
@@ -70,6 +80,21 @@ try {
   const diagramPath = join(projectDir, "diagrams", "architecture.dgm");
   if (!existsSync(diagramPath)) {
     throw new Error("init did not create starter diagram");
+  }
+  for (const generated of [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".dumbdiagrams/instructions.md",
+    ".dumbdiagrams/examples/simple-serverless-web-application/user-prompt.md",
+    ".dumbdiagrams/examples/simple-serverless-web-application/architecture-brief.md",
+    ".dumbdiagrams/examples/simple-serverless-web-application/reference-spec.md",
+    ".dumbdiagrams/examples/simple-serverless-web-application/diagram.dgm",
+  ]) {
+    if (!existsSync(join(projectDir, generated))) throw new Error(`init did not create ${generated}`);
+  }
+  if (existsSync(join(projectDir, "DUMB_DIAGRAMS.md"))) {
+    throw new Error("init created obsolete DUMB_DIAGRAMS.md");
   }
 
   const validateCode = runNpx(tarballPath, ["validate", join(projectDir, "diagrams")], "create-dumb-diagrams");

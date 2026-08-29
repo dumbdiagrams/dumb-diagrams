@@ -5,6 +5,18 @@
       "file": "aws-high-availability-web-app.dgm",
       "code": "edge-crossing",
       "message": "Edges monitor_app_a and monitor_data_a cross"
+    },
+    {
+      "file": "event-driven-order-fulfillment.dgm",
+      "code": "edge-label-group-collision",
+      "message": "Label of edge authorize_payment overlaps boundary label event_backbone"
+    }
+  ],
+  "reviews": [
+    {
+      "file": "event-driven-order-fulfillment.dgm",
+      "warning": "edge-label-group-collision: authorize_payment / event_backbone",
+      "decision": "Baselined after visual review. The rendered texts are horizontally and vertically separated; the invariant uses a conservatively clamped full-width group header rectangle. Shortening the edge label would violate the preserved reference specification, so the golden source remains unchanged."
     }
   ]
 }

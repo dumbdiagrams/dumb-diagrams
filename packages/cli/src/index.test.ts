@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -46,15 +46,22 @@ describe("runCli", () => {
       expect(code).toBe(0);
       expect(readFileSync(join(projectDir, "README.md"), "utf8")).toContain("Payments");
       expect(readFileSync(join(projectDir, "diagrams/system-overview.dgm"), "utf8")).toContain("system-overview");
-      const instructions = readFileSync(join(projectDir, "DUMB_DIAGRAMS.md"), "utf8");
-      expect(instructions).toContain("system-overview.dgm");
-      expect(instructions).toContain("cloud-agnostic.boundary");
-      expect(instructions).toContain("Do not author the legacy `group` shorthand");
-      const catalog = readFileSync(join(projectDir, "CATALOG.json"), "utf8");
+      const instructions = readFileSync(join(projectDir, ".dumbdiagrams/instructions.md"), "utf8");
+      expect(instructions).toContain("Explicit user decisions");
+      expect(readFileSync(join(projectDir, "AGENTS.md"), "utf8")).toContain(".dumbdiagrams/instructions.md");
+      expect(readFileSync(join(projectDir, "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
+      expect(readFileSync(join(projectDir, "GEMINI.md"), "utf8")).toBe("@./AGENTS.md\n");
+      const catalog = readFileSync(join(projectDir, ".dumbdiagrams/catalog.json"), "utf8");
       expect(catalog).toContain("\"entries\"");
       expect(catalog).toContain("\"type\": \"cloud-agnostic.boundary\"");
-      expect(catalog).not.toContain("cloud-agnostic.logical");
-      expect(catalog).not.toContain("neutral.logical");
+      const generatedPilot = join(projectDir, ".dumbdiagrams/examples/simple-serverless-web-application");
+      const sourcePilot = join(ROOT, "examples/pilots/simple-serverless-web-application");
+      for (const file of ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"]) {
+        expect(readFileSync(join(generatedPilot, file), "utf8")).toBe(readFileSync(join(sourcePilot, file), "utf8"));
+      }
+      expect(existsSync(join(projectDir, ".dumbdiagrams/examples/legacy/simple-serverless-web-application.dgm"))).toBe(false);
+      expect(existsSync(join(projectDir, "DUMB_DIAGRAMS.md"))).toBe(false);
+      expect(existsSync(join(projectDir, "CATALOG.md"))).toBe(false);
     } finally {
       rmSync(workRoot, { recursive: true, force: true });
     }

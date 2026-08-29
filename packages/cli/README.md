@@ -38,9 +38,9 @@ npm create dumb-diagrams@latest -- --yes
 ## What `init` creates
 
 - `diagrams/` — starter `.dgm` source (one file per diagram)
-- `DUMB_DIAGRAMS.md`, `AGENTS.md`, `CLAUDE.md` — agent instructions
-- `CATALOG.md` / `CATALOG.json` — canonical resource and group types
-- `examples/` — bundled source/prompt pairs for style reference
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` — small agent entrypoints
+- `.dumbdiagrams/` — canonical workflow, architecture, format, provider, and catalog knowledge
+- `.dumbdiagrams/examples/` — one four-role pilot plus legacy reference pairs
 
 Use `--editor cursor` or `--editor code` to pick an editor. Without `--editor`, `--open-editor` tries Cursor, VS Code, Codium, Windsurf, and Zed in that order.
 

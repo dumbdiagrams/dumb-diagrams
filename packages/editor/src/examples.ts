@@ -1,7 +1,7 @@
 import awsHighAvailabilityWebAppSource from "../../../examples/diagrams/aws-high-availability-web-app.dgm?raw";
 import awsDataTransferHubSource from "../../../examples/diagrams/aws-data-transfer-hub.dgm?raw";
 import bedrockClaimsProcessingSource from "../../../examples/diagrams/bedrock-claims-processing.dgm?raw";
-import simpleServerlessWebApplicationSource from "../../../examples/diagrams/simple-serverless-web-application.dgm?raw";
+import simpleServerlessWebApplicationSource from "../../../examples/pilots/simple-serverless-web-application/diagram.dgm?raw";
 import imageThumbnailPipelineSource from "../../../examples/diagrams/image-thumbnail-pipeline.dgm?raw";
 import asynchronousReportGenerationSource from "../../../examples/diagrams/asynchronous-report-generation.dgm?raw";
 import eventDrivenOrderFulfillmentSource from "../../../examples/diagrams/event-driven-order-fulfillment.dgm?raw";
@@ -10,7 +10,7 @@ import azurePrivateAppServiceSource from "../../../examples/diagrams/azure-priva
 import DATA_TRANSFER_HUB_PROMPT from "../../../examples/prompts/aws-data-transfer-hub.md?raw";
 import HIGH_AVAILABILITY_PROMPT from "../../../examples/prompts/aws-high-availability-web-app.md?raw";
 import BEDROCK_CLAIMS_PROMPT from "../../../examples/prompts/bedrock-claims-processing.md?raw";
-import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/prompts/simple-serverless-web-application.md?raw";
+import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/pilots/simple-serverless-web-application/user-prompt.md?raw";
 import IMAGE_THUMBNAIL_PIPELINE_PROMPT from "../../../examples/prompts/image-thumbnail-pipeline.md?raw";
 import ASYNCHRONOUS_REPORT_GENERATION_PROMPT from "../../../examples/prompts/asynchronous-report-generation.md?raw";
 import EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT from "../../../examples/prompts/event-driven-order-fulfillment.md?raw";

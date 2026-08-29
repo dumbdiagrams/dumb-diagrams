@@ -67,7 +67,12 @@ describe("diagram compilation canvas bounds", () => {
       "azure-private-app-service",
     ]);
     for (const example of DIAGRAM_EXAMPLES) {
-      expect(example.prompt.trim().length).toBeGreaterThan(500);
+      if (example.id === "simple-serverless-web-application") {
+        expect(example.prompt.trim().length).toBeGreaterThan(40);
+        expect(example.prompt.trim().length).toBeLessThan(500);
+      } else {
+        expect(example.prompt.trim().length).toBeGreaterThan(500);
+      }
       expect(example.prompt).not.toMatch(
         /(?:replicate (?:it|this|from)|reference (?:image|screenshot)|attached (?:image|screenshot)|based on (?:the|this) image)/i,
       );

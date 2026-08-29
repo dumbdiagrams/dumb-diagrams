@@ -190,8 +190,10 @@ Run `npx create-dumb-diagrams@latest help` (or `$CLI help` from a tarball) for t
 | `init` | Agent-ready project scaffold | `[directory]` | `--name`, `--directory`, `--diagram`, `--description`, `--open-editor`, `--editor`, `--yes` |
 | `fixtures` | Render built-in dev fixtures | `<name>` — `async-docs` or `transfer-hub` | `--output <path>` (default `.artifacts/golden/<name>.svg`) |
 
-`init` writes `diagrams/`, `DUMB_DIAGRAMS.md`, `AGENTS.md`, `CLAUDE.md`,
-`CATALOG.md`, `CATALOG.json`, and bundled `examples/` prompt/source pairs.
+`init` writes `diagrams/`, small `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
+entrypoints, and canonical knowledge under `.dumbdiagrams/`: instructions,
+architecture/DGM/provider guidance, catalogs, one four-role pilot, and seven
+legacy prompt/source pairs.
 
 ### Try each command manually
 
@@ -233,7 +235,8 @@ version (`@0.1.0`).
 | --- | --- |
 | `packages/cli/src/index.test.ts` | `help`, `--version`, `init`, `validate`, `format`, `render` |
 | `packages/cli/src/studio-server.test.ts` | Local Studio HTTP API (`/api/session`, document read/write, SSE) |
-| `pnpm check` | Compiled CLI validates every `examples/diagrams/*.dgm` |
+| `pnpm check` | Compiled CLI validates every checked-in `.dgm`, verifies the curated byte baseline, and runs the pilot semantic prompt ladder |
+| `pnpm check:routing` | Compares routing/layout warnings with the visually reviewed warning baseline |
 | `pnpm test:e2e` | Full Studio UI via **Vite** (not the CLI server) |
 | `pnpm test:e2e:packed` | Tarball → `studio` server → bundled Studio → disk lifecycle in a browser |
 | `pnpm smoke:package` | `npx` tarball: `init`, `validate`, `render`, `format`, invalid-input rejection, `dgm` alias, AGPL source rebuild |
