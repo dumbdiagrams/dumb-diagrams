@@ -789,6 +789,7 @@ function placeEdgeDecorations(
           edge,
           edges.filter((candidate) => candidate.id !== edge.id),
           occupiedBadges,
+          [],
           obstacles,
         );
     if (!badge) continue;
@@ -799,6 +800,7 @@ function placeEdgeDecorations(
     edge.badgeSide = badge.side;
   }
 
+  const labels = new Map<string, EdgeLabelPlacement>();
   const occupiedLabels: Rect[] = [];
   const labelOrder = edges
     .filter((edge) => edge.label)
@@ -832,14 +834,97 @@ function placeEdgeDecorations(
     edge.labelRect = labelPlacement?.rect;
     edge.labelT = labelPlacement?.t;
     edge.labelSide = labelPlacement?.side;
-    if (labelPlacement) occupiedLabels.push(labelPlacement.rect);
+    if (labelPlacement) {
+      labels.set(edge.id, labelPlacement);
+      occupiedLabels.push(labelPlacement.rect);
+    }
   }
+
+  // The initial pass gives every decoration a deterministic valid position.
+  // Refine automatic decorations against the complete shared occupancy set so
+  // badges are no longer blind to labels placed later in the pass. Each item
+  // remains independent: only its own candidate is reconsidered, while
+  // authored positions stay fixed and merely reserve space.
+  const automaticBadges = badgeOrder.filter(({ edge }) => {
+    const override = routeOverrides[edge.id];
+    return override?.badgeT === undefined && override?.badgeSide === undefined;
+  });
+  const automaticLabels = labelOrder.filter(({ edge }) => {
+    const override = routeOverrides[edge.id];
+    return override?.labelT === undefined && override?.labelSide === undefined;
+  });
+
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+
+    for (const { edge } of automaticBadges) {
+      const next = getSafeEdgeBadgePlacement(
+        edge,
+        edges.filter((candidate) => candidate.id !== edge.id),
+        [...badges.entries()]
+          .filter(([id]) => id !== edge.id)
+          .map(([, placement]) => placement.point),
+        [...labels.values()].map((placement) => placement.rect),
+        obstacles,
+      );
+      const previous = badges.get(edge.id);
+      if (!next || sameBadgePlacement(previous, next)) continue;
+      badges.set(edge.id, next);
+      edge.badge = next.point;
+      edge.badgeT = next.t;
+      edge.badgeSide = next.side;
+      changed = true;
+    }
+
+    for (const { edge } of automaticLabels) {
+      const next = getEdgeLabelPlacement(
+        edge.points,
+        edge.label!,
+        obstacles,
+        badges.get(edge.id),
+        undefined,
+        undefined,
+        edges.filter((candidate) => candidate.id !== edge.id),
+        [...badges.values()],
+        [...labels.entries()]
+          .filter(([id]) => id !== edge.id)
+          .map(([, placement]) => placement.rect),
+      );
+      const previous = labels.get(edge.id);
+      if (!next || sameLabelPlacement(previous, next)) continue;
+      labels.set(edge.id, next);
+      edge.labelPoint = next.point;
+      edge.labelRect = next.rect;
+      edge.labelT = next.t;
+      edge.labelSide = next.side;
+      changed = true;
+    }
+
+    if (!changed) break;
+  }
+}
+
+function sameBadgePlacement(
+  a: EdgeBadgePlacement | undefined,
+  b: EdgeBadgePlacement,
+): boolean {
+  return Boolean(a && a.t === b.t && a.side === b.side &&
+    a.point.x === b.point.x && a.point.y === b.point.y);
+}
+
+function sameLabelPlacement(
+  a: EdgeLabelPlacement | undefined,
+  b: EdgeLabelPlacement,
+): boolean {
+  return Boolean(a && a.t === b.t && a.side === b.side &&
+    a.point.x === b.point.x && a.point.y === b.point.y);
 }
 
 function getSafeEdgeBadgePlacement(
   edge: RoutedEdge,
   otherEdges: RoutedEdge[],
   occupiedBadges: Point[],
+  occupiedLabels: Rect[],
   obstacles: Obstacle[],
 ): EdgeBadgePlacement | undefined {
   const preferred = getEdgeBadgePlacement(edge.points);
@@ -882,6 +967,7 @@ function getSafeEdgeBadgePlacement(
           preferred,
           otherEdges,
           occupiedBadges,
+          occupiedLabels,
           obstacles,
         ) + (clearance - 6) * 4;
         if (score < bestScore) {
@@ -899,6 +985,7 @@ function badgeCollisionScore(
   preferred: EdgeBadgePlacement,
   otherEdges: RoutedEdge[],
   occupiedBadges: Point[],
+  occupiedLabels: Rect[],
   obstacles: Obstacle[],
 ): number {
   let score = Math.abs(candidate.t - preferred.t) * 1_000;
@@ -926,6 +1013,15 @@ function badgeCollisionScore(
       score += 1_000_000 +
         (BADGE_TO_BADGE_CLEARANCE - distance) * 10_000;
     }
+  }
+  for (const label of occupiedLabels) {
+    if (!circleIntersectsRect(
+      candidate.point,
+      GRAMMAR.badgeRadius,
+      label,
+      LABEL_CONTENT_CLEARANCE,
+    )) continue;
+    score += BADGE_CONTENT_COLLISION_COST;
   }
   for (const obstacle of obstacles) {
     if (!circleIntersectsRect(

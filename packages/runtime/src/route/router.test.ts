@@ -84,6 +84,88 @@ describe("routeEdgePreview", () => {
     expect(Math.hypot(edge.badge!.x - closestX, edge.badge!.y - closestY)).toBeGreaterThan(12);
   });
 
+  it("moves an automatic badge around an independently authored label", () => {
+    const doc = createEmptyDocument("shared-decoration-space");
+    doc.resources = [
+      routingResource("source", "generic.client", "Source"),
+      routingResource("target", "generic.server", "Target"),
+    ];
+    doc.edges = [{
+      id: "request",
+      source: "source",
+      target: "target",
+      step: 1,
+      label: "reserved label",
+      style: "solid",
+      kind: "flow",
+    }];
+    doc.views[0]!.routes.request = {
+      pin: true,
+      mode: "manual",
+      points: [{ x: 48, y: 124 }, { x: 320, y: 124 }],
+      labelT: 0.5,
+      labelSide: "top",
+    };
+    const layout: LayoutResult = {
+      nodes: [
+        routingNode("source", 0, 100, 48),
+        routingNode("target", 320, 100, 48),
+      ],
+      groups: [],
+      edges: [],
+      width: 400,
+      height: 220,
+      symmetries: [],
+    };
+
+    const edge = routeEdges(doc, layout).find((candidate) => candidate.id === "request")!;
+
+    expect(edge.labelT).toBe(0.5);
+    expect(edge.labelSide).toBe("top");
+    expect({ t: edge.badgeT, side: edge.badgeSide }).not.toEqual({ t: 0.5, side: "top" });
+    expect(circleIntersectsRectForTest(edge.badge!, 10, edge.labelRect!, 4)).toBe(false);
+
+    const repeated = routeEdges(doc, layout).find((candidate) => candidate.id === "request")!;
+    expect({
+      badge: repeated.badge,
+      badgeT: repeated.badgeT,
+      badgeSide: repeated.badgeSide,
+      labelPoint: repeated.labelPoint,
+      labelRect: repeated.labelRect,
+      labelT: repeated.labelT,
+      labelSide: repeated.labelSide,
+    }).toEqual({
+      badge: edge.badge,
+      badgeT: edge.badgeT,
+      badgeSide: edge.badgeSide,
+      labelPoint: edge.labelPoint,
+      labelRect: edge.labelRect,
+      labelT: edge.labelT,
+      labelSide: edge.labelSide,
+    });
+  });
+
+  it("keeps independently authored badge and label positions exact", () => {
+    const doc = createAsyncDocsFixture();
+    const edgeModel = doc.edges[0]!;
+    edgeModel.label = "request";
+    doc.views[0]!.routes[edgeModel.id] = {
+      badgeT: 0.25,
+      badgeSide: "bottom",
+      labelT: 0.75,
+      labelSide: "top",
+    };
+
+    const edge = routeEdges(doc, layoutDocument(doc)).find(
+      (candidate) => candidate.id === edgeModel.id,
+    )!;
+
+    expect(edge.badgeT).toBe(0.25);
+    expect(edge.badgeSide).toBe("bottom");
+    expect(edge.labelT).toBe(0.75);
+    expect(edge.labelSide).toBe("top");
+  });
+
   it("moves a later badge to the clear side instead of covering an earlier arrow", () => {
     const doc = createEmptyDocument("badge-clearance");
     doc.resources = [
