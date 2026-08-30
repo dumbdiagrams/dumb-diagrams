@@ -19,6 +19,10 @@
   `step` for requested or useful numbered stages. Use dashed edges for peer or
   supporting relationships. Add `from`/`to` face hints only when the intended
   attachment is unambiguous and automatic routing needs help.
+- Use `flow lr` for primary sequential pipelines and order causally sequential
+  children left-to-right. Stack vertically only parallel or same-level
+  branches/resources; use `flow tb` only when requested or clearly more
+  appropriate for a coherent composition.
 - Prefer automatic layout. Do not add a `view` block, manual node positions, or
   manual routes unless requested or revising an existing manually arranged
   diagram. Preserve existing view, positions, ports, and routes during semantic

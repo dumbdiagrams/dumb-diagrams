@@ -68,6 +68,9 @@ describe("runCli", () => {
       for (const grammar of ["aws", "azure", "gcp", "cloud-agnostic"]) {
         expect(dgmGuide).toContain(grammar);
       }
+      expect(dgmGuide).toContain("Use `flow lr` for primary sequential pipelines");
+      expect(dgmGuide).toContain("Stack vertically only parallel or same-level");
+      expect(dgmGuide).toContain("use `flow tb` only when requested");
       for (const [provider, marker] of [
         ["aws", "First-class"],
         ["azure", "Experimental"],

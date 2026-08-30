@@ -265,6 +265,13 @@ function layoutRegionGroup(
   state: LayoutState,
 ): Measured {
   const style = GROUP_STYLES.region;
+  const horizontal =
+    group.type === "azure.region" &&
+    doc.flow === "lr" &&
+    hasHorizontalChildFlow(doc, group);
+  if (horizontal) {
+    return layoutGenericGroup(doc, group, state, style.padding);
+  }
   const children = measureChildren(doc, group.children, state);
   const columns: Record<RegionColumn, LayoutChild[]> = {
     left: [],

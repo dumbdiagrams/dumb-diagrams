@@ -232,4 +232,101 @@ describe("logical group layout", () => {
     expect(nodes.get("service")!.obstacle.x).toBeLessThan(nodes.get("database")!.obstacle.x);
     expect(nodes.get("monitor")!.obstacle.y).toBeGreaterThan(nodes.get("database")!.obstacle.y);
   });
+
+  it("keeps sequential boundaries in a left-to-right region row", () => {
+    const doc = createEmptyDocument("azure-region-pipeline");
+    doc.grammar = "azure";
+    doc.flow = "lr";
+    const stages = ["api", "storage", "queue", "processing", "data"];
+    doc.resources = stages.map((id) => ({
+      ...resource(`${id}_service`, id),
+      type: "azure.function-apps",
+    }));
+    doc.groups = [
+      {
+        id: "region",
+        kind: "region",
+        type: "azure.region",
+        label: "Azure region",
+        children: stages,
+      },
+      ...stages.map((id) => ({
+        id,
+        kind: "logical" as const,
+        type: "cloud-agnostic.boundary",
+        parent: "region",
+        label: id,
+        children: [`${id}_service`],
+      })),
+    ];
+    doc.edges = [
+      { id: "api-storage", source: "api_service", target: "storage_service", style: "solid", kind: "flow" },
+      { id: "api-queue", source: "api_service", target: "queue_service", style: "solid", kind: "flow" },
+      { id: "queue-processing", source: "queue_service", target: "processing_service", style: "solid", kind: "flow" },
+      { id: "processing-data", source: "processing_service", target: "data_service", style: "solid", kind: "flow" },
+    ];
+
+    const layout = layoutDocument(doc);
+    const groups = new Map(layout.groups.map((group) => [group.id, group]));
+    const centersY = stages.map((id) => {
+      const bounds = groups.get(id)!.bounds;
+      return bounds.y + bounds.h / 2;
+    });
+
+    for (let index = 1; index < stages.length; index++) {
+      expect(groups.get(stages[index - 1]!)!.bounds.x).toBeLessThan(
+        groups.get(stages[index]!)!.bounds.x,
+      );
+    }
+    expect(new Set(centersY)).toHaveLength(1);
+    expect(groups.get("region")!.bounds.w).toBeGreaterThan(groups.get("region")!.bounds.h);
+  });
+
+  it("keeps parallel same-level boundaries vertically stacked in a region", () => {
+    const doc = createEmptyDocument("azure-region-parallel");
+    doc.grammar = "azure";
+    doc.flow = "lr";
+    doc.resources = [
+      resource("source"),
+      ...["first", "second", "third"].map((id) => ({
+        ...resource(`${id}_service`, id),
+        type: "azure.function-apps",
+      })),
+    ];
+    doc.groups = [
+      {
+        id: "region",
+        kind: "region",
+        type: "azure.region",
+        label: "Azure region",
+        children: ["first", "second", "third"],
+      },
+      ...["first", "second", "third"].map((id) => ({
+        id,
+        kind: "logical" as const,
+        type: "cloud-agnostic.boundary",
+        parent: "region",
+        label: id,
+        children: [`${id}_service`],
+      })),
+    ];
+    doc.edges = ["first", "second", "third"].map((id) => ({
+      id: `source-${id}`,
+      source: "source",
+      target: `${id}_service`,
+      style: "solid" as const,
+      kind: "flow" as const,
+    }));
+
+    const groups = new Map(layoutDocument(doc).groups.map((group) => [group.id, group]));
+    const first = groups.get("first")!.bounds;
+    const second = groups.get("second")!.bounds;
+    const third = groups.get("third")!.bounds;
+    const centerX = (bounds: typeof first) => bounds.x + bounds.w / 2;
+
+    expect(centerX(first)).toBe(centerX(second));
+    expect(centerX(second)).toBe(centerX(third));
+    expect(first.y).toBeLessThan(second.y);
+    expect(second.y).toBeLessThan(third.y);
+  });
 });
