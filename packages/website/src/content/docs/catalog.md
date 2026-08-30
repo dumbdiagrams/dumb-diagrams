@@ -10,7 +10,8 @@ The grammar adds visual conventions so resources from the catalog work together 
 
 ## Use canonical types
 
-Every initialized project includes `CATALOG.md` and `CATALOG.json`. Search those files for a service and copy its canonical type.
+After `dumbdiagrams init`, the repository includes catalog guidance under
+`.dumbdiagrams/`. Search those files for a service and copy its canonical type.
 
 For example, the canonical Lambda type is `aws.aws-lambda`. The quoted label can be “Payment handler,” but the label does not choose the icon.
 

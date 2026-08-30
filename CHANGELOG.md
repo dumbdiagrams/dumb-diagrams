@@ -7,10 +7,12 @@ the versioning policy in [docs/VERSIONING.md](./docs/VERSIONING.md).
 
 ### Changed
 
-- The public initializer is now `npm create dumb-diagrams@latest`; the package
-  exposes `dumbdiagrams` and `dgm` aliases for command-style usage.
-- Interactive initialization asks for a diagram space name and uses a
-  current-name-plus-timestamp default when no name is supplied.
+- The public CLI now has two commands: `dumbdiagrams init` and
+  `dumbdiagrams studio`; `dgm` is a convenience shorthand.
+- Interactive initialization prepares the current repository and asks for its
+  project or repository name.
+- Studio is a generic local editor for portable `.dgm` files and no longer
+  discovers or associates diagrams through a launch project.
 - Vendored catalog assets grouped under `assets/catalog/` with documented
   generation and staging lifecycle.
 - Repository examples moved to `examples/diagrams/`; generated editor catalog
@@ -32,14 +34,14 @@ the versioning policy in [docs/VERSIONING.md](./docs/VERSIONING.md).
 - First public `create-dumb-diagrams` npm package with bundled CLI runtime, Studio assets,
   catalog icons, and example templates.
 - CLI integration tests, package tarball smoke checks, and Playwright coverage in CI.
-- Init project templates and release documentation for private tarball testing.
+- Agent-init templates and release documentation for private tarball testing.
 
 ### Changed
 
 - Workspace packages normalized to `0.1.0` for the first npm release.
 - Seven private runtime workspaces consolidated into one internal
   `@dumb-diagrams/runtime` package.
-- CLI `render` and `validate` now require explicit paths for published usage.
+- The initial CLI shipped additional file-processing commands.
 - Release artifact includes `LICENSE` and `ICON-NOTICES.md`.
 - Project licensing changed from MIT to AGPL-3.0-only before the first public
   release.

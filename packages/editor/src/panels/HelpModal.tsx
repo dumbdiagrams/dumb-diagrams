@@ -23,17 +23,16 @@ export function HelpModal({
           <h3>Source-first workflow</h3>
           <p>
             The <code>.dgm</code> source is the portable source of truth. Edit it in the Source tool,
-            import it from a repository, or let an LLM update it and then reload the visual result.
+            open it from anywhere on disk, or let an LLM update it and then reload the visual result.
           </p>
           <p>
-            Run <code>npx create-dumb-diagrams@latest studio diagrams</code> for a local project workflow, or pass one
-            `.dgm` path directly. Studio lets you select among files in that folder, writes the
-            selected file directly, watches for edits from an agent or another editor, and asks
-            before replacing a newer disk revision.
+            Start Studio with <code>dumbdiagrams studio</code>, then use Open to choose any
+            <code>.dgm</code> file. Modern browsers save directly to the selected file; other
+            browsers download a portable source file.
           </p>
           <p>
-            Keep one diagram per file. For a new request, create a new `.dgm` under <code>diagrams/</code>;
-            edit an existing file only when the user explicitly names it.
+            Keep one diagram per file. Diagram files may live anywhere and can be edited by
+            agents, editors, or Studio without registration.
           </p>
         </section>
         <section>

@@ -3,8 +3,8 @@ import { createCommand, installCommand, url } from '../lib/site';
 ---
 <div class="install trace-border" data-install data-trace>
   <div class="install-tabs" role="group" aria-label="Installation method">
-    <button type="button" aria-pressed="true" data-command={createCommand}>Create a project</button>
-    <button type="button" aria-pressed="false" data-command={installCommand}>Global install</button>
+    <button type="button" aria-pressed="true" data-command={createCommand}>Install CLI</button>
+    <button type="button" aria-pressed="false" data-command={installCommand}>Initialize repository</button>
     <span class="mono">TERMINAL</span>
   </div>
   <div class="install-command"><span class="prompt" aria-hidden="true">$</span><code data-command-text tabindex="0" aria-label="Installation command">{createCommand}</code><button class="copy-button" data-copy={createCommand} aria-label="Copy installation command" title="Copy command"><span aria-hidden="true">⧉</span></button></div>

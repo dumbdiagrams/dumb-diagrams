@@ -2,7 +2,8 @@
 
 **LLM-first architecture diagrams that are hard to get wrong.**
 
-Local CLI and Studio for agent-generated `.dgm` source files — deterministic layout, validated catalog types, human controls when you need them.
+Local CLI and generic Studio for portable `.dgm` source files — deterministic
+layout, catalog types, and human controls when you need them.
 
 [![npm version](https://img.shields.io/npm/v/create-dumb-diagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-dumb-diagrams)
 [![Node.js](https://img.shields.io/node/v/create-dumb-diagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -22,39 +23,40 @@ a substantially cleaner path.
 
 ## Quick start
 
-```bash
-npm create dumb-diagrams@latest -- --open-editor
-```
-
-When no directory or name is supplied in an interactive terminal, the initializer asks what the diagram space should be called. The default is based on the current directory and a timestamp. For scripted use, pass values explicitly or use `--yes` for the same timestamped fallback:
+Install the package once, then run the two commands from the repository where
+an agent will work:
 
 ```bash
-npm create dumb-diagrams@latest payments -- --name "Payments Platform" --diagram system-overview
-npx create-dumb-diagrams@latest init --directory ./projects/payments --name "Payments Platform"
-npx create-dumb-diagrams@latest init --name payments --description "Event-driven billing system."
-npm create dumb-diagrams@latest -- --yes
+npm install -g create-dumb-diagrams
+cd path/to/your-repository
+dumbdiagrams init
+dumbdiagrams studio
 ```
+
+`init` asks for the repository/project name and writes the agent entrypoints and
+`.dumbdiagrams/` guidance into the current repository. `studio` starts the
+generic local editor and is independent of the directory where it was started.
+Use **Open** inside Studio to select any `.dgm` file on disk.
+
+`dgm init` and `dgm studio` are convenience shorthands for the canonical
+`dumbdiagrams` commands.
 
 ## What `init` creates
 
-- `diagrams/` — starter `.dgm` source (one file per diagram)
 - `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` — small agent entrypoints
 - `.dumbdiagrams/` — canonical workflow, architecture, format, provider, and catalog knowledge
-- `.dumbdiagrams/examples/` — seven four-role AWS examples plus the legacy Azure pair
-
-Use `--editor cursor` or `--editor code` to pick an editor. Without `--editor`, `--open-editor` tries Cursor, VS Code, Codium, Windsurf, and Zed in that order.
+- `.dumbdiagrams/examples/` — reference examples for agent prompts and source
 
 ## Commands
 
 ```bash
-npx create-dumb-diagrams@latest help                         # full command reference
-npx create-dumb-diagrams@latest studio diagrams              # local Studio
-npx create-dumb-diagrams@latest validate diagrams            # check every .dgm in a folder
-npx create-dumb-diagrams@latest render diagrams/foo.dgm --output foo.svg
-npx create-dumb-diagrams@latest format diagrams/foo.dgm      # print canonical source
+dumbdiagrams init                                               # prepare the current repository
+dumbdiagrams studio                                             # start generic local Studio
 ```
 
-Run `npx create-dumb-diagrams@latest help` for init, studio, and render flags.
+The CLI intentionally has only `init` and `studio` as its main user-facing
+commands. Use Studio's **Open** action to select a `.dgm` file from any local
+directory.
 
 ## Maintainer tarball test
 
@@ -68,8 +70,8 @@ pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 
 VERSION="$(node -p 'require("./packages/cli/package.json").version')"
 ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-npx --yes --package="$ARTIFACT" create-dumb-diagrams ./preview-project --yes
-npx --yes --package="$ARTIFACT" create-dumb-diagrams validate ./preview-project/diagrams
+npx --yes --package="$ARTIFACT" dumbdiagrams init
+npx --yes --package="$ARTIFACT" dumbdiagrams studio
 ```
 
 `pnpm smoke:package` from the repository root exercises the same artifact and

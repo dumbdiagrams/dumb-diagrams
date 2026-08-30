@@ -24,7 +24,6 @@ const projectTemplatesTarget = join(cliDist, "templates");
 const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
 const exampleSource = join(root, "examples/diagrams");
 const entry = join(cliDist, "index.js");
-const createEntry = join(cliDist, "create.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
 const curatedExampleIds = [
   "aws-high-availability-web-app",
@@ -43,7 +42,6 @@ const exampleFiles = [
 ];
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
-if (!existsSync(createEntry)) throw new Error("Create CLI build is missing. Run `pnpm build` before preparing the npm package.");
 if (!existsSync(join(editorDist, "index.html"))) {
   throw new Error("Editor build is missing. Run `pnpm build` before preparing the npm package.");
 }
@@ -100,7 +98,7 @@ for (const legalFile of ["LICENSE", "ICON-NOTICES.md"]) {
   }
 }
 
-console.log("Prepared create-dumb-diagrams package assets:");
+console.log("Prepared DumbDiagrams package assets:");
 console.log(`  CLI:    ${entry} (bundled runtime)`);
 console.log(`  Studio: ${standaloneEditor}`);
 console.log(`  Source: ${sourceSnapshot}`);
@@ -109,7 +107,7 @@ console.log(`  Templates: ${projectTemplatesTarget}`);
 
 function cleanupDistArtifacts(distDir) {
   for (const fileName of readdirSync(distDir)) {
-    if (fileName === "index.js" || fileName === "create.js") continue;
+    if (fileName === "index.js") continue;
     rmSync(join(distDir, fileName), { recursive: true, force: true });
   }
 }
@@ -188,7 +186,7 @@ function buildSourceSnapshot() {
     join(sourceSnapshot, "CORRESPONDING_SOURCE.md"),
     `# Corresponding source
 
-This directory contains the source corresponding to the bundled create-dumb-diagrams
+This directory contains the source corresponding to the bundled DumbDiagrams
 CLI and Studio in this npm package.
 
 The vendored catalog source files are included under \`assets/catalog/sources\`

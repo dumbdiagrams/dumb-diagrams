@@ -25,7 +25,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "create-dumb-diagrams": "./dist/create.js",
     "dumbdiagrams": "./dist/index.js",
     "dgm": "./dist/index.js"
   },

@@ -9,7 +9,7 @@ import Analytics from '../components/Analytics.astro';
 import { analyticsConfig } from '../lib/analytics-config.mjs';
 import { url } from '../lib/site';
 interface Props { title?: string; description?: string; docs?: boolean; noindex?: boolean; structuredData?: Record<string, unknown> }
-const { title = 'LLM-first architecture diagrams as code', description = 'Create architecture diagrams as code with an LLM-first workflow. Draft plain-text .dgm files with a coding agent, refine locally in Studio, and version in Git.', docs = false, noindex = false, structuredData } = Astro.props;
+const { title = 'LLM-first architecture diagrams as code', description = 'Create architecture diagrams as code with an LLM-first workflow. Prepare a repository for agents, open portable .dgm files in generic local Studio, and version the source in Git.', docs = false, noindex = false, structuredData } = Astro.props;
 const { measurementId } = analyticsConfig();
 const analyticsEnabled = Boolean(import.meta.env.PROD && measurementId);
 const consentPreview = Boolean(import.meta.env.DEV && !analyticsEnabled);

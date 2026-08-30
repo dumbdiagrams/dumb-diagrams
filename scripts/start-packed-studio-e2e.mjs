@@ -1,45 +1,39 @@
 import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const cliRoot = join(root, "packages/cli");
 const manifest = JSON.parse(readFileSync(join(cliRoot, "package.json"), "utf8"));
-const artifactsRoot = join(root, ".artifacts/packed-studio-e2e");
 const packagesRoot = join(root, ".artifacts/packages");
-const projectRoot = join(artifactsRoot, "project");
-const diagramsRoot = join(projectRoot, "diagrams");
 const tarball = join(packagesRoot, `create-dumb-diagrams-${manifest.version}.tgz`);
 const npx = process.platform === "win32" ? "npx.cmd" : "npx";
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
-rmSync(artifactsRoot, { recursive: true, force: true });
 mkdirSync(packagesRoot, { recursive: true });
 execFileSync(pnpm, ["--dir", cliRoot, "pack", "--pack-destination", packagesRoot], {
   cwd: root,
   stdio: "inherit",
 });
-execFileSync(
-  npx,
-  ["--yes", `--package=${tarball}`, "create-dumb-diagrams", projectRoot, "--yes", "--name", "Packed Studio E2E"],
-  { cwd: root, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
-);
-copyFileSync(join(root, "examples/diagrams/async-docs.dgm"), join(diagramsRoot, "async-docs.dgm"));
-
 const child = spawn(
   npx,
   [
     "--yes",
     `--package=${tarball}`,
-    "create-dumb-diagrams",
+    "dumbdiagrams",
     "studio",
-    diagramsRoot,
-    "--no-open",
-    "--port",
-    "5175",
   ],
-  { cwd: root, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
+  {
+    cwd: root,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      DUMBDIAGRAMS_STUDIO_NO_OPEN: "1",
+      DUMBDIAGRAMS_STUDIO_PORT: "5175",
+      npm_config_yes: "true",
+    },
+  },
 );
 
 const stop = (signal) => {

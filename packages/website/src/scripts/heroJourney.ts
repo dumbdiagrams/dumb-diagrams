@@ -27,9 +27,9 @@ journeys.forEach(journey => {
   let promptStarted = false;
 
   const messages = [
-    'The project is ready. Open it with your coding agent to draft the first diagram.',
+    'The repository is ready. Open it with your coding agent to draft a .dgm file.',
     'Describe your architecture in your favorite code editor with an integrated LLM.',
-    'Use Studio’s layout, routing, styling, and source tools to adjust the result to your liking.',
+    'Open the file in Studio and use its layout, routing, styling, and source tools to adjust the result.',
   ];
 
   function updateControls() {
@@ -49,12 +49,12 @@ journeys.forEach(journey => {
     if (current === 0) {
       nextButton.disabled = unlocked < 1;
       nextStepNumberElement.textContent = unlocked < 1 ? 'STEP 01' : 'NEXT · 02';
-      nextLabelElement.textContent = unlocked < 1 ? 'Initializing project…' : 'Open in editor with agent';
-      statusElement.textContent = unlocked < 1 ? 'Running the CLI… the next step unlocks when the project is ready.' : messages[0];
+      nextLabelElement.textContent = unlocked < 1 ? 'Initializing repository…' : 'Open repository with agent';
+      statusElement.textContent = unlocked < 1 ? 'Running the CLI… the next step unlocks when the repository is ready.' : messages[0];
     } else if (current === 1) {
       nextButton.disabled = !promptDone;
       nextStepNumberElement.textContent = 'NEXT · 03';
-      nextLabelElement.textContent = promptDone ? 'See the result in Studio' : 'Agent is drafting…';
+      nextLabelElement.textContent = promptDone ? 'Open the file in Studio' : 'Agent is drafting…';
       statusElement.textContent = messages[1];
     } else {
       nextButton.disabled = false;

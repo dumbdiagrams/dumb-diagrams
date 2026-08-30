@@ -21,7 +21,7 @@ future documentation site a sensible set of sections to turn into navigation:
 | Package guide | Which package owns a behavior and where to start reading |
 | Document and compile pipeline | How source moves through parsing, validation, layout, routing, and rendering |
 | Routing and rendering decisions | Why connectors and output behave the way they do |
-| Studio and local file bridge | How browser editing differs from editing a real file |
+| Studio and local files | How the browser opens and saves portable files |
 | Catalog and asset strategy | Where provider icons come from and how browser assets are handled |
 | Build, tests, and packaging | Which checks protect the workspace and the published package |
 
@@ -37,8 +37,8 @@ Dumb Diagrams is a source-first diagram engine with a browser editor around it.
 - A `.dgm` file is the durable source of truth.
 - The runtime parses, validates, lays out, routes, and renders that source.
 - Studio lets a person edit the same document visually or as text.
-- The CLI creates projects, validates and renders files, and serves Studio next
-  to real files on disk.
+- `dumbdiagrams init` prepares a repository for agents; `dumbdiagrams studio`
+  serves the generic editor for files selected by the user.
 - The npm tarball contains the CLI, the compiled Studio, templates, catalog
   assets, and buildable corresponding source.
 
@@ -74,9 +74,8 @@ modules:
 3. **Meaning comes before placement.** The document describes resources,
    containment, and relationships. Coordinates and manual routes are useful
    overrides, but they should not be required for a useful first render.
-4. **The browser is optional.** Studio is convenient, but validation and
-   rendering also work from the CLI. A local project does not depend on a
-   hosted service to stay usable.
+4. **The browser is optional.** Studio is convenient, and a local repository
+   does not depend on a hosted service to stay usable.
 5. **Exports use the same geometry.** PNG, PDF, HTML, and SVG are different
    delivery formats for the same compiled diagram. Export code should not invent
    a second layout system.
@@ -108,11 +107,11 @@ delegates back to pnpm. Use the pinned package manager so workspace linking,
 engine checks, dependency policy, and the lockfile behave the same locally and
 in CI.
 
-When you need the compiled CLI and its local-file bridge:
+When you need the compiled CLI and its static Studio server:
 
 ```bash
 pnpm build
-pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm
+pnpm dev:cli
 ```
 
 When you change packaging, templates, bundled Studio assets, or corresponding
@@ -129,9 +128,8 @@ Nothing is published by those commands. The generated tarball lives under
 
 ## Testing the CLI
 
-The CLI is the publishable `create-dumb-diagrams` package (`dumbdiagrams` and
-`dgm` are command aliases). Use three
-loops depending on what you need to verify.
+The CLI is the publishable `create-dumb-diagrams` package. `dumbdiagrams` is
+the canonical command and `dgm` is its convenience shorthand.
 
 | Loop | When to use it | What it proves |
 | --- | --- | --- |
@@ -145,10 +143,10 @@ Build what changed, then invoke the dist entry directly or through `dev:cli`:
 
 ```bash
 pnpm build
-pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm
+pnpm dev:cli
 
 # equivalent:
-node packages/cli/dist/index.js studio examples/curated/aws-high-availability-web-app/diagram.dgm
+node packages/cli/dist/index.js studio
 ```
 
 `dev:cli` serves Studio from `packages/editor/dist` after an editor build. UI
@@ -168,25 +166,19 @@ node packages/cli/dist/index.js -h
 set -e
 cd "$(git rev-parse --show-toplevel)"
 # If you use nvm, run `nvm use` here before continuing.
-npm uninstall -g create-dumb-diagrams
-hash -r
 pnpm install --frozen-lockfile
-rm -rf packages/runtime/dist packages/editor/dist packages/cli/dist
-rm -f .artifacts/packages/create-dumb-diagrams-0.1.0.tgz
 pnpm build
 pnpm smoke:package
 ARTIFACT="$PWD/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
 npm install -g "$ARTIFACT"
-create-dumb-diagrams --version
 dumbdiagrams --version
 dgm --version
 ```
 
 This is the recommended local consumer test. `pnpm smoke:package` creates the
-tarball and runs the pack + consumer checks automatically, including a
-deliberate **invalid** `.dgm` that must fail validation—the red `✖` in the log
-is expected. It also verifies the `dgm` alias and the corresponding-source
-rebuild. The commands do not publish to npm. If the global install reports a
+tarball and runs the pack + consumer checks automatically, including the
+`dumbdiagrams` and `dgm` entrypoints and the corresponding-source rebuild. The
+commands do not publish to npm. If the global install reports a
 permission problem or command conflict, stop; do not use `sudo` or `--force`.
 
 For a temporary one-off test without changing the global install, the tarball
@@ -195,28 +187,23 @@ can still be invoked with `npx --package`, but use the artifact created by
 
 ```bash
 export ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
-export CLI="npx --yes --package=$ARTIFACT create-dumb-diagrams"
+export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
 ```
 
 ### Command reference
 
-Run `npx create-dumb-diagrams@latest help` (or `$CLI help` from a tarball) for the live list. Summary:
+The public CLI has two main commands:
 
-| Command | Purpose | Positional args | Notable flags |
-| --- | --- | --- | --- |
-| `studio` / `open` | Local Studio + file bridge | `[file-or-folder]` — defaults to `diagrams/architecture.dgm` | `--port` (default 4788), `--no-open` |
-| `render` | Portable SVG export | `<file.dgm>` | `--output <path>` (default `output.svg`) |
-| `validate` / `check` | Parse, validate, compile; report routing notes | `<file.dgm>` or directory | — |
-| `format` / `fmt` | Print canonical `.dgm` | `<file.dgm>` | `--write` to update the file |
-| `init` | Agent-ready project scaffold | `[directory]` | `--name`, `--directory`, `--diagram`, `--description`, `--open-editor`, `--editor`, `--yes` |
-| `fixtures` | Render built-in dev fixtures | `<name>` — `async-docs` or `transfer-hub` | `--output <path>` (default `.artifacts/golden/<name>.svg`) |
+| Command | Purpose |
+| --- | --- |
+| `dumbdiagrams init` | Prepare the current repository for coding agents. The interactive prompt asks for its repository/project name and writes agent entrypoints plus `.dumbdiagrams/` guidance. |
+| `dumbdiagrams studio` | Start the generic local Studio. It is independent of the launch directory; use **Open** to select any `.dgm` file on disk. |
 
-`init` writes `diagrams/`, small `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
-entrypoints, and canonical knowledge under `.dumbdiagrams/`: instructions,
-architecture/DGM/provider guidance, catalogs, seven four-role AWS examples, and
-the remaining legacy Azure prompt/source pair.
+`dgm` invokes the same entrypoint as a convenience shorthand. There are no
+file/folder positional arguments or project-registration options. Normal
+`--help` and `--version` handling remains available.
 
-### Try each command manually
+### Try the public workflow manually
 
 Use a temp directory so experiments stay outside the repo:
 
@@ -228,39 +215,28 @@ $CLI help
 $CLI --version
 npx --yes --package="$ARTIFACT" dgm --version   # alias
 
-# Init variants
-$CLI init "$TMP/by-name" --name "Payments Platform" --diagram billing-flow
-$CLI init "$TMP/by-yes" --yes
-$CLI init "$TMP/with-desc" --name demo --description "Smoke-test project"
+# Initialize the current directory (answer the name prompt when interactive)
+cd "$TMP"
+$CLI init
 
-# Read-only on an initialized project
-$CLI validate "$TMP/by-name/diagrams"
-$CLI render "$TMP/by-name/diagrams/architecture.dgm" --output "$TMP/out.svg"
-$CLI format "$TMP/by-name/diagrams/architecture.dgm"
-$CLI format "$TMP/by-name/diagrams/architecture.dgm" --write
-
-# Studio without opening a browser (Ctrl+C to stop)
-$CLI studio "$TMP/by-name/diagrams" --no-open --port 4799
-
-# Workspace-only fixture render (needs monorepo examples/catalog)
-node packages/cli/dist/index.js fixtures async-docs
-node packages/cli/dist/index.js validate examples
+# Start generic Studio from any directory (Ctrl+C to stop)
+$CLI studio
 ```
 
-After publishing, replace `$CLI` with `npx create-dumb-diagrams@latest` or a pinned
-version (`@0.1.0`).
+After publishing, install the package and use `dumbdiagrams`; `dgm` is the
+optional shorthand.
 
 ### What automated tests cover
 
 | Gate | CLI surface exercised |
 | --- | --- |
-| `packages/cli/src/index.test.ts` | `help`, `--version`, `init`, `validate`, `format`, `render` |
-| `packages/cli/src/studio-server.test.ts` | Local Studio HTTP API (`/api/session`, document read/write, SSE) |
+| `packages/cli/src/index.test.ts` | `help`, `--version`, `init`, and `studio` |
+| `packages/cli/src/studio-server.test.ts` | Loopback-only static serving, security headers, and absence of file/project APIs |
 | `pnpm check` | Compiled CLI validates every checked-in `.dgm`, verifies the curated byte baseline, and runs the pilot semantic prompt ladder |
 | `pnpm check:routing` | Compares routing/layout warnings with the visually reviewed warning baseline |
 | `pnpm test:e2e` | Full Studio UI via **Vite** (not the CLI server) |
-| `pnpm test:e2e:packed` | Tarball → `studio` server → bundled Studio → disk lifecycle in a browser |
-| `pnpm smoke:package` | `npx` tarball: `init`, `validate`, `render`, `format`, invalid-input rejection, `dgm` alias, AGPL source rebuild |
+| `pnpm test:e2e:packed` | Tarball → `studio` server → bundled generic Studio in a browser |
+| `pnpm smoke:package` | `npx` tarball: `init`, `studio`, `dgm` alias, and AGPL source rebuild |
 
 The main gap for manual spot-checking: browser UX through **workspace** `dev:cli`
 after editor changes (`pnpm build && pnpm dev:cli …`). Packed E2E covers the
@@ -320,7 +296,7 @@ measurements.
 ├── packages/
 │   ├── runtime/                Model, DSL, catalog, layout, routing, rendering
 │   ├── editor/                 React Studio and browser export surface
-│   ├── cli/                    Published command and local Studio server
+│   ├── cli/                    Published command and static Studio server
 │   ├── brand/                  Shared fonts, palette, and wordmark (see STYLE_GUIDE.md)
 │   └── website/                Static Astro website and public documentation
 ├── scripts/                    Build, catalog, package, policy, and release tools
@@ -423,7 +399,7 @@ testable modules. See [MAINTAINING.md](./MAINTAINING.md) for the ownership map.
 #### UI shell and editor model
 
 `main.tsx` is the coordinator. It connects menus, panels, the active workspace,
-compilation status, and local-mode capabilities. It should not become the place
+compilation status, and local-file capabilities. It should not become the place
 where document rules accumulate. Mutations belong in `editor-model.ts`, while
 small UI surfaces belong in panels or focused components.
 
@@ -431,8 +407,8 @@ small UI surfaces belong in panels or focused components.
 
 `state/workspace.ts` treats tabs, undo/redo, saved state, and browser persistence
 as one workspace concern. A browser session can hold several diagrams without
-changing their source format. Local mode adds disk synchronization around that
-same state rather than creating a second editor model.
+changing their source format. File handles are associated with open tabs only
+for the lifetime of the page and do not create a second editor model.
 
 #### Canvas and interactions
 
@@ -452,36 +428,27 @@ inside the runtime renderer.
 
 ### `create-dumb-diagrams` CLI
 
-This is the publishable package and exposes `create-dumb-diagrams` for the
-initializer plus `dumbdiagrams` and `dgm` for command-style usage.
+This is the publishable package. Its canonical `dumbdiagrams` command exposes
+`init` for current-repository agent setup and `studio` for the generic local
+editor. `dgm` invokes the same entrypoint as a convenience shorthand.
 
-- `init` creates an agent-ready project, examples, catalog references, and a
-  starter diagram.
-- `studio` serves the bundled editor and connects it to a `.dgm` file or folder.
-- `validate` / `check` parse, validate, compile, and report routing notes.
-- `format` prints or writes canonical `.dgm` source.
-- `render` produces portable SVG.
-- `fixtures` renders built-in development fixtures.
-
-OS-specific browser/editor launch commands are isolated in
-`platform-launch.ts` so Windows, macOS, and Linux syntax can be tested without
+OS-specific browser launch commands are isolated in `platform-launch.ts` so
+Windows, macOS, and Linux syntax can be tested without
 opening GUI applications in CI.
 
 #### Commands and local files
 
-The CLI is the user-facing entry point for projects that want files on disk. It
-creates a starter project, validates and formats source, renders portable SVG,
-and starts Studio when a visual view is useful. The command layer should remain
-thin: parsing and document behavior belong to the runtime, while browser state
-belongs to the editor.
+The CLI is the user-facing bridge to local files. It writes agent guidance in
+the current repository and starts Studio without inferring a file, folder, or
+project from the launch directory. The command layer should remain thin:
+document behavior belongs to the runtime, while browser state belongs to the
+editor.
 
-#### The local Studio bridge
+#### The local Studio server
 
-`studio-server.ts` serves the compiled editor and a small same-origin API. It is
-deliberately a local file bridge, not a general-purpose application server. The
-server owns file reads/writes, revisions, directory watching, and local-origin
-protections. Studio owns how conflicts and connection state are explained to the
-person editing.
+`studio-server.ts` serves only the compiled editor on loopback. It has no file,
+project, discovery, or workspace API. Browser file handles provide direct local
+Open and Save where supported; the file-input and download path is the fallback.
 
 #### The published boundary
 
@@ -618,41 +585,15 @@ SVG gives us the clearest path from source to screen to export.
 
 The same editor bundle runs in two modes:
 
-| Mode | Started with | Persistence |
-| --- | --- | --- |
-| Browser/static | `pnpm dev`, Vite preview, or GitHub Pages | Browser workspace and explicit downloads |
-| Local-file | `dumbdiagrams studio <file-or-folder>` | Reads and writes real `.dgm` files through the CLI server |
+Studio uses the File System Access API when the browser provides it. Open keeps
+the selected file handle with that tab, Save writes through the handle, and Save
+As requests a new handle. Handles are intentionally not persisted across page
+reloads. Browsers without that API use the same `.dgm` validation and tab flow,
+but opening uses a hidden file input and saving downloads a portable source file.
 
-On startup, Studio probes `/api/session`. A static server has no compatible API,
-so the editor quietly stays in browser mode. The CLI serves both the compiled
-assets and the API on one origin, enabling local-file mode without CORS or a
-remote service.
-
-The local bridge exposes a deliberately small API:
-
-| Endpoint | Purpose |
-| --- | --- |
-| `GET /api/session` | Detect local mode and describe the active project/file |
-| `GET /api/document` | Load source and its content-hash revision |
-| `PUT /api/document` | Validate and revision-check a save; optionally Save As |
-| `GET /api/files` | List sibling `.dgm` files |
-| `POST /api/select` | Switch the connected file |
-| `GET /api/events` | Stream external changes and reconnection state with SSE |
-
-Writes are atomic. Each save includes the revision it was based on; a stale save
-receives HTTP 409 and Studio asks whether to reload the disk version or keep the
-browser version. The bridge watches the diagram's containing directory so
-editors that atomically replace a file do not detach the watcher. API reads,
-saves, and SSE reconnects refresh from disk before using a revision. EventSource
-reconnects automatically after laptop sleep or a dropped local connection, and
-the SSE readiness event resynchronizes both the document and visible connection
-state. A low-frequency heartbeat helps detect a half-open connection; browser
-internet-status events are intentionally ignored because Studio only needs
-localhost.
-
-Studio binds to `127.0.0.1` and is intended for local use. The server also emits
-a restrictive content-security policy and anti-framing/content-sniffing headers;
-it is a local-development bridge, not a public hosting server.
+The CLI server binds to `127.0.0.1`, serves static assets only, and emits a
+restrictive content-security policy plus anti-framing/content-sniffing headers.
+It neither receives file contents nor learns where selected `.dgm` files live.
 
 ## Catalog pipeline
 
@@ -756,7 +697,7 @@ Packing `packages/cli` invokes `scripts/prepare-cli-package.mjs`. That script:
 
 - bundles the compiled CLI and runtime with esbuild;
 - copies the production Studio into `dist/studio`;
-- copies project templates and curated examples;
+- copies agent-init templates and curated examples;
 - checks the packaged legal files;
 - builds the AGPL corresponding-source snapshot under `dist/source`.
 
@@ -776,7 +717,7 @@ resolution.
 | `pnpm check:performance` | Median compile time for the representative examples against a 250 ms CI ceiling |
 | `pnpm check:assets` | Branding image dimensions and byte budgets |
 | `pnpm test:e2e` | Chromium and WebKit Studio interactions and every format supported by each engine (WebP is hidden where encoding is unavailable) |
-| `pnpm test:e2e:packed` | Real tarball → CLI server → bundled Studio → disk lifecycle |
+| `pnpm test:e2e:packed` | Real tarball → CLI server → bundled generic Studio |
 | `pnpm smoke:package` | Local `npx` consumer flows, tarball contents, aliases, failure codes, and clean corresponding-source rebuild |
 | `pnpm check:release` | Aggregate local Linux/macOS release gate |
 

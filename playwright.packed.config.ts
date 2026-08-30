@@ -17,7 +17,7 @@ export default defineConfig({
   },
   webServer: {
     command: "node scripts/start-packed-studio-e2e.mjs",
-    url: "http://127.0.0.1:5175/api/session",
+    url: "http://127.0.0.1:5175/",
     reuseExistingServer: false,
     timeout: 180_000,
   },

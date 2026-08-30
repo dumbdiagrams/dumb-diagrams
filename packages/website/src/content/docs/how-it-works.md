@@ -1,6 +1,6 @@
 ---
 title: How the engine works
-description: Trace a .dgm file through parsing, validation, layout, and rendering in Studio and exported SVG.
+description: Trace a portable .dgm file through parsing, layout, and rendering in Studio.
 section: Under the hood
 order: 7
 ---
@@ -50,9 +50,14 @@ Document mutations live in the editor model. Workspace state owns tabs, undo/red
 
 ## The CLI provides the local bridge
 
-`create-dumb-diagrams` creates projects, validates and formats files, renders SVG, and serves Studio beside files on disk.
+`create-dumb-diagrams` publishes the `dumbdiagrams` CLI. Its `init` command
+prepares the current repository for agents; its `studio` command serves the
+generic file editor. Studio can open any `.dgm` file selected by the user and
+does not infer ownership from the launch directory.
 
-The local server has a narrow role. It reads and writes files, checks revisions, watches for changes, and serves the editor. The browser explains conflicts and connection state.
+The local server has one narrow role: it serves the compiled editor on loopback.
+The browser opens and saves selected files directly when file handles are
+available, with file-input and download fallbacks elsewhere.
 
 The published package bundles the runtime, compiled Studio, templates, catalog assets, and buildable corresponding source. Testing only the workspace is not enough: a missing file in the tarball is still a broken consumer experience.
 

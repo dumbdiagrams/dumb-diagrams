@@ -1,30 +1,26 @@
 # My System
 
-A local Dumb Diagrams project. Authored `.dgm` files live in `diagrams/`,
-one diagram per file. Shared agent knowledge and read-only examples live under
+A repository prepared for Dumb Diagrams. Authored `.dgm` files are portable and
+can live wherever your workflow needs them. Shared agent knowledge and examples live under
 `.dumbdiagrams/`.
 
 ## Structure
 
-- `diagrams/architecture.dgm` — starter diagram only
-- `diagrams/<name>.dgm` — one new file per additional diagram
-- `diagrams/README.md` — output-folder file policy
 - `AGENTS.md` — universal router to the canonical instructions
 - `CLAUDE.md` / `GEMINI.md` — tiny compatibility entrypoints
 - `.dumbdiagrams/instructions.md` — canonical workflow and navigation
 - `.dumbdiagrams/architecture.md` — prompt interpretation and architecture brief contract
 - `.dumbdiagrams/dgm.md` — source and layout conventions
 - `.dumbdiagrams/providers/` — provider-specific conventions
-- `.dumbdiagrams/examples/` — curated four-role examples and remaining legacy references
+- `.dumbdiagrams/examples/` — curated examples
 - `.dumbdiagrams/catalog.md` / `catalog.json` — canonical resource and group types
 
-Open the visual editor with:
+Start the generic visual editor with:
 
 ```bash
-npx create-dumb-diagrams@latest studio diagrams
+dumbdiagrams studio
 ```
 
-Describe the architecture naturally. The coding agent should discover
-`AGENTS.md`, follow the shared instructions selectively, create a new file under
-`diagrams/`, validate it, and inspect the rendered result. For a revision, name
-the exact existing `.dgm` file.
+Describe the architecture naturally. The coding agent should read `AGENTS.md`
+and the shared instructions, create or update a `.dgm` file, and then open that
+exact file in Studio for review.

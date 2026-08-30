@@ -27,7 +27,7 @@ const previewHeight = Number(dimensions[2]);
 <div class="hero-journey" data-hero-journey>
   <div class="journey-stage-nav" role="tablist" aria-label="Workflow stages">
     <button id="journey-stage-tab-0" type="button" role="tab" aria-selected="true" aria-controls="journey-stage-cli" data-stage-tab="0">
-      <span class="journey-stage-number">01</span><span>Init project</span>
+      <span class="journey-stage-number">01</span><span>Init repository</span>
     </button>
     <span class="journey-stage-line" aria-hidden="true"></span>
     <button id="journey-stage-tab-1" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-editor" data-stage-tab="1" disabled>
@@ -35,7 +35,7 @@ const previewHeight = Number(dimensions[2]);
     </button>
     <span class="journey-stage-line" aria-hidden="true"></span>
     <button id="journey-stage-tab-2" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-studio" data-stage-tab="2" disabled>
-      <span class="journey-stage-number">03</span><span>See it in Studio</span>
+      <span class="journey-stage-number">03</span><span>Open in Studio</span>
     </button>
   </div>
 
@@ -48,14 +48,14 @@ const previewHeight = Number(dimensions[2]);
       <div class="cursor-window" aria-label="Cursor-style coding agent preview">
         <div class="cursor-titlebar">
           <WindowControls />
-          <span class="cursor-window-title">my-system</span>
+          <span class="cursor-window-title">repository</span>
           <span class="cursor-title-actions" aria-hidden="true">⌘  P&nbsp;&nbsp; · &nbsp;&nbsp;•••</span>
         </div>
         <div class="cursor-body">
           <div class="cursor-activity" aria-hidden="true"><span class="is-active">▱</span><span>⌕</span><span>⑂</span><span>▷</span><span>▦</span><i></i><span>◎</span><span>⚙</span></div>
           <aside class="cursor-explorer" aria-label="Project explorer">
             <div class="cursor-pane-label">EXPLORER <span aria-hidden="true">•••</span></div>
-            <div class="cursor-project"><span aria-hidden="true">⌄</span> MY-SYSTEM</div>
+            <div class="cursor-project"><span aria-hidden="true">⌄</span> REPOSITORY</div>
             <ul>
               <li class="cursor-folder"><span aria-hidden="true">⌄</span><b aria-hidden="true">▰</b> diagrams</li>
               <li class="cursor-file cursor-selected"><span aria-hidden="true">·</span><b aria-hidden="true">◇</b> architecture.dgm</li>
@@ -78,7 +78,7 @@ const previewHeight = Number(dimensions[2]);
               <pre class="cursor-prompt" data-editor-prompt aria-label="Prompt sent to the coding agent">{prompt}<b class="cursor-prompt-caret" aria-hidden="true"></b></pre>
               <div class="cursor-agent-tools"><span>＋ Add context</span><span>⌘ ↵ Send</span></div>
             </div>
-            <div class="cursor-agent-output" aria-hidden="true"><span class="cursor-output-dot"></span><span>Agent will write the diagram source in your project</span></div>
+          <div class="cursor-agent-output" aria-hidden="true"><span class="cursor-output-dot"></span><span>Agent will write portable .dgm source</span></div>
           </div>
         </div>
         <div class="cursor-statusbar"><span>⌁ main*</span><span>Ln 1, Col 1</span><span>Spaces: 2</span><span>UTF-8</span><span>Cursor Tab</span></div>
@@ -112,10 +112,10 @@ const previewHeight = Number(dimensions[2]);
   </div>
 
   <div class="journey-action-row">
-    <p class="journey-status" data-journey-status aria-live="polite">Running the CLI… the next step unlocks when the project is ready.</p>
-    <button type="button" class="journey-next" data-next-step disabled><span class="journey-next-step" data-next-step-number>STEP 01</span><span data-next-label>Initializing project…</span><span class="journey-next-arrow" aria-hidden="true">→</span></button>
+    <p class="journey-status" data-journey-status aria-live="polite">Running the CLI… the next step unlocks when the repository is ready.</p>
+    <button type="button" class="journey-next" data-next-step disabled><span class="journey-next-step" data-next-step-number>STEP 01</span><span data-next-label>Initializing repository…</span><span class="journey-next-arrow" aria-hidden="true">→</span></button>
   </div>
-  <noscript><p class="journey-noscript">Follow the complete workflow above: initialize a project, ask your coding agent to draft the diagram, then refine the result in Studio.</p></noscript>
+  <noscript><p class="journey-noscript">Follow the complete workflow above: initialize a repository, ask your coding agent to draft a portable .dgm file, then open it in Studio.</p></noscript>
 </div>
 
 <script>

@@ -29,8 +29,9 @@ Studio assets, and the AGPL corresponding-source snapshot. Publishing it makes
 the end-user flow work without requiring a repository checkout:
 
 ```bash
-npm create dumb-diagrams@0.1.0 -- --open-editor
-npm create dumb-diagrams@latest -- --open-editor
+npm install -g create-dumb-diagrams@0.1.0
+dumbdiagrams init
+dumbdiagrams studio
 ```
 
 ### Private testing before publish
@@ -43,8 +44,8 @@ mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 VERSION="$(node -p 'require("./packages/cli/package.json").version')"
 ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-npx --yes --package="$ARTIFACT" create-dumb-diagrams ./preview-project --yes
-npx --yes --package="$ARTIFACT" create-dumb-diagrams validate ./preview-project/diagrams
+npx --yes --package="$ARTIFACT" dumbdiagrams init
+npx --yes --package="$ARTIFACT" dumbdiagrams studio
 ```
 
 This never uploads anything to npm.
@@ -78,16 +79,14 @@ npm view "create-dumb-diagrams@$VERSION" version --registry=https://registry.npm
 ### Public usage after publish
 
 ```bash
-# One-off commands
-npm create dumb-diagrams@latest -- --open-editor
-npx create-dumb-diagrams@latest studio diagrams
-npx create-dumb-diagrams@latest validate diagrams
-npx create-dumb-diagrams@latest render diagrams/my-diagram.dgm --output renders/my-diagram.svg
-
-# Optional global install (exposes dumbdiagrams and dgm)
+# Install once, then use the canonical command
 npm install -g create-dumb-diagrams
-dumbdiagrams init --yes
-dgm studio diagrams
+dumbdiagrams init
+dumbdiagrams studio
+
+# Convenience shorthand
+dgm init
+dgm studio
 ```
 
 Create and push the release tag only after `pnpm check:release`,

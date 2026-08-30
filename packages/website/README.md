@@ -32,7 +32,11 @@ The check runs Astro diagnostics, a production build, and tests for local links/
 
 Every article has `title`, `description`, `section`, and `order` frontmatter. Sidebar, pagination, search, and `llms.txt` follow the collection. Use relative links between articles so subdirectory deployments work. Complete `dgm` code fences are compiled in tests; use `text` for intentionally partial syntax examples.
 
-The articles are based on `docs/TECHNICAL_OVERVIEW.md`, the application README, project templates, and focused runtime contracts. Keep those references and the public explanations aligned when behavior changes.
+The articles are based on `docs/TECHNICAL_OVERVIEW.md`, the application README,
+and focused runtime contracts. Keep those references and the public
+explanations aligned when behavior changes. The public workflow is always
+`dumbdiagrams init` followed by `dumbdiagrams studio`; `.dgm` files are
+portable and Studio is independent of the launch repository.
 
 ## Build and host
 
@@ -118,6 +122,6 @@ Fonts are self-hosted through Fontsource. Diagrams use the project’s existing 
 
 See [the shared style guide](../../docs/STYLE_GUIDE.md). Both Studio and the website import the CSS-only `@dumb-diagrams/brand` package. The site uses the native Web Animations API for one-time section entrances and a small frame-based playback controller for the terminal, without an animation-library download. Reduced-motion preferences show a static transcript; no animation is required to read content.
 
-`prepare:assets` compiles the runtime and CLI, then `scripts/capture-cli.mjs` runs the local CLI in a temporary directory. It captures the actual creation log with ANSI colors, normalizes the example home path, and removes the temporary project. No npm package is fetched, no Studio server is started, and no commands run in the visitor's browser. `src/lib/ansi.mjs` escapes text before rendering the CLI styles.
+`prepare:assets` compiles the runtime and CLI, then `scripts/capture-cli.mjs` runs `dumbdiagrams init` in a temporary directory. It captures the actual initialization log with ANSI colors, normalizes the example home path, and removes the temporary repository. No npm package is fetched, no Studio server is started, and no commands run in the visitor's browser. `src/lib/ansi.mjs` escapes text before rendering the CLI styles.
 
-The homepage imports three selected examples from the canonical curated bundles under `examples/curated/`. Each bundle contains the natural prompt, architecture brief, preserved reference specification, and golden `.dgm`; asset preparation renders the same diagram source used by Studio. Keep those sources intact: the website is a view of the app examples, not a separate set of lookalikes. Output controls enlarge the SVG without changing its geometry.
+The homepage imports three selected examples from the canonical curated bundles under `examples/curated/`. Each bundle contains the natural prompt, architecture brief, preserved reference specification, and portable `.dgm`; asset preparation renders the same diagram source used by Studio. Keep those sources intact: the website is a view of the app examples, not a separate set of lookalikes. Output controls enlarge the SVG without changing its geometry.

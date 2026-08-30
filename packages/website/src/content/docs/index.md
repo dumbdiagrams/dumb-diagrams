@@ -1,6 +1,6 @@
 ---
 title: Welcome to Dumb Diagrams
-description: LLM-first architecture diagrams as code, with readable .dgm files, deterministic layout, and a local visual editor.
+description: LLM-first architecture diagrams as code, with portable .dgm files, deterministic layout, and a generic local Studio.
 section: Start here
 order: 0
 ---
@@ -16,13 +16,15 @@ If you want to use a coding agent, set it up separately. Codex, Claude Code, Cur
 
 A diagram is a normal text file. It describes resources, the groups they belong to, and the connections between them. When you make a visual adjustment in Studio, that decision can be saved in the same file.
 
-Keep diagrams beside your code, review changes in Git, and ask a coding agent to update a diagram when the system changes. Studio is one way to work with the file, not the only one.
+Keep `.dgm` files wherever they belong, review changes in Git, and ask a coding
+agent to update a diagram when the system changes. Studio is a generic file
+editor: use **Open** to select any local file.
 
 ## Choose your starting point
 
 | Task | Start here |
 | --- | --- |
-| Create a project and open Studio | [Quick start](./quick-start/) |
+| Prepare a repository and open Studio | [Quick start](./quick-start/) |
 | Ask an agent for a first draft | [Work with an agent](./agent-workflow/) |
 | Understand the source language | [The .dgm format](./source-format/) |
 | Move things around and save your work | [Using Studio](./studio/) |

@@ -1,28 +1,25 @@
 ---
 title: Using Studio
-description: Edit source and diagram together, with a clear distinction between browser storage and files on disk.
+description: Edit any portable .dgm file locally, independent of the directory where Studio starts.
 section: Make diagrams
 order: 4
 ---
-Studio is the visual editor around the diagram engine. You can pan and zoom, move and resize items, change source, adjust connectors, work with multiple diagrams, and export the result.
+Studio is the generic visual editor around the diagram engine. You can pan and
+zoom, move and resize items, change source, adjust connectors, work with tabs
+and recent files, and export the result.
 
 The diagram you see is the runtime’s SVG. The editor adds interaction around it; it does not maintain a separate drawing format.
 
-## Open a local project
+## Start Studio and open a file
 
 ```bash
-npx create-dumb-diagrams@latest studio diagrams
+npm install -g create-dumb-diagrams
+dumbdiagrams studio
 ```
 
-Pass a folder to work with its diagrams, or a `.dgm` file to open that specific document. The default server address is `127.0.0.1` on port `4788`. Keep the terminal process running while Studio is connected.
-
-If that port is occupied:
-
-```bash
-npx create-dumb-diagrams@latest studio diagrams --port 4799
-```
-
-Use `--no-open` if you want the server to print its address without launching a browser.
+Studio is independent of the directory where it was launched. Choose **Open**
+to select any `.dgm` file from anywhere on disk. Keep the terminal process
+running while Studio is connected.
 
 ## Edit the picture or the source
 
@@ -34,22 +31,19 @@ Start with automatic layout, then move the items that need attention. For dense 
 
 ## Understand where saves go
 
-| Mode | How you start it | Where work is kept |
-| --- | --- | --- |
-| Local Studio | The CLI’s `studio` command | Real `.dgm` files through the local server |
-| Standalone browser Studio | A static deployment or the editor dev server | Browser workspace storage and explicit downloads |
+In browsers with the File System Access API, Open keeps a handle to the selected
+file and Save writes back to it. Save As asks for a new destination. File handles
+are not retained across a page reload, so reopen the file when needed.
 
-The same editor bundle supports both modes. At startup it checks for the local API. With the API, it connects to the CLI’s file-backed Studio; without it, the editor stays in browser mode. Neither mode sends your diagrams to a Dumb Diagrams service or stores them on our servers.
-
-> A static browser page cannot silently save into your repository. If you want an agent and Studio to edit the same file on disk, start Studio through the CLI.
+Other browsers use a standard file chooser and download the updated `.dgm` when
+you save. In either case the source remains an ordinary portable file; Studio
+does not register it with a project or upload it to a Dumb Diagrams service.
 
 ## Work alongside an editor or agent
 
-The local server watches the diagram’s directory and notices external changes. It also tracks the revision that each save was based on.
-
-If another editor changes the file before Studio saves, the server rejects the stale write. Studio asks whether to reload the disk version or keep the browser version. Read the choice carefully: preserving the wrong version can discard the other edit.
-
-Writes are atomic, and reconnecting after sleep refreshes the document and connection state. A dropped internet connection does not affect local Studio. It only needs the server on your machine.
+Studio does not watch selected files for changes made by another editor. Reopen
+the file before saving if an agent or editor has changed it on disk, otherwise a
+direct save can replace those external changes.
 
 Studio binds to `127.0.0.1` and is intended for local use. It is not a hosted service or a public server.
 

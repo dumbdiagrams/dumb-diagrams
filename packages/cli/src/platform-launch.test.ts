@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { browserLaunchCommand, editorLaunchCandidates } from "./platform-launch.js";
+import { browserLaunchCommand } from "./platform-launch.js";
 
 describe("browserLaunchCommand", () => {
   const url = "http://127.0.0.1:4788/a path?x=1&y=2";
@@ -18,15 +18,5 @@ describe("browserLaunchCommand", () => {
 
   it("uses xdg-open on Linux", () => {
     expect(browserLaunchCommand("linux", url)).toEqual({ command: "xdg-open", args: [url] });
-  });
-});
-
-describe("editorLaunchCandidates", () => {
-  it("honors one explicitly requested editor", () => {
-    expect(editorLaunchCandidates("  my-editor  ")).toEqual(["my-editor"]);
-  });
-
-  it("falls back through supported editor commands", () => {
-    expect(editorLaunchCandidates("")).toEqual(["cursor", "code", "codium", "windsurf", "zed"]);
   });
 });

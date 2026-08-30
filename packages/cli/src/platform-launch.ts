@@ -9,9 +9,3 @@ export function browserLaunchCommand(platform: NodeJS.Platform, url: string): La
   if (platform === "win32") return { command: "cmd", args: ["/c", "start", "", url] };
   return { command: "xdg-open", args: [url] };
 }
-
-export function editorLaunchCandidates(requestedEditor: string): string[] {
-  return requestedEditor.trim()
-    ? [requestedEditor.trim()]
-    : ["cursor", "code", "codium", "windsurf", "zed"];
-}

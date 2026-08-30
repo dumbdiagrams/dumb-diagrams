@@ -1,7 +1,7 @@
-# Project diagrams
+# Diagram files
 
-This is the writable output folder for the project. Keep one independent
-`.dgm` source file per architecture or workflow.
+Keep one independent `.dgm` source file per architecture or workflow. Files are
+portable and may live anywhere; Studio's **Open** action selects them directly.
 
 ## File policy
 
@@ -14,8 +14,5 @@ This is the writable output folder for the project. Keep one independent
 - Never overwrite another existing `.dgm` just because it is the first file
   in the directory.
 
-Open the folder in Studio to choose among the project diagrams:
-
-```bash
-npx create-dumb-diagrams@latest studio diagrams
-```
+Start Studio with `dumbdiagrams studio`, then choose **Open** and select the
+specific `.dgm` file you want to edit.

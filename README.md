@@ -4,10 +4,10 @@
 
 # Dumb Diagrams
 
-**Plain-text architecture diagrams for coding agents and people.**
+**Portable plain-text architecture diagrams for coding agents and people.**
 
-A source-first diagram engine with deterministic layout, a local Studio, and
-validation for agent-generated drafts.
+A source-first diagram engine with deterministic layout and a generic local
+Studio for portable `.dgm` files.
 
 <br />
 
@@ -68,11 +68,10 @@ diagram that is ready to discuss and refine.
 - **Opinionated automatic layout.** New diagrams begin with a coherent visual
   hierarchy instead of an empty infinite canvas.
 - **A human editing surface.** Studio supports moving and resizing items,
-  editing source, adjusting routes, managing multiple diagrams, and exporting.
-- **Local files, not a hidden database.** Diagrams live beside the project, work
-  with Git, and can be edited by Cursor, Codex, Claude, or another coding agent.
-- **Guardrails.** The CLI validates source and reports layout/routing problems
-  before a broken diagram quietly becomes the new reference.
+  editing source, adjusting routes, recent files, and exporting.
+- **Portable local files, not a hidden database.** `.dgm` files can live
+  anywhere on disk, work with Git, and can be edited by Cursor, Codex, Claude,
+  or another coding agent.
 - **Several output formats.** Export PNG, JPEG, WebP, GIF, SVG, PDF, standalone HTML,
   XML, URL payloads, JSON, or canonical `.dgm` source.
 
@@ -97,49 +96,44 @@ manual routes for the cases where the architect knows better than the router.
 
 ## Quick start
 
-Requires Node.js 24 or newer.
+Requires Node.js 24 or newer. Install the CLI, prepare the repository where an
+agent will work, then start Studio:
 
 ```bash
-npm create dumb-diagrams@latest -- --open-editor
+npm install -g create-dumb-diagrams
+cd path/to/your-repository
+dumbdiagrams init
+dumbdiagrams studio
 ```
 
-The command asks for a diagram space name, creates a folder with a starter diagram
-and agent instructions, and can open it in your editor. If you accept the default,
-the name is derived from the current directory and a timestamp. Run the printed `Next:`
-command to open the project’s diagrams in Studio.
+`init` keeps the prompt for your repository/project name and writes the
+`.dumbdiagrams/` agent guidance plus `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`.
+Studio is independent of the directory where it was launched: choose **Open** to select
+any `.dgm` file anywhere on disk.
 
-For an explicit setup:
+`dgm` is a convenience shorthand for the same commands:
 
 ```bash
-npm create dumb-diagrams@latest payments-platform -- \
-  --name "Payments Platform" \
-  --diagram system-overview \
-  --description "Event-driven billing architecture." \
-  --open-editor
-
-cd payments-platform
-npx create-dumb-diagrams@latest studio diagrams
+dgm init
+dgm studio
 ```
 
-Every diagram is a normal file under `diagrams/`. Studio watches the selected
-file, saves changes back to disk, notices external edits, and protects against
-overwriting a newer revision.
+Use `dumbdiagrams` in documentation and scripts.
 
 ## The agent workflow
 
-`init` creates more than an empty drawing. It adds:
+`init` prepares the current repository for coding agents. It adds:
 
 - a small `AGENTS.md` router plus tiny `CLAUDE.md` and `GEMINI.md` compatibility entrypoints;
 - `.dumbdiagrams/`, the shared architecture, source, provider, catalog, and example knowledge;
-- a `diagrams/` directory with its own guidance;
-- curated source/prompt examples that show the expected style.
+- reference examples that show the expected style.
 
 The prompt can stay short:
 
 ```text
 Create a highly available payments API on AWS using ECS Fargate and Aurora
 PostgreSQL. Keep the application and database private, show the main request
-path, and validate the result when you are done.
+path, and keep the source coherent when you are done.
 ```
 
 The agent writes architecture, not SVG coordinates. A source file looks roughly
@@ -169,46 +163,36 @@ view default {
 }
 ```
 
-The engine validates the service types and relationships, places the resources,
-and draws deterministic right-angle connectors. If you move something or pin a
-route in Studio, that human decision is written into the `view` block and wins
-on the next render.
+The engine checks service types and relationships, places resources, and draws
+deterministic right-angle connectors. If you move something or pin a route in
+Studio, that human decision is written into the `view` block and persists in
+the same portable file.
 
 ## Everyday commands
 
 ```bash
-# Start or open a project
-npm create dumb-diagrams@latest
-npx create-dumb-diagrams@latest studio diagrams
-npx create-dumb-diagrams@latest studio diagrams/system-overview.dgm
-
-# Check and normalize source
-npx create-dumb-diagrams@latest validate diagrams
-npx create-dumb-diagrams@latest format diagrams/system-overview.dgm --write
-
-# Produce a portable SVG without opening Studio
-npx create-dumb-diagrams@latest render diagrams/system-overview.dgm --output architecture.svg
+dumbdiagrams init
+dumbdiagrams studio
 ```
 
-An optional global install exposes both command names:
+After Studio starts, use **Open** to choose a file, including a file outside
+the repository where you ran the command. `dgm` is the optional shorthand:
 
 ```bash
-npm install -g create-dumb-diagrams
-dumbdiagrams studio diagrams
-dgm validate diagrams
+dgm init
+dgm studio
 ```
 
 ## Working on this repository
 
 This repository uses the pinned pnpm workspace. Use `pnpm` for workspace
-dependencies; use npm only for the global install of the local tarball below.
+dependencies and `npm` when installing the published CLI.
 
 ### Test the CLI locally (before publishing)
 
 Use this flow when CLI changes need to be tested through the same global
-commands an end user will run. It removes the old global package, rebuilds the
-workspace, creates and verifies a fresh local tarball, then installs that exact
-tarball globally. Run the commands in order and stop if any command fails.
+commands an end user will run. It rebuilds the workspace, creates and verifies
+a local tarball, then installs that exact tarball globally.
 
 Use Node.js 24 or newer and pnpm 11.23.0. Stop any local Studio or dev server
 before removing build outputs.
@@ -219,27 +203,21 @@ cd "$(git rev-parse --show-toplevel)"
 # If you use nvm, run `nvm use` here before continuing.
 node --version
 pnpm --version
-npm uninstall -g create-dumb-diagrams
-hash -r                         # refresh zsh's command lookup cache
 pnpm install --frozen-lockfile
-rm -rf packages/runtime/dist packages/editor/dist packages/cli/dist
-rm -f .artifacts/packages/create-dumb-diagrams-0.1.0.tgz
 pnpm build
 pnpm smoke:package
 ARTIFACT="$PWD/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
 npm install -g "$ARTIFACT"
-create-dumb-diagrams --version
 dumbdiagrams --version
 dgm --version
 ```
 
 Confirm the version output is Node 24+ and pnpm 11.23.0 before continuing.
 
-All three version commands should report `0.1.0`. `pnpm smoke:package` creates
-the tarball, checks its contents, exercises the CLI (including the `dgm` alias),
-and verifies that the included source can rebuild. An expected validation error
-for the intentionally invalid test diagram may appear before the final
-`OK package smoke passed ...` message. These commands do not publish to npm.
+Both version commands should report the package version. `pnpm smoke:package`
+creates the tarball, checks its contents, exercises `init`, `studio`, and the
+`dgm` alias, and verifies that the included source can rebuild. These commands
+do not publish to npm.
 
 The fresh artifact is:
 `.artifacts/packages/create-dumb-diagrams-0.1.0.tgz` in the repository root.
@@ -247,39 +225,7 @@ The fresh artifact is:
 If npm reports a permission problem or command conflict during the global
 install, stop. Do not add `sudo` or `--force`.
 
-After the global install, prepare a separate demo directory:
-
-```bash
-mkdir -p ../diagram-demos
-cd ../diagram-demos
-create-dumb-diagrams my-system --open-editor
-dgm studio my-system/diagrams
-```
-
-Use an unused project name if `my-system` already exists. Use the local `dgm`
-command above instead of any printed `npx …@latest` suggestion until the
-package is published.
-
-### Try `init` locally (workspace path)
-
-Build once, then run `init` directly from the compiled workspace CLI:
-
-```bash
-pnpm build
-node packages/cli/dist/index.js init ../my-diagram-project --name "My Project" --open-editor
-```
-
-That creates a real folder **next to** this repo (`../my-diagram-project`) with
-`diagrams/`, agent instructions, examples, and a starter `.dgm` file. Open
-Studio on it with:
-
-```bash
-node packages/cli/dist/index.js studio ../my-diagram-project/diagrams
-```
-
-To skip the name prompt in scripts, add `--yes`.
-
-To test the **exact npm tarball** (what `npm create dumb-diagrams@latest` runs), use:
+To test the **exact npm tarball**, use:
 
 ```bash
 pnpm smoke:package
@@ -293,10 +239,10 @@ That packs the CLI and runs `init` for you automatically.
 | --- | --- |
 | Studio UI only | `pnpm dev` |
 | Website and public docs | `pnpm dev:website` |
-| CLI or how Studio is served | `pnpm build && pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm` |
+| CLI or how Studio is served | `pnpm build && pnpm dev:cli` |
 | Full release check | `pnpm check:release` |
 
-For commands, flags, and deeper CLI testing, see
+For command behavior and deeper CLI testing, see
 **[docs/TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md)**.
 
 ### Website and documentation

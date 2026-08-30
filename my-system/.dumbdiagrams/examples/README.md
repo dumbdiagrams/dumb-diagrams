@@ -34,11 +34,11 @@ matter.
 Before authoring:
 
 1. Read `../instructions.md` and only the relevant linked guidance.
-2. Read `../../diagrams/README.md` and inspect existing project diagrams.
+2. Inspect any existing `.dgm` source files relevant to the request.
 3. Form the architecture brief before making layout choices.
 4. Search `../catalog.md` or `../catalog.json` for exact canonical types.
-5. Create a descriptive new file under `../../diagrams/`, unless the user names
-   an existing file to revise.
+5. Create a descriptive new `.dgm` file, unless the user names an existing file
+   to revise.
 6. Validate and visually inspect the result.
 
 Reuse conventions—not architecture. Preserve stable IDs, nesting, explicit

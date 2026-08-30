@@ -9,11 +9,11 @@ For the broader system walkthrough, start with
 
 | Area | Primary implementation | Fast test | Consumer-boundary test |
 | --- | --- | --- | --- |
-| `.dgm` grammar and validation | `packages/runtime/src/dsl`, `packages/runtime/src/core` | `pnpm test` | tarball `validate` and `format` smoke |
+| `.dgm` grammar and document model | `packages/runtime/src/dsl`, `packages/runtime/src/core` | `pnpm test` | packed CLI smoke |
 | Layout and Manhattan routing | `packages/runtime/src/layout`, `packages/runtime/src/route`, `packages/runtime/src/render/invariants.ts` | router/compiler unit tests and `pnpm check:routing` | Playwright canvas and all-format export tests |
 | Editor document operations | `packages/editor/src/editor-model.ts` | editor-model unit tests | Playwright canvas interactions |
 | Tabs, history, and persistence | `packages/editor/src/state/workspace.ts` | workspace unit tests | Playwright workspace tests |
-| Local file bridge | `packages/cli/src/studio-server.ts` and the local-Studio effect in `packages/editor/src/main.tsx` | Studio HTTP integration tests | `pnpm test:e2e:packed` |
+| Studio serving and local files | `packages/cli/src/studio-server.ts` and file-picker handling in `packages/editor/src/main.tsx` | Static-server integration tests and editor typecheck | `pnpm test:e2e:packed` |
 | CLI packaging | `packages/cli/src/index.ts`, `scripts/prepare-cli-package.mjs` | CLI unit tests | Linux and Windows `pnpm smoke:package` |
 | Release and Pages | `.github/workflows/ci.yml`, `.github/workflows/deploy.yml` | workflow syntax review | exact-tag deployment repeats the Linux release gates |
 

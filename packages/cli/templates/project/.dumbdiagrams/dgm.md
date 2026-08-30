@@ -21,6 +21,6 @@
   Inspect the render for overlaps, crossings, loops, retraced segments,
   overshoots, and dead ends.
 
-Every new architecture gets a new descriptive file under `diagrams/`; never
+Every new architecture gets a new descriptive portable `.dgm` file; never
 silently replace an unrelated diagram. Validation is mandatory, and visual
 inspection is required whenever routing or layout changed.

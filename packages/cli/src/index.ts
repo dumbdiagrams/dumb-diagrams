@@ -1,27 +1,18 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import {
-  createAsyncDocsFixture,
-  createEmptyDocument,
-  createTransferHubFixture,
-  hasErrors,
-  validateDocument,
-} from "@dumb-diagrams/runtime/core";
-import { getCatalogEntryByBrowserPath, getCatalogMap, listAssets } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/runtime/render";
+import { listAssets } from "@dumb-diagrams/runtime/catalog";
 
 import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
 import { displayNameForDirectory, resolveInitOptions } from "./init-options.js";
-import { browserLaunchCommand, editorLaunchCandidates } from "./platform-launch.js";
-import { resolveStudioEditorRoot, startStudioServer } from "./studio-server.js";
+import { browserLaunchCommand } from "./platform-launch.js";
+import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,18 +24,12 @@ interface ParsedArgs {
   flags: Map<string, string | true>;
 }
 
-interface CheckResult {
-  file: string;
-  ok: boolean;
-  messages: string[];
-}
-
-const PROJECT_LEGACY_REFERENCE_FILES = [
+const LEGACY_REFERENCE_FILES = [
   "azure-private-app-service.dgm",
   "prompts/azure-private-app-service.md",
 ] as const;
 
-const PROJECT_CURATED_EXAMPLE_IDS = [
+const CURATED_EXAMPLE_IDS = [
   "aws-high-availability-web-app",
   "aws-data-transfer-hub",
   "bedrock-claims-processing",
@@ -53,14 +38,7 @@ const PROJECT_CURATED_EXAMPLE_IDS = [
   "asynchronous-report-generation",
   "event-driven-order-fulfillment",
 ] as const;
-const PROJECT_CURATED_FILE_NAMES = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"] as const;
-
-const BOOLEAN_FLAGS = new Set(["help", "version", "no-open", "write", "open-editor", "open", "yes"]);
-
-const FIXTURES: Record<string, () => ReturnType<typeof createAsyncDocsFixture>> = {
-  "async-docs": createAsyncDocsFixture,
-  "transfer-hub": createTransferHubFixture,
-};
+const CURATED_FILE_NAMES = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"] as const;
 
 export async function runCli(argv: string[]): Promise<number> {
   const [command, ...rawArgs] = argv;
@@ -83,21 +61,10 @@ export async function runCli(argv: string[]): Promise<number> {
       printHelp();
       return 0;
     case "studio":
-    case "open":
       await cmdStudio(parsed);
       return 0;
-    case "render":
-      return await cmdRender(parsed);
-    case "validate":
-    case "check":
-      return cmdCheck(parsed);
-    case "format":
-    case "fmt":
-      return cmdFormat(parsed);
     case "init":
       return await cmdInit(parsed);
-    case "fixtures":
-      return await cmdFixtures(parsed);
     default:
       console.error(ui.error(`Unknown command: ${command}`));
       console.error(ui.muted(`  Run ${ui.command("dumbdiagrams help")} to see available commands.`));
@@ -111,48 +78,26 @@ function printHelp(): void {
 ${ui.brand()}
 
 ${ui.heading("Usage")}
-  ${ui.command("npm create dumb-diagrams@latest [directory] [options]")}
-  ${ui.command("dumbdiagrams <command> [options]")} ${ui.muted("(after installation or via the package alias)")}
+  ${ui.command("dumbdiagrams init")}       Prepare the current repository for agents
+  ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
 
 ${ui.heading("Commands")}
-  ${ui.command("studio [file-or-folder]")} Open Studio for a diagram or project folder
-  ${ui.command("render <file.dgm>")}       Render a diagram to SVG
-  ${ui.command("validate <path>")}         Validate one file or every .dgm in a directory
-  ${ui.command("format <file.dgm>")}       Print canonical source; add --write to update it
-  ${ui.command("init [directory]")}        Create an agent-ready diagram project
-  ${ui.command("fixtures <name>")}         Render a bundled fixture
-
-${ui.heading("Studio options")}
-  --port <number>         Port to listen on (default: 4788)
-  --no-open               Start the server without opening a browser
-
-${ui.heading("Init options")}
-  --name <name>           Diagram space name; also names the default folder
-  --directory <path>      Output folder (alternative to the positional argument)
-  --diagram <name>        Starter diagram filename (default: architecture)
-  --description <text>    Short project description for the generated README
-  --open-editor           Open the project in Cursor, VS Code, or another editor
-  --editor <command>      Use a specific editor command (for example: cursor)
-  --yes                   Skip prompts and use timestamped defaults
-
-${ui.heading("Render options")}
-  --output <file.svg>     Output path (default: output.svg)
+  ${ui.command("init")}                    Prepare this repository for agents
+  ${ui.command("studio")}                  Open the generic local .dgm editor
 
 ${ui.heading("Quick start")}
-  ${ui.command("npm create dumb-diagrams@latest")}
-  ${ui.command("npm create dumb-diagrams@latest payments-platform -- --diagram system-overview")}
-  ${ui.command("cd payments-platform")}
-  ${ui.command("npx create-dumb-diagrams@latest studio diagrams")}
+  ${ui.command("dumbdiagrams init")}
+  ${ui.command("dumbdiagrams studio")}
 
-${ui.muted("Tip: run dumbdiagrams help whenever you need this command reference.")}
+${ui.muted("Tip: dgm is a shorthand alias for dumbdiagrams.")}
 `);
 }
 
-async function promptDiagramSpaceName(defaultName: string): Promise<string> {
+async function promptProjectName(defaultName: string): Promise<string> {
   const readline = createInterface({ input: process.stdin, output: process.stdout });
   try {
     return await readline.question(
-      `  ${ui.command("?")} ${ui.heading("What will your diagram space be called?")} ${ui.muted(`(${defaultName})`)} `,
+      `  ${ui.command("?")} ${ui.heading("What is this repository or project called?")} ${ui.muted(`(${defaultName})`)} `,
     );
   } finally {
     readline.close();
@@ -160,104 +105,20 @@ async function promptDiagramSpaceName(defaultName: string): Promise<string> {
 }
 
 async function cmdStudio(args: ParsedArgs): Promise<void> {
-  if (hasFlag(args, "host")) {
-    throw new Error("Studio runs on 127.0.0.1; --host is no longer supported.");
-  }
-  const input = args.positionals[0] ?? "diagrams/architecture.dgm";
-  const port = flagNumber(args, "port", 4788);
+  rejectArguments(args, "studio");
+  const testPort = Number(process.env.DUMBDIAGRAMS_STUDIO_PORT);
   const handle = await startStudioServer({
-    filePath: resolveStudioInput(input),
-    port,
+    port: Number.isInteger(testPort) && testPort >= 0 && testPort <= 65535 ? testPort : undefined,
   });
 
   console.log(`\n${ui.brand()}\n`);
   console.log(ui.heading("Studio is ready"));
   console.log(ui.info("local", ui.command(handle.url)));
-  console.log(ui.info("file", handle.filePath));
-  console.log(ui.info("edit", "changes save directly to the .dgm source"));
+  console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
   console.log(ui.info("stop", "Ctrl+C"));
 
-  if (!hasFlag(args, "no-open")) openBrowser(handle.url);
+  if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") openBrowser(handle.url);
   await waitForShutdown(handle.server);
-}
-
-async function cmdRender(args: ParsedArgs): Promise<number> {
-  const input = args.positionals[0];
-  if (!input) {
-    console.error(ui.error("render requires a .dgm file path"));
-    return 1;
-  }
-  const output = flagString(args, "output", args.positionals[1] ?? "output.svg");
-  const doc = loadDocument(input);
-  const result = compileDiagram(doc);
-  if (!result.ok) {
-    printIssues("Validation errors", result.issues);
-    return 1;
-  }
-  if (result.invariantFailures.length) {
-    printIssues("Routing notes", result.invariantFailures, "warn");
-  }
-  const outputPath = resolve(process.cwd(), output);
-  mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, await renderPortableSvg(doc, result.layout!, { loadCatalogSvg }), "utf8");
-  console.log(ui.success(`Rendered ${relativeForLog(outputPath)}`));
-  return 0;
-}
-
-function cmdCheck(args: ParsedArgs): number {
-  const target = args.positionals[0];
-  if (!target) {
-    console.error(ui.error("validate requires a .dgm file or directory path"));
-    return 1;
-  }
-  const root = resolve(process.cwd(), target);
-  if (!existsAsFileOrDirectory(root)) {
-    console.error(ui.error(`Path not found: ${target}`));
-    return 1;
-  }
-
-  const files = collectDgmFiles(root);
-  if (!files.length) {
-    console.error(ui.error(`No .dgm files found at ${target}`));
-    return 1;
-  }
-
-  const results: CheckResult[] = files.map((file) => checkFile(file));
-  for (const result of results) {
-    const label = relativeForLog(result.file);
-    if (result.ok) {
-      console.log(ui.success(label));
-      for (const message of result.messages) console.warn(ui.warning(message));
-    } else {
-      console.error(ui.error(label));
-      for (const message of result.messages) console.error(`    ${message}`);
-    }
-  }
-  const failures = results.filter((result) => !result.ok).length;
-  console.log(ui.summary(`${results.length - failures} valid · ${failures} failed`));
-  return failures ? 1 : 0;
-}
-
-function cmdFormat(args: ParsedArgs): number {
-  const input = args.positionals[0];
-  if (!input) {
-    console.error(ui.error("format requires a .dgm file"));
-    return 1;
-  }
-  const filePath = resolve(process.cwd(), input);
-  try {
-    const formatted = printDgm(parseDgm(readFileSync(filePath, "utf8")));
-    if (hasFlag(args, "write")) {
-      writeFileSync(filePath, formatted, "utf8");
-      console.log(ui.success(`Formatted ${relativeForLog(filePath)}`));
-    } else {
-      process.stdout.write(formatted);
-    }
-    return 0;
-  } catch (error) {
-    console.error(ui.error(`Cannot format ${input}: ${error instanceof Error ? error.message : "invalid source"}`));
-    return 1;
-  }
 }
 
 async function cmdInit(args: ParsedArgs): Promise<number> {
@@ -266,56 +127,44 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   try {
     options = await resolveInitOptions(args, {
       interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
-      askDiagramSpaceName: promptDiagramSpaceName,
-      currentName: basename(process.cwd()),
+      askProjectName: promptProjectName,
+      currentName: displayNameForDirectory(process.cwd()),
     });
   } catch (error) {
     console.error(ui.error(error instanceof Error ? error.message : "Invalid init options."));
     return 1;
   }
 
-  const { projectDirectory, diagramName, description } = options;
-  const projectRoot = resolve(process.cwd(), projectDirectory);
-  mkdirSync(projectRoot, { recursive: true });
-  const projectName = options.projectName ?? displayNameForDirectory(projectRoot);
-  const diagramsRoot = join(projectRoot, "diagrams");
-  const diagramFile = `${diagramName}.dgm`;
-  const diagramPath = join(diagramsRoot, diagramFile);
-  const diagramsReadmePath = join(diagramsRoot, "README.md");
-  const knowledgeRoot = join(projectRoot, ".dumbdiagrams");
-  const agentsPath = join(projectRoot, "AGENTS.md");
-  const claudePath = join(projectRoot, "CLAUDE.md");
-  const geminiPath = join(projectRoot, "GEMINI.md");
-  const readmePath = join(projectRoot, "README.md");
+  const repositoryRoot = resolve(process.cwd());
+  const projectName = options.projectName;
+  const knowledgeRoot = join(repositoryRoot, ".dumbdiagrams");
+  const agentsPath = join(repositoryRoot, "AGENTS.md");
+  const claudePath = join(repositoryRoot, "CLAUDE.md");
+  const geminiPath = join(repositoryRoot, "GEMINI.md");
   const examplesRoot = join(knowledgeRoot, "examples");
-  mkdirSync(diagramsRoot, { recursive: true });
-  const starterDocument = createEmptyDocument(diagramName);
-  starterDocument.title = displayNameForDirectory(diagramName);
-  const diagramSource = printDgm(starterDocument);
-  console.log(ui.heading("Creating diagram space"));
-  console.log(ui.info("name", projectName));
-  console.log(ui.info("folder", projectRoot));
-  console.log(ui.info("diagram", `diagrams/${diagramFile}`));
-  console.log("");
-  const templateVars = { projectName, diagramFile, description };
-  const diagramsReadme = renderInitTemplate("diagrams-readme.md", templateVars);
-  const agentPointer = renderInitTemplate("AGENTS.md", templateVars);
-  const readme = renderInitTemplate("README.md", templateVars);
 
+  console.log(ui.heading("Preparing repository"));
+  console.log(ui.info("name", projectName));
+  console.log(ui.info("folder", repositoryRoot));
+  console.log("");
+
+  const templateVars = { projectName };
+  const agentPointer = renderInitTemplate("AGENTS.md", templateVars);
   const catalogReference = createCatalogReference();
   const catalogMarkdownPath = join(knowledgeRoot, "catalog.md");
   const catalogJsonPath = join(knowledgeRoot, "catalog.json");
-  mkdirSync(knowledgeRoot, { recursive: true });
-  const knowledgeFiles = [".dumbdiagrams/instructions.md", ".dumbdiagrams/architecture.md", ".dumbdiagrams/dgm.md", ".dumbdiagrams/providers/aws.md"];
+  const knowledgeFiles = [
+    ".dumbdiagrams/instructions.md",
+    ".dumbdiagrams/architecture.md",
+    ".dumbdiagrams/dgm.md",
+    ".dumbdiagrams/providers/aws.md",
+  ];
 
   const files = [
-    [diagramsReadmePath, diagramsReadme],
-    [diagramPath, diagramSource],
-    ...knowledgeFiles.map((name) => [join(projectRoot, name), renderInitTemplate(name, templateVars)] as const),
+    ...knowledgeFiles.map((name) => [join(repositoryRoot, name), renderInitTemplate(name, templateVars)] as const),
     [agentsPath, agentPointer],
     [claudePath, renderInitTemplate("CLAUDE.md", templateVars)],
     [geminiPath, renderInitTemplate("GEMINI.md", templateVars)],
-    [readmePath, readme],
     [catalogMarkdownPath, catalogReference.markdown],
     [catalogJsonPath, catalogReference.json],
   ] as const;
@@ -330,15 +179,10 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     console.log(ui.success(`Created ${relativeForLog(filePath)}`));
     created++;
   }
-  created += copyProjectExamples(examplesRoot);
+  created += copyBundledExamples(examplesRoot);
 
-  const requestedEditor = flagString(args, "editor", "");
-  if (hasFlag(args, "open-editor") || hasFlag(args, "open") || requestedEditor) {
-    openProjectEditor(projectRoot, requestedEditor);
-  }
-
-  console.log(ui.summary(created ? "Project ready" : "Project already exists"));
-  console.log(ui.info("next", ui.command(`npx create-dumb-diagrams@latest studio ${relativeForLog(diagramsRoot)}`)));
+  console.log(ui.summary(created ? "Repository ready" : "Repository already prepared"));
+  console.log(ui.info("next", ui.command("dumbdiagrams studio")));
   return 0;
 }
 
@@ -409,8 +253,8 @@ function createCatalogReference(): { markdown: string; json: string } {
   const markdown = [
     "# Dumb Diagrams catalog",
     "",
-    `This project contains ${jsonEntries.length} canonical, browsable catalog entries across ${Object.keys(providerCounts).length} providers.`,
-    "The complete machine-readable inventory is in `CATALOG.json`.",
+    `This repository contains ${jsonEntries.length} canonical, browsable catalog entries across ${Object.keys(providerCounts).length} providers.`,
+    "The complete machine-readable inventory is in `catalog.json`.",
     "",
     "## Icon rules for agents",
     "",
@@ -458,20 +302,17 @@ function createCatalogReference(): { markdown: string; json: string } {
     ]),
   ].join("\n");
 
-  return {
-    markdown,
-    json: `${JSON.stringify(catalogJson, null, 2)}\n`,
-  };
+  return { markdown, json: `${JSON.stringify(catalogJson, null, 2)}\n` };
 }
 
-function copyProjectExamples(examplesRoot: string): number {
+function copyBundledExamples(examplesRoot: string): number {
   mkdirSync(examplesRoot, { recursive: true });
-  const files = PROJECT_LEGACY_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
+  const files = LEGACY_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
   files.unshift("README.md");
   let created = 0;
 
   for (const fileName of files) {
-    const sourcePath = resolveProjectExample(fileName.replace(/^legacy\//, ""));
+    const sourcePath = resolveBundledExample(fileName.replace(/^legacy\//, ""));
     if (!sourcePath) {
       console.warn(ui.warning(`Bundled example not found: ${fileName}`));
       continue;
@@ -487,11 +328,9 @@ function copyProjectExamples(examplesRoot: string): number {
     created++;
   }
 
-  const curatedFiles = PROJECT_CURATED_EXAMPLE_IDS.flatMap((id) =>
-    PROJECT_CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`),
-  );
+  const curatedFiles = CURATED_EXAMPLE_IDS.flatMap((id) => CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`));
   for (const fileName of curatedFiles) {
-    const sourcePath = resolveProjectExample(fileName);
+    const sourcePath = resolveBundledExample(fileName);
     if (!sourcePath) {
       console.warn(ui.warning(`Bundled curated example file not found: ${fileName}`));
       continue;
@@ -506,11 +345,10 @@ function copyProjectExamples(examplesRoot: string): number {
     console.log(ui.success(`Created ${relativeForLog(targetPath)}`));
     created++;
   }
-
   return created;
 }
 
-function resolveProjectExample(fileName: string): string | undefined {
+function resolveBundledExample(fileName: string): string | undefined {
   const candidates = [
     resolve(__dirname, "templates", "examples", fileName),
     resolve(__dirname, "..", "templates", "examples", fileName),
@@ -521,93 +359,10 @@ function resolveProjectExample(fileName: string): string | undefined {
   return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
 }
 
-async function cmdFixtures(args: ParsedArgs): Promise<number> {
-  const name = args.positionals[0] ?? "async-docs";
-  const fixture = FIXTURES[name];
-  if (!fixture) {
-    console.error(ui.error(`Unknown fixture: ${name}. Choose async-docs or transfer-hub.`));
-    return 1;
+function rejectArguments(args: ParsedArgs, command: string): void {
+  if (args.positionals.length || args.flags.size) {
+    throw new Error(`${command} does not accept file paths, positionals, or options.`);
   }
-  const doc = fixture();
-  const result = compileDiagram(doc);
-  if (!result.ok) {
-    printIssues("Fixture errors", result.issues);
-    return 1;
-  }
-  const output = resolve(process.cwd(), flagString(args, "output", `.artifacts/golden/${name}.svg`));
-  mkdirSync(dirname(output), { recursive: true });
-  writeFileSync(output, await renderPortableSvg(doc, result.layout!, { loadCatalogSvg }), "utf8");
-  console.log(ui.success(`Rendered ${relativeForLog(output)}`));
-  return 0;
-}
-
-function checkFile(filePath: string): CheckResult {
-  try {
-    const doc = parseDgm(readFileSync(filePath, "utf8"));
-    const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
-    if (hasErrors(issues)) {
-      return { file: filePath, ok: false, messages: issues.map((issue) => issue.message) };
-    }
-    const result = compileDiagram(doc);
-    if (!result.ok) {
-      return { file: filePath, ok: false, messages: result.issues.map((issue) => issue.message) };
-    }
-    const routingNotes = result.invariantFailures
-      .filter((failure) => failure.code !== "edge-label-collision")
-      .map((failure) => failure.message);
-    const collisions = result.invariantFailures
-      .filter((failure) => failure.code === "edge-label-collision")
-      .map((failure) => failure.message);
-    return {
-      file: filePath,
-      ok: collisions.length === 0,
-      messages: collisions.length ? collisions : routingNotes,
-    };
-  } catch (error) {
-    return {
-      file: filePath,
-      ok: false,
-      messages: [error instanceof Error ? error.message : "Unable to read source."],
-    };
-  }
-}
-
-function loadDocument(input: string) {
-  if (FIXTURES[input]) return FIXTURES[input]!();
-  return parseDgm(readFileSync(resolve(process.cwd(), input), "utf8"));
-}
-
-function collectDgmFiles(target: string): string[] {
-  const stat = statSync(target);
-  if (stat.isFile()) return target.toLowerCase().endsWith(".dgm") ? [target] : [];
-  const files: string[] = [];
-  for (const entry of readdirSync(target)) {
-    const child = join(target, entry);
-    const childStat = statSync(child);
-    if (childStat.isDirectory()) files.push(...collectDgmFiles(child));
-    else if (child.toLowerCase().endsWith(".dgm")) files.push(child);
-  }
-  return files.sort();
-}
-
-function loadCatalogSvg(browserPath: string): Promise<string> {
-  const entry = getCatalogEntryByBrowserPath(browserPath);
-  if (!entry) return Promise.reject(new Error(`Unknown catalog asset ${browserPath}`));
-  const stagedPath = resolve(resolveStudioEditorRoot(), entry.icon.browserPath);
-  if (existsAsFileOrDirectory(stagedPath)) {
-    return Promise.resolve(readFileSync(stagedPath, "utf8"));
-  }
-  return Promise.resolve(readFileSync(resolve(__dirname, "../../..", entry.icon.sourcePath), "utf8"));
-}
-
-function printIssues(
-  heading: string,
-  issues: Array<{ message: string }>,
-  level: "error" | "warn" = "error",
-): void {
-  const write = level === "warn" ? console.warn : console.error;
-  write(level === "warn" ? ui.warning(heading) : ui.error(heading));
-  for (const issue of issues) write(`    ${issue.message}`);
 }
 
 function parseArgs(args: string[]): ParsedArgs {
@@ -626,7 +381,7 @@ function parseArgs(args: string[]): ParsedArgs {
       continue;
     }
     const next = args[index + 1];
-    if (next && !next.startsWith("-") && !BOOLEAN_FLAGS.has(withoutDashes)) {
+    if (next && !next.startsWith("-")) {
       flags.set(withoutDashes, next);
       index += 1;
     } else {
@@ -634,20 +389,6 @@ function parseArgs(args: string[]): ParsedArgs {
     }
   }
   return { positionals, flags };
-}
-
-function flagString(args: ParsedArgs, name: string, fallback: string): string {
-  const value = args.flags.get(name);
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
-}
-
-function flagNumber(args: ParsedArgs, name: string, fallback: number): number {
-  const value = Number(flagString(args, name, String(fallback)));
-  return Number.isInteger(value) && value >= 0 && value <= 65535 ? value : fallback;
-}
-
-function hasFlag(args: ParsedArgs, name: string): boolean {
-  return args.flags.has(name);
 }
 
 function existsAsFileOrDirectory(path: string): boolean {
@@ -664,48 +405,10 @@ function relativeForLog(path: string): string {
   return relativePath || ".";
 }
 
-function resolveStudioInput(input: string): string {
-  const target = resolve(process.cwd(), input);
-  if (!existsAsFileOrDirectory(target)) {
-    return target.toLowerCase().endsWith(".dgm") ? target : join(target, "architecture.dgm");
-  }
-  if (!statSync(target).isDirectory()) return target;
-
-  const candidates = readdirSync(target, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".dgm"))
-    .map((entry) => entry.name)
-    .sort((left, right) => left.localeCompare(right));
-  const selected = candidates.find((fileName) => fileName.toLowerCase() === "architecture.dgm")
-    ?? candidates[0]
-    ?? "architecture.dgm";
-  return join(target, selected);
-}
-
 function openBrowser(url: string): void {
   const { command, args } = browserLaunchCommand(process.platform, url);
   const child = spawn(command, args, { detached: true, stdio: "ignore" });
   child.unref();
-}
-
-function openProjectEditor(projectRoot: string, requestedEditor: string): void {
-  const candidates = editorLaunchCandidates(requestedEditor);
-
-  const tryEditor = (index: number): void => {
-    const command = candidates[index];
-    if (!command) {
-      console.warn(ui.warning("Could not find a supported editor command. Open the project manually with `cursor .` or `code .`."));
-      return;
-    }
-
-    const child = spawn(command, [projectRoot], { detached: true, stdio: "ignore" });
-    child.once("spawn", () => {
-      child.unref();
-      console.log(ui.success(`Opened project in ${command}: ${relativeForLog(projectRoot)}`));
-    });
-    child.once("error", () => tryEditor(index + 1));
-  };
-
-  tryEditor(0);
 }
 
 function waitForShutdown(server: { close(callback?: (error?: Error) => void): void }): Promise<void> {

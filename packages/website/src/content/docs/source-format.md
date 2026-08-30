@@ -88,11 +88,8 @@ When you move or resize an item, or pin a route in Studio, those overrides can b
 
 If an agent changes the architecture, ask it to preserve existing view information. Visual overrides are part of the document, not disposable editor cache.
 
-## Validate and format
+## Open the source in Studio
 
-```bash
-npx create-dumb-diagrams@latest validate diagrams/payments.dgm
-npx create-dumb-diagrams@latest format diagrams/payments.dgm
-```
-
-`format` prints canonical source without changing the file. Add `--write` when you want to save it. Validation checks IDs, references, service types, containment, labels, ports, and other document constraints, then compiles the diagram and reports routing notes.
+Save the source as a `.dgm` file, run `dumbdiagrams studio`, and choose **Open**
+to select it. Studio keeps the source and visual overrides together in the same
+portable file.

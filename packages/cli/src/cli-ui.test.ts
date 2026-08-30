@@ -24,8 +24,8 @@ describe("CLI presentation", () => {
   });
 
   it("uses a high-contrast light orange for commands", () => {
-    expect(createCliUi({ color: true }).command("npx create-dumb-diagrams@latest studio diagrams"))
-      .toBe("\u001B[38;2;247;152;44mnpx create-dumb-diagrams@latest studio diagrams\u001B[0m");
+    expect(createCliUi({ color: true }).command("dumbdiagrams studio"))
+      .toBe("\u001B[38;2;247;152;44mdumbdiagrams studio\u001B[0m");
   });
 
   it("uses consistent status glyphs and indentation", () => {

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,9 +36,11 @@ if (!existsSync(tarballPath)) {
 }
 
 const entries = listTarballEntries(tarballPath);
+if (entries.includes("package/dist/create.js")) {
+  throw new Error("Tarball must not ship the obsolete create CLI entrypoint");
+}
 const required = [
   "package/dist/index.js",
-  "package/dist/create.js",
   "package/dist/studio/index.html",
   "package/dist/templates/project/AGENTS.md",
   "package/dist/templates/project/CLAUDE.md",
@@ -82,10 +84,9 @@ verifyCorrespondingSource(tarballPath);
 const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-smoke-"));
 const projectDir = join(workRoot, "smoke-project");
 try {
-  runNpx(tarballPath, [projectDir, "--yes", "--name", "Smoke Test"], "create-dumb-diagrams");
-  const diagramPath = join(projectDir, "diagrams", "architecture.dgm");
-  if (!existsSync(diagramPath)) {
-    throw new Error("init did not create starter diagram");
+  mkdirSync(projectDir);
+  if (runNpx(tarballPath, ["init"], "dumbdiagrams", projectDir) !== 0) {
+    throw new Error("packed dumbdiagrams init failed");
   }
   for (const generated of [
     "AGENTS.md",
@@ -96,49 +97,13 @@ try {
   ]) {
     if (!existsSync(join(projectDir, generated))) throw new Error(`init did not create ${generated}`);
   }
-  if (existsSync(join(projectDir, "DUMB_DIAGRAMS.md"))) {
-    throw new Error("init created obsolete DUMB_DIAGRAMS.md");
-  }
 
-  const validateCode = runNpx(tarballPath, ["validate", join(projectDir, "diagrams")], "create-dumb-diagrams");
-  if (validateCode !== 0) {
-    throw new Error(`validate failed with exit code ${validateCode}`);
-  }
-
-  const outputSvg = join(workRoot, "output.svg");
-  const renderCode = runNpx(tarballPath, [
-    "render",
-    diagramPath,
-    "--output",
-    outputSvg,
-  ], "create-dumb-diagrams");
-  if (renderCode !== 0) {
-    throw new Error(`render failed with exit code ${renderCode}`);
-  }
-  if (!existsSync(outputSvg)) {
-    throw new Error("render did not create output.svg");
-  }
-
-  const formatted = runNpxCapture(tarballPath, ["format", diagramPath], "create-dumb-diagrams");
-  if (!formatted.startsWith("diagram ")) {
-    throw new Error("format did not print canonical .dgm source");
-  }
-
-  const invalidPath = join(projectDir, "diagrams", "invalid.dgm");
-  writeFileSync(invalidPath, "this is not a diagram\n", "utf8");
-  console.log("Expecting validate to reject invalid.dgm (non-zero exit is success):");
-  const invalidCode = runNpx(tarballPath, ["validate", invalidPath], "create-dumb-diagrams");
-  if (invalidCode === 0) {
-    throw new Error("validate accepted invalid source");
-  }
-  console.log(`OK validate rejected invalid source (exit ${invalidCode})`);
-
-  const helpOut = runNpxCapture(tarballPath, ["help"], "create-dumb-diagrams");
+  const helpOut = runNpxCapture(tarballPath, ["help"], "dumbdiagrams");
   if (!helpOut.includes("studio")) {
     throw new Error("help output missing studio command");
   }
 
-  const versionOut = runNpxCapture(tarballPath, ["--version"], "create-dumb-diagrams");
+  const versionOut = runNpxCapture(tarballPath, ["--version"], "dumbdiagrams");
   if (!versionOut.includes(version)) {
     throw new Error(`--version output missing ${version}: ${versionOut}`);
   }
@@ -185,12 +150,12 @@ function verifyCorrespondingSource(tarballPath) {
   }
 }
 
-function runNpx(tarballPath, args, bin = "dumbdiagrams") {
+function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
   try {
     execFileSync(
       npxCommand,
       ["--yes", `--package=${tarballPath}`, bin, ...args],
-      { cwd: root, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
+      { cwd, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
     );
     return 0;
   } catch (error) {

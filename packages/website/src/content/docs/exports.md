@@ -22,15 +22,12 @@ Keep the `.dgm` file as the editable source when you share an image. The image i
 
 Studio exposes the formats the browser supports. WebP, for example, is hidden when that browser cannot encode it. A URL payload is not a promise of a hosted sharing service, and XML should not be assumed to be an editable draw.io document.
 
-## Render SVG from the terminal
+## Export from Studio
 
-```bash
-npx create-dumb-diagrams@latest render diagrams/payments.dgm --output payments.svg
-```
-
-Replace the input with your actual filename. If you omit `--output`, the CLI writes `output.svg`.
-
-The CLI’s render command produces portable SVG. Use Studio for the other export formats; the CLI does not have a `--format png` flag.
+Open the `.dgm` file in Studio, then use its export controls to produce SVG,
+PNG, PDF, or another supported format. The exported image uses the same
+geometry as the editor. Keep the original `.dgm` beside the export so it stays
+editable.
 
 ## Portable assets
 

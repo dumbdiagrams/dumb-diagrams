@@ -1,10 +1,7 @@
-import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { request as httpRequest } from "node:http";
 
-import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
-import { printDgm } from "@dumb-diagrams/runtime/dsl";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { startStudioServer, type StudioServerHandle } from "./studio-server.js";
@@ -16,217 +13,46 @@ afterEach(async () => {
 });
 
 describe("local Studio server", () => {
-  it("binds the Studio URL to loopback without a remote-access token", async () => {
+  it("serves only the static editor bundle on loopback", async () => {
     const { handle } = await createTestServer();
     const launchUrl = new URL(handle.url);
     expect(launchUrl.hostname).toBe("127.0.0.1");
     expect(launchUrl.search).toBe("");
-    const session = await fetch(`${handle.url}api/session`);
-    expect(session.status).toBe(200);
-    expect(session.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
-    expect(session.headers.get("x-content-type-options")).toBe("nosniff");
+
+    const index = await fetch(handle.url);
+    expect(index.status).toBe(200);
+    expect(await index.text()).toContain("Studio test");
+    expect(index.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(index.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
-  it("rejects cross-origin and rebound-host access to the loopback API", async () => {
+  it("does not expose file or project APIs", async () => {
     const { handle } = await createTestServer();
-    const endpoint = `${handle.url}api/session`;
-    const crossOrigin = await fetch(endpoint, { headers: { Origin: "https://untrusted.example" } });
-    expect(crossOrigin.status).toBe(403);
-    const reboundStatus = await new Promise<number>((resolve, reject) => {
-      const request = httpRequest(endpoint, { headers: { Host: "untrusted.example" } }, (response) => {
-        response.resume();
-        resolve(response.statusCode ?? 0);
-      });
-      request.on("error", reject);
-      request.end();
-    });
-    expect(reboundStatus).toBe(403);
-    const sameOrigin = await fetch(endpoint, { headers: { Origin: new URL(handle.url).origin } });
-    expect(sameOrigin.status).toBe(200);
-  });
-
-  it("loads and writes a .dgm file through the revision-safe API", async () => {
-    const created = await createTestServer();
-    const { handle, filePath } = created;
-    const session = await getJson<{ source: string; revision: string }>(`${handle.url}api/session`);
-    const nextSource = printDgm(createEmptyDocument("updated-diagram"));
-
-    const saved = await fetch(`${handle.url}api/document`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: nextSource, baseRevision: session.revision }),
-    });
-
-    expect(saved.status).toBe(200);
-    expect(readFileSync(filePath, "utf8")).toBe(nextSource);
-    const document = await saved.json() as { revision: string; fileName: string };
-    expect(document.revision).not.toBe(session.revision);
-    expect(document.fileName).toBe("architecture.dgm");
-  });
-
-  it("rejects a stale save after an external edit", async () => {
-    const created = await createTestServer();
-    const { handle, filePath } = created;
-    const session = await getJson<{ source: string; revision: string }>(`${handle.url}api/document`);
-    replaceFile(filePath, printDgm(createEmptyDocument("external-edit")));
-
-    const staleSave = await fetch(`${handle.url}api/document`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: session.source, baseRevision: session.revision }),
-    });
-
-    expect(staleSave.status).toBe(409);
-    const conflict = await staleSave.json() as { error: string; source: string };
-    expect(conflict.error).toBe("conflict");
-    expect(conflict.source).toContain("external-edit");
-  });
-
-  it("keeps streaming changes when an editor atomically replaces the file", async () => {
-    const { handle, filePath } = await createTestServer();
-    const response = await fetch(`${handle.url}api/events`);
-    const reader = response.body?.getReader();
-    expect(reader).toBeDefined();
-    if (!reader) return;
-
-    expect(await readSseEvent(reader)).toContain("event: ready");
-
-    replaceFile(filePath, printDgm(createEmptyDocument("first-replacement")));
-    const firstChange = await readSseEvent(reader);
-    expect(firstChange).toContain("event: document");
-    expect(firstChange).toContain("first-replacement");
-
-    replaceFile(filePath, printDgm(createEmptyDocument("second-replacement")));
-    const secondChange = await readSseEvent(reader);
-    expect(secondChange).toContain("event: document");
-    expect(secondChange).toContain("second-replacement");
-
-    await reader.cancel();
-  });
-
-  it("lists and selects another diagram in the project folder", async () => {
-    const created = await createTestServer();
-    const { handle, filePath } = created;
-    const secondPath = join(dirname(filePath), "network.dgm");
-    const secondSource = printDgm(createEmptyDocument("network-diagram"));
-    writeFileSync(secondPath, secondSource, "utf8");
-
-    const files = await getJson<{ files: string[] }>(`${handle.url}api/files`);
-    expect(files.files).toEqual(["architecture.dgm", "network.dgm"]);
-
-    const selected = await fetch(`${handle.url}api/select`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: "network.dgm" }),
-    });
-
-    expect(selected.status).toBe(200);
-    const document = await selected.json() as { source: string; fileName: string; filePath: string };
-    expect(document.source).toBe(secondSource);
-    expect(document.fileName).toBe("network.dgm");
-    expect(document.filePath).toBe(secondPath);
-    expect(handle.filePath).toBe(secondPath);
-  });
-
-  it("announces and opens a newly created valid project diagram", async () => {
-    const created = await createTestServer();
-    const { handle, filePath } = created;
-    const response = await fetch(`${handle.url}api/events`);
-    const reader = response.body?.getReader();
-    expect(reader).toBeDefined();
-    if (!reader) return;
-    try {
-      expect(await readSseEvent(reader)).toContain("event: ready");
-
-      const nextPath = join(dirname(filePath), "new-workflow.dgm");
-      writeFileSync(nextPath, printDgm(createEmptyDocument("new-workflow")), "utf8");
-      const events = await readSseUntil(reader, ["event: project-files", "event: document"]);
-      expect(events).toContain("new-workflow.dgm");
-      expect(handle.filePath).toBe(nextPath);
-    } finally {
-      await reader.cancel();
+    for (const endpoint of ["api/session", "api/document", "api/files", "api/select", "api/events"]) {
+      const response = await fetch(`${handle.url}${endpoint}`);
+      expect(response.status, endpoint).toBe(404);
     }
+  });
+
+  it("keeps traversal outside the editor root forbidden", async () => {
+    const { handle } = await createTestServer();
+    const response = await fetch(`${handle.url}%2e%2e%2fsecret.txt`);
+    expect(response.status).toBe(403);
   });
 });
 
-async function createTestServer(): Promise<{ handle: StudioServerHandle; filePath: string }> {
+async function createTestServer(): Promise<{ handle: StudioServerHandle }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
   mkdirSync(editorRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
-  const filePath = join(root, "architecture.dgm");
-  const handle = await startStudioServer({ filePath, editorRoot, port: 0 });
+  const handle = await startStudioServer({ editorRoot, port: 0 });
   handles.push(handle);
-  return { handle, filePath };
-}
-
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  expect(response.status).toBe(200);
-  return response.json() as Promise<T>;
+  return { handle };
 }
 
 function closeServer(handle: StudioServerHandle): Promise<void> {
   return new Promise((resolve, reject) => {
     handle.server.close((error) => error ? reject(error) : resolve());
   });
-}
-
-function replaceFile(filePath: string, source: string): void {
-  const replacementPath = `${filePath}.replacement`;
-  writeFileSync(replacementPath, source, "utf8");
-  renameSync(replacementPath, filePath);
-}
-
-async function readSseEvent(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-): Promise<string> {
-  const decoder = new TextDecoder();
-  let content = "";
-  let timeoutHandle: NodeJS.Timeout | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error("Timed out waiting for a Studio SSE event.")),
-      3_000,
-    );
-    timeoutHandle.unref();
-  });
-
-  try {
-    while (!content.includes("\n\n")) {
-      const result = await Promise.race([reader.read(), timeout]);
-      if (result.done) throw new Error("Studio SSE stream closed before sending an event.");
-      content += decoder.decode(result.value, { stream: true });
-    }
-    return content.slice(0, content.indexOf("\n\n"));
-  } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle);
-  }
-}
-
-async function readSseUntil(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  markers: string[],
-): Promise<string> {
-  const decoder = new TextDecoder();
-  let content = "";
-  let timeoutHandle: NodeJS.Timeout | undefined;
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timeoutHandle = setTimeout(
-      () => reject(new Error(`Timed out waiting for Studio SSE markers: ${markers.join(", ")}`)),
-      3_000,
-    );
-    timeoutHandle.unref();
-  });
-
-  try {
-    while (!markers.every((marker) => content.includes(marker))) {
-      const result = await Promise.race([reader.read(), timeout]);
-      if (result.done) throw new Error("Studio SSE stream closed before sending the expected events.");
-      content += decoder.decode(result.value, { stream: true });
-    }
-    return content;
-  } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle);
-  }
 }

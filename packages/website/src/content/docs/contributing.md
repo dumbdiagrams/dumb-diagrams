@@ -29,7 +29,8 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-`pnpm dev` starts Studio through Vite. Use it for browser UI work; it does not provide the CLI’s local file bridge.
+`pnpm dev` starts Studio through Vite. Use it for browser UI work; the published
+CLI serves the same compiled editor on loopback.
 
 For local-file behavior:
 

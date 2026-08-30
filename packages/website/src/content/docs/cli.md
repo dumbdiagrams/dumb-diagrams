@@ -1,80 +1,35 @@
 ---
 title: Command reference
-description: Create projects, open Studio, validate source, and export diagrams from the command line.
+description: Prepare a repository for agents and start the generic local Studio.
 section: Make diagrams
 order: 6
 ---
-Use `npx create-dumb-diagrams@latest` followed by a command. A global install also provides the aliases `dumbdiagrams` and `dgm`.
-
-Use the installed version for the current flag list:
-
-```bash
-npx create-dumb-diagrams@latest help
-npx create-dumb-diagrams@latest --version
-```
-
-## Create a project
+The published package is installed as `create-dumb-diagrams`; its canonical
+command is `dumbdiagrams`. `dgm` is a convenience shorthand for the same
+entrypoint.
 
 ```bash
-npx create-dumb-diagrams@latest init my-architecture --name "My architecture" --yes
+npm install -g create-dumb-diagrams
+cd path/to/your-repository
+dumbdiagrams init
+dumbdiagrams studio
 ```
 
-`npm create dumb-diagrams@latest` is a shortcut for initialization. Use `init` when you want the command-style form.
+## `dumbdiagrams init`
 
-| Option | What it controls |
-| --- | --- |
-| `[directory]` or `--directory` | Where the project is created |
-| `--name` | The diagram space name |
-| `--diagram` | The starter diagram identifier |
-| `--description` | A description for the project |
-| `--open-editor` | Open the created project in a coding editor |
-| `--editor` | Choose the editor launch command |
-| `--yes` | Skip the interactive naming prompt |
+Initializes the current repository for coding-agent use. It keeps the
+interactive prompt for the repository/project name and writes `AGENTS.md`,
+`CLAUDE.md`, `GEMINI.md`, and `.dumbdiagrams/` guidance in the current
+directory.
 
-The initializer creates instructions, examples, catalog references, and a starter diagram. Follow the printed next steps rather than assuming the starter filename from its display title.
+## `dumbdiagrams studio`
 
-## Open Studio
+Starts the local Studio server and opens the generic editor. Use **Open** in the
+editor to select any `.dgm` file anywhere on disk. `.dgm` remains the portable
+source of truth; recent files and tabs are editor session conveniences.
 
-```bash
-npx create-dumb-diagrams@latest studio diagrams
-npx create-dumb-diagrams@latest studio diagrams/payments.dgm --no-open
-```
+There are no file or folder positional arguments and no documented alternate
+Studio flags. The local server is bound to `127.0.0.1` for desktop use.
 
-`open` is an alias for `studio`. The optional path defaults to `diagrams/architecture.dgm`.
-
-| Flag | Default | Purpose |
-| --- | --- | --- |
-| `--port` | `4788` | Port for the local server |
-| `--no-open` | Off | Do not open the browser automatically |
-
-Studio binds to `127.0.0.1` and is intended for local use.
-
-## Validate source
-
-```bash
-npx create-dumb-diagrams@latest validate diagrams
-npx create-dumb-diagrams@latest check diagrams/payments.dgm
-```
-
-`validate` and `check` are aliases. Pass a file or directory. The command parses, validates, compiles, and reports routing notes. Invalid source returns a failing exit code; a structurally valid diagram can still have layout or routing warnings worth reviewing.
-
-## Format a file
-
-```bash
-npx create-dumb-diagrams@latest format diagrams/payments.dgm
-npx create-dumb-diagrams@latest fmt diagrams/payments.dgm --write
-```
-
-Without `--write`, canonical source is printed to the terminal. With it, the file is updated. `fmt` is an alias.
-
-## Render a file
-
-```bash
-npx create-dumb-diagrams@latest render diagrams/payments.dgm --output payments.svg
-```
-
-The output is portable SVG. The default destination is `output.svg`. Other formats are available through [Studio exports](../exports/).
-
-## Contributor fixtures
-
-`fixtures` renders the built-in `async-docs` or `transfer-hub` development fixture. It is intended for repository development and may need workspace examples and catalog inputs. Use `render` for your own `.dgm` files.
+Both commands support normal `--help` and `--version` handling. The CLI is
+intentionally small: use the runtime and Studio for editing and exporting.
