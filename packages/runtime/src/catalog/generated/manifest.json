@@ -61454,7 +61454,7 @@
         "vpc",
         "az"
       ],
-      "allowRoot": false,
+      "allowRoot": true,
       "scope": "global",
       "column": "edge",
       "sizeTier": "primary",

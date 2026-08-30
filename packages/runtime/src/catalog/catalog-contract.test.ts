@@ -29,6 +29,11 @@ describe("canonical catalog contract", () => {
   it("keeps cloud-agnostic groups distinct from similarly named resources", () => {
     const cloudGroup = getCatalogEntry("cloud-agnostic.cloud");
     expect(cloudGroup).toMatchObject({ assetKind: "group", groupKind: "cloud" });
+    expect(getCatalogEntry("cloud-agnostic.boundary")).toMatchObject({
+      assetKind: "group",
+      groupKind: "logical",
+      allowRoot: true,
+    });
     expect(getCatalogEntry("cloud-agnostic.cloud-resource")).toMatchObject({
       assetKind: "resource",
       name: "Cloud Resource",

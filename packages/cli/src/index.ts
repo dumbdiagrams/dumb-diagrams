@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { listAssets } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { compileDiagram } from "@dumb-diagrams/runtime/render";
 
 import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
@@ -65,6 +67,8 @@ export async function runCli(argv: string[]): Promise<number> {
       return 0;
     case "init":
       return await cmdInit(parsed);
+    case "validate":
+      return cmdValidate(parsed);
     default:
       console.error(ui.error(`Unknown command: ${command}`));
       console.error(ui.muted(`  Run ${ui.command("dumbdiagrams help")} to see available commands.`));
@@ -80,13 +84,16 @@ ${ui.brand()}
 ${ui.heading("Usage")}
   ${ui.command("dumbdiagrams init")}       Create a project folder for agents
   ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
+  ${ui.command("dumbdiagrams validate")}   Validate a .dgm source file
 
 ${ui.heading("Commands")}
   ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
+  ${ui.command("validate <file.dgm>")}      Parse and fully validate a diagram
 
 ${ui.heading("Quick start")}
   ${ui.command("dumbdiagrams init")}
+  ${ui.command("dumbdiagrams validate diagrams/example/diagram.dgm")}
   ${ui.command("dumbdiagrams studio")}
 
 ${ui.muted("Tip: dgm is a shorthand alias for dumbdiagrams.")}
@@ -119,6 +126,31 @@ async function cmdStudio(args: ParsedArgs): Promise<void> {
 
   if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") openBrowser(handle.url);
   await waitForShutdown(handle.server);
+}
+
+function cmdValidate(args: ParsedArgs): number {
+  if (args.positionals.length !== 1 || args.flags.size) {
+    console.error(ui.error("validate expects exactly one .dgm file path and no options."));
+    return 1;
+  }
+  const filePath = resolve(process.cwd(), args.positionals[0]!);
+  try {
+    const source = readFileSync(filePath, "utf8");
+    const result = compileDiagram(parseDgm(source));
+    if (!result.ok) {
+      console.error(ui.error(`Invalid diagram: ${relativeForLog(filePath)}`));
+      for (const issue of result.issues) {
+        console.error(`  ${issue.code}${issue.id ? ` (${issue.id})` : ""}: ${issue.message}`);
+      }
+      return 1;
+    }
+    console.log(ui.success(`Valid diagram: ${relativeForLog(filePath)}`));
+    return 0;
+  } catch (error) {
+    console.error(ui.error(`Invalid diagram: ${relativeForLog(filePath)}`));
+    console.error(`  ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
 }
 
 async function cmdInit(args: ParsedArgs): Promise<number> {

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -18,11 +18,33 @@ describe("runCli", () => {
     expect(version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it("exposes only init and studio commands", async () => {
+  it("rejects unknown commands and invalid command arguments", async () => {
     expect(await runCli(["not-a-command"])).toBe(1);
     expect(await runCli(["legacy-command"])).toBe(1);
     expect(await runCli(["init", "nested-repository"])).toBe(1);
     await expect(runCli(["studio", "diagram.dgm"])).rejects.toThrow(/does not accept/);
+    expect(await runCli(["validate"])).toBe(1);
+  });
+
+  it("validates a complete diagram before Studio handoff", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-validate-"));
+    const validPath = join(workRoot, "valid.dgm");
+    const invalidPath = join(workRoot, "invalid.dgm");
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      writeFileSync(validPath, `diagram valid {\n  grammar gcp\n  cloud-agnostic.boundary external "External" {}\n}\n`);
+      writeFileSync(invalidPath, `diagram invalid {\n  grammar gcp\n  unknown.service nope "Nope"\n}\n`);
+
+      expect(await runCli(["validate", validPath])).toBe(0);
+      expect(log.mock.calls.flat().join("\n")).toContain("Valid diagram");
+      expect(await runCli(["validate", invalidPath])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain("unknown-type");
+    } finally {
+      log.mockRestore();
+      error.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
   });
 
   it("creates a timestamped project folder with agent guidance and portable examples", async () => {
@@ -61,6 +83,7 @@ describe("runCli", () => {
       expect(instructions).toContain("no provider signal");
       expect(instructions).toContain("stop and ask the user");
       expect(instructions).toContain("single-provider");
+      expect(instructions).toContain("dumbdiagrams validate <path-to-diagram.dgm>");
       expect(readFileSync(join(projectRoot, ".dumbdiagrams/architecture.md"), "utf8")).toContain(
         "cloud-agnostic` (Experimental)",
       );

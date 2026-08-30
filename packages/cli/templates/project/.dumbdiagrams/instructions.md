@@ -25,7 +25,10 @@ does not need to write a structured Dumb Diagrams prompt.
    conventions; they do not override the user or become default architectures.
 7. Resolve architecture semantics before layout. Write a descriptive `.dgm`
    source file unless revising a named file.
-8. Validate the source with the available project tooling.
+8. Run `dumbdiagrams validate <path-to-diagram.dgm>` after writing or revising
+   the source. Do not report completion or hand the file to the user unless
+   validation exits successfully; repair every reported parse, type, and
+   containment error first.
 9. Open the result with `dumbdiagrams studio` and use Open to choose the `.dgm`
    file. Correct validation errors, nonsensical routes, overlaps, and
    unreadable grouping without changing the agreed architecture.

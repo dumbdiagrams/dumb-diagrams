@@ -669,7 +669,9 @@ function cloudAgnosticEntries(used, collisionLog) {
       specificity: "semantic-neutral",
       groupKind: kind,
       allowedParents: kind === "cloud" ? [] : ["cloud", "account", "region", "logical", "vpc", "az"],
-      allowRoot: ["cloud", "account", "region"].includes(kind),
+      // A general-purpose logical boundary may represent external systems or
+      // data sources beside a provider cloud, so it is valid at diagram root.
+      allowRoot: type === "cloud-agnostic.boundary" || ["cloud", "account", "region"].includes(kind),
       scope: "global",
     });
     // `cloud-agnostic.boundary` is the single general-purpose logical

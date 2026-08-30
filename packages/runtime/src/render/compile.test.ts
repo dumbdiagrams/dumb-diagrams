@@ -21,6 +21,28 @@ import {
 import { checkInvariants } from "./invariants.js";
 
 describe("async-docs fixture", () => {
+  it("compiles a top-level external boundary beside a provider cloud", () => {
+    const doc = parseDgm(`diagram gcp-data-analytics {
+  grammar gcp
+  flow lr
+  cloud-agnostic.boundary sources "Data sources" {
+    cloud-agnostic.container applications "Applications"
+    cloud-agnostic.repository files "Files"
+  }
+  gcp.organization gcp_cloud "Google Cloud" {
+    gcp.project project "Analytics project" {
+      gcp.bigquery bigquery "BigQuery"
+    }
+  }
+  applications -> bigquery { id ingest label "events" }
+}`);
+
+    const result = compileDiagram(doc);
+
+    expect(result.ok).toBe(true);
+    expect(result.svg).toContain("<svg");
+  });
+
   it("renders Azure subscriptions with an amber default while honoring authored colors", () => {
     const doc = parseDgm(`diagram azure-subscription {\n  grammar azure\n  azure.subscription subscription "Azure Subscription" {}\n}`);
     const defaultSvg = renderSvg(doc, layoutDocument(doc));
