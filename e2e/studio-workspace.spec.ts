@@ -7,6 +7,9 @@ const ROOT = join(import.meta.dirname, "..");
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");
 
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Untitled Diagram");
+  await expect(page.locator(".workspace-tab.is-active")).not.toContainText("Async Docs");
+
   const wordmark = page.locator(".studio-brand .dd-wordmark");
   await expect(wordmark).toHaveText("dumbdiagrams.");
   await expect(wordmark).toHaveCSS("font-family", /Manrope/);

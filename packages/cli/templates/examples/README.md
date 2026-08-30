@@ -11,6 +11,10 @@ Each migrated AWS example has four roles:
 - `<name>/reference-spec.md` — the preserved expert reconstruction specification.
 - `<name>/diagram.dgm` — the unchanged curated source.
 
+The `architecture-brief.md` files demonstrate the persistent diagnostic artifact
+used for new project diagrams. In an initialized project, new diagrams use
+the `diagrams/<descriptive-slug>/` bundle documented in `diagrams/README.md`.
+
 Available migrated AWS examples:
 
 - `simple-serverless-web-application/`

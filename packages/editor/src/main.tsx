@@ -160,12 +160,10 @@ import {
   snapLayoutToGrid,
   snapPoint,
 } from "./grid.js";
-import asyncDocsSource from "../../../examples/diagrams/async-docs.dgm?raw";
 import "./styles.css";
 
 initTheme();
 
-const DEFAULT_SOURCE = asyncDocsSource;
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
@@ -317,9 +315,9 @@ function App() {
     markTabSaved,
     setTabFilename,
   } = useWorkspace({
-    initialSource: RECOVERY?.source ?? DEFAULT_SOURCE,
-    initialSavedSource: RECOVERY ? "" : DEFAULT_SOURCE,
-    initialOrigin: RECOVERY ? "recovery" : "fixture",
+    initialSource: RECOVERY?.source ?? BLANK_SOURCE,
+    initialSavedSource: RECOVERY ? "" : BLANK_SOURCE,
+    initialOrigin: RECOVERY ? "recovery" : "new",
     initialViewport: INITIAL_VIEWPORT,
     blankSource: BLANK_SOURCE,
   });

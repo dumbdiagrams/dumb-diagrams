@@ -78,11 +78,11 @@ function printHelp(): void {
 ${ui.brand()}
 
 ${ui.heading("Usage")}
-  ${ui.command("dumbdiagrams init")}       Prepare the current repository for agents
+  ${ui.command("dumbdiagrams init")}       Create a project folder for agents
   ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
 
 ${ui.heading("Commands")}
-  ${ui.command("init")}                    Prepare this repository for agents
+  ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
 
 ${ui.heading("Quick start")}
@@ -97,7 +97,7 @@ async function promptProjectName(defaultName: string): Promise<string> {
   const readline = createInterface({ input: process.stdin, output: process.stdout });
   try {
     return await readline.question(
-      `  ${ui.command("?")} ${ui.heading("What is this repository or project called?")} ${ui.muted(`(${defaultName})`)} `,
+      `  ${ui.command("?")} ${ui.heading("What should we call this project?")} ${ui.muted(`(default: ${defaultName})`)} `,
     );
   } finally {
     readline.close();
@@ -135,17 +135,18 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     return 1;
   }
 
-  const repositoryRoot = resolve(process.cwd());
+  const projectRoot = resolve(process.cwd(), options.projectDirectory);
   const projectName = options.projectName;
-  const knowledgeRoot = join(repositoryRoot, ".dumbdiagrams");
-  const agentsPath = join(repositoryRoot, "AGENTS.md");
-  const claudePath = join(repositoryRoot, "CLAUDE.md");
-  const geminiPath = join(repositoryRoot, "GEMINI.md");
+  const knowledgeRoot = join(projectRoot, ".dumbdiagrams");
+  const agentsPath = join(projectRoot, "AGENTS.md");
+  const claudePath = join(projectRoot, "CLAUDE.md");
+  const geminiPath = join(projectRoot, "GEMINI.md");
   const examplesRoot = join(knowledgeRoot, "examples");
 
-  console.log(ui.heading("Preparing repository"));
+  mkdirSync(projectRoot, { recursive: true });
+  console.log(ui.heading("Creating project"));
   console.log(ui.info("name", projectName));
-  console.log(ui.info("folder", repositoryRoot));
+  console.log(ui.info("folder", projectRoot));
   console.log("");
 
   const templateVars = { projectName };
@@ -158,10 +159,14 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     ".dumbdiagrams/architecture.md",
     ".dumbdiagrams/dgm.md",
     ".dumbdiagrams/providers/aws.md",
+    ".dumbdiagrams/providers/azure.md",
+    ".dumbdiagrams/providers/gcp.md",
+    ".dumbdiagrams/providers/cloud-agnostic.md",
   ];
 
   const files = [
-    ...knowledgeFiles.map((name) => [join(repositoryRoot, name), renderInitTemplate(name, templateVars)] as const),
+    ...knowledgeFiles.map((name) => [join(projectRoot, name), renderInitTemplate(name, templateVars)] as const),
+    [join(projectRoot, "diagrams/README.md"), renderInitTemplate("diagrams/README.md", templateVars)],
     [agentsPath, agentPointer],
     [claudePath, renderInitTemplate("CLAUDE.md", templateVars)],
     [geminiPath, renderInitTemplate("GEMINI.md", templateVars)],
@@ -181,8 +186,8 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
   }
   created += copyBundledExamples(examplesRoot);
 
-  console.log(ui.summary(created ? "Repository ready" : "Repository already prepared"));
-  console.log(ui.info("next", ui.command("dumbdiagrams studio")));
+  console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
+  console.log(ui.info("next", ui.command(`cd ${relativeForLog(projectRoot)} && dumbdiagrams studio`)));
   return 0;
 }
 

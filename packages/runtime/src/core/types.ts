@@ -1,7 +1,7 @@
 export type ID = string;
 
 export type FlowDirection = "lr" | "tb";
-export type Grammar = "aws";
+export type Grammar = "aws" | "azure" | "gcp" | "cloud-agnostic";
 export type ResourceRole = "primary" | "secondary" | "border";
 export type ResourceLabelPosition = "top" | "bottom";
 export type GroupLabelPosition = "top-left" | "top-right";

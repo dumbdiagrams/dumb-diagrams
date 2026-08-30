@@ -35,7 +35,7 @@ Studio follows these stages and adds editor concerns such as snap-to-grid, artbo
 | `core` | Document types, defaults, limits, validation, and port helpers |
 | `dsl` | Parsing and canonical printing of .dgm source |
 | `catalog` | Provider types, rules, and icon lookup |
-| `grammar-aws` | AWS-oriented visual conventions |
+| `grammar-aws` | Shared visual conventions; first-class for AWS and currently reused by experimental providers |
 | `layout` | Nested group sizes, placement, and authored overrides |
 | `route` | Deterministic right-angle connections |
 | `render` | Compilation, geometry checks, SVG, and portable assets |
@@ -51,9 +51,10 @@ Document mutations live in the editor model. Workspace state owns tabs, undo/red
 ## The CLI provides the local bridge
 
 `create-dumb-diagrams` publishes the `dumbdiagrams` CLI. Its `init` command
-prepares the current repository for agents; its `studio` command serves the
-generic file editor. Studio can open any `.dgm` file selected by the user and
-does not infer ownership from the launch directory.
+creates a project folder for agents, including the convention that
+persists each normalized architecture brief beside its diagram; its `studio`
+command serves the generic file editor. Studio can open any `.dgm` file
+selected by the user and does not infer ownership from the launch directory.
 
 The local server has one narrow role: it serves the compiled editor on loopback.
 The browser opens and saves selected files directly when file handles are

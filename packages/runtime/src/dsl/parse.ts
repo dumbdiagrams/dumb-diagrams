@@ -3,6 +3,7 @@ import type {
   DiagramDocument,
   Edge,
   EdgeColor,
+  Grammar,
   Group,
   Resource,
   TextAlign,
@@ -151,7 +152,11 @@ class Parser {
       }
       if (t.type === "id" && t.value === "grammar") {
         this.pos++;
-        this.expect("id");
+        const grammar = this.expect("id").value;
+        if (!isGrammar(grammar)) {
+          throw new Error(`Invalid grammar ${JSON.stringify(grammar)}; expected aws, azure, gcp, or cloud-agnostic`);
+        }
+        this.doc.grammar = grammar;
         continue;
       }
       if (t.type === "id" && t.value === "flow") {
@@ -874,6 +879,10 @@ export function printDgm(doc: DiagramDocument): string {
 function isEdgeColor(value: string): value is EdgeColor {
   return value === "graphite" || value === "blue" || value === "teal" ||
     value === "purple" || value === "amber" || value === "red" || value === "green";
+}
+
+function isGrammar(value: string): value is Grammar {
+  return value === "aws" || value === "azure" || value === "gcp" || value === "cloud-agnostic";
 }
 
 function isAnnotationStyle(value: string): value is AnnotationStyle {

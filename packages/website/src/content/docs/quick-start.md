@@ -9,19 +9,23 @@ The install command below uses npm, which comes with Node.js.
 
 The **agent workflow** uses a separate coding agent, such as **Codex, Claude Code, Cursor, Gemini**, or an open-source alternative. Dumb Diagrams provides the source format, agent guidance, and Studio; it does not bundle an agent.
 
-## Prepare a repository
+## Create a project
 
-Install the CLI and run `init` in the repository that should provide context to
-your coding agent:
+Install the CLI and run `init` from the directory where you want the new
+project folder:
 
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-repository
+cd path/to/your-projects
 dumbdiagrams init
+cd <project-folder>
 ```
 
-The initializer keeps its prompt for the repository/project name, then writes
-agent instructions and `.dumbdiagrams/` knowledge into the current directory.
+The initializer asks for a project name and uses it for the new folder. Leave
+the prompt blank, or run without a terminal, to get a timestamped folder based
+on the current directory. It prints the exact folder path when it finishes.
+The project contains agent instructions, `.dumbdiagrams/` knowledge, and a
+documented `diagrams/` workspace.
 
 Start Studio separately:
 
@@ -35,18 +39,22 @@ you work; stop it with `Ctrl+C` when finished.
 
 ## Know what was created
 
-The initialized repository contains ordinary agent guidance files:
+The new project contains ordinary agent guidance files:
 
 ```text
   .dumbdiagrams/     Shared instructions, catalog, and reference examples
+  diagrams/          Diagram bundles with persisted architecture briefs
   AGENTS.md          Instructions for coding agents
   CLAUDE.md          Another agent entry point
   GEMINI.md          Another agent entry point
 ```
 
-Keep `.dumbdiagrams/examples/` as reference material. Store `.dgm` files
-wherever makes sense for your repository or workflow; Studio can open them by
-file selection.
+Keep `.dumbdiagrams/examples/` as reference material. By default, agents create
+`diagrams/<name>/diagram.dgm` together with
+`diagrams/<name>/architecture-brief.md`. The brief records the normalized
+goal, explicit requirements, relationships and containment, and inferred
+decisions and exclusions for review and debugging. If you choose another
+source location, Studio can still open the `.dgm` by file selection.
 
 ## Create the first draft with an agent
 

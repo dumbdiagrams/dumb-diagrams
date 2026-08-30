@@ -6,6 +6,23 @@ public/private placement, containment, runtime location, and connections. Ask
 only when a genuine ambiguity would materially change the architecture; do not
 replace an explicit choice merely because another design is more common.
 
+## Provider selection
+
+The authored grammar is single-provider. Select it before writing the brief or
+`.dgm`: AWS/Amazon Web Services or an unambiguous AWS service selects `aws`
+(First-class); Azure/Microsoft Azure selects `azure` (Experimental); and
+GCP/Google Cloud selects `gcp` (Experimental). Explicit cloud-agnostic or
+provider-neutral language, and requests with no provider signal, select
+`cloud-agnostic` (Experimental). Omitted provider signals do not require a
+question.
+
+If signals conflict, multiple providers are named without clear multi-cloud
+intent, or the request is explicitly multi-cloud, stop and ask the user how to
+scope it and which provider should be primary. Do not write the brief or
+`.dgm`, and do not silently mix provider catalogs. Record the selected provider
+in the Goal and the matching `grammar` line. Use only that provider's catalog
+types, plus cloud-agnostic actors and logical boundaries.
+
 ## Detail-sensitive inference
 
 - **Vague:** infer the smallest conventional structure that makes the named
@@ -43,9 +60,13 @@ Before authoring, normalize the request into these semantics:
 - exclusions, unresolved choices, and other constraints.
 
 Keep stated and inferred decisions distinguishable. The brief may remain in
-working reasoning; create a file only when the user asks for one or the project
-uses it as an example/evaluation artifact. It is not a giant prose rewrite and
-does not contain routing syntax.
+working reasoning only until it is written as the project artifact described in
+`diagrams/README.md`. For every new diagram and meaningful semantic revision,
+write or update its Markdown brief in the same change. For an existing or
+custom flat `.dgm` path, place `<stem>.architecture-brief.md` beside it unless
+the user directs another location. It is a concise diagnostic normalization,
+not chain-of-thought or a giant prose rewrite, and it does not contain routing
+syntax. Never persist credentials, secrets, or unrelated conversation.
 
 Once the brief is stable, apply provider and layout conventions. Layout may
 clarify semantics but must not invent, remove, or redirect architecture.

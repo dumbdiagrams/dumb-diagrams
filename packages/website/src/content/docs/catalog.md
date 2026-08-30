@@ -10,7 +10,7 @@ The grammar adds visual conventions so resources from the catalog work together 
 
 ## Use canonical types
 
-After `dumbdiagrams init`, the repository includes catalog guidance under
+After `dumbdiagrams init`, the new project includes catalog guidance under
 `.dumbdiagrams/`. Search those files for a service and copy its canonical type.
 
 For example, the canonical Lambda type is `aws.aws-lambda`. The quoted label can be “Payment handler,” but the label does not choose the icon.
@@ -19,9 +19,14 @@ Older aliases remain accepted for compatibility. Use canonical types in new file
 
 ## Check provider coverage
 
-AWS has the strongest grammar, examples, and visual guidance. Azure, Google Cloud, and cloud-agnostic assets are also present in the catalog.
+AWS is the first-class grammar, examples, and visual-guidance path. Azure,
+Google Cloud, and cloud-agnostic authoring are experimental. They use their own
+catalog icons while currently inheriting AWS's composition, layout, and routing
+conventions.
 
-An available icon does not mean that the provider has the same grammar coverage as AWS. When working outside the main AWS path, start with the catalog rules and the nearest checked-in example.
+An available icon does not mean that the provider has the same semantic-guide
+coverage as AWS. When working outside the main AWS path, start with the
+experimental provider guide, catalog rules, and nearest checked-in example.
 
 ## Asset pipeline
 

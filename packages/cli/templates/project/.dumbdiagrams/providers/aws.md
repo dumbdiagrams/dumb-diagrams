@@ -1,4 +1,7 @@
-# AWS conventions
+# AWS conventions (First-class)
+
+AWS is the first-class provider. Use the current AWS catalog and conventions
+below; the other provider guides are experimental adaptations for now.
 
 Use canonical `aws.*` types from `../catalog.md` or `../catalog.json` and obey
 each entry's allowed parent boundaries. Use `aws.cloud` for the AWS scope shown

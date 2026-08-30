@@ -236,14 +236,15 @@ test('terminal fallback contains the real CLI banner and runnable package comman
   assert.equal(banner.replace(/<[^>]+>/g, ''), cli.banner(), 'the full CLI banner survives ANSI rendering');
   assert.ok(banner.includes('color:rgb(247,152,44)'), 'CLI light orange starting color');
   assert.ok(banner.includes('color:rgb(22,57,100)'), 'CLI navy ending color');
-  assert.ok(plain.includes(cli.summary('Repository ready').trim()));
-  assert.ok(plain.includes('Preparing repository'));
-  assert.ok(plain.indexOf('Created .dumbdiagrams/instructions.md') < plain.indexOf('Repository ready'));
+  assert.ok(plain.includes(cli.summary('Project ready').trim()));
+  assert.ok(plain.includes('Creating project'));
+  assert.match(plain, /Created .*\.dumbdiagrams\/instructions\.md/);
+  assert.ok(plain.indexOf('Created ') < plain.indexOf('Project ready'));
   assert.equal(await readFile(join(dist, 'cli-transcript.txt'), 'utf8'), `$ ${demo.command}\n${plain}`);
   assert.ok(html.includes('dumbdiagrams init'));
   assert.match(
     html,
-    /color:rgb\(247,152,44\)">dumbdiagrams studio<\/span>/,
+    /color:rgb\(247,152,44\)">.*dumbdiagrams studio<\/span>/,
     'next command uses the high-contrast CLI command color',
   );
   assert.match(html, /<div\b[^>]*class="terminal-controls"[^>]*hidden/, 'controls stay hidden without JavaScript');
@@ -255,10 +256,10 @@ test('hero journey preserves the canonical CLI, agent prompt, and Studio result'
   const prompt = await readFile(resolve(site, '../../examples/curated/image-thumbnail-pipeline/user-prompt.md'), 'utf8');
   const escapedPrompt = prompt.trimEnd().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
   assert.match(html, /data-hero-journey/);
-  assert.match(html, /Init repository/);
+  assert.match(html, /Create project/);
   assert.match(html, /Open with agent/);
   assert.match(html, /Open in Studio/);
-  assert.match(html, /Initializing repository…/);
+  assert.match(html, /Creating project…/);
   assert.ok(html.includes(escapedPrompt), 'agent stage contains the canonical prompt');
   assert.match(html, /data-terminal-final="true"/);
   assert.match(html, /image-thumbnail-pipeline-preview\.svg/);

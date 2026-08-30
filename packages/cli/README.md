@@ -23,20 +23,26 @@ a substantially cleaner path.
 
 ## Quick start
 
-Install the package once, then run the two commands from the repository where
-an agent will work:
+Install the package once, then run `init` from the directory where you want the
+new project folder:
 
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-repository
+cd path/to/your-projects
 dumbdiagrams init
+cd <project-folder>
 dumbdiagrams studio
 ```
 
-`init` asks for the repository/project name and writes the agent entrypoints and
-`.dumbdiagrams/` guidance into the current repository. `studio` starts the
-generic local editor and is independent of the directory where it was started.
-Use **Open** inside Studio to select any `.dgm` file on disk.
+`init` creates a new project folder inside the current directory. It asks for a
+project name and uses that name for the folder. Leave the prompt blank, or run
+without a terminal, to get a timestamped folder based on the current directory,
+such as `my-projects-2026-08-30-14-32-10`. The command prints the exact folder
+path when it finishes. It writes the agent entrypoints, `.dumbdiagrams/`
+guidance, and a documented `diagrams/` workspace there. New agent-authored
+diagrams default to `diagrams/<name>/diagram.dgm` with a persisted
+`diagrams/<name>/architecture-brief.md`. `studio` starts the generic local
+editor. Use **Open** inside Studio to select any `.dgm` file on disk.
 
 `dgm init` and `dgm studio` are convenience shorthands for the canonical
 `dumbdiagrams` commands.
@@ -45,12 +51,14 @@ Use **Open** inside Studio to select any `.dgm` file on disk.
 
 - `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` — small agent entrypoints
 - `.dumbdiagrams/` — canonical workflow, architecture, format, provider, and catalog knowledge
+- `.dumbdiagrams/providers/` — first-class AWS guidance and experimental Azure, GCP, and cloud-agnostic guidance
 - `.dumbdiagrams/examples/` — reference examples for agent prompts and source
+- `diagrams/README.md` — the diagram/architecture-brief bundle convention
 
 ## Commands
 
 ```bash
-dumbdiagrams init                                               # prepare the current repository
+dumbdiagrams init                                               # create a project folder here
 dumbdiagrams studio                                             # start generic local Studio
 ```
 

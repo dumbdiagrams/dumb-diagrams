@@ -31,6 +31,8 @@ diagram payments {
 
 The customer sits outside the region. The three AWS services sit inside it. The arrows describe a numbered request path from the customer to the ledger.
 
+The `grammar` value selects the document's primary provider catalog. Supported values are `aws`, `azure`, `gcp`, and `cloud-agnostic`. AWS is first-class; the other three are experimental and currently share AWS layout and routing conventions while using their own icons.
+
 ## Resources and boundaries
 
 A resource declaration starts with its catalog type, followed by a stable ID and an optional quoted label:

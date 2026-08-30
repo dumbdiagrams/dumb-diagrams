@@ -1,9 +1,15 @@
 # DGM source and layout
 
-- Start with `diagram <stable-id>`, `grammar`, `flow`, and a concise `title`.
+- Start with `diagram <stable-id>`, one `grammar` token, `flow`, and a concise
+  `title`. Supported grammar tokens are `aws` (First-class), `azure`
+  (Experimental), `gcp` (Experimental), and `cloud-agnostic` (Experimental).
+  The grammar is single-provider; it must match the provider choice recorded in
+  the architecture brief.
 - Use exact canonical types from `catalog.md`/`catalog.json`; the type selects
   the icon and the quoted label changes only display text. Do not guess types
   or use legacy aliases when a canonical type exists.
+- Use only catalog types matching the selected grammar, plus cloud-agnostic
+  actors and logical boundaries. Do not silently mix provider catalogs.
 - Nest resources inside the provider boundaries allowed by the catalog. Use
   `cloud-agnostic.boundary <id> "<label>" { ... }` for logical containers; do
   not author the legacy `group` shorthand or simulate boundaries with icons.

@@ -88,28 +88,36 @@ with a strong default style. It is intentionally less suitable when you want:
 - a mobile editor. v0.1 is desktop-focused, with roughly 1280px as the comfortable
   baseline.
 
-AWS is the strongest grammar, example, and visual-guidance path today. The
-catalog also contains cloud-agnostic and other provider assets, but the product
-should currently be evaluated as AWS-first rather than provider-neutral.
+AWS is the first-class grammar, example, and visual-guidance path today. Azure,
+GCP, and cloud-agnostic authoring are available as experimental paths using
+their respective catalog icons with the current AWS composition, layout, and
+routing conventions. Agent workflows default an omitted provider to
+cloud-agnostic and ask for clarification when provider signals conflict.
 Very dense diagrams can still force connector compromises; Studio exposes
 manual routes for the cases where the architect knows better than the router.
 
 ## Quick start
 
-Requires Node.js 24 or newer. Install the CLI, prepare the repository where an
-agent will work, then start Studio:
+Requires Node.js 24 or newer. Install the CLI, then create a project folder in
+the directory where you want to work:
 
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-repository
+cd path/to/your-projects
 dumbdiagrams init
+cd <project-folder>
 dumbdiagrams studio
 ```
 
-`init` keeps the prompt for your repository/project name and writes the
-`.dumbdiagrams/` agent guidance plus `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`.
-Studio is independent of the directory where it was launched: choose **Open** to select
-any `.dgm` file anywhere on disk.
+`init` creates a new project folder inside the current directory. It asks for a
+project name and uses that name for the folder. Leave the prompt blank, or run
+without a terminal, to get a timestamped folder based on the current directory.
+The command prints the exact folder path when it finishes, then writes the
+`.dumbdiagrams/` agent guidance plus `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and
+a documented `diagrams/` workspace there. New agent-authored diagrams default
+to a bundle containing both `diagram.dgm` and the persisted
+`architecture-brief.md` that records how the request was interpreted. Studio
+is a generic local editor: choose **Open** to select any `.dgm` file on disk.
 
 `dgm` is a convenience shorthand for the same commands:
 
@@ -122,10 +130,11 @@ Use `dumbdiagrams` in documentation and scripts.
 
 ## The agent workflow
 
-`init` prepares the current repository for coding agents. It adds:
+`init` prepares a new project folder for coding agents. It adds:
 
 - a small `AGENTS.md` router plus tiny `CLAUDE.md` and `GEMINI.md` compatibility entrypoints;
 - `.dumbdiagrams/`, the shared architecture, source, provider, catalog, and example knowledge;
+- `diagrams/`, the default home for reviewable diagram bundles and their persisted architecture briefs;
 - reference examples that show the expected style.
 
 The prompt can stay short:
@@ -135,6 +144,12 @@ Create a highly available payments API on AWS using ECS Fargate and Aurora
 PostgreSQL. Keep the application and database private, show the main request
 path, and keep the source coherent when you are done.
 ```
+
+Provider selection is explicit: AWS is first-class; Azure, GCP, and
+cloud-agnostic are experimental. Saying “Azure,” “GCP,” or “cloud-agnostic”
+selects that catalog and grammar. If no provider is named, the agent uses
+cloud-agnostic. Conflicting or unclear multi-cloud requests pause for a provider
+choice instead of silently mixing catalogs.
 
 The agent writes architecture, not SVG coordinates. A source file looks roughly
 like this:

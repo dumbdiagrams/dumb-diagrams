@@ -9,8 +9,8 @@ the versioning policy in [docs/VERSIONING.md](./docs/VERSIONING.md).
 
 - The public CLI now has two commands: `dumbdiagrams init` and
   `dumbdiagrams studio`; `dgm` is a convenience shorthand.
-- Interactive initialization prepares the current repository and asks for its
-  project or repository name.
+- Initialization creates a named project folder and uses a timestamped folder
+  when no project name is provided.
 - Studio is a generic local editor for portable `.dgm` files and no longer
   discovers or associates diagrams through a launch project.
 - Vendored catalog assets grouped under `assets/catalog/` with documented

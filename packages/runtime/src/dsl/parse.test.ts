@@ -7,6 +7,30 @@ import { DIAGRAM_LIMITS } from "../core/index.js";
 import { parseDgm, printDgm } from "./parse.js";
 
 describe("parseDgm / printDgm round-trip", () => {
+  it.each(["aws", "azure", "gcp", "cloud-agnostic"] as const)(
+    "retains and prints the %s grammar",
+    (grammar) => {
+      const source = `diagram ${grammar.replace(/-/g, "_")} {
+  grammar ${grammar}
+  flow lr
+  cloud-agnostic.boundary boundary "Boundary"
+}`;
+
+      const parsed = parseDgm(source);
+      expect(parsed.grammar).toBe(grammar);
+      expect(printDgm(parsed)).toContain(`  grammar ${grammar}`);
+      expect(parseDgm(printDgm(parsed))).toEqual(parsed);
+    },
+  );
+
+  it("rejects unsupported grammar values", () => {
+    expect(() => parseDgm(`diagram unsupported {
+  grammar digitalocean
+}`)).toThrow(
+      'Invalid grammar "digitalocean"; expected aws, azure, gcp, or cloud-agnostic',
+    );
+  });
+
   it("keeps nested logical groups and their children", () => {
     const doc = parseDgm(`diagram nested {
       grammar aws

@@ -36,7 +36,7 @@ editor: use **Open** to select any local file.
 
 Dumb Diagrams takes a defined approach to architecture diagrams. Nested cloud boundaries, service icons, numbered request paths, and right-angle connectors are part of the model. The same source, catalog, and saved view produce the same layout and SVG.
 
-AWS is the most developed path today. The catalog also contains Azure, Google Cloud, and cloud-agnostic assets, but the grammar and examples are strongest for AWS.
+AWS is the first-class provider path. Azure, Google Cloud, and cloud-agnostic authoring are experimental: they use their own catalog icons while currently sharing AWS composition, layout, and routing conventions.
 
 ## What it does not do
 

@@ -10,17 +10,21 @@ entrypoint.
 
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-repository
+cd path/to/your-projects
 dumbdiagrams init
+cd <project-folder>
 dumbdiagrams studio
 ```
 
 ## `dumbdiagrams init`
 
-Initializes the current repository for coding-agent use. It keeps the
-interactive prompt for the repository/project name and writes `AGENTS.md`,
-`CLAUDE.md`, `GEMINI.md`, and `.dumbdiagrams/` guidance in the current
-directory.
+Creates a new project folder inside the current directory for coding-agent use.
+The prompt names the project and the folder. Leave it blank, or run without a
+terminal, to use a timestamped folder based on the current directory. The
+command prints the exact folder path and writes `AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `.dumbdiagrams/` guidance, and `diagrams/README.md` there. The
+generated workflow stores each new diagram with a reviewable Markdown
+architecture brief by default.
 
 ## `dumbdiagrams studio`
 

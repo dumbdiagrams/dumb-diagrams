@@ -1,5 +1,5 @@
 diagram azure-private-app-service {
-  grammar aws
+  grammar azure
   flow lr
   title "Write-through caching with Azure Managed Redis and Azure SQL Database"
 

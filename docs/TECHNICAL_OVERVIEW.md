@@ -37,8 +37,9 @@ Dumb Diagrams is a source-first diagram engine with a browser editor around it.
 - A `.dgm` file is the durable source of truth.
 - The runtime parses, validates, lays out, routes, and renders that source.
 - Studio lets a person edit the same document visually or as text.
-- `dumbdiagrams init` prepares a repository for agents; `dumbdiagrams studio`
-  serves the generic editor for files selected by the user.
+- `dumbdiagrams init` creates a named project folder for agents;
+  `dumbdiagrams studio` serves the generic editor for files selected by the
+  user.
 - The npm tarball contains the CLI, the compiled Studio, templates, catalog
   assets, and buildable corresponding source.
 
@@ -196,7 +197,7 @@ The public CLI has two main commands:
 
 | Command | Purpose |
 | --- | --- |
-| `dumbdiagrams init` | Prepare the current repository for coding agents. The interactive prompt asks for its repository/project name and writes agent entrypoints plus `.dumbdiagrams/` guidance. |
+| `dumbdiagrams init` | Create a named project folder for coding agents. The interactive prompt asks for its project name, uses a timestamped folder when blank, and writes agent entrypoints, `.dumbdiagrams/` guidance, and the documented `diagrams/` bundle convention. |
 | `dumbdiagrams studio` | Start the generic local Studio. It is independent of the launch directory; use **Open** to select any `.dgm` file on disk. |
 
 `dgm` invokes the same entrypoint as a convenience shorthand. There are no
@@ -215,7 +216,7 @@ $CLI help
 $CLI --version
 npx --yes --package="$ARTIFACT" dgm --version   # alias
 
-# Initialize the current directory (answer the name prompt when interactive)
+# Create a project folder below the current directory
 cd "$TMP"
 $CLI init
 
@@ -323,7 +324,7 @@ the stages explicit:
 | `core` | Document types, defaults, limits, port helpers, and validation |
 | `catalog` | Provider inventory, lookup, and icon URL handling |
 | `dsl` | `.dgm` tokenizer/parser and canonical printer |
-| `grammar-aws` | AWS-oriented grammar tokens and conventions |
+| `grammar-aws` | Shared visual tokens and conventions, first-class for AWS and currently reused by experimental providers |
 | `layout` | Nested group sizing, resource placement, and authored overrides |
 | `route` | Deterministic orthogonal connector routing |
 | `render` | Compilation, invariant checks, SVG, and portable rendering |
@@ -351,10 +352,11 @@ become a second general-purpose drawing format.
 #### `catalog` and `grammar-aws`: provider knowledge
 
 `catalog` is the generated inventory of provider resources, groups, labels,
-parent rules, and icon paths. `grammar-aws` contains the visual conventions and
-style defaults used by the current AWS-oriented grammar. The catalog is data;
-the grammar is the set of presentation rules that make that data feel
-consistent in a diagram.
+parent rules, and icon paths. Documents select `aws`, `azure`, `gcp`, or
+`cloud-agnostic`; the selected provider controls the authored catalog types and
+icons. `grammar-aws` contains the visual conventions and style defaults shared
+by all four today. AWS is first-class, while Azure, GCP, and cloud-agnostic are
+experimental compatibility paths until their conventions are refined.
 
 #### `layout`: turning structure into space
 
@@ -429,8 +431,9 @@ inside the runtime renderer.
 ### `create-dumb-diagrams` CLI
 
 This is the publishable package. Its canonical `dumbdiagrams` command exposes
-`init` for current-repository agent setup and `studio` for the generic local
-editor. `dgm` invokes the same entrypoint as a convenience shorthand.
+`init` for creating a project folder with agent setup and `studio` for the
+generic local editor. `dgm` invokes the same entrypoint as a convenience
+shorthand.
 
 OS-specific browser launch commands are isolated in `platform-launch.ts` so
 Windows, macOS, and Linux syntax can be tested without
@@ -438,11 +441,14 @@ opening GUI applications in CI.
 
 #### Commands and local files
 
-The CLI is the user-facing bridge to local files. It writes agent guidance in
-the current repository and starts Studio without inferring a file, folder, or
-project from the launch directory. The command layer should remain thin:
-document behavior belongs to the runtime, while browser state belongs to the
-editor.
+The CLI is the user-facing bridge to local files. It creates a named project
+folder below the current directory, writes agent guidance and the default
+`diagrams/<name>/{diagram.dgm,architecture-brief.md}` convention there, then
+starts Studio without inferring a file or project from the launch directory.
+The persisted brief is diagnostic
+metadata describing interpreted semantics; the `.dgm` remains authoritative.
+The command layer should remain thin: document behavior belongs to the runtime,
+while browser state belongs to the editor.
 
 #### The local Studio server
 

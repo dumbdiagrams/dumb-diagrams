@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,6 +46,11 @@ const required = [
   "package/dist/templates/project/CLAUDE.md",
   "package/dist/templates/project/GEMINI.md",
   "package/dist/templates/project/.dumbdiagrams/instructions.md",
+  "package/dist/templates/project/.dumbdiagrams/providers/aws.md",
+  "package/dist/templates/project/.dumbdiagrams/providers/azure.md",
+  "package/dist/templates/project/.dumbdiagrams/providers/gcp.md",
+  "package/dist/templates/project/.dumbdiagrams/providers/cloud-agnostic.md",
+  "package/dist/templates/project/diagrams/README.md",
   "package/dist/templates/examples/README.md",
   ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `package/dist/templates/examples/${id}/${file}`)),
   "package/dist/source/CORRESPONDING_SOURCE.md",
@@ -85,18 +90,6 @@ const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-smoke-"));
 const projectDir = join(workRoot, "smoke-project");
 try {
   mkdirSync(projectDir);
-  if (runNpx(tarballPath, ["init"], "dumbdiagrams", projectDir) !== 0) {
-    throw new Error("packed dumbdiagrams init failed");
-  }
-  for (const generated of [
-    "AGENTS.md",
-    "CLAUDE.md",
-    "GEMINI.md",
-    ".dumbdiagrams/instructions.md",
-    ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `.dumbdiagrams/examples/${id}/${file}`)),
-  ]) {
-    if (!existsSync(join(projectDir, generated))) throw new Error(`init did not create ${generated}`);
-  }
 
   const helpOut = runNpxCapture(tarballPath, ["help"], "dumbdiagrams");
   if (!helpOut.includes("studio")) {
@@ -111,6 +104,32 @@ try {
   const dgmOut = runNpxCapture(tarballPath, ["--version"], "dgm");
   if (!dgmOut.includes(version)) {
     throw new Error(`dgm --version output missing ${version}: ${dgmOut}`);
+  }
+
+  // Smoke tests must never pause for the interactive project-name prompt,
+  // even when the script itself is run from a terminal.
+  if (runNpx(tarballPath, ["init"], "dumbdiagrams", projectDir) !== 0) {
+    throw new Error("packed dumbdiagrams init failed");
+  }
+  const generatedProjects = readdirSync(projectDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(entry.name));
+  if (generatedProjects.length !== 1) {
+    throw new Error(`init should create one timestamped project folder, found ${generatedProjects.length}`);
+  }
+  const initializedProject = join(projectDir, generatedProjects[0].name);
+  for (const generated of [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "diagrams/README.md",
+    ".dumbdiagrams/instructions.md",
+    ".dumbdiagrams/providers/aws.md",
+    ".dumbdiagrams/providers/azure.md",
+    ".dumbdiagrams/providers/gcp.md",
+    ".dumbdiagrams/providers/cloud-agnostic.md",
+    ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `.dumbdiagrams/examples/${id}/${file}`)),
+  ]) {
+    if (!existsSync(join(initializedProject, generated))) throw new Error(`init did not create ${generated}`);
   }
 
   console.log(`OK package smoke passed for ${tarballName}`);
@@ -155,7 +174,7 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
     execFileSync(
       npxCommand,
       ["--yes", `--package=${tarballPath}`, bin, ...args],
-      { cwd, stdio: "inherit", env: { ...process.env, npm_config_yes: "true" } },
+      { cwd, stdio: ["ignore", "inherit", "inherit"], env: { ...process.env, npm_config_yes: "true" } },
     );
     return 0;
   } catch (error) {
@@ -168,6 +187,6 @@ function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
   return execFileSync(
     npxCommand,
     ["--yes", `--package=${tarballPath}`, bin, ...args],
-    { cwd: root, encoding: "utf8", env: { ...process.env, npm_config_yes: "true" } },
+    { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, npm_config_yes: "true" } },
   );
 }

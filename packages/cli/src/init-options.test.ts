@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { displayNameForDirectory, resolveInitOptions } from "./init-options.js";
+import { defaultProjectDirectory, displayNameForDirectory, resolveInitOptions } from "./init-options.js";
 
 const args = (positionals: string[] = [], flags: Record<string, string | true> = {}) => ({
   positionals,
@@ -8,36 +8,57 @@ const args = (positionals: string[] = [], flags: Record<string, string | true> =
 });
 
 describe("init options", () => {
-  it("prompts for a repository name using the current directory display name", async () => {
+  it("uses a project name as the new folder name", async () => {
+    const now = new Date(2026, 7, 24, 19, 45, 12);
     const askProjectName = vi.fn().mockResolvedValue("Payments Platform");
     const result = await resolveInitOptions(args(), {
       interactive: true,
       askProjectName,
       currentName: "payments-platform",
+      now,
     });
 
-    expect(askProjectName).toHaveBeenCalledWith("Payments Platform");
-    expect(result).toEqual({ projectName: "Payments Platform" });
+    expect(askProjectName).toHaveBeenCalledWith("payments-platform-2026-08-24-19-45-12");
+    expect(result).toEqual({
+      projectDirectory: "payments-platform",
+      projectName: "Payments Platform",
+    });
   });
 
-  it("uses the current directory display name in non-interactive mode", async () => {
+  it("uses a timestamped folder in non-interactive mode", async () => {
+    const now = new Date(2026, 7, 24, 19, 45, 12);
     const result = await resolveInitOptions(args(), {
       interactive: false,
       currentName: "payments-platform",
+      now,
     });
 
-    expect(result).toEqual({ projectName: "Payments Platform" });
+    expect(result).toEqual({
+      projectDirectory: "payments-platform-2026-08-24-19-45-12",
+      projectName: "payments-platform-2026-08-24-19-45-12",
+    });
   });
 
-  it("uses the default when the interactive prompt is blank", async () => {
+  it("uses a timestamped folder when the interactive prompt is blank", async () => {
+    const now = new Date(2026, 7, 24, 19, 45, 12);
     const askProjectName = vi.fn().mockResolvedValue("  ");
     const result = await resolveInitOptions(args(), {
       interactive: true,
       askProjectName,
       currentName: "existing-repository",
+      now,
     });
 
-    expect(result.projectName).toBe("Existing Repository");
+    expect(askProjectName).toHaveBeenCalledWith("existing-repository-2026-08-24-19-45-12");
+    expect(result).toEqual({
+      projectDirectory: "existing-repository-2026-08-24-19-45-12",
+      projectName: "existing-repository-2026-08-24-19-45-12",
+    });
+  });
+
+  it("builds the fallback from the current directory and timestamp", () => {
+    expect(defaultProjectDirectory(new Date(2026, 7, 24, 19, 45, 12), "My Repository"))
+      .toBe("my-repository-2026-08-24-19-45-12");
   });
 
   it("rejects all positional arguments and flags", async () => {
