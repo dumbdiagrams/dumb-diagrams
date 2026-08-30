@@ -259,20 +259,81 @@ function longestChildFlow(doc: DiagramDocument, group: Group): ID[] {
   }, []);
 }
 
+function regionFlowParticipants(doc: DiagramDocument, group: Group): ID[] {
+  const owners = new Map<ID, ID>();
+  const collect = (id: ID, owner: ID): void => {
+    const resource = getResource(doc, id);
+    if (resource) {
+      owners.set(resource.id, owner);
+      return;
+    }
+    for (const child of getGroup(doc, id)?.children ?? []) collect(child, owner);
+  };
+  for (const child of group.children) collect(child, child);
+
+  const active = new Set<ID>();
+  for (const edge of doc.edges) {
+    if (edge.style === "dashed" || edge.kind === "fail" || edge.kind === "peer") continue;
+    const source = owners.get(edge.source);
+    const target = owners.get(edge.target);
+    if (source && target && source !== target) {
+      active.add(source);
+      active.add(target);
+    }
+  }
+  return group.children.filter((id) => active.has(id));
+}
+
 function layoutRegionGroup(
   doc: DiagramDocument,
   group: Group,
   state: LayoutState,
 ): Measured {
   const style = GROUP_STYLES.region;
-  const horizontal =
-    group.type === "azure.region" &&
-    doc.flow === "lr" &&
-    hasHorizontalChildFlow(doc, group);
-  if (horizontal) {
-    return layoutGenericGroup(doc, group, state, style.padding);
-  }
   const children = measureChildren(doc, group.children, state);
+  const participants = regionFlowParticipants(doc, group);
+  if (
+    doc.grammar !== "aws" &&
+    doc.flow === "lr" &&
+    participants.length >= 3
+  ) {
+    // Provider catalog columns are useful when a region has no causal spine,
+    // but they must not override an explicit multi-stage pipeline. Preserve
+    // authored child order on the primary axis and move dashed-only support
+    // boundaries (IAM, monitoring, telemetry, and similar concerns) below it.
+    const participantIds = new Set(participants);
+    const primary = children.filter((child) => participantIds.has(child.id));
+    const support = children.filter((child) => !participantIds.has(child.id));
+    const gaps = primary.slice(1).map((child, index) =>
+      genericChildGap(doc, primary[index]!, child, state)
+    );
+    const primaryW = primary.reduce(
+      (sum, item, index) => sum + item.w + (index ? gaps[index - 1]! : 0),
+      0,
+    );
+    const primaryH = Math.max(40, ...primary.map((item) => item.h));
+    const supportW = support.reduce(
+      (sum, item, index) => sum + item.w + (index ? H_GAP : 0),
+      0,
+    );
+    const supportH = Math.max(0, ...support.map((item) => item.h));
+    const contentW = Math.max(120, groupLabelContentWidth(group, style), primaryW, supportW);
+    const contentH = primaryH + (support.length ? V_GAP + supportH : 0);
+    let cursor = 0;
+    for (const [index, item] of primary.entries()) {
+      placeLayoutChild(state, item, cursor, (primaryH - item.h) / 2, doc);
+      cursor += item.w + (gaps[index] ?? 0);
+    }
+    cursor = (contentW - supportW) / 2;
+    for (const item of support) {
+      placeLayoutChild(state, item, cursor, primaryH + V_GAP, doc);
+      cursor += item.w + H_GAP;
+    }
+    const w = contentW + style.padding * 2;
+    const h = contentH + style.headerHeight + style.padding * 2;
+    storeGroupGeom(state, group, 0, 0, w, h);
+    return { w, h };
+  }
   const columns: Record<RegionColumn, LayoutChild[]> = {
     left: [],
     center: [],

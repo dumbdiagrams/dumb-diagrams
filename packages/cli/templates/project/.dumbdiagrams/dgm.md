@@ -23,6 +23,10 @@
   children left-to-right. Stack vertically only parallel or same-level
   branches/resources; use `flow tb` only when requested or clearly more
   appropriate for a coherent composition.
+- Separate the primary request/data path from IAM, Monitoring, Logging, and
+  Telemetry. Put explicitly requested support services in a side/shared
+  support boundary and connect them with dashed peer/support edges; keep them
+  out of the primary path unless the user describes them as processing stages.
 - Prefer automatic layout. Do not add a `view` block, manual node positions, or
   manual routes unless requested or revising an existing manually arranged
   diagram. Preserve existing view, positions, ports, and routes during semantic

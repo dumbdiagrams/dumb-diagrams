@@ -71,6 +71,8 @@ describe("runCli", () => {
       expect(dgmGuide).toContain("Use `flow lr` for primary sequential pipelines");
       expect(dgmGuide).toContain("Stack vertically only parallel or same-level");
       expect(dgmGuide).toContain("use `flow tb` only when requested");
+      expect(dgmGuide).toContain("Separate the primary request/data path from IAM, Monitoring, Logging, and");
+      expect(dgmGuide).toContain("support boundary and connect them with dashed peer/support edges");
       for (const [provider, marker] of [
         ["aws", "First-class"],
         ["azure", "Experimental"],

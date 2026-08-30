@@ -329,4 +329,55 @@ describe("logical group layout", () => {
     expect(first.y).toBeLessThan(second.y);
     expect(second.y).toBeLessThan(third.y);
   });
+
+  it("separates a GCP primary data path from dashed-only support boundaries", () => {
+    const doc = createEmptyDocument("gcp-analytics-region");
+    doc.grammar = "gcp";
+    doc.flow = "lr";
+    const primary = ["ingestion", "processing", "analytics", "visualization"];
+    const allGroups = [...primary, "support"];
+    doc.resources = allGroups.map((id) => ({
+      ...resource(`${id}_service`, id),
+      type: id === "analytics" ? "gcp.bigquery" : "gcp.dataflow",
+    }));
+    doc.groups = [
+      {
+        id: "region",
+        kind: "region",
+        type: "gcp.region",
+        label: "GCP region",
+        children: allGroups,
+      },
+      ...allGroups.map((id) => ({
+        id,
+        kind: "logical" as const,
+        type: "cloud-agnostic.boundary",
+        parent: "region",
+        label: id,
+        children: [`${id}_service`],
+      })),
+    ];
+    doc.edges = [
+      { id: "ingest-process", source: "ingestion_service", target: "processing_service", style: "solid", kind: "flow" },
+      { id: "process-store", source: "processing_service", target: "analytics_service", style: "solid", kind: "flow" },
+      { id: "store-view", source: "analytics_service", target: "visualization_service", style: "solid", kind: "flow" },
+      { id: "iam", source: "support_service", target: "processing_service", style: "dashed", kind: "peer" },
+      { id: "metrics", source: "analytics_service", target: "support_service", style: "dashed", kind: "peer" },
+    ];
+
+    const groups = new Map(layoutDocument(doc).groups.map((group) => [group.id, group]));
+    for (let index = 1; index < primary.length; index++) {
+      expect(groups.get(primary[index - 1]!)!.bounds.x).toBeLessThan(
+        groups.get(primary[index]!)!.bounds.x,
+      );
+    }
+    const primaryBottom = Math.max(
+      ...primary.map((id) => {
+        const bounds = groups.get(id)!.bounds;
+        return bounds.y + bounds.h;
+      }),
+    );
+    expect(groups.get("support")!.bounds.y).toBeGreaterThan(primaryBottom);
+    expect(groups.get("region")!.bounds.w).toBeGreaterThan(groups.get("region")!.bounds.h);
+  });
 });
