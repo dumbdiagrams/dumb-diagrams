@@ -563,6 +563,15 @@ function InteractionOverlayComponent({
     const pointerId = event.pointerId;
     let lastT = initialT;
     let lastSide = initialSide;
+    const renderedBadge = handle
+      .closest(".canvas-artboard")
+      ?.querySelector<SVGGElement>(`.diagram-svg g[id="edge-${edgeId}"]`);
+    const renderedBadgeParts = renderedBadge
+      ? Array.from(renderedBadge.querySelectorAll<SVGElement>(".edge-badge-circle, .edge-badge-text"))
+      : [];
+    // The compiled SVG keeps the old badge until the async recompilation
+    // lands. Hide that copy while the overlay preview owns the position.
+    for (const part of renderedBadgeParts) part.setAttribute("visibility", "hidden");
     const preview = createFramePreview<{ t: number; side: EdgeBadgeSide }>((placement) => {
       setBadgeDrag({ edgeId, t: placement.t, side: placement.side });
     });
@@ -591,7 +600,10 @@ function InteractionOverlayComponent({
       }
       // Keep the committed preview visible until the worker returns the new
       // layout, avoiding a one-frame snap back to the old badge position.
-      if (!changed) setBadgeDrag(null);
+      if (!changed) {
+        for (const part of renderedBadgeParts) part.removeAttribute("visibility");
+        setBadgeDrag(null);
+      }
       onGestureEnd();
       try {
         handle.releasePointerCapture(pointerId);
@@ -1208,6 +1220,15 @@ function InteractionOverlayComponent({
           ? resizePreview.bounds
           : boundsFor(item, layout, doc);
         if (!bounds || !isEntityVisible(doc, view, item.id)) return null;
+        // Keep a selected group's authored boundary visible. Drawing the
+        // selection stroke on the same pixels concealed live color changes.
+        const selectionGap = item.kind === "group" ? 4 : 0;
+        const selectionBounds = {
+          x: bounds.x - selectionGap,
+          y: bounds.y - selectionGap,
+          w: bounds.w + selectionGap * 2,
+          h: bounds.h + selectionGap * 2,
+        };
         const radius = item.kind === "group" ? 10 : 8;
         const isText = item.kind === "annotation" && doc.annotations.some(
           (annotation) => annotation.id === item.id && annotation.style === "text",
@@ -1224,19 +1245,19 @@ function InteractionOverlayComponent({
             <rect
               className="selection-outline-halo"
               data-selection-edge-label={isEdgeLabel ? item.id : undefined}
-              x={bounds.x}
-              y={bounds.y}
-              width={bounds.w}
-              height={bounds.h}
+              x={selectionBounds.x}
+              y={selectionBounds.y}
+              width={selectionBounds.w}
+              height={selectionBounds.h}
               rx={radius}
             />
             <rect
               className={`selection-outline selection-${item.kind}${isText ? " selection-text" : ""}${isEdgeLabel ? " selection-edge-label" : ""}`}
               data-selection-edge-label={isEdgeLabel ? item.id : undefined}
-              x={bounds.x}
-              y={bounds.y}
-              width={bounds.w}
-              height={bounds.h}
+              x={selectionBounds.x}
+              y={selectionBounds.y}
+              width={selectionBounds.w}
+              height={selectionBounds.h}
               rx={radius}
             />
           </g>

@@ -41,10 +41,7 @@ test("protects the final untouched blank untitled draft", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("tab")).toHaveCount(1);
-  await expect(page.locator(".workspace-tab-close")).toHaveCount(1);
-  await page.locator(".workspace-tab-close").click();
-
-  await expect(page.getByRole("tab")).toHaveCount(1);
+  await expect(page.locator(".workspace-tab-close")).toHaveCount(0);
   await expect(page.locator(".workspace-tab.is-active")).toContainText("Untitled Diagram");
   await expect(page.locator(".workspace-tab.is-active")).not.toContainText("Async Docs");
   await expect(page.locator(".workspace-tab-close")).toHaveCount(0);
@@ -99,8 +96,8 @@ test("bulk closes tabs with visible progress without recovering empty drafts", a
   await confirmation.getByRole("button", { name: "Close tabs", exact: true }).click();
 
   const progress = page.locator(".operation-status");
-  await expect(progress).toContainText("Closing diagrams…");
   await expect(progress.locator("progress")).toHaveAttribute("max", "4");
+  await expect(progress).toContainText("Closing diagrams…");
   await expect(page.getByRole("tab")).toHaveCount(1);
 
   await page.getByRole("button", { name: "File", exact: true }).click();
@@ -318,7 +315,37 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
   ]);
 
   await expect(page.getByRole("tab")).toHaveCount(3);
-  await expect(page.locator(".workspace-tab")).toContainText(["Async Docs", "Async Docs", "Transfer Hub"]);
+  await expect(page.locator(".workspace-tab")).toContainText(["Untitled Diagram", "Async Docs", "Transfer Hub"]);
+});
+
+test("covers the empty canvas with progress feedback while importing a diagram", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    const original = File.prototype.text;
+    File.prototype.text = async function text() {
+      await new Promise((resolve) => window.setTimeout(resolve, 400));
+      return original.call(this);
+    };
+    const postMessage = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function delayedPostMessage(...args: Parameters<Worker["postMessage"]>) {
+      window.setTimeout(() => postMessage.apply(this, args), 400);
+    };
+  });
+
+  const opening = page.locator('input[type="file"]').setInputFiles(
+    `${ROOT}/examples/diagrams/async-docs.dgm`,
+  );
+  const loading = page.locator(".workspace-loading.operation-loading");
+  await expect(loading).toContainText("Opening 1 diagram…");
+  await expect(loading).toContainText("Preparing the canvas and diagram layout");
+  await expect(page.locator(".app")).toHaveAttribute("aria-busy", "true");
+  await opening;
+
+  await expect(loading).toBeVisible();
+  await expect(page.locator("#group-use1")).toHaveCount(1);
+  await expect(loading).toHaveCount(0);
+  await expect(page.locator(".app")).toHaveAttribute("aria-busy", "false");
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Async Docs");
 });
 
 test("updates an imported filename when the diagram is renamed", async ({ page }) => {
@@ -360,7 +387,11 @@ test("reopens the most recently closed tab", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "New diagram", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(2);
+  const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
+  await title.fill("Recover me");
+  await title.press("Enter");
   await page.locator(".workspace-tab.is-active .workspace-tab-close").click();
+  await page.getByRole("dialog", { name: "Unsaved changes" }).getByRole("button", { name: "Discard", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(1);
 
   await page.keyboard.press("Control+KeyK");
@@ -370,7 +401,7 @@ test("reopens the most recently closed tab", async ({ page }) => {
   await search.fill("reopen closed tab");
   await palette.getByRole("option", { name: /Reopen closed tab/ }).click();
   await expect(page.getByRole("tab")).toHaveCount(2);
-  await expect(page.locator(".workspace-tab.is-active")).toContainText(/Untitled diagram/i);
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Recover me");
 });
 
 test("restores each tab's viewport when switching tabs", async ({ page }) => {

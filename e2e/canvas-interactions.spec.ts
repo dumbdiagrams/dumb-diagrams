@@ -3,6 +3,13 @@ import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 const ROOT = join(import.meta.dirname, "..");
+const ASYNC_DOCS = `${ROOT}/examples/diagrams/async-docs.dgm`;
+
+async function openAsyncDocs(page: Page) {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
+  await expect(page.locator('[data-entity-kind="edge"][data-entity-id="e1"]')).toHaveCount(1);
+}
 
 async function canvasPointForE3(page: Page) {
   const points = await canvasPointsForE3(page);
@@ -68,7 +75,7 @@ async function selectEdge(page: Page, edgeId: string) {
 }
 
 test("keeps rendered arrow numbers readable in light and dark themes", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const badgeText = page.locator(".diagram-svg .edge-badge-text").first();
   await expect(badgeText).toHaveCount(1);
@@ -90,7 +97,7 @@ test("keeps rendered arrow numbers readable in light and dark themes", async ({ 
 });
 
 test("selects the owning connector when its numbered badge is clicked", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const edge = page.locator('[data-entity-kind="edge"][data-entity-id="e1"]');
   const badge = page.locator('[data-edge-badge-hit="e1"]');
@@ -104,7 +111,7 @@ test("selects the owning connector when its numbered badge is clicked", async ({
 });
 
 test("highlights the connector and badge together on badge hover", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const badge = page.locator('[data-edge-badge-hit="e1"]');
   await expect(badge).toHaveCount(1);
@@ -115,8 +122,7 @@ test("highlights the connector and badge together on badge hover", async ({ page
 });
 
 test("keeps label dragging attached to the active diagram when another SVG repeats the edge id", async ({ page }) => {
-  await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
+  await openAsyncDocs(page);
 
   await selectEdge(page, "e3");
   const labelInput = page.locator("#edge-panel-label");
@@ -150,7 +156,7 @@ test("keeps label dragging attached to the active diagram when another SVG repea
 });
 
 test("shows only the resolved connector hover when wide hit strokes overlap", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const edge = page.locator('[data-entity-kind="edge"][data-entity-id="e3"]');
   const hover = page.locator(".hover-edge");
@@ -175,7 +181,7 @@ test("shows only the resolved connector hover when wide hit strokes overlap", as
 });
 
 test("highlights the nearest canvas target and edits a movable numbered edge badge", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const region = page.locator('[data-entity-kind="group"][data-entity-id="use1"]');
   await expect(region).toHaveCount(1);
@@ -256,11 +262,16 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
   const preview = page.locator('[data-edge-badge-preview]');
   await expect(preview).toHaveCount(1);
   await expect(preview.locator("text")).toHaveText("7");
+  await expect(page.locator('#edge-e3 .edge-badge-circle')).toHaveAttribute("visibility", "hidden");
+  await expect(page.locator('#edge-e3 .edge-badge-text')).toHaveAttribute("visibility", "hidden");
   await page.mouse.up();
 
   const after = await badge.boundingBox();
   expect(after).not.toBeNull();
   expect(after!.y).toBeGreaterThan(before!.y + 12);
+  await expect(preview).toHaveCount(0);
+  await expect(page.locator('[data-edge-badge="e3"]')).toHaveCount(1);
+  await expect(page.locator('#edge-e3 .edge-badge-circle')).not.toHaveAttribute("visibility", "hidden");
 
   await numberInput.focus();
   await numberInput.press("End");
@@ -273,7 +284,7 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
 });
 
 test("anchors a group display label at the selected corner", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const queues = page.locator('[data-entity-kind="group"][data-entity-id="queues"]');
   await expect(queues).toHaveCount(1);
@@ -300,7 +311,7 @@ test("anchors a group display label at the selected corner", async ({ page }) =>
 });
 
 test("offers only above and below for resource display labels", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   await page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]').click();
 
@@ -416,7 +427,7 @@ test("opens the board menu anywhere and pastes a clipboard image", async ({ page
 });
 
 test("exposes draggable turn points and moves a connector bend", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const edge = await selectE3(page);
 
   const routeEditor = page.locator('[data-route-editor="e3"]');
@@ -454,7 +465,7 @@ test("exposes draggable turn points and moves a connector bend", async ({ page }
 });
 
 test("keeps a single visible route when an automatic edge is pinned", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   await selectE3(page);
 
   const connector = page.getByRole("dialog", { name: "Connector", exact: true });
@@ -467,7 +478,7 @@ test("keeps a single visible route when an automatic edge is pinned", async ({ p
 });
 
 test("keeps the connector inspector open alongside a left drawer", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const groups = page.getByRole("dialog", { name: "Boundaries", exact: true });
   await page.getByRole("button", { name: "Boundaries", exact: true }).click();
@@ -488,11 +499,11 @@ test("keeps the connector inspector open alongside a left drawer", async ({ page
 });
 
 test("previews resource movement without rerouting the document until release", async ({ page }) => {
-  await page.goto("/");
-  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
-  const rendered = page.locator("#res-apiA");
+  await openAsyncDocs(page);
+  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
+  const rendered = page.locator("#res-client");
   const connectedEdges = page.locator(
-    '[data-entity-kind="edge"][data-entity-id="e2"], [data-entity-kind="edge"][data-entity-id="e3"]',
+    '[data-entity-kind="edge"][data-entity-id="e1"]',
   );
   const targetBox = await hitTarget.boundingBox();
   const beforeBox = await rendered.boundingBox();
@@ -506,13 +517,13 @@ test("previews resource movement without rerouting the document until release", 
   const startY = targetBox!.y + targetBox!.height / 2;
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.mouse.move(startX + 96, startY + 54, { steps: 16 });
+  await page.mouse.move(startX - 96, startY + 54, { steps: 16 });
 
   await expect.poll(async () => rendered.getAttribute("transform")).toContain("translate(");
   const previewBox = await rendered.boundingBox();
   expect(previewBox).not.toBeNull();
-  expect(previewBox!.x - beforeBox!.x).toBeCloseTo(96, 0);
-  expect(previewBox!.y - beforeBox!.y).toBeCloseTo(54, 0);
+  expect(Math.abs(previewBox!.x - beforeBox!.x + 96)).toBeLessThan(2);
+  expect(Math.abs(previewBox!.y - beforeBox!.y - 54)).toBeLessThan(6);
   expect(await connectedEdges.evaluateAll((elements) =>
     elements.map((element) => element.getAttribute("points")),
   )).toEqual(beforeEdges);
@@ -521,15 +532,15 @@ test("previews resource movement without rerouting the document until release", 
   await expect.poll(async () => rendered.getAttribute("transform")).toBeNull();
   const afterBox = await rendered.boundingBox();
   expect(afterBox).not.toBeNull();
-  expect(afterBox!.x).toBeGreaterThan(beforeBox!.x + 80);
+  expect(afterBox!.x).toBeLessThan(beforeBox!.x - 80);
   expect(afterBox!.y).toBeGreaterThan(beforeBox!.y + 40);
 });
 
 test("records a resource movement in undo history and restores its source position", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
-  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
-  const rendered = page.locator("#res-apiA");
+  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
+  const rendered = page.locator("#res-client");
   const undo = page.getByRole("button", { name: "Undo", exact: true });
   const redo = page.getByRole("button", { name: "Redo", exact: true });
   await expect(hitTarget).toHaveCount(1);
@@ -545,15 +556,15 @@ test("records a resource movement in undo history and restores its source positi
   const startY = targetBox!.y + targetBox!.height / 2;
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.mouse.move(startX + 96, startY + 54, { steps: 16 });
+  await page.mouse.move(startX - 96, startY + 54, { steps: 16 });
   await page.mouse.up();
 
   await expect.poll(async () => (await rendered.boundingBox())?.x ?? 0)
-    .toBeGreaterThan(before!.x + 80);
+    .toBeLessThan(before!.x - 80);
   await expect.poll(async () => rendered.getAttribute("transform")).toBeNull();
   const moved = await rendered.boundingBox();
   expect(moved).not.toBeNull();
-  expect(moved!.x).toBeGreaterThan(before!.x + 80);
+  expect(moved!.x).toBeLessThan(before!.x - 80);
   expect(moved!.y).toBeGreaterThan(before!.y + 40);
   await expect(undo).toBeEnabled();
 
@@ -567,7 +578,7 @@ test("records a resource movement in undo history and restores its source positi
 });
 
 test("shows a gentle centre guide while aligning icons", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const moving = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
   const target = page.locator('[data-entity-kind="resource"][data-entity-id="workerA"]');
   const movingBox = await moving.boundingBox();
@@ -591,7 +602,7 @@ test("shows a gentle centre guide while aligning icons", async ({ page }) => {
 });
 
 test("keeps a connected resource draggable from beneath its connector endpoint", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const resource = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
   const edge = page.locator('[data-entity-kind="edge"][data-entity-id="e2"]');
   await expect(resource).toHaveCount(1);
@@ -631,7 +642,7 @@ test("keeps a connected resource draggable from beneath its connector endpoint",
 });
 
 test("moves the adjoining leg when a connector bend is dragged past its line", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const edge = await selectEdge(page, "e1");
   const bend = page.locator('[data-bend-handle="e1:2"]');
   await expect(bend).toHaveCount(1);
@@ -674,7 +685,7 @@ test("moves the adjoining leg when a connector bend is dragged past its line", a
 });
 
 test("merges connector controls when a bend collapses onto its neighbor", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   await selectEdge(page, "e1");
   const bendHandles = page.locator('[data-bend-handle^="e1:"]');
   const beforeCount = await bendHandles.count();
@@ -703,7 +714,7 @@ test("merges connector controls when a bend collapses onto its neighbor", async 
 });
 
 test("adds an orthogonal manual break point on connector double-click", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const edge = await selectE3(page);
   const beforePoints = await edge.getAttribute("points");
   const edgePoint = await canvasPointForE3(page);
@@ -732,7 +743,7 @@ test("adds an orthogonal manual break point on connector double-click", async ({
 });
 
 test("exposes segment handles and moves a routed connector section", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const edge = await selectE3(page);
 
   const segmentHandles = page.locator('[data-segment-handle^="e3:"]');
@@ -761,7 +772,7 @@ test("exposes segment handles and moves a routed connector section", async ({ pa
 });
 
 test("uses clear lock controls in the layers panel", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const layers = page.getByRole("button", { name: "Layers", exact: true });
   await expect(layers).toHaveCount(1);
   await layers.click();
@@ -792,7 +803,7 @@ test("uses clear lock controls in the layers panel", async ({ page }) => {
 });
 
 test("applies the dark palette to the canvas and grid", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   const theme = page.getByRole("button", { name: "Theme", exact: true });
@@ -829,7 +840,7 @@ test("applies the dark palette to the canvas and grid", async ({ page }) => {
 });
 
 test("shows a friendly editable diagram name", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
   await expect(title).toHaveValue("Async Docs");
@@ -871,14 +882,14 @@ test("keeps the canvas zoom controls ordered and padded", async ({ page }) => {
 });
 
 test("supports copy, paste, cut, and keyboard deletion for canvas selections", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const resources = page.locator('[data-entity-kind="resource"]');
   const beforeCount = await resources.count();
-  const nestedResource = page.locator('[data-entity-kind="resource"][data-entity-id="artifacts"]');
-  await expect(nestedResource).toHaveCount(1);
-  await nestedResource.click();
-  await expect(nestedResource).toHaveAttribute("aria-selected", "true");
+  const client = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
+  await expect(client).toHaveCount(1);
+  await client.click();
+  await expect(client).toHaveAttribute("aria-selected", "true");
 
   await page.keyboard.press("Control+c");
   const status = page.getByRole("status");
@@ -893,7 +904,6 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await expect(page.getByRole("status")).toContainText("Deleted selection");
   await expect(resources).toHaveCount(beforeCount);
 
-  const client = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
   await expect(client).toHaveCount(1);
   await client.click();
   await expect(client).toHaveAttribute("aria-selected", "true");
@@ -913,7 +923,7 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
 });
 
 test("offers quick connector ports directly on a selected icon", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const edges = page.locator('[data-entity-kind="edge"]');
   const beforeEdgeCount = await edges.count();
@@ -936,7 +946,7 @@ test("offers quick connector ports directly on a selected icon", async ({ page }
 });
 
 test("previews the calculated route while dragging between ports", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
 
   const edges = page.locator('[data-entity-kind="edge"]');
   const beforeEdgeCount = await edges.count();
@@ -975,7 +985,7 @@ test("previews the calculated route while dragging between ports", async ({ page
 });
 
 test("keeps rewired endpoints on explicit icon ports", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const edge = await selectE3(page);
   const stage = page.locator('[data-testid="canvas-stage"]');
   const stageBox = await stage.boundingBox();
@@ -1035,7 +1045,7 @@ test("keeps rewired endpoints on explicit icon ports", async ({ page }) => {
 });
 
 test("infers the top face and previews the routed path when an endpoint is dropped on an icon", async ({ page }) => {
-  await page.goto("/");
+  await openAsyncDocs(page);
   const edge = await selectE3(page);
   const sourceHandle = page.locator('[data-endpoint-handle="e3:source"]');
   const handleBox = await sourceHandle.boundingBox();

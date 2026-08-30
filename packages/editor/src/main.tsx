@@ -237,7 +237,13 @@ type BulkCloseRequest = {
   tabCount: number;
   dirtyCount: number;
 } | null;
-type OperationState = { label: string; completed?: number; total?: number } | null;
+type OperationState = {
+  label: string;
+  completed?: number;
+  total?: number;
+  blocking?: boolean;
+  awaitSource?: string;
+} | null;
 type CatalogPlacement = {
   parent: string | undefined;
   at: Point;
@@ -610,7 +616,10 @@ function App() {
     // FileList is live and is cleared by the input after this handler returns.
     // Snapshot it before yielding so the browser can paint the progress state.
     const inputFiles = entries;
-    setOperation({ label: `Opening ${inputFiles.length} diagram${inputFiles.length === 1 ? "" : "s"}…` });
+    setOperation({
+      label: `Opening ${inputFiles.length} diagram${inputFiles.length === 1 ? "" : "s"}…`,
+      blocking: true,
+    });
     await waitForPaint();
     const opened: string[] = [];
     const rejected: string[] = [];
@@ -641,6 +650,7 @@ function App() {
             continue;
           }
           if (handle) fileHandlesRef.current.set(tabId, handle);
+          setOperation((current) => current ? { ...current, awaitSource: candidate } : current);
           opened.push(file.name);
         } catch {
           rejected.push(file.name);
@@ -656,7 +666,7 @@ function App() {
       }
       if (limitReached) setToast(tabLimitMessage);
     } finally {
-      setOperation(null);
+      if (!opened.length) setOperation(null);
     }
   };
 
@@ -786,7 +796,8 @@ function App() {
       return;
     }
     setOpeningExampleId(example.id);
-    setOperation({ label: `Opening ${example.title}…` });
+    setOperation({ label: `Opening ${example.title}…`, blocking: true, awaitSource: example.source });
+    let opened = false;
     await waitForPaint();
     try {
       if (!openTab(example.source, {
@@ -801,13 +812,25 @@ function App() {
       setHelpOpen(false);
       resetTransientState();
       setToast(`Opened ${example.title}`);
+      opened = true;
     } finally {
       setOpeningExampleId(null);
-      setOperation(null);
+      if (!opened) setOperation(null);
     }
   };
 
-  const compiled = useDiagramCompilation(source, snapToGrid);
+  const { compilation: compiled, pending: compilationPending } = useDiagramCompilation(source, snapToGrid);
+
+  useEffect(() => {
+    if (
+      operation?.blocking
+      && operation.awaitSource !== undefined
+      && operation.awaitSource === source
+      && !compilationPending
+    ) {
+      setOperation(null);
+    }
+  }, [compilationPending, operation, source]);
 
   useEffect(() => {
     if (compiled.ok) lastGoodRef.current = compiled;
@@ -2322,7 +2345,7 @@ function App() {
         </footer>
 
         {toast && <div key={`${toast}-${toastNonce}`} className="toast" role="status">{toast}</div>}
-        {operation && (
+        {operation && !operation.blocking && (
           <div className="operation-status" role="status" aria-live="polite">
             <span className="loading-spinner is-small" aria-hidden="true" />
             <span>{operation.label}</span>
@@ -2332,6 +2355,13 @@ function App() {
                 <span className="mono">{operation.completed}/{operation.total}</span>
               </>
             )}
+          </div>
+        )}
+        {operation?.blocking && (
+          <div className="workspace-loading operation-loading" role="status" aria-live="polite">
+            <span className="loading-spinner" aria-hidden="true" />
+            <strong>{operation.label}</strong>
+            <span>Preparing the canvas and diagram layout</span>
           </div>
         )}
         {!workspaceReady && (

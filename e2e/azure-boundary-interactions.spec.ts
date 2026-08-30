@@ -1,14 +1,19 @@
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
+
+const AZURE_PRIVATE_APP = join(
+  import.meta.dirname,
+  "..",
+  "examples/diagrams/azure-private-app-service.dgm",
+);
 
 test("moves an Azure boundary where a connector crosses its stroke", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Help", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
-  const examples = page.getByRole("dialog", { name: "Browse examples" });
-  const azure = examples.locator(".example-card").filter({ hasText: "Private Azure App Service" });
-  await azure.getByRole("button", { name: "Open", exact: true }).click();
+  await page.locator('input[type="file"]').setInputFiles(AZURE_PRIVATE_APP);
 
-  const boundary = page.locator('[data-entity-kind="group"][aria-label="Group Platform services"]');
+  const boundary = page.locator(
+    '[data-entity-kind="group"][aria-label="Group Write-through caching architecture"]',
+  );
   await expect(boundary).toHaveCount(1);
   const boundaryId = await boundary.getAttribute("data-entity-id");
   expect(boundaryId).toBeTruthy();
@@ -61,10 +66,12 @@ test("moves an Azure boundary where a connector crosses its stroke", async ({ pa
         }
       }
     }
-    throw new Error("Expected a connector to cross the Platform services boundary");
+    throw new Error("Expected a connector to cross the Azure architecture boundary");
   });
 
-  const edge = azureCanvas.locator(`[data-entity-kind="edge"][data-entity-id="${crossing.edgeId}"]`);
+  const edge = azureCanvas.locator(
+    `[data-entity-kind="edge"][data-edge-id="${crossing.edgeId}"]`,
+  );
   await edge.dispatchEvent("pointermove", {
     bubbles: true,
     pointerId: 7,

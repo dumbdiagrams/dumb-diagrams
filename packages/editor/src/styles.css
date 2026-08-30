@@ -4962,6 +4962,11 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
+.workspace-loading.operation-loading {
+  background: color-mix(in srgb, var(--canvas-bg) 96%, transparent);
+  backdrop-filter: blur(3px);
+}
+
 @keyframes loading-spinner-turn {
   to { transform: rotate(360deg); }
 }

@@ -1,4 +1,7 @@
+import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+
+const ROOT = join(import.meta.dirname, "..");
 
 const PROVIDER_SAMPLES = [
   { provider: "aws", type: "aws.elastic-container-registry", search: "Elastic Container Registry" },
@@ -7,9 +10,17 @@ const PROVIDER_SAMPLES = [
   { provider: "cloud-agnostic", type: "cloud-agnostic.database", search: "Database" },
 ] as const;
 
+const PROVIDER_GROUP_SAMPLES = [
+  { grammar: "aws", type: "aws.account", id: "aws_group", label: "AWS account" },
+  { grammar: "azure", type: "azure.subscription", id: "azure_group", label: "Azure subscription" },
+  { grammar: "gcp", type: "gcp.project", id: "gcp_group", label: "GCP project" },
+  { grammar: "cloud-agnostic", type: "cloud-agnostic.boundary", id: "neutral_group", label: "Boundary" },
+] as const;
+
 async function openResources(page: Page, parentGroupId?: string) {
   await page.goto("/");
   if (parentGroupId) {
+    await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
     const parentGroup = page.locator(
       `[data-entity-kind="group"][data-entity-id="${parentGroupId}"]`,
     );
@@ -61,7 +72,10 @@ test("progressively renders real catalog icons in the all-provider view", async 
   const cardCount = await cards.count();
   expect(cardCount).toBe(80);
   await expect(page.getByText(/Showing 80 of \d+/)).toBeVisible();
-  await page.getByRole("button", { name: "Load more", exact: true }).click();
+  await page.locator(".asset-grid").evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
   await expect(cards).toHaveCount(160);
 
   await expect
@@ -198,7 +212,7 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   const beforeCount = await groups.count();
 
   await page.getByRole("button", { name: "Boundaries", exact: true }).click();
-  await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
+  await page.getByRole("tab", { name: "Cloud", exact: true }).click();
 
   const cloud = page.locator('[data-catalog-type="cloud-agnostic.cloud"]');
   await expect(cloud).toHaveCount(1);
@@ -242,7 +256,7 @@ test("creates and customizes an iconless boundary and hides icons on semantic bo
   await expect(renderedBoundary).toHaveAttribute("fill", "transparent");
 
   await page.getByRole("button", { name: "Boundaries", exact: true }).click();
-  await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
+  await page.getByRole("tab", { name: "Cloud", exact: true }).click();
   await page.locator('[data-catalog-type="cloud-agnostic.cluster"] .palette-item').click();
 
   const inspector = page.getByRole("dialog", { name: "Cluster", exact: true });
@@ -256,10 +270,43 @@ test("creates and customizes an iconless boundary and hides icons on semantic bo
   await expect(inspector.getByRole("button", { name: "Hide icon", exact: true })).toHaveClass(/is-active/);
 });
 
+test("changes and restores authored colors for every provider group", async ({ page }) => {
+  for (const sample of PROVIDER_GROUP_SAMPLES) {
+    await page.goto("/");
+    const source = `diagram ${sample.id} {\n  grammar ${sample.grammar}\n  ${sample.type} ${sample.id} "${sample.label}" {}\n}\n`;
+    await page.locator('input[type="file"]').setInputFiles({
+      name: `${sample.id}.dgm`,
+      mimeType: "text/plain",
+      buffer: Buffer.from(source),
+    });
+
+    const groupHit = page.locator(`[data-entity-kind="group"][data-entity-id="${sample.id}"]`);
+    await expect(groupHit).toHaveCount(1);
+    await groupHit.click({ position: { x: 20, y: 20 } });
+    const inspector = page.getByRole("dialog", { name: sample.label, exact: true });
+    const purple = inspector.locator(".boundary-color-options").getByRole("radio", { name: "Purple" });
+    await purple.click();
+    await expect(purple).toHaveAttribute("aria-checked", "true");
+    const renderedBoundary = page.locator(`#group-${sample.id} rect`).first();
+    await expect(renderedBoundary).toHaveAttribute("stroke", "#7C3AED");
+    const selectionOutline = page.locator(
+      `[data-drag-overlay-kind="group"][data-drag-overlay-id="${sample.id}"] .selection-group`,
+    );
+    await expect(selectionOutline).toHaveCount(1);
+    expect(Number(await selectionOutline.getAttribute("x"))).toBeLessThan(
+      Number(await renderedBoundary.getAttribute("x")),
+    );
+
+    await inspector.locator(".boundary-color-options").getByRole("radio", { name: "Auto" }).click();
+    await expect(purple).toHaveAttribute("aria-checked", "false");
+    await expect(page.locator(`#group-${sample.id} rect`).first()).not.toHaveAttribute("stroke", "#7C3AED");
+  }
+});
+
 test("drags a catalog group onto the canvas", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Boundaries", exact: true }).click();
-  await page.getByRole("tab", { name: "Cloud-agnostic", exact: true }).click();
+  await page.getByRole("tab", { name: "Cloud", exact: true }).click();
 
   const card = page.locator('[data-catalog-type="cloud-agnostic.cluster"]');
   await expect(card).toHaveCount(1);

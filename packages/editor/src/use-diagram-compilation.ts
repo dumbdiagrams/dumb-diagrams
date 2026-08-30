@@ -35,7 +35,7 @@ function prepareForDisplay(compilation: DiagramCompilation): DiagramCompilation 
 export function useDiagramCompilation(
   source: string,
   snapToGrid: boolean,
-): DiagramCompilation {
+): { compilation: DiagramCompilation; pending: boolean } {
   const [compilation, setCompilation] = useState<DiagramCompilation>(() =>
     compileDiagramSource(source, snapToGrid)
   );
@@ -112,5 +112,9 @@ export function useDiagramCompilation(
     return () => window.clearTimeout(timer);
   }, [snapToGrid, source]);
 
-  return getCachedDiagramCompilation(source, snapToGrid) ?? compilation;
+  const cached = getCachedDiagramCompilation(source, snapToGrid);
+  return {
+    compilation: cached ?? compilation,
+    pending: !cached,
+  };
 }
