@@ -902,7 +902,16 @@ function badgeCollisionScore(
   obstacles: Obstacle[],
 ): number {
   let score = Math.abs(candidate.t - preferred.t) * 1_000;
-  if (candidate.side !== preferred.side) score += 20;
+  // Prefer moving along the owning route over flipping sides. A nearby
+  // collision-free candidate on the preferred side should win; the very large
+  // collision penalties below still force a side flip when that side is
+  // blocked everywhere.
+  if (candidate.side !== preferred.side) {
+    // A side flip at the preferred anchor is still the best escape hatch for
+    // a blocked run. Once moving along the route is involved, however, keep
+    // the preferred side stable whenever a clear pocket exists there.
+    score += Math.abs(candidate.t - preferred.t) < 1e-9 ? 20 : 2_000;
+  }
 
   for (const other of otherEdges) {
     const distance = distanceToPolyline(candidate.point, other.points);
@@ -2614,9 +2623,11 @@ function labelCollisionScore(
   for (const edge of otherEdges) {
     for (let index = 0; index < edge.points.length - 1; index++) {
       if (segmentHits(edge.points[index]!, edge.points[index + 1]!, inflatedLabel)) {
-        // Crossing copy is a soft placement cost; staying close to the owning
-        // connector is usually easier to understand than escaping its lane.
-        score += 2_000;
+        // Crossing copy is a soft placement cost. Keep it below the cost of
+        // pushing a label another clearance lane away: a nearby opposite-side
+        // placement (or, as a last resort, a crossing) still reads as attached
+        // to its owning connector instead of appearing to label another one.
+        score += 600;
         break;
       }
     }

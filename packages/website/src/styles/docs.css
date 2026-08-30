@@ -51,6 +51,9 @@
   .prose th, .prose td { text-align: left; border-bottom: 1px solid var(--line); padding: 11px 12px; vertical-align: top; }
   .prose th { color: var(--ink); background: var(--brand-navy-soft); font-weight: 650; }
   .prose img { width: 100%; border: 1px solid var(--line); background: #fffefa; }
+  .prose figure { margin: 0 0 26px; }
+  .prose figure img { display: block; }
+  .prose figcaption { margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.65; }
   .docs-toc > span { font-size: 8px; letter-spacing: .06em; }
   .docs-toc nav { margin: 15px 0 24px; display: grid; gap: 12px; border-left: 1px solid var(--line); padding-left: 14px; }
   .docs-toc a { font-size: 10px; color: var(--muted); line-height: 1.7; }

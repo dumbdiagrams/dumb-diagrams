@@ -170,6 +170,57 @@ describe("routeEdgePreview", () => {
     )).toBe(false);
   });
 
+  it("keeps an Azure queue-trigger badge above its route and its label below", () => {
+    const doc = parseDgm(`diagram azure-queue-trigger {
+  grammar azure
+  flow lr
+
+  azure.subscription subscription "Azure subscription" {
+    cloud-agnostic.boundary ingress "API ingress" {
+      azure.api-management-services api "API Management"
+      azure.function-apps ingest "Ingest function"
+    }
+    cloud-agnostic.boundary storage "Document storage" {
+      azure.storage-accounts blob "Document blob storage"
+    }
+    cloud-agnostic.boundary messaging "Messaging" {
+      azure.azure-service-bus queue "Document queue"
+    }
+    cloud-agnostic.boundary processing "Document processing" {
+      azure.function-apps processor "Process function"
+      azure.form-recognizers recognizer "Document Intelligence"
+    }
+    cloud-agnostic.boundary results "Results storage" {
+      azure.azure-cosmos-db metadata "Document metadata"
+    }
+    azure.application-insights insights "Application Insights"
+  }
+
+  api -> ingest { id api_to_ingest step 2 }
+  ingest -> blob { id ingest_to_blob step 3 label "store document" }
+  ingest -> queue { id ingest_to_queue step 4 label "enqueue job" }
+  queue -> processor { id queue_trigger step 5 style dashed label "queue trigger" }
+  processor -> blob { id read_blob style dashed label "read document" }
+  processor -> recognizer { id analyze step 6 label "analyze" }
+  processor -> metadata { id save step 7 label "save results" }
+  ingest -> insights { id ingest_telemetry style dashed label "telemetry" }
+  processor -> insights { id processor_telemetry style dashed label "telemetry" }
+}`);
+    const routes = routeEdges(doc, layoutDocument(doc));
+    const edge = routes.find(
+      (candidate) => candidate.id === "queue_trigger",
+    )!;
+    const readBlob = routes.find((candidate) => candidate.id === "read_blob")!;
+
+    expect(edge.badgeSide).toBe("top");
+    expect(edge.labelSide).toBe("bottom");
+    expect(edge.badge).toBeDefined();
+    expect(edge.labelRect).toBeDefined();
+    expect(edge.badge!.y).toBeLessThan(edge.labelRect!.y);
+    expect(readBlob.labelPoint).toBeDefined();
+    expect(distanceToPath(readBlob.labelPoint!, readBlob.points)).toBeLessThanOrEqual(20);
+  });
+
   it("keeps order-flow labels visibly attached to their connectors", () => {
     const doc = parseDgm(readFileSync(
       new URL("../../../../examples/curated/event-driven-order-fulfillment/diagram.dgm", import.meta.url),

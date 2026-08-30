@@ -1,4 +1,8 @@
+import { join } from "node:path";
+
 import { expect, test, type Page } from "@playwright/test";
+
+const ROOT = join(import.meta.dirname, "..");
 
 async function canvasPointForE3(page: Page) {
   const points = await canvasPointsForE3(page);
@@ -108,6 +112,41 @@ test("highlights the connector and badge together on badge hover", async ({ page
 
   await expect(page.locator('[data-hover-kind="edge"][data-hover-id="e1"]')).toHaveCount(1);
   await expect(page.locator('[data-hover-kind="edge-badge"][data-hover-id="e1"]')).toHaveCount(1);
+});
+
+test("keeps label dragging attached to the active diagram when another SVG repeats the edge id", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
+
+  await selectEdge(page, "e3");
+  const labelInput = page.locator("#edge-panel-label");
+  await labelInput.fill("enqueue work");
+  await labelInput.blur();
+
+  const renderedLabel = page.locator('.canvas-artboard .diagram-svg [data-edge-label="e3"]');
+  const labelHandle = page.locator('[data-edge-label-handle="e3"]');
+  await expect(renderedLabel).toHaveText("enqueue work");
+  await expect(labelHandle).toHaveCount(1);
+  const beforeX = Number(await renderedLabel.getAttribute("x"));
+
+  await page.evaluate(() => {
+    const decoy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    decoy.setAttribute("data-label-drag-decoy", "true");
+    decoy.innerHTML = '<g id="edge-e3"><text class="edge-label" data-edge-label="e3" x="-999" y="-999">decoy</text></g>';
+    document.body.prepend(decoy);
+  });
+
+  const handleBounds = await labelHandle.boundingBox();
+  expect(handleBounds).not.toBeNull();
+  const centerX = handleBounds!.x + handleBounds!.width / 2;
+  const centerY = handleBounds!.y + handleBounds!.height / 2;
+  await page.mouse.move(centerX, centerY);
+  await page.mouse.down();
+  await page.mouse.move(centerX + 48, centerY + 20, { steps: 6 });
+  await page.mouse.up();
+
+  await expect.poll(async () => Number(await renderedLabel.getAttribute("x"))).not.toBe(beforeX);
+  await expect(page.locator('[data-label-drag-decoy] text')).toHaveAttribute("x", "-999");
 });
 
 test("shows only the resolved connector hover when wide hit strokes overlap", async ({ page }) => {

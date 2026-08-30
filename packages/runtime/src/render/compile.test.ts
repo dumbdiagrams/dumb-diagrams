@@ -21,6 +21,18 @@ import {
 import { checkInvariants } from "./invariants.js";
 
 describe("async-docs fixture", () => {
+  it("renders Azure subscriptions with an amber default while honoring authored colors", () => {
+    const doc = parseDgm(`diagram azure-subscription {\n  grammar azure\n  azure.subscription subscription "Azure Subscription" {}\n}`);
+    const defaultSvg = renderSvg(doc, layoutDocument(doc));
+    expect(defaultSvg).toContain('stroke="#f7982c"');
+    expect(defaultSvg).toContain('fill="rgba(247,152,44,0.04)"');
+
+    doc.groups[0]!.color = "purple";
+    const authoredSvg = renderSvg(doc, layoutDocument(doc));
+    expect(authoredSvg).toContain('stroke="#7C3AED"');
+    expect(authoredSvg).toContain('fill="rgba(124,58,237,0.045)"');
+  });
+
   it("compiles without validation errors", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);

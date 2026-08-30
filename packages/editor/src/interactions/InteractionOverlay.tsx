@@ -623,9 +623,14 @@ function InteractionOverlayComponent({
     let lastSide = initialSide;
     let didDrag = false;
     const dragStart = { x: event.clientX, y: event.clientY };
-    const labelText = document
-      .getElementById(`edge-${edgeId}`)
-      ?.querySelector<SVGTextElement>("text.edge-label");
+    // Diagram previews (for example the Examples modal) render complete SVGs
+    // and can therefore repeat an edge's DOM id. Keep the imperative drag
+    // preview scoped to the artboard that owns this interaction overlay so a
+    // duplicate edge in another SVG cannot steal the label update.
+    const artboard = handle.closest(".canvas-artboard");
+    const labelText = Array.from(
+      artboard?.querySelectorAll<SVGTextElement>(".diagram-svg text.edge-label") ?? [],
+    ).find((candidate) => candidate.getAttribute("data-edge-label") === edgeId);
     let selectionOutlines: SVGRectElement[] | undefined;
 
     const applyPlacement = (placement: { point: Point; rect: typeof initialRect } | undefined) => {

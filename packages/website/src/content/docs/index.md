@@ -26,6 +26,7 @@ editor: use **Open** to select any local file.
 | --- | --- |
 | Prepare a repository and open Studio | [Quick start](./quick-start/) |
 | Ask an agent for a first draft | [Work with an agent](./agent-workflow/) |
+| Follow a complete AWS example | [Cross-account data transfer walkthrough](./aws-cross-account-data-transfer/) |
 | Understand the source language | [The .dgm format](./source-format/) |
 | Move things around and save your work | [Using Studio](./studio/) |
 | Put a diagram in a document or review | [Export and share](./exports/) |

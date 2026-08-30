@@ -94,8 +94,13 @@ function renderGroup(
   group: LayoutResult["groups"][number],
   resolveHref: (p: string) => string,
 ): string {
-  const style = GROUP_STYLES[group.kind];
   const model = doc.groups.find((candidate) => candidate.id === group.id);
+  const baseStyle = GROUP_STYLES[group.kind];
+  // Azure subscriptions use the provider's amber boundary treatment. Keep
+  // the generic account style for all other providers/types.
+  const style = doc.grammar === "azure" && model?.type === "azure.subscription"
+    ? { ...baseStyle, stroke: "#f7982c", fill: "rgba(247,152,44,0.04)" }
+    : baseStyle;
   const stroke = model?.color ? EDGE_COLOR_VALUES[model.color] : style.stroke;
   const fill = model?.fill === "none"
     ? "transparent"
