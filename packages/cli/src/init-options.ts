@@ -1,5 +1,3 @@
-import { basename } from "node:path";
-
 export interface InitArgs {
   positionals: string[];
   flags: Map<string, string | true>;
@@ -9,7 +7,6 @@ export interface InitOptionsContext {
   interactive: boolean;
   askProjectName?: (defaultName: string) => Promise<string>;
   now?: Date;
-  currentName?: string;
 }
 
 export interface ResolvedInitOptions {
@@ -25,7 +22,7 @@ export async function resolveInitOptions(
     throw new Error("init does not accept file paths, positionals, or options.");
   }
 
-  const defaultName = defaultProjectDirectory(context.now ?? new Date(), context.currentName);
+  const defaultName = defaultProjectDirectory(context.now ?? new Date());
   const answer = context.interactive ? await context.askProjectName?.(defaultName) : undefined;
   const projectName = cleanDisplayText(answer?.trim() || defaultName, "project name", 120);
   return {
@@ -34,10 +31,7 @@ export async function resolveInitOptions(
   };
 }
 
-export function defaultProjectDirectory(
-  now = new Date(),
-  currentName = "dumb-diagrams",
-): string {
+export function defaultProjectDirectory(now = new Date()): string {
   const pad = (value: number): string => String(value).padStart(2, "0");
   const timestamp = [
     now.getFullYear(),
@@ -47,14 +41,7 @@ export function defaultProjectDirectory(
     pad(now.getMinutes()),
     pad(now.getSeconds()),
   ].join("-");
-  return `${slugify(currentName, "current directory")}-${timestamp}`;
-}
-
-export function displayNameForDirectory(path: string): string {
-  const value = basename(path) || "repository";
-  return value
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+  return `dumb-diagrams-${timestamp}`;
 }
 
 function cleanDisplayText(value: string, label: string, maxLength: number): string {

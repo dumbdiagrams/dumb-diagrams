@@ -59,7 +59,7 @@ BASE_PATH=/diagrams/ pnpm --filter @dumb-diagrams/website test
 
 Use the repository root as the build root, **not** `packages/website`: asset preparation needs the other workspace packages. Set the build command to `pnpm build:website` and the output directory to `packages/website/dist`. This is static output; no Cloudflare adapter or server function is needed.
 
-In Pages build variables, set `NODE_VERSION=24.15.0`, `PNPM_VERSION=11.23.0` (matching the repository's pinned toolchain), and `SITE_URL` to the real HTTPS origin. Leave `BASE_PATH` unset for a root-domain deployment. Cloudflare supports these [build-tool version overrides](https://developers.cloudflare.com/pages/configuration/build-image/). Add the analytics/privacy variables below to **production only**; omit the GA ID on preview deployments so test traffic does not enter your production property. These instructions do not create or deploy a Pages project.
+In Pages build variables, set `NODE_VERSION=24.18.0`, `PNPM_VERSION=11.23.0` (matching the repository's pinned toolchain), and `SITE_URL` to the real HTTPS origin. Leave `BASE_PATH` unset for a root-domain deployment. Cloudflare supports these [build-tool version overrides](https://developers.cloudflare.com/pages/configuration/build-image/). Add the analytics/privacy variables below to **production only**; omit the GA ID on preview deployments so test traffic does not enter your production property. These instructions do not create or deploy a Pages project.
 
 ## Google Analytics 4 through Partytown
 

@@ -20,8 +20,9 @@ dumbdiagrams studio
 
 Creates a new project folder inside the current directory for coding-agent use.
 The prompt names the project and the folder. Leave it blank, or run without a
-terminal, to use a timestamped folder based on the current directory. The
-command prints the exact folder path and writes `AGENTS.md`, `CLAUDE.md`,
+terminal, to use a timestamped `dumb-diagrams-YYYY-MM-DD-HH-MM-SS` folder,
+independent of the current directory. The command prints the exact folder path
+and writes `AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`, `.dumbdiagrams/` guidance, and `diagrams/README.md` there. The
 generated workflow stores each new diagram with a reviewable Markdown
 architecture brief by default.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { defaultProjectDirectory, displayNameForDirectory, resolveInitOptions } from "./init-options.js";
+import { defaultProjectDirectory, resolveInitOptions } from "./init-options.js";
 
 const args = (positionals: string[] = [], flags: Record<string, string | true> = {}) => ({
   positionals,
@@ -14,11 +14,10 @@ describe("init options", () => {
     const result = await resolveInitOptions(args(), {
       interactive: true,
       askProjectName,
-      currentName: "payments-platform",
       now,
     });
 
-    expect(askProjectName).toHaveBeenCalledWith("payments-platform-2026-08-24-19-45-12");
+    expect(askProjectName).toHaveBeenCalledWith("dumb-diagrams-2026-08-24-19-45-12");
     expect(result).toEqual({
       projectDirectory: "payments-platform",
       projectName: "Payments Platform",
@@ -29,13 +28,12 @@ describe("init options", () => {
     const now = new Date(2026, 7, 24, 19, 45, 12);
     const result = await resolveInitOptions(args(), {
       interactive: false,
-      currentName: "payments-platform",
       now,
     });
 
     expect(result).toEqual({
-      projectDirectory: "payments-platform-2026-08-24-19-45-12",
-      projectName: "payments-platform-2026-08-24-19-45-12",
+      projectDirectory: "dumb-diagrams-2026-08-24-19-45-12",
+      projectName: "dumb-diagrams-2026-08-24-19-45-12",
     });
   });
 
@@ -45,28 +43,23 @@ describe("init options", () => {
     const result = await resolveInitOptions(args(), {
       interactive: true,
       askProjectName,
-      currentName: "existing-repository",
       now,
     });
 
-    expect(askProjectName).toHaveBeenCalledWith("existing-repository-2026-08-24-19-45-12");
+    expect(askProjectName).toHaveBeenCalledWith("dumb-diagrams-2026-08-24-19-45-12");
     expect(result).toEqual({
-      projectDirectory: "existing-repository-2026-08-24-19-45-12",
-      projectName: "existing-repository-2026-08-24-19-45-12",
+      projectDirectory: "dumb-diagrams-2026-08-24-19-45-12",
+      projectName: "dumb-diagrams-2026-08-24-19-45-12",
     });
   });
 
-  it("builds the fallback from the current directory and timestamp", () => {
-    expect(defaultProjectDirectory(new Date(2026, 7, 24, 19, 45, 12), "My Repository"))
-      .toBe("my-repository-2026-08-24-19-45-12");
+  it("builds the fallback from the product name and timestamp", () => {
+    expect(defaultProjectDirectory(new Date(2026, 7, 24, 19, 45, 12)))
+      .toBe("dumb-diagrams-2026-08-24-19-45-12");
   });
 
   it("rejects all positional arguments and flags", async () => {
     await expect(resolveInitOptions(args(["nested"]), { interactive: false })).rejects.toThrow(/does not accept/);
     await expect(resolveInitOptions(args([], { name: "Repository" }), { interactive: false })).rejects.toThrow(/does not accept/);
-  });
-
-  it("formats directory names for the prompt", () => {
-    expect(displayNameForDirectory("my-repository")).toBe("My Repository");
   });
 });

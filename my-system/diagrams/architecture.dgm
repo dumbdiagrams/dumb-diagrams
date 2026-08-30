@@ -1,9 +1,0 @@
-diagram architecture {
-  grammar aws
-  flow lr
-  title "Architecture"
-
-}
-
-view default {
-}

@@ -2,6 +2,7 @@ import type { WriteStream } from "node:tty";
 
 interface CliUiOptions {
   color?: boolean;
+  truecolor?: boolean;
   columns?: number;
 }
 
@@ -42,9 +43,10 @@ const PALETTE = {
 
 export function createCliUi(options: CliUiOptions = {}) {
   const color = options.color ?? supportsColor(process.stdout);
+  const truecolor = options.truecolor ?? (options.color === true || supportsTruecolor(process.stdout));
   const columns = options.columns ?? process.stdout.columns ?? (Number(process.env.COLUMNS) || 80);
   const paint = (value: string, rgb: readonly [number, number, number]) =>
-    color ? `\u001B[38;2;${rgb[0]};${rgb[1]};${rgb[2]}m${value}${RESET}` : value;
+    color ? `${foreground(rgb, truecolor)}${value}${RESET}` : value;
   const bold = (value: string) => color ? `${BOLD}${value}${RESET}` : value;
   const dim = (value: string) => color ? `${DIM}${value}${RESET}` : value;
 
@@ -52,7 +54,7 @@ export function createCliUi(options: CliUiOptions = {}) {
     banner(): string {
       const lines = columns >= 72 ? WIDE_LOGO : COMPACT_LOGO;
       return lines
-        .map((line) => color && line ? gradient(line, PALETTE.amber, PALETTE.navy) : line)
+        .map((line) => color && line ? gradient(line, PALETTE.amber, PALETTE.navy, truecolor) : line)
         .join("\n");
     },
     brand(): string {
@@ -90,13 +92,31 @@ function supportsColor(stream: WriteStream): boolean {
   if ("NO_COLOR" in process.env || process.env.TERM === "dumb") return false;
   if (process.env.FORCE_COLOR === "0") return false;
   if (process.env.FORCE_COLOR) return true;
-  return Boolean(stream.isTTY);
+  if (!stream.isTTY) return false;
+  if (process.platform !== "win32") return true;
+  // Legacy Windows consoles may not process ANSI sequences. These variables
+  // identify Windows hosts with virtual-terminal support enabled.
+  return Boolean(
+    process.env.WT_SESSION
+      || process.env.TERM_PROGRAM === "vscode"
+      || process.env.ConEmuANSI === "ON"
+      || process.env.ANSICON
+      || process.env.TERM,
+  );
+}
+
+function supportsTruecolor(stream: WriteStream): boolean {
+  if (!supportsColor(stream)) return false;
+  if (process.env.FORCE_COLOR === "3") return true;
+  const terminalColor = `${process.env.COLORTERM ?? ""} ${process.env.TERM ?? ""}`.toLowerCase();
+  return /truecolor|24bit|direct/.test(terminalColor);
 }
 
 function gradient(
   value: string,
   from: readonly [number, number, number],
   to: readonly [number, number, number],
+  truecolor: boolean,
 ): string {
   const visible = [...value];
   const denominator = Math.max(1, visible.length - 1);
@@ -106,6 +126,23 @@ function gradient(
     const r = Math.round(from[0] + (to[0] - from[0]) * t);
     const g = Math.round(from[1] + (to[1] - from[1]) * t);
     const b = Math.round(from[2] + (to[2] - from[2]) * t);
-    return `\u001B[38;2;${r};${g};${b}m${character}`;
+    return `${foreground([r, g, b], truecolor)}${character}`;
   }).join("") + RESET;
+}
+
+function foreground(rgb: readonly [number, number, number], truecolor: boolean): string {
+  return truecolor
+    ? `\u001B[38;2;${rgb[0]};${rgb[1]};${rgb[2]}m`
+    : `\u001B[38;5;${ansi256(rgb)}m`;
+}
+
+function ansi256([red, green, blue]: readonly [number, number, number]): number {
+  const levels = [0, 95, 135, 175, 215, 255];
+  const nearest = (value: number) => levels.reduce((best, level, index) =>
+    Math.abs(level - value) < Math.abs(levels[best]! - value) ? index : best, 0);
+  // The nearest RGB cube swatch for the brand navy is [0, 95, 95], which
+  // reads cyan in terminals without truecolor. Preserve the blue hue by
+  // nudging blue-dominant colors toward the next blue cube level.
+  const blueAdjusted = blue > green ? Math.min(255, blue + blue - green) : blue;
+  return 16 + nearest(red) * 36 + nearest(green) * 6 + nearest(blueAdjusted);
 }

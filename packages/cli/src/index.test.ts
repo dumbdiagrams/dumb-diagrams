@@ -34,7 +34,7 @@ describe("runCli", () => {
       expect(await runCli(["init"])).toBe(0);
       const projectEntries = readdirSync(workRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory());
       expect(projectEntries).toHaveLength(1);
-      expect(projectEntries[0]!.name).toMatch(/-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/);
+      expect(projectEntries[0]!.name).toMatch(/^dumb-diagrams-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/);
       const projectRoot = resolve(process.cwd(), projectEntries[0]!.name);
       const output = log.mock.calls.flat().join("\n");
       expect(output).toContain(`name     ${projectEntries[0]!.name}`);

@@ -10,7 +10,7 @@ import { listAssets } from "@dumb-diagrams/runtime/catalog";
 
 import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
-import { displayNameForDirectory, resolveInitOptions } from "./init-options.js";
+import { resolveInitOptions } from "./init-options.js";
 import { browserLaunchCommand } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
@@ -128,7 +128,6 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     options = await resolveInitOptions(args, {
       interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
       askProjectName: promptProjectName,
-      currentName: displayNameForDirectory(process.cwd()),
     });
   } catch (error) {
     console.error(ui.error(error instanceof Error ? error.message : "Invalid init options."));

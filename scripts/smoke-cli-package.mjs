@@ -112,7 +112,7 @@ try {
     throw new Error("packed dumbdiagrams init failed");
   }
   const generatedProjects = readdirSync(projectDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(entry.name));
+    .filter((entry) => entry.isDirectory() && /^dumb-diagrams-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(entry.name));
   if (generatedProjects.length !== 1) {
     throw new Error(`init should create one timestamped project folder, found ${generatedProjects.length}`);
   }

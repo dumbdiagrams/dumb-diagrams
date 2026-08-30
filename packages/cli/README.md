@@ -36,9 +36,9 @@ dumbdiagrams studio
 
 `init` creates a new project folder inside the current directory. It asks for a
 project name and uses that name for the folder. Leave the prompt blank, or run
-without a terminal, to get a timestamped folder based on the current directory,
-such as `my-projects-2026-08-30-14-32-10`. The command prints the exact folder
-path when it finishes. It writes the agent entrypoints, `.dumbdiagrams/`
+without a terminal, to get a timestamped folder named
+`dumb-diagrams-2026-08-30-14-32-10`, independent of the current directory. The
+command prints the exact folder path when it finishes. It writes the agent entrypoints, `.dumbdiagrams/`
 guidance, and a documented `diagrams/` workspace there. New agent-authored
 diagrams default to `diagrams/<name>/diagram.dgm` with a persisted
 `diagrams/<name>/architecture-brief.md`. `studio` starts the generic local

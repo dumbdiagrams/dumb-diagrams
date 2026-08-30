@@ -23,6 +23,14 @@ describe("CLI presentation", () => {
     expect(ui.brand()).toContain("\u001B[38;2;240;83;30m");
   });
 
+  it("falls back to 256-color escapes for terminals without truecolor", () => {
+    const ui = createCliUi({ color: true, truecolor: false, columns: 100 });
+    expect(ui.banner()).toContain("\u001B[38;5;");
+    expect(ui.banner()).not.toContain("\u001B[38;2;");
+    expect(ui.banner()).toContain("\u001B[38;5;24m");
+    expect(ui.brand()).toContain("\u001B[38;5;");
+  });
+
   it("uses a high-contrast light orange for commands", () => {
     expect(createCliUi({ color: true }).command("dumbdiagrams studio"))
       .toBe("\u001B[38;2;247;152;44mdumbdiagrams studio\u001B[0m");

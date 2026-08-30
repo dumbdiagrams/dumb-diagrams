@@ -95,6 +95,8 @@ Requirements:
 From the repository root:
 
 ```bash
+fnm use  # or: nvm use
+corepack enable  # once for this Node installation
 pnpm install --frozen-lockfile
 pnpm dev
 ```
@@ -166,7 +168,7 @@ node packages/cli/dist/index.js -h
 ```bash
 set -e
 cd "$(git rev-parse --show-toplevel)"
-# If you use nvm, run `nvm use` here before continuing.
+# If you use nvm or fnm, run the matching `nvm use` or `fnm use` here before continuing.
 pnpm install --frozen-lockfile
 pnpm build
 pnpm smoke:package
@@ -197,7 +199,7 @@ The public CLI has two main commands:
 
 | Command | Purpose |
 | --- | --- |
-| `dumbdiagrams init` | Create a named project folder for coding agents. The interactive prompt asks for its project name, uses a timestamped folder when blank, and writes agent entrypoints, `.dumbdiagrams/` guidance, and the documented `diagrams/` bundle convention. |
+| `dumbdiagrams init` | Create a named project folder for coding agents. The interactive prompt asks for its project name, uses a `dumb-diagrams-YYYY-MM-DD-HH-MM-SS` folder when blank, and writes agent entrypoints, `.dumbdiagrams/` guidance, and the documented `diagrams/` bundle convention. |
 | `dumbdiagrams studio` | Start the generic local Studio. It is independent of the launch directory; use **Open** to select any `.dgm` file on disk. |
 
 `dgm` invokes the same entrypoint as a convenience shorthand. There are no

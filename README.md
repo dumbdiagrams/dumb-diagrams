@@ -111,7 +111,8 @@ dumbdiagrams studio
 
 `init` creates a new project folder inside the current directory. It asks for a
 project name and uses that name for the folder. Leave the prompt blank, or run
-without a terminal, to get a timestamped folder based on the current directory.
+without a terminal, to get a timestamped `dumb-diagrams-YYYY-MM-DD-HH-MM-SS`
+folder. The name is independent of the directory where you run the command.
 The command prints the exact folder path when it finishes, then writes the
 `.dumbdiagrams/` agent guidance plus `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and
 a documented `diagrams/` workspace there. New agent-authored diagrams default
@@ -203,6 +204,12 @@ dgm studio
 This repository uses the pinned pnpm workspace. Use `pnpm` for workspace
 dependencies and `npm` when installing the published CLI.
 
+The root `package.json` pins pnpm to `11.23.0`. Node's Corepack provides the
+matching pnpm launcher, so after `fnm use` (or `nvm use`) run `corepack enable`
+once for that Node installation. Then `pnpm --version` and the commands below
+will use the pinned version. If another global pnpm still takes precedence, use
+`corepack pnpm <command>` directly; do not bypass the version check.
+
 ### Test the CLI locally (before publishing)
 
 Use this flow when CLI changes need to be tested through the same global
@@ -215,7 +222,8 @@ before removing build outputs.
 ```bash
 set -e
 cd "$(git rev-parse --show-toplevel)"
-# If you use nvm, run `nvm use` here before continuing.
+# If you use nvm or fnm, run the matching `nvm use` or `fnm use` here before continuing.
+corepack enable
 node --version
 pnpm --version
 pnpm install --frozen-lockfile
@@ -225,6 +233,7 @@ ARTIFACT="$PWD/.artifacts/packages/create-dumb-diagrams-0.1.0.tgz"
 npm install -g "$ARTIFACT"
 dumbdiagrams --version
 dgm --version
+dumbdiagrams init
 ```
 
 Confirm the version output is Node 24+ and pnpm 11.23.0 before continuing.
