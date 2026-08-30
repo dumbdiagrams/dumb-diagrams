@@ -1,0 +1,24 @@
+diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  title "Simple serverless web application"
+
+  generic.client web_client "Web client"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service static_assets "Static web assets"
+    }
+
+    aws.api-gateway gateway
+    aws.aws-lambda handler "Request handler"
+    aws.dynamodb app_data "Application data"
+  }
+
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> static_assets { id cdn_to_assets label "static content" }
+  cdn -> gateway { id cdn_to_api step 2 }
+  gateway -> handler { id api_to_handler step 3 }
+  handler -> app_data { id handler_to_data step 4 }
+}

@@ -126,6 +126,7 @@ import {
 } from "./state/export-actions";
 import {
   isTabDirty,
+  isDisposableTab,
   isProtectedDefaultTab,
   MAX_WORKSPACE_TABS,
   normalizeWorkspacePreview,
@@ -537,7 +538,21 @@ function App() {
           applyStudioEvent(JSON.parse((event as MessageEvent).data) as LocalStudioPayload);
         });
         events.addEventListener("document", (event) => {
-          applyStudioEvent(JSON.parse((event as MessageEvent).data) as LocalStudioPayload);
+          try {
+            applyStudioEvent(JSON.parse((event as MessageEvent).data) as LocalStudioPayload);
+          } catch {
+            setToast("Studio sent an invalid document update");
+          }
+        });
+        events.addEventListener("project-files", (event) => {
+          try {
+            const payload = JSON.parse((event as MessageEvent).data) as Partial<ProjectFilesPayload>;
+            if (Array.isArray(payload.files)) {
+              setProjectFiles(payload.files.filter((file): file is string => typeof file === "string"));
+            }
+          } catch {
+            setProjectFilesError("The project diagram list update was invalid.");
+          }
         });
         events.addEventListener("document-missing", () => {
           setLocalStudio((current) => current ? { ...current, status: "disconnected" } : current);
@@ -936,9 +951,12 @@ function App() {
       const closedCount = request.kind === "all"
         ? closeAllTabs(previews)
         : closeTabsToRight(request.tabId, previews);
+      const recoverableCount = targets.filter((tab) => !isDisposableTab(tab, BLANK_SOURCE)).length;
       resetTransientState();
       if (closedCount) {
-        setToast(`${closedCount} diagram${closedCount === 1 ? "" : "s"} moved to the recycle bin`);
+        setToast(recoverableCount
+          ? `${recoverableCount} diagram${recoverableCount === 1 ? "" : "s"} moved to the recycle bin`
+          : `${closedCount} diagram${closedCount === 1 ? "" : "s"} closed`);
       }
     } finally {
       setOperation(null);

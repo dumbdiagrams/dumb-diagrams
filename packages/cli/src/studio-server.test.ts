@@ -127,6 +127,26 @@ describe("local Studio server", () => {
     expect(document.filePath).toBe(secondPath);
     expect(handle.filePath).toBe(secondPath);
   });
+
+  it("announces and opens a newly created valid project diagram", async () => {
+    const created = await createTestServer();
+    const { handle, filePath } = created;
+    const response = await fetch(`${handle.url}api/events`);
+    const reader = response.body?.getReader();
+    expect(reader).toBeDefined();
+    if (!reader) return;
+    try {
+      expect(await readSseEvent(reader)).toContain("event: ready");
+
+      const nextPath = join(dirname(filePath), "new-workflow.dgm");
+      writeFileSync(nextPath, printDgm(createEmptyDocument("new-workflow")), "utf8");
+      const events = await readSseUntil(reader, ["event: project-files", "event: document"]);
+      expect(events).toContain("new-workflow.dgm");
+      expect(handle.filePath).toBe(nextPath);
+    } finally {
+      await reader.cancel();
+    }
+  });
 });
 
 async function createTestServer(): Promise<{ handle: StudioServerHandle; filePath: string }> {
@@ -179,6 +199,33 @@ async function readSseEvent(
       content += decoder.decode(result.value, { stream: true });
     }
     return content.slice(0, content.indexOf("\n\n"));
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+  }
+}
+
+async function readSseUntil(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  markers: string[],
+): Promise<string> {
+  const decoder = new TextDecoder();
+  let content = "";
+  let timeoutHandle: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timeoutHandle = setTimeout(
+      () => reject(new Error(`Timed out waiting for Studio SSE markers: ${markers.join(", ")}`)),
+      3_000,
+    );
+    timeoutHandle.unref();
+  });
+
+  try {
+    while (!markers.every((marker) => content.includes(marker))) {
+      const result = await Promise.race([reader.read(), timeout]);
+      if (result.done) throw new Error("Studio SSE stream closed before sending the expected events.");
+      content += decoder.decode(result.value, { stream: true });
+    }
+    return content;
   } finally {
     if (timeoutHandle) clearTimeout(timeoutHandle);
   }

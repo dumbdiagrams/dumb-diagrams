@@ -112,6 +112,27 @@ export function isProtectedDefaultTab(tabs: WorkspaceTab[], blankSource: string,
   return Boolean(tab && tab.id === tabId && tab.origin === "new" && !tab.filename && tab.source === blankSource);
 }
 
+/** Tabs that can be discarded without offering recovery. */
+export function isDisposableTab(tab: WorkspaceTab, blankSource: string): boolean {
+  if (tab.origin === "new") {
+    if (tab.source === blankSource) return true;
+    // Empty drafts may have been serialized with a filename or formatting
+    // changes. Keep intentionally renamed empty diagrams recoverable.
+    try {
+      const document = parseDgm(tab.source);
+      const empty = document.resources.length === 0 && document.groups.length === 0 &&
+        document.edges.length === 0 && document.annotations.length === 0 &&
+        (document.assets?.length ?? 0) === 0;
+      const title = document.title?.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+      if (empty && (!title || title === "untitled diagram")) return true;
+    } catch {
+      // Invalid drafts remain recoverable.
+    }
+  }
+  return (tab.origin === "fixture" || tab.origin === "example") &&
+    tab.source === tab.initialSource && tab.source === tab.savedSource;
+}
+
 export function closeWorkspaceTabs(
   current: WorkspaceState,
   tabIds: string[],
@@ -124,7 +145,7 @@ export function closeWorkspaceTabs(
 ): { state: WorkspaceState; closed: WorkspaceTab[] } {
   const closingIds = new Set(tabIds);
   if (options.protectedBlankSource !== undefined && isProtectedDefaultTab(current.tabs, options.protectedBlankSource) && closingIds.has(current.activeTabId)) return { state: current, closed: [] };
-  const closed = current.tabs
+  const removed = current.tabs
     .filter((tab) => closingIds.has(tab.id))
     .map((tab) => {
       const previews = options.previewByTabId;
@@ -132,7 +153,8 @@ export function closeWorkspaceTabs(
       const previewSvg = normalizeWorkspacePreview(previews[tab.id]);
       return previewSvg ? { ...tab, previewSvg } : omitWorkspacePreview(tab);
     });
-  if (!closed.length) return { state: current, closed: [] };
+  if (!removed.length) return { state: current, closed: [] };
+  const archived = removed.filter((tab) => options.protectedBlankSource === undefined || !isDisposableTab(tab, options.protectedBlankSource));
 
   const tabs = current.tabs.filter((tab) => !closingIds.has(tab.id));
   if (!tabs.length && options.replacementTab) tabs.push(options.replacementTab);
@@ -143,9 +165,9 @@ export function closeWorkspaceTabs(
     : closingIds.has(current.activeTabId) && tabs.length > 0
       ? tabs[Math.max(0, Math.min(closedActiveIndex - 1, tabs.length - 1))]!.id
       : current.activeTabId;
-  const closedIds = new Set(closed.map((tab) => tab.id));
+  const closedIds = new Set(archived.map((tab) => tab.id));
   const recentlyClosed = [
-    ...closed.slice().reverse(),
+    ...archived.slice().reverse(),
     ...current.recentlyClosed.filter((tab) => !closedIds.has(tab.id)),
   ].slice(0, MAX_RECENTLY_CLOSED);
 
@@ -156,7 +178,8 @@ export function closeWorkspaceTabs(
       activeTabId,
       recentlyClosed,
     },
-    closed,
+    // `closed` reports all removed tabs; only `recentlyClosed` is recoverable.
+    closed: removed,
   };
 }
 

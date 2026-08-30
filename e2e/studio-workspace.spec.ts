@@ -80,7 +80,7 @@ test("duplicates and closes a diagram from its tab context menu", async ({ page 
   await expect(page.getByRole("tab")).toHaveCount(2);
 });
 
-test("bulk closes tabs with visible progress and keeps them recoverable", async ({ page }) => {
+test("bulk closes tabs with visible progress without recovering empty drafts", async ({ page }) => {
   await page.goto("/");
   for (let index = 0; index < 4; index += 1) {
     await page.getByRole("button", { name: "New diagram", exact: true }).click();
@@ -101,8 +101,8 @@ test("bulk closes tabs with visible progress and keeps them recoverable", async 
   await expect(page.getByRole("tab")).toHaveCount(1);
 
   await page.getByRole("button", { name: "File", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Recycle bin (4)", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Recycle bin" }).locator(".recycle-bin-item")).toHaveCount(4);
+  await page.getByRole("menuitem", { name: "Recycle bin", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Recycle bin" })).toContainText("Recycle bin is empty");
 });
 
 test("close all replaces every diagram with one blank untitled tab", async ({ page }) => {

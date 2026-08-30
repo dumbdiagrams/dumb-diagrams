@@ -6,6 +6,7 @@ import {
   createWorkspaceTab,
   deserializeWorkspace,
   isTabDirty,
+  isDisposableTab,
   MAX_RECYCLED_PREVIEW_BYTES,
   MAX_RECENTLY_CLOSED,
   MAX_WORKSPACE_TABS,
@@ -14,7 +15,8 @@ import {
   restoreWorkspaceTab,
   serializeWorkspace,
 } from "./workspace";
-import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
+import { createEmptyDocument, DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
+import { printDgm } from "@dumb-diagrams/runtime/dsl";
 
 const viewport = { panX: 12, panY: 24, zoom: 0.9 };
 
@@ -181,6 +183,37 @@ describe("workspace state", () => {
     const named = createWorkspaceTab("blank", { id: "named", origin: "new", filename: "x.dgm", viewport });
     const result = closeWorkspaceTabs({ ...state, tabs: [named], activeTabId: named.id }, [named.id], { protectedBlankSource: "blank" });
     expect(result.closed).toHaveLength(1);
+  });
+
+  it("keeps disposable tabs out of recovery while still removing them", () => {
+    const fixture = createWorkspaceTab("example", { id: "fixture", origin: "fixture", initialSource: "example", savedSource: "example", viewport });
+    const blank = createWorkspaceTab("blank", { id: "blank", origin: "new", viewport });
+    const changedExample = createWorkspaceTab("edited", { id: "edited", origin: "example", initialSource: "example", savedSource: "edited", viewport });
+    const namedBlank = createWorkspaceTab("blank", { id: "named", origin: "new", filename: "named.dgm", viewport });
+    const state = { version: 1 as const, tabs: [fixture, blank, changedExample, namedBlank], activeTabId: fixture.id, recentlyClosed: [] };
+    const result = closeWorkspaceTabs(state, state.tabs.map((tab) => tab.id), { protectedBlankSource: "blank" });
+    expect(result.closed.map((tab) => tab.id)).toEqual(["fixture", "blank", "edited", "named"]);
+    expect(result.state.recentlyClosed.map((tab) => tab.id)).toEqual(["edited"]);
+    expect(isDisposableTab(fixture, "blank")).toBe(true);
+    expect(isDisposableTab(blank, "blank")).toBe(true);
+    expect(isDisposableTab(changedExample, "blank")).toBe(false);
+    expect(isDisposableTab(namedBlank, "blank")).toBe(true);
+  });
+
+  it("discards serialized empty untitled drafts but keeps intentionally named empty drafts", () => {
+    const empty = createEmptyDocument("another-empty-draft");
+    empty.title = "Untitled-Diagram";
+    const untitled = createWorkspaceTab(printDgm(empty), {
+      origin: "new",
+      filename: "Untitled-Diagram.dgm",
+      viewport,
+    });
+    const named = createEmptyDocument("named-empty-draft");
+    named.title = "Quarterly architecture";
+    const namedTab = createWorkspaceTab(printDgm(named), { origin: "new", viewport });
+
+    expect(isDisposableTab(untitled, "different blank source")).toBe(true);
+    expect(isDisposableTab(namedTab, "different blank source")).toBe(false);
   });
 
   it("attaches the latest render preview when tabs are archived", () => {

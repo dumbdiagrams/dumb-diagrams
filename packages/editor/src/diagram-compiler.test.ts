@@ -160,6 +160,35 @@ describe("diagram compilation canvas bounds", () => {
     ]));
   });
 
+  it("compiles the claims workflow with the editor grid enabled", () => {
+    const example = DIAGRAM_EXAMPLES.find(
+      (candidate) => candidate.id === "bedrock-claims-processing",
+    );
+    expect(example).toBeDefined();
+    const source = example!.source
+      .replace("diagram bedrock-claims-processing", "diagram claims-processing-workflow")
+      .replace(
+        "email -> web_client { id notify_client from s to e }",
+        "email -> claims_analyst { id notify_analyst from s to e }",
+      );
+
+    const result = compileDiagramSource(source, true);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const workflow = result.layout.edges.find((edge) => edge.id === "workflow_to_state");
+    expect(workflow?.points.length).toBeGreaterThan(1);
+    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "edge-icon-collision",
+        elementIds: expect.arrayContaining([
+          "workflow_to_state",
+          expect.stringMatching(/^(extractor|fraud_model)$/),
+        ]),
+      }),
+    ]));
+  });
+
   it("keeps Data Transfer Hub compact and free of connector dead ends", () => {
     const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "aws-data-transfer-hub")!;
     const result = compileDiagramSource(example.source, true);

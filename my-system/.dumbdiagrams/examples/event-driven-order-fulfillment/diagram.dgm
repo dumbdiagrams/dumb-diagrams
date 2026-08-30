@@ -1,0 +1,60 @@
+diagram event-driven-order-fulfillment {
+  grammar aws
+  flow lr
+  title "Event-driven order fulfillment"
+
+  generic.user customer "Customer"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary customer_experience "Customer experience" {
+      aws.cloudfront storefront_delivery "Storefront delivery"
+      aws.simple-storage-service storefront "Storefront"
+    }
+
+    aws.api-gateway gateway
+
+    cloud-agnostic.boundary order_domain "Order domain" {
+      aws.aws-lambda order_service "Order service"
+      aws.dynamodb orders_database "Orders database"
+    }
+
+    cloud-agnostic.boundary event_backbone "Event backbone" {
+      aws.eventbridge order_events "Order events"
+    }
+
+    cloud-agnostic.boundary fulfillment_services "Fulfillment services" {
+      aws.aws-lambda inventory_service "Inventory service"
+      aws.aws-lambda payment_service "Payment service"
+      aws.aws-fargate shipping_service "Shipping service"
+    }
+
+    aws.simple-notification-service customer_notifications "Customer notifications"
+  }
+
+  customer -> storefront_delivery { id customer_to_delivery step 1 }
+  storefront_delivery -> storefront { id delivery_to_storefront label "static content" }
+  storefront_delivery -> gateway { id delivery_to_api step 2 }
+  gateway -> order_service { id api_to_order step 3 }
+  order_service -> orders_database { id persist_order step 4 label "persist order" }
+  order_service -> order_events { id publish_order_created step 5 label "OrderCreated" }
+  order_events -> inventory_service {
+    id reserve_stock
+    style dashed
+    label "reserve stock"
+  }
+  order_events -> payment_service {
+    id authorize_payment
+    style dashed
+    label "authorize payment"
+  }
+  order_events -> shipping_service {
+    id create_shipment
+    style dashed
+    label "create shipment"
+  }
+  order_events -> customer_notifications {
+    id send_confirmation
+    style dashed
+    label "send confirmation"
+  }
+}

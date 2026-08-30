@@ -1,0 +1,1 @@
+Build a serverless image processing pipeline on AWS. Host a simple web UI for uploading images. Users should upload original images directly to S3. When a new image arrives, trigger Lambda to generate a thumbnail, store the generated thumbnail in a separate S3 bucket, and save image metadata in DynamoDB. Use CloudFront to serve the upload experience.

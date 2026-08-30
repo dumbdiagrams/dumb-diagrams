@@ -79,6 +79,8 @@ export async function startStudioServer(
   let currentSource = readFileSync(documentPath, "utf8");
   let currentRevision = revisionFor(currentSource);
   let documentPresent = true;
+  let projectFiles = listProjectFiles(projectDirectory);
+  const pendingProjectFiles = new Set<string>();
   let watcher: FSWatcher | null = null;
   let watchTimer: NodeJS.Timeout | null = null;
   let watcherRestartTimer: NodeJS.Timeout | null = null;
@@ -118,6 +120,41 @@ export async function startStudioServer(
     }
   };
 
+  const syncProjectFiles = () => {
+    const nextFiles = listProjectFiles(projectDirectory);
+    const previous = new Set(projectFiles);
+    const added = nextFiles.filter((file) => !previous.has(file));
+    const candidates = [...added, ...pendingProjectFiles].filter((file, index, all) => all.indexOf(file) === index);
+    projectFiles = nextFiles;
+    const validCandidates: Array<{ file: string; source: string }> = [];
+    for (const file of candidates) {
+      const path = join(projectDirectory, file);
+      try {
+        const source = readFileSync(path, "utf8");
+        const validation = validateSource(source);
+        if (!validation.ok) {
+          pendingProjectFiles.add(file);
+          continue;
+        }
+        pendingProjectFiles.delete(file);
+        validCandidates.push({ file, source });
+      } catch {
+        pendingProjectFiles.add(file);
+      }
+    }
+    if (validCandidates.length === 1) {
+      const candidate = validCandidates[0]!;
+      documentPath = join(projectDirectory, candidate.file);
+      currentSource = candidate.source;
+      currentRevision = revisionFor(currentSource);
+      documentPresent = true;
+      sendEvent("document", readPayload());
+    }
+    if (nextFiles.join("\0") !== [...previous].sort().join("\0")) {
+      sendEvent("project-files", { directory: projectDirectory, activeFileName: basename(documentPath), files: nextFiles });
+    }
+  };
+
   const syncFromDisk = (announce: boolean): boolean => {
     try {
       const nextSource = readFileSync(documentPath, "utf8");
@@ -149,11 +186,19 @@ export async function startStudioServer(
     }
     closeWatcher();
     watcher = watch(projectDirectory, { persistent: false }, (_eventType, filename) => {
-      if (filename && String(filename) !== basename(documentPath)) return;
+      if (filename && String(filename) !== basename(documentPath)) {
+        if (watchTimer) clearTimeout(watchTimer);
+        watchTimer = setTimeout(() => {
+          watchTimer = null;
+          syncProjectFiles();
+        }, 80);
+        return;
+      }
       if (watchTimer) clearTimeout(watchTimer);
       watchTimer = setTimeout(() => {
         watchTimer = null;
         syncFromDisk(true);
+        syncProjectFiles();
       }, 80);
     });
     watcher.once("error", () => {

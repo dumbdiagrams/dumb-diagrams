@@ -1,3 +1,4 @@
+import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import type { DiagramDocument, ID, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 
 export const GRID_SIZE = 24;
@@ -180,8 +181,16 @@ export function snapLayoutToGrid(
 ): LayoutResult {
   if (!enabled) return layout;
 
+  const view = getDefaultView(doc);
   const offsets = new Map<ID, { dx: number; dy: number }>();
-  for (const rootId of findPositionRoots(doc)) {
+  for (const rootId of findPositionRoots(doc).filter((id) => {
+    const place = view.places[id];
+    return Boolean(
+      place &&
+      (place.manual || place.pin) &&
+      (place.x !== undefined || place.y !== undefined),
+    );
+  })) {
     const rootGroup = layout.groups.find((group) => group.id === rootId);
     const rootNode = layout.nodes.find((node) => node.id === rootId);
     // A resource's obstacle includes label/routing padding, which varies with

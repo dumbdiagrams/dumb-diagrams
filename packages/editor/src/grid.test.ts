@@ -64,6 +64,7 @@ describe("editor grid", () => {
 
   it("snaps root resources by their visible icon instead of label-sized obstacles", () => {
     const doc = createAsyncDocsFixture();
+    getDefaultView(doc).places.client = { x: 55, y: 57, pin: true };
     const layout = layoutDocument(doc);
     const before = layout.nodes.find((node) => node.id === "client")!;
     const after = snapLayoutToGrid(layout, true, doc).nodes.find((node) => node.id === "client")!;
