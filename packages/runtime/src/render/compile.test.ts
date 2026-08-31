@@ -77,6 +77,17 @@ describe("async-docs fixture", () => {
     expect(renderedGroup).not.toContain("<image");
   });
 
+  it("adds a contrast halo for dark structural group strokes without changing the canonical stroke", () => {
+    const doc = createEmptyDocument("cloud-contrast");
+    doc.groups = [{ id: "cloud", kind: "cloud", label: "AWS Cloud", children: [] }];
+
+    const svg = renderSvg(doc, layoutDocument(doc));
+    expect(svg).toContain('class="group-border-contrast"');
+    expect(svg).toContain('class="group-border"');
+    expect(svg).toContain('stroke="#2a3542"');
+    expect(svg).toContain('stroke="rgba(255,255,255,0.25)"');
+  });
+
   it("renders connector labels without an opaque backing box", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.label = "authorize payment";
@@ -440,7 +451,7 @@ describe("async-docs fixture", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);
     expect(result.svg).toMatch(
-      /id="group-main"[\s\S]*?<rect x="([^"]+)" y="([^"]+)"[\s\S]*?<image[^>]* x="\1" y="\2"/,
+      /id="group-main"[\s\S]*?<rect class="group-border" x="([^"]+)" y="([^"]+)"[\s\S]*?<image[^>]* x="\1" y="\2"/,
     );
   });
 

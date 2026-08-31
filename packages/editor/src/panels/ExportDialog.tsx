@@ -62,11 +62,10 @@ export function ExportDialog({
   useEffect(() => {
     if (!open) return;
     const nextScope = selection.length > 0 ? "selection" : "all";
-    const currentTheme = document.documentElement.dataset.theme;
     setFormat(initialFormat);
     setScope(nextScope);
     setSize(nextScope === "selection" ? "selection" : "diagram");
-    setAppearance(currentTheme === "dark" ? "dark" : "light");
+    setAppearance("light");
     setTransparentBackground(false);
     setIncludeSource(true);
     setZoom(100);

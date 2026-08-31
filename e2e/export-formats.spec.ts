@@ -96,8 +96,8 @@ test("dark SVG export keeps canonical diagram colors and a dark grid background"
   expect(colors.circle).toBe("#f7982c");
   expect(colors.text).toBe("#112d51");
   expect(colors.text).not.toBe(colors.circle);
-  expect(colors.edgeStroke).toBe("#d6c9bc");
-  expect(colors.groupStroke).not.toBe("#f4ede5");
-  expect(colors.gridBackground).toBe("#1e3a5f");
+  expect(colors.edgeStroke).toBe("#b8c2ce");
+  expect(colors.groupStroke).not.toBe("#e6ebf0");
+  expect(colors.gridBackground).toBe("#102033");
   expect(colors.canvasBackground).toBe("url(#export-grid)");
 });

@@ -64,22 +64,22 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #f5f0ea;
-  --muted: #c3cbd5;
-  --line: #334a63;
-  --line-strong: #5a718a;
-  --surface: #101e32;
-  --surface-solid: #172a42;
-  --surface-elevated: #1d3551;
-  --canvas-bg: #0a1728;
-  --canvas-tint: #5a718a;
+  --ink: #e6ebf0;
+  --muted: #adb9c8;
+  --line: #243447;
+  --line-strong: #3a5068;
+  --surface: #0a1525;
+  --surface-solid: #0d1a2c;
+  --surface-elevated: #122033;
+  --canvas-bg: #081525;
+  --canvas-tint: #ffffff;
   --accent: #9eb5d2;
   --accent-strong: #d5e0ef;
-  --accent-soft: #2a405e;
+  --accent-soft: #1a2a3f;
   --highlight: #8da8ff;
-  --highlight-soft: #23345d;
+  --highlight-soft: #1a2840;
   --accent-warm: var(--brand-orange);
-  --accent-warm-soft: #584221;
+  --accent-warm-soft: #3d2a18;
   --action-fill: var(--brand-navy);
   --action-hover: var(--brand-navy-deep);
   --action-text: #ffffff;
@@ -87,14 +87,13 @@
   --badge-text: var(--brand-navy-deep);
   --success: #7bc4a0;
   --danger: #ff9b75;
-  --danger-soft: #5a302d;
+  --danger-soft: #4a2824;
   --focus: var(--brand-orange);
-  /* Slightly lighter than the original #142943 artboard for depth against the surround. */
-  --artboard: #1e3a5f;
-  --diagram-ink: #f4ede5;
-  --diagram-edge: #d6c9bc;
-  --diagram-fallback: #2c425c;
-  --annotation-ink: #f4ede5;
+  --artboard: #102033;
+  --diagram-ink: #e6ebf0;
+  --diagram-edge: #b8c2ce;
+  --diagram-fallback: #1a2a3f;
+  --annotation-ink: #e6ebf0;
   --canvas-atmosphere: none;
   --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.56);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -3534,6 +3533,14 @@ textarea:focus-visible {
 }
 
 /* Dark artboard: lift label, edge, and badge contrast; group borders and icons stay canonical. */
+.diagram-svg svg .group-border-contrast {
+  display: none;
+}
+
+:root[data-theme="dark"] .diagram-svg svg .group-border-contrast {
+  display: block;
+}
+
 :root[data-theme="dark"] .diagram-svg svg text:not(.edge-badge-text):not(.group-badge-text) {
   fill: var(--diagram-ink);
 }
@@ -3576,10 +3583,10 @@ textarea:focus-visible {
 
 :root[data-theme="dark"] .diagram-svg {
   background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 24%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 24%, transparent) 1px, transparent 1px),
-    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 36%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 36%, transparent) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 8%, transparent) 1px, transparent 1px);
 }
 
 .floating-panel.drawer-sheet {

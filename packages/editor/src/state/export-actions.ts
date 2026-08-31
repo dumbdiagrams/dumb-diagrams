@@ -60,11 +60,11 @@ export const EXPORT_FORMATS: ReadonlyArray<{
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-const DARK_EXPORT_BACKGROUND = "#1e3a5f";
-const DARK_EXPORT_GRID_STROKE = "#5a718a";
-const DARK_EXPORT_BORDER_STROKE = "#9eb5d2";
-const DARK_EXPORT_INK = "#f4ede5";
-const DARK_EXPORT_EDGE = "#d6c9bc";
+const DARK_EXPORT_BACKGROUND = "#102033";
+const DARK_EXPORT_GRID_STROKE = "#ffffff";
+const DARK_EXPORT_BORDER_STROKE = "#b8c2ce";
+const DARK_EXPORT_INK = "#e6ebf0";
+const DARK_EXPORT_EDGE = "#b8c2ce";
 const DARK_EXPORT_BADGE_FILL = "#f7982c";
 const DARK_EXPORT_BADGE_TEXT = "#112d51";
 
@@ -269,6 +269,10 @@ export function prepareExportSvg(
     }
     for (const text of [...root.querySelectorAll(".edge-badge-text, .group-badge-text")]) {
       text.setAttribute("fill", DARK_EXPORT_BADGE_TEXT);
+    }
+  } else {
+    for (const halo of [...root.querySelectorAll(".group-border-contrast")]) {
+      halo.remove();
     }
   }
 

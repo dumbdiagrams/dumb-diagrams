@@ -2,6 +2,7 @@ import { getCatalogEntry } from "../catalog/index.js";
 import type { AnnotationStyle, DiagramDocument, LayoutResult } from "../core/index.js";
 import { EDGE_COLOR_VALUES, getDefaultView, resolveEdgeColor } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
+import { darkContrastStrokeMarkup, needsDarkContrastAid } from "./contrast.js";
 
 import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon } from "./assets.js";
 
@@ -134,10 +135,21 @@ function renderGroup(
   const badge = model?.step === undefined ? "" : `
   <circle class="group-badge-circle" cx="${badgeX}" cy="${group.bounds.y + 12}" r="10" fill="${GRAMMAR.badgeFill}"/>
   <text class="group-badge-text" x="${badgeX}" y="${group.bounds.y + 16}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${model.step}</text>`;
+  const contrastStroke = needsDarkContrastAid(stroke)
+    ? darkContrastStrokeMarkup(
+      group.bounds.x,
+      group.bounds.y,
+      group.bounds.w,
+      group.bounds.h,
+      style.strokeWidth,
+      dash,
+      style.cornerRadius,
+    )
+    : "";
 
   return `
-<g id="group-${group.id}">
-  <rect x="${group.bounds.x}" y="${group.bounds.y}" width="${group.bounds.w}" height="${group.bounds.h}"
+<g id="group-${group.id}">${contrastStroke}
+  <rect class="group-border" x="${group.bounds.x}" y="${group.bounds.y}" width="${group.bounds.w}" height="${group.bounds.h}"
     fill="${fill}" stroke="${stroke}" stroke-width="${style.strokeWidth}" ${dash} rx="${style.cornerRadius}"/>
   ${iconTag}
   <text x="${textX}" y="${textY}"
