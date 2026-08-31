@@ -56,7 +56,6 @@ export function ExportDialog({
   const [customHeight, setCustomHeight] = useState(Math.ceil(canvasHeight));
   const [dpi, setDpi] = useState(100);
   const [borderWidth, setBorderWidth] = useState(0);
-  const [shadow, setShadow] = useState(false);
   const [grid, setGrid] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -75,7 +74,6 @@ export function ExportDialog({
     setCustomHeight(Math.ceil(canvasHeight));
     setDpi(100);
     setBorderWidth(0);
-    setShadow(false);
     setGrid(false);
   }, [canvasHeight, canvasWidth, initialFormat, open, selection.length]);
 
@@ -109,7 +107,6 @@ export function ExportDialog({
       height: Math.max(1, height),
       dpi: Math.max(36, dpi),
       borderWidth: Math.max(0, borderWidth),
-      shadow,
       grid,
     };
     setExporting(true);
@@ -290,7 +287,6 @@ export function ExportDialog({
             </label>
           </div>
           <div className="export-advanced-checks">
-            <label className="export-check-row"><input type="checkbox" checked={shadow} onChange={(event) => setShadow(event.target.checked)} /><span>Shadow</span></label>
             <label className="export-check-row"><input type="checkbox" checked={grid} onChange={(event) => setGrid(event.target.checked)} /><span>Grid</span></label>
           </div>
         </details>

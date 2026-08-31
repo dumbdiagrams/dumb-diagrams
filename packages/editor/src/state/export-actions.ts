@@ -36,7 +36,6 @@ export interface ExportOptions {
   height: number;
   dpi: number;
   borderWidth: number;
-  shadow: boolean;
   grid: boolean;
 }
 
@@ -60,6 +59,14 @@ export const EXPORT_FORMATS: ReadonlyArray<{
 ];
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+const DARK_EXPORT_BACKGROUND = "#1e3a5f";
+const DARK_EXPORT_GRID_STROKE = "#5a718a";
+const DARK_EXPORT_BORDER_STROKE = "#9eb5d2";
+const DARK_EXPORT_INK = "#f4ede5";
+const DARK_EXPORT_EDGE = "#d6c9bc";
+const DARK_EXPORT_BADGE_FILL = "#f7982c";
+const DARK_EXPORT_BADGE_TEXT = "#112d51";
 
 export function exportFormat(value: ExportFormat) {
   return EXPORT_FORMATS.find((format) => format.value === value) ?? EXPORT_FORMATS[0]!;
@@ -231,22 +238,38 @@ export function prepareExportSvg(
   root.setAttribute("viewBox", `${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`);
 
   const dark = options.appearance === "dark";
-  const foreground = dark ? "#F4EDE5" : GRAMMAR.edgeColor;
-  const background = options.transparentBackground ? "none" : dark ? "#101E32" : "#FFFFFF";
-  const foregroundTokens = ["#232F3E", GRAMMAR.edgeColor];
-  for (const token of foregroundTokens) {
-    for (const element of [...root.querySelectorAll(`[stroke='${token}']`)]) {
-      element.setAttribute("stroke", foreground);
+  const background = options.transparentBackground ? "none" : dark ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
+  const gridStroke = dark ? DARK_EXPORT_GRID_STROKE : GRAMMAR.edgeColor;
+  const borderStroke = dark ? DARK_EXPORT_BORDER_STROKE : GRAMMAR.edgeColor;
+
+  if (dark) {
+    for (const style of [...root.querySelectorAll("style")]) {
+      style.textContent = (style.textContent ?? "")
+        .replaceAll(GRAMMAR.edgeColor, DARK_EXPORT_INK)
+        .replaceAll(GRAMMAR.badgeText, DARK_EXPORT_BADGE_TEXT);
     }
-    for (const element of [...root.querySelectorAll(`[fill='${token}']`)]) {
-      element.setAttribute("fill", foreground);
+    for (const path of [...root.querySelectorAll('path[stroke="#163964"]')]) {
+      path.setAttribute("stroke", DARK_EXPORT_EDGE);
     }
-  }
-  for (const style of [...root.querySelectorAll("style")]) {
-    style.textContent = foregroundTokens.reduce(
-      (value, token) => value.replaceAll(token, foreground),
-      style.textContent ?? "",
-    );
+    for (const path of [...root.querySelectorAll('path[fill="#163964"]')]) {
+      path.setAttribute("fill", DARK_EXPORT_EDGE);
+    }
+    for (const circle of [...root.querySelectorAll('circle[fill="#163964"]:not(.edge-badge-circle):not(.group-badge-circle)')]) {
+      circle.setAttribute("fill", DARK_EXPORT_EDGE);
+    }
+    for (const text of [...root.querySelectorAll("text")]) {
+      if (text.classList.contains("edge-badge-text") || text.classList.contains("group-badge-text")) continue;
+      const fill = text.getAttribute("fill");
+      if (!fill || fill.toLowerCase() === GRAMMAR.edgeColor.toLowerCase()) {
+        text.setAttribute("fill", DARK_EXPORT_INK);
+      }
+    }
+    for (const circle of [...root.querySelectorAll(".edge-badge-circle, .group-badge-circle")]) {
+      circle.setAttribute("fill", DARK_EXPORT_BADGE_FILL);
+    }
+    for (const text of [...root.querySelectorAll(".edge-badge-text, .group-badge-text")]) {
+      text.setAttribute("fill", DARK_EXPORT_BADGE_TEXT);
+    }
   }
 
   const backgroundRect = [...root.children].find(
@@ -267,10 +290,17 @@ export function prepareExportSvg(
     pattern.setAttribute("width", "24");
     pattern.setAttribute("height", "24");
     pattern.setAttribute("patternUnits", "userSpaceOnUse");
+    if (background !== "none") {
+      const patternBackground = parsed.createElementNS(SVG_NS, "rect");
+      patternBackground.setAttribute("width", "24");
+      patternBackground.setAttribute("height", "24");
+      patternBackground.setAttribute("fill", background);
+      pattern.append(patternBackground);
+    }
     const gridPath = parsed.createElementNS(SVG_NS, "path");
     gridPath.setAttribute("d", "M 24 0 L 0 0 0 24");
     gridPath.setAttribute("fill", "none");
-    gridPath.setAttribute("stroke", foreground);
+    gridPath.setAttribute("stroke", gridStroke);
     gridPath.setAttribute("stroke-opacity", "0.12");
     gridPath.setAttribute("stroke-width", "1");
     pattern.append(gridPath);
@@ -285,23 +315,6 @@ export function prepareExportSvg(
     if (tag === "defs" || child === backgroundRect || tag === "metadata") continue;
     content.append(child);
   }
-  if (options.shadow) {
-    const filter = parsed.createElementNS(SVG_NS, "filter");
-    filter.setAttribute("id", "export-shadow");
-    filter.setAttribute("x", "-20%");
-    filter.setAttribute("y", "-20%");
-    filter.setAttribute("width", "140%");
-    filter.setAttribute("height", "140%");
-    const dropShadow = parsed.createElementNS(SVG_NS, "feDropShadow");
-    dropShadow.setAttribute("dx", "0");
-    dropShadow.setAttribute("dy", "8");
-    dropShadow.setAttribute("stdDeviation", "10");
-    dropShadow.setAttribute("flood-color", dark ? "#000000" : GRAMMAR.edgeColor);
-    dropShadow.setAttribute("flood-opacity", dark ? "0.42" : "0.18");
-    filter.append(dropShadow);
-    defs?.append(filter);
-    content.setAttribute("filter", "url(#export-shadow)");
-  }
   root.append(content);
 
   if (options.borderWidth > 0) {
@@ -311,7 +324,7 @@ export function prepareExportSvg(
     border.setAttribute("width", String(bounds.w));
     border.setAttribute("height", String(bounds.h));
     border.setAttribute("fill", "none");
-    border.setAttribute("stroke", foreground);
+    border.setAttribute("stroke", borderStroke);
     border.setAttribute("stroke-width", String(Math.max(0, options.borderWidth)));
     border.setAttribute("pointer-events", "none");
     root.append(border);
@@ -472,7 +485,7 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCa
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas export is unavailable");
     if (!options.transparentBackground || options.format === "jpeg") {
-      context.fillStyle = options.appearance === "dark" ? "#101E32" : "#FFFFFF";
+      context.fillStyle = options.appearance === "dark" ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);

@@ -229,7 +229,7 @@ export function EdgePanel({
           </div>
           <span className="edge-current-color">
             <i style={{ backgroundColor: effectiveColor }} aria-hidden="true" />
-            {colorDraft ? COLOR_OPTIONS.find((option) => option.id === colorDraft)?.label : "Auto"}
+            {colorDraft ? COLOR_OPTIONS.find((option) => option.id === colorDraft)?.label : "Default"}
           </span>
         </div>
         <div className="edge-color-options" role="radiogroup" aria-label="Connector color">
@@ -242,10 +242,10 @@ export function EdgePanel({
               setColorDraft(undefined);
               onUpdateColor(undefined);
             }}
-            title="Use the meaning-aware automatic color"
+            title="Use the meaning-aware default color"
           >
             <span className="edge-color-swatch is-auto" aria-hidden="true" />
-            <span>Auto</span>
+            <span>Default</span>
           </button>
           {COLOR_OPTIONS.map((option) => {
             const selected = colorDraft === option.id;

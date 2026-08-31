@@ -603,7 +603,7 @@ test("changes and restores authored colors for every provider group", async ({ p
       Number(await renderedBoundary.getAttribute("x")),
     );
 
-    await inspector.locator(".boundary-color-options").getByRole("radio", { name: "Auto" }).click();
+    await inspector.locator(".boundary-color-options").getByRole("radio", { name: "Default" }).click();
     await expect(purple).toHaveAttribute("aria-checked", "false");
     await expect(page.locator(`#group-${sample.id} rect`).first()).not.toHaveAttribute("stroke", "#7C3AED");
   }

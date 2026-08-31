@@ -3285,10 +3285,10 @@ function Inspector({
               role="radio"
               aria-checked={group.color === undefined}
               onClick={() => onSetBoundaryAppearance({ color: undefined })}
-              title="Use the boundary type's automatic color"
+              title="Use the boundary type's default color"
             >
               <span className="edge-color-swatch is-auto" aria-hidden="true" />
-              <span>Auto</span>
+              <span>Default</span>
             </button>
             {BOUNDARY_COLOR_OPTIONS.map((option) => (
               <button

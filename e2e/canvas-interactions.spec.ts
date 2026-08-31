@@ -1161,11 +1161,6 @@ test("applies the dark palette to the canvas and grid", async ({ page }) => {
   await expect(page.locator(".studio-tabbar-actions .theme-control")).toHaveCount(1);
   await expect(page.locator(".floating-topbar .theme-control")).toHaveCount(0);
   await theme.click();
-
-  await expect(page.getByRole("menuitem", { name: "System", exact: true })).toHaveCount(0);
-  const dark = page.getByRole("menuitem", { name: "Dark", exact: true });
-  await expect(dark).toHaveCount(1);
-  await dark.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
   const colors = await page.locator('[data-testid="canvas-stage"]').evaluate((stage) => {
@@ -1184,9 +1179,10 @@ test("applies the dark palette to the canvas and grid", async ({ page }) => {
 
   expect(colors.canvas).not.toBe("rgb(255, 255, 255)");
   expect(colors.atmosphere).toBe("none");
+  expect(colors.artboard).toBe("rgb(30, 58, 95)");
   expect(colors.artboard).not.toBe("rgb(255, 255, 255)");
   expect(colors.grid).toContain("linear-gradient");
-  expect(colors.text).not.toBe("rgb(35, 47, 62)");
+  expect(colors.text).toBe("rgb(244, 237, 229)");
 });
 
 test("shows a friendly editable diagram name", async ({ page }) => {

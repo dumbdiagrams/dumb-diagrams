@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { expect, test } from "@playwright/test";
+
+const ROOT = join(import.meta.dirname, "..");
+const ASYNC_DOCS = `${ROOT}/examples/diagrams/async-docs.dgm`;
 
 const formats = [
   { value: "png", label: "PNG", extension: ".png", verify: (data: Buffer) => expect(data.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
@@ -50,4 +54,50 @@ test("downloads a structurally valid artifact for every advertised export format
       await expect(dialog).toHaveCount(0);
     });
   }
+});
+
+test("dark SVG export keeps canonical diagram colors and a dark grid background", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
+  await expect(page.locator(".edge-badge-text").first()).toHaveCount(1);
+
+  await page.getByRole("button", { name: "More export formats", exact: true }).click();
+  await page.getByRole("menu", { name: "Export as", exact: true })
+    .locator(".export-format-option").filter({ hasText: "SVG" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Export SVG" });
+  await dialog.getByRole("button", { name: "Dark", exact: true }).click();
+  await dialog.getByText("Advanced", { exact: true }).click();
+  await dialog.getByRole("checkbox", { name: "Grid" }).check();
+
+  const downloadPromise = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Export SVG", exact: true }).click();
+  const download = await downloadPromise;
+  const path = await download.path();
+  expect(path).not.toBeNull();
+  const svg = await readFile(path!, "utf8");
+
+  const colors = await page.evaluate((svgText) => {
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    const circle = doc.querySelector(".edge-badge-circle");
+    const text = doc.querySelector(".edge-badge-text");
+    const groupBorder = doc.querySelector('[id^="group-"] rect');
+    const edgePath = doc.querySelector('[id^="edge-"] path[stroke]');
+    return {
+      circle: circle?.getAttribute("fill")?.toLowerCase() ?? "",
+      text: text?.getAttribute("fill")?.toLowerCase() ?? "",
+      groupStroke: groupBorder?.getAttribute("stroke")?.toLowerCase() ?? "",
+      edgeStroke: edgePath?.getAttribute("stroke")?.toLowerCase() ?? "",
+      gridBackground: doc.querySelector("#export-grid rect")?.getAttribute("fill")?.toLowerCase() ?? "",
+      canvasBackground: doc.querySelector("svg > rect")?.getAttribute("fill") ?? "",
+    };
+  }, svg);
+
+  expect(colors.circle).toBe("#f7982c");
+  expect(colors.text).toBe("#112d51");
+  expect(colors.text).not.toBe(colors.circle);
+  expect(colors.edgeStroke).toBe("#d6c9bc");
+  expect(colors.groupStroke).not.toBe("#f4ede5");
+  expect(colors.gridBackground).toBe("#1e3a5f");
+  expect(colors.canvasBackground).toBe("url(#export-grid)");
 });

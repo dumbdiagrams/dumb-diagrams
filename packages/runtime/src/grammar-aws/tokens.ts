@@ -37,8 +37,8 @@ export const GRAMMAR = {
 
 export const GROUP_STYLES: Record<GroupKind, GroupStyle> = {
   cloud: {
-    stroke: "#163964",
-    fill: "rgba(22,57,100,0.03)",
+    stroke: "#2a3542",
+    fill: "rgba(42,53,66,0.03)",
     strokeWidth: 1.5,
     headerHeight: 24,
     padding: 16,
