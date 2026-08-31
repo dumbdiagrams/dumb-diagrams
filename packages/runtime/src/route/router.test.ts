@@ -24,6 +24,66 @@ import {
 } from "./router.js";
 
 describe("routeEdgePreview", () => {
+  it("routes blocked edges with an emergency elbow instead of throwing", () => {
+    const doc = createEmptyDocument("blocked-edge");
+    doc.resources = [
+      routingResource("cloudfront", "aws.cloudfront", "CloudFront"),
+      routingResource("simple-storage-service", "aws.simple-storage-service", "S3"),
+    ];
+    doc.edges = [{
+      id: "cloudfront-simple-storage-service",
+      source: "cloudfront",
+      target: "simple-storage-service",
+      style: "solid",
+      kind: "flow",
+    }];
+    const layout: LayoutResult = {
+      nodes: [
+        routingNode("cloudfront", 100, 100, 104),
+        routingNode("simple-storage-service", 100, 100, 104),
+      ],
+      groups: [],
+      edges: [],
+      width: 800,
+      height: 600,
+      symmetries: [],
+    };
+
+    expect(() => routeEdges(doc, layout)).not.toThrow();
+    expect(routeEdges(doc, layout).find((edge) => edge.id === "cloudfront-simple-storage-service")?.points.length)
+      .toBeGreaterThan(2);
+  });
+
+  it("routes an edge between coincident cards without throwing", () => {
+    const doc = createEmptyDocument("coincident-edge");
+    doc.resources = [
+      routingResource("abs-member", "azure.abs-member", "ABS member"),
+      routingResource("abs-member-2", "azure.abs-member", "ABS member"),
+    ];
+    doc.edges = [{
+      id: "abs-member-2-abs-member",
+      source: "abs-member-2",
+      target: "abs-member",
+      style: "solid",
+      kind: "flow",
+    }];
+    const layout: LayoutResult = {
+      nodes: [
+        routingNode("abs-member", 100, 100, 104),
+        routingNode("abs-member-2", 100, 100, 104),
+      ],
+      groups: [],
+      edges: [],
+      width: 800,
+      height: 600,
+      symmetries: [],
+    };
+
+    expect(() => routeEdges(doc, layout)).not.toThrow();
+    const routed = routeEdges(doc, layout).find((edge) => edge.id === "abs-member-2-abs-member");
+    expect(routed?.points.length).toBeGreaterThan(2);
+  });
+
   it("returns a routed polyline for an existing edge", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);

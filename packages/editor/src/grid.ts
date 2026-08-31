@@ -4,6 +4,8 @@ import { findDiagramRoots, orderRootsForFlow } from "@dumb-diagrams/runtime/layo
 
 export const GRID_SIZE = 24;
 export const ALIGNMENT_GUIDE_THRESHOLD_PX = 6;
+/** Gutter between the fixed staging slot and the diagram's leftmost content. */
+export const STAGING_GUTTER_PX = 50;
 
 export interface AlignmentGuide {
   axis: "x" | "y";
@@ -125,18 +127,24 @@ function closestAlignment(
 }
 
 /**
- * Return a staging position wholly before the existing diagram. Keeping a
- * full gutter between the new item and every current object/route prevents a
- * newly spawned root object from becoming an obstacle inside existing paths.
+ * Return a fixed staging slot immediately left of the diagram's stable
+ * content. Previously spawned root catalog items are excluded from the
+ * baseline so every new item lands in the same top-left slot.
  */
 export function leftStagingInsertionPoint(
+  doc: DiagramDocument,
   layout: LayoutResult,
   itemWidth = 240,
-  gap = 72,
+  gap = STAGING_GUTTER_PX,
 ): { x: number; y: number } {
+  const exclude = stagedRootIds(doc);
   const rects = [
-    ...layout.groups.map((group) => group.bounds),
-    ...layout.nodes.map((node) => node.obstacle),
+    ...layout.groups
+      .filter((group) => !exclude.has(group.id))
+      .map((group) => group.bounds),
+    ...layout.nodes
+      .filter((node) => !exclude.has(node.id))
+      .map((node) => node.obstacle),
     ...layout.edges.flatMap((edge) => {
       const xs = edge.points.map((point) => point.x);
       const ys = edge.points.map((point) => point.y);
@@ -159,6 +167,15 @@ export function leftStagingInsertionPoint(
     x: left - gap - itemWidth,
     y: top,
   };
+}
+
+function stagedRootIds(doc: DiagramDocument): Set<ID> {
+  const view = getDefaultView(doc);
+  const staged = new Set<ID>();
+  for (const rootId of findDiagramRoots(doc)) {
+    if (view.places[rootId]?.manual) staged.add(rootId);
+  }
+  return staged;
 }
 
 /**

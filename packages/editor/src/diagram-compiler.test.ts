@@ -7,7 +7,13 @@ import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
-import { compileDiagramSource, getCommittedCompilationEpoch, STUDIO_CANVAS_PADDING, warmDiagramCompilationCache } from "./diagram-compiler";
+import {
+  autoFixRejectionReason,
+  compileDiagramSource,
+  getCommittedCompilationEpoch,
+  STUDIO_CANVAS_PADDING,
+  warmDiagramCompilationCache,
+} from "./diagram-compiler";
 import { addResource, moveSelection, needsAutoFix, setRoute } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
@@ -63,6 +69,24 @@ describe("diagram compilation canvas bounds", () => {
         elementIds: expect.arrayContaining(["e3", "workerA"]),
       }),
     ]));
+  });
+
+  it("stops Auto-fix from introducing a new diagram quality failure", () => {
+    const current = compileDiagramSource(printDgm(createAsyncDocsFixture()), false);
+    expect(current.ok).toBe(true);
+    if (!current.ok) return;
+    const failure = {
+      code: "edge-icon-collision",
+      message: "Edge api passes through icon of storage",
+      elementIds: ["api", "storage"],
+    };
+    const candidate = {
+      ...current,
+      invariantFailures: [...current.invariantFailures, failure],
+    };
+
+    expect(autoFixRejectionReason(current, candidate)).toBe(failure.message);
+    expect(autoFixRejectionReason(candidate, { ...candidate })).toBeUndefined();
   });
 
   it("uses the canonical prompt/brief/reference roles for AWS examples", () => {
@@ -265,7 +289,7 @@ describe("diagram compilation canvas bounds", () => {
     expect(before.ok).toBe(true);
     if (!before.ok) return;
     const entry = getCatalogEntry("aws.simple-storage-service")!;
-    const at = leftStagingInsertionPoint(before.layout, 240);
+    const at = leftStagingInsertionPoint(doc, before.layout, 240);
     const added = addResource(doc, entry, undefined, at);
     const after = compileDiagramSource(printDgm(added.doc), false);
     expect(after.ok).toBe(true);

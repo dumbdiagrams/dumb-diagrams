@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { createEmptyDocument } from "../core/index.js";
 import type { DiagramDocument, Resource } from "../core/index.js";
+import { parseDgm } from "../dsl/index.js";
 import { snap } from "../grammar-aws/index.js";
+import { checkInvariants } from "../render/index.js";
+import { attachRoutes, routeEdges } from "../route/index.js";
 import { layoutDocument } from "./layout.js";
 import { findDiagramRoots, isEmptyRootBoundary, orderRootsForFlow } from "./roots.js";
 
@@ -463,6 +466,44 @@ describe("logical group layout", () => {
     );
     expect(groups.get("support")!.bounds.y).toBeGreaterThan(primaryBottom);
     expect(groups.get("region")!.bounds.w).toBeGreaterThan(groups.get("region")!.bounds.h);
+  });
+});
+
+describe("flat cloud flow layout", () => {
+  it("keeps an Auto-fix branch out of the main connector path", () => {
+    const doc = parseDgm(`diagram autofix-branch {
+  grammar aws
+  flow lr
+
+  generic.client client "Client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.cloudfront cloudfront "CloudFront"
+    aws.api-gateway api_gateway "API Gateway"
+    aws.simple-storage-service s3 "S3"
+    aws.aws-lambda lambda "Lambda"
+    aws.dynamodb dynamodb "DynamoDB"
+  }
+
+  client -> cloudfront
+  cloudfront -> s3
+  cloudfront -> api_gateway
+  api_gateway -> lambda
+  lambda -> dynamodb
+}`);
+
+    const layout = layoutDocument(doc);
+    const nodes = new Map(layout.nodes.map((node) => [node.id, node.obstacle]));
+    expect(nodes.get("cloudfront")!.x).toBeLessThan(nodes.get("api_gateway")!.x);
+    expect(Math.abs(
+      nodes.get("api_gateway")!.x + nodes.get("api_gateway")!.w / 2 -
+      (nodes.get("s3")!.x + nodes.get("s3")!.w / 2),
+    )).toBeLessThanOrEqual(8);
+    expect(nodes.get("api_gateway")!.y).not.toBe(nodes.get("s3")!.y);
+    expect(nodes.get("api_gateway")!.x).toBeLessThan(nodes.get("lambda")!.x);
+    expect(nodes.get("lambda")!.x).toBeLessThan(nodes.get("dynamodb")!.x);
+
+    const routed = attachRoutes(layout, routeEdges(doc, layout));
+    expect(checkInvariants(routed)).toEqual([]);
   });
 });
 

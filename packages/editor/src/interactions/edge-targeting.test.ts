@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { nearestEdgeIdAt, nearestNodePortAt } from "./edge-targeting.js";
+import { nearestEdgeIdAt, nearestNodePortAt, endpointForSelectedEdgePort, resolvePortPointerAction } from "./edge-targeting.js";
 
 describe("nearestEdgeIdAt", () => {
   const edges = [
@@ -62,5 +62,70 @@ describe("nearestNodePortAt", () => {
       side: "s",
       offset: 0.5,
     });
+  });
+});
+
+describe("endpointForSelectedEdgePort", () => {
+  const edge = {
+    source: "cdn",
+    target: "gateway",
+    sourcePort: "e" as const,
+    targetPort: "w" as const,
+    sourcePortOffset: 0.5,
+    targetPortOffset: 0.5,
+  };
+
+  it("maps a port click on the source node to source rewire", () => {
+    expect(endpointForSelectedEdgePort(edge, "cdn", "e", 0.5)).toBe("source");
+  });
+
+  it("maps a port click on the target node to target rewire", () => {
+    expect(endpointForSelectedEdgePort(edge, "gateway", "w", 0.5)).toBe("target");
+  });
+
+  it("ignores ports on unrelated nodes", () => {
+    expect(endpointForSelectedEdgePort(edge, "handler", "e", 0.5)).toBeNull();
+  });
+});
+
+describe("resolvePortPointerAction", () => {
+  const edge = {
+    source: "cdn",
+    target: "gateway",
+    sourcePort: "e" as const,
+    targetPort: "w" as const,
+  };
+
+  it("rewires when a selected connector endpoint port is pressed", () => {
+    expect(resolvePortPointerAction({
+      tool: "select",
+      selectedEdge: edge,
+      pendingPort: null,
+      nodeId: "cdn",
+      side: "e",
+      offset: 0.5,
+    })).toEqual({ type: "rewire", endpoint: "source" });
+  });
+
+  it("drags from a pending source port instead of forcing click-to-connect only", () => {
+    expect(resolvePortPointerAction({
+      tool: "select",
+      selectedEdge: undefined,
+      pendingPort: { nodeId: "cdn", side: "e", offset: 0.5 },
+      nodeId: "cdn",
+      side: "e",
+      offset: 0.5,
+    })).toEqual({ type: "drag-pending" });
+  });
+
+  it("completes a pending connector when a different port is pressed", () => {
+    expect(resolvePortPointerAction({
+      tool: "select",
+      selectedEdge: undefined,
+      pendingPort: { nodeId: "cdn", side: "e", offset: 0.5 },
+      nodeId: "gateway",
+      side: "w",
+      offset: 0.5,
+    })).toEqual({ type: "complete-pending" });
   });
 });

@@ -752,6 +752,55 @@ function layoutGenericGroup(
 ): Measured {
   const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
   const children = measureChildren(doc, group.children, state);
+  const flowLayers = directResourceFlowLayers(doc, group, children);
+  if (flowLayers) {
+    const columnWidths = flowLayers.map((layer) =>
+      Math.max(...layer.map((child) => child.w))
+    );
+    const columnGaps = flowLayers.slice(1).map((layer, index) =>
+      Math.max(
+        H_GAP,
+        ...flowLayers[index]!.flatMap((left) =>
+          layer.map((right) => genericChildGap(doc, left, right, state))
+        ),
+      )
+    );
+    const columnHeights = flowLayers.map((layer) =>
+      layer.reduce(
+        (height, child, index) => height + child.h + (index ? V_GAP : 0),
+        0,
+      )
+    );
+    const contentW = Math.max(
+      100,
+      groupLabelContentWidth(group, style),
+      columnWidths.reduce(
+        (width, columnWidth, index) =>
+          width + columnWidth + (index ? columnGaps[index - 1]! : 0),
+        0,
+      ),
+    );
+    const contentH = Math.max(40, ...columnHeights);
+    let x = 0;
+    for (const [column, layer] of flowLayers.entries()) {
+      let y = (contentH - columnHeights[column]!) / 2;
+      for (const child of layer) {
+        placeLayoutChild(
+          state,
+          child,
+          x + (columnWidths[column]! - child.w) / 2,
+          y,
+          doc,
+        );
+        y += child.h + V_GAP;
+      }
+      x += columnWidths[column]! + (columnGaps[column] ?? 0);
+    }
+    const w = contentW + padding * 2;
+    const h = contentH + style.headerHeight + padding * 2;
+    storeGroupGeom(state, group, 0, 0, w, h);
+    return { w, h };
+  }
   const childGaps = children.slice(1).map((child, index) =>
     genericChildGap(doc, children[index]!, child, state),
   );
@@ -775,6 +824,66 @@ function layoutGenericGroup(
   const h = contentH + style.headerHeight + padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
+}
+
+/**
+ * A flat cloud assembled in Studio has no nested boundaries to express a
+ * branch. Put direct resources with the same flow depth in one vertical tier
+ * so Auto-fix cannot flatten that branch into unrelated connectors.
+ */
+function directResourceFlowLayers(
+  doc: DiagramDocument,
+  group: Group,
+  children: LayoutChild[],
+): LayoutChild[][] | undefined {
+  if (
+    doc.flow !== "lr" ||
+    group.kind !== "cloud" ||
+    children.length < 3 ||
+    children.some((child) => !child.resource)
+  ) return undefined;
+
+  const childById = new Map(children.map((child) => [child.id, child]));
+  const adjacency = new Map(children.map((child) => [child.id, new Set<ID>()]));
+  const inDegree = new Map(children.map((child) => [child.id, 0]));
+  const active = new Set<ID>();
+  for (const edge of doc.edges) {
+    if (
+      edge.kind === "fail" ||
+      edge.kind === "peer" ||
+      edge.style === "dashed" ||
+      !childById.has(edge.source) ||
+      !childById.has(edge.target) ||
+      edge.source === edge.target
+    ) continue;
+    if (adjacency.get(edge.source)!.has(edge.target)) continue;
+    adjacency.get(edge.source)!.add(edge.target);
+    inDegree.set(edge.target, inDegree.get(edge.target)! + 1);
+    active.add(edge.source);
+    active.add(edge.target);
+  }
+  if (active.size !== children.length) return undefined;
+
+  const rank = new Map(children.map((child) => [child.id, 0]));
+  const queue = children.filter((child) => inDegree.get(child.id) === 0);
+  let visited = 0;
+  while (queue.length) {
+    const source = queue.shift()!;
+    visited += 1;
+    for (const targetId of adjacency.get(source.id)!) {
+      rank.set(targetId, Math.max(rank.get(targetId)!, rank.get(source.id)! + 1));
+      inDegree.set(targetId, inDegree.get(targetId)! - 1);
+      if (inDegree.get(targetId) === 0) queue.push(childById.get(targetId)!);
+    }
+  }
+  if (visited !== children.length) return undefined;
+
+  const layers = Array.from(
+    { length: Math.max(...rank.values()) + 1 },
+    () => [] as LayoutChild[],
+  );
+  for (const child of children) layers[rank.get(child.id)!]!.push(child);
+  return layers.some((layer) => layer.length > 1) ? layers : undefined;
 }
 
 /**
@@ -1026,7 +1135,7 @@ function measureResource(
     x: 0,
     y: 0,
     w,
-    h: h + GRAMMAR.labelPad,
+    h: h + 10,
   };
 
   state.nodeGeoms.set(resource.id, {

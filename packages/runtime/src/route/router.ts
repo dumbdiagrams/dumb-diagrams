@@ -359,7 +359,11 @@ export function routeEdges(
     }
 
     if (!best) {
-      throw new Error(`Unable to route automatic edge ${edge.id} without crossing content`);
+      const port = representativePortChoices(ports, 1)[0] ?? ports[0]!;
+      best = cardsOverlap(source, target)
+        ? simplify(colocatedEdgeFallback(source, target, port))
+        : emergencyEdgeRoute(source, target, port);
+      bestPort = port;
     }
     let points = best;
     points = shortcut(
@@ -756,6 +760,56 @@ function perimeterFallback(
     return best;
   };
   return choose(existing);
+}
+
+function cardsOverlap(source: NodeGeom, target: NodeGeom, margin = 4): boolean {
+  const left = Math.max(source.obstacle.x, target.obstacle.x);
+  const top = Math.max(source.obstacle.y, target.obstacle.y);
+  const right = Math.min(
+    source.obstacle.x + source.obstacle.w,
+    target.obstacle.x + target.obstacle.w,
+  );
+  const bottom = Math.min(
+    source.obstacle.y + source.obstacle.h,
+    target.obstacle.y + target.obstacle.h,
+  );
+  return right - left > margin && bottom - top > margin;
+}
+
+/** Direct elbow used only when every scored search fails. Studio must stay editable. */
+function emergencyEdgeRoute(
+  source: NodeGeom,
+  target: NodeGeom,
+  portChoice: PortChoice,
+): Point[] {
+  const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
+  const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
+  if (start.x === goal.x || start.y === goal.y) {
+    return [portChoice.src, start, goal, portChoice.tgt];
+  }
+  const corner = portChoice.srcSide === "e" || portChoice.srcSide === "w"
+    ? { x: goal.x, y: start.y }
+    : { x: start.x, y: goal.y };
+  return [portChoice.src, start, corner, goal, portChoice.tgt];
+}
+
+/** Loop above coincident cards so stacked endpoints still get a visible route. */
+function colocatedEdgeFallback(
+  source: NodeGeom,
+  target: NodeGeom,
+  portChoice: PortChoice,
+): Point[] {
+  const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
+  const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
+  const loopY = Math.min(source.obstacle.y, target.obstacle.y) - 48;
+  return [
+    portChoice.src,
+    start,
+    { x: start.x, y: loopY },
+    { x: goal.x, y: loopY },
+    goal,
+    portChoice.tgt,
+  ];
 }
 
 function nudgeAutomaticRoutesOffBoundaries(

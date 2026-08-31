@@ -1,6 +1,6 @@
 import type { NodeGeom, Point, RoutedEdge, Side } from "@dumb-diagrams/runtime/core";
 
-import { nearestPortAnchor, portPoint } from "@dumb-diagrams/runtime/core";
+import { nearestPortAnchor, normalizePortOffset, portPoint } from "@dumb-diagrams/runtime/core";
 import { projectPointToPolyline } from "@dumb-diagrams/runtime/route";
 
 const EDGE_HIT_RADIUS = 16;
@@ -34,6 +34,75 @@ export interface NodePortTarget {
   nodeId: string;
   side: Side;
   offset: number;
+}
+
+type EdgePortEndpoint = {
+  source: string;
+  target: string;
+  sourcePort?: Side;
+  targetPort?: Side;
+  sourcePortOffset?: number;
+  targetPortOffset?: number;
+};
+
+/** Which endpoint of a selected connector owns a port click on its node. */
+export function endpointForSelectedEdgePort(
+  edge: EdgePortEndpoint,
+  nodeId: string,
+  side: Side,
+  offset: number,
+): "source" | "target" | null {
+  if (edge.source !== nodeId && edge.target !== nodeId) return null;
+  const normalized = normalizePortOffset(offset);
+  const onSource = edge.source === nodeId;
+  const onTarget = edge.target === nodeId;
+  const matchesSource =
+    onSource &&
+    edge.sourcePort === side &&
+    normalizePortOffset(edge.sourcePortOffset) === normalized;
+  const matchesTarget =
+    onTarget &&
+    edge.targetPort === side &&
+    normalizePortOffset(edge.targetPortOffset) === normalized;
+  if (matchesSource && !matchesTarget) return "source";
+  if (matchesTarget && !matchesSource) return "target";
+  if (onSource && !onTarget) return "source";
+  if (onTarget && !onSource) return "target";
+  return "source";
+}
+
+export type PortPointerAction =
+  | { type: "rewire"; endpoint: "source" | "target" }
+  | { type: "drag-pending" }
+  | { type: "complete-pending" }
+  | { type: "start-connector" };
+
+/** Decide whether a port pointerdown should rewire, finish, or start a connector. */
+export function resolvePortPointerAction(input: {
+  tool: "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note" | "text";
+  selectedEdge?: EdgePortEndpoint;
+  pendingPort: NodePortTarget | null;
+  nodeId: string;
+  side: Side;
+  offset: number;
+}): PortPointerAction {
+  if (input.tool === "select" && input.selectedEdge) {
+    const endpoint = endpointForSelectedEdgePort(
+      input.selectedEdge,
+      input.nodeId,
+      input.side,
+      input.offset,
+    );
+    if (endpoint) return { type: "rewire", endpoint };
+  }
+  if (input.pendingPort) {
+    const samePort =
+      input.pendingPort.nodeId === input.nodeId &&
+      input.pendingPort.side === input.side &&
+      input.pendingPort.offset === input.offset;
+    return samePort ? { type: "drag-pending" } : { type: "complete-pending" };
+  }
+  return { type: "start-connector" };
 }
 
 /**

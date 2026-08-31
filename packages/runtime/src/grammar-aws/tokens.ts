@@ -17,7 +17,7 @@ export const GRAMMAR = {
   grid: 8,
   iconPrimary: 48,
   iconSecondary: 36,
-  labelPad: 14,
+  labelPad: 10,
   labelLineHeight: 16,
   serviceFontSize: 12,
   roleFontSize: 11,

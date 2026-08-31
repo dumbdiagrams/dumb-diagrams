@@ -1,10 +1,12 @@
-import type { DiagramDocument, LayoutResult, ValidationIssue } from "@dumb-diagrams/runtime/core";
+import type { DiagramDocument, LayoutResult, RoutedEdge, ValidationIssue } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/runtime/core";
 import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import {
   checkInvariants,
+  qualityFindings,
+  qualityHardRegressionReason,
   renderSvg,
   type InvariantFailure,
 } from "@dumb-diagrams/runtime/render";
@@ -96,29 +98,7 @@ export function compileDiagramSource(source: string, snapToGrid: boolean): Diagr
   const key = cacheKey(source, snapToGrid);
   try {
     const doc = parseDgm(source);
-    const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
-    if (hasErrors(issues)) {
-      return remember(key, {
-        ok: false,
-        issues,
-        svg: null,
-        invariantFailures: [],
-      });
-    }
-    const placedLayout = snapToGrid
-      ? snapLayoutToGrid(layoutDocument(doc), true, doc)
-      : layoutDocument(doc);
-    const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routeEdges(doc, placedLayout)));
-    const invariantFailures = checkInvariants(layout);
-    const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
-    return remember(key, {
-      ok: true,
-      issues,
-      invariantFailures,
-      doc,
-      layout,
-      svg,
-    });
+    return remember(key, compileParsedDocument(doc, snapToGrid));
   } catch (error) {
     return remember(key, {
       ok: false,
@@ -129,6 +109,83 @@ export function compileDiagramSource(source: string, snapToGrid: boolean): Diagr
       invariantFailures: [],
     });
   }
+}
+
+/** Compile a parsed document without consulting the source-string cache. */
+export function compileDocument(
+  doc: DiagramDocument,
+  snapToGrid: boolean,
+): DiagramCompilation {
+  return compileParsedDocument(doc, snapToGrid);
+}
+
+function compileParsedDocument(
+  doc: DiagramDocument,
+  snapToGrid: boolean,
+): DiagramCompilation {
+  const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
+  if (hasErrors(issues)) {
+    return {
+      ok: false,
+      issues,
+      svg: null,
+      invariantFailures: [],
+    };
+  }
+  const placedLayout = snapToGrid
+    ? snapLayoutToGrid(layoutDocument(doc), true, doc)
+    : layoutDocument(doc);
+  let routedEdges: RoutedEdge[];
+  const routingWarnings: ValidationIssue[] = [];
+  try {
+    routedEdges = routeEdges(doc, placedLayout);
+  } catch (error) {
+    routingWarnings.push({
+      level: "warning",
+      code: "routing",
+      message: (error as Error).message,
+    });
+    routedEdges = [];
+  }
+  const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routedEdges));
+  const invariantFailures = checkInvariants(layout);
+  const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
+  return {
+    ok: true,
+    issues: [...issues, ...routingWarnings],
+    invariantFailures,
+    doc,
+    layout,
+    svg,
+  };
+}
+
+/**
+ * Auto-fix is destructive, so only commit a candidate that introduces no new
+ * compiler warnings or rendered-diagram invariant failures.
+ */
+export function autoFixRejectionReason(
+  current: DiagramCompilation,
+  candidate: DiagramCompilation,
+): string | undefined {
+  return qualityHardRegressionReason(
+    compilationQualityFindings(current),
+    compilationQualityFindings(candidate),
+  );
+}
+
+function compilationQualityFindings(
+  compilation: DiagramCompilation,
+): ReturnType<typeof qualityFindings> {
+  const parseError =
+    !compilation.ok && "parseError" in compilation
+      ? compilation.parseError
+      : undefined;
+  return qualityFindings(
+    compilation.issues,
+    compilation.invariantFailures,
+    parseError,
+  );
 }
 
 /** Keep a generous editable margin around every diagram and any authored overflow. */

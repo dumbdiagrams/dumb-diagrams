@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture, createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 
+import { addResource } from "./editor-model.js";
 import {
   GRID_SIZE,
   leftStagingInsertionPoint,
   snapDragDelta,
   snapLayoutToGrid,
+  STAGING_GUTTER_PX,
 } from "./grid.js";
 
 describe("editor grid", () => {
@@ -106,8 +109,9 @@ describe("editor grid", () => {
     expect(snapped).toEqual({ dx: 62, dy: 38, guides: [] });
   });
 
-  it("places new root objects in a safe staging lane before the diagram", () => {
-    const layout = layoutDocument(createAsyncDocsFixture());
+  it("places new root objects in a fixed staging slot before the diagram", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
     const left = Math.min(
       ...layout.groups.map((group) => group.bounds.x),
       ...layout.nodes.map((node) => node.obstacle.x),
@@ -118,9 +122,28 @@ describe("editor grid", () => {
       ...layout.nodes.map((node) => node.obstacle.y),
       ...layout.edges.flatMap((edge) => edge.points.map((point) => point.y)),
     );
-    const point = leftStagingInsertionPoint(layout, 240);
+    const point = leftStagingInsertionPoint(doc, layout, 240);
 
-    expect(point).toEqual({ x: left - 72 - 240, y: top });
+    expect(point).toEqual({ x: left - STAGING_GUTTER_PX - 240, y: top });
     expect(point.x + 240).toBeLessThan(left);
+  });
+
+  it("reuses the same staging slot for consecutive root catalog additions", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const first = leftStagingInsertionPoint(doc, layout, 240);
+    const entry = getCatalogEntry("aws.simple-storage-service")!;
+    const added = addResource(doc, entry, undefined, first);
+    const afterFirst = layoutDocument(added.doc);
+    const second = leftStagingInsertionPoint(added.doc, afterFirst, 240);
+
+    expect(second).toEqual(first);
+  });
+
+  it("falls back to the empty-canvas origin on a blank diagram", () => {
+    const doc = createEmptyDocument("blank");
+    const layout = layoutDocument(doc);
+
+    expect(leftStagingInsertionPoint(doc, layout, 240)).toEqual({ x: 48, y: 48 });
   });
 });

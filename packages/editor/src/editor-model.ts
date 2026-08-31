@@ -2,6 +2,7 @@ import type {
   DiagramDocument,
   DiagramAsset,
   Edge,
+  ID,
   EdgeBadgeSide,
   EdgeColor,
   EdgeLabelSide,
@@ -605,6 +606,54 @@ export function clearRoute(
     };
   } else {
     delete view.routes[edgeId];
+  }
+  return next;
+}
+
+/** Drop authored route geometry while preserving badge and label decoration prefs. */
+export function clearAllRoutes(doc: DiagramDocument): DiagramDocument {
+  let next = doc;
+  for (const edgeId of Object.keys(getDefaultView(doc).routes)) {
+    next = clearRoute(next, edgeId);
+  }
+  return next;
+}
+
+/** Remove manual placement for the listed entities and clear their incident routes. */
+export function clearPlaces(
+  doc: DiagramDocument,
+  ids: ID[],
+): DiagramDocument {
+  const unique = [...new Set(ids)];
+  let next = cloneDocument(doc);
+  const view = getDefaultView(next);
+  for (const id of unique) {
+    const place = view.places[id];
+    if (!place) continue;
+    if (isEmptyRootBoundary(next, id)) {
+      view.places[id] = {
+        x: place.x,
+        y: place.y,
+        w: place.w,
+        h: place.h,
+        pin: place.pin,
+        manual: place.manual,
+        locked: place.locked,
+        visible: place.visible,
+        zIndex: place.zIndex,
+      };
+    } else {
+      view.places[id] = {
+        locked: place.locked,
+        visible: place.visible,
+        zIndex: place.zIndex,
+      };
+    }
+    for (const edge of next.edges) {
+      if (edge.source === id || edge.target === id) {
+        next = clearRoute(next, edge.id);
+      }
+    }
   }
   return next;
 }

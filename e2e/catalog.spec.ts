@@ -377,6 +377,20 @@ test("delete removes an empty detached aws cloud after ungroup", async ({ page }
   await expect(frontend).toHaveCount(1);
 });
 
+test("auto-fix leaves an already clean diagram unchanged", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const frontendBefore = await entityBox(page, "group", "frontend");
+  await page.getByRole("button", { name: "Auto-fix" }).click();
+  await expect(page.getByText("Diagram already passes Auto-fix checks")).toBeVisible();
+
+  const frontendAfter = await entityBox(page, "group", "frontend");
+  expect(Math.abs(frontendAfter.x - frontendBefore.x)).toBeLessThan(8);
+  expect(Math.abs(frontendAfter.y - frontendBefore.y)).toBeLessThan(8);
+});
+
 test("auto-fix after grouping mixed roots preserves left-to-right architecture flow", async ({ page }) => {
   const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
   await page.goto("/");

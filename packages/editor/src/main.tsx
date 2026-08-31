@@ -89,7 +89,6 @@ import {
   duplicateSelection,
   importSvgAsset,
   moveSelection,
-  needsAutoFix,
   removeSelectionPreservingGroupContents,
   setGroupBounds,
   updateAnnotationText,
@@ -165,7 +164,13 @@ import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
 import { useDiagramCompilation } from "./use-diagram-compilation";
-import { getCachedDiagramCompilation, warmDiagramCompilationCache } from "./diagram-compiler";
+import { planAutoFix } from "./auto-fix";
+import {
+  compileDiagramSource,
+  getCachedDiagramCompilation,
+  warmDiagramCompilationCache,
+  type DiagramCompilation,
+} from "./diagram-compiler";
 import {
   GRID_SIZE,
   leftStagingInsertionPoint,
@@ -833,14 +838,42 @@ function App() {
     }
   };
 
-  const { compilation: hookCompiled, pending: compilationPending } = useDiagramCompilation(source, snapToGrid);
-  const compiled = useMemo(() => {
+  const { compilation: rawCompiled, pending: compilationPending } = useDiagramCompilation(source, snapToGrid);
+  const compiledFromCache = useMemo(() => {
     void committedCompilationKey;
     const committed = getCachedDiagramCompilation(sourceRef.current, snapToGrid);
     if (committed) return committed;
     const cached = getCachedDiagramCompilation(source, snapToGrid);
-    return cached ?? hookCompiled;
-  }, [committedCompilationKey, hookCompiled, snapToGrid, source]);
+    return cached ?? rawCompiled;
+  }, [committedCompilationKey, rawCompiled, snapToGrid, source]);
+
+  const displayCompiled = compiledFromCache.ok ? compiledFromCache : lastGoodRef.current;
+
+  const parsedDoc = useMemo(() => {
+    try {
+      return parseDgm(source);
+    } catch {
+      return null;
+    }
+  }, [source]);
+
+  const compiled = useMemo((): DiagramCompilation => {
+    if (compiledFromCache.ok) return compiledFromCache;
+    if (!parsedDoc || !displayCompiled) return compiledFromCache;
+    const message = ("parseError" in compiledFromCache && compiledFromCache.parseError)
+      || compiledFromCache.issues.find((issue) => issue.level === "error")?.message
+      || compiledFromCache.issues[0]?.message;
+    return {
+      ok: true as const,
+      doc: parsedDoc,
+      layout: displayCompiled.layout,
+      svg: displayCompiled.svg,
+      issues: message
+        ? [{ level: "warning" as const, code: "render-degraded", message }]
+        : [],
+      invariantFailures: [],
+    };
+  }, [compiledFromCache, displayCompiled, parsedDoc]);
 
   useEffect(() => {
     if (
@@ -854,8 +887,8 @@ function App() {
   }, [compilationPending, operation, source]);
 
   useEffect(() => {
-    if (compiled.ok) lastGoodRef.current = compiled;
-  }, [compiled]);
+    if (compiledFromCache.ok) lastGoodRef.current = compiledFromCache;
+  }, [compiledFromCache]);
 
   useEffect(() => {
     if (sourceCommitTimerRef.current) {
@@ -877,7 +910,6 @@ function App() {
     clearDraft();
   }, [activeTab.origin, workspaceReady]);
 
-  const displayCompiled = compiled.ok ? compiled : lastGoodRef.current;
   const displayCanvas = displayCompiled
     ? displayCompiled.layout.canvasBounds ?? {
         x: 0,
@@ -898,6 +930,7 @@ function App() {
   }, [compiled.ok, compiled.ok ? compiled.doc.title : "", compiled.ok ? compiled.doc.id : ""]);
 
   const selectItem = (item: SelectionItem, mode: SelectionMode) => {
+    if (item.kind === "edge") setPendingPort(null);
     setSelection((current) => mergeSelection(current, [item], mode));
   };
 
@@ -927,20 +960,35 @@ function App() {
   }, [textEditRequest]);
 
   const journalIssues = useMemo<StudioIssue[]>(() => {
-    if ("parseError" in compiled && compiled.parseError) {
-      return [{ severity: "error", message: compiled.parseError }];
+    if (!compiledFromCache.ok) {
+      const message = ("parseError" in compiledFromCache && compiledFromCache.parseError)
+        || compiledFromCache.issues.find((issue) => issue.level === "error")?.message
+        || compiledFromCache.issues[0]?.message;
+      if (message) {
+        return [{
+          severity: parsedDoc ? "warning" : "error",
+          message,
+        }];
+      }
     }
     if (!compiled.ok) {
-      return compiled.issues.map((issue) => ({ severity: "error", message: issue.message }));
+      return compiled.issues.map((issue) => ({ severity: "error" as const, message: issue.message }));
     }
-    return compiled.invariantFailures.map((failure) => ({
-      severity: "warning" as const,
-      message: failure.message,
-      elementIds: "elementIds" in failure && Array.isArray(failure.elementIds)
-        ? failure.elementIds
-        : undefined,
-    }));
-  }, [compiled]);
+    const active = compiled;
+    return [
+      ...active.issues.map((issue) => ({
+        severity: issue.level,
+        message: issue.message,
+      })),
+      ...active.invariantFailures.map((failure) => ({
+        severity: "warning" as const,
+        message: failure.message,
+        elementIds: "elementIds" in failure && Array.isArray(failure.elementIds)
+          ? failure.elementIds
+          : undefined,
+      })),
+    ];
+  }, [compiled, compiledFromCache, parsedDoc]);
   const issues = useMemo(() => journalIssues.map(({ message }) => ({ message })), [journalIssues]);
 
   const handleIssueSelect = (issue: StudioIssue) => {
@@ -1048,14 +1096,20 @@ function App() {
 
   const autoFix = () => {
     try {
-      const current = parseDgm(sourceRef.current);
       setPendingPort(null);
-      if (!needsAutoFix(current)) {
-        setToast("Already auto-fixed");
+      const current = compiled.ok ? compiled.doc : parseDgm(sourceRef.current);
+      const plan = planAutoFix(current, snapToGrid);
+      if (plan.status === "unchanged") {
+        setToast(plan.message ?? "Diagram already passes Auto-fix checks");
         return;
       }
-      commitDocument(clearView(current));
-      setToast("Diagram auto-fixed");
+      if (plan.status === "blocked" || plan.status === "unresolved") {
+        setToast(plan.message ?? "Auto-fix could not improve the diagram");
+        return;
+      }
+      if (commitDocument(plan.doc)) {
+        setToast(plan.message ?? "Diagram auto-fixed");
+      }
     } catch {
       // Keep the source editor authoritative while it contains parse errors.
     }
@@ -1090,7 +1144,7 @@ function App() {
     const at = requestedPlacement?.at ?? snapPoint(
       parent
         ? insertionPoint(compiled.layout, parent)
-        : leftStagingInsertionPoint(compiled.layout, 240),
+        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 240),
       snapToGrid,
     );
     try {
@@ -1120,7 +1174,7 @@ function App() {
     const at = requestedPlacement?.at ?? snapPoint(
       parent
         ? insertionPoint(compiled.layout, parent)
-        : leftStagingInsertionPoint(compiled.layout, 360),
+        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 360),
       snapToGrid,
     );
     try {
@@ -1151,7 +1205,7 @@ function App() {
     const at = snapPoint(
       parent
         ? insertionPoint(compiled.layout, parent)
-        : leftStagingInsertionPoint(compiled.layout, 360),
+        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 360),
       snapToGrid,
     );
     try {
@@ -1220,7 +1274,7 @@ function App() {
   const createNote = (style: AnnotationStyle) => {
     if (!compiled.ok) return;
     const size = annotationSize(style);
-    const at = snapPoint(leftStagingInsertionPoint(compiled.layout, size.w), snapToGrid);
+    const at = snapPoint(leftStagingInsertionPoint(compiled.doc, compiled.layout, size.w), snapToGrid);
     const result = addAnnotation(compiled.doc, "Note", at, undefined, style);
     if (!updateDocument(result.doc)) return;
     setSelection([{ kind: "annotation", id: result.id }]);
@@ -1243,7 +1297,7 @@ function App() {
       setToast("Enter some text before placing it");
       return;
     }
-    const at = snapPoint(leftStagingInsertionPoint(compiled.layout, 240), snapToGrid);
+    const at = snapPoint(leftStagingInsertionPoint(compiled.doc, compiled.layout, 240), snapToGrid);
     const result = addText(compiled.doc, text, at, {
       font: textFont,
       fontSize: textFontSize,
@@ -1507,53 +1561,51 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
       const mod = event.metaKey || event.ctrlKey;
-      const key = event.key.toLowerCase();
 
-      if (mod && key === "k") {
+      if (modifierShortcut(event, "KeyK")) {
         event.preventDefault();
         setCommandPaletteOpen(true);
         return;
       }
-      if (mod && key === "n") {
+      if (modifierShortcut(event, "KeyN")) {
         event.preventDefault();
         handleNewTab();
         return;
       }
-      if (mod && key === "o") {
+      if (modifierShortcut(event, "KeyO")) {
         event.preventDefault();
         void openFromDisk();
         return;
       }
-      if (mod && key === "s") {
+      if (modifierShortcut(event, "KeyS")) {
         event.preventDefault();
         if (event.shiftKey) openSaveAs();
         else saveActive();
         return;
       }
-      if (mod && key === "w") {
+      if (modifierShortcut(event, "KeyW")) {
         event.preventDefault();
         handleCloseTab(activeTab.id);
         return;
       }
 
-      if (target.matches("textarea, input, select, [contenteditable='true']") || target.closest(".cm-editor")) return;
+      if (isEditableKeyboardTarget(event.target)) return;
 
-      if (mod && key === "g") {
+      if (modifierShortcut(event, "KeyG")) {
         event.preventDefault();
         if (event.shiftKey) ungroupCurrentSelection();
         else groupCurrentSelection();
         return;
       }
 
-      if (mod && key === "z") {
+      if (modifierShortcut(event, "KeyZ")) {
         event.preventDefault();
         if (event.shiftKey) redo();
         else undo();
         return;
       }
-      if (mod && key === "y") {
+      if (modifierShortcut(event, "KeyY")) {
         event.preventDefault();
         redo();
         return;
@@ -1569,7 +1621,7 @@ function App() {
         removeCurrentSelection();
         return;
       }
-      if (mod && key === "a") {
+      if (modifierShortcut(event, "KeyA")) {
         event.preventDefault();
         if (!compiled.ok) return;
         const all: Selection = [
@@ -1587,28 +1639,28 @@ function App() {
         setSelection(all);
         return;
       }
-      if (mod && key === "c") {
+      if (modifierShortcut(event, "KeyC")) {
         event.preventDefault();
         void copySelection();
         return;
       }
-      if (mod && key === "x") {
+      if (modifierShortcut(event, "KeyX")) {
         event.preventDefault();
         void cutSelection();
         return;
       }
-      if (mod && key === "v") {
+      if (modifierShortcut(event, "KeyV")) {
         event.preventDefault();
         void pasteSelection();
         return;
       }
-      if (mod && key === "d") {
+      if (modifierShortcut(event, "KeyD")) {
         event.preventDefault();
         duplicateCurrentSelection();
         return;
       }
-      if (key === "v" && !mod) setTool("select");
-      if (key === "t" && !mod) openTextComposer();
+      if (event.code === "KeyV" && !mod) setTool("select");
+      if (event.code === "KeyT" && !mod) openTextComposer();
       if (selection.length && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         event.preventDefault();
         const step = event.shiftKey ? 32 : 8;
@@ -1790,6 +1842,7 @@ function App() {
                 onSelect={selectItem}
                 onEditText={requestTextEdit}
                 onChoosePort={choosePort}
+                onClearPendingPort={() => setPendingPort(null)}
                 onConnectPorts={connectPorts}
                 onReconnect={(edgeId, endpoint, nodeId, side, offset) => {
                   mutateCurrent((doc) =>
@@ -1857,9 +1910,13 @@ function App() {
             </div>
           )}
         </CanvasStage>
-        {!compiled.ok && displayCompiled && (
+        {!compiledFromCache.ok && displayCompiled && (
           <div className="source-error-banner" role="alert">
-            <strong>Source error — showing the last valid diagram.</strong>
+            <strong>
+              {parsedDoc
+                ? "Diagram warning — you can keep editing."
+                : "Source error — showing the last valid diagram."}
+            </strong>
             <span>{issues[0]?.message}</span>
           </div>
         )}
@@ -2093,7 +2150,7 @@ function App() {
                     snapPoint(
                       importParent
                         ? insertionPoint(compiled.layout, importParent)
-                        : leftStagingInsertionPoint(compiled.layout, 240),
+                        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 240),
                       snapToGrid,
                     ),
                   );
@@ -3400,6 +3457,20 @@ function Inspector({
       </div>
     </FloatingPanel>
   );
+}
+
+function isEditableKeyboardTarget(target: EventTarget | null): boolean {
+  const candidates: HTMLElement[] = [];
+  if (target instanceof HTMLElement) candidates.push(target);
+  if (document.activeElement instanceof HTMLElement) candidates.push(document.activeElement);
+  return candidates.some((element) =>
+    element.matches("textarea, input, select, [contenteditable='true']") ||
+    Boolean(element.closest(".cm-editor")),
+  );
+}
+
+function modifierShortcut(event: KeyboardEvent, code: string): boolean {
+  return (event.metaKey || event.ctrlKey) && event.code === code;
 }
 
 function insertionPoint(layout: LayoutResult, parent?: string): Point {

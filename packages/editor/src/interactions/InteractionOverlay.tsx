@@ -35,7 +35,7 @@ import {
   snapDragDelta,
   type AlignmentGuide,
 } from "../grid.js";
-import { nearestEdgeIdAt, nearestNodePortAt } from "./edge-targeting.js";
+import { nearestEdgeIdAt, nearestNodePortAt, resolvePortPointerAction } from "./edge-targeting.js";
 import {
   anchorOrthogonalRouteEndpoints,
   moveOrthogonalBend,
@@ -87,6 +87,7 @@ function InteractionOverlayComponent({
   onSelect,
   onEditText,
   onChoosePort,
+  onClearPendingPort,
   onConnectPorts,
   onReconnect,
   onGestureBegin,
@@ -109,6 +110,7 @@ function InteractionOverlayComponent({
   onSelect: (item: SelectionItem, mode: SelectionMode) => void;
   onEditText: (item: SelectionItem) => void;
   onChoosePort: (nodeId: string, side: Side, offset: number) => void;
+  onClearPendingPort: () => void;
   onConnectPorts: (
     sourceNodeId: string,
     sourceSide: Side,
@@ -375,7 +377,7 @@ function InteractionOverlayComponent({
     );
 
   const beginRewire = (
-    event: React.PointerEvent<SVGRectElement>,
+    event: React.PointerEvent<SVGElement>,
     edgeId: string,
     endpoint: "source" | "target",
   ) => {
@@ -451,7 +453,11 @@ function InteractionOverlayComponent({
       // Commit the exact mount represented by the last rendered preview.
       // Re-resolving on pointerup can see a different DOM layer after React
       // updates and used to make a highlighted port silently fail to attach.
-      const target = next && didDrag ? latestTarget : null;
+      // Re-resolve on pointerup so a click without drag can still snap to a port.
+      const releaseTarget = next
+        ? portTargetAt(svg, next.clientX, next.clientY, latestTarget)
+        : null;
+      const target = didDrag ? latestTarget : releaseTarget;
       if (
         target &&
         (!currentTarget ||
@@ -1360,12 +1366,30 @@ function InteractionOverlayComponent({
                   onPointerDown={(event) => {
                     if (!isPrimaryPointerButton(event)) return;
                     event.stopPropagation();
-                    if (pendingPort) {
+                    const clickedPort = { nodeId: node.id, side, offset };
+                    const action = resolvePortPointerAction({
+                      tool,
+                      selectedEdge: edgeModel,
+                      pendingPort,
+                      nodeId: node.id,
+                      side,
+                      offset,
+                    });
+                    if (action.type === "rewire" && edgeGeom) {
+                      onClearPendingPort();
+                      beginRewire(event, edgeGeom.id, action.endpoint);
+                      return;
+                    }
+                    if (action.type === "drag-pending" && pendingPort) {
+                      beginConnectorDrag(event, pendingPort);
+                      return;
+                    }
+                    if (action.type === "complete-pending") {
                       onChoosePort(node.id, side, offset);
                       return;
                     }
                     onChoosePort(node.id, side, offset);
-                    beginConnectorDrag(event, { nodeId: node.id, side, offset });
+                    beginConnectorDrag(event, clickedPort);
                   }}
                   onClick={(event) => event.stopPropagation()}
                 />
