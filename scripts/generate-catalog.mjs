@@ -45,6 +45,11 @@ const ALL_PARENT_KINDS = [
   "subnet",
   "az",
   "vpc",
+  "auto-scaling",
+  "ec2-instance",
+  "elastic-beanstalk",
+  "spot-fleet",
+  "step-functions",
 ];
 
 const CATEGORY_COLUMN = {
@@ -188,6 +193,46 @@ const PROVIDER_GROUPS = [
     iconPath:
       "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Private-subnet_32.svg",
     kind: "subnet-private",
+  },
+  {
+    type: "aws.auto-scaling-group",
+    provider: "aws",
+    name: "Auto Scaling Group",
+    iconPath:
+      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Auto-Scaling-group_32.svg",
+    kind: "auto-scaling",
+  },
+  {
+    type: "aws.ec2-instance-contents",
+    provider: "aws",
+    name: "EC2 Instance Contents",
+    iconPath:
+      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/EC2-instance-contents_32.svg",
+    kind: "ec2-instance",
+  },
+  {
+    type: "aws.elastic-beanstalk-container",
+    provider: "aws",
+    name: "Elastic Beanstalk Container",
+    iconPath:
+      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Elastic-Beanstalk-container_32.svg",
+    kind: "elastic-beanstalk",
+  },
+  {
+    type: "aws.spot-fleet",
+    provider: "aws",
+    name: "Spot Fleet",
+    iconPath:
+      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Spot-Fleet_32.svg",
+    kind: "spot-fleet",
+  },
+  {
+    type: "aws.step-functions-workflow",
+    provider: "aws",
+    name: "AWS Step Functions Workflow",
+    iconPath:
+      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/AWS-Step-Functions-workflow_32.svg",
+    kind: "step-functions",
   },
   {
     type: "azure.subscription",
@@ -631,6 +676,13 @@ function gcpCategoryAssets() {
 }
 
 function providerGroupEntries(used, collisionLog) {
+  const nestableGroupKinds = new Set([
+    "auto-scaling",
+    "ec2-instance",
+    "elastic-beanstalk",
+    "spot-fleet",
+    "step-functions",
+  ]);
   return PROVIDER_GROUPS.map((item) => {
     const file = join(ROOT, item.iconPath);
     if (!existsSync(file)) throw new Error(`Missing curated group icon: ${item.iconPath}`);
@@ -646,7 +698,12 @@ function providerGroupEntries(used, collisionLog) {
       file,
       specificity: item.provider === "gcp" ? "shared-category" : "unique",
       groupKind: item.kind,
-      allowedParents: item.kind === "cloud" ? [] : ["cloud", "account", "region", "logical", "vpc", "az"],
+      allowedParents:
+        item.kind === "cloud"
+          ? []
+          : nestableGroupKinds.has(item.kind)
+            ? ALL_PARENT_KINDS
+            : ["cloud", "account", "region", "logical", "vpc", "az"],
       allowRoot: ["cloud", "account", "region"].includes(item.kind),
       scope: "global",
     });

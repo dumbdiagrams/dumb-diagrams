@@ -37,7 +37,12 @@ export type GroupKind =
   | "subnet-public"
   | "subnet-private"
   | "logical"
-  | "overlay";
+  | "overlay"
+  | "auto-scaling"
+  | "ec2-instance"
+  | "elastic-beanstalk"
+  | "spot-fleet"
+  | "step-functions";
 
 export type Side = "n" | "s" | "e" | "w";
 export type RouteMode = "auto" | "manual";

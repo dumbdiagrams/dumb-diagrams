@@ -2131,7 +2131,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function validGroup(value: unknown): boolean {
-  const groupKinds = new Set(["cloud", "account", "region", "vpc", "az", "subnet", "subnet-public", "subnet-private", "logical", "overlay"]);
+  const groupKinds = new Set(["cloud", "account", "region", "vpc", "az", "subnet", "subnet-public", "subnet-private", "logical", "overlay", "auto-scaling", "ec2-instance", "elastic-beanstalk", "spot-fleet", "step-functions"]);
   return isRecord(value) && typeof value.id === "string" && typeof value.kind === "string" && groupKinds.has(value.kind) && typeof value.label === "string" &&
     Array.isArray(value.children) && value.children.every((id) => typeof id === "string") &&
     (value.parent === undefined || typeof value.parent === "string") &&
