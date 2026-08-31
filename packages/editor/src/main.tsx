@@ -165,7 +165,7 @@ import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
 import { useDiagramCompilation } from "./use-diagram-compilation";
-import { getCachedDiagramCompilation } from "./diagram-compiler";
+import { getCachedDiagramCompilation, warmDiagramCompilationCache } from "./diagram-compiler";
 import {
   GRID_SIZE,
   leftStagingInsertionPoint,
@@ -347,6 +347,7 @@ function App() {
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [committedCompilationKey, setCommittedCompilationKey] = useState(0);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef(source);
   sourceRef.current = source;
@@ -832,7 +833,14 @@ function App() {
     }
   };
 
-  const { compilation: compiled, pending: compilationPending } = useDiagramCompilation(source, snapToGrid);
+  const { compilation: hookCompiled, pending: compilationPending } = useDiagramCompilation(source, snapToGrid);
+  const compiled = useMemo(() => {
+    void committedCompilationKey;
+    const committed = getCachedDiagramCompilation(sourceRef.current, snapToGrid);
+    if (committed) return committed;
+    const cached = getCachedDiagramCompilation(source, snapToGrid);
+    return cached ?? hookCompiled;
+  }, [committedCompilationKey, hookCompiled, snapToGrid, source]);
 
   useEffect(() => {
     if (
@@ -968,6 +976,8 @@ function App() {
     }
     const nextSource = printDgm(doc);
     sourceRef.current = nextSource;
+    warmDiagramCompilationCache(nextSource, snapToGrid);
+    setCommittedCompilationKey((current) => current + 1);
     commitSource(nextSource);
     return true;
   };
@@ -1440,7 +1450,8 @@ function App() {
     if (!updateDocument(result.doc)) return;
     setSelection(result.selection);
     setContextMenu(null);
-    setToast("Ungrouped selection");
+    const count = result.selection.length;
+    setToast(count === 1 ? "Ungrouped selection" : `Ungrouped selection (${count} layers promoted)`);
   };
 
   const groupCurrentSelection = (items: Selection = selection) => {

@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
+
+import { compileDiagramSource } from "./diagram-compiler.js";
 
 import {
   addAnnotation,
@@ -810,7 +812,9 @@ describe("editor commands", () => {
 
     const { doc: next, selection } = ungroup(doc, "aws_cloud", beforeLayout);
 
-    expect(next.groups.some((group) => group.id === "aws_cloud")).toBe(false);
+    const cloudGroup = next.groups.find((group) => group.id === "aws_cloud");
+    expect(cloudGroup).toBeTruthy();
+    expect(cloudGroup?.children).toEqual([]);
     expect(next.groups.some((group) => group.id === "frontend")).toBe(true);
     expect(next.resources.some((resource) => resource.id === "gateway")).toBe(true);
     expect(next.resources.some((resource) => resource.id === "handler")).toBe(true);
@@ -818,12 +822,12 @@ describe("editor commands", () => {
     expect(next.resources.some((resource) => resource.id === "web_client")).toBe(true);
     expect(next.edges).toHaveLength(edgeCount);
     expect(selection.map((item) => item.id).sort()).toEqual(
-      ["app_data", "frontend", "gateway", "handler"].sort(),
+      ["app_data", "aws_cloud", "frontend", "gateway", "handler"].sort(),
     );
 
     const afterLayout = layoutDocument(next);
     const view = getDefaultView(next);
-    for (const id of ["frontend", "gateway", "handler", "app_data"]) {
+    for (const id of ["frontend", "gateway", "handler", "app_data", "cdn", "static_assets"]) {
       const before = beforePositions.get(id);
       expect(before, id).toBeTruthy();
       const place = view.places[id];
@@ -832,6 +836,172 @@ describe("editor commands", () => {
       expect(Math.abs((place?.y ?? 0) - before!.y)).toBeLessThan(4);
     }
     expect(afterLayout.nodes.some((node) => node.id === "gateway")).toBe(true);
+  });
+
+  it("round-trips aws cloud ungroup through print and studio compile with visible nodes", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  generic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service static_assets "Static web assets"
+    }
+    aws.api-gateway gateway
+    aws.aws-lambda handler "Request handler"
+    aws.dynamodb app_data "Application data"
+  }
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> static_assets { id cdn_to_assets label "static content" }
+  cdn -> gateway { id cdn_to_api step 2 }
+  gateway -> handler { id api_to_handler step 3 }
+  handler -> app_data { id handler_to_data step 4 }
+}
+`);
+    const beforeLayout = layoutDocument(doc);
+    const { doc: next } = ungroup(doc, "aws_cloud", beforeLayout);
+    expect(next.resources.find((resource) => resource.id === "gateway")?.parent).toBeUndefined();
+    expect(next.groups.find((group) => group.id === "frontend")?.parent).toBeUndefined();
+    expect("parent" in (next.resources.find((resource) => resource.id === "gateway") ?? {})).toBe(false);
+    expect("parent" in (next.groups.find((group) => group.id === "frontend") ?? {})).toBe(false);
+    const view = getDefaultView(next);
+    expect(Object.keys(view.places).sort()).toEqual(
+      ["app_data", "aws_cloud", "cdn", "frontend", "gateway", "handler", "static_assets"].sort(),
+    );
+    const source = printDgm(next);
+    expect(source).toContain("aws.cloud aws_cloud");
+    expect(source).toContain("aws.api-gateway gateway");
+    expect(source).toContain("place gateway {");
+
+    const compiled = compileDiagramSource(source, true);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    for (const id of ["frontend", "gateway", "handler", "app_data", "cdn", "static_assets", "web_client"]) {
+      expect(
+        compiled.layout.nodes.some((node) => node.id === id) ||
+          compiled.layout.groups.some((group) => group.id === id),
+        id,
+      ).toBe(true);
+    }
+    expect(compiled.svg).toContain('id="res-gateway"');
+    expect(compiled.svg).toContain('id="group-frontend"');
+  });
+
+  it("ungroups image thumbnail pipeline aws cloud with all nested content visible", () => {
+    const initialSource = `diagram image-thumbnail-pipeline {
+  grammar aws
+  flow lr
+  title "Image thumbnail pipeline"
+  generic.client image_uploader "Image uploader"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary upload_experience "Upload experience" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service upload_ui "Upload UI"
+    }
+    cloud-agnostic.boundary upload_storage "Upload storage" {
+      aws.simple-storage-service original_images "Original images"
+    }
+    cloud-agnostic.boundary processing "Processing" {
+      aws.aws-lambda thumbnail_processor "Thumbnail processor"
+    }
+    cloud-agnostic.boundary processed_assets "Processed assets" {
+      aws.simple-storage-service thumbnail_images "Thumbnail images"
+      aws.dynamodb image_metadata "Image metadata"
+    }
+  }
+  image_uploader -> cdn { id uploader_to_cdn step 1 }
+  cdn -> upload_ui { id cdn_to_upload_ui label "static content" }
+  image_uploader -> original_images { id uploader_to_originals label "direct multipart upload" }
+  original_images -> thumbnail_processor { id originals_to_processor step 2 style dashed label "object-created event" }
+  thumbnail_processor -> thumbnail_images { id processor_to_thumbnails step 3 }
+  thumbnail_processor -> image_metadata { id processor_to_metadata step 4 }
+}
+`;
+    const doc = parseDgm(initialSource);
+    const compiledBefore = compileDiagramSource(initialSource, true);
+    expect(compiledBefore.ok).toBe(true);
+    if (!compiledBefore.ok) return;
+    const { doc: next, selection } = ungroup(doc, "aws_cloud", compiledBefore.layout);
+    expect(next.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
+    expect(selection.map((item) => item.id).sort()).toEqual(
+      ["aws_cloud", "processed_assets", "processing", "upload_experience", "upload_storage"].sort(),
+    );
+    for (const id of ["upload_experience", "upload_storage", "processing", "processed_assets"]) {
+      expect(next.groups.find((group) => group.id === id)?.parent).toBeUndefined();
+    }
+    const source = printDgm(next);
+    expect(source).toContain("aws.cloud aws_cloud");
+    expect(source).toContain('boundary upload_experience "Upload experience"');
+    expect(source).toContain('aws.aws-lambda thumbnail_processor');
+    const reparsed = parseDgm(source);
+    expect(reparsed.groups.some((group) => group.id === "upload_experience")).toBe(true);
+    expect(reparsed.resources.some((resource) => resource.id === "thumbnail_processor")).toBe(true);
+    const compiled = compileDiagramSource(source, true);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    for (const id of [
+      "image_uploader", "cdn", "upload_ui", "original_images", "thumbnail_processor",
+      "thumbnail_images", "image_metadata", "upload_experience", "upload_storage",
+      "processing", "processed_assets",
+    ]) {
+      expect(
+        compiled.layout.nodes.some((node) => node.id === id) ||
+          compiled.layout.groups.some((group) => group.id === id),
+        id,
+      ).toBe(true);
+    }
+    expect(compiled.svg).toContain('id="res-cdn"');
+    expect(compiled.svg).toContain('id="group-upload_experience"');
+  });
+
+  it("ungroups a provider cloud in one pass without requiring a second action", () => {
+    const initialSource = `diagram image-thumbnail-pipeline {
+  grammar aws
+  flow lr
+  generic.client image_uploader "Image uploader"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary upload_experience "Upload experience" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service upload_ui "Upload UI"
+    }
+    cloud-agnostic.boundary upload_storage "Upload storage" {
+      aws.simple-storage-service original_images "Original images"
+    }
+    cloud-agnostic.boundary processing "Processing" {
+      aws.aws-lambda thumbnail_processor "Thumbnail processor"
+    }
+    cloud-agnostic.boundary processed_assets "Processed assets" {
+      aws.simple-storage-service thumbnail_images "Thumbnail images"
+      aws.dynamodb image_metadata "Image metadata"
+    }
+  }
+  image_uploader -> cdn { id uploader_to_cdn step 1 }
+  cdn -> upload_ui { id cdn_to_upload_ui label "static content" }
+  image_uploader -> original_images { id uploader_to_originals label "direct multipart upload" }
+  original_images -> thumbnail_processor { id originals_to_processor step 2 style dashed label "object-created event" }
+  thumbnail_processor -> thumbnail_images { id processor_to_thumbnails step 3 }
+  thumbnail_processor -> image_metadata { id processor_to_metadata step 4 }
+}
+`;
+    const before = compileDiagramSource(initialSource, true);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+
+    const once = ungroup(before.doc, "aws_cloud", before.layout);
+    const afterOnce = compileDiagramSource(printDgm(once.doc), true);
+    expect(afterOnce.ok).toBe(true);
+    if (!afterOnce.ok) return;
+
+    expect(once.doc.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
+    expect(once.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
+    expect(afterOnce.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
+    expect(printDgm(once.doc)).toContain('cloud-agnostic.boundary upload_experience "Upload experience"');
+    expect(printDgm(once.doc)).toContain('aws.cloud aws_cloud "AWS Cloud" {');
+
+    const twice = ungroup(afterOnce.doc, "aws_cloud", afterOnce.layout);
+    expect(twice.doc.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
+    expect(twice.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
   });
 
   it("infers parent-pointer-only direct children when ungrouping", () => {

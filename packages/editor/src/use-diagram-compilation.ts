@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { catalogIconUrl } from "@dumb-diagrams/runtime/catalog";
 import { renderSvg } from "@dumb-diagrams/runtime/render";
@@ -7,6 +7,7 @@ import {
   cacheDiagramCompilation,
   compileDiagramSource,
   getCachedDiagramCompilation,
+  getCommittedCompilationEpoch,
   type DiagramCompilation,
 } from "./diagram-compiler";
 
@@ -43,6 +44,21 @@ export function useDiagramCompilation(
   const workerBusyRef = useRef(false);
   const restartWorkerRef = useRef<(() => Worker | null) | null>(null);
   const requestIdRef = useRef(0);
+  const committedEpochRef = useRef(getCommittedCompilationEpoch());
+  const committedEpoch = getCommittedCompilationEpoch();
+
+  const invalidateInFlightCompilation = () => {
+    requestIdRef.current += 1;
+    if (workerBusyRef.current) restartWorkerRef.current?.();
+  };
+
+  useLayoutEffect(() => {
+    if (committedEpoch === committedEpochRef.current) return;
+    committedEpochRef.current = committedEpoch;
+    invalidateInFlightCompilation();
+    const cached = getCachedDiagramCompilation(source, snapToGrid);
+    if (cached) setCompilation(cached);
+  }, [committedEpoch, snapToGrid, source]);
 
   useEffect(() => {
     if (typeof Worker === "undefined") return;
@@ -81,8 +97,7 @@ export function useDiagramCompilation(
   useEffect(() => {
     const cached = getCachedDiagramCompilation(source, snapToGrid);
     if (cached) {
-      requestIdRef.current += 1;
-      if (workerBusyRef.current) restartWorkerRef.current?.();
+      invalidateInFlightCompilation();
       setCompilation(cached);
       return;
     }

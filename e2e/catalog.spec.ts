@@ -274,6 +274,8 @@ test("ungroups a curated aws cloud example while preserving children, geometry, 
   const gateway = page.locator('[data-entity-kind="resource"][data-entity-id="gateway"]');
   const handler = page.locator('[data-entity-kind="resource"][data-entity-id="handler"]');
   const appData = page.locator('[data-entity-kind="resource"][data-entity-id="app_data"]');
+  const cdn = page.locator('[data-entity-kind="resource"][data-entity-id="cdn"]');
+  const staticAssets = page.locator('[data-entity-kind="resource"][data-entity-id="static_assets"]');
   await expect(cloud).toHaveCount(1);
   const edgeIds = await page.locator('[data-entity-kind="edge"][data-edge-id]').evaluateAll((elements) =>
     [...new Set(elements.map((element) => element.getAttribute("data-edge-id")))],
@@ -292,8 +294,10 @@ test("ungroups a curated aws cloud example while preserving children, geometry, 
   await expect(cloud).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
 
-  await expect(cloud).toHaveCount(0);
+  await expect(cloud).toHaveCount(1);
   await expect(frontend).toHaveCount(1);
+  await expect(cdn).toHaveCount(1);
+  await expect(staticAssets).toHaveCount(1);
   await expect(gateway).toHaveCount(1);
   await expect(handler).toHaveCount(1);
   await expect(appData).toHaveCount(1);
@@ -320,8 +324,39 @@ test("ungroups a curated aws cloud example while preserving children, geometry, 
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Z" : "Control+Z");
   await expect(cloud).toHaveCount(1);
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+Z" : "Control+Shift+Z");
-  await expect(cloud).toHaveCount(0);
+  await expect(cloud).toHaveCount(1);
   await expect(frontend).toHaveAttribute("aria-selected", "true");
+});
+
+test("ungroups image thumbnail pipeline aws cloud while preserving nested content", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/image-thumbnail-pipeline/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const uploadExperience = page.locator('[data-entity-kind="group"][data-entity-id="upload_experience"]');
+  const cdn = page.locator('[data-entity-kind="resource"][data-entity-id="cdn"]');
+  const processor = page.locator('[data-entity-kind="resource"][data-entity-id="thumbnail_processor"]');
+  const thumbnails = page.locator('[data-entity-kind="resource"][data-entity-id="thumbnail_images"]');
+  await expect(cloud).toHaveCount(1);
+  await expect(uploadExperience).toHaveCount(1);
+  await expect(cdn).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12, { button: "right" });
+  const menu = page.locator(".context-menu");
+  await expect(menu.locator('[data-menu-item="ungroup"]')).toHaveCount(1);
+  await menu.locator('[data-menu-item="ungroup"]').click();
+
+  await expect(cloud).toHaveCount(1);
+  await expect(uploadExperience).toHaveCount(1);
+  await expect(cdn).toHaveCount(1);
+  await expect(processor).toHaveCount(1);
+  await expect(thumbnails).toHaveCount(1);
+  await expect(uploadExperience).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-entity-kind="group"][data-entity-id="processing"]')).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-entity-kind="group"][data-entity-id="processed_assets"]')).toHaveAttribute("aria-selected", "true");
 });
 
 async function entityBox(

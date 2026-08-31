@@ -31,6 +31,11 @@ export type DiagramCompilation = {
 const MAX_CACHED_COMPILATIONS = 12;
 export const STUDIO_CANVAS_PADDING = 128;
 const compilationCache = new Map<string, DiagramCompilation>();
+let committedCompilationEpoch = 0;
+
+export function getCommittedCompilationEpoch(): number {
+  return committedCompilationEpoch;
+}
 
 function cacheKey(source: string, snapToGrid: boolean): string {
   return `${snapToGrid ? "grid" : "free"}\0${source}`;
@@ -53,6 +58,22 @@ export function cacheDiagramCompilation(
   compilation: DiagramCompilation,
 ): DiagramCompilation {
   return remember(cacheKey(source, snapToGrid), compilation);
+}
+
+/** Keep the visible diagram in sync immediately after source commits. */
+export function warmDiagramCompilationCache(
+  source: string,
+  snapToGrid: boolean,
+): DiagramCompilation {
+  committedCompilationEpoch += 1;
+  const compilation = compileDiagramSource(source, snapToGrid);
+  if (!compilation.ok) return compilation;
+  return cacheDiagramCompilation(source, snapToGrid, {
+    ...compilation,
+    svg: renderSvg(compilation.doc, compilation.layout, {
+      resolveIconHref: catalogIconUrl,
+    }),
+  });
 }
 
 export function getCachedDiagramCompilation(

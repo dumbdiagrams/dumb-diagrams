@@ -1514,14 +1514,13 @@ export function ungroup(
       .map((candidate) => candidate.id),
   ];
   const promotedIds = [...ordinaryChildren, ...borderChildren.keys(), ...inferredChildren];
+  const preserveCloudBackdrop = group.kind === "cloud";
   const next = cloneDocument(doc);
 
   if (layout) {
     const view = getDefaultView(next);
     const sourceView = getDefaultView(doc);
-    const pinnedIds = new Set<string>();
-    pinnedIds.add(groupId);
-    collectChildren(doc, groupId, pinnedIds);
+    const pinnedIds = collectDescendantIds(doc, groupId);
     const layoutById = new Map<string, Rect>();
     for (const candidate of layout.groups) layoutById.set(candidate.id, candidate.bounds);
     for (const node of layout.nodes) layoutById.set(node.id, node.obstacle);
@@ -1570,8 +1569,14 @@ export function ungroup(
     const childGroup = next.groups.find((candidate) => candidate.id === childId);
     const childResource = next.resources.find((candidate) => candidate.id === childId);
     if (!childGroup && !childResource) continue;
-    if (childGroup) childGroup.parent = parentId;
-    if (childResource) childResource.parent = parentId;
+    if (childGroup) {
+      if (parentId) childGroup.parent = parentId;
+      else delete childGroup.parent;
+    }
+    if (childResource) {
+      if (parentId) childResource.parent = parentId;
+      else delete childResource.parent;
+    }
     validPromotedIds.push(childId);
   }
   if (destination) {
@@ -1595,14 +1600,34 @@ export function ungroup(
     }
   }
 
-  next.groups = next.groups.filter((candidate) => candidate.id !== groupId);
-  for (const view of next.views) delete view.places[groupId];
+  next.groups = preserveCloudBackdrop
+    ? next.groups
+    : next.groups.filter((candidate) => candidate.id !== groupId);
+  if (preserveCloudBackdrop) {
+    const cloudGroup = next.groups.find((candidate) => candidate.id === groupId);
+    if (cloudGroup) {
+      cloudGroup.children = [];
+      cloudGroup.borderChildren = [];
+      cloudGroup.overlayTargets = cloudGroup.overlayTargets?.filter((id) => !promotedIds.includes(id));
+    }
+  } else {
+    for (const view of next.views) delete view.places[groupId];
+  }
+  for (const resource of next.resources) {
+    if (resource.parent === groupId) delete resource.parent;
+  }
+  for (const candidate of next.groups) {
+    if (candidate.parent === groupId) delete candidate.parent;
+  }
 
-  const selection: Selection = validPromotedIds.map((id) => (
-    next.groups.some((candidate) => candidate.id === id)
-      ? { kind: "group" as const, id }
-      : { kind: "resource" as const, id }
-  ));
+  const selection: Selection = [
+    ...(preserveCloudBackdrop ? [{ kind: "group" as const, id: groupId }] : []),
+    ...validPromotedIds.map((id) => (
+      next.groups.some((candidate) => candidate.id === id)
+        ? { kind: "group" as const, id }
+        : { kind: "resource" as const, id }
+    )),
+  ];
   return { doc: next, selection };
 }
 
@@ -2145,6 +2170,43 @@ function collectChildren(
       collectChildren(doc, childId, ids);
     }
   }
+}
+
+function collectDescendantIds(doc: DiagramDocument, groupId: string): Set<string> {
+  const ids = new Set<string>([groupId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const group of doc.groups) {
+      if (group.parent && ids.has(group.parent) && !ids.has(group.id)) {
+        ids.add(group.id);
+        changed = true;
+      }
+    }
+    for (const resource of doc.resources) {
+      if (resource.parent && ids.has(resource.parent) && !ids.has(resource.id)) {
+        ids.add(resource.id);
+        changed = true;
+      }
+    }
+    for (const id of [...ids]) {
+      const group = doc.groups.find((candidate) => candidate.id === id);
+      if (!group) continue;
+      for (const childId of group.children) {
+        if (!ids.has(childId)) {
+          ids.add(childId);
+          changed = true;
+        }
+      }
+      for (const child of group.borderChildren ?? []) {
+        if (!ids.has(child.id)) {
+          ids.add(child.id);
+          changed = true;
+        }
+      }
+    }
+  }
+  return ids;
 }
 
 function isDescendant(
