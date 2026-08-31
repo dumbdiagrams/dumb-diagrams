@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createEmptyDocument } from "../core/index.js";
 import type { DiagramDocument, Resource } from "../core/index.js";
+import { snap } from "../grammar-aws/index.js";
 import { layoutDocument } from "./layout.js";
 
 function resource(id: string, parent?: string): Resource {
@@ -33,6 +34,88 @@ function logicalGroupDocument(): DiagramDocument {
 }
 
 describe("logical group layout", () => {
+  it("keeps authored group bounds after pinned-child collision repair", () => {
+    const doc = logicalGroupDocument();
+    const view = doc.views[0]!;
+    view.places.services = {
+      x: 104,
+      y: 88,
+      w: 216,
+      h: 128,
+      pin: true,
+      manual: true,
+    };
+    for (const id of ["first", "second", "third"]) {
+      view.places[id] = { x: 160, y: 176, pin: true, manual: true };
+    }
+
+    const group = layoutDocument(doc).groups.find((candidate) => candidate.id === "services")!;
+
+    expect(group.bounds).toMatchObject({ x: 104, y: 88, w: 216, h: 128 });
+  });
+
+  it("auto-fits groups when authored dimensions are absent", () => {
+    const doc = logicalGroupDocument();
+    const group = layoutDocument(doc).groups.find((candidate) => candidate.id === "services")!;
+
+    expect(doc.views[0]!.places.services).toBeUndefined();
+    expect(group.bounds.w).toBeGreaterThan(100);
+    expect(group.bounds.h).toBeGreaterThan(40);
+  });
+
+  it("keeps descendants fixed when authored group bounds move", () => {
+    const doc = createEmptyDocument("manual-boundary-resize");
+    doc.resources = [
+      resource("direct", "services"),
+      resource("nested-resource", "nested"),
+    ];
+    doc.groups = [
+      {
+        id: "services",
+        kind: "logical",
+        label: "Services",
+        children: ["direct", "nested"],
+      },
+      {
+        id: "nested",
+        kind: "logical",
+        label: "Nested",
+        parent: "services",
+        children: ["nested-resource"],
+      },
+    ];
+
+    const before = layoutDocument(doc);
+    const beforeGroup = before.groups.find((group) => group.id === "services")!;
+    const beforeNested = before.groups.find((group) => group.id === "nested")!;
+    const beforeNodes = new Map(
+      before.nodes.map((node) => [node.id, { ...node.obstacle }]),
+    );
+    const place = doc.views[0]!.places.services = {
+      x: beforeGroup.bounds.x + 32,
+      y: beforeGroup.bounds.y + 24,
+      w: beforeGroup.bounds.w + 64,
+      h: beforeGroup.bounds.h + 48,
+      pin: true,
+      manual: true,
+    };
+
+    const after = layoutDocument(doc);
+    const afterGroup = after.groups.find((group) => group.id === "services")!;
+    const afterNested = after.groups.find((group) => group.id === "nested")!;
+
+    expect(afterGroup.bounds).toMatchObject({
+      x: snap(place.x!),
+      y: snap(place.y!),
+      w: Math.max(80, snap(place.w!)),
+      h: Math.max(48, snap(place.h!)),
+    });
+    expect(afterNested.bounds).toEqual(beforeNested.bounds);
+    for (const [id, obstacle] of beforeNodes) {
+      expect(after.nodes.find((node) => node.id === id)!.obstacle).toEqual(obstacle);
+    }
+  });
+
   it("stacks parallel siblings fed by the same external source", () => {
     const doc = logicalGroupDocument();
     doc.edges = ["first", "second", "third"].map((target, index) => ({

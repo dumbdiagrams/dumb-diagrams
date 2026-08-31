@@ -1344,6 +1344,17 @@ function applyPinnedViewOverrides(
     if (!place?.pin || (place.x === undefined && place.y === undefined)) continue;
     const dx = (place.x ?? group.bounds.x) - group.bounds.x;
     const dy = (place.y ?? group.bounds.y) - group.bounds.y;
+    // Authored dimensions represent a boundary edit (including north/west
+    // resize, where x/y move with the edge). Keep every descendant at its
+    // existing absolute position. A position-only pin remains a group move
+    // and translates the complete subtree as before.
+    if (place.w !== undefined || place.h !== undefined) {
+      shiftRect(group.bounds, dx, dy);
+      shiftRect(group.header, dx, dy);
+      if (group.labelRect) shiftRect(group.labelRect, dx, dy);
+      shiftRect(group.content, dx, dy);
+      continue;
+    }
     const descendants = new Set<ID>([group.id]);
     collectDescendants(doc, group.id, descendants);
     for (const candidate of layout.groups) {
@@ -1571,16 +1582,25 @@ function growGroupToContain(
 ): void {
   const group = groupById.get(model.id);
   if (!group) return;
+  const place = getDefaultView(doc).places[model.id];
+  // A persisted group dimension is an authored boundary. Collision repair may
+  // still move an offending child, but it must never silently turn a manual
+  // resize into an auto-fit boundary (including when this helper is called
+  // recursively for an auto-fit descendant).
+  const authoredW = place?.w !== undefined;
+  const authoredH = place?.h !== undefined;
   const growthX = Math.max(0, rect.x + rect.w + padding - (group.content.x + group.content.w));
   const growthY = Math.max(0, rect.y + rect.h + padding - (group.content.y + group.content.h));
-  if (!growthX && !growthY) return;
-  group.content.w += growthX;
-  group.content.h += growthY;
-  group.bounds.w += growthX;
-  group.bounds.h += growthY;
-  group.header.w += growthX;
+  const appliedGrowthX = authoredW ? 0 : growthX;
+  const appliedGrowthY = authoredH ? 0 : growthY;
+  if (!appliedGrowthX && !appliedGrowthY) return;
+  group.content.w += appliedGrowthX;
+  group.content.h += appliedGrowthY;
+  group.bounds.w += appliedGrowthX;
+  group.bounds.h += appliedGrowthY;
+  group.header.w += appliedGrowthX;
   const labelPosition = group.labelPosition ?? model.labelPosition ?? "top-left";
-  if (labelPosition.endsWith("right") && group.labelRect) group.labelRect.x += growthX;
+  if (labelPosition.endsWith("right") && group.labelRect) group.labelRect.x += appliedGrowthX;
   if (!model.parent) return;
   const parent = doc.groups.find((candidate) => candidate.id === model.parent);
   if (parent) growGroupToContain(doc, groupById, parent, group.bounds, padding);

@@ -45,7 +45,9 @@ export function HelpModal({
             <Shortcut keys="⌘/Ctrl+K" label="Command palette" />
             <Shortcut keys="⌘/Ctrl+Z" label="Undo" />
             <Shortcut keys="⌘/Ctrl+Shift+Z" label="Redo" />
-            <Shortcut keys="V / C / T" label="Select / connector / text" />
+            <Shortcut keys="V / T" label="Select / text" />
+            <Shortcut keys="⌘/Ctrl+G" label="Group selection" />
+            <Shortcut keys="⌘/Ctrl+Shift+G" label="Ungroup selection" />
             <Shortcut keys="⌘/Ctrl+C" label="Copy selection" />
             <Shortcut keys="⌘/Ctrl+V" label="Paste selection" />
           </div>

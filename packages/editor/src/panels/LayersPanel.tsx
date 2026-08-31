@@ -2,6 +2,10 @@ import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 
 import type { Selection, SelectionItem } from "../editor-model";
+import {
+  selectionModeForModifiers,
+  type SelectionMode,
+} from "../interactions/selection-targeting";
 import { IconEye, IconEyeOff } from "../ui/icons";
 
 export function LayersPanel({
@@ -10,6 +14,10 @@ export function LayersPanel({
   query,
   onQuery,
   onSelect,
+  onGroup,
+  onUngroup,
+  canGroup,
+  canUngroup,
   onToggleVisible,
   onToggleLocked,
 }: {
@@ -17,7 +25,11 @@ export function LayersPanel({
   selection: Selection;
   query: string;
   onQuery: (value: string) => void;
-  onSelect: (item: SelectionItem, additive: boolean) => void;
+  onSelect: (item: SelectionItem, mode: SelectionMode) => void;
+  onGroup: () => void;
+  onUngroup: () => void;
+  canGroup: boolean;
+  canUngroup: boolean;
   onToggleVisible: (item: SelectionItem) => void;
   onToggleLocked: (item: SelectionItem) => void;
 }) {
@@ -63,6 +75,24 @@ export function LayersPanel({
         placeholder="Search layers"
         aria-label="Search layers"
       />
+      <div className="layers-toolbar" role="toolbar" aria-label="Layer grouping controls">
+        <button
+          type="button"
+          onClick={onGroup}
+          disabled={!canGroup}
+          title={canGroup ? "Group selected layers" : "Select at least two sibling resources or groups"}
+        >
+          Group
+        </button>
+        <button
+          type="button"
+          onClick={onUngroup}
+          disabled={!canUngroup}
+          title={canUngroup ? "Remove the selected group boundary" : "Select one group to ungroup"}
+        >
+          Ungroup
+        </button>
+      </div>
       <div className="layers-list" role="listbox">
         {rows.map((row) => {
           const place =
@@ -83,7 +113,7 @@ export function LayersPanel({
               <button
                 type="button"
                 className="layer-select"
-                onClick={(event) => onSelect(row.item, event.shiftKey)}
+                onClick={(event) => onSelect(row.item, selectionModeForModifiers(event))}
               >
                 <span className="layer-kind">{row.item.kind}</span>
                 <span className="layer-label">{row.label}</span>

@@ -241,6 +241,38 @@ view default {
     expect(reparsed).toEqual(parsed);
   });
 
+  it("round-trips authored manual group bounds without changing the hierarchy", () => {
+    const source = `diagram manual_group {
+  grammar aws
+  flow lr
+
+  cloud-agnostic.boundary services "Services" {
+    aws.lambda worker
+  }
+}
+
+view default {
+  place services { x 104 y 88 w 216 h 128 pin manual }
+}`;
+
+    const parsed = parseDgm(source);
+    const printed = printDgm(parsed);
+    const reparsed = parseDgm(printed);
+
+    expect(reparsed.groups).toEqual(parsed.groups);
+    expect(getDefaultView(reparsed).places.services).toEqual({
+      x: 104,
+      y: 88,
+      w: 216,
+      h: 128,
+      pin: true,
+      manual: true,
+    });
+    expect(getDefaultView(reparsed).places.services).toEqual(
+      getDefaultView(parsed).places.services,
+    );
+  });
+
   it("round-trips note style variants", () => {
     const source = `diagram notes {
   grammar aws

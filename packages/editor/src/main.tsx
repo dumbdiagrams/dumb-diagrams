@@ -22,6 +22,7 @@ import {
   characterLength,
   DIAGRAM_LIMITS,
   EDGE_COLOR_VALUES,
+  getDefaultView,
   hasErrors,
   normalizeMultilineText,
   normalizeSingleLineText,
@@ -52,6 +53,8 @@ import {
   clearView,
   deleteSelection,
   distributeSelection,
+  fitGroupToContents,
+  groupSelection,
   nudgeSelection,
   pasteClipboard,
   primarySelection,
@@ -78,18 +81,21 @@ import {
   setEdgeBadgePosition,
   setEdgeLabelPosition,
   swapEdgeDirection,
-  toggleSelectionItem,
   updateEdge,
   updateEdgePreservingLayout,
   addCustomResource,
   canPlaceCatalogEntry,
+  canGroupSelection,
   duplicateSelection,
   importSvgAsset,
   moveSelection,
   needsAutoFix,
+  removeSelectionPreservingGroupContents,
+  setGroupBounds,
   updateAnnotationText,
   updateTextFormat,
   setAnnotationStyle,
+  ungroup,
   type Selection,
   type SelectionItem,
   type ResourceIconSize,
@@ -101,6 +107,11 @@ import {
   defaultViewportForContent,
 } from "./canvas/CanvasStage";
 import { InteractionOverlay } from "./interactions/InteractionOverlay";
+import {
+  marqueeSelection,
+  mergeSelection,
+  type SelectionMode,
+} from "./interactions/selection-targeting";
 import {
   CATALOG_DRAG_MIME,
   parseCatalogDragPayload,
@@ -876,14 +887,12 @@ function App() {
     if (compiled.ok) setTitleDraft(documentNameForDisplay(compiled.doc));
   }, [compiled.ok, compiled.ok ? compiled.doc.title : "", compiled.ok ? compiled.doc.id : ""]);
 
-  const selectItem = (item: SelectionItem, additive: boolean) => {
-    setSelection((current) => toggleSelectionItem(current, item, additive));
-    if (tool === "layers") setTool("select");
+  const selectItem = (item: SelectionItem, mode: SelectionMode) => {
+    setSelection((current) => mergeSelection(current, [item], mode));
   };
 
   const requestTextEdit = (item: SelectionItem) => {
     setSelection([item]);
-    if (tool === "layers") setTool("select");
     setTextEditRequest(item);
   };
 
@@ -1037,16 +1046,18 @@ function App() {
     }
   };
 
-  const selectMarquee = (rect: { x: number; y: number; w: number; h: number }) => {
+  const selectMarquee = (
+    rect: { x: number; y: number; w: number; h: number },
+    mode: SelectionMode,
+  ) => {
     if (!compiled.ok) return;
-    const hits: Selection = [];
-    for (const node of compiled.layout.nodes) {
-      if (intersects(rect, node.obstacle)) hits.push({ kind: "resource", id: node.id });
-    }
-    for (const group of compiled.layout.groups) {
-      if (intersects(rect, group.bounds)) hits.push({ kind: "group", id: group.id });
-    }
-    setSelection(hits);
+    const hits = marqueeSelection(
+      compiled.doc,
+      compiled.layout,
+      getDefaultView(compiled.doc),
+      rect,
+    );
+    setSelection((current) => mergeSelection(current, hits, mode));
   };
 
   const addCatalogResource = (entry: CatalogEntry, requestedPlacement?: CatalogPlacement) => {
@@ -1380,6 +1391,21 @@ function App() {
     setToast("Duplicated selection");
   };
 
+  const removeCurrentSelection = (items: Selection = selection) => {
+    if (!compiled.ok || items.length === 0) return;
+    mutateCurrent((doc) => removeSelectionPreservingGroupContents(doc, items));
+    setSelection((current) =>
+      current.filter(
+        (candidate) =>
+          !items.some(
+            (item) => item.kind === candidate.kind && item.id === candidate.id,
+          ),
+      ),
+    );
+    setContextMenu(null);
+    setToast("Deleted selection");
+  };
+
   const deleteCurrentSelection = (items: Selection = selection) => {
     if (!compiled.ok || items.length === 0) return;
     mutateCurrent((doc) => deleteSelection(doc, items));
@@ -1393,6 +1419,43 @@ function App() {
     );
     setContextMenu(null);
     setToast("Deleted selection");
+  };
+
+  const fitCurrentGroup = (items: Selection = selection) => {
+    if (!compiled.ok || items.length !== 1 || items[0]?.kind !== "group") return;
+    const groupId = items[0].id;
+    mutateCurrent((doc) => fitGroupToContents(doc, groupId, compiled.layout));
+    setContextMenu(null);
+    setToast("Fit group to contents");
+  };
+
+  const ungroupCurrentSelection = (items: Selection = selection) => {
+    if (!compiled.ok || items.length !== 1 || items[0]?.kind !== "group") return;
+    const groupId = items[0].id;
+    mutateCurrent((doc) => ungroup(doc, groupId));
+    setSelection([]);
+    setContextMenu(null);
+    setToast("Ungrouped selection");
+  };
+
+  const groupCurrentSelection = (items: Selection = selection) => {
+    if (!compiled.ok || !canGroupSelection(compiled.doc, items)) return;
+    const result = groupSelection(compiled.doc, items, compiled.layout);
+    if (!result) {
+      setToast("Those layers cannot be grouped together");
+      return;
+    }
+    if (!updateDocument(result.doc)) return;
+    setSelection([{ kind: "group", id: result.id }]);
+    setToast("Grouped selection");
+  };
+
+  const deleteGroupAndContents = (items: Selection = selection) => {
+    if (!compiled.ok || items.length !== 1 || items[0]?.kind !== "group") return;
+    mutateCurrent((doc) => deleteSelection(doc, items));
+    setSelection([]);
+    setContextMenu(null);
+    setToast("Deleted group and contents");
   };
 
   const toggleSelectedLocked = () => {
@@ -1458,6 +1521,13 @@ function App() {
 
       if (target.matches("textarea, input, select, [contenteditable='true']") || target.closest(".cm-editor")) return;
 
+      if (mod && key === "g") {
+        event.preventDefault();
+        if (event.shiftKey) ungroupCurrentSelection();
+        else groupCurrentSelection();
+        return;
+      }
+
       if (mod && key === "z") {
         event.preventDefault();
         if (event.shiftKey) redo();
@@ -1477,7 +1547,7 @@ function App() {
       }
       if ((event.key === "Backspace" || event.key === "Delete") && selection.length) {
         event.preventDefault();
-        deleteCurrentSelection();
+        removeCurrentSelection();
         return;
       }
       if (mod && key === "a") {
@@ -1519,7 +1589,6 @@ function App() {
         return;
       }
       if (key === "v" && !mod) setTool("select");
-      if (key === "c" && !mod) setTool("connector");
       if (key === "t" && !mod) openTextComposer();
       if (selection.length && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         event.preventDefault();
@@ -1579,7 +1648,7 @@ function App() {
     { id: "command-cut", label: "Cut selection", section: "Edit", shortcut: "⌘X", disabled: selection.length === 0, onSelect: () => void cutSelection() },
     { id: "command-paste", label: "Paste selection", section: "Edit", shortcut: "⌘V", disabled: !compiled.ok, onSelect: () => void pasteSelection() },
     { id: "command-duplicate-selection", label: "Duplicate selection", section: "Edit", shortcut: "⌘D", disabled: selection.length === 0, onSelect: () => duplicateCurrentSelection() },
-    { id: "command-delete-selection", label: "Delete selection", section: "Edit", shortcut: "Delete", disabled: selection.length === 0, onSelect: () => deleteCurrentSelection() },
+    { id: "command-delete-selection", label: "Delete selection", section: "Edit", shortcut: "Delete", disabled: selection.length === 0, onSelect: () => removeCurrentSelection() },
     { id: "command-align-left", label: "Align left", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "left")) },
     { id: "command-align-center", label: "Align center", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "center")) },
     { id: "command-align-right", label: "Align right", section: "Arrange", disabled: selection.length < 2 || !compiled.ok, onSelect: () => compiled.ok && mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout, "right")) },
@@ -1726,9 +1795,11 @@ function App() {
                     return moveSelection(doc, active, dx, dy, compiled.layout);
                   });
                 }}
-                onResize={(kind, id, w, h, unlockAspect) => {
+                onResize={(kind, id, bounds, unlockAspect) => {
                   previewMutate((doc) =>
-                    setSize(doc, id, w, h, { unlockAspect }),
+                    kind === "group"
+                      ? setGroupBounds(doc, id, bounds)
+                      : setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
                   );
                 }}
                 onRoute={(edgeId, points) =>
@@ -2155,6 +2226,10 @@ function App() {
               query={layersQuery}
               onQuery={setLayersQuery}
               onSelect={selectItem}
+              canGroup={canGroupSelection(compiled.doc, selection)}
+              canUngroup={selection.length === 1 && selection[0]?.kind === "group"}
+              onGroup={() => groupCurrentSelection()}
+              onUngroup={() => ungroupCurrentSelection()}
               onToggleVisible={(item) => {
                 mutateCurrent((doc) => {
                   const view = doc.views[0]!;
@@ -2276,8 +2351,7 @@ function App() {
               mutateCurrent((doc) => clearRoute(doc, edge.id));
             }}
             onDelete={() => {
-              mutateCurrent((doc) => deleteSelection(doc, selection));
-              setSelection([]);
+              removeCurrentSelection(selection);
             }}
             onClose={() => setSelection([])}
           />
@@ -2564,7 +2638,12 @@ function App() {
                 onCut: () => void cutSelection(contextMenu.selection),
                 onPaste: () => void pasteSelection(contextMenu.canvasPoint),
                 onDuplicate: () => duplicateCurrentSelection(contextMenu.selection),
-                onDelete: () => deleteCurrentSelection(contextMenu.selection),
+                onDelete: () => removeCurrentSelection(contextMenu.selection),
+                onGroup: () => groupCurrentSelection(contextMenu.selection),
+                onDeleteGroup: () => removeCurrentSelection(contextMenu.selection),
+                onFitGroup: () => fitCurrentGroup(contextMenu.selection),
+                onUngroup: () => ungroupCurrentSelection(contextMenu.selection),
+                onDeleteGroupAndContents: () => deleteGroupAndContents(contextMenu.selection),
                 onMutate: (change) => mutateCurrent(change),
               },
             )}
@@ -3330,18 +3409,6 @@ function insertionPoint(layout: LayoutResult, parent?: string): Point {
   };
 }
 
-function intersects(
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number },
-): boolean {
-  return (
-    a.x < b.x + b.w &&
-    a.x + a.w > b.x &&
-    a.y < b.y + b.h &&
-    a.y + a.h > b.y
-  );
-}
-
 function containsPoint(
   rect: { x: number; y: number; w: number; h: number },
   point: Point,
@@ -3367,6 +3434,11 @@ function buildContextMenuItems(
     onPaste: () => void;
     onDuplicate: () => void;
     onDelete: () => void;
+    onGroup: () => void;
+    onDeleteGroup: () => void;
+    onFitGroup: () => void;
+    onUngroup: () => void;
+    onDeleteGroupAndContents: () => void;
     onMutate: (change: (doc: DiagramDocument) => DiagramDocument) => void;
   },
 ): ContextMenuItem[] {
@@ -3406,6 +3478,15 @@ function buildContextMenuItems(
 
   if (!hasSelection) return items;
 
+  if (selection.length > 1 && canGroupSelection(doc, selection)) {
+    items.push({
+      id: "group",
+      label: "Group",
+      shortcut: "⌘G / Ctrl+G",
+      onSelect: actions.onGroup,
+    });
+  }
+
   if (selection.length === 1) {
     const item = selection[0]!;
     const view = doc.views[0];
@@ -3439,21 +3520,51 @@ function buildContextMenuItems(
           ),
         ),
     });
+
+    if (item.kind === "group") {
+      items.push({ id: "group-actions-divider", label: "", separator: true });
+      items.push({
+        id: "fit-group-to-contents",
+        label: "Fit to contents",
+        onSelect: actions.onFitGroup,
+      });
+      items.push({
+        id: "ungroup",
+        label: "Ungroup",
+        shortcut: "⌘⇧G / Ctrl+Shift+G",
+        onSelect: actions.onUngroup,
+      });
+      items.push({
+        id: "delete-group",
+        label: "Delete group",
+        onSelect: actions.onDeleteGroup,
+      });
+      items.push({
+        id: "delete-group-and-contents",
+        label: "Delete group and contents",
+        danger: true,
+        onSelect: actions.onDeleteGroupAndContents,
+      });
+    }
   }
 
-  items.push({ id: "delete-divider", label: "", separator: true });
-  items.push({
-    id: "delete",
-    label:
-      selection.length > 1
-        ? `Delete ${selection.length} items`
-        : selection[0]?.kind === "edge"
-          ? "Delete connector"
-          : "Delete",
-    shortcut: "⌫ / Delete",
-    danger: true,
-    onSelect: actions.onDelete,
-  });
+  // A single selected group has explicit boundary actions above. Omitting a
+  // second generic Delete keeps destructive subtree deletion intentional.
+  if (!(selection.length === 1 && selection[0]?.kind === "group")) {
+    items.push({ id: "delete-divider", label: "", separator: true });
+    items.push({
+      id: "delete",
+      label:
+        selection.length > 1
+          ? `Delete ${selection.length} items`
+          : selection[0]?.kind === "edge"
+            ? "Delete connector"
+            : "Delete",
+      shortcut: "⌫ / Delete",
+      danger: true,
+      onSelect: actions.onDelete,
+    });
+  }
 
   return items;
 }

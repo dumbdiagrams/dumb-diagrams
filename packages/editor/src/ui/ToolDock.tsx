@@ -2,7 +2,6 @@ import type { ComponentType } from "react";
 
 import {
   IconCode,
-  IconConnector,
   IconGroups,
   IconLayers,
   IconNote,
@@ -11,7 +10,16 @@ import {
   IconText,
 } from "./icons";
 
-export type ToolId = "select" | "resources" | "groups" | "connector" | "code" | "layers" | "note" | "text";
+export type ToolId =
+  | "select"
+  | "resources"
+  | "groups"
+  /** @deprecated The legacy Connector dock mode is hidden; use direct icon quick-connect. */
+  | "connector"
+  | "code"
+  | "layers"
+  | "note"
+  | "text";
 
 const TOOLS: Array<{
   id: ToolId;
@@ -24,7 +32,6 @@ const TOOLS: Array<{
   { id: "resources", label: "Resources", Icon: IconResources },
   { id: "text", label: "Text", shortcut: "T", Icon: IconText },
   { id: "note", label: "Add note", Icon: IconNote },
-  { id: "connector", label: "Connector", shortcut: "C", Icon: IconConnector },
   { id: "layers", label: "Layers", Icon: IconLayers },
   { id: "code", label: "Source", Icon: IconCode },
 ];

@@ -1429,6 +1429,11 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
+.marquee-hit-surface {
+  fill: transparent;
+  stroke: none;
+}
+
 .hit-group,
 .hit-node,
 .hit-edge,
@@ -2955,6 +2960,33 @@ textarea:focus-visible {
   padding: 8px 10px;
 }
 
+.layers-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.layers-toolbar button {
+  flex: 1;
+  min-height: 32px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.layers-toolbar button:hover:not(:disabled),
+.layers-toolbar button:focus-visible:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.layers-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .layers-list {
   overflow: auto;
   display: grid;
@@ -3225,9 +3257,11 @@ textarea:focus-visible {
 }
 
 .marquee {
-  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
   stroke: var(--accent);
-  stroke-width: 1;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
 
@@ -3240,6 +3274,26 @@ textarea:focus-visible {
 
 .resize-handle {
   pointer-events: all;
+  cursor: nwse-resize;
+}
+
+.resize-handle-n,
+.resize-handle-s {
+  cursor: ns-resize;
+}
+
+.resize-handle-e,
+.resize-handle-w {
+  cursor: ew-resize;
+}
+
+.resize-handle-ne,
+.resize-handle-sw {
+  cursor: nesw-resize;
+}
+
+.resize-handle-nw,
+.resize-handle-se {
   cursor: nwse-resize;
 }
 

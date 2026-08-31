@@ -1,6 +1,6 @@
 import { join } from "node:path";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const ROOT = join(import.meta.dirname, "..");
 const ASYNC_DOCS = `${ROOT}/examples/diagrams/async-docs.dgm`;
@@ -72,6 +72,43 @@ async function selectEdge(page: Page, edgeId: string) {
   });
   await expect(edge).toHaveAttribute("aria-selected", "true");
   return edge;
+}
+
+type ScreenBox = { x: number; y: number; width: number; height: number };
+
+async function entityBox(
+  page: Page,
+  kind: "resource" | "group",
+  id: string,
+): Promise<ScreenBox> {
+  const entity = page.locator(`[data-entity-kind="${kind}"][data-entity-id="${id}"]`).first();
+  await expect(entity).toHaveCount(1);
+  const box = await entity.boundingBox();
+  expect(box, `${kind}:${id} should have a rendered box`).not.toBeNull();
+  return box!;
+}
+
+function boxCenter(box: ScreenBox): { x: number; y: number } {
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+async function dispatchPointerClick(
+  locator: Locator,
+  point: { x: number; y: number },
+  modifiers: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean } = {},
+) {
+  const event = {
+    bubbles: true,
+    button: 0,
+    buttons: 1,
+    pointerId: 1,
+    clientX: point.x,
+    clientY: point.y,
+    ...modifiers,
+  };
+  await locator.dispatchEvent("pointerdown", event);
+  await locator.dispatchEvent("pointerup", { ...event, buttons: 0 });
+  await locator.dispatchEvent("click", { ...event, buttons: 0 });
 }
 
 test("keeps rendered arrow numbers readable in light and dark themes", async ({ page }) => {
@@ -800,6 +837,187 @@ test("uses clear lock controls in the layers panel", async ({ page }) => {
   await expect(visibilityToggle).toHaveAttribute("aria-label", "Show");
   await expect(visibilityToggle).toHaveAttribute("data-visible", "false");
   await expect(visibilityToggle.locator("svg.layer-visibility-icon")).toHaveCount(1);
+});
+
+test("keeps Layers open for selection and exposes grouping controls", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  const layersPanel = page.getByRole("dialog", { name: "Layers", exact: true });
+  await expect(layersPanel).toBeVisible();
+
+  const api = layersPanel.locator(".layer-select").filter({ hasText: "Document API" }).nth(1);
+  const worker = layersPanel.locator(".layer-select").filter({ hasText: "Document worker" }).first();
+  await api.click();
+  await expect(layersPanel).toBeVisible();
+  await worker.click({ modifiers: ["Shift"] });
+
+  const groupButton = layersPanel.getByRole("button", { name: "Group", exact: true });
+  const ungroupButton = layersPanel.getByRole("button", { name: "Ungroup", exact: true });
+  await expect(groupButton).toBeEnabled();
+  await expect(ungroupButton).toBeDisabled();
+  await groupButton.click();
+  await expect(layersPanel).toBeVisible();
+  await expect(ungroupButton).toBeEnabled();
+
+  await ungroupButton.click();
+  await expect(layersPanel).toBeVisible();
+  await expect(groupButton).toBeDisabled();
+});
+
+test("hides the legacy Connector dock button while retaining direct quick-connect", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  await expect(page.getByRole("button", { name: "Connector", exact: true })).toHaveCount(0);
+  await page.locator('[data-entity-kind="resource"][data-entity-id="client"]').click();
+  await expect(page.locator('[data-quick-connect="client"]')).toHaveCount(1);
+});
+
+test("supports selection modifiers, regrouping, and undo round-trip", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  const queues = page.locator('[data-entity-kind="group"][data-entity-id="queues"]');
+  const jobs = page.locator('[data-entity-kind="resource"][data-entity-id="jobs"]');
+  const dlq = page.locator('[data-entity-kind="resource"][data-entity-id="jobs_dlq"]');
+  const queuesBefore = await entityBox(page, "group", "queues");
+  const jobsBefore = await entityBox(page, "resource", "jobs");
+  const dlqBefore = await entityBox(page, "resource", "jobs_dlq");
+
+  // Shift+Cmd/Ctrl+G removes only the boundary. Child geometry is expected
+  // to remain stable as the hierarchy is flattened.
+  await queues.click({ position: { x: queuesBefore.width / 2, y: 4 } });
+  await expect(queues).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Control+Shift+g");
+  await expect(queues).toHaveCount(0);
+  await expect(jobs).toHaveCount(1);
+  await expect(dlq).toHaveCount(1);
+  const jobsAfterUngroup = await entityBox(page, "resource", "jobs");
+  const dlqAfterUngroup = await entityBox(page, "resource", "jobs_dlq");
+  expect(Math.abs(jobsAfterUngroup.x - jobsBefore.x)).toBeLessThan(4);
+  expect(Math.abs(jobsAfterUngroup.y - jobsBefore.y)).toBeLessThan(4);
+  expect(Math.abs(dlqAfterUngroup.x - dlqBefore.x)).toBeLessThan(4);
+  expect(Math.abs(dlqAfterUngroup.y - dlqBefore.y)).toBeLessThan(4);
+
+  // Plain click replaces; Shift adds; Cmd/Ctrl toggles.
+  await dispatchPointerClick(jobs, boxCenter(jobsAfterUngroup));
+  await expect(jobs).toHaveAttribute("aria-selected", "true");
+  await expect(dlq).toHaveAttribute("aria-selected", "false");
+  await dispatchPointerClick(dlq, boxCenter(dlqAfterUngroup), { shiftKey: true });
+  await expect(jobs).toHaveAttribute("aria-selected", "true");
+  await expect(dlq).toHaveAttribute("aria-selected", "true");
+  await dispatchPointerClick(jobs, boxCenter(jobsAfterUngroup), { ctrlKey: true });
+  await expect(jobs).toHaveAttribute("aria-selected", "false");
+  await expect(dlq).toHaveAttribute("aria-selected", "true");
+  await dispatchPointerClick(dlq, boxCenter(dlqAfterUngroup), { ctrlKey: true });
+  await expect(page.locator('[data-entity-kind="resource"][aria-selected="true"]')).toHaveCount(0);
+
+  // Rebuild a valid multi-selection after exercising toggle removal.
+  await dispatchPointerClick(jobs, boxCenter(jobsAfterUngroup));
+  await dispatchPointerClick(dlq, boxCenter(dlqAfterUngroup), { shiftKey: true });
+  await expect(jobs).toHaveAttribute("aria-selected", "true");
+  await expect(dlq).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-entity-kind="group"][aria-selected="true"]')).toHaveCount(0);
+
+  await page.keyboard.press("Control+g");
+  const regrouped = page.locator('[data-entity-kind="group"][aria-selected="true"]');
+  await expect(regrouped).toHaveCount(1);
+  const regroupedId = await regrouped.getAttribute("data-entity-id");
+  expect(regroupedId).toBeTruthy();
+  await expect(jobs).toHaveCount(1);
+  await expect(dlq).toHaveCount(1);
+
+  // Undo/redo restores the same hierarchy without losing the child resources.
+  // DSL serialization is covered deterministically in the runtime parse tests;
+  // CodeMirror virtualizes off-screen source lines in this large fixture.
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  const redo = page.getByRole("button", { name: "Redo", exact: true });
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect(page.locator(`[data-entity-kind="group"][data-entity-id="${regroupedId}"]`)).toHaveCount(0);
+  await expect(jobs).toHaveCount(1);
+  await expect(dlq).toHaveCount(1);
+  await expect(redo).toBeEnabled();
+  await redo.click();
+  await expect(page.locator(`[data-entity-kind="group"][data-entity-id="${regroupedId}"]`)).toHaveCount(1);
+});
+
+test("selects children inside a group with an empty-canvas marquee", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  const group = page.locator('[data-entity-kind="group"][data-entity-id="appA"]');
+  const api = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
+  const worker = page.locator('[data-entity-kind="resource"][data-entity-id="workerA"]');
+  const groupBox = await entityBox(page, "group", "appA");
+  const apiBox = await entityBox(page, "resource", "apiA");
+  const workerBox = await entityBox(page, "resource", "workerA");
+
+  // Start on genuinely empty canvas just outside the group's left edge, then
+  // finish just beyond the children. The rectangle intersects the children
+  // without containing the group's full boundary, so the parent stays out.
+  const start = {
+    x: groupBox.x - 24,
+    y: Math.max(groupBox.y + 32, Math.min(apiBox.y, workerBox.y) - 10),
+  };
+  const finish = {
+    x: Math.max(apiBox.x + apiBox.width, workerBox.x + workerBox.width) + 10,
+    y: Math.max(apiBox.y + apiBox.height, workerBox.y + workerBox.height) + 10,
+  };
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(finish.x, finish.y, { steps: 8 });
+  await expect(page.locator(".marquee")).toBeVisible();
+  await page.mouse.up();
+
+  await expect(api).toHaveAttribute("aria-selected", "true");
+  await expect(worker).toHaveAttribute("aria-selected", "true");
+  await expect(group).toHaveAttribute("aria-selected", "false");
+});
+
+test("exposes safe and destructive group actions in the context menu", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  const queues = page.locator('[data-entity-kind="group"][data-entity-id="queues"]');
+  const jobs = page.locator('[data-entity-kind="resource"][data-entity-id="jobs"]');
+  const dlq = page.locator('[data-entity-kind="resource"][data-entity-id="jobs_dlq"]');
+  const jobsBefore = await entityBox(page, "resource", "jobs");
+  const dlqBefore = await entityBox(page, "resource", "jobs_dlq");
+  const queuesBox = await entityBox(page, "group", "queues");
+
+  await queues.click({
+    button: "right",
+    position: { x: 4, y: queuesBox.height / 2 },
+    force: true,
+  });
+  const menu = page.getByRole("menu", { name: "Canvas context menu" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: /^Ungroup/ })).toBeVisible();
+  await expect(menu.locator('[data-menu-item="delete-group"]')).toBeVisible();
+  await expect(menu.locator('[data-menu-item="delete-group-and-contents"]')).toBeVisible();
+  await menu.locator('[data-menu-item="delete-group"]').click();
+
+  await expect(queues).toHaveCount(0);
+  await expect(jobs).toHaveCount(1);
+  await expect(dlq).toHaveCount(1);
+  const jobsAfter = await entityBox(page, "resource", "jobs");
+  const dlqAfter = await entityBox(page, "resource", "jobs_dlq");
+  expect(Math.abs(jobsAfter.x - jobsBefore.x)).toBeLessThan(4);
+  expect(Math.abs(jobsAfter.y - jobsBefore.y)).toBeLessThan(4);
+  expect(Math.abs(dlqAfter.x - dlqBefore.x)).toBeLessThan(4);
+  expect(Math.abs(dlqAfter.y - dlqBefore.y)).toBeLessThan(4);
+
+  const storage = page.locator('[data-entity-kind="group"][data-entity-id="storage"]');
+  const artifacts = page.locator('[data-entity-kind="resource"][data-entity-id="artifacts"]');
+  const storageBox = await entityBox(page, "group", "storage");
+  await storage.click({
+    button: "right",
+    position: { x: 4, y: storageBox.height / 2 },
+    force: true,
+  });
+  await page.getByRole("menu", { name: "Canvas context menu" })
+    .locator('[data-menu-item="delete-group-and-contents"]')
+    .dispatchEvent("click", { bubbles: true });
+  await expect(storage).toHaveCount(0);
+  await expect(artifacts).toHaveCount(0);
 });
 
 test("applies the dark palette to the canvas and grid", async ({ page }) => {

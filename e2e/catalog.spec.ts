@@ -229,9 +229,86 @@ test("adds cloud-agnostic boundaries as resizable groups", async ({ page }) => {
   await expect(groups).toHaveCount(beforeCount + 1);
   await expect(page.locator('[data-entity-kind="group"][aria-label="Group Cluster"]')).toHaveCount(1);
   await expect(page.locator('[data-entity-kind="resource"][aria-label="Resource Cluster"]')).toHaveCount(0);
-  await expect(page.locator('[data-resize-kind="group"][data-resize-handle="se"]')).toHaveCount(1);
-  await expect(page.locator('[data-resize-kind="group"][data-resize-handle="e"]')).toHaveCount(1);
-  await expect(page.locator('[data-resize-kind="group"][data-resize-handle="s"]')).toHaveCount(1);
+  for (const handle of ["n", "s", "e", "w", "ne", "nw", "se", "sw"]) {
+    await expect(
+      page.locator(`[data-resize-kind="group"][data-resize-handle="${handle}"]`),
+    ).toHaveCount(1);
+  }
+});
+
+test("ungroups a selected group without deleting its contents", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "group-actions.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram group-actions {
+  grammar cloud-agnostic
+  cloud-agnostic.boundary parent "Parent" { cloud-agnostic.database child "Child" }
+}
+`),
+  });
+
+  const parent = page.locator('[data-entity-kind="group"][data-entity-id="parent"]');
+  const child = page.locator('[data-entity-kind="resource"][data-entity-id="child"]');
+  await expect(parent).toHaveCount(1);
+  await expect(child).toHaveCount(1);
+
+  await parent.click({ button: "right", position: { x: 20, y: 20 } });
+  const menu = page.getByRole("menu", { name: "Canvas context menu" });
+  await expect(menu.getByRole("menuitem", { name: "Fit to contents", exact: true })).toHaveCount(1);
+  await expect(menu.locator('[data-menu-item="ungroup"]')).toHaveCount(1);
+  await expect(menu.getByRole("menuitem", { name: "Delete group and contents", exact: true })).toHaveCount(1);
+  await menu.locator('[data-menu-item="ungroup"]').click();
+
+  await expect(parent).toHaveCount(0);
+  await expect(child).toHaveCount(1);
+});
+
+test("Delete group and contents explicitly removes the complete subtree", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "group-actions.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram group-actions {
+  grammar cloud-agnostic
+  cloud-agnostic.boundary parent "Parent" { cloud-agnostic.database child "Child" }
+}
+`),
+  });
+
+  const parent = page.locator('[data-entity-kind="group"][data-entity-id="parent"]');
+  const child = page.locator('[data-entity-kind="resource"][data-entity-id="child"]');
+  await expect(parent).toHaveCount(1);
+  await parent.click({ button: "right", position: { x: 20, y: 20 } });
+  await page
+    .getByRole("menu", { name: "Canvas context menu" })
+    .getByRole("menuitem", { name: "Delete group and contents", exact: true })
+    .click();
+
+  await expect(parent).toHaveCount(0);
+  await expect(child).toHaveCount(0);
+});
+
+test("keyboard Delete removes a group boundary while preserving its contents", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "group-actions.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram group-actions {
+  grammar cloud-agnostic
+  cloud-agnostic.boundary parent "Parent" { cloud-agnostic.database child "Child" }
+}
+`),
+  });
+
+  const parent = page.locator('[data-entity-kind="group"][data-entity-id="parent"]');
+  const child = page.locator('[data-entity-kind="resource"][data-entity-id="child"]');
+  await expect(parent).toHaveCount(1);
+  await parent.click({ position: { x: 20, y: 20 } });
+  await page.keyboard.press("Delete");
+
+  await expect(parent).toHaveCount(0);
+  await expect(child).toHaveCount(1);
 });
 
 test("creates and customizes an iconless boundary and hides icons on semantic boundaries", async ({ page }) => {

@@ -6,6 +6,7 @@ import type {
   EdgeStyle,
   LayoutResult,
   Point,
+  Rect,
   Side,
 } from "@dumb-diagrams/runtime/core";
 import {
@@ -14,6 +15,7 @@ import {
   portPoint,
   portAnchors,
 } from "@dumb-diagrams/runtime/core";
+import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 import {
   getEdgeBadgePlacement,
   getEdgeLabelPlacementOnPath,
@@ -41,9 +43,11 @@ import {
 } from "./route-editing.js";
 import {
   distanceToResource,
+  selectionModeForModifiers,
   pointInRect,
   resourceHitRects,
   resourceVisualBounds,
+  type SelectionMode,
 } from "./selection-targeting.js";
 import {
   createInteractionIndex,
@@ -52,6 +56,7 @@ import {
 } from "./interaction-index.js";
 
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note" | "text";
+export type ResizeHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 type RewireTarget = { nodeId: string; side: Side; offset: number };
 type BadgeDrag = {
   edgeId: string;
@@ -95,9 +100,9 @@ function InteractionOverlayComponent({
   snapToGrid: boolean;
   selection: Selection;
   pendingPort: { nodeId: string; side: Side; offset: number } | null;
-  onSelect: (item: SelectionItem, additive: boolean) => void;
+  onSelect: (item: SelectionItem, mode: SelectionMode) => void;
   onEditText: (item: SelectionItem) => void;
-  onMarquee: (rect: { x: number; y: number; w: number; h: number }) => void;
+  onMarquee: (rect: { x: number; y: number; w: number; h: number }, mode: SelectionMode) => void;
   onBackgroundClick: () => void;
   onChoosePort: (nodeId: string, side: Side, offset: number) => void;
   onConnectPorts: (
@@ -128,8 +133,7 @@ function InteractionOverlayComponent({
   onResize: (
     kind: "resource" | "group" | "annotation",
     id: string,
-    w: number,
-    h: number,
+    bounds: Rect,
     unlockAspect?: boolean,
   ) => void;
   onRoute: (edgeId: string, points: Point[]) => void;
@@ -742,6 +746,44 @@ function InteractionOverlayComponent({
     );
   };
 
+  const beginMarquee = (
+    event: React.PointerEvent<SVGElement>,
+    onClick = onBackgroundClick,
+  ) => {
+    if (tool !== "select" || event.button !== 0) return;
+    const overlay = event.currentTarget instanceof SVGSVGElement
+      ? event.currentTarget
+      : event.currentTarget.ownerSVGElement;
+    if (!overlay) return;
+    const toSvg = (clientX: number, clientY: number): Point =>
+      pointFromClient(overlay, clientX, clientY, zoom);
+    const start = toSvg(event.clientX, event.clientY);
+    const marqueeMode = selectionModeForModifiers(event);
+    const move = (next: PointerEvent) => {
+      const current = toSvg(next.clientX, next.clientY);
+      setMarquee(rectFromPoints(start, current));
+    };
+    const up = (next: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      const current = toSvg(next.clientX, next.clientY);
+      const rect = rectFromPoints(start, current);
+      setMarquee(null);
+      if (rect.w > 4 || rect.h > 4) onMarquee(rect, marqueeMode);
+      else onClick();
+    };
+    const cancel = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      setMarquee(null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+  };
+
   return (
     <svg
       className={`interaction-overlay${tool === "select" ? " is-select-tool" : ""}${tool === "text" ? " is-text-tool" : ""}${hoveredItem?.kind === "group" ? " has-group-hover" : ""}`}
@@ -751,35 +793,8 @@ function InteractionOverlayComponent({
       viewBox={`${canvas.x} ${canvas.y} ${canvas.w} ${canvas.h}`}
       aria-label="Diagram editing layer"
       onPointerDown={(event) => {
-        if (tool !== "select" || event.button !== 0) return;
         if ((event.target as Element).closest("[data-interactive]")) return;
-        const overlay = event.currentTarget as SVGSVGElement;
-        const toSvg = (clientX: number, clientY: number): Point =>
-          pointFromClient(overlay, clientX, clientY, zoom);
-        const start = toSvg(event.clientX, event.clientY);
-        const move = (next: PointerEvent) => {
-          const current = toSvg(next.clientX, next.clientY);
-          setMarquee(rectFromPoints(start, current));
-        };
-        const up = (next: PointerEvent) => {
-          window.removeEventListener("pointermove", move);
-          window.removeEventListener("pointerup", up);
-          window.removeEventListener("pointercancel", cancel);
-          const current = toSvg(next.clientX, next.clientY);
-          const rect = rectFromPoints(start, current);
-          setMarquee(null);
-          if (rect.w > 4 || rect.h > 4) onMarquee(rect);
-          else onBackgroundClick();
-        };
-        const cancel = () => {
-          window.removeEventListener("pointermove", move);
-          window.removeEventListener("pointerup", up);
-          window.removeEventListener("pointercancel", cancel);
-          setMarquee(null);
-        };
-        window.addEventListener("pointermove", move);
-        window.addEventListener("pointerup", up);
-        window.addEventListener("pointercancel", cancel);
+        beginMarquee(event);
       }}
       onContextMenu={(event) => {
         if ((event.target as Element).closest("[data-interactive]")) return;
@@ -801,6 +816,14 @@ function InteractionOverlayComponent({
           <path d="M0,0 L10,5 L0,10 Z" className="connector-preview-arrow" />
         </marker>
       </defs>
+      <rect
+        className="marquee-hit-surface"
+        x={canvas.x}
+        y={canvas.y}
+        width={canvas.w}
+        height={canvas.h}
+        pointerEvents={tool === "select" ? "all" : "none"}
+      />
       <g data-alignment-guides />
       {groups.map((group) => {
         const place = view.places[group.id];
@@ -825,9 +848,25 @@ function InteractionOverlayComponent({
             onPointerLeave={() => clearHover("group", group.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
+              const point = pointFromClient(event.currentTarget.ownerSVGElement, event.clientX, event.clientY, zoom);
+              const model = doc.groups.find((candidate) => candidate.id === group.id);
+              const headerHeight = model
+                ? (GROUP_STYLES[model.kind] ?? GROUP_STYLES.logical).headerHeight
+                : GROUP_STYLES.logical.headerHeight;
+              const boundaryTolerance = 10 / Math.max(zoom, 0.01);
+              const onBoundary =
+                point.x - group.bounds.x <= boundaryTolerance ||
+                group.bounds.x + group.bounds.w - point.x <= boundaryTolerance ||
+                point.y - group.bounds.y <= Math.max(boundaryTolerance, headerHeight) ||
+                group.bounds.y + group.bounds.h - point.y <= boundaryTolerance;
+              if (!onBoundary) {
+                const mode = selectionModeForModifiers(event);
+                beginMarquee(event, () => onSelect({ kind: "group", id: group.id }, mode));
+                return;
+              }
               const target = closestTargetAt(event.clientX, event.clientY)
                 ?? { kind: "group" as const, id: group.id };
-              onSelect(target, event.shiftKey);
+              onSelect(target, selectionModeForModifiers(event));
               if (target.kind === "group") beginGroupMove(event, target.id);
             }}
             onContextMenu={(event) => {
@@ -875,7 +914,7 @@ function InteractionOverlayComponent({
               projection.point,
               ...edge.points.slice(insertAt),
             ]);
-            onSelect({ kind: "edge", id: edge.id }, false);
+            onSelect({ kind: "edge", id: edge.id }, "replace");
             // A double-click intentionally authors a straight-through break.
             // Keep it until the user later collapses it through a drag.
             onRoute(edge.id, next);
@@ -904,7 +943,7 @@ function InteractionOverlayComponent({
             const target = overlapTarget?.kind === "group"
               ? overlapTarget
               : nearestEdgeAt(point, layout, doc, view, edge.id) ?? { kind: "edge" as const, id: edge.id };
-            onSelect(target, event.shiftKey);
+            onSelect(target, selectionModeForModifiers(event));
             if (target.kind === "group") beginGroupMove(event, target.id);
           }}
           onContextMenu={(event) => {
@@ -971,7 +1010,7 @@ function InteractionOverlayComponent({
           event.stopPropagation();
           const target = closestTargetAt(event.clientX, event.clientY)
             ?? { kind: "resource" as const, id: node.id };
-          onSelect(target, event.shiftKey);
+          onSelect(target, selectionModeForModifiers(event));
           if (tool === "select" && target.kind === "resource") {
             const targetNode = layout.nodes.find((candidate) => candidate.id === target.id);
             const targetPlace = targetNode ? view.places[targetNode.id] : undefined;
@@ -1058,7 +1097,7 @@ function InteractionOverlayComponent({
               event.stopPropagation();
               const target = closestTargetAt(event.clientX, event.clientY)
                 ?? { kind: "annotation" as const, id: annotation.id };
-              onSelect(target, event.shiftKey);
+              onSelect(target, selectionModeForModifiers(event));
               if (tool === "select" && target.kind === "annotation" && !place?.locked) {
                 const active = selection.some(
                   (candidate) => candidate.kind === target.kind && candidate.id === target.id,
@@ -1080,7 +1119,7 @@ function InteractionOverlayComponent({
             onDoubleClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              onSelect({ kind: "annotation", id: annotation.id }, false);
+              onSelect({ kind: "annotation", id: annotation.id }, "replace");
               onEditText({ kind: "annotation", id: annotation.id });
             }}
             onContextMenu={(event) => {
@@ -1131,7 +1170,7 @@ function InteractionOverlayComponent({
             onPointerLeave={() => clearHover("edge", edge.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
-              onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
+              onSelect({ kind: "edge", id: edge.id }, selectionModeForModifiers(event));
               if (tool === "select" && !view.places[edge.id]?.locked) {
                 beginLabelMove(
                   event,
@@ -1148,7 +1187,7 @@ function InteractionOverlayComponent({
             onDoubleClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              onSelect({ kind: "edge", id: edge.id }, false);
+              onSelect({ kind: "edge", id: edge.id }, "replace");
               onEditText({ kind: "edge", id: edge.id });
             }}
             onContextMenu={(event) => {
@@ -1270,24 +1309,30 @@ function InteractionOverlayComponent({
           : boundsFor(item, layout, doc);
         const place = item.kind === "annotation" ? view.annotations?.[item.id] : view.places[item.id];
         if (!bounds || item.kind === "edge" || item.kind === "resource" || place?.locked) return null;
+        // Keep group handles comfortably targetable in screen space when the
+        // canvas is zoomed out. Non-group handles retain their established
+        // geometry and behavior.
+        const handleSize = item.kind === "group"
+          ? Math.max(12, 12 / Math.max(zoom, 0.01))
+          : 8;
         return (
           <g
             key={`resize-${item.kind}-${item.id}`}
             data-drag-overlay-kind={item.kind}
             data-drag-overlay-id={item.id}
           >
-            {resizeHandles(bounds).map((handle) => (
+            {resizeHandles(bounds, item.kind === "group").map((handle) => (
               <rect
                 key={handle.name}
                 data-interactive
                 data-resize-kind={item.kind}
                 data-resize-handle={handle.name}
                 aria-label={item.kind === "group" ? `Resize group ${handle.name}` : `Resize ${handle.name}`}
-                className={`resize-handle${item.kind === "group" ? " group-resize-handle" : ""}`}
-                x={handle.x - (item.kind === "group" ? 6 : 4)}
-                y={handle.y - (item.kind === "group" ? 6 : 4)}
-                width={item.kind === "group" ? 12 : 8}
-                height={item.kind === "group" ? 12 : 8}
+                className={`resize-handle resize-handle-${handle.name}${item.kind === "group" ? " group-resize-handle" : ""}`}
+                x={handle.x - handleSize / 2}
+                y={handle.y - handleSize / 2}
+                width={handleSize}
+                height={handleSize}
                 onPointerDown={(event) => {
                   event.stopPropagation();
                   beginResize(
@@ -1296,16 +1341,15 @@ function InteractionOverlayComponent({
                     snapToGrid,
                     bounds,
                     handle.name,
-                    (w, h) => setResizePreview({
+                    (next) => setResizePreview({
                       kind: item.kind,
                       id: item.id,
-                      bounds: { ...bounds, w, h },
+                      bounds: next,
                     }),
-                    (w, h) => onResize(
+                    (next) => onResize(
                         item.kind as "resource" | "group" | "annotation",
                         item.id,
-                        w,
-                        h,
+                        next,
                         event.shiftKey,
                       ),
                     () => setResizePreview(null),
@@ -1411,7 +1455,7 @@ function InteractionOverlayComponent({
             onPointerLeave={() => clearHover("edge", edge.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
-              onSelect({ kind: "edge", id: edge.id }, event.shiftKey);
+              onSelect({ kind: "edge", id: edge.id }, selectionModeForModifiers(event));
             }}
             onClick={(event) => event.stopPropagation()}
             onContextMenu={(event) => {
@@ -1710,6 +1754,31 @@ export function closestInteractiveTarget(
     }
   }
 
+  // A pointer over a child's actual visual content should never be stolen by
+  // a nearby group boundary. Keep the padded-distance candidates below for
+  // forgiving edge behavior, but give direct resource/annotation interiors
+  // an unconditional first-class target here.
+  for (const node of pool.nodes) {
+    if (
+      isEntityVisible(doc, view, node.id) &&
+      pointInRect(point, resourceVisualBounds(node))
+    ) {
+      return { kind: "resource", id: node.id };
+    }
+  }
+
+  for (const annotation of pool.annotations) {
+    const place = view.annotations?.[annotation.id];
+    const bounds = {
+      x: place?.x ?? 48,
+      y: place?.y ?? 48,
+      w: place?.w ?? 160,
+      h: place?.h ?? 48,
+    };
+    if (!isEntityVisible(doc, view, annotation.id)) continue;
+    if (pointInRect(point, bounds)) return { kind: "annotation", id: annotation.id };
+  }
+
   for (const node of pool.nodes) {
     if (!isEntityVisible(doc, view, node.id)) continue;
     const distance = distanceToResource(point, node);
@@ -1902,11 +1971,26 @@ function alignmentTargets(
   ];
 }
 
-function resizeHandles(rect: { x: number; y: number; w: number; h: number }) {
-  return [
+export function resizeHandles(rect: Rect, allDirections = false): Array<{
+  name: ResizeHandle;
+  x: number;
+  y: number;
+}> {
+  const handles: Array<{ name: ResizeHandle; x: number; y: number }> = [
     { name: "se", x: rect.x + rect.w, y: rect.y + rect.h },
     { name: "e", x: rect.x + rect.w, y: rect.y + rect.h / 2 },
     { name: "s", x: rect.x + rect.w / 2, y: rect.y + rect.h },
+  ];
+  if (!allDirections) return handles;
+  return [
+    { name: "n", x: rect.x + rect.w / 2, y: rect.y },
+    { name: "s", x: rect.x + rect.w / 2, y: rect.y + rect.h },
+    { name: "e", x: rect.x + rect.w, y: rect.y + rect.h / 2 },
+    { name: "w", x: rect.x, y: rect.y + rect.h / 2 },
+    { name: "ne", x: rect.x + rect.w, y: rect.y },
+    { name: "nw", x: rect.x, y: rect.y },
+    { name: "se", x: rect.x + rect.w, y: rect.y + rect.h },
+    { name: "sw", x: rect.x, y: rect.y + rect.h },
   ];
 }
 
@@ -2200,35 +2284,78 @@ function createFramePreview<T>(apply: (value: T) => void) {
   };
 }
 
+/**
+ * Calculate a resized rectangle from the original bounds and pointer delta.
+ *
+ * The dragged edge is snapped in world coordinates before the minimum-size
+ * clamp is applied. This keeps the opposite edge fixed for north/west drags,
+ * including when the pointer crosses the minimum-size boundary.
+ */
+export function resizeRect(
+  origin: Rect,
+  handle: ResizeHandle,
+  dx: number,
+  dy: number,
+  minimum: number | { w: number; h: number } = 32,
+  snap = false,
+): Rect {
+  const minW = typeof minimum === "number" ? minimum : minimum.w;
+  const minH = typeof minimum === "number" ? minimum : minimum.h;
+  const leftEdge = origin.x;
+  const rightEdge = origin.x + origin.w;
+  const topEdge = origin.y;
+  const bottomEdge = origin.y + origin.h;
+  let left = leftEdge;
+  let right = rightEdge;
+  let top = topEdge;
+  let bottom = bottomEdge;
+
+  if (handle.includes("w")) left = snapCoordinate(leftEdge + dx, snap);
+  if (handle.includes("e")) right = snapCoordinate(rightEdge + dx, snap);
+  if (handle.includes("n")) top = snapCoordinate(topEdge + dy, snap);
+  if (handle.includes("s")) bottom = snapCoordinate(bottomEdge + dy, snap);
+
+  if (handle.includes("w")) left = Math.min(left, right - minW);
+  if (handle.includes("e")) right = Math.max(right, left + minW);
+  if (handle.includes("n")) top = Math.min(top, bottom - minH);
+  if (handle.includes("s")) bottom = Math.max(bottom, top + minH);
+
+  return {
+    x: left,
+    y: top,
+    w: right - left,
+    h: bottom - top,
+  };
+}
+
 function beginResize(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
   snapToGrid: boolean,
-  rect: { x: number; y: number; w: number; h: number },
-  handle: string,
-  onPreview: (w: number, h: number) => void,
-  onCommit: (w: number, h: number) => void,
+  rect: Rect,
+  handle: ResizeHandle,
+  onPreview: (bounds: Rect) => void,
+  onCommit: (bounds: Rect) => void,
   onCancel: () => void,
   onBegin?: () => void,
   onEnd?: () => void,
 ) {
   onBegin?.();
+  const handleElement = event.currentTarget;
+  const pointerId = event.pointerId;
   const start = { x: event.clientX, y: event.clientY };
   const origin = { ...rect };
-  let latest = { w: origin.w, h: origin.h };
-  const preview = createFramePreview<{ w: number; h: number }>(
-    ({ w, h }) => onPreview(w, h),
-  );
+  let latest: Rect = origin;
+  const preview = createFramePreview<Rect>((bounds) => onPreview(bounds));
+  try {
+    handleElement.setPointerCapture(pointerId);
+  } catch {
+    // Pointer capture is unavailable in some synthetic test events.
+  }
   const move = (next: PointerEvent) => {
     const dx = (next.clientX - start.x) / zoom;
     const dy = (next.clientY - start.y) / zoom;
-    const w = handle.includes("e")
-      ? Math.max(32, snapCoordinate(origin.w + dx, snapToGrid))
-      : origin.w;
-    const h = handle.includes("s")
-      ? Math.max(32, snapCoordinate(origin.h + dy, snapToGrid))
-      : origin.h;
-    latest = { w, h };
+    latest = resizeRect(origin, handle, dx, dy, 32, snapToGrid);
     preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
@@ -2237,8 +2364,13 @@ function beginResize(
     window.removeEventListener("pointercancel", cancel);
     move(next);
     preview.flush();
-    onCommit(latest.w, latest.h);
+    onCommit(latest);
     onEnd?.();
+    try {
+      handleElement.releasePointerCapture(pointerId);
+    } catch {
+      // Pointer capture may already have been released by the browser.
+    }
   };
   const cancel = () => {
     window.removeEventListener("pointermove", move);
@@ -2247,6 +2379,11 @@ function beginResize(
     preview.flush();
     onCancel();
     onEnd?.();
+    try {
+      handleElement.releasePointerCapture(pointerId);
+    } catch {
+      // Pointer capture may already have been released by the browser.
+    }
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);

@@ -4,6 +4,7 @@ import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-di
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
 import {
   addAnnotation,
@@ -42,6 +43,13 @@ import {
   toggleSelectionItem,
   updateTextFormat,
   setGroupPlace,
+  setGroupBounds,
+  fitGroupToContents,
+  canGroupSelection,
+  groupSelection,
+  reparentPreservingAbsolutePosition,
+  ungroup,
+  removeSelectionPreservingGroupContents,
   setRoute,
   setResourceIconSize,
   setTitle,
@@ -484,6 +492,181 @@ describe("editor commands", () => {
     expect(place).toMatchObject({ w: 360, h: 240, pin: true });
     const group = layoutDocument(next).groups.find((candidate) => candidate.id === "appA");
     expect(group?.bounds).toMatchObject({ w: 360, h: 240 });
+  });
+
+  it("persists rounded manual group bounds without moving descendants", () => {
+    const doc = createAsyncDocsFixture();
+    const view = getDefaultView(doc);
+    view.places.apiA = { x: 120, y: 140, pin: true };
+    view.places.workerA = { x: 220, y: 180, pin: true };
+    const next = setGroupBounds(doc, "appA", { x: 10.4, y: 20.6, w: 400.5, h: 250.2 });
+
+    expect(view.places.apiA).toEqual({ x: 120, y: 140, pin: true });
+    expect(getDefaultView(next).places.appA).toMatchObject({
+      x: 10,
+      y: 21,
+      w: 401,
+      h: 250,
+      pin: true,
+      manual: true,
+    });
+    expect(getDefaultView(next).places.apiA).toEqual(view.places.apiA);
+    expect(setGroupBounds(doc, "missing", { x: 0, y: 0, w: 1, h: 1 })).toBe(doc);
+  });
+
+  it("fits a group around nested and border-child geometry using group style insets", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    doc.groups.find((group) => group.id === "appA")!.borderChildren = [{ id: "client", side: "e" }];
+    const client = layout.nodes.find((node) => node.id === "client")!.obstacle;
+    const api = layout.nodes.find((node) => node.id === "apiA")!.obstacle;
+    const worker = layout.nodes.find((node) => node.id === "workerA")!.obstacle;
+    const next = fitGroupToContents(doc, "appA", layout);
+    const style = GROUP_STYLES["subnet-private"];
+    const minX = Math.min(client.x, api.x, worker.x);
+    const minY = Math.min(client.y, api.y, worker.y);
+    const maxX = Math.max(client.x + client.w, api.x + api.w, worker.x + worker.w);
+    const maxY = Math.max(client.y + client.h, api.y + api.h, worker.y + worker.h);
+
+    expect(getDefaultView(next).places.appA).toMatchObject({
+      x: Math.round(minX - style.padding),
+      y: Math.round(minY - style.headerHeight - style.padding),
+      w: Math.round(maxX - minX + style.padding * 2),
+      h: Math.round(maxY - minY + style.headerHeight + style.padding * 2),
+      pin: true,
+      manual: true,
+    });
+    expect(getDefaultView(next).places.apiA).toEqual(getDefaultView(doc).places.apiA);
+  });
+
+  it("reparents groups and resources without changing absolute places or routes", () => {
+    const doc = createAsyncDocsFixture();
+    getDefaultView(doc).places.apiA = { x: 120, y: 140, pin: true };
+    getDefaultView(doc).routes.e2 = { pin: true, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
+    const beforePlace = structuredClone(getDefaultView(doc).places.apiA);
+    const beforeRoute = structuredClone(getDefaultView(doc).routes.e2);
+    const next = reparentPreservingAbsolutePosition(doc, { kind: "resource", id: "apiA" }, "appB");
+
+    expect(next.resources.find((resource) => resource.id === "apiA")?.parent).toBe("appB");
+    expect(next.groups.find((group) => group.id === "appA")?.children).not.toContain("apiA");
+    expect(next.groups.find((group) => group.id === "appB")?.children).toContain("apiA");
+    expect(getDefaultView(next).places.apiA).toEqual(beforePlace);
+    expect(getDefaultView(next).routes.e2).toEqual(beforeRoute);
+    expect(reparentPreservingAbsolutePosition(doc, { kind: "group", id: "main" }, "appA")).toBe(doc);
+    expect(reparentPreservingAbsolutePosition(doc, { kind: "resource", id: "apiA" }, "missing")).toBe(doc);
+  });
+
+  it("groups direct siblings while preserving hierarchy, geometry, and edge identity", () => {
+    const doc = createAsyncDocsFixture();
+    const before = layoutDocument(doc);
+    const beforeGeometry = new Map([
+      ...before.nodes.map((node) => [node.id, node.obstacle] as const),
+      ...before.groups.map((group) => [group.id, group.bounds] as const),
+    ]);
+    const beforeEdges = structuredClone(doc.edges);
+    const result = groupSelection(doc, [
+      { kind: "resource", id: "jobs_dlq" },
+      { kind: "resource", id: "jobs" },
+    ], before, "Processing");
+
+    expect(result).toBeTruthy();
+    const next = result!.doc;
+    const group = next.groups.find((candidate) => candidate.id === result!.id)!;
+    expect(group).toMatchObject({ kind: "logical", label: "Processing", parent: "queues" });
+    expect(group.children).toEqual(["jobs", "jobs_dlq"]);
+    expect(next.groups.find((candidate) => candidate.id === "queues")?.children).toEqual([result!.id]);
+    expect(next.resources.find((resource) => resource.id === "jobs")?.parent).toBe(result!.id);
+    expect(next.resources.find((resource) => resource.id === "jobs_dlq")?.parent).toBe(result!.id);
+    expect(next.edges).toEqual(beforeEdges);
+
+    const after = layoutDocument(next);
+    for (const id of ["jobs", "jobs_dlq"]) {
+      expect(after.nodes.find((node) => node.id === id)?.obstacle).toEqual(beforeGeometry.get(id));
+    }
+    const style = GROUP_STYLES.logical;
+    const expected = {
+      x: Math.min(beforeGeometry.get("jobs")!.x, beforeGeometry.get("jobs_dlq")!.x) - style.padding,
+      y: Math.min(beforeGeometry.get("jobs")!.y, beforeGeometry.get("jobs_dlq")!.y) - style.headerHeight - style.padding,
+    };
+    expect(getDefaultView(next).places[result!.id]).toMatchObject(expected);
+  });
+
+  it("groups nested siblings and rejects invalid or ancestor selections", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+
+    const nested = groupSelection(doc, [
+      { kind: "group", id: "queues" },
+      { kind: "group", id: "storage" },
+    ], layout);
+    expect(nested).toBeTruthy();
+    expect(nested!.doc.groups.find((group) => group.id === nested!.id)?.children).toEqual(["queues", "storage"]);
+    expect(nested!.doc.groups.find((group) => group.id === "use1")?.children).toEqual(["main", nested!.id]);
+    expect(groupSelection(doc, [{ kind: "edge", id: "e1" }, { kind: "resource", id: "apiA" }], layout)).toBeNull();
+    expect(groupSelection(doc, [{ kind: "resource", id: "apiA" }, { kind: "resource", id: "missing" }], layout)).toBeNull();
+    expect(groupSelection(doc, [{ kind: "resource", id: "apiA" }, { kind: "resource", id: "apiB" }], layout)).toBeNull();
+    expect(groupSelection(doc, [{ kind: "group", id: "azA" }, { kind: "group", id: "appA" }], layout)).toBeNull();
+    expect(groupSelection(doc, [{ kind: "resource", id: "apiA" }], layout)).toBeNull();
+  });
+
+  it("centralizes group eligibility for sibling resources and groups", () => {
+    const doc = createAsyncDocsFixture();
+
+    expect(canGroupSelection(doc, [
+      { kind: "resource", id: "jobs" },
+      { kind: "resource", id: "jobs_dlq" },
+    ])).toBe(true);
+    expect(canGroupSelection(doc, [
+      { kind: "resource", id: "apiA" },
+      { kind: "resource", id: "apiB" },
+    ])).toBe(false);
+    expect(canGroupSelection(doc, [
+      { kind: "group", id: "appA" },
+      { kind: "resource", id: "apiA" },
+    ])).toBe(false);
+    expect(canGroupSelection(doc, [
+      { kind: "resource", id: "jobs" },
+      { kind: "edge", id: "e1" },
+    ])).toBe(false);
+    expect(canGroupSelection(doc, [
+      { kind: "resource", id: "missing" },
+      { kind: "resource", id: "jobs" },
+    ])).toBe(false);
+  });
+
+  it("ungroups while promoting direct children and preserving connections", () => {
+    const doc = createAsyncDocsFixture();
+    getDefaultView(doc).places.appA = { x: 12, y: 18, w: 200, h: 160, pin: true, manual: true };
+    getDefaultView(doc).routes.e2 = { pin: true, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
+    const next = ungroup(doc, "appA");
+
+    expect(next.groups.some((group) => group.id === "appA")).toBe(false);
+    expect(next.groups.find((group) => group.id === "azA")?.children).toEqual(
+      expect.arrayContaining(["pubA", "appA"].filter((id) => id !== "appA").concat(["apiA", "workerA"])),
+    );
+    expect(next.resources.find((resource) => resource.id === "apiA")?.parent).toBe("azA");
+    expect(next.resources.find((resource) => resource.id === "workerA")?.parent).toBe("azA");
+    expect(getDefaultView(next).places.appA).toBeUndefined();
+    expect(getDefaultView(next).routes.e2).toEqual(getDefaultView(doc).routes.e2);
+    expect(next.edges.find((edge) => edge.id === "e2")).toEqual(doc.edges.find((edge) => edge.id === "e2"));
+  });
+
+  it("safely removes selected groups while deleting selected ordinary items", () => {
+    const doc = createAsyncDocsFixture();
+    const selection = [
+      { kind: "group", id: "main" } as const,
+      { kind: "group", id: "azA" } as const,
+      { kind: "resource", id: "client" } as const,
+    ];
+    const next = removeSelectionPreservingGroupContents(doc, [...selection].reverse());
+
+    expect(next.groups.some((group) => group.id === "main" || group.id === "azA")).toBe(false);
+    expect(next.resources.some((resource) => resource.id === "client")).toBe(false);
+    expect(next.resources.some((resource) => resource.id === "apiA")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "workerA")).toBe(true);
+    expect(removeSelectionPreservingGroupContents(doc, selection)).toEqual(next);
+    expect(deleteSelection(doc, [{ kind: "group", id: "appA" }])).not.toEqual(doc);
+    expect(deleteSelection(doc, [{ kind: "group", id: "appA" }]).resources.some((resource) => resource.id === "apiA")).toBe(false);
   });
 
   it("reorders z-index for send to front and back", () => {

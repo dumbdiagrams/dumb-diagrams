@@ -23,6 +23,7 @@ import type {
 } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView, hasErrors, normalizePortOffset, utf8ByteLength, validateDocument } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry, getCatalogMap, type CatalogEntry } from "@dumb-diagrams/runtime/catalog";
+import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 import { sanitizeSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
@@ -294,6 +295,63 @@ export function setGroupPlace(
     place.y = Math.round(place.y + dy);
   }
   return next;
+}
+
+/** Persist an authored rectangle for a group without changing its contents. */
+export function setGroupBounds(
+  doc: DiagramDocument,
+  groupId: string,
+  bounds: Rect,
+): DiagramDocument {
+  const group = doc.groups.find((candidate) => candidate.id === groupId);
+  if (!group || ![bounds.x, bounds.y, bounds.w, bounds.h].every(Number.isFinite)) {
+    return doc;
+  }
+  const current = getDefaultView(doc).places[groupId];
+  if (current?.locked) return doc;
+  const next = cloneDocument(doc);
+  getDefaultView(next).places[groupId] = {
+    ...getDefaultView(next).places[groupId],
+    x: Math.round(bounds.x),
+    y: Math.round(bounds.y),
+    w: Math.max(0, Math.round(bounds.w)),
+    h: Math.max(0, Math.round(bounds.h)),
+    pin: true,
+    manual: true,
+  };
+  return next;
+}
+
+/** Fit a group around its currently rendered descendants, without relayout. */
+export function fitGroupToContents(
+  doc: DiagramDocument,
+  groupId: string,
+  layout: LayoutResult,
+): DiagramDocument {
+  const group = doc.groups.find((candidate) => candidate.id === groupId);
+  if (!group) return doc;
+
+  const descendants = new Set<string>();
+  collectChildren(doc, groupId, descendants);
+  const geometry = [...descendants]
+    .map((id) =>
+      layout.groups.find((candidate) => candidate.id === id)?.bounds ??
+      layout.nodes.find((candidate) => candidate.id === id)?.obstacle,
+    )
+    .filter((rect): rect is Rect => Boolean(rect));
+  if (geometry.length === 0) return doc;
+
+  const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
+  const minX = Math.min(...geometry.map((rect) => rect.x));
+  const minY = Math.min(...geometry.map((rect) => rect.y));
+  const maxX = Math.max(...geometry.map((rect) => rect.x + rect.w));
+  const maxY = Math.max(...geometry.map((rect) => rect.y + rect.h));
+  return setGroupBounds(doc, groupId, {
+    x: minX - style.padding,
+    y: minY - style.headerHeight - style.padding,
+    w: maxX - minX + style.padding * 2,
+    h: maxY - minY + style.headerHeight + style.padding * 2,
+  });
 }
 
 /** Move a complete selection once, including nested descendants. */
@@ -1090,6 +1148,365 @@ export function duplicateSelection(
   });
 }
 
+/** Move an item between semantic groups while leaving all authored geometry absolute. */
+export function reparentPreservingAbsolutePosition(
+  doc: DiagramDocument,
+  item: SelectionItem | string,
+  newParentId?: string,
+): DiagramDocument {
+  const id = typeof item === "string" ? item : item.id;
+  const kind = typeof item === "string"
+    ? (doc.groups.some((group) => group.id === id) ? "group" : "resource")
+    : item.kind;
+  if (kind !== "group" && kind !== "resource") return doc;
+
+  const movedGroup = kind === "group"
+    ? doc.groups.find((group) => group.id === id)
+    : undefined;
+  const movedResource = kind === "resource"
+    ? doc.resources.find((resource) => resource.id === id)
+    : undefined;
+  if (!movedGroup && !movedResource) return doc;
+
+  const newParent = newParentId
+    ? doc.groups.find((group) => group.id === newParentId)
+    : undefined;
+  if (newParentId && !newParent) return doc;
+  if (newParentId === id) return doc;
+  if (movedGroup && newParent && isDescendant(doc, movedGroup.id, newParent.id)) return doc;
+
+  const next = cloneDocument(doc);
+  for (const group of next.groups) {
+    group.children = group.children.filter((childId) => childId !== id);
+    group.borderChildren = group.borderChildren?.filter((child) => child.id !== id);
+  }
+  if (movedGroup) next.groups.find((group) => group.id === id)!.parent = newParentId;
+  if (movedResource) next.resources.find((resource) => resource.id === id)!.parent = newParentId;
+  if (newParent) {
+    const destination = next.groups.find((group) => group.id === newParent.id)!;
+    destination.children = [...destination.children.filter((childId) => childId !== id), id];
+  }
+  return next;
+}
+
+/**
+ * Wrap a set of direct siblings in a new logical group.
+ *
+ * Grouping is a hierarchy-only operation: the selected items and every
+ * descendant that is already laid out are pinned to their current absolute
+ * geometry before their parent changes. This keeps grouping from unexpectedly
+ * reflowing an authored diagram while still allowing the new boundary to be
+ * laid out and rendered normally.
+ */
+export function groupSelection(
+  doc: DiagramDocument,
+  selection: Selection,
+  layout: LayoutResult,
+  label = "Group",
+): { doc: DiagramDocument; id: string } | null {
+  if (!canGroupSelection(doc, selection)) return null;
+  const normalized = normalizeGroupingSelection(doc, selection);
+  if (!normalized) return null;
+
+  const ids = normalized.map((item) => item.id);
+
+  const records = normalized.map((item) => {
+    const resource = item.kind === "resource"
+      ? doc.resources.find((candidate) => candidate.id === item.id)
+      : undefined;
+    const group = item.kind === "group"
+      ? doc.groups.find((candidate) => candidate.id === item.id)
+      : undefined;
+    return { item, resource, group, parent: resource?.parent ?? group?.parent };
+  });
+
+  const parentId = records[0]!.parent;
+
+  const parent = parentId ? doc.groups.find((group) => group.id === parentId) : undefined;
+  const siblingOrder = parent
+    ? [...parent.children, ...(parent.borderChildren?.map((child) => child.id) ?? [])]
+    : [
+        ...doc.groups.filter((group) => !group.parent).map((group) => group.id),
+        ...doc.resources.filter((resource) => !resource.parent).map((resource) => resource.id),
+      ];
+  const order = new Map(siblingOrder.map((id, index) => [id, index]));
+  const selectionIndex = new Map(normalized.map((item, index) => [item.id, index]));
+  const selectedIds = [...ids].sort((a, b) =>
+    (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER) ||
+    selectionIndex.get(a)! - selectionIndex.get(b)!,
+  );
+
+  const descendantIds = new Set<string>();
+  for (const record of records) {
+    descendantIds.add(record.item.id);
+    if (record.group) collectChildren(doc, record.group.id, descendantIds);
+  }
+
+  const layoutById = new Map<string, Rect>();
+  for (const group of layout.groups) layoutById.set(group.id, group.bounds);
+  for (const node of layout.nodes) layoutById.set(node.id, node.obstacle);
+  const geometry = [...descendantIds]
+    .map((id) => layoutById.get(id))
+    .filter((rect): rect is Rect => Boolean(rect));
+  if (geometry.length !== descendantIds.size || geometry.length === 0) return null;
+
+  const next = cloneDocument(doc);
+  const view = getDefaultView(next);
+  const sourceView = getDefaultView(doc);
+  for (const id of descendantIds) {
+    const rect = layoutById.get(id)!;
+    const existing = sourceView.places[id] ?? {};
+    const isGroup = doc.groups.some((group) => group.id === id);
+    view.places[id] = isGroup
+      ? {
+          ...existing,
+          x: rect.x,
+          y: rect.y,
+          w: rect.w,
+          h: rect.h,
+          pin: true,
+          manual: true,
+        }
+      : {
+          ...existing,
+          x: rect.x,
+          y: rect.y,
+          pin: true,
+          manual: true,
+        };
+  }
+
+  const groupId = uniqueId(next, label.trim() || "Group");
+  const minX = Math.min(...geometry.map((rect) => rect.x));
+  const minY = Math.min(...geometry.map((rect) => rect.y));
+  const maxX = Math.max(...geometry.map((rect) => rect.x + rect.w));
+  const maxY = Math.max(...geometry.map((rect) => rect.y + rect.h));
+  const groupRect = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  const style = GROUP_STYLES.logical;
+  const boundary: Rect = {
+    x: groupRect.x - style.padding,
+    y: groupRect.y - style.headerHeight - style.padding,
+    w: groupRect.w + style.padding * 2,
+    h: groupRect.h + style.headerHeight + style.padding * 2,
+  };
+
+  for (const candidate of next.groups) {
+    candidate.children = candidate.children.filter((id) => !selectedIds.includes(id));
+    candidate.borderChildren = candidate.borderChildren?.filter((child) => !selectedIds.includes(child.id));
+  }
+  const destination = parentId
+    ? next.groups.find((group) => group.id === parentId)
+    : undefined;
+  if (destination) {
+    const ordinaryIndices = parent!.children
+      .map((id, index) => selectedIds.includes(id) ? index : -1)
+      .filter((index) => index >= 0);
+    const insertionIndex = ordinaryIndices.length
+      ? Math.min(...ordinaryIndices)
+      : destination.children.length;
+    destination.children.splice(Math.min(insertionIndex, destination.children.length), 0, groupId);
+  }
+
+  for (const record of records) {
+    if (record.group) next.groups.find((group) => group.id === record.group!.id)!.parent = groupId;
+    else next.resources.find((resource) => resource.id === record.resource!.id)!.parent = groupId;
+  }
+  const newGroup = {
+    id: groupId,
+    kind: "logical" as const,
+    label: label.trim() || "Group",
+    parent: parentId,
+    children: selectedIds,
+  };
+  const groupInsertIndex = parentId
+    ? next.groups.length
+    : Math.min(
+        ...selectedIds
+          .map((id) => doc.groups.findIndex((group) => group.id === id))
+          .filter((index) => index >= 0),
+        next.groups.length,
+      );
+  next.groups.splice(groupInsertIndex, 0, newGroup);
+  view.places[groupId] = {
+    x: boundary.x,
+    y: boundary.y,
+    w: boundary.w,
+    h: boundary.h,
+    pin: true,
+    manual: true,
+  };
+  return { doc: next, id: groupId };
+}
+
+/**
+ * Return whether a selection can be wrapped in one new logical group.
+ *
+ * Grouping only accepts existing resource/group entities that are direct
+ * siblings. An ancestor and one of its descendants cannot be grouped
+ * together: doing so would make the resulting hierarchy ambiguous and would
+ * otherwise silently reparent the descendant twice.
+ */
+export function canGroupSelection(
+  doc: DiagramDocument,
+  selection: Selection,
+): boolean {
+  return normalizeGroupingSelection(doc, selection) !== null;
+}
+
+function normalizeGroupingSelection(
+  doc: DiagramDocument,
+  selection: Selection,
+): SelectionItem[] | null {
+  const normalized: SelectionItem[] = [];
+  const seen = new Set<string>();
+  for (const item of selection) {
+    if (item.kind !== "resource" && item.kind !== "group") return null;
+    if (!item.id || seen.has(`${item.kind}:${item.id}`)) continue;
+    seen.add(`${item.kind}:${item.id}`);
+    normalized.push(item);
+  }
+  if (normalized.length < 2) return null;
+
+  // IDs are document-global. Treat a duplicate ID presented with two kinds as
+  // invalid instead of allowing one model object to be silently reparented.
+  const ids = normalized.map((item) => item.id);
+  if (new Set(ids).size !== ids.length) return null;
+
+  const records = normalized.map((item) => {
+    const resource = item.kind === "resource"
+      ? doc.resources.find((candidate) => candidate.id === item.id)
+      : undefined;
+    const group = item.kind === "group"
+      ? doc.groups.find((candidate) => candidate.id === item.id)
+      : undefined;
+    return { item, resource, group, parent: resource?.parent ?? group?.parent };
+  });
+  if (records.some((record) => !record.resource && !record.group)) return null;
+
+  const parentId = records[0]!.parent;
+  if (records.some((record) => record.parent !== parentId)) return null;
+  if (parentId && !doc.groups.some((group) => group.id === parentId)) return null;
+
+  // Reject any selection that contains a group and one of its descendants,
+  // including malformed documents where the parent pointer and child list do
+  // not agree.
+  for (const record of records) {
+    if (!record.group) continue;
+    const descendants = new Set<string>();
+    collectChildren(doc, record.group.id, descendants);
+    if (records.some((candidate) => candidate.item.id !== record.group!.id && descendants.has(candidate.item.id))) {
+      return null;
+    }
+  }
+  return normalized;
+}
+
+/** Remove a group's boundary while promoting its direct members. */
+export function ungroup(
+  doc: DiagramDocument,
+  groupId: string,
+): DiagramDocument {
+  const group = doc.groups.find((candidate) => candidate.id === groupId);
+  if (!group) return doc;
+
+  const parentId = group.parent && doc.groups.some((candidate) => candidate.id === group.parent)
+    ? group.parent
+    : undefined;
+  const originalParent = parentId
+    ? doc.groups.find((candidate) => candidate.id === parentId)
+    : undefined;
+  const parentChildIndex = originalParent?.children.indexOf(groupId) ?? -1;
+  const parentBorderIndex = originalParent?.borderChildren?.findIndex((child) => child.id === groupId) ?? -1;
+  const ordinaryChildren = [...new Set(group.children)];
+  const borderChildren = new Map<string, Side>();
+  for (const child of group.borderChildren ?? []) {
+    if (!ordinaryChildren.includes(child.id)) borderChildren.set(child.id, child.side);
+  }
+  const promotedIds = [...ordinaryChildren, ...borderChildren.keys()];
+  const next = cloneDocument(doc);
+
+  // Remove every stale reference to the boundary or its promoted members
+  // before rebuilding the destination membership lists.
+  for (const candidate of next.groups) {
+    candidate.children = candidate.children.filter(
+      (childId) => childId !== groupId && !promotedIds.includes(childId),
+    );
+    candidate.borderChildren = candidate.borderChildren?.filter(
+      (child) => child.id !== groupId && !promotedIds.includes(child.id),
+    );
+    candidate.overlayTargets = candidate.overlayTargets?.filter((id) => id !== groupId);
+  }
+
+  const destination = parentId
+    ? next.groups.find((candidate) => candidate.id === parentId)
+    : undefined;
+  const validPromotedIds: string[] = [];
+  for (const childId of promotedIds) {
+    const childGroup = next.groups.find((candidate) => candidate.id === childId);
+    const childResource = next.resources.find((candidate) => candidate.id === childId);
+    if (!childGroup && !childResource) continue;
+    if (childGroup) childGroup.parent = parentId;
+    if (childResource) childResource.parent = parentId;
+    validPromotedIds.push(childId);
+  }
+  if (destination) {
+    const promotedOrdinary = validPromotedIds.filter((id) => ordinaryChildren.includes(id));
+    const childIndex = parentChildIndex >= 0
+      ? Math.min(parentChildIndex, destination.children.length)
+      : destination.children.length;
+    destination.children.splice(childIndex, 0, ...promotedOrdinary);
+    const promotedBorders = validPromotedIds
+      .filter((id) => borderChildren.has(id))
+      .map((id) => ({ id, side: borderChildren.get(id)! }));
+    if (promotedBorders.length > 0) {
+      const borderIndex = parentBorderIndex >= 0
+        ? Math.min(parentBorderIndex, destination.borderChildren?.length ?? 0)
+        : destination.borderChildren?.length ?? 0;
+      const currentBorders = destination.borderChildren ?? [];
+      currentBorders.splice(borderIndex, 0, ...promotedBorders);
+      destination.borderChildren = currentBorders;
+    }
+  }
+
+  next.groups = next.groups.filter((candidate) => candidate.id !== groupId);
+  for (const view of next.views) delete view.places[groupId];
+  return next;
+}
+
+/** Keyboard/context-menu removal: preserve selected group contents. */
+export function removeSelectionPreservingGroupContents(
+  doc: DiagramDocument,
+  selection: Selection,
+): DiagramDocument {
+  const selectedGroupIds = [...new Set(
+    selection
+      .filter((item) => item.kind === "group")
+      .map((item) => item.id)
+      .filter((id) => doc.groups.some((group) => group.id === id)),
+  )];
+  const depth = (id: string): number => {
+    let current = doc.groups.find((group) => group.id === id);
+    let result = 0;
+    const seen = new Set<string>();
+    while (current?.parent && !seen.has(current.parent)) {
+      seen.add(current.parent);
+      current = doc.groups.find((group) => group.id === current!.parent);
+      if (current) result++;
+    }
+    return result;
+  };
+  // Deepest first makes nested selected groups deterministic: every selected
+  // boundary is removed exactly once, independent of selection order.
+  selectedGroupIds.sort((a, b) => depth(b) - depth(a) || a.localeCompare(b));
+
+  let next = doc;
+  for (const groupId of selectedGroupIds) next = ungroup(next, groupId);
+  for (const item of selection) {
+    if (item.kind !== "group") next = deleteOne(next, item);
+  }
+  return next;
+}
+
 export function deleteSelection(
   doc: DiagramDocument,
   selection: Selection,
@@ -1581,12 +1998,34 @@ function collectChildren(
   ids: Set<string>,
 ): void {
   const group = doc.groups.find((candidate) => candidate.id === groupId);
-  for (const childId of group?.children ?? []) {
+  const childIds = [
+    ...(group?.children ?? []),
+    ...(group?.borderChildren?.map((child) => child.id) ?? []),
+  ];
+  for (const childId of childIds) {
+    if (ids.has(childId)) continue;
     ids.add(childId);
     if (doc.groups.some((candidate) => candidate.id === childId)) {
       collectChildren(doc, childId, ids);
     }
   }
+}
+
+function isDescendant(
+  doc: DiagramDocument,
+  ancestorId: string,
+  candidateId: string,
+): boolean {
+  let current = doc.groups.find((group) => group.id === candidateId);
+  const seen = new Set<string>();
+  while (current?.parent && !seen.has(current.id)) {
+    if (current.parent === ancestorId) return true;
+    seen.add(current.id);
+    current = doc.groups.find((group) => group.id === current!.parent);
+  }
+  const descendants = new Set<string>();
+  collectChildren(doc, ancestorId, descendants);
+  return descendants.has(candidateId);
 }
 
 function uniqueId(doc: DiagramDocument, base: string): string {
