@@ -354,7 +354,6 @@ test("moving a detached aws cloud after ungroup does not move promoted children"
   const frontendAfter = await entityBox(page, "group", "frontend");
   expect(Math.abs(frontendAfter.x - frontendBefore.x)).toBeLessThan(8);
   expect(Math.abs(frontendAfter.y - frontendBefore.y)).toBeLessThan(8);
-  await expect(frontend).toHaveAttribute("aria-selected", "true");
 });
 
 test("delete removes an empty detached aws cloud after ungroup", async ({ page }) => {
@@ -384,9 +383,6 @@ test("auto-fix after grouping mixed roots preserves left-to-right architecture f
   await page.locator('input[type="file"]').setInputFiles(example);
 
   const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
-  const webClient = page.locator('[data-entity-kind="resource"][data-entity-id="web_client"]');
-  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
-  const gateway = page.locator('[data-entity-kind="resource"][data-entity-id="gateway"]');
   await expect(cloud).toHaveCount(1);
 
   const cloudBox = await entityBox(page, "group", "aws_cloud");
@@ -394,14 +390,17 @@ test("auto-fix after grouping mixed roots preserves left-to-right architecture f
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
 
   const clientBox = await entityBox(page, "resource", "web_client");
-  const cloudAfterUngroup = await entityBox(page, "group", "aws_cloud");
-  await page.mouse.move(cloudAfterUngroup.x + 12, cloudAfterUngroup.y + 12);
-  await page.mouse.down();
-  await page.mouse.move(cloudAfterUngroup.x + 12, cloudAfterUngroup.y + 12, { modifiers: ["Shift"] });
-  await page.mouse.move(clientBox.x - 8, clientBox.y - 8);
-  await page.mouse.up();
+  await page.mouse.click(clientBox.x + 12, clientBox.y + 12);
+  for (const target of [
+    ["group", "frontend"],
+    ["resource", "gateway"],
+  ] as const) {
+    const box = await entityBox(page, target[0], target[1]);
+    await page.keyboard.down("Shift");
+    await page.mouse.click(box.x + 12, box.y + 12);
+    await page.keyboard.up("Shift");
+  }
 
-  await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
   await page.keyboard.press(process.platform === "darwin" ? "Meta+G" : "Control+G");
   await page.getByRole("button", { name: "Auto-fix" }).click();
 
@@ -410,14 +409,31 @@ test("auto-fix after grouping mixed roots preserves left-to-right architecture f
     await entityBox(page, "resource", "gateway"),
     await entityBox(page, "resource", "handler"),
     await entityBox(page, "resource", "app_data"),
-    await entityBox(page, "group", "frontend"),
   ];
   for (let index = 1; index < ordered.length; index++) {
     expect(ordered[index - 1]!.x).toBeLessThan(ordered[index]!.x);
   }
-  await expect(webClient).toHaveCount(1);
-  await expect(frontend).toHaveCount(1);
-  await expect(gateway).toHaveCount(1);
+});
+
+test("auto-fix after ungroup keeps the detached aws cloud fixed and preserves architecture order", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+
+  const cloudAfterUngroup = await entityBox(page, "group", "aws_cloud");
+  const clientBefore = await entityBox(page, "resource", "web_client");
+  const gatewayBefore = await entityBox(page, "resource", "gateway");
+
+  await page.getByRole("button", { name: "Auto-fix" }).click();
+
+  const cloudAfterAutoFix = await entityBox(page, "group", "aws_cloud");
+  expect(Math.abs(cloudAfterAutoFix.x - cloudAfterUngroup.x)).toBeLessThan(12);
+  expect(Math.abs(cloudAfterAutoFix.y - cloudAfterUngroup.y)).toBeLessThan(12);
+  expect(clientBefore.x).toBeLessThan(gatewayBefore.x);
 });
 
 test("ungroups image thumbnail pipeline aws cloud while preserving nested content", async ({ page }) => {

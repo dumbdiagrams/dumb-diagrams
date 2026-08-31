@@ -697,6 +697,29 @@ describe("routeEdgePreview", () => {
     expect(pathManhattanLength(authorizer.points)).toBeLessThan(300);
   });
 
+  it("keeps intra-group connectors inside a shared availability zone boundary", () => {
+    const doc = parseDgm(`diagram az-routing {
+  grammar aws
+  flow lr
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.az az "Availability Zone" {
+      cloud-agnostic.boundary frontend "Frontend services" {
+        aws.cloudfront cdn "Web delivery"
+      }
+      aws.api-gateway gateway
+    }
+  }
+  cdn -> gateway { id cdn_to_api step 2 }
+}`);
+    const layout = layoutDocument(doc);
+    const route = routeEdges(doc, layout).find((edge) => edge.id === "cdn_to_api")!;
+    const zone = layout.groups.find((group) => group.id === "az")!;
+
+    for (const point of route.points) {
+      expect(contains(zone.bounds, point)).toBe(true);
+    }
+  });
+
   it("reselects clean faces after the API Gateway is moved above both sources", () => {
     const { doc, layout } = gatewayRoutingRegressionLayout(true);
     const routes = routeEdges(doc, layout);

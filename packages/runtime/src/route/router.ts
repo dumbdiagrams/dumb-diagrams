@@ -15,6 +15,7 @@ import type {
 } from "../core/index.js";
 import {
   getDefaultView,
+  getParentGroup,
   nearestPortAnchor,
   normalizePortOffset,
   portPoint,
@@ -22,6 +23,7 @@ import {
 import { GRAMMAR, GROUP_STYLES, snap } from "../grammar-aws/index.js";
 
 const CELL = GRAMMAR.grid;
+const GROUP_CONTAINMENT_INSET = 8;
 const BEND_COST = 320;
 const HEADER_COST = 100_000;
 // Routing quality rules, in descending priority: never hit content; avoid
@@ -80,6 +82,8 @@ interface RouteContext {
   sourceSide: Side;
   targetSide: Side;
   style: EdgeStyle;
+  /** When both endpoints share a parent group, routes stay inside its bounds. */
+  containment?: Rect;
 }
 
 interface ExistingRoute {
@@ -201,8 +205,15 @@ export function routeEdges(
     let best: Point[] | null = null;
     let bestScore = Infinity;
     let bestPort = ports[0]!;
-    const routeVGutters = [...vGutters, ...corridorGutters(existing, "vertical")];
-    const routeHGutters = [...hGutters, ...corridorGutters(existing, "horizontal")];
+    const containment = containmentForEdge(doc, layout, edge.source, edge.target);
+    const baseVGutters = [...vGutters, ...corridorGutters(existing, "vertical")];
+    const baseHGutters = [...hGutters, ...corridorGutters(existing, "horizontal")];
+    const routeVGutters = containment
+      ? guttersInside(baseVGutters, containment, "x")
+      : baseVGutters;
+    const routeHGutters = containment
+      ? guttersInside(baseHGutters, containment, "y")
+      : baseHGutters;
 
     for (const port of ports) {
       // No orthogonal path between these ports can be shorter than their
@@ -214,7 +225,7 @@ export function routeEdges(
         Math.abs(port.src.y - port.tgt.y) +
         port.preferenceCost;
       if (lowerBound >= bestScore) continue;
-      const context = createRouteContext(source, target, port, edge.style);
+      const context = createRouteContext(source, target, port, edge.style, containment);
       for (const candidate of templates(port, routeVGutters, routeHGutters, source, target)) {
         const path = simplify(candidate);
         const s = scorePath(
@@ -246,7 +257,7 @@ export function routeEdges(
         ...ports.filter((port) => port !== bestPort),
       ], MAX_ASTAR_PORT_CHOICES);
       for (const port of astarPorts) {
-        const context = createRouteContext(source, target, port, edge.style);
+        const context = createRouteContext(source, target, port, edge.style, containment);
         const astarPath = routeAStar(
           grid,
           port,
@@ -282,7 +293,7 @@ export function routeEdges(
       // direct elbow through service icons or labels. Rip up this edge's
       // corridor constraints, but keep every content obstacle hard.
       for (const port of representativePortChoices(ports, 6)) {
-        const context = createRouteContext(source, target, port, edge.style);
+        const context = createRouteContext(source, target, port, edge.style, containment);
         const astarPath = routeAStar(grid, port, source, target, []);
         if (!astarPath) continue;
         const smoothed = shortcut(simplify(astarPath), obstacles, context);
@@ -301,7 +312,7 @@ export function routeEdges(
       // scores every candidate against hard content obstacles; never replace
       // an exhausted search with an unchecked direct elbow through a card.
       for (const port of representativePortChoices(ports, 8)) {
-        const context = createRouteContext(source, target, port, edge.style);
+        const context = createRouteContext(source, target, port, edge.style, containment);
         const candidate = perimeterFallback(
           layout,
           source,
@@ -325,7 +336,7 @@ export function routeEdges(
         // available lanes, retry the same hard-obstacle-safe perimeter search
         // without them and allow this edge to cross a connector.
         for (const port of representativePortChoices(ports, 8)) {
-          const context = createRouteContext(source, target, port, edge.style);
+          const context = createRouteContext(source, target, port, edge.style, containment);
           const candidate = perimeterFallback(
             layout,
             source,
@@ -354,7 +365,7 @@ export function routeEdges(
     points = shortcut(
       points,
       obstacles,
-      createRouteContext(source, target, bestPort, edge.style),
+      createRouteContext(source, target, bestPort, edge.style, containment),
       existing,
     );
     points = simplify(points);
@@ -462,6 +473,7 @@ function repairAutomaticRouteCrossings(
       if (routeConflictCount(edge.points, otherRoutes) < 10) continue;
       const sourceAnchor = nearestPortAnchor(source.icon, edge.points[0]!);
       const targetAnchor = nearestPortAnchor(target.icon, edge.points.at(-1)!);
+      const containment = containmentForEdge(doc, layout, edge.source, edge.target);
       const context: RouteContext = {
         sourceId: edge.source,
         targetId: edge.target,
@@ -470,6 +482,7 @@ function repairAutomaticRouteCrossings(
         sourceSide: sourceAnchor.side,
         targetSide: targetAnchor.side,
         style: edge.style,
+        containment,
       };
       let best = edge.points;
       let bestConflicts = routeConflictCount(best, otherRoutes);
@@ -513,16 +526,28 @@ function repairAutomaticRouteCrossings(
         definition.sourcePortOffset !== undefined,
         definition.targetPortOffset !== undefined,
       );
-      const retryVGutters = [
-        ...vGutters,
-        ...corridorGutters(otherRoutes, "vertical"),
-      ];
-      const retryHGutters = [
-        ...hGutters,
-        ...corridorGutters(otherRoutes, "horizontal"),
-      ];
+      const retryVGutters = containment
+        ? guttersInside(
+            [...vGutters, ...corridorGutters(otherRoutes, "vertical")],
+            containment,
+            "x",
+          )
+        : [
+            ...vGutters,
+            ...corridorGutters(otherRoutes, "vertical"),
+          ];
+      const retryHGutters = containment
+        ? guttersInside(
+            [...hGutters, ...corridorGutters(otherRoutes, "horizontal")],
+            containment,
+            "y",
+          )
+        : [
+            ...hGutters,
+            ...corridorGutters(otherRoutes, "horizontal"),
+          ];
       for (const port of representativePortChoices(retryPorts, 16)) {
-        const retryContext = createRouteContext(source, target, port, edge.style);
+        const retryContext = createRouteContext(source, target, port, edge.style, containment);
         for (const candidate of templates(
           port,
           retryVGutters,
@@ -650,22 +675,39 @@ function perimeterFallback(
 ): Point[] | null {
   const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
   const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
-  // Route outside every hard obstacle, not merely inside the nominal layout
-  // bounds. Group headers can begin at y=0 and cards can extend beyond the
-  // layout's initial width/height, so fixed 16px lanes may still cut through
-  // visible content.
   const margin = CELL * 2;
-  const minX = Math.min(...obstacles.map((obstacle) => obstacle.x), 0) - margin;
-  const maxX = Math.max(
-    ...obstacles.map((obstacle) => obstacle.x + obstacle.w),
-    layout.width,
-  ) + margin;
-  const minY = Math.min(...obstacles.map((obstacle) => obstacle.y), 0) - margin;
-  const maxY = Math.max(
-    ...obstacles.map((obstacle) => obstacle.y + obstacle.h),
-    layout.height,
-  ) + margin;
-  const lanes = { top: minY, right: maxX, bottom: maxY, left: minX };
+  let lanes: { top: number; right: number; bottom: number; left: number };
+  if (context.containment) {
+    const inset = GROUP_CONTAINMENT_INSET;
+    const box = context.containment;
+    lanes = {
+      top: box.y + inset,
+      right: box.x + box.w - inset,
+      bottom: box.y + box.h - inset,
+      left: box.x + inset,
+    };
+  } else {
+    // Route outside every hard obstacle, not merely inside the nominal layout
+    // bounds. Group headers can begin at y=0 and cards can extend beyond the
+    // layout's initial width/height, so fixed 16px lanes may still cut through
+    // visible content.
+    lanes = {
+      top: Math.min(...obstacles.map((obstacle) => obstacle.y), 0) - margin,
+      right: Math.max(
+        ...obstacles.map((obstacle) => obstacle.x + obstacle.w),
+        layout.width,
+      ) + margin,
+      bottom: Math.max(
+        ...obstacles.map((obstacle) => obstacle.y + obstacle.h),
+        layout.height,
+      ) + margin,
+      left: Math.min(...obstacles.map((obstacle) => obstacle.x), 0) - margin,
+    };
+  }
+  const minX = lanes.left;
+  const maxX = lanes.right;
+  const minY = lanes.top;
+  const maxY = lanes.bottom;
   const candidates = [
     [portChoice.src, start, { x: start.x, y: lanes.top }, { x: goal.x, y: lanes.top }, goal, portChoice.tgt],
     [portChoice.src, start, { x: start.x, y: lanes.bottom }, { x: goal.x, y: lanes.bottom }, goal, portChoice.tgt],
@@ -1463,11 +1505,88 @@ function iconCenter(node: NodeGeom): Point {
   return { x: node.icon.x + node.icon.w / 2, y: node.icon.y + node.icon.h / 2 };
 }
 
+function groupAncestorIds(doc: DiagramDocument, entityId: string): string[] {
+  const ids: string[] = [];
+  let current: string | undefined = entityId;
+  while (true) {
+    const parent = getParentGroup(doc, current);
+    if (!parent) break;
+    ids.push(parent.id);
+    current = parent.id;
+  }
+  return ids;
+}
+
+function sharedAncestorGroupId(
+  doc: DiagramDocument,
+  sourceId: string,
+  targetId: string,
+): string | undefined {
+  const targetAncestors = new Set(groupAncestorIds(doc, targetId));
+  for (const id of groupAncestorIds(doc, sourceId)) {
+    if (targetAncestors.has(id)) return id;
+  }
+  return undefined;
+}
+
+function containmentForEdge(
+  doc: DiagramDocument,
+  layout: LayoutResult,
+  sourceId: string,
+  targetId: string,
+): Rect | undefined {
+  const groupId = sharedAncestorGroupId(doc, sourceId, targetId);
+  if (!groupId) return undefined;
+  return layout.groups.find((group) => group.id === groupId)?.bounds;
+}
+
+function guttersInside(
+  gutters: number[],
+  rect: Rect,
+  axis: "x" | "y",
+): number[] {
+  const lo = axis === "x" ? rect.x + GROUP_CONTAINMENT_INSET : rect.y + GROUP_CONTAINMENT_INSET;
+  const hi = axis === "x"
+    ? rect.x + rect.w - GROUP_CONTAINMENT_INSET
+    : rect.y + rect.h - GROUP_CONTAINMENT_INSET;
+  const filtered = gutters.filter((value) => value >= lo && value <= hi);
+  return [...new Set([...filtered, lo, hi].map((value) => snap(value)))].sort((a, b) => a - b);
+}
+
+function segmentInsideRect(a: Point, b: Point, rect: Rect): boolean {
+  const inset = GROUP_CONTAINMENT_INSET;
+  const box = {
+    x: rect.x + inset,
+    y: rect.y + inset,
+    w: rect.w - inset * 2,
+    h: rect.h - inset * 2,
+  };
+  if (box.w <= 0 || box.h <= 0) return true;
+  if (a.x === b.x) {
+    if (a.x < box.x || a.x > box.x + box.w) return false;
+    return Math.min(a.y, b.y) >= box.y && Math.max(a.y, b.y) <= box.y + box.h;
+  }
+  if (a.y === b.y) {
+    if (a.y < box.y || a.y > box.y + box.h) return false;
+    return Math.min(a.x, b.x) >= box.x && Math.max(a.x, b.x) <= box.x + box.w;
+  }
+  return false;
+}
+
+function pathRespectsContainment(points: Point[], rect: Rect | undefined): boolean {
+  if (!rect) return true;
+  for (let index = 0; index < points.length - 1; index++) {
+    if (!segmentInsideRect(points[index]!, points[index + 1]!, rect)) return false;
+  }
+  return true;
+}
+
 function createRouteContext(
   source: NodeGeom,
   target: NodeGeom,
   ports: PortChoice,
   style: EdgeStyle = "solid",
+  containment?: Rect,
 ): RouteContext {
   return {
     sourceId: source.id,
@@ -1477,6 +1596,7 @@ function createRouteContext(
     sourceSide: ports.srcSide,
     targetSide: ports.tgtSide,
     style,
+    containment,
   };
 }
 
@@ -1698,6 +1818,7 @@ function scorePath(
     samePoint(points.at(-1)!, context.targetPoint) &&
     !followsAttachmentDirection(points.at(-1)!, points.at(-2)!, context.targetSide)
   ) return Infinity;
+  if (!pathRespectsContainment(points, context.containment)) return Infinity;
   let score = (points.length - 2) * BEND_COST + pathLength(points);
   const manhattan =
     Math.abs(points[0]!.x - points[points.length - 1]!.x) +
@@ -2946,9 +3067,16 @@ export function routeConnectionPreview(
   let best: Point[] | null = null;
   let bestScore = Infinity;
   let bestPort = ports[0]!;
+  const containment = containmentForEdge(doc, layout, sourceId, targetId);
+  const routeVGutters = containment
+    ? guttersInside(vGutters, containment, "x")
+    : vGutters;
+  const routeHGutters = containment
+    ? guttersInside(hGutters, containment, "y")
+    : hGutters;
   for (const port of ports) {
-    const context = createRouteContext(source, target, port, options.style);
-    for (const candidate of templates(port, vGutters, hGutters, source, target)) {
+    const context = createRouteContext(source, target, port, options.style, containment);
+    for (const candidate of templates(port, routeVGutters, routeHGutters, source, target)) {
       const path = simplify(candidate);
       const s = scorePath(path, obstacles, context, []) + port.preferenceCost;
       if (s < bestScore) {
@@ -2960,7 +3088,7 @@ export function routeConnectionPreview(
   }
   if (!best || bestScore >= CROSSING_COST) {
     for (const port of ports) {
-      const context = createRouteContext(source, target, port, options.style);
+      const context = createRouteContext(source, target, port, options.style, containment);
       const astarPath = routeAStar(grid, port, source, target, []);
       if (!astarPath) continue;
       const smoothed = shortcut(simplify(astarPath), obstacles, context);
@@ -2975,7 +3103,7 @@ export function routeConnectionPreview(
 
   if (!best) {
     for (const port of representativePortChoices(ports, 8)) {
-      const context = createRouteContext(source, target, port, options.style);
+      const context = createRouteContext(source, target, port, options.style, containment);
       const candidate = perimeterFallback(
         layout,
         source,
@@ -2996,7 +3124,7 @@ export function routeConnectionPreview(
   }
   if (!best) return null;
   let points = best;
-  const context = createRouteContext(source, target, bestPort, options.style);
+  const context = createRouteContext(source, target, bestPort, options.style, containment);
   points = shortcut(points, obstacles, context);
   points = simplify(points);
   if (options.waypoints?.length) {

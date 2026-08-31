@@ -1003,6 +1003,129 @@ describe("editor commands", () => {
     expect(twice.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
   });
 
+  it("removeSelectionPreservingGroupContents deletes a retained empty boundary shell", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  generic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+    }
+    aws.api-gateway gateway
+  }
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> gateway { id cdn_to_api step 2 }
+}
+`);
+    const { doc: ungrouped } = ungroup(doc, "aws_cloud", layoutDocument(doc));
+    expect(ungrouped.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
+
+    const next = removeSelectionPreservingGroupContents(ungrouped, [{ kind: "group", id: "aws_cloud" }]);
+    expect(next.groups.some((group) => group.id === "aws_cloud")).toBe(false);
+    expect(next.groups.some((group) => group.id === "frontend")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "gateway")).toBe(true);
+  });
+
+  it("clearView after ungroup preserves detached empty boundary geometry", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  generic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.api-gateway gateway
+  }
+  web_client -> gateway { id client_to_api step 1 }
+}
+`);
+    const layout = layoutDocument(doc);
+    const { doc: ungrouped } = ungroup(doc, "aws_cloud", layout);
+    const cloudPlace = getDefaultView(ungrouped).places.aws_cloud;
+    expect(cloudPlace?.x).toBeDefined();
+
+    const fixed = clearView(ungrouped);
+    expect(getDefaultView(fixed).places.aws_cloud).toMatchObject({
+      x: cloudPlace!.x,
+      y: cloudPlace!.y,
+      w: cloudPlace!.w,
+      h: cloudPlace!.h,
+    });
+
+    const afterLayout = layoutDocument(fixed);
+    const cloudBounds = afterLayout.groups.find((group) => group.id === "aws_cloud")!.bounds;
+    expect(Math.abs(cloudBounds.x - cloudPlace!.x!)).toBeLessThan(4);
+    expect(Math.abs(cloudBounds.y - cloudPlace!.y!)).toBeLessThan(4);
+  });
+
+  it("clearView after grouping mixed siblings preserves left-to-right architecture order", () => {
+    const doc = createAsyncDocsFixture();
+    doc.groups.unshift({
+      id: "cloud",
+      kind: "cloud",
+      type: "aws.cloud",
+      label: "AWS Cloud",
+      children: [],
+    });
+    const layout = layoutDocument(doc);
+    const cloud = layout.groups.find((group) => group.id === "cloud")!;
+    const region = layout.groups.find((group) => group.id === "use1")!.bounds;
+    const client = layout.nodes.find((node) => node.id === "client")!.obstacle;
+    cloud.bounds = {
+      x: Math.min(region.x, client.x) - 64,
+      y: Math.min(region.y, client.y) - 64,
+      w: Math.max(region.x + region.w, client.x + client.w) - Math.min(region.x, client.x) + 128,
+      h: Math.max(region.y + region.h, client.y + client.h) - Math.min(region.y, client.y) + 128,
+    };
+
+    const grouped = groupSelection(doc, [
+      { kind: "group", id: "cloud" },
+      { kind: "group", id: "use1" },
+      { kind: "resource", id: "client" },
+    ], layout);
+    expect(grouped?.doc.groups.find((group) => group.id === "cloud")?.children).toEqual([
+      "client",
+      "use1",
+    ]);
+
+    const fixed = clearView(grouped!.doc);
+    const after = layoutDocument(fixed);
+    const clientNode = after.nodes.find((node) => node.id === "client")!;
+    const regionGroup = after.groups.find((group) => group.id === "use1")!;
+    expect(clientNode.obstacle.x).toBeLessThan(regionGroup.bounds.x);
+  });
+
+  it("clearView after ungroup keeps promoted architecture in causal flow order", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  generic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+    }
+    aws.api-gateway gateway
+    aws.aws-lambda handler "Request handler"
+    aws.dynamodb app_data "Application data"
+  }
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> gateway { id cdn_to_api step 2 }
+  gateway -> handler { id api_to_handler step 3 }
+  handler -> app_data { id handler_to_data step 4 }
+}
+`);
+    const { doc: ungrouped } = ungroup(doc, "aws_cloud", layoutDocument(doc));
+    const fixed = clearView(ungrouped);
+    const layout = layoutDocument(fixed);
+    const positions = new Map<string, number>();
+    for (const node of layout.nodes) positions.set(node.id, node.obstacle.x);
+    for (const group of layout.groups) {
+      if (group.id !== "aws_cloud") positions.set(group.id, group.bounds.x);
+    }
+    expect(positions.get("web_client")!).toBeLessThan(positions.get("gateway")!);
+    expect(positions.get("gateway")!).toBeLessThan(positions.get("handler")!);
+    expect(positions.get("handler")!).toBeLessThan(positions.get("app_data")!);
+  });
+
   it("infers parent-pointer-only direct children when ungrouping", () => {
     const doc = createAsyncDocsFixture();
     const group = doc.groups.find((candidate) => candidate.id === "queues");

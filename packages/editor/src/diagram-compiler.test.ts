@@ -7,7 +7,7 @@ import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
-import { compileDiagramSource, STUDIO_CANVAS_PADDING } from "./diagram-compiler";
+import { compileDiagramSource, getCommittedCompilationEpoch, STUDIO_CANVAS_PADDING, warmDiagramCompilationCache } from "./diagram-compiler";
 import { addResource, moveSelection, needsAutoFix, setRoute } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
@@ -356,3 +356,20 @@ function sharedOrthogonalLength(
   }
   return length;
 }
+
+describe("diagram compilation cache", () => {
+  it("warms the cache immediately after a committed source change", () => {
+    const source = printDgm(createAsyncDocsFixture());
+    const before = getCommittedCompilationEpoch();
+    const warmed = warmDiagramCompilationCache(source, true);
+    expect(warmed.ok).toBe(true);
+    if (!warmed.ok) return;
+    expect(getCommittedCompilationEpoch()).toBe(before + 1);
+
+    const cached = compileDiagramSource(source, true);
+    expect(cached.ok).toBe(true);
+    if (!cached.ok) return;
+    expect(cached.svg).toBe(warmed.svg);
+    expect(cached.layout).toBe(warmed.layout);
+  });
+});

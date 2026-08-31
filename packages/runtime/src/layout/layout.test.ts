@@ -4,6 +4,7 @@ import { createEmptyDocument } from "../core/index.js";
 import type { DiagramDocument, Resource } from "../core/index.js";
 import { snap } from "../grammar-aws/index.js";
 import { layoutDocument } from "./layout.js";
+import { findDiagramRoots, isEmptyRootBoundary, orderRootsForFlow } from "./roots.js";
 
 function resource(id: string, parent?: string): Resource {
   return {
@@ -462,5 +463,103 @@ describe("logical group layout", () => {
     );
     expect(groups.get("support")!.bounds.y).toBeGreaterThan(primaryBottom);
     expect(groups.get("region")!.bounds.w).toBeGreaterThan(groups.get("region")!.bounds.h);
+  });
+});
+
+describe("diagram root ordering", () => {
+  it("orders mixed architecture roots by flow instead of entity type", () => {
+    const doc = createEmptyDocument("mixed-roots");
+    doc.flow = "lr";
+    doc.resources = [
+      resource("cdn", "frontend"),
+      resource("gateway"),
+      resource("web_client"),
+    ];
+    doc.groups = [
+      {
+        id: "frontend",
+        kind: "logical",
+        label: "Frontend",
+        children: ["cdn"],
+      },
+      {
+        id: "empty_cloud",
+        kind: "cloud",
+        type: "aws.cloud",
+        label: "AWS Cloud",
+        children: [],
+      },
+    ];
+    doc.edges = [
+      { id: "client_to_cdn", source: "web_client", target: "cdn", style: "solid", kind: "flow" },
+      { id: "cdn_to_gateway", source: "cdn", target: "gateway", style: "solid", kind: "flow" },
+    ];
+    const view = doc.views[0]!;
+    view.places.web_client = { x: 40, y: 80 };
+    view.places.frontend = { x: 120, y: 72, w: 160, h: 96 };
+    view.places.cdn = { x: 136, y: 96 };
+    view.places.gateway = { x: 320, y: 80 };
+    view.places.empty_cloud = { x: 520, y: 40, w: 240, h: 180 };
+
+    const roots = findDiagramRoots(doc);
+    expect(isEmptyRootBoundary(doc, "empty_cloud")).toBe(true);
+    expect(orderRootsForFlow(doc, roots)).toEqual([
+      "web_client",
+      "frontend",
+      "gateway",
+      "empty_cloud",
+    ]);
+  });
+
+  it("places disconnected decorative boundaries after connected architecture", () => {
+    const doc = createEmptyDocument("decorative-root");
+    doc.flow = "tb";
+    doc.resources = [resource("first"), resource("second")];
+    doc.groups = [{
+      id: "decorative",
+      kind: "cloud",
+      type: "aws.cloud",
+      label: "Decorative",
+      children: [],
+    }];
+    doc.edges = [
+      { id: "flow", source: "first", target: "second", style: "solid", kind: "flow" },
+    ];
+    const view = doc.views[0]!;
+    view.places.first = { x: 80, y: 40 };
+    view.places.second = { x: 80, y: 160 };
+    view.places.decorative = { x: 40, y: 280, w: 200, h: 120 };
+
+    expect(orderRootsForFlow(doc, findDiagramRoots(doc))).toEqual([
+      "first",
+      "second",
+      "decorative",
+    ]);
+  });
+
+  it("appends disconnected decorative boundaries after cyclic architecture roots", () => {
+    const doc = createEmptyDocument("cyclic-roots");
+    doc.flow = "lr";
+    doc.resources = [resource("alpha"), resource("beta")];
+    doc.groups = [{
+      id: "wrapper",
+      kind: "logical",
+      label: "Wrapper",
+      children: [],
+    }];
+    doc.edges = [
+      { id: "ab", source: "alpha", target: "beta", style: "solid", kind: "flow" },
+      { id: "ba", source: "beta", target: "alpha", style: "solid", kind: "flow" },
+    ];
+    const view = doc.views[0]!;
+    view.places.alpha = { x: 40, y: 80 };
+    view.places.wrapper = { x: 120, y: 72, w: 96, h: 64 };
+    view.places.beta = { x: 240, y: 80 };
+
+    expect(orderRootsForFlow(doc, findDiagramRoots(doc))).toEqual([
+      "alpha",
+      "beta",
+      "wrapper",
+    ]);
   });
 });
