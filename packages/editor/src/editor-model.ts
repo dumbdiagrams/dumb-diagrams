@@ -1391,22 +1391,68 @@ export function canGroupSelection(
   return normalizeGroupingSelection(doc, selection) !== null;
 }
 
+/**
+ * Project a mixed selection onto resource/group hierarchy roots suitable for
+ * grouping. Connectors and annotations are ignored. When both an ancestor
+ * group and its descendants are selected, only the ancestor is kept.
+ */
+function projectGroupingCandidates(
+  doc: DiagramDocument,
+  selection: Selection,
+): SelectionItem[] {
+  const candidates: SelectionItem[] = [];
+  const seen = new Set<string>();
+  for (const item of selection) {
+    if (item.kind !== "resource" && item.kind !== "group") continue;
+    if (!item.id) continue;
+    const key = `${item.kind}:${item.id}`;
+    if (seen.has(key)) continue;
+    const resource = item.kind === "resource"
+      ? doc.resources.find((candidate) => candidate.id === item.id)
+      : undefined;
+    const group = item.kind === "group"
+      ? doc.groups.find((candidate) => candidate.id === item.id)
+      : undefined;
+    if (!resource && !group) continue;
+    seen.add(key);
+    candidates.push(item);
+  }
+  if (candidates.length < 2) return [];
+
+  const selectedGroups = new Set(
+    candidates.filter((item) => item.kind === "group").map((item) => item.id),
+  );
+  return candidates.filter((item) =>
+    !hasSelectedGroupAncestor(doc, item.id, selectedGroups),
+  );
+}
+
+function hasSelectedGroupAncestor(
+  doc: DiagramDocument,
+  id: string,
+  selectedGroups: ReadonlySet<string>,
+): boolean {
+  const parentById = new Map<string, string | undefined>();
+  for (const resource of doc.resources) parentById.set(resource.id, resource.parent);
+  for (const group of doc.groups) parentById.set(group.id, group.parent);
+  const visited = new Set<string>();
+  let parent = parentById.get(id);
+  while (parent) {
+    if (selectedGroups.has(parent)) return true;
+    if (visited.has(parent)) return false;
+    visited.add(parent);
+    parent = parentById.get(parent);
+  }
+  return false;
+}
+
 function normalizeGroupingSelection(
   doc: DiagramDocument,
   selection: Selection,
 ): SelectionItem[] | null {
-  const normalized: SelectionItem[] = [];
-  const seen = new Set<string>();
-  for (const item of selection) {
-    if (item.kind !== "resource" && item.kind !== "group") return null;
-    if (!item.id || seen.has(`${item.kind}:${item.id}`)) continue;
-    seen.add(`${item.kind}:${item.id}`);
-    normalized.push(item);
-  }
+  const normalized = projectGroupingCandidates(doc, selection);
   if (normalized.length < 2) return null;
 
-  // IDs are document-global. Treat a duplicate ID presented with two kinds as
-  // invalid instead of allowing one model object to be silently reparented.
   const ids = normalized.map((item) => item.id);
   if (new Set(ids).size !== ids.length) return null;
 
@@ -1425,17 +1471,6 @@ function normalizeGroupingSelection(
   if (records.some((record) => record.parent !== parentId)) return null;
   if (parentId && !doc.groups.some((group) => group.id === parentId)) return null;
 
-  // Reject any selection that contains a group and one of its descendants,
-  // including malformed documents where the parent pointer and child list do
-  // not agree.
-  for (const record of records) {
-    if (!record.group) continue;
-    const descendants = new Set<string>();
-    collectChildren(doc, record.group.id, descendants);
-    if (records.some((candidate) => candidate.item.id !== record.group!.id && descendants.has(candidate.item.id))) {
-      return null;
-    }
-  }
   return normalized;
 }
 
@@ -1443,9 +1478,10 @@ function normalizeGroupingSelection(
 export function ungroup(
   doc: DiagramDocument,
   groupId: string,
-): DiagramDocument {
+  layout?: LayoutResult,
+): { doc: DiagramDocument; selection: Selection } {
   const group = doc.groups.find((candidate) => candidate.id === groupId);
-  if (!group) return doc;
+  if (!group) return { doc, selection: [] };
 
   const parentId = group.parent && doc.groups.some((candidate) => candidate.id === group.parent)
     ? group.parent
@@ -1455,13 +1491,64 @@ export function ungroup(
     : undefined;
   const parentChildIndex = originalParent?.children.indexOf(groupId) ?? -1;
   const parentBorderIndex = originalParent?.borderChildren?.findIndex((child) => child.id === groupId) ?? -1;
-  const ordinaryChildren = [...new Set(group.children)];
   const borderChildren = new Map<string, Side>();
   for (const child of group.borderChildren ?? []) {
-    if (!ordinaryChildren.includes(child.id)) borderChildren.set(child.id, child.side);
+    // Boundary metadata is more specific than the ordinary membership list.
+    // Keep the side even when a malformed document lists the same item in both
+    // places; it must remain a border child after ungrouping.
+    borderChildren.set(child.id, child.side);
   }
-  const promotedIds = [...ordinaryChildren, ...borderChildren.keys()];
+  const ordinaryChildren = [...new Set(group.children)].filter((id) => !borderChildren.has(id));
+
+  // Membership arrays are normally the source of ordering, but older or
+  // hand-edited documents can retain only the child's parent pointer. Infer
+  // those direct children so ungrouping cannot orphan them. A strict equality
+  // check intentionally excludes descendants of the group.
+  const listedIds = new Set([...ordinaryChildren, ...borderChildren.keys()]);
+  const inferredChildren = [
+    ...doc.groups
+      .filter((candidate) => candidate.parent === groupId && !listedIds.has(candidate.id))
+      .map((candidate) => candidate.id),
+    ...doc.resources
+      .filter((candidate) => candidate.parent === groupId && !listedIds.has(candidate.id))
+      .map((candidate) => candidate.id),
+  ];
+  const promotedIds = [...ordinaryChildren, ...borderChildren.keys(), ...inferredChildren];
   const next = cloneDocument(doc);
+
+  if (layout) {
+    const view = getDefaultView(next);
+    const sourceView = getDefaultView(doc);
+    const pinnedIds = new Set<string>();
+    pinnedIds.add(groupId);
+    collectChildren(doc, groupId, pinnedIds);
+    const layoutById = new Map<string, Rect>();
+    for (const candidate of layout.groups) layoutById.set(candidate.id, candidate.bounds);
+    for (const node of layout.nodes) layoutById.set(node.id, node.obstacle);
+    for (const id of pinnedIds) {
+      const rect = layoutById.get(id);
+      if (!rect) continue;
+      const existing = sourceView.places[id] ?? {};
+      const isGroup = doc.groups.some((candidate) => candidate.id === id);
+      view.places[id] = isGroup
+        ? {
+            ...existing,
+            x: rect.x,
+            y: rect.y,
+            w: rect.w,
+            h: rect.h,
+            pin: true,
+            manual: true,
+          }
+        : {
+            ...existing,
+            x: rect.x,
+            y: rect.y,
+            pin: true,
+            manual: true,
+          };
+    }
+  }
 
   // Remove every stale reference to the boundary or its promoted members
   // before rebuilding the destination membership lists.
@@ -1488,7 +1575,9 @@ export function ungroup(
     validPromotedIds.push(childId);
   }
   if (destination) {
-    const promotedOrdinary = validPromotedIds.filter((id) => ordinaryChildren.includes(id));
+    const promotedOrdinary = validPromotedIds.filter((id) =>
+      ordinaryChildren.includes(id) || inferredChildren.includes(id),
+    );
     const childIndex = parentChildIndex >= 0
       ? Math.min(parentChildIndex, destination.children.length)
       : destination.children.length;
@@ -1508,13 +1597,20 @@ export function ungroup(
 
   next.groups = next.groups.filter((candidate) => candidate.id !== groupId);
   for (const view of next.views) delete view.places[groupId];
-  return next;
+
+  const selection: Selection = validPromotedIds.map((id) => (
+    next.groups.some((candidate) => candidate.id === id)
+      ? { kind: "group" as const, id }
+      : { kind: "resource" as const, id }
+  ));
+  return { doc: next, selection };
 }
 
 /** Keyboard/context-menu removal: preserve selected group contents. */
 export function removeSelectionPreservingGroupContents(
   doc: DiagramDocument,
   selection: Selection,
+  layout?: LayoutResult,
 ): DiagramDocument {
   const selectedGroupIds = [...new Set(
     selection
@@ -1538,7 +1634,9 @@ export function removeSelectionPreservingGroupContents(
   selectedGroupIds.sort((a, b) => depth(b) - depth(a) || a.localeCompare(b));
 
   let next = doc;
-  for (const groupId of selectedGroupIds) next = ungroup(next, groupId);
+  for (const groupId of selectedGroupIds) {
+    next = ungroup(next, groupId, layout).doc;
+  }
   for (const item of selection) {
     if (item.kind !== "group") next = deleteOne(next, item);
   }

@@ -1442,3 +1442,133 @@ test("infers the top face and previews the routed path when an endpoint is dropp
   expect(first[0]).toBeCloseTo(expectedTop.x, 4);
   expect(first[1]).toBeCloseTo(expectedTop.y, 4);
 });
+
+test("preserves marquee multi-selection on right-click and groups siblings", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "marquee-group.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram marquee-group {
+  grammar cloud-agnostic
+  cloud-agnostic.database left "Left"
+  cloud-agnostic.database right "Right"
+}
+`),
+  });
+
+  const left = page.locator('[data-entity-kind="resource"][data-entity-id="left"]');
+  const right = page.locator('[data-entity-kind="resource"][data-entity-id="right"]');
+  const leftBox = await entityBox(page, "resource", "left");
+  const rightBox = await entityBox(page, "resource", "right");
+  const stageBox = await page.getByTestId("canvas-stage").boundingBox();
+  expect(stageBox).not.toBeNull();
+
+  const start = {
+    x: Math.min(leftBox.x, rightBox.x) - 24,
+    y: Math.min(leftBox.y, rightBox.y) - 24,
+  };
+  const finish = {
+    x: Math.max(leftBox.x + leftBox.width, rightBox.x + rightBox.width) + 24,
+    y: Math.max(leftBox.y + leftBox.height, rightBox.y + rightBox.height) + 24,
+  };
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(finish.x, finish.y, { steps: 8 });
+  await page.mouse.up();
+
+  await expect(left).toHaveAttribute("aria-selected", "true");
+  await expect(right).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-entity-kind="resource"][aria-selected="true"]')).toHaveCount(2);
+
+  const leftCenter = boxCenter(leftBox);
+  await left.click({
+    button: "right",
+    position: { x: leftCenter.x - leftBox.x, y: leftCenter.y - leftBox.y },
+    force: true,
+  });
+  const menu = page.getByRole("menu", { name: "Canvas context menu" });
+  await expect(menu).toBeVisible();
+  await expect(left).toHaveAttribute("aria-selected", "true");
+  await expect(right).toHaveAttribute("aria-selected", "true");
+  await expect(menu.locator('[data-menu-item="group"]')).toBeVisible();
+  await menu.locator('[data-menu-item="group"]').click();
+
+  await expect(page.locator('[data-entity-kind="group"][aria-selected="true"]')).toHaveCount(1);
+  await expect(left).toHaveAttribute("aria-selected", "false");
+  await expect(right).toHaveAttribute("aria-selected", "false");
+});
+
+test("preserves select-all selection on right-click and groups projected roots", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "mixed-select.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram mixed-select {
+  grammar cloud-agnostic
+  cloud-agnostic.database alpha "Alpha"
+  cloud-agnostic.database beta "Beta"
+  alpha -> beta { id link }
+}
+`),
+  });
+
+  const alpha = page.locator('[data-entity-kind="resource"][data-entity-id="alpha"]');
+  const beta = page.locator('[data-entity-kind="resource"][data-entity-id="beta"]');
+  const edge = page.locator('[data-entity-kind="edge"][data-entity-id="link"]');
+  await expect(alpha).toHaveCount(1);
+  await expect(beta).toHaveCount(1);
+  await expect(edge).toHaveCount(1);
+
+  const selectAll = process.platform === "darwin" ? "Meta+A" : "Control+A";
+  await page.keyboard.press(selectAll);
+  await expect(alpha).toHaveAttribute("aria-selected", "true");
+  await expect(beta).toHaveAttribute("aria-selected", "true");
+  await expect(edge).toHaveAttribute("aria-selected", "true");
+
+  const alphaBox = await entityBox(page, "resource", "alpha");
+  await alpha.click({
+    button: "right",
+    position: { x: 12, y: alphaBox.height / 2 },
+    force: true,
+  });
+  const menu = page.getByRole("menu", { name: "Canvas context menu" });
+  await expect(menu).toBeVisible();
+  await expect(alpha).toHaveAttribute("aria-selected", "true");
+  await expect(beta).toHaveAttribute("aria-selected", "true");
+  await expect(edge).toHaveAttribute("aria-selected", "true");
+  await expect(menu.locator('[data-menu-item="group"]')).toBeVisible();
+  await menu.locator('[data-menu-item="group"]').click();
+
+  await expect(page.locator('[data-entity-kind="group"][aria-selected="true"]')).toHaveCount(1);
+  await expect(alpha).toHaveAttribute("aria-selected", "false");
+  await expect(beta).toHaveAttribute("aria-selected", "false");
+});
+
+test("replaces selection on right-click of an unselected entity and clears on empty canvas click", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  const jobs = page.locator('[data-entity-kind="resource"][data-entity-id="jobs"]');
+  const dlq = page.locator('[data-entity-kind="resource"][data-entity-id="jobs_dlq"]');
+  const jobsBox = await entityBox(page, "resource", "jobs");
+  const dlqBox = await entityBox(page, "resource", "jobs_dlq");
+  await dispatchPointerClick(jobs, boxCenter(jobsBox));
+  await dispatchPointerClick(dlq, boxCenter(dlqBox), { shiftKey: true });
+  await expect(jobs).toHaveAttribute("aria-selected", "true");
+  await expect(dlq).toHaveAttribute("aria-selected", "true");
+
+  const client = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
+  const clientBox = await entityBox(page, "resource", "client");
+  await client.click({ button: "right", position: { x: 12, y: clientBox.height / 2 }, force: true });
+  await expect(page.getByRole("menu", { name: "Canvas context menu" })).toBeVisible();
+  await expect(client).toHaveAttribute("aria-selected", "true");
+  await expect(jobs).toHaveAttribute("aria-selected", "false");
+  await expect(dlq).toHaveAttribute("aria-selected", "false");
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu", { name: "Canvas context menu" })).toHaveCount(0);
+
+  const artboardBox = await page.locator(".canvas-artboard").boundingBox();
+  expect(artboardBox).not.toBeNull();
+  await page.mouse.click(artboardBox!.x - 32, artboardBox!.y - 32);
+  await expect(page.locator('[data-entity-kind="resource"][aria-selected="true"]')).toHaveCount(0);
+});

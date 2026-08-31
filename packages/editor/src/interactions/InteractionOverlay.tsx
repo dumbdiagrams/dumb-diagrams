@@ -70,6 +70,11 @@ type LabelDrag = {
   side: EdgeLabelSide;
 } | null;
 
+/** Selection and drag gestures respond to the primary button only. */
+function isPrimaryPointerButton(event: { button: number }): boolean {
+  return event.button === 0;
+}
+
 function InteractionOverlayComponent({
   doc,
   layout,
@@ -806,6 +811,7 @@ function InteractionOverlayComponent({
             onPointerMove={updateHover}
             onPointerLeave={() => clearHover("group", group.id)}
             onPointerDown={(event) => {
+              if (!isPrimaryPointerButton(event)) return;
               event.stopPropagation();
               // The hit rectangle covers the whole group, so empty interior
               // space should move the group just like its border or icon.
@@ -867,6 +873,7 @@ function InteractionOverlayComponent({
           onPointerMove={updateHover}
           onPointerLeave={() => clearHover("edge", edge.id)}
           onPointerDown={(event) => {
+            if (!isPrimaryPointerButton(event)) return;
             event.stopPropagation();
             // Resolve the nearest connector at the pointer rather than using
             // whichever widened SVG stroke happens to be on top. This keeps
@@ -951,6 +958,7 @@ function InteractionOverlayComponent({
         if (!isEntityVisible(doc, view, node.id)) return null;
         const hitRects = resourceHitRects(node);
         const onNodePointerDown = (event: React.PointerEvent<SVGRectElement>) => {
+          if (!isPrimaryPointerButton(event)) return;
           event.stopPropagation();
           const target = closestTargetAt(event.clientX, event.clientY)
             ?? { kind: "resource" as const, id: node.id };
@@ -1038,6 +1046,7 @@ function InteractionOverlayComponent({
             onPointerMove={updateHover}
             onPointerLeave={() => clearHover("annotation", annotation.id)}
             onPointerDown={(event) => {
+              if (!isPrimaryPointerButton(event)) return;
               event.stopPropagation();
               const target = closestTargetAt(event.clientX, event.clientY)
                 ?? { kind: "annotation" as const, id: annotation.id };
@@ -1113,6 +1122,7 @@ function InteractionOverlayComponent({
             }}
             onPointerLeave={() => clearHover("edge", edge.id)}
             onPointerDown={(event) => {
+              if (!isPrimaryPointerButton(event)) return;
               event.stopPropagation();
               onSelect({ kind: "edge", id: edge.id }, selectionModeForModifiers(event));
               if (tool === "select" && !view.places[edge.id]?.locked) {
@@ -1278,6 +1288,7 @@ function InteractionOverlayComponent({
                 width={handleSize}
                 height={handleSize}
                 onPointerDown={(event) => {
+                  if (!isPrimaryPointerButton(event)) return;
                   event.stopPropagation();
                   beginResize(
                     event,
@@ -1347,6 +1358,7 @@ function InteractionOverlayComponent({
                   cy={point.y}
                   r={compact ? 6 : 8}
                   onPointerDown={(event) => {
+                    if (!isPrimaryPointerButton(event)) return;
                     event.stopPropagation();
                     if (pendingPort) {
                       onChoosePort(node.id, side, offset);
@@ -1398,6 +1410,7 @@ function InteractionOverlayComponent({
             onPointerMove={() => highlightEdge(edge.id)}
             onPointerLeave={() => clearHover("edge", edge.id)}
             onPointerDown={(event) => {
+              if (!isPrimaryPointerButton(event)) return;
               event.stopPropagation();
               onSelect({ kind: "edge", id: edge.id }, selectionModeForModifiers(event));
             }}
@@ -1458,6 +1471,7 @@ function InteractionOverlayComponent({
               onPointerMove={() => highlightEdge(edgeGeom.id)}
               onPointerLeave={() => clearHover("edge", edgeGeom.id)}
               onPointerDown={(event) => {
+                if (!isPrimaryPointerButton(event)) return;
                 event.stopPropagation();
                 if (view.places[edgeGeom.id]?.locked) return;
                 beginBadgeMove(
@@ -1527,6 +1541,7 @@ function InteractionOverlayComponent({
                   height={10}
                   rx={2}
                   onPointerDown={(event) => {
+                    if (!isPrimaryPointerButton(event)) return;
                     event.stopPropagation();
                     if (view.places[edgeGeom.id]?.locked) return;
                     beginRewire(event, edgeGeom.id, endpointName!);
@@ -1546,6 +1561,7 @@ function InteractionOverlayComponent({
                 className="turn-handle"
                 pointerEvents="all"
                 onPointerDown={(event) => {
+                  if (!isPrimaryPointerButton(event)) return;
                   event.stopPropagation();
                   if (view.places[edgeGeom.id]?.locked) return;
                   beginPointMove(
@@ -1587,6 +1603,7 @@ function InteractionOverlayComponent({
                 className={`segment-handle-group ${horizontal ? "is-horizontal" : "is-vertical"}`}
                 pointerEvents="all"
                 onPointerDown={(event) => {
+                  if (!isPrimaryPointerButton(event)) return;
                   event.stopPropagation();
                   if (view.places[edgeGeom.id]?.locked) return;
                   beginSegmentMove(

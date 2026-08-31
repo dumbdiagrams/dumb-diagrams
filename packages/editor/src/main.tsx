@@ -1395,7 +1395,9 @@ function App() {
 
   const removeCurrentSelection = (items: Selection = selection) => {
     if (!compiled.ok || items.length === 0) return;
-    mutateCurrent((doc) => removeSelectionPreservingGroupContents(doc, items));
+    mutateCurrent((doc) =>
+      removeSelectionPreservingGroupContents(doc, items, compiled.layout),
+    );
     setSelection((current) =>
       current.filter(
         (candidate) =>
@@ -1434,8 +1436,9 @@ function App() {
   const ungroupCurrentSelection = (items: Selection = selection) => {
     if (!compiled.ok || items.length !== 1 || items[0]?.kind !== "group") return;
     const groupId = items[0].id;
-    mutateCurrent((doc) => ungroup(doc, groupId));
-    setSelection([]);
+    const result = ungroup(compiled.doc, groupId, compiled.layout);
+    if (!updateDocument(result.doc)) return;
+    setSelection(result.selection);
     setContextMenu(null);
     setToast("Ungrouped selection");
   };
@@ -3470,7 +3473,7 @@ function buildContextMenuItems(
 
   if (!hasSelection) return items;
 
-  if (selection.length > 1 && canGroupSelection(doc, selection)) {
+  if (canGroupSelection(doc, selection)) {
     items.push({
       id: "group",
       label: "Group",

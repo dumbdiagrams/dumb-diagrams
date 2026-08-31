@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
@@ -688,6 +689,16 @@ describe("editor commands", () => {
       { kind: "edge", id: "e1" },
     ])).toBe(false);
     expect(canGroupSelection(doc, [
+      { kind: "resource", id: "jobs" },
+      { kind: "resource", id: "jobs_dlq" },
+      { kind: "edge", id: "e6" },
+    ])).toBe(true);
+    expect(canGroupSelection(doc, [
+      { kind: "group", id: "queues" },
+      { kind: "group", id: "storage" },
+      { kind: "edge", id: "e1" },
+    ])).toBe(true);
+    expect(canGroupSelection(doc, [
       { kind: "resource", id: "missing" },
       { kind: "resource", id: "jobs" },
     ])).toBe(false);
@@ -697,8 +708,12 @@ describe("editor commands", () => {
     const doc = createAsyncDocsFixture();
     getDefaultView(doc).places.appA = { x: 12, y: 18, w: 200, h: 160, pin: true, manual: true };
     getDefaultView(doc).routes.e2 = { pin: true, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
-    const next = ungroup(doc, "appA");
+    const { doc: next, selection } = ungroup(doc, "appA");
 
+    expect(selection).toEqual([
+      { kind: "resource", id: "apiA" },
+      { kind: "resource", id: "workerA" },
+    ]);
     expect(next.groups.some((group) => group.id === "appA")).toBe(false);
     expect(next.groups.find((group) => group.id === "azA")?.children).toEqual(
       expect.arrayContaining(["pubA", "appA"].filter((id) => id !== "appA").concat(["apiA", "workerA"])),
@@ -726,6 +741,132 @@ describe("editor commands", () => {
     expect(removeSelectionPreservingGroupContents(doc, selection)).toEqual(next);
     expect(deleteSelection(doc, [{ kind: "group", id: "appA" }])).not.toEqual(doc);
     expect(deleteSelection(doc, [{ kind: "group", id: "appA" }]).resources.some((resource) => resource.id === "apiA")).toBe(false);
+  });
+
+  it("groups mixed selections by projecting eligible sibling roots", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const mixed = [
+      { kind: "group" as const, id: "queues" },
+      { kind: "group" as const, id: "storage" },
+      { kind: "resource" as const, id: "jobs" },
+      { kind: "edge" as const, id: "e1" },
+    ];
+
+    expect(canGroupSelection(doc, mixed)).toBe(true);
+    const grouped = groupSelection(doc, mixed, layout);
+    expect(grouped).toBeTruthy();
+    const wrapper = grouped!.doc.groups.find((group) => group.id === grouped!.id);
+    expect(wrapper?.children).toEqual(expect.arrayContaining(["queues", "storage"]));
+    expect(wrapper?.children).toHaveLength(2);
+    expect(grouped!.doc.edges).toHaveLength(doc.edges.length);
+  });
+
+  it("rejects projected grouping candidates with fewer than two roots or different parents", () => {
+    const doc = createAsyncDocsFixture();
+    expect(canGroupSelection(doc, [
+      { kind: "group", id: "queues" },
+      { kind: "resource", id: "jobs" },
+      { kind: "edge", id: "e6" },
+    ])).toBe(false);
+    expect(canGroupSelection(doc, [
+      { kind: "resource", id: "client" },
+      { kind: "group", id: "queues" },
+    ])).toBe(false);
+  });
+
+  it("ungroups a parsed curated aws cloud while preserving descendants, edges, and geometry", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  title "Simple serverless web application"
+
+  generic.client web_client "Web client"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service static_assets "Static web assets"
+    }
+
+    aws.api-gateway gateway
+    aws.aws-lambda handler "Request handler"
+    aws.dynamodb app_data "Application data"
+  }
+
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> static_assets { id cdn_to_assets label "static content" }
+  cdn -> gateway { id cdn_to_api step 2 }
+  gateway -> handler { id api_to_handler step 3 }
+  handler -> app_data { id handler_to_data step 4 }
+}
+`);
+    const beforeLayout = layoutDocument(doc);
+    const beforePositions = new Map(
+      beforeLayout.nodes.map((node) => [node.id, node.obstacle]),
+    );
+    for (const group of beforeLayout.groups) beforePositions.set(group.id, group.bounds);
+    const edgeCount = doc.edges.length;
+
+    const { doc: next, selection } = ungroup(doc, "aws_cloud", beforeLayout);
+
+    expect(next.groups.some((group) => group.id === "aws_cloud")).toBe(false);
+    expect(next.groups.some((group) => group.id === "frontend")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "gateway")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "handler")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "app_data")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "web_client")).toBe(true);
+    expect(next.edges).toHaveLength(edgeCount);
+    expect(selection.map((item) => item.id).sort()).toEqual(
+      ["app_data", "frontend", "gateway", "handler"].sort(),
+    );
+
+    const afterLayout = layoutDocument(next);
+    const view = getDefaultView(next);
+    for (const id of ["frontend", "gateway", "handler", "app_data"]) {
+      const before = beforePositions.get(id);
+      expect(before, id).toBeTruthy();
+      const place = view.places[id];
+      expect(place?.pin).toBe(true);
+      expect(Math.abs((place?.x ?? 0) - before!.x)).toBeLessThan(4);
+      expect(Math.abs((place?.y ?? 0) - before!.y)).toBeLessThan(4);
+    }
+    expect(afterLayout.nodes.some((node) => node.id === "gateway")).toBe(true);
+  });
+
+  it("infers parent-pointer-only direct children when ungrouping", () => {
+    const doc = createAsyncDocsFixture();
+    const group = doc.groups.find((candidate) => candidate.id === "queues");
+    expect(group).toBeTruthy();
+    group!.children = [];
+    group!.borderChildren = [];
+    const layout = layoutDocument(doc);
+    const { doc: next, selection } = ungroup(doc, "queues", layout);
+
+    expect(next.groups.some((candidate) => candidate.id === "queues")).toBe(false);
+    expect(next.resources.some((resource) => resource.id === "jobs")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "jobs_dlq")).toBe(true);
+    expect(selection.map((item) => item.id).sort()).toEqual(["jobs", "jobs_dlq"]);
+  });
+
+  it("round-trips group and ungroup without losing document members", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const grouped = groupSelection(doc, [
+      { kind: "resource", id: "jobs" },
+      { kind: "resource", id: "jobs_dlq" },
+    ], layout);
+    expect(grouped).toBeTruthy();
+
+    const regroupedLayout = layoutDocument(grouped!.doc);
+    const ungrouped = ungroup(grouped!.doc, grouped!.id, regroupedLayout);
+    expect(ungrouped.doc.resources.some((resource) => resource.id === "jobs")).toBe(true);
+    expect(ungrouped.doc.resources.some((resource) => resource.id === "jobs_dlq")).toBe(true);
+    expect(ungrouped.doc.edges).toHaveLength(doc.edges.length);
+    expect(ungrouped.selection).toEqual([
+      { kind: "resource", id: "jobs" },
+      { kind: "resource", id: "jobs_dlq" },
+    ]);
   });
 
   it("reorders z-index for send to front and back", () => {

@@ -264,6 +264,78 @@ test("ungroups a selected group without deleting its contents", async ({ page })
   await expect(child).toHaveCount(1);
 });
 
+test("ungroups a curated aws cloud example while preserving children, geometry, and selection", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
+  const gateway = page.locator('[data-entity-kind="resource"][data-entity-id="gateway"]');
+  const handler = page.locator('[data-entity-kind="resource"][data-entity-id="handler"]');
+  const appData = page.locator('[data-entity-kind="resource"][data-entity-id="app_data"]');
+  await expect(cloud).toHaveCount(1);
+  const edgeIds = await page.locator('[data-entity-kind="edge"][data-edge-id]').evaluateAll((elements) =>
+    [...new Set(elements.map((element) => element.getAttribute("data-edge-id")))],
+  );
+  expect(edgeIds).toHaveLength(5);
+
+  const beforeBoxes = {
+    frontend: await entityBox(page, "group", "frontend"),
+    gateway: await entityBox(page, "resource", "gateway"),
+    handler: await entityBox(page, "resource", "handler"),
+    appData: await entityBox(page, "resource", "app_data"),
+  };
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await expect(cloud).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+
+  await expect(cloud).toHaveCount(0);
+  await expect(frontend).toHaveCount(1);
+  await expect(gateway).toHaveCount(1);
+  await expect(handler).toHaveCount(1);
+  await expect(appData).toHaveCount(1);
+  const edgeIdsAfter = await page.locator('[data-entity-kind="edge"][data-edge-id]').evaluateAll((elements) =>
+    [...new Set(elements.map((element) => element.getAttribute("data-edge-id")))],
+  );
+  expect(edgeIdsAfter).toHaveLength(5);
+  await expect(frontend).toHaveAttribute("aria-selected", "true");
+  await expect(gateway).toHaveAttribute("aria-selected", "true");
+  await expect(handler).toHaveAttribute("aria-selected", "true");
+  await expect(appData).toHaveAttribute("aria-selected", "true");
+
+  const afterBoxes = {
+    frontend: await entityBox(page, "group", "frontend"),
+    gateway: await entityBox(page, "resource", "gateway"),
+    handler: await entityBox(page, "resource", "handler"),
+    appData: await entityBox(page, "resource", "app_data"),
+  };
+  for (const id of ["frontend", "gateway", "handler", "appData"] as const) {
+    expect(Math.abs(afterBoxes[id].x - beforeBoxes[id].x)).toBeLessThan(8);
+    expect(Math.abs(afterBoxes[id].y - beforeBoxes[id].y)).toBeLessThan(8);
+  }
+
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Z" : "Control+Z");
+  await expect(cloud).toHaveCount(1);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+Z" : "Control+Shift+Z");
+  await expect(cloud).toHaveCount(0);
+  await expect(frontend).toHaveAttribute("aria-selected", "true");
+});
+
+async function entityBox(
+  page: Page,
+  kind: "resource" | "group",
+  id: string,
+) {
+  const entity = page.locator(`[data-entity-kind="${kind}"][data-entity-id="${id}"]`).first();
+  await expect(entity).toHaveCount(1);
+  const box = await entity.boundingBox();
+  expect(box, `${kind}:${id} should have a rendered box`).not.toBeNull();
+  return box!;
+}
+
 test("Delete group and contents explicitly removes the complete subtree", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles({
