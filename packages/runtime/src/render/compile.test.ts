@@ -43,11 +43,11 @@ describe("async-docs fixture", () => {
     expect(result.svg).toContain("<svg");
   });
 
-  it("renders Azure subscriptions with an amber default while honoring authored colors", () => {
+  it("renders Azure subscriptions with provider defaults while honoring authored colors", () => {
     const doc = parseDgm(`diagram azure-subscription {\n  grammar azure\n  azure.subscription subscription "Azure Subscription" {}\n}`);
     const defaultSvg = renderSvg(doc, layoutDocument(doc));
-    expect(defaultSvg).toContain('stroke="#f7982c"');
-    expect(defaultSvg).toContain('fill="rgba(247,152,44,0.04)"');
+    expect(defaultSvg).toContain('stroke="#FF9300"');
+    expect(defaultSvg).toContain('fill="rgba(255,147,0,0.04)"');
 
     doc.groups[0]!.color = "purple";
     const authoredSvg = renderSvg(doc, layoutDocument(doc));

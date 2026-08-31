@@ -3,6 +3,7 @@ import type { AnnotationStyle, DiagramDocument, LayoutResult } from "../core/ind
 import { EDGE_COLOR_VALUES, getDefaultView, resolveEdgeColor } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 import { darkContrastStrokeMarkup, needsDarkContrastAid } from "./contrast.js";
+import { resolveProviderGroupColors } from "./provider-group-colors.js";
 
 import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon } from "./assets.js";
 
@@ -97,10 +98,9 @@ function renderGroup(
 ): string {
   const model = doc.groups.find((candidate) => candidate.id === group.id);
   const baseStyle = GROUP_STYLES[group.kind];
-  // Azure subscriptions use the provider's amber boundary treatment. Keep
-  // the generic account style for all other providers/types.
-  const style = doc.grammar === "azure" && model?.type === "azure.subscription"
-    ? { ...baseStyle, stroke: "#f7982c", fill: "rgba(247,152,44,0.04)" }
+  const providerColors = resolveProviderGroupColors(doc.grammar, model?.type);
+  const style = providerColors
+    ? { ...baseStyle, stroke: providerColors.stroke, fill: providerColors.fill }
     : baseStyle;
   const stroke = model?.color ? EDGE_COLOR_VALUES[model.color] : style.stroke;
   const fill = model?.fill === "none"
