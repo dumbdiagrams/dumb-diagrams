@@ -96,20 +96,21 @@
   .hero-description p { font-size: 15px; color: var(--muted); line-height: 1.8; letter-spacing: -.025em; }
   .hero-start { margin-top: 28px; max-width: 100%; }
   .hero .install { width: 100%; }
-  .provider-strip { --provider-logo-h: clamp(34px, 3.5vw, 50px); display: flex; align-items: center; justify-content: space-between; gap: clamp(16px, 2.5vw, 32px); padding: clamp(36px, 4vw, 48px) 0; border-bottom: 1px solid var(--line); }
-  .provider-strip-heading { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; color: var(--ink); font: 600 clamp(12px, 1.2vw, 14px)/1 var(--mono); letter-spacing: .11em; text-transform: lowercase; }
-  .provider-strip-heading i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--orange); }
-  .provider-strip-sep { width: 4px; height: 4px; flex: 0 0 4px; border-radius: 50%; background: #8091a7; opacity: .75; }
-  .provider-strip-logo { display: flex; align-items: center; justify-content: center; height: var(--provider-logo-h); flex: 0 0 auto; min-width: 0; overflow: visible; }
-  .provider-strip-logo img { display: block; width: auto; max-width: none; object-fit: contain; object-position: center; filter: grayscale(1); opacity: .68; }
-  .provider-strip-logo--aws img { height: 112%; }
-  .provider-strip-logo--azure img { height: 54%; }
-  .provider-strip-logo--gcp { gap: clamp(6px, 1vw, 10px); color: var(--muted); opacity: .78; }
-  .provider-strip-logo--gcp img { height: 90%; flex: 0 0 auto; }
-  .provider-strip-logo--agnostic { gap: clamp(8px, 1.2vw, 14px); color: var(--muted); opacity: .78; }
-  .provider-strip-cloud { flex: 0 0 auto; height: 86%; width: auto; aspect-ratio: 22 / 18; overflow: visible; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.55; }
-  .provider-strip-label { font: clamp(11px, 1.35vw, 13px) var(--mono); letter-spacing: .05em; text-transform: lowercase; white-space: nowrap; font-weight: 550; }
-  .provider-strip-label--caps { text-transform: none; letter-spacing: .08em; }
+  .provider-strip { --provider-mark: clamp(28px, 2.6vw, 34px); padding: 18px 0 36px; }
+  .provider-strip-panel { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; width: 100%; padding-top: 14px; border-top: 2px solid color-mix(in srgb, var(--brand-navy) 58%, transparent); }
+  .provider-strip-heading { display: inline-flex; align-items: center; gap: 10px; margin: 0; color: var(--muted); font: 10px/1.6 var(--mono); letter-spacing: .1em; text-transform: lowercase; white-space: nowrap; opacity: .72; }
+  .provider-strip-heading i { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: var(--orange); opacity: .72; }
+  .provider-strip-logos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; min-width: 0; border-left: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
+  .provider-strip-logo { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 44px; padding: 0 clamp(10px, 1.8vw, 22px); color: var(--muted); border-left: 1px solid color-mix(in srgb, var(--line) 36%, transparent); opacity: .58; transition: opacity .2s ease; }
+  .provider-strip-logo:first-child { border-left: 0; }
+  .provider-strip-logo:hover { opacity: .78; }
+  .provider-strip-logo img { display: block; width: auto; height: auto; max-width: 100%; filter: grayscale(1); }
+  .provider-strip-logo--aws img { width: calc(var(--provider-mark) * 1.42); transform: translateY(calc(var(--provider-mark) * .35)); }
+  .provider-strip-logo--azure img { width: calc(var(--provider-mark) * 2.45); }
+  .provider-strip-logo--gcp img { width: calc(var(--provider-mark) * .82); flex: 0 0 auto; }
+  .provider-strip-cloud { width: calc(var(--provider-mark) * .9); height: auto; flex: 0 0 auto; overflow: visible; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.55; }
+  .provider-strip-label { font: 500 clamp(11px, 1.15vw, 13px)/1.2 Arial, system-ui, sans-serif; letter-spacing: .02em; text-transform: lowercase; white-space: nowrap; }
+  .provider-strip-label--caps { font-family: Arial, system-ui, sans-serif; font-size: clamp(13px, 1.3vw, 15px); font-weight: 400; text-transform: none; letter-spacing: 0; }
   .section { padding: 104px 0; }
   .section-heading .eyebrow { color: var(--muted); margin-bottom: 24px; }
   .section-heading h2 { font-size: 53px; line-height: 1.12; }
@@ -189,9 +190,11 @@
     .install { width: 100%; }
     .install-command code { font-size: 14px; }
     .hero .install-command code { font-size: 14px; }
-    .provider-strip { --provider-logo-h: 39px; flex-wrap: wrap; justify-content: flex-start; gap: 18px 24px; padding: 32px 0; }
-    .provider-strip-heading { width: 100%; }
-    .provider-strip-logo { flex: 0 1 calc(50% - 28px); max-width: calc(50% - 28px); }
+    .provider-strip { --provider-mark: 30px; padding: 16px 0 28px; }
+    .provider-strip-panel { grid-template-columns: 1fr; gap: 10px; }
+    .provider-strip-logos { grid-template-columns: repeat(2, minmax(0, 1fr)); border-left: 0; }
+    .provider-strip-logo { justify-content: flex-start; min-height: 44px; border-top: 1px solid color-mix(in srgb, var(--line) 48%, transparent); }
+    .provider-strip-logo:nth-child(odd) { border-left: 0; }
     .section { padding: 68px 0; }
     .manifesto { margin: 0 -24px; padding: 50px 24px; gap: 40px; }
     .manifesto h2 { font-size: 37px; }
@@ -229,8 +232,8 @@
     .install-command code, .hero .install-command code { font-size: 10.5px; }
     .install-caption { padding: 0 12px 12px; font-size: 8px; }
     .copy-button { font-size: 16px; min-width: 26px; }
-    .provider-strip { --provider-logo-h: 31px; gap: 14px 18px; }
-    .provider-strip-logo { flex-basis: calc(50% - 22px); max-width: calc(50% - 22px); }
+    .provider-strip { --provider-mark: 27px; padding: 14px 0 24px; }
+    .provider-strip-logo { padding: 0 10px; }
     .section-heading h2 { font-size: 37px; }
     .eyebrow { font-size: 8px; }
     .manifesto { margin: 0 -20px; padding: 48px 20px; grid-template-columns: 1fr; gap: 38px; }
