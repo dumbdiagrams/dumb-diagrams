@@ -47,7 +47,8 @@ const TURN_COST = 140;
 const MICRO_JOG_THRESHOLD = CELL;
 const VERTICAL_BADGE_TARGET_T = 0.75;
 const MINIMUM_BADGE_RUN = CELL * 2;
-const BADGE_CONNECTOR_CLEARANCE = GRAMMAR.badgeRadius + 6;
+const EDGE_BADGE_CLEARANCE = 6;
+const BADGE_CONNECTOR_CLEARANCE = GRAMMAR.badgeRadius + EDGE_BADGE_CLEARANCE;
 const BADGE_TO_BADGE_CLEARANCE = GRAMMAR.badgeRadius * 2 + 6;
 const BADGE_CONTENT_CLEARANCE = 4;
 const BADGE_CONTENT_COLLISION_COST = 10_000_000;
@@ -954,26 +955,19 @@ function getSafeEdgeBadgePlacement(
 
   for (const t of candidateTs) {
     for (const side of sides) {
-      for (const clearance of [6, 18, 30, 46]) {
-        const candidate = getEdgeBadgePlacement(
-          edge.points,
-          t,
-          side,
-          clearance,
-        );
-        if (!candidate) continue;
-        const score = badgeCollisionScore(
-          candidate,
-          preferred,
-          otherEdges,
-          occupiedBadges,
-          occupiedLabels,
-          obstacles,
-        ) + (clearance - 6) * 4;
-        if (score < bestScore) {
-          bestScore = score;
-          best = candidate;
-        }
+      const candidate = getEdgeBadgePlacement(edge.points, t, side);
+      if (!candidate) continue;
+      const score = badgeCollisionScore(
+        candidate,
+        preferred,
+        otherEdges,
+        occupiedBadges,
+        occupiedLabels,
+        obstacles,
+      );
+      if (score < bestScore) {
+        bestScore = score;
+        best = candidate;
       }
     }
   }
@@ -2505,7 +2499,7 @@ export function getEdgeBadgePlacement(
   points: Point[],
   requestedT?: number,
   requestedSide: EdgeBadgeSide = "top",
-  clearance = 6,
+  clearance = EDGE_BADGE_CLEARANCE,
 ): EdgeBadgePlacement | undefined {
   const segments = pathSegments(points);
   if (!segments.length) return undefined;

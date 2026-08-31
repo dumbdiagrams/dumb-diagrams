@@ -7,12 +7,23 @@ import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
-import { compileDiagramSource } from "./diagram-compiler";
+import { compileDiagramSource, STUDIO_CANVAS_PADDING } from "./diagram-compiler";
 import { addResource, moveSelection, needsAutoFix, setRoute } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
+  it("always reserves generous free space around the laid-out canvas", () => {
+    const result = compileDiagramSource(printDgm(createAsyncDocsFixture()), false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const bounds = result.layout.canvasBounds!;
+    expect(bounds.x).toBe(-STUDIO_CANVAS_PADDING);
+    expect(bounds.y).toBe(-STUDIO_CANVAS_PADDING);
+    expect(bounds.x + bounds.w - result.layout.width).toBe(STUDIO_CANVAS_PADDING);
+    expect(bounds.y + bounds.h - result.layout.height).toBe(STUDIO_CANVAS_PADDING);
+  });
+
   it("propagates invariant failures from the final expanded layout", () => {
     const doc = createAsyncDocsFixture();
     const baseline = compileDiagramSource(printDgm(doc), false);
@@ -221,8 +232,8 @@ describe("diagram compilation canvas bounds", () => {
     const result = compileDiagramSource(printDgm(doc), false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.layout.width).toBeGreaterThanOrEqual(2_400 + 220 + 32);
-    expect(result.layout.height).toBeGreaterThanOrEqual(1_500 + 96 + 32);
+    expect(result.layout.width).toBeGreaterThanOrEqual(2_400 + 220 + 128);
+    expect(result.layout.height).toBeGreaterThanOrEqual(1_500 + 96 + 128);
   });
 
   it("grows the artboard above and to the left of the initial layout", () => {
@@ -238,13 +249,13 @@ describe("diagram compilation canvas bounds", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.layout.canvasBounds).toEqual(expect.objectContaining({
-      x: -272,
-      y: -176,
+      x: -368,
+      y: -272,
     }));
-    expect(result.layout.canvasBounds!.w).toBe(result.layout.width + 272);
-    expect(result.layout.canvasBounds!.h).toBe(result.layout.height + 176);
+    expect(result.layout.canvasBounds!.w).toBe(result.layout.width + 496);
+    expect(result.layout.canvasBounds!.h).toBe(result.layout.height + 400);
     expect(result.svg).toContain(
-      `viewBox="-272 -176 ${result.layout.canvasBounds!.w} ${result.layout.canvasBounds!.h}"`,
+      `viewBox="-368 -272 ${result.layout.canvasBounds!.w} ${result.layout.canvasBounds!.h}"`,
     );
   });
 

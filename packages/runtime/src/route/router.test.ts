@@ -252,7 +252,26 @@ describe("routeEdgePreview", () => {
     )).toBe(false);
   });
 
-  it("keeps an Azure queue-trigger badge above its route and its label below", () => {
+  it("keeps automatic badges at the same parent-edge distance used by dragging", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
+      "utf8",
+    ));
+    const routes = routeEdges(doc, layoutDocument(doc));
+
+    for (const edge of routes.filter((candidate) => candidate.step !== undefined)) {
+      expect(edge.badge, edge.id).toBeDefined();
+      expect(edge.badgeT, edge.id).toBeDefined();
+      expect(edge.badgeSide, edge.id).toBeDefined();
+      expect(edge.badge, edge.id).toEqual(getEdgeBadgePlacement(
+        edge.points,
+        edge.badgeT,
+        edge.badgeSide,
+      )?.point);
+    }
+  });
+
+  it("keeps an Azure queue-trigger badge and label visibly separated", () => {
     const doc = parseDgm(`diagram azure-queue-trigger {
   grammar azure
   flow lr
@@ -295,10 +314,15 @@ describe("routeEdgePreview", () => {
     const readBlob = routes.find((candidate) => candidate.id === "read_blob")!;
 
     expect(edge.badgeSide).toBe("top");
-    expect(edge.labelSide).toBe("bottom");
     expect(edge.badge).toBeDefined();
     expect(edge.labelRect).toBeDefined();
-    expect(edge.badge!.y).toBeLessThan(edge.labelRect!.y);
+    expect(circleIntersectsRectForTest(
+      edge.badge!,
+      10,
+      edge.labelRect!,
+      4,
+    )).toBe(false);
+    expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(52);
     expect(readBlob.labelPoint).toBeDefined();
     expect(distanceToPath(readBlob.labelPoint!, readBlob.points)).toBeLessThanOrEqual(20);
   });

@@ -29,6 +29,7 @@ export type DiagramCompilation = {
 };
 
 const MAX_CACHED_COMPILATIONS = 12;
+export const STUDIO_CANVAS_PADDING = 128;
 const compilationCache = new Map<string, DiagramCompilation>();
 
 function cacheKey(source: string, snapToGrid: boolean): string {
@@ -109,19 +110,20 @@ export function compileDiagramSource(source: string, snapToGrid: boolean): Diagr
   }
 }
 
-/** Keep the visible artboard large enough for authored moves, notes, and long routes. */
+/** Keep a generous editable margin around every diagram and any authored overflow. */
 function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): LayoutResult {
   const view = getDefaultView(doc);
-  const padding = 32;
+  const originalWidth = layout.width;
+  const originalHeight = layout.height;
   let left = 0;
   let top = 0;
   let right = layout.width;
   let bottom = layout.height;
   const include = (x: number, y: number, w = 0, h = 0) => {
-    if (x < 0) left = Math.min(left, x - padding);
-    if (y < 0) top = Math.min(top, y - padding);
-    if (x + w > right) right = x + w + padding;
-    if (y + h > bottom) bottom = y + h + padding;
+    left = Math.min(left, x);
+    top = Math.min(top, y);
+    right = Math.max(right, x + w);
+    bottom = Math.max(bottom, y + h);
   };
 
   for (const group of layout.groups) include(
@@ -149,13 +151,17 @@ function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): Layo
     include(place?.x ?? 48, place?.y ?? 48, place?.w ?? dimensions.w, place?.h ?? dimensions.h);
   }
 
-  layout.width = Math.max(layout.width, Math.ceil(right));
-  layout.height = Math.max(layout.height, Math.ceil(bottom));
+  if (right > originalWidth) layout.width = Math.ceil(right + STUDIO_CANVAS_PADDING);
+  if (bottom > originalHeight) layout.height = Math.ceil(bottom + STUDIO_CANVAS_PADDING);
+  const canvasLeft = Math.floor(left - STUDIO_CANVAS_PADDING);
+  const canvasTop = Math.floor(top - STUDIO_CANVAS_PADDING);
+  const canvasRight = Math.ceil(right + STUDIO_CANVAS_PADDING);
+  const canvasBottom = Math.ceil(bottom + STUDIO_CANVAS_PADDING);
   layout.canvasBounds = {
-    x: Math.floor(left),
-    y: Math.floor(top),
-    w: Math.max(1, Math.ceil(right) - Math.floor(left)),
-    h: Math.max(1, Math.ceil(bottom) - Math.floor(top)),
+    x: canvasLeft,
+    y: canvasTop,
+    w: Math.max(1, canvasRight - canvasLeft),
+    h: Math.max(1, canvasBottom - canvasTop),
   };
   return layout;
 }

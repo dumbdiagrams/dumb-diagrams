@@ -66,6 +66,28 @@ export function marqueeSelection(
   view: View,
   rect: Rect,
 ): Selection {
+  const hits = marqueeSelectionCandidates(doc, layout, view, rect);
+  const selectedGroups = new Set(
+    hits.filter((item) => item.kind === "group").map((item) => item.id),
+  );
+  return hits.filter((item) => {
+    if (item.kind !== "resource" && item.kind !== "group") return true;
+    return !hasSelectedGroupAncestor(doc, item.id, selectedGroups);
+  });
+}
+
+/**
+ * Returns every visible entity currently covered by a marquee. Unlike the
+ * committed selection, this intentionally keeps parent groups together with
+ * their descendants so the live preview never drops an item while the
+ * rectangle grows across an enclosing boundary.
+ */
+export function marqueeSelectionCandidates(
+  doc: DiagramDocument,
+  layout: LayoutResult,
+  view: View,
+  rect: Rect,
+): Selection {
   const marquee = normalizeRect(rect);
   const hits: Selection = [];
 
@@ -99,13 +121,7 @@ export function marqueeSelection(
     }
   }
 
-  const selectedGroups = new Set(
-    hits.filter((item) => item.kind === "group").map((item) => item.id),
-  );
-  return hits.filter((item) => {
-    if (item.kind !== "resource" && item.kind !== "group") return true;
-    return !hasSelectedGroupAncestor(doc, item.id, selectedGroups);
-  });
+  return hits;
 }
 
 /**

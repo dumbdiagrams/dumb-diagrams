@@ -105,6 +105,7 @@ import {
   CanvasStage,
   clampZoom,
   defaultViewportForContent,
+  type CanvasMarqueeGesture,
 } from "./canvas/CanvasStage";
 import { InteractionOverlay } from "./interactions/InteractionOverlay";
 import {
@@ -341,6 +342,7 @@ function App() {
   const [tool, setTool] = useState<Tool>("select");
   const interactionTool = canvasInteractionTool(tool);
   const [selection, setSelection] = useState<Selection>([]);
+  const [stageMarquee, setStageMarquee] = useState<CanvasMarqueeGesture | null>(null);
   const [textEditRequest, setTextEditRequest] = useState<SelectionItem | null>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
@@ -1739,6 +1741,9 @@ function App() {
               canvasPoint,
             });
           }}
+          marqueeEnabled={compiled.ok && interactionTool === "select"}
+          onMarqueePreview={setStageMarquee}
+          onMarqueeCommit={selectMarquee}
           onBackgroundClick={() => {
             setSelection([]);
             if (tool !== "connector") setPendingPort(null);
@@ -1763,14 +1768,10 @@ function App() {
                 zoom={viewport.zoom}
                 snapToGrid={snapToGrid}
                 selection={selection}
+                externalMarquee={stageMarquee}
                 pendingPort={pendingPort}
                 onSelect={selectItem}
                 onEditText={requestTextEdit}
-                onMarquee={selectMarquee}
-                onBackgroundClick={() => {
-                  setSelection([]);
-                  if (tool !== "connector") setPendingPort(null);
-                }}
                 onChoosePort={choosePort}
                 onConnectPorts={connectPorts}
                 onReconnect={(edgeId, endpoint, nodeId, side, offset) => {
@@ -2355,15 +2356,6 @@ function App() {
             }}
             onClose={() => setSelection([])}
           />
-        )}
-
-        {selection.length > 1 && compiled.ok && (
-          <div className="context-toolbar">
-            <button type="button" onClick={() => mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, "left"))}>Align left</button>
-            <button type="button" onClick={() => mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, "center"))}>Center</button>
-            <button type="button" onClick={() => mutateCurrent((doc) => distributeSelection(doc, selection, compiled.layout!, "horizontal"))}>Distribute</button>
-            <button type="button" onClick={openNoteComposer}>Add note</button>
-          </div>
         )}
 
         <div className="status-capsule" role="toolbar" aria-label="Canvas view controls">

@@ -1190,13 +1190,12 @@ export function reparentPreservingAbsolutePosition(
 }
 
 /**
- * Wrap a set of direct siblings in a new logical group.
+ * Group a set of direct siblings using their rendered geometry.
  *
- * Grouping is a hierarchy-only operation: the selected items and every
- * descendant that is already laid out are pinned to their current absolute
- * geometry before their parent changes. This keeps grouping from unexpectedly
- * reflowing an authored diagram while still allowing the new boundary to be
- * laid out and rendered normally.
+ * A selected group that fully encloses the other items becomes their parent;
+ * otherwise the items are wrapped in a new logical group. Grouping is a
+ * hierarchy-only operation: selected items and their laid-out descendants are
+ * pinned to their current absolute geometry before their parent changes.
  */
 export function groupSelection(
   doc: DiagramDocument,
@@ -1276,6 +1275,45 @@ export function groupSelection(
         };
   }
 
+  // If one of the selected sibling groups already encloses every other
+  // selected item, treat that boundary as the intended parent. This matches
+  // direct-manipulation editors: drawing or positioning a boundary around
+  // content and then grouping should populate that boundary, not wrap it in a
+  // second anonymous group.
+  const enclosingGroup = records
+    .filter((record): record is typeof record & { group: NonNullable<typeof record.group> } => Boolean(record.group))
+    .filter((record) => {
+      const outer = layoutById.get(record.group.id)!;
+      return records.every((candidate) =>
+        candidate.item.id === record.group.id || rectContainsRect(outer, layoutById.get(candidate.item.id)!),
+      );
+    })
+    .sort((a, b) => {
+      const aBounds = layoutById.get(a.group.id)!;
+      const bBounds = layoutById.get(b.group.id)!;
+      return aBounds.w * aBounds.h - bBounds.w * bBounds.h;
+    })[0];
+
+  if (enclosingGroup) {
+    const destinationId = enclosingGroup.group.id;
+    const adoptedIds = selectedIds.filter((id) => id !== destinationId);
+    for (const candidate of next.groups) {
+      candidate.children = candidate.children.filter((id) => !adoptedIds.includes(id));
+      candidate.borderChildren = candidate.borderChildren?.filter((child) => !adoptedIds.includes(child.id));
+    }
+    const destination = next.groups.find((group) => group.id === destinationId)!;
+    destination.children = [
+      ...destination.children.filter((id) => !adoptedIds.includes(id)),
+      ...adoptedIds,
+    ];
+    for (const record of records) {
+      if (record.item.id === destinationId) continue;
+      if (record.group) next.groups.find((group) => group.id === record.group!.id)!.parent = destinationId;
+      else next.resources.find((resource) => resource.id === record.resource!.id)!.parent = destinationId;
+    }
+    return { doc: next, id: destinationId };
+  }
+
   const groupId = uniqueId(next, label.trim() || "Group");
   const minX = Math.min(...geometry.map((rect) => rect.x));
   const minY = Math.min(...geometry.map((rect) => rect.y));
@@ -1339,7 +1377,7 @@ export function groupSelection(
 }
 
 /**
- * Return whether a selection can be wrapped in one new logical group.
+ * Return whether a selection can be grouped or adopted by an enclosing group.
  *
  * Grouping only accepts existing resource/group entities that are direct
  * siblings. An ancestor and one of its descendants cannot be grouped
@@ -2026,6 +2064,15 @@ function isDescendant(
   const descendants = new Set<string>();
   collectChildren(doc, ancestorId, descendants);
   return descendants.has(candidateId);
+}
+
+function rectContainsRect(outer: Rect, inner: Rect, tolerance = 0.001): boolean {
+  return (
+    outer.x <= inner.x + tolerance &&
+    outer.y <= inner.y + tolerance &&
+    outer.x + outer.w >= inner.x + inner.w - tolerance &&
+    outer.y + outer.h >= inner.y + inner.h - tolerance
+  );
 }
 
 function uniqueId(doc: DiagramDocument, base: string): string {

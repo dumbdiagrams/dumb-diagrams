@@ -591,6 +591,65 @@ describe("editor commands", () => {
     expect(getDefaultView(next).places[result!.id]).toMatchObject(expected);
   });
 
+  it("uses a selected enclosing group as the parent instead of creating another wrapper", () => {
+    const doc = createAsyncDocsFixture();
+    doc.groups.unshift({
+      id: "cloud",
+      kind: "cloud",
+      type: "aws.cloud",
+      label: "AWS Cloud",
+      children: [],
+    });
+    const layout = layoutDocument(doc);
+    const cloud = layout.groups.find((group) => group.id === "cloud")!;
+    const region = layout.groups.find((group) => group.id === "use1")!.bounds;
+    const client = layout.nodes.find((node) => node.id === "client")!.obstacle;
+    const beforeGeometry = new Map([
+      ["use1", structuredClone(region)],
+      ["client", structuredClone(client)],
+    ]);
+    const minX = Math.min(region.x, client.x);
+    const minY = Math.min(region.y, client.y);
+    const maxX = Math.max(region.x + region.w, client.x + client.w);
+    const maxY = Math.max(region.y + region.h, client.y + client.h);
+    cloud.bounds = {
+      x: minX - 64,
+      y: minY - 64,
+      w: maxX - minX + 128,
+      h: maxY - minY + 128,
+    };
+
+    const beforeGroupCount = doc.groups.length;
+    const result = groupSelection(doc, [
+      { kind: "group", id: "cloud" },
+      { kind: "group", id: "use1" },
+      { kind: "resource", id: "client" },
+    ], layout);
+
+    expect(result?.id).toBe("cloud");
+    expect(result?.doc.groups).toHaveLength(beforeGroupCount);
+    expect(result?.doc.groups.find((group) => group.id === "cloud")).toMatchObject({
+      kind: "cloud",
+      label: "AWS Cloud",
+      children: ["use1", "client"],
+    });
+    expect(result?.doc.groups.find((group) => group.id === "use1")?.parent).toBe("cloud");
+    expect(result?.doc.resources.find((resource) => resource.id === "client")?.parent).toBe("cloud");
+    expect(result?.doc.groups.some((group) => group.label === "Group")).toBe(false);
+    expect(getDefaultView(result!.doc).places.cloud).toMatchObject({
+      ...cloud.bounds,
+      pin: true,
+      manual: true,
+    });
+    const after = layoutDocument(result!.doc);
+    const afterRegion = after.groups.find((group) => group.id === "use1")!.bounds;
+    const afterClient = after.nodes.find((node) => node.id === "client")!.obstacle;
+    for (const key of ["x", "y", "w", "h"] as const) {
+      expect(Math.abs(afterRegion[key] - beforeGeometry.get("use1")![key])).toBeLessThanOrEqual(4);
+      expect(Math.abs(afterClient[key] - beforeGeometry.get("client")![key])).toBeLessThanOrEqual(4);
+    }
+  });
+
   it("groups nested siblings and rejects invalid or ancestor selections", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);

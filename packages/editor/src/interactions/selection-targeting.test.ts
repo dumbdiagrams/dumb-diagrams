@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   distanceToResource,
   marqueeSelection,
+  marqueeSelectionCandidates,
   mergeSelection,
   pointInRect,
   resourceHitRects,
@@ -147,6 +148,21 @@ describe("selection gestures", () => {
     ]);
     expect(marqueeSelection(doc, layout, view, { x: 130, y: 40, w: 50, h: 50 })).toEqual([
       { kind: "annotation", id: "note" },
+    ]);
+  });
+
+  it("keeps every covered descendant highlighted in the live marquee preview", () => {
+    const { doc, layout } = selectionScene();
+    const view = getDefaultView(doc);
+    view.annotations = { note: { x: 135, y: 50, w: 40, h: 30 } };
+
+    expect(
+      marqueeSelectionCandidates(doc, layout, view, { x: 0, y: 0, w: 200, h: 180 }),
+    ).toEqual([
+      { kind: "resource", id: "child" },
+      { kind: "annotation", id: "note" },
+      { kind: "group", id: "outer" },
+      { kind: "group", id: "inner" },
     ]);
   });
 

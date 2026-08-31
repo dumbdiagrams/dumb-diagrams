@@ -231,7 +231,7 @@ textarea:focus-visible {
 .canvas-stage {
   position: absolute;
   inset: 0;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
   background-color: var(--canvas-bg);
   background-image: none;
@@ -3033,30 +3033,6 @@ textarea:focus-visible {
   cursor: pointer;
 }
 
-.context-toolbar {
-  position: absolute;
-  left: 50%;
-  bottom: 88px;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 999px;
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  box-shadow: var(--shadow-md);
-  animation: feedback-rise-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.context-toolbar button {
-  border: none;
-  background: var(--surface-muted);
-  color: var(--text-primary);
-  border-radius: 999px;
-  padding: 6px 10px;
-  cursor: pointer;
-}
-
 .status-capsule-button {
   display: grid;
   height: 36px;
@@ -3781,7 +3757,6 @@ textarea:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .context-toolbar,
   .status-capsule,
   .callout,
   .toast {

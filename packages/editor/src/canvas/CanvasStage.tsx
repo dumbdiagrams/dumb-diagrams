@@ -32,6 +32,13 @@ export interface ViewportChangeOptions {
   userInitiated?: boolean;
 }
 
+export type CanvasSelectionMode = "replace" | "add" | "toggle";
+
+export interface CanvasMarqueeGesture {
+  rect: { x: number; y: number; w: number; h: number };
+  mode: CanvasSelectionMode;
+}
+
 export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
@@ -91,6 +98,9 @@ export function CanvasStage({
   onCatalogDragOver,
   onCatalogDrop,
   onContextMenu,
+  marqueeEnabled = false,
+  onMarqueePreview,
+  onMarqueeCommit,
   contentSize,
   defaultFrameKey = 0,
 }: {
@@ -102,6 +112,9 @@ export function CanvasStage({
   onCatalogDragOver?: (event: DragEvent<HTMLDivElement>) => void;
   onCatalogDrop?: (event: DragEvent<HTMLDivElement>, point: { x: number; y: number }) => void;
   onContextMenu?: (clientX: number, clientY: number, point: { x: number; y: number }) => void;
+  marqueeEnabled?: boolean;
+  onMarqueePreview?: (gesture: CanvasMarqueeGesture | null) => void;
+  onMarqueeCommit?: (rect: CanvasMarqueeGesture["rect"], mode: CanvasSelectionMode) => void;
   contentSize?: { x?: number; y?: number; width: number; height: number };
   defaultFrameKey?: number;
 }) {
@@ -299,6 +312,7 @@ export function CanvasStage({
       ref={ref}
       className={`canvas-stage${panning ? " is-panning" : ""}`}
       data-testid="canvas-stage"
+      data-marquee-enabled={marqueeEnabled ? "true" : "false"}
       onDragOver={onCatalogDragOver}
       onDrop={(event) => {
         if (!onCatalogDrop) return;
@@ -340,58 +354,123 @@ export function CanvasStage({
       }}
       onPointerDown={(e) => {
         const shouldPan = e.button === 1 || (e.button === 0 && spaceRef.current);
-        if (!shouldPan) return;
-        if (e.button === 0 && (e.target as Element).closest("[data-interactive]")) return;
-        e.preventDefault();
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const origin = viewportRef.current;
-        let dragged = false;
-        let frame = 0;
-        let latest: Viewport | null = null;
-        const paint = () => {
-          frame = 0;
-          if (!latest) return;
-          const next = latest;
-          latest = null;
-          previewViewportChange(next, { userInitiated: true });
-        };
-        const move = (ev: PointerEvent) => {
-          const dx = ev.clientX - startX;
-          const dy = ev.clientY - startY;
-          if (!dragged && (dx !== 0 || dy !== 0)) {
-            dragged = true;
-            setPanning(true);
-            interactivePointerRef.current = true;
-          }
-          if (!dragged) return;
-          latest = {
-            ...origin,
-            panX: origin.panX + dx,
-            panY: origin.panY + dy,
+        if (shouldPan) {
+          if (e.button === 0 && (e.target as Element).closest("[data-interactive]")) return;
+          e.preventDefault();
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const origin = viewportRef.current;
+          let dragged = false;
+          let frame = 0;
+          let latest: Viewport | null = null;
+          const paint = () => {
+            frame = 0;
+            if (!latest) return;
+            const next = latest;
+            latest = null;
+            previewViewportChange(next, { userInitiated: true });
           };
-          if (!frame) frame = window.requestAnimationFrame(paint);
+          const move = (ev: PointerEvent) => {
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
+            if (!dragged && (dx !== 0 || dy !== 0)) {
+              dragged = true;
+              setPanning(true);
+              interactivePointerRef.current = true;
+            }
+            if (!dragged) return;
+            latest = {
+              ...origin,
+              panX: origin.panX + dx,
+              panY: origin.panY + dy,
+            };
+            if (!frame) frame = window.requestAnimationFrame(paint);
+          };
+          const cancel = () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            frame = 0;
+            latest = null;
+            flushViewportChange();
+            setPanning(false);
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+            window.removeEventListener("pointercancel", cancel);
+          };
+          const up = () => {
+            if (frame) window.cancelAnimationFrame(frame);
+            if (latest) previewViewportChange(latest, { userInitiated: true });
+            frame = 0;
+            latest = null;
+            flushViewportChange();
+            setPanning(false);
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+            window.removeEventListener("pointercancel", cancel);
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", up);
+          window.addEventListener("pointercancel", cancel);
+          return;
+        }
+
+        if (
+          e.button !== 0 ||
+          !marqueeEnabled ||
+          (e.target as Element).closest("[data-interactive]")
+        ) return;
+        e.preventDefault();
+        const stageRect = e.currentTarget.getBoundingClientRect();
+        const toWorld = (clientX: number, clientY: number) => {
+          const current = viewportRef.current;
+          return {
+            x: (clientX - stageRect.left - current.panX) / current.zoom,
+            y: (clientY - stageRect.top - current.panY) / current.zoom,
+          };
+        };
+        const startClient = { x: e.clientX, y: e.clientY };
+        const start = toWorld(e.clientX, e.clientY);
+        const mode: CanvasSelectionMode = e.metaKey || e.ctrlKey
+          ? "toggle"
+          : e.shiftKey
+            ? "add"
+            : "replace";
+        let dragged = false;
+        const gestureAt = (clientX: number, clientY: number): CanvasMarqueeGesture => {
+          const current = toWorld(clientX, clientY);
+          return {
+            mode,
+            rect: {
+              x: Math.min(start.x, current.x),
+              y: Math.min(start.y, current.y),
+              w: Math.abs(current.x - start.x),
+              h: Math.abs(current.y - start.y),
+            },
+          };
+        };
+        const move = (event: PointerEvent) => {
+          if (
+            !dragged &&
+            Math.hypot(event.clientX - startClient.x, event.clientY - startClient.y) <= 4
+          ) return;
+          dragged = true;
+          interactivePointerRef.current = true;
+          onMarqueePreview?.(gestureAt(event.clientX, event.clientY));
+        };
+        const cleanup = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", cancel);
+        };
+        const up = (event: PointerEvent) => {
+          cleanup();
+          if (!dragged) return;
+          const gesture = gestureAt(event.clientX, event.clientY);
+          onMarqueePreview?.(null);
+          onMarqueeCommit?.(gesture.rect, gesture.mode);
         };
         const cancel = () => {
-          if (frame) window.cancelAnimationFrame(frame);
-          frame = 0;
-          latest = null;
-          flushViewportChange();
-          setPanning(false);
-          window.removeEventListener("pointermove", move);
-          window.removeEventListener("pointerup", up);
-          window.removeEventListener("pointercancel", cancel);
-        };
-        const up = () => {
-          if (frame) window.cancelAnimationFrame(frame);
-          if (latest) previewViewportChange(latest, { userInitiated: true });
-          frame = 0;
-          latest = null;
-          flushViewportChange();
-          setPanning(false);
-          window.removeEventListener("pointermove", move);
-          window.removeEventListener("pointerup", up);
-          window.removeEventListener("pointercancel", cancel);
+          cleanup();
+          onMarqueePreview?.(null);
         };
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", up);

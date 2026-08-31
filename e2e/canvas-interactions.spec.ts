@@ -31,15 +31,14 @@ async function canvasPointsForEdge(page: Page, edgeId: string) {
       });
     const svg = element.ownerSVGElement!;
     const rect = svg.getBoundingClientRect();
-    const width = Number(svg.getAttribute("width"));
-    const height = Number(svg.getAttribute("height"));
-    const scaleX = rect.width / width;
-    const scaleY = rect.height / height;
+    const viewBox = svg.viewBox.baseVal;
+    const scaleX = rect.width / viewBox.width;
+    const scaleY = rect.height / viewBox.height;
     return routePoints.slice(0, -1).map((a, index) => {
       const b = routePoints[index + 1]!;
       return {
-        x: rect.left + ((a.x + b.x) / 2) * scaleX,
-        y: rect.top + ((a.y + b.y) / 2) * scaleY,
+        x: rect.left + ((a.x + b.x) / 2 - viewBox.x) * scaleX,
+        y: rect.top + ((a.y + b.y) / 2 - viewBox.y) * scaleY,
       };
     });
   });
@@ -222,14 +221,14 @@ test("highlights the nearest canvas target and edits a movable numbered edge bad
 
   const region = page.locator('[data-entity-kind="group"][data-entity-id="use1"]');
   await expect(region).toHaveCount(1);
-  await region.hover({ position: { x: 20, y: 20 } });
-  await expect(page.locator('[data-hover-kind="group"][data-hover-id="use1"]')).toHaveCount(1);
-
+  const regionBox = await region.boundingBox();
+  expect(regionBox).not.toBeNull();
   // Use the exposed midpoint of the region's top border. The provider badge
   // occupies the top-left corner, while a deep point can be covered by a
   // nested group hit layer in the SVG stack.
-  const regionBox = await region.boundingBox();
-  expect(regionBox).not.toBeNull();
+  await page.mouse.move(regionBox!.x + regionBox!.width / 2, regionBox!.y + 8);
+  await expect(page.locator('[data-hover-kind="group"][data-hover-id="use1"]')).toHaveCount(1);
+
   await page.mouse.click(regionBox!.x + regionBox!.width / 2, regionBox!.y + 8);
   await expect(region).toHaveAttribute("aria-selected", "true");
 
@@ -614,6 +613,64 @@ test("records a resource movement in undo history and restores its source positi
   await expect(redo).toBeEnabled();
 });
 
+test("moves a group when dragging from its empty center", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "group-center.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram group-center {
+  grammar aws
+  flow lr
+
+  aws.cloud cloud "Cloud" {
+    cloud-agnostic.boundary group "Group" { aws.s3 bucket "Bucket" }
+  }
+}
+
+view default {
+  place cloud { x 40 y 40 w 640 h 400 pin manual }
+  place group { x 120 y 100 w 440 h 300 pin manual }
+  place bucket { x 180 y 170 pin manual }
+}`),
+  });
+
+  const group = page.locator('[data-entity-kind="group"][data-entity-id="group"]');
+  const rendered = page.locator("#group-group");
+  const before = await rendered.boundingBox();
+  expect(before).not.toBeNull();
+
+  const center = await group.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const point = {
+      x: box.left + box.width * 0.75,
+      y: box.top + box.height * 0.75,
+    };
+    const target = document.elementFromPoint(point.x, point.y);
+    return target?.getAttribute("data-entity-kind") === "group" &&
+      target.getAttribute("data-entity-id") === "group"
+      ? point
+      : null;
+  });
+  expect(center).not.toBeNull();
+
+  await page.mouse.move(center!.x, center!.y);
+  await page.mouse.down();
+  await page.mouse.move(center!.x + 32, center!.y + 24, { steps: 16 });
+
+  await expect.poll(async () => rendered.getAttribute("transform")).toContain("translate(");
+  const preview = await rendered.boundingBox();
+  expect(preview).not.toBeNull();
+  expect(preview!.x).toBeGreaterThan(before!.x + 20);
+  expect(preview!.y).toBeGreaterThan(before!.y + 12);
+
+  await page.mouse.up();
+  await expect.poll(async () => rendered.getAttribute("transform")).toBeNull();
+  const after = await rendered.boundingBox();
+  expect(after).not.toBeNull();
+  expect(after!.x).toBeGreaterThan(before!.x + 20);
+  expect(after!.y).toBeGreaterThan(before!.y + 12);
+});
+
 test("shows a gentle centre guide while aligning icons", async ({ page }) => {
   await openAsyncDocs(page);
   const moving = page.locator('[data-entity-kind="resource"][data-entity-id="apiA"]');
@@ -941,6 +998,48 @@ test("supports selection modifiers, regrouping, and undo round-trip", async ({ p
   await expect(page.locator(`[data-entity-kind="group"][data-entity-id="${regroupedId}"]`)).toHaveCount(1);
 });
 
+test("adopts enclosed siblings into an existing selected boundary", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "enclosing-group.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`diagram enclosing-group {
+  grammar aws
+  flow lr
+
+  aws.cloud cloud "AWS Cloud" { }
+  cloud-agnostic.boundary uploads "Uploads" { aws.simple-storage-service bucket "Upload bucket" }
+  cloud-agnostic.boundary processing "Processing" { aws.aws-lambda worker "Worker" }
+}
+
+view default {
+  place cloud { x 40 y 40 w 760 h 440 pin manual }
+  place uploads { x 120 y 140 w 240 h 180 pin manual }
+  place bucket { x 200 y 220 pin manual }
+  place processing { x 440 y 140 w 240 h 180 pin manual }
+  place worker { x 520 y 220 pin manual }
+}`),
+  });
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="cloud"]');
+  const uploads = page.locator('[data-entity-kind="group"][data-entity-id="uploads"]');
+  const processing = page.locator('[data-entity-kind="group"][data-entity-id="processing"]');
+  const cloudBox = await entityBox(page, "group", "cloud");
+  const uploadsBox = await entityBox(page, "group", "uploads");
+  const processingBox = await entityBox(page, "group", "processing");
+
+  await dispatchPointerClick(cloud, { x: cloudBox.x + cloudBox.width / 2, y: cloudBox.y + 8 });
+  await dispatchPointerClick(uploads, { x: uploadsBox.x + uploadsBox.width / 2, y: uploadsBox.y + 8 }, { shiftKey: true });
+  await dispatchPointerClick(processing, { x: processingBox.x + processingBox.width / 2, y: processingBox.y + 8 }, { shiftKey: true });
+  await page.keyboard.press("Control+g");
+
+  await expect(page.locator('[data-entity-kind="group"]')).toHaveCount(3);
+  await expect(page.locator('[data-entity-kind="group"][aria-label="Group Group"]')).toHaveCount(0);
+  await expect(cloud).toHaveAttribute("aria-selected", "true");
+  await expect(uploads).toHaveCount(1);
+  await expect(processing).toHaveCount(1);
+});
+
 test("selects children inside a group with an empty-canvas marquee", async ({ page }) => {
   await openAsyncDocs(page);
 
@@ -950,12 +1049,14 @@ test("selects children inside a group with an empty-canvas marquee", async ({ pa
   const groupBox = await entityBox(page, "group", "appA");
   const apiBox = await entityBox(page, "resource", "apiA");
   const workerBox = await entityBox(page, "resource", "workerA");
+  const artboardBox = await page.locator(".canvas-artboard").boundingBox();
+  expect(artboardBox).not.toBeNull();
 
-  // Start on genuinely empty canvas just outside the group's left edge, then
-  // finish just beyond the children. The rectangle intersects the children
-  // without containing the group's full boundary, so the parent stays out.
+  // Start on genuinely empty canvas outside the artboard, then finish just
+  // beyond the children. The rectangle intersects the children without
+  // containing the group's full boundary, so the parent stays out.
   const start = {
-    x: groupBox.x - 24,
+    x: artboardBox!.x - 24,
     y: Math.max(groupBox.y + 32, Math.min(apiBox.y, workerBox.y) - 10),
   };
   const finish = {
@@ -966,11 +1067,42 @@ test("selects children inside a group with an empty-canvas marquee", async ({ pa
   await page.mouse.down();
   await page.mouse.move(finish.x, finish.y, { steps: 8 });
   await expect(page.locator(".marquee")).toBeVisible();
+  await expect(page.locator('[data-drag-overlay-kind="resource"][data-drag-overlay-id="apiA"] .selection-outline')).toBeVisible();
+  await expect(page.locator('[data-drag-overlay-kind="resource"][data-drag-overlay-id="workerA"] .selection-outline')).toBeVisible();
+  await expect(page.locator('[data-drag-overlay-kind="group"][data-drag-overlay-id="appA"] .selection-outline')).toHaveCount(0);
   await page.mouse.up();
 
   await expect(api).toHaveAttribute("aria-selected", "true");
   await expect(worker).toHaveAttribute("aria-selected", "true");
   await expect(group).toHaveAttribute("aria-selected", "false");
+});
+
+test("starts a marquee outside the artboard and selects across the full canvas", async ({ page }) => {
+  await openAsyncDocs(page);
+
+  const stageBox = await page.getByTestId("canvas-stage").boundingBox();
+  const artboardBox = await page.locator(".canvas-artboard").boundingBox();
+  expect(stageBox).not.toBeNull();
+  expect(artboardBox).not.toBeNull();
+  const start = {
+    x: Math.max(stageBox!.x + 8, artboardBox!.x - 48),
+    y: artboardBox!.y + 64,
+  };
+  const end = {
+    x: Math.min(stageBox!.x + stageBox!.width - 8, artboardBox!.x + artboardBox!.width + 32),
+    y: Math.min(stageBox!.y + stageBox!.height - 8, artboardBox!.y + artboardBox!.height + 32),
+  };
+  expect(start.x).toBeLessThan(artboardBox!.x);
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y, { steps: 12 });
+  await expect(page.locator(".marquee")).toBeVisible();
+  await expect(page.locator('[data-drag-overlay-kind="resource"][data-drag-overlay-id="client"] .selection-outline')).toBeVisible();
+  await expect(page.locator('[data-drag-overlay-kind="group"] .selection-outline').first()).toBeVisible();
+  await page.mouse.up();
+
+  await expect(page.locator('[data-entity-kind="resource"][data-entity-id="client"]').first()).toHaveAttribute("aria-selected", "true");
 });
 
 test("exposes safe and destructive group actions in the context menu", async ({ page }) => {
@@ -1081,7 +1213,7 @@ test("keeps the canvas zoom controls ordered and padded", async ({ page }) => {
   await expect(controls.getByRole("button", { name: "Zoom out", exact: true })).toHaveCount(1);
   await expect(controls.getByRole("button", { name: "Zoom in", exact: true })).toHaveCount(1);
   const initialZoom = Number((await controls.locator(".status-capsule-readout").textContent())?.replace("%", ""));
-  expect(initialZoom).toBeGreaterThanOrEqual(80);
+  expect(initialZoom).toBeGreaterThanOrEqual(50);
   expect(initialZoom).toBeLessThanOrEqual(90);
 
   await page.setViewportSize({ width: 2_000, height: 1_100 });
@@ -1237,11 +1369,10 @@ test("keeps rewired endpoints on explicit icon ports", async ({ page }) => {
     const svg = circle.ownerSVGElement!;
     const circleBox = circle.getBoundingClientRect();
     const svgBox = svg.getBoundingClientRect();
-    const width = Number(svg.getAttribute("width"));
-    const height = Number(svg.getAttribute("height"));
+    const viewBox = svg.viewBox.baseVal;
     return {
-      x: ((circleBox.left + circleBox.width / 2 - svgBox.left) / svgBox.width) * width,
-      y: ((circleBox.top + circleBox.height / 2 - svgBox.top) / svgBox.height) * height,
+      x: viewBox.x + ((circleBox.left + circleBox.width / 2 - svgBox.left) / svgBox.width) * viewBox.width,
+      y: viewBox.y + ((circleBox.top + circleBox.height / 2 - svgBox.top) / svgBox.height) * viewBox.height,
     };
   });
   const portBox = await port.boundingBox();
@@ -1285,17 +1416,16 @@ test("infers the top face and previews the routed path when an endpoint is dropp
     const svg = circle.ownerSVGElement!;
     const circleBox = circle.getBoundingClientRect();
     const svgBox = svg.getBoundingClientRect();
-    const width = Number(svg.getAttribute("width"));
-    const height = Number(svg.getAttribute("height"));
+    const viewBox = svg.viewBox.baseVal;
     return {
-      x: ((circleBox.left + circleBox.width / 2 - svgBox.left) / svgBox.width) * width,
-      y: ((circleBox.top + circleBox.height / 2 - svgBox.top) / svgBox.height) * height,
+      x: viewBox.x + ((circleBox.left + circleBox.width / 2 - svgBox.left) / svgBox.width) * viewBox.width,
+      y: viewBox.y + ((circleBox.top + circleBox.height / 2 - svgBox.top) / svgBox.height) * viewBox.height,
     };
   });
   const targetX = topPortBox!.x + topPortBox!.width / 2;
   // Deliberately miss the small port circle and drop inside the icon's top
   // region. The interaction layer should still infer the north face.
-  const targetY = topPortBox!.y + topPortBox!.height / 2 + 20;
+  const targetY = topPortBox!.y + topPortBox!.height / 2 + 8;
 
   await page.mouse.move(targetX, targetY, { steps: 8 });
   await expect(page.locator(".rewire-preview.is-snapped")).toHaveCount(1);

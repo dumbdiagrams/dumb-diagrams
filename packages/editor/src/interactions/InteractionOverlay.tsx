@@ -15,7 +15,6 @@ import {
   portPoint,
   portAnchors,
 } from "@dumb-diagrams/runtime/core";
-import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 import {
   getEdgeBadgePlacement,
   getEdgeLabelPlacementOnPath,
@@ -43,6 +42,8 @@ import {
 } from "./route-editing.js";
 import {
   distanceToResource,
+  marqueeSelectionCandidates,
+  mergeSelection,
   selectionModeForModifiers,
   pointInRect,
   resourceHitRects,
@@ -76,11 +77,10 @@ function InteractionOverlayComponent({
   zoom,
   snapToGrid,
   selection,
+  externalMarquee,
   pendingPort,
   onSelect,
   onEditText,
-  onMarquee,
-  onBackgroundClick,
   onChoosePort,
   onConnectPorts,
   onReconnect,
@@ -99,11 +99,10 @@ function InteractionOverlayComponent({
   zoom: number;
   snapToGrid: boolean;
   selection: Selection;
+  externalMarquee?: { rect: Rect; mode: SelectionMode } | null;
   pendingPort: { nodeId: string; side: Side; offset: number } | null;
   onSelect: (item: SelectionItem, mode: SelectionMode) => void;
   onEditText: (item: SelectionItem) => void;
-  onMarquee: (rect: { x: number; y: number; w: number; h: number }, mode: SelectionMode) => void;
-  onBackgroundClick: () => void;
   onChoosePort: (nodeId: string, side: Side, offset: number) => void;
   onConnectPorts: (
     sourceNodeId: string,
@@ -152,12 +151,7 @@ function InteractionOverlayComponent({
     w: layout.width,
     h: layout.height,
   };
-  const [marquee, setMarquee] = useState<{
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  } | null>(null);
+  const activeMarquee = externalMarquee ?? null;
   const [rewire, setRewire] = useState<{
     edgeId: string;
     endpoint: "source" | "target";
@@ -223,6 +217,13 @@ function InteractionOverlayComponent({
     () => createInteractionIndex(layout, doc, view),
     [doc, layout, view],
   );
+  const displayedSelection = activeMarquee
+    ? mergeSelection(
+        selection,
+        marqueeSelectionCandidates(doc, layout, view, activeMarquee.rect),
+        activeMarquee.mode,
+      )
+    : selection;
   const showAllPorts = tool === "connector" || rewire !== null;
   const quickConnectNodeIds = new Set([
     ...selection.filter((item) => item.kind === "resource").map((item) => item.id),
@@ -746,44 +747,6 @@ function InteractionOverlayComponent({
     );
   };
 
-  const beginMarquee = (
-    event: React.PointerEvent<SVGElement>,
-    onClick = onBackgroundClick,
-  ) => {
-    if (tool !== "select" || event.button !== 0) return;
-    const overlay = event.currentTarget instanceof SVGSVGElement
-      ? event.currentTarget
-      : event.currentTarget.ownerSVGElement;
-    if (!overlay) return;
-    const toSvg = (clientX: number, clientY: number): Point =>
-      pointFromClient(overlay, clientX, clientY, zoom);
-    const start = toSvg(event.clientX, event.clientY);
-    const marqueeMode = selectionModeForModifiers(event);
-    const move = (next: PointerEvent) => {
-      const current = toSvg(next.clientX, next.clientY);
-      setMarquee(rectFromPoints(start, current));
-    };
-    const up = (next: PointerEvent) => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      const current = toSvg(next.clientX, next.clientY);
-      const rect = rectFromPoints(start, current);
-      setMarquee(null);
-      if (rect.w > 4 || rect.h > 4) onMarquee(rect, marqueeMode);
-      else onClick();
-    };
-    const cancel = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      setMarquee(null);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
-  };
-
   return (
     <svg
       className={`interaction-overlay${tool === "select" ? " is-select-tool" : ""}${tool === "text" ? " is-text-tool" : ""}${hoveredItem?.kind === "group" ? " has-group-hover" : ""}`}
@@ -792,10 +755,6 @@ function InteractionOverlayComponent({
       height={canvas.h}
       viewBox={`${canvas.x} ${canvas.y} ${canvas.w} ${canvas.h}`}
       aria-label="Diagram editing layer"
-      onPointerDown={(event) => {
-        if ((event.target as Element).closest("[data-interactive]")) return;
-        beginMarquee(event);
-      }}
       onContextMenu={(event) => {
         if ((event.target as Element).closest("[data-interactive]")) return;
         // CanvasStage owns empty-space menus so right-click also works beyond
@@ -836,7 +795,7 @@ function InteractionOverlayComponent({
             data-entity-id={group.id}
             aria-selected={isSelected(selection, "group", group.id)}
             aria-label={`Group ${group.label}`}
-            className={`hit-group ${isSelected(selection, "group", group.id) ? "is-selected" : ""}`}
+            className={`hit-group ${isSelected(displayedSelection, "group", group.id) ? "is-selected" : ""}`}
             x={group.bounds.x}
             y={group.bounds.y}
             width={group.bounds.w}
@@ -848,24 +807,9 @@ function InteractionOverlayComponent({
             onPointerLeave={() => clearHover("group", group.id)}
             onPointerDown={(event) => {
               event.stopPropagation();
-              const point = pointFromClient(event.currentTarget.ownerSVGElement, event.clientX, event.clientY, zoom);
-              const model = doc.groups.find((candidate) => candidate.id === group.id);
-              const headerHeight = model
-                ? (GROUP_STYLES[model.kind] ?? GROUP_STYLES.logical).headerHeight
-                : GROUP_STYLES.logical.headerHeight;
-              const boundaryTolerance = 10 / Math.max(zoom, 0.01);
-              const onBoundary =
-                point.x - group.bounds.x <= boundaryTolerance ||
-                group.bounds.x + group.bounds.w - point.x <= boundaryTolerance ||
-                point.y - group.bounds.y <= Math.max(boundaryTolerance, headerHeight) ||
-                group.bounds.y + group.bounds.h - point.y <= boundaryTolerance;
-              if (!onBoundary) {
-                const mode = selectionModeForModifiers(event);
-                beginMarquee(event, () => onSelect({ kind: "group", id: group.id }, mode));
-                return;
-              }
-              const target = closestTargetAt(event.clientX, event.clientY)
-                ?? { kind: "group" as const, id: group.id };
+              // The hit rectangle covers the whole group, so empty interior
+              // space should move the group just like its border or icon.
+              const target = { kind: "group" as const, id: group.id };
               onSelect(target, selectionModeForModifiers(event));
               if (target.kind === "group") beginGroupMove(event, target.id);
             }}
@@ -893,7 +837,7 @@ function InteractionOverlayComponent({
           data-edge-id={edge.id}
           aria-selected={isSelected(selection, "edge", edge.id)}
           aria-label={`Connector ${edge.id}`}
-          className={`hit-edge ${isSelected(selection, "edge", edge.id) ? "is-selected" : ""}`}
+          className={`hit-edge ${isSelected(displayedSelection, "edge", edge.id) ? "is-selected" : ""}`}
           points={edge.points.map((point) => `${point.x},${point.y}`).join(" ")}
           pointerEvents="stroke"
           onDoubleClick={(event) => {
@@ -1052,7 +996,7 @@ function InteractionOverlayComponent({
             aria-selected={index === 0 ? isSelected(selection, "resource", node.id) : undefined}
             aria-label={index === 0 ? `Resource ${node.serviceLabel}` : undefined}
             aria-hidden={index === 1 ? true : undefined}
-            className={`hit-node hit-node-${index === 0 ? "icon" : "label"}${isSelected(selection, "resource", node.id) ? " is-selected" : ""}`}
+            className={`hit-node hit-node-${index === 0 ? "icon" : "label"}${isSelected(displayedSelection, "resource", node.id) ? " is-selected" : ""}`}
             x={rect.x}
             y={rect.y}
             width={rect.w}
@@ -1085,7 +1029,7 @@ function InteractionOverlayComponent({
             data-hit-annotation-style={annotation.style ?? "paper"}
             aria-selected={isSelected(selection, "annotation", annotation.id)}
             aria-label={`${isText ? "Text" : "Note"} ${annotation.text}`}
-            className={`hit-annotation${isText ? " hit-annotation-text" : ""}${isSelected(selection, "annotation", annotation.id) ? " is-selected" : ""}`}
+            className={`hit-annotation${isText ? " hit-annotation-text" : ""}${isSelected(displayedSelection, "annotation", annotation.id) ? " is-selected" : ""}`}
             x={rect.x}
             y={rect.y}
             width={rect.w}
@@ -1254,7 +1198,7 @@ function InteractionOverlayComponent({
         );
       })()}
 
-      {selection.map((item) => {
+      {displayedSelection.map((item) => {
         const bounds = resizePreview?.kind === item.kind && resizePreview.id === item.id
           ? resizePreview.bounds
           : boundsFor(item, layout, doc);
@@ -1680,13 +1624,13 @@ function InteractionOverlayComponent({
         </g>
       )}
 
-      {marquee && (
+      {activeMarquee && (
         <rect
           className="marquee"
-          x={marquee.x}
-          y={marquee.y}
-          width={marquee.w}
-          height={marquee.h}
+          x={activeMarquee.rect.x}
+          y={activeMarquee.rect.y}
+          width={activeMarquee.rect.w}
+          height={activeMarquee.rect.h}
         />
       )}
     </svg>
@@ -1702,6 +1646,7 @@ export const InteractionOverlay = memo(
     previous.zoom === next.zoom &&
     previous.snapToGrid === next.snapToGrid &&
     previous.selection === next.selection &&
+    previous.externalMarquee === next.externalMarquee &&
     previous.pendingPort === next.pendingPort,
 );
 
