@@ -3,6 +3,11 @@ import type { Point, Rect } from "@dumb-diagrams/runtime/core";
 import { nearestPortAnchor } from "@dumb-diagrams/runtime/core";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
+import { GRID_SIZE } from "../grid.js";
+
+/** Screen-space imprecision and grid snap can stop an exact coordinate match. */
+export const BEND_MERGE_SNAP_PX = GRID_SIZE;
+
 /**
  * Move an orthogonal turn without leaving either adjoining segment behind.
  *
@@ -11,6 +16,25 @@ import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
  * hairpin. Instead, shift the complete horizontal run on Y and the complete
  * vertical run on X, matching the behavior of the segment handles.
  */
+export function snapBendMergeTarget(
+  points: Point[],
+  index: number,
+  target: Point,
+  threshold = BEND_MERGE_SNAP_PX,
+): Point {
+  for (const neighborIndex of [index - 1, index + 1]) {
+    if (neighborIndex <= 0 || neighborIndex >= points.length - 1) continue;
+    const neighbor = points[neighborIndex]!;
+    if (
+      Math.abs(target.x - neighbor.x) <= threshold &&
+      Math.abs(target.y - neighbor.y) <= threshold
+    ) {
+      return { ...neighbor };
+    }
+  }
+  return target;
+}
+
 export function moveOrthogonalBend(
   points: Point[],
   index: number,
@@ -19,24 +43,25 @@ export function moveOrthogonalBend(
   const origin = points.map((point) => ({ ...point }));
   if (index <= 0 || index >= origin.length - 1) return origin;
 
+  const mergedTarget = snapBendMergeTarget(origin, index, target);
   const updated = origin.map((point) => ({ ...point }));
   const horizontal = runContaining(origin, index, "horizontal");
   const vertical = runContaining(origin, index, "vertical");
 
   if (horizontal) {
     for (let cursor = horizontal.start; cursor <= horizontal.end; cursor++) {
-      updated[cursor]!.y = target.y;
+      updated[cursor]!.y = mergedTarget.y;
     }
   } else {
-    updated[index]!.y = target.y;
+    updated[index]!.y = mergedTarget.y;
   }
 
   if (vertical) {
     for (let cursor = vertical.start; cursor <= vertical.end; cursor++) {
-      updated[cursor]!.x = target.x;
+      updated[cursor]!.x = mergedTarget.x;
     }
   } else {
-    updated[index]!.x = target.x;
+    updated[index]!.x = mergedTarget.x;
   }
 
   return collapseOrthogonalRoute(updated);
@@ -83,7 +108,7 @@ export function anchorOrthogonalRouteEndpoints(
   return collapseOrthogonalRoute(out);
 }
 
-function collapseOrthogonalRoute(points: Point[]): Point[] {
+export function collapseOrthogonalRoute(points: Point[]): Point[] {
   const normalized = normalizeOrthogonalRoute(points);
   if (normalized.length <= 2) return normalized;
 

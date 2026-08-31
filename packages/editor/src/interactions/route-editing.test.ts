@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/core";
+import { layoutDocument } from "@dumb-diagrams/runtime/layout";
+import { routeEdges } from "@dumb-diagrams/runtime/route";
+
 import {
   anchorOrthogonalRouteEndpoints,
+  collapseOrthogonalRoute,
   moveOrthogonalBend,
+  snapBendMergeTarget,
 } from "./route-editing.js";
 
 describe("moveOrthogonalBend", () => {
@@ -55,6 +61,15 @@ describe("moveOrthogonalBend", () => {
       { x: 160, y: 0 },
     ]);
   });
+
+  it("snaps a nearby drag target onto an adjacent bend to eliminate a z-break", () => {
+    expect(snapBendMergeTarget([
+      { x: 0, y: 0 },
+      { x: 80, y: 0 },
+      { x: 80, y: 80 },
+      { x: 160, y: 80 },
+    ], 2, { x: 84, y: 4 })).toEqual({ x: 80, y: 0 });
+  });
 });
 
 describe("anchorOrthogonalRouteEndpoints", () => {
@@ -106,5 +121,24 @@ describe("anchorOrthogonalRouteEndpoints", () => {
       { x: 120, y: 240 },
       { x: 300, y: 240 },
     ]);
+  });
+});
+
+describe("async-docs e1 bend merge", () => {
+  it("merges the second interior bend onto its neighbor through the commit path", () => {
+    const doc = createAsyncDocsFixture();
+    const layout = layoutDocument(doc);
+    const routed = routeEdges(doc, layout).find((edge) => edge.id === "e1");
+    expect(routed?.points.length).toBeGreaterThan(3);
+
+    const source = layout.nodes.find((node) => node.id === routed!.source)!;
+    const target = layout.nodes.find((node) => node.id === routed!.target)!;
+    const neighbor = routed!.points[1]!;
+    const merged = moveOrthogonalBend(routed!.points, 2, neighbor);
+    const committed = collapseOrthogonalRoute(
+      anchorOrthogonalRouteEndpoints(merged, source.icon, target.icon),
+    );
+
+    expect(committed.length).toBeLessThan(routed!.points.length);
   });
 });

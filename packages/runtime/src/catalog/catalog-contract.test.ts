@@ -65,6 +65,24 @@ describe("canonical catalog contract", () => {
     }
   });
 
+  it("uses official AWS service colors for compute and workflow group tiles", () => {
+    const expectedColors: Record<string, string> = {
+      "aws.auto-scaling-group": "#ED7100",
+      "aws.ec2-instance-contents": "#ED7100",
+      "aws.elastic-beanstalk-container": "#ED7100",
+      "aws.spot-fleet": "#ED7100",
+      "aws.step-functions-workflow": "#E7157B",
+    };
+
+    for (const [type, color] of Object.entries(expectedColors)) {
+      const entry = getCatalogEntry(type)!;
+      expect(entry.assetKind, type).toBe("group");
+      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(
+        `fill="${color}"`,
+      );
+    }
+  });
+
   it("uses named GCP product categories and keeps category glyphs non-browsable", () => {
     expect(listCategories("gcp")).toContain("Databases");
     expect(listCategories("gcp")).not.toEqual(["AI Hypercomputer"]);

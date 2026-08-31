@@ -38,6 +38,7 @@ import {
 import { nearestEdgeIdAt, nearestNodePortAt, resolvePortPointerAction } from "./edge-targeting.js";
 import {
   anchorOrthogonalRouteEndpoints,
+  collapseOrthogonalRoute,
   moveOrthogonalBend,
 } from "./route-editing.js";
 import {
@@ -257,7 +258,7 @@ function InteractionOverlayComponent({
     const anchored = source && target
       ? anchorOrthogonalRouteEndpoints(points, source.icon, target.icon)
       : points;
-    onRoute(edgeId, normalizeOrthogonalRoute(anchored));
+    onRoute(edgeId, collapseOrthogonalRoute(anchored));
   };
 
   const closestTargetAt = (
@@ -2411,7 +2412,7 @@ function beginSegmentMove(
       updated[index]!.x = x;
       updated[index + 1]!.x = x;
     }
-    latest = normalizeOrthogonalRoute(updated);
+    latest = collapseOrthogonalRoute(updated);
     preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
