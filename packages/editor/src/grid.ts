@@ -1,5 +1,6 @@
-import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import type { DiagramDocument, ID, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
+import { getDefaultView } from "@dumb-diagrams/runtime/core";
+import { findDiagramRoots, orderRootsForFlow } from "@dumb-diagrams/runtime/layout";
 
 export const GRID_SIZE = 24;
 export const ALIGNMENT_GUIDE_THRESHOLD_PX = 6;
@@ -237,25 +238,7 @@ function translateRect(rect: Rect, dx: number, dy: number): Rect {
 }
 
 function findPositionRoots(doc: DiagramDocument): ID[] {
-  const childIds = new Set<ID>();
-  for (const group of doc.groups) {
-    for (const childId of group.children) childIds.add(childId);
-    for (const child of group.borderChildren ?? []) childIds.add(child.id);
-  }
-
-  const roots = [
-    ...doc.groups.filter((group) => !group.parent && !childIds.has(group.id)).map((group) => group.id),
-    ...doc.resources
-      .filter((resource) => !resource.parent && !childIds.has(resource.id))
-      .map((resource) => resource.id),
-  ];
-
-  if (roots.length > 0) return roots;
-
-  return [
-    ...doc.groups.filter((group) => !group.parent).map((group) => group.id),
-    ...doc.resources.filter((resource) => !resource.parent).map((resource) => resource.id),
-  ];
+  return orderRootsForFlow(doc, findDiagramRoots(doc));
 }
 
 function collectSubtreeIds(doc: DiagramDocument, rootId: ID): Set<ID> {

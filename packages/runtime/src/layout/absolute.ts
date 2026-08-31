@@ -10,6 +10,7 @@ import { GROUP_STYLES } from "../grammar-aws/index.js";
 
 import type { LayoutState } from "./internal.js";
 import { LAYOUT_METRICS } from "./metrics.js";
+import { findDiagramRoots, orderRootsForFlow } from "./roots.js";
 
 export function finalizeAbsoluteLayout(
   doc: DiagramDocument,
@@ -20,7 +21,7 @@ export function finalizeAbsoluteLayout(
   const nodes: NodeGeom[] = [];
   const groups: GroupGeom[] = [];
 
-  const roots = findPositionRoots(doc);
+  const roots = orderRootsForFlow(doc, findDiagramRoots(doc));
   const view = getDefaultView(doc);
   const flowingRoots = roots.filter((id) => {
     const place = view.places[id];
@@ -263,21 +264,6 @@ function translateNode(node: NodeGeom, dx: number, dy: number): NodeGeom {
       y: node.obstacle.y + dy,
     },
   };
-}
-
-function findPositionRoots(doc: DiagramDocument): ID[] {
-  const referenced = new Set<ID>();
-  for (const g of doc.groups) {
-    for (const c of g.children) referenced.add(c);
-  }
-  const roots: ID[] = [];
-  for (const r of doc.resources) {
-    if (!referenced.has(r.id) && !r.parent) roots.push(r.id);
-  }
-  for (const g of doc.groups) {
-    if (!referenced.has(g.id) && !g.parent) roots.push(g.id);
-  }
-  return roots;
 }
 
 function union(rects: Array<{ x: number; y: number; w: number; h: number }>) {

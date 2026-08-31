@@ -19,6 +19,7 @@ import { GRAMMAR, GROUP_STYLES, snap } from "../grammar-aws/index.js";
 import type { LayoutState } from "./internal.js";
 import { finalizeAbsoluteLayout } from "./absolute.js";
 import { LAYOUT_METRICS } from "./metrics.js";
+import { findDiagramRoots, orderRootsForFlow } from "./roots.js";
 
 interface Measured {
   w: number;
@@ -46,7 +47,7 @@ export function layoutDocument(doc: DiagramDocument): LayoutResult {
     groupGeoms: new Map(),
   };
 
-  const roots = findRoots(doc);
+  const roots = orderRootsForFlow(doc, findDiagramRoots(doc));
   for (const rootId of roots) {
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
@@ -59,30 +60,6 @@ export function layoutDocument(doc: DiagramDocument): LayoutResult {
   applyPinnedViewOverrides(doc, layout);
   sortLayoutByZIndex(doc, layout);
   return layout;
-}
-
-function findRoots(doc: DiagramDocument): ID[] {
-  const childIds = new Set<ID>();
-  for (const g of doc.groups) {
-    for (const c of g.children) childIds.add(c);
-    for (const b of g.borderChildren ?? []) childIds.add(b.id);
-  }
-  const roots: ID[] = [];
-  for (const g of doc.groups) {
-    if (!g.parent && !childIds.has(g.id)) roots.push(g.id);
-  }
-  for (const r of doc.resources) {
-    if (!r.parent && !childIds.has(r.id)) roots.push(r.id);
-  }
-  if (roots.length === 0) {
-    for (const r of doc.resources) {
-      if (!r.parent) roots.push(r.id);
-    }
-    for (const g of doc.groups) {
-      if (!g.parent) roots.push(g.id);
-    }
-  }
-  return roots;
 }
 
 function layoutGroup(

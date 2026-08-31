@@ -24,6 +24,8 @@ import type {
 import { DIAGRAM_LIMITS, getDefaultView, hasErrors, normalizePortOffset, utf8ByteLength, validateDocument } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry, getCatalogMap, type CatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
+
+import { findDiagramRoots, isEmptyRootBoundary, orderRootsForFlow } from "@dumb-diagrams/runtime/layout";
 import { sanitizeSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
@@ -663,14 +665,29 @@ export function clearView(doc: DiagramDocument): DiagramDocument {
   const next = cloneDocument(doc);
   for (const view of next.views) {
     view.places = Object.fromEntries(
-      Object.entries(view.places).map(([id, place]) => [
-        id,
-        {
-          locked: place.locked,
-          visible: place.visible,
-          zIndex: place.zIndex,
-        },
-      ]),
+      Object.entries(view.places).map(([id, place]) => {
+        if (isEmptyRootBoundary(next, id)) {
+          return [id, {
+            x: place.x,
+            y: place.y,
+            w: place.w,
+            h: place.h,
+            pin: place.pin,
+            manual: place.manual,
+            locked: place.locked,
+            visible: place.visible,
+            zIndex: place.zIndex,
+          }];
+        }
+        return [
+          id,
+          {
+            locked: place.locked,
+            visible: place.visible,
+            zIndex: place.zIndex,
+          },
+        ];
+      }),
     );
     view.routes = {};
     // Notes keep their authored position, visibility, and lock state when
@@ -1230,10 +1247,22 @@ export function groupSelection(
       ];
   const order = new Map(siblingOrder.map((id, index) => [id, index]));
   const selectionIndex = new Map(normalized.map((item, index) => [item.id, index]));
-  const selectedIds = [...ids].sort((a, b) =>
-    (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER) ||
-    selectionIndex.get(a)! - selectionIndex.get(b)!,
-  );
+  const layoutById = new Map<string, Rect>();
+  for (const group of layout.groups) layoutById.set(group.id, group.bounds);
+  for (const node of layout.nodes) layoutById.set(node.id, node.obstacle);
+  const selectedIds = [...ids].sort((a, b) => {
+    const aRect = layoutById.get(a);
+    const bRect = layoutById.get(b);
+    if (aRect && bRect) {
+      const horizontal = doc.flow === "lr";
+      const primary = horizontal ? aRect.x - bRect.x : aRect.y - bRect.y;
+      if (primary !== 0) return primary;
+      const secondary = horizontal ? aRect.y - bRect.y : aRect.x - bRect.x;
+      if (secondary !== 0) return secondary;
+    }
+    return (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER) ||
+      selectionIndex.get(a)! - selectionIndex.get(b)!;
+  });
 
   const descendantIds = new Set<string>();
   for (const record of records) {
@@ -1241,9 +1270,6 @@ export function groupSelection(
     if (record.group) collectChildren(doc, record.group.id, descendantIds);
   }
 
-  const layoutById = new Map<string, Rect>();
-  for (const group of layout.groups) layoutById.set(group.id, group.bounds);
-  for (const node of layout.nodes) layoutById.set(node.id, node.obstacle);
   const geometry = [...descendantIds]
     .map((id) => layoutById.get(id))
     .filter((rect): rect is Rect => Boolean(rect));
@@ -1514,7 +1540,6 @@ export function ungroup(
       .map((candidate) => candidate.id),
   ];
   const promotedIds = [...ordinaryChildren, ...borderChildren.keys(), ...inferredChildren];
-  const preserveCloudBackdrop = group.kind === "cloud";
   const next = cloneDocument(doc);
 
   if (layout) {
@@ -1600,18 +1625,32 @@ export function ungroup(
     }
   }
 
-  next.groups = preserveCloudBackdrop
-    ? next.groups
-    : next.groups.filter((candidate) => candidate.id !== groupId);
-  if (preserveCloudBackdrop) {
-    const cloudGroup = next.groups.find((candidate) => candidate.id === groupId);
-    if (cloudGroup) {
-      cloudGroup.children = [];
-      cloudGroup.borderChildren = [];
-      cloudGroup.overlayTargets = cloudGroup.overlayTargets?.filter((id) => !promotedIds.includes(id));
+  const retainedGroup = next.groups.find((candidate) => candidate.id === groupId);
+  if (retainedGroup) {
+    retainedGroup.children = [];
+    retainedGroup.borderChildren = [];
+    retainedGroup.overlayTargets = retainedGroup.overlayTargets?.filter((id) => !promotedIds.includes(id));
+    if (destination) {
+      if (parentBorderIndex >= 0) {
+        const borders = destination.borderChildren ?? [];
+        if (!borders.some((child) => child.id === groupId)) {
+          borders.splice(
+            Math.min(parentBorderIndex, borders.length),
+            0,
+            { id: groupId, side: borderChildren.get(groupId) ?? "n" },
+          );
+          destination.borderChildren = borders;
+        }
+      } else if (!destination.children.includes(groupId)) {
+        destination.children.splice(
+          parentChildIndex >= 0
+            ? Math.min(parentChildIndex, destination.children.length)
+            : destination.children.length,
+          0,
+          groupId,
+        );
+      }
     }
-  } else {
-    for (const view of next.views) delete view.places[groupId];
   }
   for (const resource of next.resources) {
     if (resource.parent === groupId) delete resource.parent;
@@ -1620,14 +1659,11 @@ export function ungroup(
     if (candidate.parent === groupId) delete candidate.parent;
   }
 
-  const selection: Selection = [
-    ...(preserveCloudBackdrop ? [{ kind: "group" as const, id: groupId }] : []),
-    ...validPromotedIds.map((id) => (
-      next.groups.some((candidate) => candidate.id === id)
-        ? { kind: "group" as const, id }
-        : { kind: "resource" as const, id }
-    )),
-  ];
+  const selection: Selection = validPromotedIds.map((id) => (
+    next.groups.some((candidate) => candidate.id === id)
+      ? { kind: "group" as const, id }
+      : { kind: "resource" as const, id }
+  ));
   return { doc: next, selection };
 }
 
@@ -1661,6 +1697,7 @@ export function removeSelectionPreservingGroupContents(
   let next = doc;
   for (const groupId of selectedGroupIds) {
     next = ungroup(next, groupId, layout).doc;
+    next = deleteOne(next, { kind: "group", id: groupId });
   }
   for (const item of selection) {
     if (item.kind !== "group") next = deleteOne(next, item);

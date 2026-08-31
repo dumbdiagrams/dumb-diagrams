@@ -631,11 +631,9 @@ describe("editor commands", () => {
 
     expect(result?.id).toBe("cloud");
     expect(result?.doc.groups).toHaveLength(beforeGroupCount);
-    expect(result?.doc.groups.find((group) => group.id === "cloud")).toMatchObject({
-      kind: "cloud",
-      label: "AWS Cloud",
-      children: ["use1", "client"],
-    });
+    expect(result?.doc.groups.find((group) => group.id === "cloud")?.children.sort()).toEqual(
+      ["client", "use1"],
+    );
     expect(result?.doc.groups.find((group) => group.id === "use1")?.parent).toBe("cloud");
     expect(result?.doc.resources.find((resource) => resource.id === "client")?.parent).toBe("cloud");
     expect(result?.doc.groups.some((group) => group.label === "Group")).toBe(false);
@@ -716,13 +714,14 @@ describe("editor commands", () => {
       { kind: "resource", id: "apiA" },
       { kind: "resource", id: "workerA" },
     ]);
-    expect(next.groups.some((group) => group.id === "appA")).toBe(false);
+    expect(next.groups.some((group) => group.id === "appA")).toBe(true);
+    expect(next.groups.find((group) => group.id === "appA")?.children).toEqual([]);
     expect(next.groups.find((group) => group.id === "azA")?.children).toEqual(
-      expect.arrayContaining(["pubA", "appA"].filter((id) => id !== "appA").concat(["apiA", "workerA"])),
+      expect.arrayContaining(["pubA", "appA", "apiA", "workerA"]),
     );
     expect(next.resources.find((resource) => resource.id === "apiA")?.parent).toBe("azA");
     expect(next.resources.find((resource) => resource.id === "workerA")?.parent).toBe("azA");
-    expect(getDefaultView(next).places.appA).toBeUndefined();
+    expect(getDefaultView(next).places.appA).toMatchObject(getDefaultView(doc).places.appA!);
     expect(getDefaultView(next).routes.e2).toEqual(getDefaultView(doc).routes.e2);
     expect(next.edges.find((edge) => edge.id === "e2")).toEqual(doc.edges.find((edge) => edge.id === "e2"));
   });
@@ -822,7 +821,7 @@ describe("editor commands", () => {
     expect(next.resources.some((resource) => resource.id === "web_client")).toBe(true);
     expect(next.edges).toHaveLength(edgeCount);
     expect(selection.map((item) => item.id).sort()).toEqual(
-      ["app_data", "aws_cloud", "frontend", "gateway", "handler"].sort(),
+      ["app_data", "frontend", "gateway", "handler"].sort(),
     );
 
     const afterLayout = layoutDocument(next);
@@ -925,7 +924,7 @@ describe("editor commands", () => {
     const { doc: next, selection } = ungroup(doc, "aws_cloud", compiledBefore.layout);
     expect(next.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
     expect(selection.map((item) => item.id).sort()).toEqual(
-      ["aws_cloud", "processed_assets", "processing", "upload_experience", "upload_storage"].sort(),
+      ["processed_assets", "processing", "upload_experience", "upload_storage"].sort(),
     );
     for (const id of ["upload_experience", "upload_storage", "processing", "processed_assets"]) {
       expect(next.groups.find((group) => group.id === id)?.parent).toBeUndefined();
@@ -1013,7 +1012,8 @@ describe("editor commands", () => {
     const layout = layoutDocument(doc);
     const { doc: next, selection } = ungroup(doc, "queues", layout);
 
-    expect(next.groups.some((candidate) => candidate.id === "queues")).toBe(false);
+    expect(next.groups.some((candidate) => candidate.id === "queues")).toBe(true);
+    expect(next.groups.find((candidate) => candidate.id === "queues")?.children).toEqual([]);
     expect(next.resources.some((resource) => resource.id === "jobs")).toBe(true);
     expect(next.resources.some((resource) => resource.id === "jobs_dlq")).toBe(true);
     expect(selection.map((item) => item.id).sort()).toEqual(["jobs", "jobs_dlq"]);

@@ -991,6 +991,9 @@ function App() {
       const next = change(parseDgm(sourceRef.current));
       if (hasErrors(validateDocument(next, getCatalogMap(), { enforceCatalogRules: false }))) return;
       const nextSource = printDgm(next);
+      sourceRef.current = nextSource;
+      warmDiagramCompilationCache(nextSource, snapToGrid);
+      setCommittedCompilationKey((current) => current + 1);
       replaceSource(nextSource);
     } catch {
       // Keep the source editor authoritative while it contains parse errors.

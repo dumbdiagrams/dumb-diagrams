@@ -260,8 +260,9 @@ test("ungroups a selected group without deleting its contents", async ({ page })
   await expect(menu.getByRole("menuitem", { name: "Delete group and contents", exact: true })).toHaveCount(1);
   await menu.locator('[data-menu-item="ungroup"]').click();
 
-  await expect(parent).toHaveCount(0);
+  await expect(parent).toHaveCount(1);
   await expect(child).toHaveCount(1);
+  await expect(child).toHaveAttribute("aria-selected", "true");
 });
 
 test("ungroups a curated aws cloud example while preserving children, geometry, and selection", async ({ page }) => {
@@ -326,6 +327,97 @@ test("ungroups a curated aws cloud example while preserving children, geometry, 
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+Z" : "Control+Shift+Z");
   await expect(cloud).toHaveCount(1);
   await expect(frontend).toHaveAttribute("aria-selected", "true");
+});
+
+test("moving a detached aws cloud after ungroup does not move promoted children", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
+  await expect(cloud).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+  await expect(cloud).toHaveCount(1);
+
+  const frontendBefore = await entityBox(page, "group", "frontend");
+  const cloudBefore = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBefore.x + 12, cloudBefore.y + 12);
+  await page.mouse.move(cloudBefore.x + 12, cloudBefore.y + 12);
+  await page.mouse.down();
+  await page.mouse.move(cloudBefore.x + 120, cloudBefore.y + 80);
+  await page.mouse.up();
+
+  const frontendAfter = await entityBox(page, "group", "frontend");
+  expect(Math.abs(frontendAfter.x - frontendBefore.x)).toBeLessThan(8);
+  expect(Math.abs(frontendAfter.y - frontendBefore.y)).toBeLessThan(8);
+  await expect(frontend).toHaveAttribute("aria-selected", "true");
+});
+
+test("delete removes an empty detached aws cloud after ungroup", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
+  await expect(cloud).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+  await expect(frontend).toHaveAttribute("aria-selected", "true");
+
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press("Delete");
+
+  await expect(cloud).toHaveCount(0);
+  await expect(frontend).toHaveCount(1);
+});
+
+test("auto-fix after grouping mixed roots preserves left-to-right architecture flow", async ({ page }) => {
+  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const webClient = page.locator('[data-entity-kind="resource"][data-entity-id="web_client"]');
+  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
+  const gateway = page.locator('[data-entity-kind="resource"][data-entity-id="gateway"]');
+  await expect(cloud).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+
+  const clientBox = await entityBox(page, "resource", "web_client");
+  const cloudAfterUngroup = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.move(cloudAfterUngroup.x + 12, cloudAfterUngroup.y + 12);
+  await page.mouse.down();
+  await page.mouse.move(cloudAfterUngroup.x + 12, cloudAfterUngroup.y + 12, { modifiers: ["Shift"] });
+  await page.mouse.move(clientBox.x - 8, clientBox.y - 8);
+  await page.mouse.up();
+
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+G" : "Control+G");
+  await page.getByRole("button", { name: "Auto-fix" }).click();
+
+  const ordered = [
+    await entityBox(page, "resource", "web_client"),
+    await entityBox(page, "resource", "gateway"),
+    await entityBox(page, "resource", "handler"),
+    await entityBox(page, "resource", "app_data"),
+    await entityBox(page, "group", "frontend"),
+  ];
+  for (let index = 1; index < ordered.length; index++) {
+    expect(ordered[index - 1]!.x).toBeLessThan(ordered[index]!.x);
+  }
+  await expect(webClient).toHaveCount(1);
+  await expect(frontend).toHaveCount(1);
+  await expect(gateway).toHaveCount(1);
 });
 
 test("ungroups image thumbnail pipeline aws cloud while preserving nested content", async ({ page }) => {
