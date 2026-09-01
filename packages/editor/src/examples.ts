@@ -5,7 +5,6 @@ import simpleServerlessWebApplicationSource from "../../../examples/curated/simp
 import imageThumbnailPipelineSource from "../../../examples/curated/image-thumbnail-pipeline/diagram.dgm?raw";
 import asynchronousReportGenerationSource from "../../../examples/curated/asynchronous-report-generation/diagram.dgm?raw";
 import eventDrivenOrderFulfillmentSource from "../../../examples/curated/event-driven-order-fulfillment/diagram.dgm?raw";
-import azurePrivateAppServiceSource from "../../../examples/diagrams/azure-private-app-service.dgm?raw";
 
 import DATA_TRANSFER_HUB_PROMPT from "../../../examples/curated/aws-data-transfer-hub/user-prompt.md?raw";
 import HIGH_AVAILABILITY_PROMPT from "../../../examples/curated/aws-high-availability-web-app/user-prompt.md?raw";
@@ -14,7 +13,6 @@ import SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT from "../../../examples/curated/
 import IMAGE_THUMBNAIL_PIPELINE_PROMPT from "../../../examples/curated/image-thumbnail-pipeline/user-prompt.md?raw";
 import ASYNCHRONOUS_REPORT_GENERATION_PROMPT from "../../../examples/curated/asynchronous-report-generation/user-prompt.md?raw";
 import EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT from "../../../examples/curated/event-driven-order-fulfillment/user-prompt.md?raw";
-import AZURE_PRIVATE_APP_SERVICE_PROMPT from "../../../examples/prompts/azure-private-app-service.md?raw";
 
 import DATA_TRANSFER_HUB_BRIEF from "../../../examples/curated/aws-data-transfer-hub/architecture-brief.md?raw";
 import HIGH_AVAILABILITY_BRIEF from "../../../examples/curated/aws-high-availability-web-app/architecture-brief.md?raw";
@@ -115,13 +113,5 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
     prompt: EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT,
     architectureBrief: EVENT_DRIVEN_ORDER_FULFILLMENT_BRIEF,
     referenceSpec: EVENT_DRIVEN_ORDER_FULFILLMENT_REFERENCE,
-  },
-  {
-    id: "azure-private-app-service",
-    title: "Write-through caching with Azure Managed Redis",
-    description: "An Azure App Service read path with Managed Redis cache-aside reads, Functions-coordinated write-through updates, SQL as the system of record, private endpoints, and Azure Monitor.",
-    tags: ["Azure", "Managed Redis", "SQL Database", "write-through caching"],
-    source: azurePrivateAppServiceSource,
-    prompt: AZURE_PRIVATE_APP_SERVICE_PROMPT,
   },
 ];

@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "description": "Reviewed semantic layout contracts for the seven curated AWS Studio examples. These assert flow direction, canvas shape, and key left-to-right chains without pixel snapshots or routing allowlists.",
+  "examples": {
+    "simple-serverless-web-application": {
+      "diagram": "examples/curated/simple-serverless-web-application/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 1.2,
+      "maxAspectRatio": 2.0,
+      "maxWidth": 1200,
+      "maxHeight": 800,
+      "leftToRight": [
+        ["web_client", "cdn", "gateway", "handler", "app_data"]
+      ]
+    },
+    "image-thumbnail-pipeline": {
+      "diagram": "examples/curated/image-thumbnail-pipeline/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 1.4,
+      "maxAspectRatio": 2.2,
+      "maxWidth": 1400,
+      "maxHeight": 800,
+      "leftToRight": [
+        ["image_uploader", "cdn", "original_images", "thumbnail_processor", "image_metadata"]
+      ]
+    },
+    "bedrock-claims-processing": {
+      "diagram": "examples/curated/bedrock-claims-processing/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 1.4,
+      "maxAspectRatio": 2.2,
+      "maxWidth": 1800,
+      "maxHeight": 1000,
+      "leftToRight": [
+        ["claims_analyst", "sample_docs", "blueprint_generation"],
+        ["claims_docs", "extractor", "fraud_model", "claims_state", "nova", "sns"],
+        ["email", "web_client"]
+      ]
+    },
+    "aws-data-transfer-hub": {
+      "diagram": "examples/curated/aws-data-transfer-hub/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 1.8,
+      "maxAspectRatio": 2.8,
+      "maxWidth": 2000,
+      "maxHeight": 1000,
+      "leftToRight": [
+        ["user", "ui", "cloudfront"],
+        ["appsync", "api_lambda", "workflow_lambda", "cloudformation"]
+      ]
+    },
+    "aws-high-availability-web-app": {
+      "diagram": "examples/curated/aws-high-availability-web-app/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 2.2,
+      "maxAspectRatio": 3.5,
+      "maxWidth": 2200,
+      "maxHeight": 900,
+      "leftToRight": [
+        ["browser", "dns", "cdn", "gateway", "load_balancer", "service_one", "table_one"]
+      ]
+    },
+    "event-driven-order-fulfillment": {
+      "diagram": "examples/curated/event-driven-order-fulfillment/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 2.0,
+      "maxAspectRatio": 3.2,
+      "maxWidth": 1800,
+      "maxHeight": 800,
+      "leftToRight": [
+        ["customer", "storefront", "gateway", "order_service", "orders_database"]
+      ]
+    },
+    "asynchronous-report-generation": {
+      "diagram": "examples/curated/asynchronous-report-generation/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 2.4,
+      "maxAspectRatio": 3.5,
+      "maxWidth": 2000,
+      "maxHeight": 800,
+      "leftToRight": [
+        ["web_client", "cdn", "gateway", "report_handler", "report_jobs", "report_worker", "generated_reports"]
+      ]
+    }
+  }
+}

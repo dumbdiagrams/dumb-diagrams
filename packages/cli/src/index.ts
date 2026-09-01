@@ -26,11 +26,6 @@ interface ParsedArgs {
   flags: Map<string, string | true>;
 }
 
-const LEGACY_REFERENCE_FILES = [
-  "azure-private-app-service.dgm",
-  "prompts/azure-private-app-service.md",
-] as const;
-
 const CURATED_EXAMPLE_IDS = [
   "aws-high-availability-web-app",
   "aws-data-transfer-hub",
@@ -343,32 +338,16 @@ function createCatalogReference(): { markdown: string; json: string } {
 
 function copyBundledExamples(examplesRoot: string): number {
   mkdirSync(examplesRoot, { recursive: true });
-  const files = LEGACY_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
-  files.unshift("README.md");
+  const files = [
+    "README.md",
+    ...CURATED_EXAMPLE_IDS.flatMap((id) => CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`)),
+  ];
   let created = 0;
 
   for (const fileName of files) {
-    const sourcePath = resolveBundledExample(fileName.replace(/^legacy\//, ""));
-    if (!sourcePath) {
-      console.warn(ui.warning(`Bundled example not found: ${fileName}`));
-      continue;
-    }
-    const targetPath = join(examplesRoot, fileName);
-    mkdirSync(dirname(targetPath), { recursive: true });
-    if (existsAsFileOrDirectory(targetPath)) {
-      console.log(ui.skip(`Skipped ${relativeForLog(targetPath)} (already exists)`));
-      continue;
-    }
-    copyFileSync(sourcePath, targetPath);
-    console.log(ui.success(`Created ${relativeForLog(targetPath)}`));
-    created++;
-  }
-
-  const curatedFiles = CURATED_EXAMPLE_IDS.flatMap((id) => CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`));
-  for (const fileName of curatedFiles) {
     const sourcePath = resolveBundledExample(fileName);
     if (!sourcePath) {
-      console.warn(ui.warning(`Bundled curated example file not found: ${fileName}`));
+      console.warn(ui.warning(`Bundled example not found: ${fileName}`));
       continue;
     }
     const targetPath = join(examplesRoot, fileName);

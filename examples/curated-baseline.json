@@ -1,56 +1,77 @@
 {
   "version": 1,
-  "description": "Reviewed byte baseline for seven canonical AWS bundles and the legacy Azure diagram/reference pair.",
-  "routingBaseline": "examples/routing-warnings.json",
+  "description": "Reviewed byte baseline for the seven canonical AWS bundles.",
   "compatibilityMirrors": [],
   "curated": {
     "simple-serverless-web-application": {
       "diagram": "examples/curated/simple-serverless-web-application/diagram.dgm",
+      "architectureBrief": "examples/curated/simple-serverless-web-application/architecture-brief.md",
+      "userPrompt": "examples/curated/simple-serverless-web-application/user-prompt.md",
       "referenceSpec": "examples/curated/simple-serverless-web-application/reference-spec.md",
       "diagramSha256": "d1ac54aa7ad6c6d1faad039b8da3efeeb8987de254e12176deb063c8411e4324",
+      "architectureBriefSha256": "ebc01bd6e23348ccebd4e0e6c94f4e7703c186f41686661e9e37f7b54e15bf49",
+      "userPromptSha256": "aaa95008c88f7a272d8581e4a3793721f7c3945e1f817387317241ed82c0d451",
       "referenceSpecSha256": "5353cc300e503d8fa30582fb40f4ad2937a5d6e9e66198c2f2e4d2d39d29115c"
     },
     "aws-high-availability-web-app": {
       "diagram": "examples/curated/aws-high-availability-web-app/diagram.dgm",
+      "architectureBrief": "examples/curated/aws-high-availability-web-app/architecture-brief.md",
+      "userPrompt": "examples/curated/aws-high-availability-web-app/user-prompt.md",
       "referenceSpec": "examples/curated/aws-high-availability-web-app/reference-spec.md",
       "diagramSha256": "10e812fc9f9f2479d86b7faad3b61abaabeac7a15afefd4e80a0e84b9b942db4",
+      "architectureBriefSha256": "e9fba810b026fe2a59e152f924fe9acce65cdf931345e81a67c0d58b5cdf57f0",
+      "userPromptSha256": "3ac80e32e3d1cf409bdb8df81144d9a617ce83cd5fc81d36d241cfabf3b0a02b",
       "referenceSpecSha256": "9fb2badb5359883c056ae5a9bcd5c24c0b88520abdfaa5c110d90c5b7742a18b"
     },
     "aws-data-transfer-hub": {
       "diagram": "examples/curated/aws-data-transfer-hub/diagram.dgm",
+      "architectureBrief": "examples/curated/aws-data-transfer-hub/architecture-brief.md",
+      "userPrompt": "examples/curated/aws-data-transfer-hub/user-prompt.md",
       "referenceSpec": "examples/curated/aws-data-transfer-hub/reference-spec.md",
       "diagramSha256": "eb56b338fd7adb2f265a77935b56661a1511dd5f74fd4af90fcbcbd1b97d98c1",
+      "architectureBriefSha256": "e41c54a23826f63c14249ff6fa5d41a820a109e6dd32a8ea2261b66681ab353e",
+      "userPromptSha256": "f81311f13656b72b84892ca844c63bc067c4559b01824227972523116c5be830",
       "referenceSpecSha256": "a7d984109f6296912f693d4f2003ac305a965b6e1a50f6dc7fd3e9f90f7d8493"
     },
     "bedrock-claims-processing": {
       "diagram": "examples/curated/bedrock-claims-processing/diagram.dgm",
+      "architectureBrief": "examples/curated/bedrock-claims-processing/architecture-brief.md",
+      "userPrompt": "examples/curated/bedrock-claims-processing/user-prompt.md",
       "referenceSpec": "examples/curated/bedrock-claims-processing/reference-spec.md",
       "diagramSha256": "d2f28d1f2b17ab7da3825fc91320ba9e49974fadc7fb5d4654296503687f6a10",
+      "architectureBriefSha256": "7d5167e523e80e08510b730c52f3af28cb6f8ca1ff2de2159cff8d5fcdeeb1ba",
+      "userPromptSha256": "68684c6dc93e6e1a6e11f4f383463347c710119b80c4c0783220316762d54382",
       "referenceSpecSha256": "97c1d27883cb2a54bf9394b4bf3ebab2d1d5cc28ffceb69cf91b6eb1515e5165"
     },
     "image-thumbnail-pipeline": {
       "diagram": "examples/curated/image-thumbnail-pipeline/diagram.dgm",
+      "architectureBrief": "examples/curated/image-thumbnail-pipeline/architecture-brief.md",
+      "userPrompt": "examples/curated/image-thumbnail-pipeline/user-prompt.md",
       "referenceSpec": "examples/curated/image-thumbnail-pipeline/reference-spec.md",
       "diagramSha256": "8b78fae00aa92132519a6c1f7e633ec260efc1ef2aa062cb2a4c0a5c9e8ea169",
+      "architectureBriefSha256": "8d0e58f824a7395979233802511bdf8ec0d09442718d1872c4ccf2a539f38760",
+      "userPromptSha256": "3cca139ef748ae4f3ab2709a6754c10c63ba9921c944c0d23d93dbba7afed781",
       "referenceSpecSha256": "338835bb3228020c033d5ab3c179f2dd26fe9284c5b2b1dcf66e7c32fbe5e913"
     },
     "asynchronous-report-generation": {
       "diagram": "examples/curated/asynchronous-report-generation/diagram.dgm",
+      "architectureBrief": "examples/curated/asynchronous-report-generation/architecture-brief.md",
+      "userPrompt": "examples/curated/asynchronous-report-generation/user-prompt.md",
       "referenceSpec": "examples/curated/asynchronous-report-generation/reference-spec.md",
       "diagramSha256": "da531f440aceab2ef43d6abf7d5666e60bbfd25dd8db51ce91a3c2ef6b7ae6ea",
+      "architectureBriefSha256": "2df21d2b4e16dc084f46ae826e0b20d36a39c37fd0706b5a6a79f737d020f5fd",
+      "userPromptSha256": "69a8ea1858196043b933aefd7118871c8b4237027923c90084868f1cf46a14d8",
       "referenceSpecSha256": "6fc0ade1fa825724ac967d5750f4f3bee04e112b20827215cffe2b4a249a1068"
     },
     "event-driven-order-fulfillment": {
       "diagram": "examples/curated/event-driven-order-fulfillment/diagram.dgm",
+      "architectureBrief": "examples/curated/event-driven-order-fulfillment/architecture-brief.md",
+      "userPrompt": "examples/curated/event-driven-order-fulfillment/user-prompt.md",
       "referenceSpec": "examples/curated/event-driven-order-fulfillment/reference-spec.md",
       "diagramSha256": "645b52bbedf725e92c3beb2c90fcfcf1cdc88394a24338a13270926f9302bad3",
+      "architectureBriefSha256": "1087d66cb20f0f171f22844a03397beae2e549da3b53b69fa6bec2dcabd24f9d",
+      "userPromptSha256": "64760bc796f155871ec5e6603cf224593912bd978cff742097daae8538d63d5e",
       "referenceSpecSha256": "2af25c967f137a9b32b33788fe7261251b1cc5165b77fccf05970528726e098b"
-    },
-    "azure-private-app-service": {
-      "diagram": "examples/diagrams/azure-private-app-service.dgm",
-      "referenceSpec": "examples/prompts/azure-private-app-service.md",
-      "diagramSha256": "e916d9ad8c6ac2df0fe0220ef3d378a31e54bd870f320c2bc73d54fb2ad9c394",
-      "referenceSpecSha256": "d4ea0f4c9def1a701436ea306f677963d81c998aadd26afb79780837f5a13c0a"
     }
   }
 }

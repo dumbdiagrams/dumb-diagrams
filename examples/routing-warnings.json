@@ -2,9 +2,24 @@
   "description": "Reviewed routing warnings for checked-in examples. New or removed warnings fail check:routing and require a visual review before this file changes.",
   "warnings": [
     {
+      "file": "aws-data-transfer-hub.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cloudformation-fargate and templates-cloudformation cross"
+    },
+    {
+      "file": "aws-data-transfer-hub.dgm",
+      "code": "edge-crossing",
+      "message": "Edges ui-appsync and ui-oidc cross"
+    },
+    {
       "file": "aws-high-availability-web-app.dgm",
       "code": "edge-crossing",
-      "message": "Edges monitor_app_a and monitor_data_a cross"
+      "message": "Edges pull_image_a and monitor_data_a cross"
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pull_image_b and monitor_data_a cross"
     },
     {
       "file": "event-driven-order-fulfillment.dgm",

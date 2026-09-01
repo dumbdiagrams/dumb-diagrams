@@ -777,6 +777,7 @@ function App() {
           : `${closedCount} diagram${closedCount === 1 ? "" : "s"} closed`);
       }
     } finally {
+      await waitForPaint();
       setOperation(null);
     }
   };
@@ -1671,8 +1672,8 @@ function App() {
         );
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [selection, source, undo, redo, compiled, snapToGrid]);
 
   const fileMenuItems: TopMenuItem[] = [
@@ -3459,14 +3460,18 @@ function Inspector({
   );
 }
 
+function isTypingField(element: HTMLElement): boolean {
+  if (element.closest(".cm-editor") || element.isContentEditable) return true;
+  if (element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) return true;
+  if (!(element instanceof HTMLInputElement)) return false;
+  return !["file", "button", "submit", "reset", "checkbox", "radio", "hidden", "range", "color"].includes(element.type);
+}
+
 function isEditableKeyboardTarget(target: EventTarget | null): boolean {
   const candidates: HTMLElement[] = [];
   if (target instanceof HTMLElement) candidates.push(target);
   if (document.activeElement instanceof HTMLElement) candidates.push(document.activeElement);
-  return candidates.some((element) =>
-    element.matches("textarea, input, select, [contenteditable='true']") ||
-    Boolean(element.closest(".cm-editor")),
-  );
+  return candidates.some(isTypingField);
 }
 
 function modifierShortcut(event: KeyboardEvent, code: string): boolean {

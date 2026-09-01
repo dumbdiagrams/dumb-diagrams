@@ -1,8 +1,6 @@
-import { join } from "node:path";
-
 import { expect, test } from "@playwright/test";
 
-const ROOT = join(import.meta.dirname, "..");
+import { ROOT } from "./support/helpers";
 
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");
@@ -93,11 +91,14 @@ test("bulk closes tabs with visible progress without recovering empty drafts", a
     .click();
   const confirmation = page.getByRole("dialog", { name: "Close tabs to the right?" });
   await expect(confirmation).toContainText("4 tabs will be closed");
+  const sawProgress = page.waitForFunction(() => {
+    const status = document.querySelector(".operation-status");
+    const progress = status?.querySelector("progress");
+    return progress?.getAttribute("max") === "4"
+      && (status?.textContent ?? "").includes("Closing diagrams");
+  });
   await confirmation.getByRole("button", { name: "Close tabs", exact: true }).click();
-
-  const progress = page.locator(".operation-status");
-  await expect(progress.locator("progress")).toHaveAttribute("max", "4");
-  await expect(progress).toContainText("Closing diagrams…");
+  await sawProgress;
   await expect(page.getByRole("tab")).toHaveCount(1);
 
   await page.getByRole("button", { name: "File", exact: true }).click();
@@ -223,11 +224,11 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 8…|Previews ready/);
-  await expect(examples.locator(".example-card")).toHaveCount(8);
-  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(8);
+  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 7…|Previews ready/);
+  await expect(examples.locator(".example-card")).toHaveCount(7);
+  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(7);
   await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(7);
-  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(8);
+  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(7);
   await expect(examples.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(7);
 
   const claims = examples.locator(".example-card").filter({ hasText: "Claims processing with Amazon Bedrock" });
@@ -243,9 +244,6 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
     'Create a diagram titled "Claims processing with Amazon Bedrock"',
   );
 
-  const azure = examples.locator(".example-card").filter({ hasText: "Write-through caching with Azure Managed Redis" });
-  await expect(azure.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(0);
-  await expect(azure.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(0);
   await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);
@@ -375,11 +373,19 @@ test("prompts before discarding a dirty tab", async ({ page }) => {
   const title = page.getByRole("textbox", { name: "Diagram name" });
   await title.fill("Changed diagram");
   await title.press("Enter");
+  await expect(page.locator(".dirty-pill")).toHaveCount(1);
 
   await page.locator(".workspace-tab.is-active .workspace-tab-close").click();
   const dialog = page.getByRole("dialog", { name: "Unsaved changes" });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Discard", exact: true }).click();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Changed diagram");
+  await expect(page.locator(".dirty-pill")).toHaveCount(1);
+
+  await page.locator(".workspace-tab.is-active .workspace-tab-close").click();
+  await page.getByRole("dialog", { name: "Unsaved changes" }).getByRole("button", { name: "Discard", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(1);
 });
 

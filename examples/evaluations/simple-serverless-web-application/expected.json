@@ -47,6 +47,5 @@
     { "sourceType": "aws.api-gateway", "targetType": "aws.aws-lambda", "count": 1 },
     { "sourceType": "aws.aws-lambda", "targetType": "aws.dynamodb", "count": 1 }
   ],
-  "relationshipMode": "exact",
-  "allowedRoutingWarnings": []
+  "relationshipMode": "exact"
 }

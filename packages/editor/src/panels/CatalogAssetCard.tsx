@@ -30,6 +30,10 @@ export function CatalogAssetCard({
   const retryTimer = useRef<number | undefined>(undefined);
   const iconSize = variant === "group" ? 52 : 40;
   const iconUrl = catalogIconUrl(entry.browserPath);
+  const iconRef = useRef<HTMLImageElement>(null);
+  const iconSrc = retryCount
+    ? `${iconUrl}${iconUrl.includes("?") ? "&" : "?"}icon-retry=${retryCount}`
+    : iconUrl;
 
   useEffect(() => {
     setStatus("loading");
@@ -39,9 +43,10 @@ export function CatalogAssetCard({
     };
   }, [entry.browserPath]);
 
-  const iconSrc = retryCount
-    ? `${iconUrl}${iconUrl.includes("?") ? "&" : "?"}icon-retry=${retryCount}`
-    : iconUrl;
+  useEffect(() => {
+    const image = iconRef.current;
+    if (image?.complete && image.naturalWidth > 0) setStatus("loaded");
+  }, [iconSrc]);
 
   const handleIconError = () => {
     if (retryCount >= ICON_RETRY_DELAYS_MS.length) {
@@ -92,6 +97,7 @@ export function CatalogAssetCard({
             </span>
           ) : (
             <img
+              ref={iconRef}
               src={iconSrc}
               alt=""
               width={iconSize}

@@ -1,10 +1,8 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-const ROOT = join(import.meta.dirname, "..");
-const ASYNC_DOCS = `${ROOT}/examples/diagrams/async-docs.dgm`;
+import { ASYNC_DOCS } from "./support/helpers";
 
 const formats = [
   { value: "png", label: "PNG", extension: ".png", verify: (data: Buffer) => expect(data.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },

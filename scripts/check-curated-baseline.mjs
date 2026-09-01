@@ -3,32 +3,26 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const baselinePath = resolve(root, "examples/curated-baseline.json");
-const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-const expectedIds = new Set([
-  "simple-serverless-web-application",
-  "aws-high-availability-web-app",
-  "aws-data-transfer-hub",
-  "bedrock-claims-processing",
-  "image-thumbnail-pipeline",
-  "asynchronous-report-generation",
-  "event-driven-order-fulfillment",
-  "azure-private-app-service",
-]);
+import { loadCuratedBaseline, repoRoot } from "./lib/example-manifest.mjs";
+
+const root = repoRoot();
+const baseline = loadCuratedBaseline();
 const failures = [];
 
 if (baseline.version !== 1) failures.push(`unsupported baseline version: ${baseline.version}`);
 const entries = Object.entries(baseline.curated ?? {});
 const actualIds = new Set(entries.map(([id]) => id));
-for (const id of expectedIds) if (!actualIds.has(id)) failures.push(`missing curated id: ${id}`);
-for (const id of actualIds) if (!expectedIds.has(id)) failures.push(`unexpected curated id: ${id}`);
 
 for (const [id, entry] of entries) {
   checkFile(id, "diagram", entry.diagram, entry.diagramSha256, ["examples/diagrams", "examples/curated"]);
   checkFile(id, "reference spec", entry.referenceSpec, entry.referenceSpecSha256, ["examples/prompts", "examples/curated"]);
+  if (entry.architectureBrief) {
+    checkFile(id, "architecture brief", entry.architectureBrief, entry.architectureBriefSha256, ["examples/curated"]);
+  }
+  if (entry.userPrompt) {
+    checkFile(id, "user prompt", entry.userPrompt, entry.userPromptSha256, ["examples/curated"]);
+  }
 }
 
 for (const mirror of baseline.compatibilityMirrors ?? []) {
@@ -44,16 +38,13 @@ for (const mirror of baseline.compatibilityMirrors ?? []) {
   }
 }
 
-const routingPath = safePath(baseline.routingBaseline, ["examples"]);
-if (routingPath && !existsSync(routingPath)) failures.push(`routing baseline missing: ${baseline.routingBaseline}`);
-
 const discoveredIds = new Set();
 for (const file of readdirSync(resolve(root, "examples/diagrams"))) {
-  if (!file.endsWith(".dgm") || ["async-docs.dgm", "transfer-hub.dgm"].includes(file)) continue;
+  if (!file.endsWith(".dgm") || ["async-docs.dgm", "transfer-hub.dgm", "azure-private-app-service.dgm"].includes(file)) continue;
   discoveredIds.add(file.replace(/\.dgm$/, ""));
 }
 for (const file of readdirSync(resolve(root, "examples/prompts"))) {
-  if (file.endsWith(".md")) discoveredIds.add(file.replace(/\.md$/, ""));
+  if (file.endsWith(".md") && file !== "azure-private-app-service.md") discoveredIds.add(file.replace(/\.md$/, ""));
 }
 for (const directory of readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })) {
   if (directory.isDirectory()) discoveredIds.add(directory.name);

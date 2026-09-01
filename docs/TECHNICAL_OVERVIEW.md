@@ -719,7 +719,7 @@ resolution.
 | Gate | Boundary covered |
 | --- | --- |
 | `pnpm test` | Runtime, editor logic, CLI, and local Studio HTTP integration |
-| `pnpm test:coverage` | Node-focused CLI, runtime, editor-model, and crash-recovery coverage against enforced thresholds; browser-bound canvas, workspace, drag/drop, and worker orchestration are exercised by the Playwright suites |
+| `pnpm test:coverage` | Node-focused CLI, runtime, editor-model, and crash-recovery coverage report with advisory floors; browser-bound canvas, workspace, drag/drop, and worker orchestration are exercised by the Playwright suites |
 | `pnpm check` | Every checked-in example through the compiled CLI |
 | `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings |
 | `pnpm check:performance` | Median compile time for the representative examples against a 250 ms CI ceiling |

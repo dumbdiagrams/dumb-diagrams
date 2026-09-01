@@ -122,6 +122,14 @@ jobs:
       - name: Run packed CLI Studio journey
         run: pnpm test:e2e:packed
 
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: .artifacts/playwright/
+          if-no-files-found: ignore
+
   cli-windows:
     runs-on: windows-latest
     steps:

@@ -97,6 +97,10 @@ jobs:
         if: github.event_name == 'push' || inputs.ref == ''
         run: pnpm smoke:package
 
+      - name: Check website
+        if: github.event_name == 'push' || inputs.ref == ''
+        run: pnpm check:website
+
       - name: Record deployed ref
         run: printf '%s\n' "$DEPLOY_REF" > packages/editor/dist/DEPLOYED_REF
 

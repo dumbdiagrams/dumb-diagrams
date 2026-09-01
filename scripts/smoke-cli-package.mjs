@@ -1,10 +1,11 @@
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
+
+const root = repoRoot();
 const artifactsDir = join(root, ".artifacts/packages");
 const cliPackageRoot = join(root, "packages/cli");
 const cliManifest = JSON.parse(readFileSync(join(cliPackageRoot, "package.json"), "utf8"));
@@ -13,15 +14,7 @@ const tarballName = `create-dumb-diagrams-${version}.tgz`;
 const tarballPath = join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
-const curatedExampleIds = [
-  "simple-serverless-web-application",
-  "image-thumbnail-pipeline",
-  "aws-data-transfer-hub",
-  "bedrock-claims-processing",
-  "aws-high-availability-web-app",
-  "asynchronous-report-generation",
-  "event-driven-order-fulfillment",
-];
+const curatedExampleIds = awsCuratedIds();
 const curatedExampleFiles = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
 
 mkdirSync(artifactsDir, { recursive: true });

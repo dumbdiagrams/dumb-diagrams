@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-const ROOT = join(import.meta.dirname, "..");
+import { ASYNC_DOCS, ROOT, SIMPLE_SERVERLESS, entityBox } from "./support/helpers";
 
 const PROVIDER_SAMPLES = [
   { provider: "aws", type: "aws.elastic-container-registry", search: "Elastic Container Registry" },
@@ -20,7 +20,7 @@ const PROVIDER_GROUP_SAMPLES = [
 async function openResources(page: Page, parentGroupId?: string) {
   await page.goto("/");
   if (parentGroupId) {
-    await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
+    await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
     const parentGroup = page.locator(
       `[data-entity-kind="group"][data-entity-id="${parentGroupId}"]`,
     );
@@ -266,7 +266,7 @@ test("ungroups a selected group without deleting its contents", async ({ page })
 });
 
 test("ungroups a curated aws cloud example while preserving children, geometry, and selection", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -330,7 +330,7 @@ test("ungroups a curated aws cloud example while preserving children, geometry, 
 });
 
 test("moving a detached aws cloud after ungroup does not move promoted children", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -357,7 +357,7 @@ test("moving a detached aws cloud after ungroup does not move promoted children"
 });
 
 test("delete removes an empty detached aws cloud after ungroup", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -378,7 +378,7 @@ test("delete removes an empty detached aws cloud after ungroup", async ({ page }
 });
 
 test("auto-fix leaves an already clean diagram unchanged", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -392,7 +392,7 @@ test("auto-fix leaves an already clean diagram unchanged", async ({ page }) => {
 });
 
 test("auto-fix after grouping mixed roots preserves left-to-right architecture flow", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -430,7 +430,7 @@ test("auto-fix after grouping mixed roots preserves left-to-right architecture f
 });
 
 test("auto-fix after ungroup keeps the detached aws cloud fixed and preserves architecture order", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -480,18 +480,6 @@ test("ungroups image thumbnail pipeline aws cloud while preserving nested conten
   await expect(page.locator('[data-entity-kind="group"][data-entity-id="processing"]')).toHaveAttribute("aria-selected", "true");
   await expect(page.locator('[data-entity-kind="group"][data-entity-id="processed_assets"]')).toHaveAttribute("aria-selected", "true");
 });
-
-async function entityBox(
-  page: Page,
-  kind: "resource" | "group",
-  id: string,
-) {
-  const entity = page.locator(`[data-entity-kind="${kind}"][data-entity-id="${id}"]`).first();
-  await expect(entity).toHaveCount(1);
-  const box = await entity.boundingBox();
-  expect(box, `${kind}:${id} should have a rendered box`).not.toBeNull();
-  return box!;
-}
 
 test("Delete group and contents explicitly removes the complete subtree", async ({ page }) => {
   await page.goto("/");
@@ -557,7 +545,7 @@ test("creates and customizes an iconless boundary and hides icons on semantic bo
   const boundaryInspector = page.getByRole("dialog", { name: "Boundary", exact: true });
   await boundaryInspector.locator(".boundary-color-options").getByRole("radio", { name: "Purple" }).click();
   await boundaryInspector.getByRole("radio", { name: "None" }).click();
-  const renderedBoundary = page.locator(`#group-${boundaryId} rect`).first();
+  const renderedBoundary = page.locator(`#group-${boundaryId} rect.group-border`);
   await expect(renderedBoundary).toHaveAttribute("stroke", "#7C3AED");
   await expect(renderedBoundary).toHaveAttribute("fill", "transparent");
 
@@ -593,7 +581,7 @@ test("changes and restores authored colors for every provider group", async ({ p
     const purple = inspector.locator(".boundary-color-options").getByRole("radio", { name: "Purple" });
     await purple.click();
     await expect(purple).toHaveAttribute("aria-checked", "true");
-    const renderedBoundary = page.locator(`#group-${sample.id} rect`).first();
+    const renderedBoundary = page.locator(`#group-${sample.id} rect.group-border`);
     await expect(renderedBoundary).toHaveAttribute("stroke", "#7C3AED");
     const selectionOutline = page.locator(
       `[data-drag-overlay-kind="group"][data-drag-overlay-id="${sample.id}"] .selection-group`,
@@ -605,7 +593,7 @@ test("changes and restores authored colors for every provider group", async ({ p
 
     await inspector.locator(".boundary-color-options").getByRole("radio", { name: "Default" }).click();
     await expect(purple).toHaveAttribute("aria-checked", "false");
-    await expect(page.locator(`#group-${sample.id} rect`).first()).not.toHaveAttribute("stroke", "#7C3AED");
+    await expect(page.locator(`#group-${sample.id} rect.group-border`)).not.toHaveAttribute("stroke", "#7C3AED");
   }
 });
 

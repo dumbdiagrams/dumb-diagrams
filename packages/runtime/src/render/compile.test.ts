@@ -169,17 +169,6 @@ describe("async-docs fixture", () => {
     });
   });
 
-  it("compiles the Azure reference flow without routing or decoration violations", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/diagrams/azure-private-app-service.dgm", import.meta.url),
-      "utf8",
-    ));
-    const result = compileDiagram(doc);
-
-    expect(result.ok).toBe(true);
-    expect(result.invariantFailures).toEqual([]);
-  });
-
   it("keeps curated Bedrock automatic routes inside the rendered canvas", () => {
     const doc = parseDgm(readFileSync(
       new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),

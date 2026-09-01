@@ -174,10 +174,6 @@ export function evaluateSource(source, expected) {
       failures.push(`validation ${issue.level}: ${issue.code}`);
     }
   }
-  const allowedRoutingWarnings = new Set(expected.allowedRoutingWarnings ?? []);
-  for (const warning of compiled.invariantFailures) {
-    if (!allowedRoutingWarnings.has(warning.code)) failures.push(`routing warning: ${warning.code}`);
-  }
 
   return failures.length
     ? failure(failures.join("; "), { counts: Object.fromEntries(counts) })

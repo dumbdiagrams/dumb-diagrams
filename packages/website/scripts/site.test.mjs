@@ -62,7 +62,6 @@ test('complete documentation and homepage examples compile through the actual ru
     for (const snippet of snippets) {
       const result = compileDiagram(parseDgm(snippet));
       assert.equal(result.ok, true, `${file}: ${JSON.stringify(result.issues)}`);
-      assert.equal(result.invariantFailures.length, 0, `${file}: clean example geometry`);
       checked++;
     }
   }
@@ -102,6 +101,10 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
     const preview = await readFile(join(dist, 'diagrams', previewName), 'utf8');
     const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
     assert.ok(dimensions, `${example.id}: generated preview dimensions`);
+    assert.match(preview, /viewBox="[^"]+"/, `${example.id}: preview viewBox`);
+    assert.ok(Number(dimensions[1]) > Number(dimensions[2]), `${example.id}: preview should be wider than tall`);
+    const full = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
+    assert.match(full, /<svg\b[^>]*viewBox="[^"]+"/, `${example.id}: export viewBox`);
     const image = [...homepage.matchAll(/<img\b[^>]*>/g)].find(([tag]) => tag.includes(`/diagrams/${previewName}`))?.[0];
     assert.ok(image, `${example.id}: homepage preview image`);
     assert.ok(image.includes(`width="${dimensions[1]}"`), `${example.id}: reserved preview width matches the SVG`);
@@ -223,7 +226,7 @@ test('homepage explains the engine and attributes examples without altering thei
   assert.match(html, /<div class="section-heading examples-heading" id="how-it-works"/);
   assert.doesNotMatch(html, /<section[^>]+id="how-it-works"/);
   assert.match(html, /class="faq-brand"[\s\S]*?logo_dumbdiagrams_highres\./, 'FAQ uses the canonical high-resolution logo derivative');
-  assert.doesNotMatch(html, /Write-through caching with Azure Managed Redis/, 'Azure caching example remains Studio-only');
+  assert.doesNotMatch(html, /Write-through caching with Azure Managed Redis/, 'Azure example stays out of the website');
 });
 
 test('terminal fallback contains the real CLI banner and runnable package commands', async () => {

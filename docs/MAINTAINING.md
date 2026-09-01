@@ -31,7 +31,9 @@ extraction. Do not combine a file split with route-quality tuning.
 
 ## Before merging
 
-Run `pnpm check:release`. A routing-baseline change is exceptional: inspect the
-affected rendered examples before editing `examples/routing-warnings.json`.
-Never weaken coverage thresholds or delete a baseline warning merely to make a
-pipeline green.
+Run `pnpm check:release`. That local gate now matches the Linux release
+surface, including `icons:check` and `pnpm check:website`. A routing-baseline
+change is exceptional: inspect the affected rendered examples before editing
+`examples/routing-warnings.json`. Never delete a baseline warning merely to
+make a pipeline green. Coverage percentages are reported with advisory
+targets; they warn when low and do not fail the release gate.

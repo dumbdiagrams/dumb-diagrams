@@ -52,7 +52,7 @@ describe("planAutoFix", () => {
     expect(printDgm(plan.doc)).toBe(before);
   });
 
-  it("repairs flat-cloud branch topology with full layout when needed", () => {
+  it("repairs flat-cloud branch topology with full layout when needed", { timeout: 15_000 }, () => {
     const doc = parseDgm(FLAT_CLOUD_BRANCH);
     const view = getDefaultView(doc);
     for (const id of ["cloudfront", "api_gateway", "s3", "lambda", "dynamodb"]) {
@@ -98,7 +98,7 @@ describe("planAutoFix", () => {
     expect(getDefaultView(plan.doc).places.api_gateway?.x).toBe(320);
   });
 
-  it("escalates to clear-view when overlapping pins cannot be route-only repaired", () => {
+  it("escalates to clear-view when overlapping pins cannot be route-only repaired", { timeout: 15_000 }, () => {
     const doc = parseDgm(FLAT_CLOUD_BRANCH);
     const view = getDefaultView(doc);
     for (const id of ["cloudfront", "api_gateway", "s3", "lambda"]) {

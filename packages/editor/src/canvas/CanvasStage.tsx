@@ -351,6 +351,7 @@ export function CanvasStage({
         interactivePointerRef.current = Boolean(
           (event.target as Element).closest("[data-interactive]"),
         );
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       }}
       onPointerDown={(e) => {
         const shouldPan = e.button === 1 || (e.button === 0 && spaceRef.current);

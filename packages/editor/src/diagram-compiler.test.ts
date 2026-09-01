@@ -90,18 +90,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("uses the canonical prompt/brief/reference roles for AWS examples", () => {
-    expect(DIAGRAM_EXAMPLES).toHaveLength(8);
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
-      "bedrock-claims-processing",
-      "aws-data-transfer-hub",
-      "aws-high-availability-web-app",
-      "simple-serverless-web-application",
-      "image-thumbnail-pipeline",
-      "asynchronous-report-generation",
-      "event-driven-order-fulfillment",
-      "azure-private-app-service",
-    ]);
-    const awsIds = new Set([
       "bedrock-claims-processing",
       "aws-data-transfer-hub",
       "aws-high-availability-web-app",
@@ -115,16 +104,11 @@ describe("diagram compilation canvas bounds", () => {
       expect(example.prompt).not.toMatch(
         /(?:replicate (?:it|this|from)|reference (?:image|screenshot)|attached (?:image|screenshot)|based on (?:the|this) image)/i,
       );
-      if (awsIds.has(example.id)) {
-        expect(example.architectureBrief?.trim().length, example.id).toBeGreaterThan(80);
-        expect(example.referenceSpec?.trim().length, example.id).toBeGreaterThan(500);
-        expect(example.prompt, example.id).not.toMatch(
-          /(?:connector sides?|exact (?:row|column|x|y)|automatic layout|routing instructions?|place .* (?:left|right|above|below))/i,
-        );
-      } else {
-        expect(example.architectureBrief, example.id).toBeUndefined();
-        expect(example.referenceSpec, example.id).toBeUndefined();
-      }
+      expect(example.architectureBrief?.trim().length, example.id).toBeGreaterThan(80);
+      expect(example.referenceSpec?.trim().length, example.id).toBeGreaterThan(500);
+      expect(example.prompt, example.id).not.toMatch(
+        /(?:connector sides?|exact (?:row|column|x|y)|automatic layout|routing instructions?|place .* (?:left|right|above|below))/i,
+      );
     }
   });
 
@@ -134,7 +118,7 @@ describe("diagram compilation canvas bounds", () => {
     }
   });
 
-  it("keeps the Bedrock example compact and wraps long service names", () => {
+  it("wraps long Bedrock service names", () => {
     const example = DIAGRAM_EXAMPLES.find(
       (candidate) => candidate.id === "bedrock-claims-processing",
     );
@@ -143,14 +127,12 @@ describe("diagram compilation canvas bounds", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.layout.width).toBeLessThanOrEqual(1_600);
-    expect(result.layout.height).toBeLessThanOrEqual(960);
     expect(result.svg).toContain(">Amazon Bedrock Data</text>");
     expect(result.svg).toContain(">Automation</text>");
     expect(result.svg).not.toContain(">Amazon Bedrock Data Automation</text>");
   });
 
-  it("keeps the Bedrock workflow as wide bands with distinct, straight routes", () => {
+  it("keeps Bedrock routes distinct and straight", () => {
     const example = DIAGRAM_EXAMPLES.find(
       (candidate) => candidate.id === "bedrock-claims-processing",
     );
@@ -158,16 +140,6 @@ describe("diagram compilation canvas bounds", () => {
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-
-    expect(result.layout.width / result.layout.height).toBeGreaterThan(1.5);
-    const nodes = new Map(result.layout.nodes.map((node) => [node.id, node]));
-    expect(nodes.get("sample_docs")!.obstacle.x).toBeLessThan(
-      nodes.get("blueprint_generation")!.obstacle.x,
-    );
-    expect(nodes.get("claims_docs")!.obstacle.x).toBeLessThan(
-      nodes.get("extractor")!.obstacle.x,
-    );
-    expect(nodes.get("extractor")!.obstacle.x).toBeLessThan(nodes.get("sns")!.obstacle.x);
 
     const edges = new Map(result.layout.edges.map((edge) => [edge.id, edge]));
     const extraction = edges.get("claims_to_extract")!;

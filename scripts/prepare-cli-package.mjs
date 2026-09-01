@@ -9,10 +9,11 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
+
+const root = repoRoot();
 const cliPackageRoot = join(root, "packages/cli");
 const cliDist = join(cliPackageRoot, "dist");
 const editorDist = join(root, "packages/editor/dist");
@@ -22,24 +23,11 @@ const packagedExamples = join(cliDist, "templates/examples");
 const projectTemplatesSource = join(cliPackageRoot, "templates");
 const projectTemplatesTarget = join(cliDist, "templates");
 const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
-const exampleSource = join(root, "examples/diagrams");
 const entry = join(cliDist, "index.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
-const curatedExampleIds = [
-  "aws-high-availability-web-app",
-  "aws-data-transfer-hub",
-  "bedrock-claims-processing",
-  "simple-serverless-web-application",
-  "image-thumbnail-pipeline",
-  "asynchronous-report-generation",
-  "event-driven-order-fulfillment",
-];
+const curatedExampleIds = awsCuratedIds();
 const curatedExampleFileNames = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
-const exampleFiles = [
-  "azure-private-app-service.dgm",
-  "prompts/azure-private-app-service.md",
-  ...curatedExampleIds.flatMap((id) => curatedExampleFileNames.map((fileName) => `${id}/${fileName}`)),
-];
+const exampleFiles = curatedExampleIds.flatMap((id) => curatedExampleFileNames.map((fileName) => `${id}/${fileName}`));
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
 if (!existsSync(join(editorDist, "index.html"))) {
@@ -77,11 +65,7 @@ cpSync(exampleTemplateSource, packagedExamples, { recursive: true });
 for (const fileName of exampleFiles) {
   const target = join(packagedExamples, fileName);
   mkdirSync(dirname(target), { recursive: true });
-  const source = fileName.startsWith("prompts/")
-    ? join(root, "examples", fileName)
-    : curatedExampleIds.some((id) => fileName.startsWith(`${id}/`))
-      ? join(root, "examples", "curated", fileName)
-      : join(exampleSource, fileName);
+  const source = join(root, "examples", "curated", fileName);
   cpSync(source, target);
 }
 

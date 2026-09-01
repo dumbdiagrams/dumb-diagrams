@@ -25,10 +25,6 @@ Available migrated AWS examples:
 - `asynchronous-report-generation/`
 - `event-driven-order-fulfillment/`
 
-Azure is intentionally not migrated in this tranche. Its existing pair remains
-under `legacy/prompts/azure-private-app-service.md` and
-`legacy/azure-private-app-service.dgm`.
-
 The detailed reference specifications are regression and advanced-documentation
 material, not a prompt language users must learn. Start from `user-prompt.md`,
 use `architecture-brief.md` to understand the intended normalization, and read

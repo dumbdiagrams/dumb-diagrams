@@ -32,8 +32,7 @@
         { "sourceType": "aws.api-gateway", "targetType": "aws.aws-lambda" },
         { "sourceType": "aws.aws-lambda", "targetType": "aws.dynamodb" }
       ],
-      "relationshipMode": "exact",
-      "allowedRoutingWarnings": []
+      "relationshipMode": "exact"
     },
     "image-thumbnail-pipeline": {
       "exactCounts": {
@@ -61,8 +60,7 @@
         { "sourceType": "aws.aws-lambda", "targetType": "aws.simple-storage-service" },
         { "sourceType": "aws.aws-lambda", "targetType": "aws.dynamodb" }
       ],
-      "relationshipMode": "exact",
-      "allowedRoutingWarnings": []
+      "relationshipMode": "exact"
     },
     "aws-data-transfer-hub": {
       "exactCounts": {
@@ -116,8 +114,7 @@
         { "sourceType": "aws.elastic-container-registry", "targetType": "aws.aws-fargate" },
         { "sourceType": "aws.aws-appsync", "targetType": "aws.dynamodb" }
       ],
-      "relationshipMode": "exact",
-      "allowedRoutingWarnings": []
+      "relationshipMode": "exact"
     },
     "bedrock-claims-processing": {
       "exactCounts": {
@@ -161,8 +158,7 @@
         { "sourceType": "aws.simple-notification-service", "targetType": "aws.simple-notification-service-email-notification" },
         { "sourceType": "aws.simple-notification-service-email-notification", "targetType": "cloud-agnostic.client" }
       ],
-      "relationshipMode": "exact",
-      "allowedRoutingWarnings": []
+      "relationshipMode": "exact"
     },
     "aws-high-availability-web-app": {
       "exactCounts": {
@@ -217,8 +213,7 @@
         { "sourceType": "aws.dynamodb", "targetType": "aws.cloudwatch", "count": 2 }
       ],
       "relationshipMode": "exact",
-      "allowedValidationWarnings": ["regional-in-vpc"],
-      "allowedRoutingWarnings": ["edge-crossing"]
+      "allowedValidationWarnings": ["regional-in-vpc"]
     },
     "event-driven-order-fulfillment": {
       "exactCounts": {
@@ -256,8 +251,7 @@
         { "sourceType": "aws.eventbridge", "targetType": "aws.aws-fargate" },
         { "sourceType": "aws.eventbridge", "targetType": "aws.simple-notification-service" }
       ],
-      "relationshipMode": "exact",
-      "allowedRoutingWarnings": ["edge-label-group-collision"]
+      "relationshipMode": "exact"
     },
     "asynchronous-report-generation": {
       "exactCounts": {
@@ -300,8 +294,7 @@
         { "sourceType": "aws.simple-notification-service", "targetType": "aws.simple-notification-service-email-notification" },
         { "sourceType": "aws.simple-queue-service", "targetType": "aws.simple-queue-service" }
       ],
-      "relationshipMode": "exact",
-      "allowedRoutingWarnings": []
+      "relationshipMode": "exact"
     }
   }
 }

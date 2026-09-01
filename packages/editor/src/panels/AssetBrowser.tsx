@@ -376,9 +376,11 @@ export function AssetBrowser({
           onActivate={activate}
           onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
           onNearEnd={() => {
-            if (hasMore) {
-              setVisibleCount((current) => Math.min(current + ASSET_PAGE_SIZE, filteredEntries.length));
-            }
+            setVisibleCount((current) =>
+              current === visibleCount
+                ? Math.min(current + ASSET_PAGE_SIZE, filteredEntries.length)
+                : current,
+            );
           }}
         />
         {filteredEntries.length > ASSET_PAGE_SIZE && (

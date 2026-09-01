@@ -11,10 +11,11 @@ pnpm install --frozen-lockfile
 pnpm check:release
 ```
 
-`check:release` runs version sync, dependency-boundary checks, build,
-unit/integration tests with coverage thresholds, editor typecheck, example
-validation plus the reviewed routing-warning baseline, static and packed-Studio
-Playwright journeys, and the publishable package smoke test.
+`check:release` runs catalog inventory, version sync, dependency-boundary
+checks, build, unit/integration tests with a coverage report, editor
+typecheck, example validation plus the reviewed routing-warning baseline,
+static and packed-Studio Playwright journeys, the publishable package smoke
+test, and website check/build/tests.
 
 Build the standalone npm artifact from the compiled workspace:
 
@@ -139,8 +140,8 @@ dynamic boundary instead of increasing the warning limit.
 - `assets/catalog/` — vendored provider SVGs, source locks, and collision policy.
   See [`assets/catalog/README.md`](../assets/catalog/README.md).
 - `examples/curated/` — canonical four-file bundles for curated AWS examples.
-- `examples/diagrams/` and `examples/prompts/` — development fixtures and the
-  not-yet-migrated Azure example, all validated by CI.
+- `examples/diagrams/` and `examples/prompts/` — development fixtures, all
+  validated by CI. Studio ships the seven canonical AWS examples only.
 - `packages/runtime`, `packages/editor`, and `packages/cli` — the only workspace
   packages.
 - `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed
