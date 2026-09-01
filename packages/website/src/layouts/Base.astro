@@ -1,6 +1,6 @@
 ---
 import '@dumb-diagrams/brand/styles.css';
-import { brandFont } from '@dumb-diagrams/brand/fonts';
+import { brandFont, codeFont } from '@dumb-diagrams/brand/fonts';
 import '../styles/global.css';
 import '../styles/motion.css';
 import Header from '../components/Header.astro';
@@ -23,6 +23,7 @@ const canonical = Astro.site && !noindex ? new URL(Astro.url.pathname, Astro.sit
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f7f6f2" />
     <link rel="preload" href={brandFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={codeFont} as="font" type="font/woff2" crossorigin />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}

@@ -11,8 +11,8 @@
   .journey-stage-line { height: 1px; min-width: 10px; flex: 1; background: var(--journey-line); }
   .journey-window { position: relative; min-height: var(--journey-window-height); }
   .journey-stage-panel { min-height: var(--journey-window-height); }
-  .journey-stage-panel[aria-hidden="true"] { display: block; }
-  .hero-journey.is-enhanced .journey-stage-panel[aria-hidden="true"] { display: none; }
+  .journey-stage-panel[aria-hidden="true"] { display: none; }
+  noscript .journey-stage-panel[aria-hidden="true"] { display: block; }
   .hero-journey.is-enhanced .journey-stage-panel[data-entering] { animation: journey-panel-in .55s cubic-bezier(.22, 1, .36, 1) both; }
   @keyframes journey-panel-in { from { opacity: .2; transform: translateY(10px) scale(.992); } to { opacity: 1; transform: none; } }
   .journey-action-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding-top: 12px; }
