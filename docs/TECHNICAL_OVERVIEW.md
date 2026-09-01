@@ -721,8 +721,9 @@ resolution.
 | `pnpm test` | Runtime, editor logic, CLI, and local Studio HTTP integration |
 | `pnpm test:coverage` | Node-focused CLI, runtime, editor-model, and crash-recovery coverage report with advisory floors; browser-bound canvas, workspace, drag/drop, and worker orchestration are exercised by the Playwright suites |
 | `pnpm check` | Every checked-in example through the compiled CLI |
-| `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings |
-| `pnpm check:performance` | Median compile time for the representative examples against a 250 ms CI ceiling |
+| `pnpm test:integration` | Curated AWS layout contracts: aspect, LTR chains, and 8px compiled node/route/canvas geometry |
+| `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings; every warning needs a reviews[] note |
+| `pnpm check:performance` | Median compile time for the representative examples against a 250 ms advisory ceiling |
 | `pnpm check:assets` | Branding image dimensions and byte budgets |
 | `pnpm test:e2e` | Chromium and WebKit Studio interactions and every format supported by each engine (WebP is hidden where encoding is unavailable) |
 | `pnpm test:e2e:packed` | Real tarball → CLI server → bundled generic Studio |

@@ -5,13 +5,19 @@ import type { InvariantFailure } from "./invariants.js";
 import {
   assessQuality,
   compareQuality,
-  isQualityImproved,
+  invariantTier,
   qualityFindings,
   qualityHardRegressionReason,
   qualityRegressionReason,
 } from "./quality.js";
 
 describe("diagram quality assessment", () => {
+  it("treats unknown invariant codes as hard", () => {
+    expect(invariantTier("brand-new-collision")).toBe("hard");
+    expect(invariantTier("edge-crossing")).toBe("soft");
+    expect(invariantTier("edge-icon-collision")).toBe("hard");
+  });
+
   it("classifies hard collisions ahead of soft crossings", () => {
     const hard: InvariantFailure = {
       code: "edge-icon-collision",

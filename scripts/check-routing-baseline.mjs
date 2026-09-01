@@ -38,7 +38,16 @@ if (hardFailures.length || baselinedHard.length) {
   process.exitCode = 1;
 } else {
   const normalizedExpected = [...expected.warnings].sort(compareWarnings);
-  if (JSON.stringify(actual) !== JSON.stringify(normalizedExpected)) {
+  const missingReviews = normalizedExpected.filter((warning) =>
+    !expected.reviews?.some((review) => warningKey(review) === warningKey(warning)),
+  );
+  if (missingReviews.length) {
+    console.error("Every baselined routing warning needs a reviews[] note.");
+    for (const warning of missingReviews) {
+      console.error(`  ${warning.file}: ${warning.code}: ${warning.message}`);
+    }
+    process.exitCode = 1;
+  } else if (JSON.stringify(actual) !== JSON.stringify(normalizedExpected)) {
     const expectedKeys = new Set(normalizedExpected.map(warningKey));
     const actualKeys = new Set(actual.map(warningKey));
     const added = actual.filter((warning) => !expectedKeys.has(warningKey(warning)));

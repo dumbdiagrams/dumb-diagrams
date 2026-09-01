@@ -29,8 +29,33 @@
   ],
   "reviews": [
     {
+      "file": "aws-data-transfer-hub.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cloudformation-fargate and templates-cloudformation cross",
+      "decision": "Baselined after visual review. The CloudFormation template fan-in crosses the Fargate deploy edge inside a dense automation cluster; rerouting would backtrack past the preserved reference composition."
+    },
+    {
+      "file": "aws-data-transfer-hub.dgm",
+      "code": "edge-crossing",
+      "message": "Edges ui-appsync and ui-oidc cross",
+      "decision": "Baselined after visual review. The hosted UI's AppSync and OIDC edges leave the same card toward adjacent identity and API targets; uncrossing them would break the compact cross-account stack."
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pull_image_a and monitor_data_a cross",
+      "decision": "Baselined after visual review. AZ A image-pull and CloudWatch monitoring edges share a vertical corridor beside mirrored Fargate services; the crossing is the cheaper of the two-AZ symmetric layout."
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pull_image_b and monitor_data_a cross",
+      "decision": "Baselined after visual review. AZ B image-pull crosses AZ A monitoring because both AZs report to one CloudWatch card; splitting monitors would violate the reference specification."
+    },
+    {
       "file": "event-driven-order-fulfillment.dgm",
-      "warning": "edge-label-group-collision: authorize_payment / event_backbone",
+      "code": "edge-label-group-collision",
+      "message": "Label of edge authorize_payment overlaps boundary label event_backbone",
       "decision": "Baselined after visual review. The rendered texts are horizontally and vertically separated; the invariant uses a conservatively clamped full-width group header rectangle. Shortening the edge label would violate the preserved reference specification, so the golden source remains unchanged."
     }
   ]

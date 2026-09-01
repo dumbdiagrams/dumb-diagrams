@@ -1,17 +1,155 @@
 {
   "version": 1,
-  "description": "Reviewed semantic layout contracts for the seven curated AWS Studio examples. These assert flow direction, canvas shape, and key left-to-right chains without pixel snapshots or routing allowlists.",
+  "description": "Reviewed layout contracts for the seven curated AWS Studio examples. Aspect and left-to-right chains document intent. geometry is an 8px-quantized compiled snapshot of nodes, groups, routes, and canvas size; update it with pnpm update:layout-contracts after a visual review.",
   "examples": {
     "simple-serverless-web-application": {
       "diagram": "examples/curated/simple-serverless-web-application/diagram.dgm",
       "flow": "lr",
       "minAspectRatio": 1.2,
-      "maxAspectRatio": 2.0,
+      "maxAspectRatio": 2,
       "maxWidth": 1200,
       "maxHeight": 800,
       "leftToRight": [
-        ["web_client", "cdn", "gateway", "handler", "app_data"]
-      ]
+        [
+          "web_client",
+          "cdn",
+          "gateway",
+          "handler",
+          "app_data"
+        ]
+      ],
+      "geometry": {
+        "width": 864,
+        "height": 600,
+        "nodes": {
+          "app_data": {
+            "x": 704,
+            "y": 112,
+            "w": 112,
+            "h": 104
+          },
+          "cdn": {
+            "x": 168,
+            "y": 144,
+            "w": 88,
+            "h": 104
+          },
+          "gateway": {
+            "x": 464,
+            "y": 120,
+            "w": 88,
+            "h": 88
+          },
+          "handler": {
+            "x": 576,
+            "y": 112,
+            "w": 104,
+            "h": 104
+          },
+          "static_assets": {
+            "x": 304,
+            "y": 144,
+            "w": 120,
+            "h": 104
+          },
+          "web_client": {
+            "x": 32,
+            "y": 104,
+            "w": 80,
+            "h": 104
+          }
+        },
+        "groups": {
+          "aws_cloud": {
+            "x": 144,
+            "y": 32,
+            "w": 688,
+            "h": 256
+          },
+          "frontend": {
+            "x": 160,
+            "y": 64,
+            "w": 280,
+            "h": 200
+          }
+        },
+        "routes": {
+          "api_to_handler": [
+            {
+              "x": 528,
+              "y": 144
+            },
+            {
+              "x": 600,
+              "y": 144
+            }
+          ],
+          "cdn_to_api": [
+            {
+              "x": 240,
+              "y": 176
+            },
+            {
+              "x": 272,
+              "y": 176
+            },
+            {
+              "x": 272,
+              "y": 256
+            },
+            {
+              "x": 448,
+              "y": 256
+            },
+            {
+              "x": 448,
+              "y": 144
+            },
+            {
+              "x": 480,
+              "y": 144
+            }
+          ],
+          "cdn_to_assets": [
+            {
+              "x": 240,
+              "y": 168
+            },
+            {
+              "x": 336,
+              "y": 168
+            }
+          ],
+          "client_to_cdn": [
+            {
+              "x": 96,
+              "y": 128
+            },
+            {
+              "x": 152,
+              "y": 128
+            },
+            {
+              "x": 152,
+              "y": 168
+            },
+            {
+              "x": 192,
+              "y": 168
+            }
+          ],
+          "handler_to_data": [
+            {
+              "x": 648,
+              "y": 136
+            },
+            {
+              "x": 736,
+              "y": 136
+            }
+          ]
+        }
+      }
     },
     "image-thumbnail-pipeline": {
       "diagram": "examples/curated/image-thumbnail-pipeline/diagram.dgm",
@@ -21,8 +159,188 @@
       "maxWidth": 1400,
       "maxHeight": 800,
       "leftToRight": [
-        ["image_uploader", "cdn", "original_images", "thumbnail_processor", "image_metadata"]
-      ]
+        [
+          "image_uploader",
+          "cdn",
+          "original_images",
+          "thumbnail_processor",
+          "image_metadata"
+        ]
+      ],
+      "geometry": {
+        "width": 1056,
+        "height": 600,
+        "nodes": {
+          "cdn": {
+            "x": 192,
+            "y": 184,
+            "w": 88,
+            "h": 104
+          },
+          "image_metadata": {
+            "x": 880,
+            "y": 224,
+            "w": 104,
+            "h": 104
+          },
+          "image_uploader": {
+            "x": 32,
+            "y": 144,
+            "w": 104,
+            "h": 104
+          },
+          "original_images": {
+            "x": 480,
+            "y": 160,
+            "w": 104,
+            "h": 104
+          },
+          "thumbnail_images": {
+            "x": 872,
+            "y": 96,
+            "w": 112,
+            "h": 104
+          },
+          "thumbnail_processor": {
+            "x": 696,
+            "y": 160,
+            "w": 128,
+            "h": 104
+          },
+          "upload_ui": {
+            "x": 352,
+            "y": 184,
+            "w": 72,
+            "h": 104
+          }
+        },
+        "groups": {
+          "aws_cloud": {
+            "x": 168,
+            "y": 32,
+            "w": 856,
+            "h": 336
+          },
+          "processed_assets": {
+            "x": 864,
+            "y": 64,
+            "w": 144,
+            "h": 280
+          },
+          "processing": {
+            "x": 688,
+            "y": 128,
+            "w": 152,
+            "h": 152
+          },
+          "upload_experience": {
+            "x": 184,
+            "y": 104,
+            "w": 256,
+            "h": 200
+          },
+          "upload_storage": {
+            "x": 464,
+            "y": 128,
+            "w": 144,
+            "h": 152
+          }
+        },
+        "routes": {
+          "cdn_to_upload_ui": [
+            {
+              "x": 264,
+              "y": 208
+            },
+            {
+              "x": 360,
+              "y": 208
+            }
+          ],
+          "originals_to_processor": [
+            {
+              "x": 560,
+              "y": 184
+            },
+            {
+              "x": 736,
+              "y": 184
+            }
+          ],
+          "processor_to_metadata": [
+            {
+              "x": 784,
+              "y": 192
+            },
+            {
+              "x": 864,
+              "y": 192
+            },
+            {
+              "x": 864,
+              "y": 248
+            },
+            {
+              "x": 904,
+              "y": 248
+            }
+          ],
+          "processor_to_thumbnails": [
+            {
+              "x": 784,
+              "y": 184
+            },
+            {
+              "x": 856,
+              "y": 184
+            },
+            {
+              "x": 856,
+              "y": 120
+            },
+            {
+              "x": 904,
+              "y": 120
+            }
+          ],
+          "uploader_to_cdn": [
+            {
+              "x": 104,
+              "y": 168
+            },
+            {
+              "x": 176,
+              "y": 168
+            },
+            {
+              "x": 176,
+              "y": 208
+            },
+            {
+              "x": 216,
+              "y": 208
+            }
+          ],
+          "uploader_to_originals": [
+            {
+              "x": 104,
+              "y": 160
+            },
+            {
+              "x": 456,
+              "y": 160
+            },
+            {
+              "x": 456,
+              "y": 184
+            },
+            {
+              "x": 512,
+              "y": 184
+            }
+          ]
+        }
+      }
     },
     "bedrock-claims-processing": {
       "diagram": "examples/curated/bedrock-claims-processing/diagram.dgm",
@@ -32,10 +350,284 @@
       "maxWidth": 1800,
       "maxHeight": 1000,
       "leftToRight": [
-        ["claims_analyst", "sample_docs", "blueprint_generation"],
-        ["claims_docs", "extractor", "fraud_model", "claims_state", "nova", "sns"],
-        ["email", "web_client"]
-      ]
+        [
+          "claims_analyst",
+          "sample_docs",
+          "blueprint_generation"
+        ],
+        [
+          "claims_docs",
+          "extractor",
+          "fraud_model",
+          "claims_state",
+          "nova",
+          "sns"
+        ],
+        [
+          "email",
+          "web_client"
+        ]
+      ],
+      "geometry": {
+        "width": 1384,
+        "height": 800,
+        "nodes": {
+          "blueprint_generation": {
+            "x": 720,
+            "y": 176,
+            "w": 144,
+            "h": 120
+          },
+          "claims_analyst": {
+            "x": 32,
+            "y": 360,
+            "w": 112,
+            "h": 88
+          },
+          "claims_docs": {
+            "x": 224,
+            "y": 456,
+            "w": 152,
+            "h": 104
+          },
+          "claims_state": {
+            "x": 752,
+            "y": 456,
+            "w": 152,
+            "h": 104
+          },
+          "email": {
+            "x": 1064,
+            "y": 632,
+            "w": 136,
+            "h": 88
+          },
+          "extractor": {
+            "x": 416,
+            "y": 448,
+            "w": 144,
+            "h": 120
+          },
+          "fraud_model": {
+            "x": 584,
+            "y": 456,
+            "w": 144,
+            "h": 104
+          },
+          "nova": {
+            "x": 928,
+            "y": 448,
+            "w": 144,
+            "h": 120
+          },
+          "sample_docs": {
+            "x": 544,
+            "y": 184,
+            "w": 152,
+            "h": 104
+          },
+          "sns": {
+            "x": 1112,
+            "y": 464,
+            "w": 80,
+            "h": 88
+          },
+          "web_client": {
+            "x": 1272,
+            "y": 360,
+            "w": 80,
+            "h": 88
+          }
+        },
+        "groups": {
+          "aws_cloud": {
+            "x": 176,
+            "y": 32,
+            "w": 1064,
+            "h": 736
+          },
+          "blueprint_creation": {
+            "x": 528,
+            "y": 96,
+            "w": 344,
+            "h": 216
+          },
+          "claims_processing": {
+            "x": 208,
+            "y": 336,
+            "w": 992,
+            "h": 280
+          },
+          "region": {
+            "x": 192,
+            "y": 64,
+            "w": 1032,
+            "h": 680
+          },
+          "workflow": {
+            "x": 400,
+            "y": 416,
+            "w": 688,
+            "h": 184
+          }
+        },
+        "routes": {
+          "analyst_to_samples": [
+            {
+              "x": 112,
+              "y": 384
+            },
+            {
+              "x": 160,
+              "y": 384
+            },
+            {
+              "x": 160,
+              "y": 208
+            },
+            {
+              "x": 592,
+              "y": 208
+            }
+          ],
+          "claims_to_extract": [
+            {
+              "x": 320,
+              "y": 488
+            },
+            {
+              "x": 464,
+              "y": 488
+            }
+          ],
+          "client_to_claims": [
+            {
+              "x": 1288,
+              "y": 384
+            },
+            {
+              "x": 384,
+              "y": 384
+            },
+            {
+              "x": 384,
+              "y": 480
+            },
+            {
+              "x": 320,
+              "y": 480
+            }
+          ],
+          "extractor_to_fraud": [
+            {
+              "x": 512,
+              "y": 472
+            },
+            {
+              "x": 632,
+              "y": 472
+            }
+          ],
+          "fraud_to_state": [
+            {
+              "x": 680,
+              "y": 464
+            },
+            {
+              "x": 808,
+              "y": 464
+            }
+          ],
+          "notify_client": [
+            {
+              "x": 1152,
+              "y": 656
+            },
+            {
+              "x": 1256,
+              "y": 656
+            },
+            {
+              "x": 1256,
+              "y": 392
+            },
+            {
+              "x": 1288,
+              "y": 392
+            }
+          ],
+          "nova_to_sns": [
+            {
+              "x": 1024,
+              "y": 472
+            },
+            {
+              "x": 1096,
+              "y": 472
+            },
+            {
+              "x": 1096,
+              "y": 520
+            },
+            {
+              "x": 1128,
+              "y": 520
+            }
+          ],
+          "sample_to_blueprints": [
+            {
+              "x": 640,
+              "y": 208
+            },
+            {
+              "x": 768,
+              "y": 208
+            }
+          ],
+          "sns_to_email": [
+            {
+              "x": 1152,
+              "y": 544
+            },
+            {
+              "x": 1152,
+              "y": 632
+            }
+          ],
+          "state_to_nova": [
+            {
+              "x": 856,
+              "y": 480
+            },
+            {
+              "x": 976,
+              "y": 480
+            }
+          ],
+          "workflow_to_state": [
+            {
+              "x": 296,
+              "y": 504
+            },
+            {
+              "x": 296,
+              "y": 600
+            },
+            {
+              "x": 736,
+              "y": 600
+            },
+            {
+              "x": 736,
+              "y": 480
+            },
+            {
+              "x": 808,
+              "y": 480
+            }
+          ]
+        }
+      }
     },
     "aws-data-transfer-hub": {
       "diagram": "examples/curated/aws-data-transfer-hub/diagram.dgm",
@@ -45,9 +637,360 @@
       "maxWidth": 2000,
       "maxHeight": 1000,
       "leftToRight": [
-        ["user", "ui", "cloudfront"],
-        ["appsync", "api_lambda", "workflow_lambda", "cloudformation"]
-      ]
+        [
+          "user",
+          "ui",
+          "cloudfront"
+        ],
+        [
+          "appsync",
+          "api_lambda",
+          "workflow_lambda",
+          "cloudformation"
+        ]
+      ],
+      "geometry": {
+        "width": 1544,
+        "height": 728,
+        "nodes": {
+          "api_lambda": {
+            "x": 616,
+            "y": 288,
+            "w": 80,
+            "h": 104
+          },
+          "appsync": {
+            "x": 296,
+            "y": 288,
+            "w": 128,
+            "h": 104
+          },
+          "cloudformation": {
+            "x": 888,
+            "y": 304,
+            "w": 120,
+            "h": 104
+          },
+          "cloudfront": {
+            "x": 336,
+            "y": 528,
+            "w": 80,
+            "h": 88
+          },
+          "cognito": {
+            "x": 272,
+            "y": 136,
+            "w": 64,
+            "h": 88
+          },
+          "dynamodb_component": {
+            "x": 1296,
+            "y": 176,
+            "w": 168,
+            "h": 120
+          },
+          "ecr": {
+            "x": 1096,
+            "y": 464,
+            "w": 152,
+            "h": 104
+          },
+          "ecr_component": {
+            "x": 1296,
+            "y": 320,
+            "w": 168,
+            "h": 120
+          },
+          "ecr_image": {
+            "x": 1288,
+            "y": 464,
+            "w": 184,
+            "h": 104
+          },
+          "fargate": {
+            "x": 816,
+            "y": 496,
+            "w": 144,
+            "h": 104
+          },
+          "oidc": {
+            "x": 360,
+            "y": 128,
+            "w": 104,
+            "h": 104
+          },
+          "s3_component": {
+            "x": 1088,
+            "y": 176,
+            "w": 168,
+            "h": 120
+          },
+          "state": {
+            "x": 592,
+            "y": 112,
+            "w": 128,
+            "h": 120
+          },
+          "templates": {
+            "x": 1080,
+            "y": 328,
+            "w": 184,
+            "h": 104
+          },
+          "ui": {
+            "x": 176,
+            "y": 520,
+            "w": 136,
+            "h": 104
+          },
+          "ui_bucket": {
+            "x": 440,
+            "y": 520,
+            "w": 120,
+            "h": 104
+          },
+          "user": {
+            "x": 32,
+            "y": 320,
+            "w": 64,
+            "h": 88
+          },
+          "workflow_lambda": {
+            "x": 760,
+            "y": 304,
+            "w": 104,
+            "h": 104
+          }
+        },
+        "groups": {
+          "auth": {
+            "x": 256,
+            "y": 96,
+            "w": 216,
+            "h": 152
+          },
+          "cloud": {
+            "x": 128,
+            "y": 32,
+            "w": 1376,
+            "h": 664
+          },
+          "customer": {
+            "x": 144,
+            "y": 64,
+            "w": 896,
+            "h": 608
+          },
+          "frontend": {
+            "x": 160,
+            "y": 440,
+            "w": 408,
+            "h": 200
+          },
+          "managed": {
+            "x": 1064,
+            "y": 144,
+            "w": 432,
+            "h": 448
+          },
+          "workflow": {
+            "x": 744,
+            "y": 272,
+            "w": 272,
+            "h": 152
+          },
+          "workloads": {
+            "x": 800,
+            "y": 464,
+            "w": 168,
+            "h": 152
+          }
+        },
+        "routes": {
+          "api_lambda-workflow_lambda": [
+            {
+              "x": 680,
+              "y": 312
+            },
+            {
+              "x": 784,
+              "y": 312
+            }
+          ],
+          "appsync-api_lambda": [
+            {
+              "x": 384,
+              "y": 312
+            },
+            {
+              "x": 632,
+              "y": 312
+            }
+          ],
+          "appsync-state": [
+            {
+              "x": 384,
+              "y": 304
+            },
+            {
+              "x": 576,
+              "y": 304
+            },
+            {
+              "x": 576,
+              "y": 136
+            },
+            {
+              "x": 632,
+              "y": 136
+            }
+          ],
+          "cloudformation-fargate": [
+            {
+              "x": 968,
+              "y": 328
+            },
+            {
+              "x": 1016,
+              "y": 328
+            },
+            {
+              "x": 1016,
+              "y": 424
+            },
+            {
+              "x": 800,
+              "y": 424
+            },
+            {
+              "x": 800,
+              "y": 520
+            },
+            {
+              "x": 864,
+              "y": 520
+            }
+          ],
+          "cloudfront-ui_bucket": [
+            {
+              "x": 400,
+              "y": 552
+            },
+            {
+              "x": 472,
+              "y": 552
+            }
+          ],
+          "ecr-fargate": [
+            {
+              "x": 1152,
+              "y": 504
+            },
+            {
+              "x": 912,
+              "y": 504
+            }
+          ],
+          "templates-cloudformation": [
+            {
+              "x": 1152,
+              "y": 344
+            },
+            {
+              "x": 968,
+              "y": 344
+            }
+          ],
+          "ui-appsync": [
+            {
+              "x": 240,
+              "y": 520
+            },
+            {
+              "x": 240,
+              "y": 312
+            },
+            {
+              "x": 336,
+              "y": 312
+            }
+          ],
+          "ui-cloudfront": [
+            {
+              "x": 264,
+              "y": 544
+            },
+            {
+              "x": 352,
+              "y": 544
+            }
+          ],
+          "ui-cognito": [
+            {
+              "x": 232,
+              "y": 520
+            },
+            {
+              "x": 232,
+              "y": 232
+            },
+            {
+              "x": 304,
+              "y": 232
+            },
+            {
+              "x": 304,
+              "y": 208
+            }
+          ],
+          "ui-oidc": [
+            {
+              "x": 256,
+              "y": 520
+            },
+            {
+              "x": 256,
+              "y": 248
+            },
+            {
+              "x": 408,
+              "y": 248
+            },
+            {
+              "x": 408,
+              "y": 224
+            }
+          ],
+          "user-ui": [
+            {
+              "x": 88,
+              "y": 344
+            },
+            {
+              "x": 160,
+              "y": 344
+            },
+            {
+              "x": 160,
+              "y": 544
+            },
+            {
+              "x": 216,
+              "y": 544
+            }
+          ],
+          "workflow_lambda-cloudformation": [
+            {
+              "x": 832,
+              "y": 328
+            },
+            {
+              "x": 920,
+              "y": 328
+            }
+          ]
+        }
+      }
     },
     "aws-high-availability-web-app": {
       "diagram": "examples/curated/aws-high-availability-web-app/diagram.dgm",
@@ -57,19 +1000,781 @@
       "maxWidth": 2200,
       "maxHeight": 900,
       "leftToRight": [
-        ["browser", "dns", "cdn", "gateway", "load_balancer", "service_one", "table_one"]
-      ]
+        [
+          "browser",
+          "dns",
+          "cdn",
+          "gateway",
+          "load_balancer",
+          "service_one",
+          "table_one"
+        ]
+      ],
+      "geometry": {
+        "width": 1720,
+        "height": 616,
+        "nodes": {
+          "browser": {
+            "x": 32,
+            "y": 256,
+            "w": 80,
+            "h": 104
+          },
+          "cdn": {
+            "x": 416,
+            "y": 296,
+            "w": 80,
+            "h": 88
+          },
+          "dns": {
+            "x": 168,
+            "y": 296,
+            "w": 72,
+            "h": 88
+          },
+          "gateway": {
+            "x": 704,
+            "y": 272,
+            "w": 88,
+            "h": 88
+          },
+          "identity": {
+            "x": 264,
+            "y": 288,
+            "w": 128,
+            "h": 104
+          },
+          "load_balancer": {
+            "x": 832,
+            "y": 264,
+            "w": 152,
+            "h": 104
+          },
+          "monitoring": {
+            "x": 1512,
+            "y": 320,
+            "w": 152,
+            "h": 120
+          },
+          "registry": {
+            "x": 1528,
+            "y": 192,
+            "w": 112,
+            "h": 104
+          },
+          "service_one": {
+            "x": 1032,
+            "y": 160,
+            "w": 80,
+            "h": 104
+          },
+          "service_two": {
+            "x": 1032,
+            "y": 392,
+            "w": 80,
+            "h": 104
+          },
+          "static_site": {
+            "x": 560,
+            "y": 288,
+            "w": 104,
+            "h": 104
+          },
+          "table_one": {
+            "x": 1304,
+            "y": 160,
+            "w": 104,
+            "h": 104
+          },
+          "table_two": {
+            "x": 1304,
+            "y": 392,
+            "w": 104,
+            "h": 104
+          },
+          "tasks_one": {
+            "x": 1136,
+            "y": 168,
+            "w": 96,
+            "h": 96
+          },
+          "tasks_two": {
+            "x": 1136,
+            "y": 400,
+            "w": 96,
+            "h": 96
+          }
+        },
+        "groups": {
+          "app_subnet_one": {
+            "x": 1016,
+            "y": 136,
+            "w": 224,
+            "h": 152
+          },
+          "app_subnet_two": {
+            "x": 1016,
+            "y": 368,
+            "w": 224,
+            "h": 152
+          },
+          "aws_cloud": {
+            "x": 144,
+            "y": 32,
+            "w": 1544,
+            "h": 552
+          },
+          "data_subnet_one": {
+            "x": 1264,
+            "y": 136,
+            "w": 184,
+            "h": 152
+          },
+          "data_subnet_two": {
+            "x": 1264,
+            "y": 368,
+            "w": 184,
+            "h": 152
+          },
+          "network": {
+            "x": 816,
+            "y": 64,
+            "w": 664,
+            "h": 496
+          },
+          "platform_services": {
+            "x": 1504,
+            "y": 160,
+            "w": 176,
+            "h": 296
+          },
+          "public_edge": {
+            "x": 160,
+            "y": 208,
+            "w": 520,
+            "h": 200
+          },
+          "zone_one": {
+            "x": 1008,
+            "y": 96,
+            "w": 456,
+            "h": 216
+          },
+          "zone_two": {
+            "x": 1008,
+            "y": 328,
+            "w": 456,
+            "h": 216
+          }
+        },
+        "routes": {
+          "api_authorizer": [
+            {
+              "x": 352,
+              "y": 320
+            },
+            {
+              "x": 408,
+              "y": 320
+            },
+            {
+              "x": 408,
+              "y": 400
+            },
+            {
+              "x": 688,
+              "y": 400
+            },
+            {
+              "x": 688,
+              "y": 296
+            },
+            {
+              "x": 720,
+              "y": 296
+            }
+          ],
+          "api_to_alb": [
+            {
+              "x": 768,
+              "y": 296
+            },
+            {
+              "x": 880,
+              "y": 296
+            }
+          ],
+          "cdn_to_api": [
+            {
+              "x": 480,
+              "y": 304
+            },
+            {
+              "x": 512,
+              "y": 304
+            },
+            {
+              "x": 512,
+              "y": 240
+            },
+            {
+              "x": 688,
+              "y": 240
+            },
+            {
+              "x": 688,
+              "y": 288
+            },
+            {
+              "x": 720,
+              "y": 288
+            }
+          ],
+          "distribute_a": [
+            {
+              "x": 928,
+              "y": 288
+            },
+            {
+              "x": 1016,
+              "y": 288
+            },
+            {
+              "x": 1016,
+              "y": 184
+            },
+            {
+              "x": 1048,
+              "y": 184
+            }
+          ],
+          "distribute_b": [
+            {
+              "x": 928,
+              "y": 304
+            },
+            {
+              "x": 992,
+              "y": 304
+            },
+            {
+              "x": 992,
+              "y": 416
+            },
+            {
+              "x": 1048,
+              "y": 416
+            }
+          ],
+          "identity_to_cdn": [
+            {
+              "x": 352,
+              "y": 312
+            },
+            {
+              "x": 432,
+              "y": 312
+            }
+          ],
+          "monitor_app_a": [
+            {
+              "x": 1200,
+              "y": 176
+            },
+            {
+              "x": 1248,
+              "y": 176
+            },
+            {
+              "x": 1248,
+              "y": 104
+            },
+            {
+              "x": 1680,
+              "y": 104
+            },
+            {
+              "x": 1680,
+              "y": 344
+            },
+            {
+              "x": 1608,
+              "y": 344
+            }
+          ],
+          "monitor_app_b": [
+            {
+              "x": 1200,
+              "y": 424
+            },
+            {
+              "x": 1248,
+              "y": 424
+            },
+            {
+              "x": 1248,
+              "y": 536
+            },
+            {
+              "x": 1680,
+              "y": 536
+            },
+            {
+              "x": 1680,
+              "y": 352
+            },
+            {
+              "x": 1608,
+              "y": 352
+            }
+          ],
+          "monitor_data_a": [
+            {
+              "x": 1376,
+              "y": 184
+            },
+            {
+              "x": 1496,
+              "y": 184
+            },
+            {
+              "x": 1496,
+              "y": 328
+            },
+            {
+              "x": 1560,
+              "y": 328
+            }
+          ],
+          "monitor_data_b": [
+            {
+              "x": 1376,
+              "y": 416
+            },
+            {
+              "x": 1496,
+              "y": 416
+            },
+            {
+              "x": 1496,
+              "y": 344
+            },
+            {
+              "x": 1560,
+              "y": 344
+            }
+          ],
+          "pull_image_a": [
+            {
+              "x": 1560,
+              "y": 216
+            },
+            {
+              "x": 1512,
+              "y": 216
+            },
+            {
+              "x": 1512,
+              "y": 280
+            },
+            {
+              "x": 1248,
+              "y": 280
+            },
+            {
+              "x": 1248,
+              "y": 192
+            },
+            {
+              "x": 1200,
+              "y": 192
+            }
+          ],
+          "pull_image_b": [
+            {
+              "x": 1584,
+              "y": 240
+            },
+            {
+              "x": 1584,
+              "y": 304
+            },
+            {
+              "x": 1248,
+              "y": 304
+            },
+            {
+              "x": 1248,
+              "y": 408
+            },
+            {
+              "x": 1200,
+              "y": 408
+            }
+          ],
+          "read_data_a": [
+            {
+              "x": 1200,
+              "y": 184
+            },
+            {
+              "x": 1328,
+              "y": 184
+            }
+          ],
+          "read_data_b": [
+            {
+              "x": 1200,
+              "y": 416
+            },
+            {
+              "x": 1328,
+              "y": 416
+            }
+          ],
+          "request_dns": [
+            {
+              "x": 96,
+              "y": 280
+            },
+            {
+              "x": 152,
+              "y": 280
+            },
+            {
+              "x": 152,
+              "y": 320
+            },
+            {
+              "x": 176,
+              "y": 320
+            }
+          ],
+          "resolve_identity": [
+            {
+              "x": 224,
+              "y": 320
+            },
+            {
+              "x": 304,
+              "y": 320
+            }
+          ],
+          "run_tasks_a": [
+            {
+              "x": 1096,
+              "y": 184
+            },
+            {
+              "x": 1160,
+              "y": 184
+            }
+          ],
+          "run_tasks_b": [
+            {
+              "x": 1096,
+              "y": 416
+            },
+            {
+              "x": 1160,
+              "y": 416
+            }
+          ],
+          "static_origin": [
+            {
+              "x": 480,
+              "y": 320
+            },
+            {
+              "x": 584,
+              "y": 320
+            }
+          ]
+        }
+      }
     },
     "event-driven-order-fulfillment": {
       "diagram": "examples/curated/event-driven-order-fulfillment/diagram.dgm",
       "flow": "lr",
-      "minAspectRatio": 2.0,
+      "minAspectRatio": 2,
       "maxAspectRatio": 3.2,
       "maxWidth": 1800,
       "maxHeight": 800,
       "leftToRight": [
-        ["customer", "storefront", "gateway", "order_service", "orders_database"]
-      ]
+        [
+          "customer",
+          "storefront",
+          "gateway",
+          "order_service",
+          "orders_database"
+        ]
+      ],
+      "geometry": {
+        "width": 1424,
+        "height": 600,
+        "nodes": {
+          "customer": {
+            "x": 32,
+            "y": 208,
+            "w": 64,
+            "h": 104
+          },
+          "customer_notifications": {
+            "x": 1232,
+            "y": 208,
+            "w": 152,
+            "h": 120
+          },
+          "gateway": {
+            "x": 448,
+            "y": 224,
+            "w": 88,
+            "h": 88
+          },
+          "inventory_service": {
+            "x": 1072,
+            "y": 96,
+            "w": 120,
+            "h": 104
+          },
+          "order_events": {
+            "x": 920,
+            "y": 224,
+            "w": 88,
+            "h": 104
+          },
+          "order_service": {
+            "x": 576,
+            "y": 248,
+            "w": 96,
+            "h": 104
+          },
+          "orders_database": {
+            "x": 752,
+            "y": 248,
+            "w": 104,
+            "h": 104
+          },
+          "payment_service": {
+            "x": 1080,
+            "y": 224,
+            "w": 104,
+            "h": 104
+          },
+          "shipping_service": {
+            "x": 1080,
+            "y": 352,
+            "w": 112,
+            "h": 104
+          },
+          "storefront": {
+            "x": 336,
+            "y": 248,
+            "w": 80,
+            "h": 104
+          },
+          "storefront_delivery": {
+            "x": 160,
+            "y": 248,
+            "w": 128,
+            "h": 104
+          }
+        },
+        "groups": {
+          "aws_cloud": {
+            "x": 128,
+            "y": 32,
+            "w": 1264,
+            "h": 464
+          },
+          "customer_experience": {
+            "x": 144,
+            "y": 168,
+            "w": 280,
+            "h": 200
+          },
+          "event_backbone": {
+            "x": 888,
+            "y": 192,
+            "w": 144,
+            "h": 152
+          },
+          "fulfillment_services": {
+            "x": 1056,
+            "y": 64,
+            "w": 152,
+            "h": 408
+          },
+          "order_domain": {
+            "x": 560,
+            "y": 168,
+            "w": 304,
+            "h": 200
+          }
+        },
+        "routes": {
+          "api_to_order": [
+            {
+              "x": 520,
+              "y": 248
+            },
+            {
+              "x": 592,
+              "y": 248
+            }
+          ],
+          "authorize_payment": [
+            {
+              "x": 984,
+              "y": 248
+            },
+            {
+              "x": 1104,
+              "y": 248
+            }
+          ],
+          "create_shipment": [
+            {
+              "x": 984,
+              "y": 256
+            },
+            {
+              "x": 1048,
+              "y": 256
+            },
+            {
+              "x": 1048,
+              "y": 376
+            },
+            {
+              "x": 1112,
+              "y": 376
+            }
+          ],
+          "customer_to_delivery": [
+            {
+              "x": 88,
+              "y": 232
+            },
+            {
+              "x": 144,
+              "y": 232
+            },
+            {
+              "x": 144,
+              "y": 272
+            },
+            {
+              "x": 200,
+              "y": 272
+            }
+          ],
+          "delivery_to_api": [
+            {
+              "x": 248,
+              "y": 256
+            },
+            {
+              "x": 304,
+              "y": 256
+            },
+            {
+              "x": 304,
+              "y": 216
+            },
+            {
+              "x": 432,
+              "y": 216
+            },
+            {
+              "x": 432,
+              "y": 240
+            },
+            {
+              "x": 472,
+              "y": 240
+            }
+          ],
+          "delivery_to_storefront": [
+            {
+              "x": 248,
+              "y": 272
+            },
+            {
+              "x": 344,
+              "y": 272
+            }
+          ],
+          "persist_order": [
+            {
+              "x": 640,
+              "y": 272
+            },
+            {
+              "x": 776,
+              "y": 272
+            }
+          ],
+          "publish_order_created": [
+            {
+              "x": 640,
+              "y": 256
+            },
+            {
+              "x": 680,
+              "y": 256
+            },
+            {
+              "x": 680,
+              "y": 232
+            },
+            {
+              "x": 936,
+              "y": 232
+            }
+          ],
+          "reserve_stock": [
+            {
+              "x": 984,
+              "y": 232
+            },
+            {
+              "x": 1056,
+              "y": 232
+            },
+            {
+              "x": 1056,
+              "y": 120
+            },
+            {
+              "x": 1104,
+              "y": 120
+            }
+          ],
+          "send_confirmation": [
+            {
+              "x": 960,
+              "y": 272
+            },
+            {
+              "x": 960,
+              "y": 464
+            },
+            {
+              "x": 1208,
+              "y": 464
+            },
+            {
+              "x": 1208,
+              "y": 232
+            },
+            {
+              "x": 1280,
+              "y": 232
+            }
+          ]
+        }
+      }
     },
     "asynchronous-report-generation": {
       "diagram": "examples/curated/asynchronous-report-generation/diagram.dgm",
@@ -79,8 +1784,316 @@
       "maxWidth": 2000,
       "maxHeight": 800,
       "leftToRight": [
-        ["web_client", "cdn", "gateway", "report_handler", "report_jobs", "report_worker", "generated_reports"]
-      ]
+        [
+          "web_client",
+          "cdn",
+          "gateway",
+          "report_handler",
+          "report_jobs",
+          "report_worker",
+          "generated_reports"
+        ]
+      ],
+      "geometry": {
+        "width": 1696,
+        "height": 600,
+        "nodes": {
+          "cdn": {
+            "x": 168,
+            "y": 184,
+            "w": 88,
+            "h": 104
+          },
+          "dead_letter_queue": {
+            "x": 776,
+            "y": 232,
+            "w": 152,
+            "h": 96
+          },
+          "email": {
+            "x": 1464,
+            "y": 144,
+            "w": 184,
+            "h": 120
+          },
+          "gateway": {
+            "x": 456,
+            "y": 160,
+            "w": 88,
+            "h": 88
+          },
+          "generated_reports": {
+            "x": 1136,
+            "y": 96,
+            "w": 120,
+            "h": 104
+          },
+          "job_status": {
+            "x": 1160,
+            "y": 224,
+            "w": 80,
+            "h": 104
+          },
+          "notifications": {
+            "x": 1296,
+            "y": 144,
+            "w": 144,
+            "h": 120
+          },
+          "report_handler": {
+            "x": 576,
+            "y": 160,
+            "w": 152,
+            "h": 104
+          },
+          "report_jobs": {
+            "x": 776,
+            "y": 104,
+            "w": 152,
+            "h": 104
+          },
+          "report_ui": {
+            "x": 320,
+            "y": 184,
+            "w": 96,
+            "h": 104
+          },
+          "report_worker": {
+            "x": 984,
+            "y": 160,
+            "w": 96,
+            "h": 104
+          },
+          "web_client": {
+            "x": 32,
+            "y": 144,
+            "w": 80,
+            "h": 104
+          }
+        },
+        "groups": {
+          "async_queue": {
+            "x": 768,
+            "y": 72,
+            "w": 176,
+            "h": 264
+          },
+          "aws_cloud": {
+            "x": 144,
+            "y": 32,
+            "w": 1520,
+            "h": 336
+          },
+          "frontend": {
+            "x": 160,
+            "y": 104,
+            "w": 272,
+            "h": 200
+          },
+          "report_api": {
+            "x": 568,
+            "y": 128,
+            "w": 176,
+            "h": 152
+          },
+          "storage_tier": {
+            "x": 1128,
+            "y": 64,
+            "w": 144,
+            "h": 280
+          },
+          "worker_tier": {
+            "x": 960,
+            "y": 128,
+            "w": 144,
+            "h": 152
+          }
+        },
+        "routes": {
+          "api_to_report_handler": [
+            {
+              "x": 520,
+              "y": 184
+            },
+            {
+              "x": 624,
+              "y": 184
+            }
+          ],
+          "cdn_to_api": [
+            {
+              "x": 240,
+              "y": 192
+            },
+            {
+              "x": 272,
+              "y": 192
+            },
+            {
+              "x": 272,
+              "y": 168
+            },
+            {
+              "x": 440,
+              "y": 168
+            },
+            {
+              "x": 440,
+              "y": 176
+            },
+            {
+              "x": 472,
+              "y": 176
+            }
+          ],
+          "cdn_to_report_ui": [
+            {
+              "x": 240,
+              "y": 208
+            },
+            {
+              "x": 344,
+              "y": 208
+            }
+          ],
+          "client_to_cdn": [
+            {
+              "x": 96,
+              "y": 168
+            },
+            {
+              "x": 152,
+              "y": 168
+            },
+            {
+              "x": 152,
+              "y": 208
+            },
+            {
+              "x": 192,
+              "y": 208
+            }
+          ],
+          "enqueue_report": [
+            {
+              "x": 672,
+              "y": 184
+            },
+            {
+              "x": 760,
+              "y": 184
+            },
+            {
+              "x": 760,
+              "y": 128
+            },
+            {
+              "x": 824,
+              "y": 128
+            }
+          ],
+          "failed_jobs": [
+            {
+              "x": 848,
+              "y": 152
+            },
+            {
+              "x": 848,
+              "y": 232
+            }
+          ],
+          "jobs_to_worker": [
+            {
+              "x": 872,
+              "y": 128
+            },
+            {
+              "x": 944,
+              "y": 128
+            },
+            {
+              "x": 944,
+              "y": 184
+            },
+            {
+              "x": 1008,
+              "y": 184
+            }
+          ],
+          "notifications_to_email": [
+            {
+              "x": 1384,
+              "y": 168
+            },
+            {
+              "x": 1528,
+              "y": 168
+            }
+          ],
+          "worker_to_notifications": [
+            {
+              "x": 1056,
+              "y": 168
+            },
+            {
+              "x": 1096,
+              "y": 168
+            },
+            {
+              "x": 1096,
+              "y": 40
+            },
+            {
+              "x": 1280,
+              "y": 40
+            },
+            {
+              "x": 1280,
+              "y": 168
+            },
+            {
+              "x": 1336,
+              "y": 168
+            }
+          ],
+          "worker_to_reports": [
+            {
+              "x": 1056,
+              "y": 184
+            },
+            {
+              "x": 1120,
+              "y": 184
+            },
+            {
+              "x": 1120,
+              "y": 120
+            },
+            {
+              "x": 1168,
+              "y": 120
+            }
+          ],
+          "worker_to_status": [
+            {
+              "x": 1056,
+              "y": 192
+            },
+            {
+              "x": 1096,
+              "y": 192
+            },
+            {
+              "x": 1096,
+              "y": 248
+            },
+            {
+              "x": 1176,
+              "y": 248
+            }
+          ]
+        }
+      }
     }
   }
 }

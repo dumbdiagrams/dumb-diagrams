@@ -62,7 +62,7 @@ const INVARIANT_WEIGHTS: Record<string, number> = {
 export function invariantTier(code: string): QualityTier {
   if (HARD_INVARIANT_CODES.has(code)) return "hard";
   if (SOFT_INVARIANT_CODES.has(code)) return "soft";
-  return "soft";
+  return "hard";
 }
 
 export function qualityFindings(

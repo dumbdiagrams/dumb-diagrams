@@ -31,6 +31,8 @@
     "test:e2e:packed": "playwright test --config playwright.packed.config.ts",
     "precheck:routing": "pnpm --filter @dumb-diagrams/runtime build",
     "check:routing": "node scripts/check-routing-baseline.mjs",
+    "preupdate:layout-contracts": "pnpm --filter @dumb-diagrams/runtime build",
+    "update:layout-contracts": "node scripts/update-layout-contracts.mjs",
     "check:curated": "node scripts/check-curated-baseline.mjs",
     "check:agent-init-evaluation": "node scripts/check-agent-init-evaluation.mjs",
     "check:performance": "node scripts/check-performance-budget.mjs",
