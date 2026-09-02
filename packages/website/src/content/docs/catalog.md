@@ -45,7 +45,10 @@ pnpm icons:check
 pnpm icons:build
 ```
 
-`icons:check` inspects the catalog inventory. `icons:build` generates the runtime data and stages browser assets. Run `pnpm icons:update` only when you intend to update the upstream inputs.
+`icons:check` inspects committed catalog sources and manifest metadata, so it is
+self-sufficient on a clean checkout. `icons:build` generates the runtime data
+and stages ignored browser assets. Run `pnpm icons:update` only when you intend
+to update the upstream inputs.
 
 Do not edit a generated manifest or a staged icon as the source of a change. Update the reviewed inputs and rerun the workflow.
 

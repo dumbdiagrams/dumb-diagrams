@@ -123,8 +123,13 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
-    // Kept for legacy custom SVG imports; it is not a catalog item.
-    excluded: new Set(["assets/catalog/sources/cloud-agnostic/custom.svg"]),
+    // Legacy generic glyphs remain resolvable but are intentionally hidden
+    // from the agent/Studio-facing catalog. They are not catalog items for
+    // source/catalog inventory purposes.
+    excluded: new Set([
+      "assets/catalog/sources/cloud-agnostic/custom.svg",
+      "assets/catalog/sources/cloud-agnostic/logical.svg",
+    ]),
   },
 ];
 
@@ -218,6 +223,9 @@ async function check() {
       console.log(`${library.provider}: source/catalog inventory matches (${sourcePaths.size})`);
     }
   }
+  // The browser copy is ignored and created by catalog:stage/build. Keep this
+  // gate focused on committed source files and manifest metadata so it works
+  // before staging on a clean checkout.
   for (const asset of manifest.assetFiles) {
     const file = join(ROOT, asset.sourcePath);
     if (!existsSync(file)) {
@@ -240,9 +248,8 @@ async function check() {
       failed = true;
     }
     assetsBySourceId.set(asset.sourceId, asset);
-    let staged;
     try {
-      staged = validateBrowserPath(asset.browserPath, asset.sourceId);
+      validateBrowserPath(asset.browserPath, asset.sourceId);
     } catch (error) {
       console.error(error.message);
       failed = true;
@@ -254,21 +261,6 @@ async function check() {
       failed = true;
     }
     browserPaths.set(asset.browserPath, asset.sourceId);
-    if (!existsSync(staged)) {
-      console.error(`missing staged browser asset: ${asset.browserPath}`);
-      failed = true;
-      continue;
-    }
-    try {
-      validateSvg(staged);
-    } catch (error) {
-      console.error(error.message);
-      failed = true;
-    }
-    if (sha256File(staged) !== asset.sha256) {
-      console.error(`staged hash drift: ${asset.browserPath}`);
-      failed = true;
-    }
   }
   for (const entry of manifest.entries) {
     if (entry.canonical === false || entry.browsable === false) continue;

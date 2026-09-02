@@ -38,6 +38,11 @@ describe("canonical catalog contract", () => {
       assetKind: "resource",
       name: "Cloud Resource",
     });
+    expect(getCatalogEntry("cloud-agnostic.logical")).toMatchObject({
+      assetKind: "group",
+      groupKind: "logical",
+      browsable: false,
+    });
   });
 
   it("uses the brand boundary palette for cloud-agnostic group tiles", () => {

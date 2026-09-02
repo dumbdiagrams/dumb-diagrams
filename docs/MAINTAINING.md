@@ -36,5 +36,5 @@ surface, including `icons:check` and `pnpm check:website`. A routing-baseline
 change is exceptional: inspect the affected rendered examples before editing
 `examples/routing-warnings.json`. Every baselined warning needs a matching
 `reviews[]` note. Never delete a baseline warning merely to make a pipeline
-green. Coverage percentages and the 250 ms compile budget are advisory; they
-warn when missed and do not fail the release gate.
+green. Coverage floors are required and fail the release gate when missed. The
+250 ms compile budget remains advisory and only warns when exceeded.
