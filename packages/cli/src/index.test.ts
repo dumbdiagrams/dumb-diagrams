@@ -47,6 +47,65 @@ describe("runCli", () => {
     }
   });
 
+  it("formats canonical source and supports check/write semantics", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-format-"));
+    const sourcePath = join(workRoot, "diagram.dgm");
+    const source = `diagram format-me {\n  grammar aws\n  aws.cloud cloud "Cloud" {}\n}\n`;
+    writeFileSync(sourcePath, source);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["format", "--check", sourcePath])).toBe(1);
+      expect(await runCli(["format", "--write", sourcePath])).toBe(0);
+      const canonical = readFileSync(sourcePath, "utf8");
+      expect(canonical).toContain("diagram format-me {");
+      expect(await runCli(["format", "--check", sourcePath])).toBe(0);
+    } finally {
+      error.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("renders deterministic SVG and does not create output for invalid input", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-render-"));
+    const validPath = join(workRoot, "valid.dgm");
+    const invalidPath = join(workRoot, "invalid.dgm");
+    const firstPath = join(workRoot, "first.svg");
+    const secondPath = join(workRoot, "second.svg");
+    const invalidOutput = join(workRoot, "should-not-exist.svg");
+    const source = `diagram render-me {\n  grammar aws\n  aws.cloud cloud "Cloud" {}\n}\n`;
+    writeFileSync(validPath, source);
+    writeFileSync(invalidPath, "diagram broken { grammar aws");
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["render", validPath, "--output", firstPath])).toBe(0);
+      expect(await runCli(["render", validPath, "--output", secondPath])).toBe(0);
+      expect(readFileSync(firstPath, "utf8")).toBe(readFileSync(secondPath, "utf8"));
+      expect(readFileSync(firstPath, "utf8")).toContain("<svg");
+      expect(await runCli(["render", invalidPath, "--output", invalidOutput])).toBe(1);
+      expect(existsSync(invalidOutput)).toBe(false);
+    } finally {
+      error.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports provider mismatches before rendering", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-provider-"));
+    const sourcePath = join(workRoot, "mismatch.dgm");
+    const outputPath = join(workRoot, "mismatch.svg");
+    writeFileSync(sourcePath, `diagram mismatch {\n  grammar aws\n  azure.subscription subscription "Azure" {}\n}\n`);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["validate", sourcePath])).toBe(1);
+      expect(await runCli(["render", sourcePath, "-o", outputPath])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain("provider-mismatch");
+      expect(existsSync(outputPath)).toBe(false);
+    } finally {
+      error.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
   it("creates a timestamped project folder with agent guidance and portable examples", async () => {
     const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-init-"));
     const previous = process.cwd();

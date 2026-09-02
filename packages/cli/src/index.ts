@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { listAssets } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
-import { compileDiagram } from "@dumb-diagrams/runtime/render";
+import { getCatalogEntryByBrowserPath, listAssets } from "@dumb-diagrams/runtime/catalog";
+import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { compileDiagram, renderPortableSvg } from "@dumb-diagrams/runtime/render";
 
 import { createCliUi } from "./cli-ui.js";
 import { renderInitTemplate } from "./init-templates.js";
@@ -39,7 +39,7 @@ const CURATED_FILE_NAMES = ["user-prompt.md", "architecture-brief.md", "referenc
 
 export async function runCli(argv: string[]): Promise<number> {
   const [command, ...rawArgs] = argv;
-  const parsed = parseArgs(rawArgs);
+  const parsed = parseArgs(rawArgs, command);
 
   if (parsed.flags.has("help")) {
     printHelp();
@@ -64,6 +64,10 @@ export async function runCli(argv: string[]): Promise<number> {
       return await cmdInit(parsed);
     case "validate":
       return cmdValidate(parsed);
+    case "format":
+      return cmdFormat(parsed);
+    case "render":
+      return await cmdRender(parsed);
     default:
       console.error(ui.error(`Unknown command: ${command}`));
       console.error(ui.muted(`  Run ${ui.command("dumbdiagrams help")} to see available commands.`));
@@ -80,15 +84,20 @@ ${ui.heading("Usage")}
   ${ui.command("dumbdiagrams init")}       Create a project folder for agents
   ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
   ${ui.command("dumbdiagrams validate")}   Validate a .dgm source file
+  ${ui.command("dumbdiagrams format")}     Canonicalize a .dgm source file
+  ${ui.command("dumbdiagrams render")}     Render a .dgm source file to SVG
 
 ${ui.heading("Commands")}
   ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
   ${ui.command("validate <file.dgm>")}      Parse and fully validate a diagram
+  ${ui.command("format <file.dgm>")}        Print canonical .dgm source
+  ${ui.command("render <file.dgm>")}        Render deterministic SVG (use -o for a file)
 
 ${ui.heading("Quick start")}
   ${ui.command("dumbdiagrams init")}
   ${ui.command("dumbdiagrams validate diagrams/example/diagram.dgm")}
+  ${ui.command("dumbdiagrams render diagrams/example/diagram.dgm -o diagram.svg")}
   ${ui.command("dumbdiagrams studio")}
 
 ${ui.muted("Tip: dgm is a shorthand alias for dumbdiagrams.")}
@@ -125,27 +134,177 @@ async function cmdStudio(args: ParsedArgs): Promise<void> {
 
 function cmdValidate(args: ParsedArgs): number {
   if (args.positionals.length !== 1 || args.flags.size) {
-    console.error(ui.error("validate expects exactly one .dgm file path and no options."));
+    console.error(ui.error("validate expects exactly one .dgm file path (or - for stdin) and no options."));
     return 1;
   }
-  const filePath = resolve(process.cwd(), args.positionals[0]!);
+  const input = args.positionals[0]!;
+  const filePath = input === "-" ? undefined : resolve(process.cwd(), input);
   try {
-    const source = readFileSync(filePath, "utf8");
+    const source = readDiagramSource(input);
     const result = compileDiagram(parseDgm(source));
     if (!result.ok) {
-      console.error(ui.error(`Invalid diagram: ${relativeForLog(filePath)}`));
+      console.error(ui.error(`Invalid diagram: ${displayInput(filePath)}`));
       for (const issue of result.issues) {
         console.error(`  ${issue.code}${issue.id ? ` (${issue.id})` : ""}: ${issue.message}`);
       }
       return 1;
     }
-    console.log(ui.success(`Valid diagram: ${relativeForLog(filePath)}`));
+    console.log(ui.success(`Valid diagram: ${displayInput(filePath)}`));
     return 0;
   } catch (error) {
-    console.error(ui.error(`Invalid diagram: ${relativeForLog(filePath)}`));
+    console.error(ui.error(`Invalid diagram: ${displayInput(filePath)}`));
     console.error(`  ${error instanceof Error ? error.message : String(error)}`);
     return 1;
   }
+}
+
+function cmdFormat(args: ParsedArgs): number {
+  const allowed = new Set(["check", "write", "stdout"]);
+  if (args.positionals.length !== 1 || [...args.flags.keys()].some((flag) => !allowed.has(flag))) {
+    console.error(ui.error("format expects one .dgm file path (or - for stdin), with optional --check, --write, or --stdout."));
+    return 1;
+  }
+  const input = args.positionals[0]!;
+  if (input === "-" && args.flags.has("write")) {
+    console.error(ui.error("format --write requires a file path; stdin cannot be overwritten."));
+    return 1;
+  }
+  if (args.flags.has("check") && args.flags.has("write")) {
+    console.error(ui.error("format --check and --write cannot be used together."));
+    return 1;
+  }
+  if (args.flags.has("stdout") && args.flags.has("write")) {
+    console.error(ui.error("format --stdout and --write cannot be used together."));
+    return 1;
+  }
+
+  const filePath = input === "-" ? undefined : resolve(process.cwd(), input);
+  try {
+    const source = readDiagramSource(input);
+    const doc = parseDgm(source);
+    const result = compileDiagram(doc);
+    if (!result.ok) {
+      reportCompilationFailure(result.issues, filePath);
+      return 1;
+    }
+    const formatted = printDgm(doc);
+    if (args.flags.has("check")) {
+      if (source !== formatted) {
+        console.error(ui.error(`Needs formatting: ${displayInput(filePath)}`));
+        return 1;
+      }
+      console.error(ui.success(`Already formatted: ${displayInput(filePath)}`));
+      return 0;
+    }
+    if (args.flags.has("write")) {
+      writeOutputAtomically(filePath!, formatted);
+      console.error(ui.success(`Formatted: ${displayInput(filePath)}`));
+      return 0;
+    }
+    process.stdout.write(formatted);
+    return 0;
+  } catch (error) {
+    reportInputFailure(error, filePath);
+    return 1;
+  }
+}
+
+async function cmdRender(args: ParsedArgs): Promise<number> {
+  const allowed = new Set(["output", "o", "stdout", "format"]);
+  if (args.positionals.length !== 1 || [...args.flags.keys()].some((flag) => !allowed.has(flag))) {
+    console.error(ui.error("render expects one .dgm file path (or - for stdin), with optional --output/-o and --format svg."));
+    return 1;
+  }
+  const input = args.positionals[0]!;
+  const outputValue = args.flags.get("output") ?? args.flags.get("o");
+  if (outputValue !== undefined && typeof outputValue !== "string") {
+    console.error(ui.error("render --output/-o requires a destination path."));
+    return 1;
+  }
+  const outputPath = typeof outputValue === "string" && outputValue !== "-" ? resolve(process.cwd(), outputValue) : undefined;
+  if (args.flags.has("stdout") && outputPath) {
+    console.error(ui.error("render --stdout and --output cannot be used together."));
+    return 1;
+  }
+  const format = args.flags.get("format");
+  if (format !== undefined && format !== "svg") {
+    console.error(ui.error(`Unsupported render format ${String(format)}; only svg is supported.`));
+    return 1;
+  }
+
+  const filePath = input === "-" ? undefined : resolve(process.cwd(), input);
+  try {
+    const source = readDiagramSource(input);
+    const doc = parseDgm(source);
+    const result = compileDiagram(doc);
+    if (!result.ok) {
+      reportCompilationFailure(result.issues, filePath);
+      return 1;
+    }
+    const svg = await renderPortableSvg(doc, result.layout, {
+      loadCatalogSvg: loadCatalogSvg,
+    });
+    if (outputPath) {
+      writeOutputAtomically(outputPath, svg);
+      console.error(ui.success(`Rendered SVG: ${relativeForLog(outputPath)}`));
+    } else {
+      process.stdout.write(svg);
+    }
+    return 0;
+  } catch (error) {
+    reportInputFailure(error, filePath);
+    return 1;
+  }
+}
+
+function readDiagramSource(input: string): string {
+  return input === "-" ? readFileSync(0, "utf8") : readFileSync(resolve(process.cwd(), input), "utf8");
+}
+
+function displayInput(filePath: string | undefined): string {
+  return filePath ? relativeForLog(filePath) : "<stdin>";
+}
+
+function reportCompilationFailure(issues: Array<{ code: string; id?: string; message: string }>, filePath: string | undefined): void {
+  console.error(ui.error(`Invalid diagram: ${displayInput(filePath)}`));
+  for (const issue of issues) {
+    console.error(`  ${issue.code}${issue.id ? ` (${issue.id})` : ""}: ${issue.message}`);
+  }
+}
+
+function reportInputFailure(error: unknown, filePath: string | undefined): void {
+  console.error(ui.error(`Unable to process diagram: ${displayInput(filePath)}`));
+  console.error(`  ${error instanceof Error ? error.message : String(error)}`);
+}
+
+function writeOutputAtomically(outputPath: string, contents: string): void {
+  const temporaryPath = `${outputPath}.tmp-${process.pid}`;
+  try {
+    writeFileSync(temporaryPath, contents, { encoding: "utf8", flag: "wx" });
+    renameSync(temporaryPath, outputPath);
+  } catch (error) {
+    try {
+      if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    } catch {
+      // Preserve the original write error; cleanup is best effort.
+    }
+    throw error;
+  }
+}
+
+function loadCatalogSvg(browserPath: string): Promise<string> {
+  const entry = getCatalogEntryByBrowserPath(browserPath);
+  if (!entry) return Promise.reject(new Error(`Catalog icon is not registered: ${browserPath}`));
+  const candidates = [
+    resolve(__dirname, "..", "..", "..", entry.icon.sourcePath),
+    resolve(__dirname, "source", entry.icon.sourcePath),
+    resolve(__dirname, "studio", browserPath),
+  ];
+  const filePath = candidates.find((candidate) => existsAsFileOrDirectory(candidate));
+  if (!filePath) {
+    return Promise.reject(new Error(`Catalog icon asset is unavailable for ${browserPath}`));
+  }
+  return Promise.resolve(readFileSync(filePath, "utf8"));
 }
 
 async function cmdInit(args: ParsedArgs): Promise<number> {
@@ -380,12 +539,13 @@ function rejectArguments(args: ParsedArgs, command: string): void {
   }
 }
 
-function parseArgs(args: string[]): ParsedArgs {
+function parseArgs(args: string[], command?: string): ParsedArgs {
   const positionals: string[] = [];
   const flags = new Map<string, string | true>();
+  const valueFlags = command === "render" ? new Set(["output", "o", "format"]) : new Set<string>();
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]!;
-    if (!argument.startsWith("-")) {
+    if (!argument.startsWith("-") || argument === "-") {
       positionals.push(argument);
       continue;
     }
@@ -396,7 +556,7 @@ function parseArgs(args: string[]): ParsedArgs {
       continue;
     }
     const next = args[index + 1];
-    if (next && !next.startsWith("-")) {
+    if (next && !next.startsWith("-") && valueFlags.has(withoutDashes)) {
       flags.set(withoutDashes, next);
       index += 1;
     } else {

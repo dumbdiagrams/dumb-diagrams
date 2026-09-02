@@ -60,11 +60,23 @@ editor. Use **Open** inside Studio to select any `.dgm` file on disk.
 ```bash
 dumbdiagrams init                                               # create a project folder here
 dumbdiagrams studio                                             # start generic local Studio
+dumbdiagrams validate path/to/diagram.dgm                        # parse and validate (use - for stdin)
+dumbdiagrams format path/to/diagram.dgm                         # print canonical source
+dumbdiagrams format --check path/to/diagram.dgm                 # fail when source is not canonical
+dumbdiagrams format --write path/to/diagram.dgm                 # replace with canonical source
+dumbdiagrams render path/to/diagram.dgm --output diagram.svg    # deterministic portable SVG
 ```
 
-The CLI intentionally has only `init` and `studio` as its main user-facing
-commands. Use Studio's **Open** action to select a `.dgm` file from any local
-directory.
+`validate`, `format`, and `render` are headless workflows for automation and
+CI. All three parse and fully validate provider grammar before reporting
+success; invalid input never creates a render or format output. Use `-` as the
+input path to read a diagram from stdin. `format` writes canonical source to
+stdout by default, or uses `--check`/`--write`; `render` writes SVG to stdout
+unless `--output` (or `-o`) is provided. Only SVG rendering is currently
+supported.
+
+Studio's **Open** action remains available for interactive editing of any local
+`.dgm` file.
 
 ## Maintainer tarball test
 

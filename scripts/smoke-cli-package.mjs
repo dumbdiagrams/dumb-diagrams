@@ -125,6 +125,26 @@ try {
     if (!existsSync(join(initializedProject, generated))) throw new Error(`init did not create ${generated}`);
   }
 
+  const smokeDiagram = join(initializedProject, ".dumbdiagrams/examples/simple-serverless-web-application/diagram.dgm");
+  if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
+    throw new Error("packed dumbdiagrams validate failed");
+  }
+  const formatCopy = join(workRoot, "packed-format.dgm");
+  copyFileSync(smokeDiagram, formatCopy);
+  if (runNpx(tarballPath, ["format", "--write", formatCopy], "dumbdiagrams", projectDir) !== 0 ||
+      runNpx(tarballPath, ["format", "--check", formatCopy], "dumbdiagrams", projectDir) !== 0) {
+    throw new Error("packed dumbdiagrams format failed");
+  }
+  const firstSvg = join(workRoot, "packed-first.svg");
+  const secondSvg = join(workRoot, "packed-second.svg");
+  if (runNpx(tarballPath, ["render", smokeDiagram, "--output", firstSvg], "dumbdiagrams", projectDir) !== 0 ||
+      runNpx(tarballPath, ["render", smokeDiagram, "--output", secondSvg], "dumbdiagrams", projectDir) !== 0) {
+    throw new Error("packed dumbdiagrams render failed");
+  }
+  if (readFileSync(firstSvg, "utf8") !== readFileSync(secondSvg, "utf8")) {
+    throw new Error("packed dumbdiagrams render is not deterministic");
+  }
+
   console.log(`OK package smoke passed for ${tarballName}`);
 } finally {
   rmSync(workRoot, { recursive: true, force: true });
