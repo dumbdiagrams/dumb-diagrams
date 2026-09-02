@@ -129,6 +129,12 @@ import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { clearDraft, loadDraft } from "./state/autosave";
 import {
+  isAbortError,
+  saveExistingFileHandle,
+  type FileSaveResult,
+  type FileSystemHandleLike,
+} from "./state/file-save";
+import {
   decodeDiagramUrlPayload,
   downloadText,
   exportDgmFile,
@@ -186,13 +192,6 @@ const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
 const LEFT_DRAWER_WIDTH = 420;
-type FileSystemWritable = { write(data: string): Promise<void>; close(): Promise<void> };
-type FileSystemHandleLike = {
-  kind: "file";
-  name: string;
-  getFile(): Promise<File>;
-  createWritable(): Promise<FileSystemWritable>;
-};
 type FilePickerWindow = Window & {
   showOpenFilePicker?: (options?: {
     multiple?: boolean;
@@ -372,6 +371,7 @@ function App() {
     updateViewport,
     markTabSaved,
     setTabFilename,
+    persistenceWarning,
   } = useWorkspace({
     initialSource: INITIAL_URL_IMPORT.source ?? RECOVERY?.source ?? BLANK_SOURCE,
     initialSavedSource: (INITIAL_URL_IMPORT.source || RECOVERY) ? "" : BLANK_SOURCE,
@@ -421,6 +421,11 @@ function App() {
   const [exportDialogFormat, setExportDialogFormat] = useState<ExportFormat | null>(null);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState("");
+  const [fileConflictRequest, setFileConflictRequest] = useState<{
+    tabId: string;
+    filename: string;
+    diskSource: string;
+  } | null>(null);
   const [closeRequest, setCloseRequest] = useState<string | null>(null);
   const [resetExampleOpen, setResetExampleOpen] = useState(false);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
@@ -461,26 +466,42 @@ function App() {
     }
   };
 
-  const saveTabSource = async (tabId: string, requestedFilename?: string): Promise<boolean> => {
+  const saveTabSource = async (
+    tabId: string,
+    requestedFilename?: string,
+    options: { overwriteExisting?: boolean } = {},
+  ): Promise<FileSaveResult> => {
     const tab = tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return false;
+    if (!tab) return {
+      status: "error",
+      filename: requestedFilename ?? "diagram.dgm",
+      code: "missing-tab",
+      message: "The diagram tab is no longer open.",
+    };
     if (!sourceIsValid(tab.source)) {
       setToast("Cannot save an invalid diagram. Fix the source errors first.");
-      return false;
+      return {
+        status: "error",
+        filename: requestedFilename ?? tab.filename ?? "diagram.dgm",
+        code: "invalid-source",
+        message: "Cannot save an invalid diagram. Fix the source errors first.",
+      };
     }
     const existingHandle = !requestedFilename ? fileHandlesRef.current.get(tabId) : undefined;
     if (existingHandle) {
-      try {
-        const writable = await existingHandle.createWritable();
-        await writable.write(tab.source);
-        await writable.close();
-        markTabSaved(tabId, tab.source, existingHandle.name);
+      const result = await saveExistingFileHandle(existingHandle, tab.source, tab.savedSource, {
+        overwrite: options.overwriteExisting,
+      });
+      if (result.status === "saved") {
+        markTabSaved(tabId, tab.source, result.filename);
         setToast(`Saved ${existingHandle.name}`);
-        return true;
-      } catch (error) {
-        setToast(error instanceof Error ? error.message : "The diagram could not be saved.");
-        return false;
       }
+      if (result.status === "conflict") {
+        setFileConflictRequest({ ...result, tabId });
+      } else if (result.status === "error") {
+        setToast(`Could not save ${result.filename}: ${result.message}`);
+      }
+      return result;
     }
 
     if (requestedFilename) {
@@ -497,11 +518,12 @@ function App() {
           fileHandlesRef.current.set(tabId, handle);
           markTabSaved(tabId, tab.source, handle.name);
           setToast(`Saved ${handle.name}`);
-          return true;
+          return { status: "saved", filename: handle.name };
         } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") return false;
-          setToast(error instanceof Error ? error.message : "The diagram could not be saved.");
-          return false;
+          if (isAbortError(error)) return { status: "cancelled" };
+          const message = error instanceof Error ? error.message : "The diagram could not be saved.";
+          setToast(message);
+          return { status: "error", filename: requestedFilename, code: "write-failed", message };
         }
       }
     }
@@ -509,11 +531,11 @@ function App() {
     const filename = filenameWithExtension(baseName, "dgm");
     if (!downloadText(tab.source, filename)) {
       setToast("Save failed. Your browser blocked the download.");
-      return false;
+      return { status: "error", filename, code: "download-failed", message: "Your browser blocked the download." };
     }
     markTabSaved(tab.id, tab.source, filename);
     setToast(`Downloaded ${filename}`);
-    return true;
+    return { status: "saved", filename };
   };
 
   const saveActive = () => {
@@ -544,7 +566,8 @@ function App() {
       return;
     }
     setSaveAsDraft(filename);
-    if (await saveTabSource(activeTab.id, filename)) setSaveAsOpen(false);
+    const result = await saveTabSource(activeTab.id, filename);
+    if (result.status === "saved") setSaveAsOpen(false);
   };
 
   const resetTransientState = () => {
@@ -664,9 +687,44 @@ function App() {
     if (!closeRequest) return;
     const tabId = closeRequest;
     const tab = tabs.find((candidate) => candidate.id === tabId);
-    if (await saveTabSource(tabId)) {
+    const result = await saveTabSource(tabId);
+    if (result.status === "saved") {
       setCloseRequest(null);
       beginTabClose(tabId, tab ? previewsForTabs([tab]) : {});
+    }
+  };
+
+  const reloadConflictingFile = () => {
+    const request = fileConflictRequest;
+    if (!request) return;
+    const tab = tabs.find((candidate) => candidate.id === request.tabId);
+    if (!tab) {
+      setFileConflictRequest(null);
+      setToast("The conflicting diagram tab is no longer open.");
+      return;
+    }
+    setFileConflictRequest(null);
+    resetTab(request.tabId, request.diskSource, request.diskSource);
+    if (request.tabId === activeTabId) {
+      resetTransientState();
+      setDefaultFrameKey((current) => current + 1);
+    }
+    setToast(`Reloaded ${request.filename} from disk`);
+    if (closeRequest === request.tabId) {
+      setCloseRequest(null);
+      beginTabClose(request.tabId, previewsForTabs([tab]));
+    }
+  };
+
+  const overwriteConflictingFile = async () => {
+    const request = fileConflictRequest;
+    if (!request) return;
+    setFileConflictRequest(null);
+    const result = await saveTabSource(request.tabId, undefined, { overwriteExisting: true });
+    if (result.status === "saved" && closeRequest === request.tabId) {
+      const tab = tabs.find((candidate) => candidate.id === request.tabId);
+      setCloseRequest(null);
+      beginTabClose(request.tabId, tab ? previewsForTabs([tab]) : {});
     }
   };
 
@@ -957,6 +1015,10 @@ function App() {
   }, [activeTab.origin, workspaceReady]);
 
   useEffect(() => {
+    if (persistenceWarning) setToast(persistenceWarning);
+  }, [persistenceWarning]);
+
+  useEffect(() => {
     if (!workspaceReady || initialUrlHandledRef.current) return;
     initialUrlHandledRef.current = true;
     if (INITIAL_URL_IMPORT.source) {
@@ -1028,21 +1090,25 @@ function App() {
   }, [textEditRequest]);
 
   const journalIssues = useMemo<StudioIssue[]>(() => {
+    const persistenceIssues: StudioIssue[] = persistenceWarning
+      ? [{ severity: "warning", message: persistenceWarning }]
+      : [];
     if (!compiledFromCache.ok) {
       if ("parseError" in compiledFromCache && compiledFromCache.parseError) {
-        return [{ severity: "error", message: compiledFromCache.parseError }];
+        return [...persistenceIssues, { severity: "error", message: compiledFromCache.parseError }];
       }
-      return compiledFromCache.issues.map((issue) => ({
+      return [...persistenceIssues, ...compiledFromCache.issues.map((issue) => ({
         severity: issue.level,
         message: issue.message,
         elementIds: issue.id ? [issue.id] : undefined,
-      }));
+      }))];
     }
     if (!compiled.ok) {
-      return compiled.issues.map((issue) => ({ severity: "error" as const, message: issue.message }));
+      return [...persistenceIssues, ...compiled.issues.map((issue) => ({ severity: "error" as const, message: issue.message }))];
     }
     const active = compiled;
     return [
+      ...persistenceIssues,
       ...active.issues.map((issue) => ({
         severity: issue.level,
         message: issue.message,
@@ -1055,7 +1121,7 @@ function App() {
           : undefined,
       })),
     ];
-  }, [compiled, compiledFromCache, parsedDoc]);
+  }, [compiled, compiledFromCache, parsedDoc, persistenceWarning]);
   const issues = useMemo(() => journalIssues.map(({ message }) => ({ message })), [journalIssues]);
 
   const handleIssueSelect = (issue: StudioIssue) => {
@@ -2684,6 +2750,26 @@ function App() {
               <button type="button" className="text-button" onClick={() => setCloseRequest(null)}>Cancel</button>
               <button type="button" className="danger-button" onClick={closeRequestedTab}>Discard</button>
               <button type="button" className="primary-button" onClick={saveAndCloseRequestedTab}>Save and close</button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal
+          open={Boolean(fileConflictRequest)}
+          title="File changed on disk"
+          subtitle={fileConflictRequest?.filename}
+          onClose={() => setFileConflictRequest(null)}
+          className="confirm-dialog"
+          width={500}
+        >
+          <div className="confirm-modal">
+            <p>
+              Another editor changed or replaced this file after Studio opened it. Choose whether to keep the external source or replace it with your Studio edits.
+            </p>
+            <div className="modal-actions modal-actions-spread">
+              <button type="button" className="text-button" onClick={() => setFileConflictRequest(null)}>Cancel</button>
+              <button type="button" className="text-button" onClick={reloadConflictingFile}>Reload from disk</button>
+              <button type="button" className="danger-button" onClick={() => void overwriteConflictingFile}>Overwrite anyway</button>
             </div>
           </div>
         </Modal>

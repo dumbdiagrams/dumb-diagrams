@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@dumb-diagrams/runtime/dsl": resolve("packages/runtime/src/dsl/index.ts"),
+      "@dumb-diagrams/runtime/catalog": resolve("packages/runtime/src/catalog/index.ts"),
       "@dumb-diagrams/runtime/render": resolve("packages/runtime/src/render/index.ts"),
     },
   },
@@ -31,7 +32,7 @@ export default defineConfig({
         "**/vite-env.d.ts",
         // These are browser-bound orchestration layers. Their behavior is
         // exercised by Playwright rather than by the Node-focused coverage
-        // suite below. Numeric floors are advisory; see scripts/warn-coverage.mjs.
+        // suite below. Required numeric floors live in scripts/warn-coverage.mjs.
         "packages/editor/src/canvas/**",
         "packages/editor/src/catalog-dnd.ts",
         "packages/editor/src/diagram-compiler.worker.ts",

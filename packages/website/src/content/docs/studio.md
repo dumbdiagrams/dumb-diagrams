@@ -41,9 +41,11 @@ does not register it with a project or upload it to a Dumb Diagrams service.
 
 ## Work alongside an editor or agent
 
-Studio does not watch selected files for changes made by another editor. Reopen
-the file before saving if an agent or editor has changed it on disk, otherwise a
-direct save can replace those external changes.
+Studio does not watch selected files live, but File System Access saves compare
+the on-disk text with the last source snapshot before overwriting. If another
+editor changed or deleted the file, Studio stops and offers a reload or an
+explicit overwrite choice. Standard chooser/download saves cannot perform that
+comparison, so reopen the file when coordinating edits through that fallback.
 
 Studio binds to `127.0.0.1` and is intended for local use. It is not a hosted service or a public server.
 
