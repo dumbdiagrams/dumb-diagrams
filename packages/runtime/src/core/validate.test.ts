@@ -129,4 +129,58 @@ describe("document validation modes", () => {
     codes = validateDocument(doc, new Map(), { enforceCatalogRules: false }).map((issue) => issue.code);
     expect(codes).toContain("hierarchy-cycle");
   });
+
+  it("rejects group edge endpoints with a stable error", () => {
+    const doc = createEmptyDocument("group-edges");
+    doc.groups = [
+      { id: "source-group", kind: "logical", label: "Source", children: [] },
+      { id: "target-group", kind: "logical", label: "Target", children: [] },
+    ];
+    doc.edges = [{ id: "edge", source: "source-group", target: "target-group", style: "solid" }];
+
+    expect(validateDocument(doc, new Map(), { enforceCatalogRules: false })).toEqual([
+      expect.objectContaining({ code: "invalid-edge-endpoint", id: "edge" }),
+      expect.objectContaining({ code: "invalid-edge-endpoint", id: "edge" }),
+    ]);
+  });
+
+  it("enforces provider grammar while allowing neutral entries in provider documents", () => {
+    const doc = createEmptyDocument("providers");
+    doc.grammar = "aws";
+    doc.groups = [
+      { id: "region", kind: "region", label: "Region", children: ["neutral-group", "azure-resource", "azure-group"] },
+      { id: "neutral-group", kind: "logical", label: "Neutral", children: [] },
+      { id: "azure-group", kind: "logical", label: "Azure group", children: [] },
+    ];
+    doc.resources = [
+      { id: "neutral", type: "neutral.service", parent: "region", label: {}, role: "primary", props: {} },
+      { id: "azure-resource", type: "azure.service", parent: "region", label: {}, role: "primary", props: {} },
+    ];
+    const catalog = new Map<string, CatalogRule>([
+      ["neutral.service", { type: "neutral.service", provider: "cloud-agnostic", allowedParents: ["region"], scope: "any" }],
+      ["azure.service", { type: "azure.service", provider: "azure", allowedParents: ["region"], scope: "any" }],
+      ["azure.group", { type: "azure.group", provider: "azure", allowedParents: ["region"], scope: "any" }],
+    ]);
+    doc.groups[2]!.type = "azure.group";
+    doc.groups[2]!.parent = "region";
+
+    const issues = validateDocument(doc, catalog, { enforceCatalogRules: false });
+    expect(issues.filter((issue) => issue.code === "provider-mismatch")).toEqual([
+      expect.objectContaining({ id: "azure-resource" }),
+      expect.objectContaining({ id: "azure-group" }),
+    ]);
+    expect(issues.some((issue) => issue.id === "neutral" && issue.code === "provider-mismatch")).toBe(false);
+  });
+
+  it("enforces that a cloud-agnostic document contains only neutral catalog entries", () => {
+    const doc = createEmptyDocument("neutral-only");
+    doc.grammar = "cloud-agnostic";
+    doc.resources = [{ id: "aws-resource", type: "aws.service", label: {}, role: "primary", props: {} }];
+    const catalog = new Map<string, CatalogRule>([
+      ["aws.service", { type: "aws.service", provider: "aws", allowedParents: [], scope: "any", allowRoot: true }],
+    ]);
+    expect(validateDocument(doc, catalog, { enforceCatalogRules: false })).toContainEqual(
+      expect.objectContaining({ code: "provider-mismatch", id: "aws-resource" }),
+    );
+  });
 });

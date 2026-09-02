@@ -5,6 +5,7 @@ import { getCatalogEntry } from "../catalog/catalog.js";
 import {
   embedAssetsInSvg,
   inlineCatalogIcons,
+  PortableSvgError,
   resolveResourceIcon,
 } from "./assets.js";
 
@@ -77,6 +78,7 @@ describe("render assets", () => {
       text: async () => '<svg viewBox="0 0 16 16"><path d="M0 0"/></svg>',
     }));
     vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("document", { baseURI: "https://example.test/" });
     try {
       const output = await inlineCatalogIcons(`<svg><image href="/${entry.browserPath}"/></svg>`);
       expect(output).toContain("data:image/svg+xml;charset=utf-8");
@@ -92,12 +94,21 @@ describe("render assets", () => {
 
     vi.stubGlobal("fetch", undefined);
     try {
-      await expect(inlineCatalogIcons(svg)).rejects.toThrow(/No browser loader/);
+      await expect(inlineCatalogIcons(svg)).rejects.toThrow(/loader required/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => "" })));
+    try {
+      await expect(inlineCatalogIcons(svg)).rejects.toBeInstanceOf(PortableSvgError);
+      await expect(inlineCatalogIcons(svg)).rejects.toMatchObject({ code: "catalog-loader-required" });
     } finally {
       vi.unstubAllGlobals();
     }
 
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, text: async () => "" })));
+    vi.stubGlobal("document", { baseURI: "https://example.test/" });
     try {
       await expect(inlineCatalogIcons(svg)).rejects.toThrow(/Unable to load catalog icon/);
     } finally {

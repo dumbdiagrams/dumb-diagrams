@@ -55,6 +55,9 @@ export function validateDocument(
       continue;
     }
 
+    const providerIssue = validateProvider(doc.grammar, rule.provider, "Resource", r.id, r.type);
+    if (providerIssue) issues.push(providerIssue);
+
     if (!r.parent) {
       if (enforceCatalogRules && !rule.allowRoot) {
         issues.push({
@@ -98,7 +101,14 @@ export function validateDocument(
   }
 
   for (const e of doc.edges) {
-    if (!getResource(doc, e.source) && !getGroup(doc, e.source)) {
+    if (!getResource(doc, e.source) && getGroup(doc, e.source)) {
+      issues.push({
+        level: "error",
+        code: "invalid-edge-endpoint",
+        message: `Edge ${e.id} source ${e.source} must reference a resource, not a group`,
+        id: e.id,
+      });
+    } else if (!getResource(doc, e.source)) {
       issues.push({
         level: "error",
         code: "missing-source",
@@ -106,7 +116,14 @@ export function validateDocument(
         id: e.id,
       });
     }
-    if (!getResource(doc, e.target) && !getGroup(doc, e.target)) {
+    if (!getResource(doc, e.target) && getGroup(doc, e.target)) {
+      issues.push({
+        level: "error",
+        code: "invalid-edge-endpoint",
+        message: `Edge ${e.id} target ${e.target} must reference a resource, not a group`,
+        id: e.id,
+      });
+    } else if (!getResource(doc, e.target)) {
       issues.push({
         level: "error",
         code: "missing-target",
@@ -126,6 +143,10 @@ export function validateDocument(
       });
     }
     const rule = g.type ? catalog.get(g.type) : undefined;
+    if (g.type && rule) {
+      const providerIssue = validateProvider(doc.grammar, rule.provider, "Group", g.id, g.type);
+      if (providerIssue) issues.push(providerIssue);
+    }
     if (enforceCatalogRules && g.type && !g.parent && rule && !rule.allowRoot) {
       issues.push({
         level: "error",
@@ -168,6 +189,25 @@ export function validateDocument(
   }
 
   return issues;
+}
+
+function validateProvider(
+  grammar: DiagramDocument["grammar"],
+  provider: CatalogRule["provider"],
+  entityKind: "Resource" | "Group",
+  id: string,
+  type: string,
+): ValidationIssue | undefined {
+  if (!provider || provider === "cloud-agnostic") return undefined;
+  if (grammar !== provider) {
+    return {
+      level: "error",
+      code: "provider-mismatch",
+      message: `${entityKind} ${id} type ${type} belongs to ${provider}, but document grammar is ${grammar}`,
+      id,
+    };
+  }
+  return undefined;
 }
 
 function isInsideVpc(doc: DiagramDocument, groupId: string): boolean {

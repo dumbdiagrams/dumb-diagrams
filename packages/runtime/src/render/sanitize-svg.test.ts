@@ -33,6 +33,9 @@ describe("sanitizeSvg", () => {
     expect(() => sanitizeSvg("plain text")).toThrow(/Invalid SVG/);
     expect(() => sanitizeSvg('<svg width="-1" height="10"/>')).toThrow(/width/i);
     expect(() => sanitizeSvg('<svg><rect fill="url(#paint0)"/></svg>')).not.toThrow();
+    expect(() => sanitizeSvg('<svg><rect></svg>')).toThrow(/unbalanced/i);
+    expect(() => sanitizeSvg('<svg></svg><svg></svg>')).toThrow(/multiple root/i);
+    expect(() => sanitizeSvg('<svg></svg>trailing text')).toThrow(/outside root/i);
   });
 
   it("uses explicit dimensions and safe local references when the DOM parser is unavailable", () => {

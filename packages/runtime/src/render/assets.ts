@@ -42,19 +42,28 @@ export interface PortableSvgOptions {
   loadCatalogSvg?: (browserPath: string) => Promise<string>;
 }
 
+/** A portable export cannot resolve relative catalog paths without a loader/base URL. */
+export class PortableSvgError extends Error {
+  readonly code = "catalog-loader-required";
+
+  constructor(browserPath: string) {
+    super(`Catalog icon loader required for ${browserPath}; pass loadCatalogSvg when exporting outside a browser`);
+    this.name = "PortableSvgError";
+  }
+}
+
 /** Replace catalog image hrefs with data URLs for portable exports. */
 export async function inlineCatalogIcons(
   svg: string,
   options: PortableSvgOptions = {},
 ): Promise<string> {
   const load = options.loadCatalogSvg ?? (async (browserPath: string) => {
+    const baseUrl = typeof document !== "undefined" ? document.baseURI : undefined;
+    if (!baseUrl) throw new PortableSvgError(browserPath);
     if (typeof fetch === "undefined") {
       throw new Error(`No browser loader is available for ${browserPath}`);
     }
-    const baseUrl = typeof document !== "undefined" ? document.baseURI : undefined;
-    const url = baseUrl
-      ? new URL(browserPath.replace(/^\/+/, ""), baseUrl).toString()
-      : browserPath;
+    const url = new URL(browserPath.replace(/^\/+/, ""), baseUrl).toString();
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Unable to load catalog icon ${browserPath}`);
     return response.text();
