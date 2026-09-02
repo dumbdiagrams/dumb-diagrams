@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { expect, test } from "@playwright/test";
 
-import { ASYNC_DOCS } from "./support/helpers";
+import { ASYNC_DOCS, waitForStudioReady } from "./support/helpers";
 
 const formats = [
   { value: "png", label: "PNG", extension: ".png", verify: (data: Buffer) => expect(data.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
@@ -98,4 +98,37 @@ test("dark SVG export keeps canonical diagram colors and a dark grid background"
   expect(colors.groupStroke).not.toBe("#e6ebf0");
   expect(colors.gridBackground).toBe("#102033");
   expect(colors.canvasBackground).toBe("url(#export-grid)");
+});
+
+test("URL export reloads the canonical source into Studio once", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
+  await waitForStudioReady(page);
+
+  await page.getByRole("button", { name: "More export formats", exact: true }).click();
+  await page.getByRole("menu", { name: "Export as", exact: true })
+    .locator(".export-format-option").filter({ hasText: "URL" }).click();
+  const dialog = page.getByRole("dialog", { name: "Export URL" });
+  const downloadPromise = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Export URL", exact: true }).click();
+  const download = await downloadPromise;
+  const path = await download.path();
+  expect(path).not.toBeNull();
+  const sharedUrl = (await readFile(path!, "utf8")).trim();
+  expect(sharedUrl).toContain("#diagram=");
+
+  const reloaded = await page.context().newPage();
+  await reloaded.goto(sharedUrl);
+  await waitForStudioReady(reloaded);
+  await expect(reloaded.locator("#group-use1")).toHaveCount(1);
+  await expect(reloaded.locator(".workspace-tab.is-active")).toContainText("Async Docs");
+  await expect(reloaded).toHaveURL(/[^#]$/);
+  await reloaded.close();
+});
+
+test("malformed diagram URLs are rejected and consumed once", async ({ page }) => {
+  await page.goto("/#diagram=not-valid!");
+  await waitForStudioReady(page);
+  await expect(page.locator(".toast")).toContainText("malformed source payload");
+  await expect(page).toHaveURL(/[^#]$/);
 });

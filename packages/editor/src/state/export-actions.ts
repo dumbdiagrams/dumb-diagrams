@@ -1,5 +1,5 @@
 import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
-import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
 
 export type ExportFormat =
@@ -18,6 +18,59 @@ export type ExportFormat =
 export type ExportScope = "all" | "selection";
 export type ExportSize = "diagram" | "selection" | "custom";
 export type ExportAppearance = "light" | "dark";
+
+const DIAGRAM_URL_HASH_KEY = "diagram";
+const MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS = Math.ceil(DIAGRAM_LIMITS.sourceBytes / 3) * 4;
+
+export type DiagramUrlEncodeResult =
+  | { ok: true; payload: string }
+  | { ok: false; code: "empty" | "oversize"; message: string };
+
+export type DiagramUrlDecodeResult =
+  | { ok: true; source: string }
+  | { ok: false; code: "empty" | "malformed" | "oversize"; message: string };
+
+/** Encode source into the URL-safe payload used by the `#diagram=` format. */
+export function encodeDiagramUrlPayload(source: string): DiagramUrlEncodeResult {
+  if (!source) return { ok: false, code: "empty", message: "Diagram source cannot be empty." };
+  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
+    return { ok: false, code: "oversize", message: "Diagram source exceeds the 1 MiB URL limit." };
+  }
+  const bytes = new TextEncoder().encode(source);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return {
+    ok: true,
+    payload: btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, ""),
+  };
+}
+
+/** Decode and size-check a URL-safe `#diagram=` payload without parsing it. */
+export function decodeDiagramUrlPayload(payload: string): DiagramUrlDecodeResult {
+  if (!payload) return { ok: false, code: "empty", message: "Diagram URL does not contain source." };
+  if (payload.length > MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS) {
+    return { ok: false, code: "oversize", message: "Diagram URL source exceeds the 1 MiB limit." };
+  }
+  if (!/^[A-Za-z0-9_-]+$/.test(payload) || payload.length % 4 === 1) {
+    return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
+  }
+  try {
+    const padded = payload.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - payload.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    if (bytes.byteLength > DIAGRAM_LIMITS.sourceBytes) {
+      return { ok: false, code: "oversize", message: "Diagram URL source exceeds the 1 MiB limit." };
+    }
+    const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    if (!source) return { ok: false, code: "empty", message: "Diagram URL does not contain source." };
+    return { ok: true, source };
+  } catch {
+    return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
+  }
+}
 
 export interface ExportSelectionItem {
   kind: "resource" | "group" | "edge" | "annotation";
@@ -436,7 +489,12 @@ export async function exportDiagramFile(args: {
       return { ok: downloadText(toDiagramXml(doc, source), filename, "application/xml"), filename };
     }
     if (options.format === "url") {
-      return { ok: downloadText(createDiagramUrl(source), filename, "text/plain"), filename };
+      const diagramUrl = createDiagramUrl(source);
+      return {
+        ok: diagramUrl !== null && downloadText(diagramUrl, filename, "text/plain"),
+        filename,
+        ...(diagramUrl === null ? { error: "Diagram source cannot be encoded as a URL." } : {}),
+      };
     }
 
     const baseSvg = await getPortableSvg();
@@ -516,11 +574,10 @@ function toStandaloneHtml(title: string, svg: string, source?: string): string {
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>html,body{margin:0;min-height:100%;background:#f4f7fb;color:#172033;font-family:system-ui,sans-serif}main{display:grid;gap:24px;justify-items:center;padding:32px}svg{max-width:100%;height:auto;box-shadow:0 18px 50px rgba(18,32,58,.14);border-radius:12px}details{width:min(1100px,100%);background:#fff;border:1px solid #dbe3ee;border-radius:12px;padding:14px 18px}pre{white-space:pre-wrap;overflow:auto;font:12px/1.5 ui-monospace,monospace}</style></head><body><main>${svg}${sourceBlock}</main></body></html>\n`;
 }
 
-function createDiagramUrl(source: string): string {
-  let binary = "";
-  for (const byte of new TextEncoder().encode(source)) binary += String.fromCharCode(byte);
-  const encoded = btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
-  return `${window.location.origin}${window.location.pathname}#diagram=${encoded}`;
+export function createDiagramUrl(source: string): string | null {
+  const encoded = encodeDiagramUrlPayload(source);
+  if (!encoded.ok) return null;
+  return `${window.location.origin}${window.location.pathname}#${DIAGRAM_URL_HASH_KEY}=${encoded.payload}`;
 }
 
 function escapeHtml(value: string): string {
@@ -682,6 +739,7 @@ function concatBytes(...values: Uint8Array[]): Uint8Array {
 export interface ExportResult {
   ok: boolean;
   filename: string;
+  error?: string;
 }
 
 export async function exportSvgFile(

@@ -199,6 +199,10 @@ dgm init
 dgm studio
 ```
 
+Studio's **Export → URL** downloads a shareable URL containing the canonical
+`.dgm` source. Opening that URL imports the source into a new Studio tab; the
+one-time `#diagram` payload is removed from the address bar after import.
+
 ## Working on this repository
 
 This repository uses the pinned pnpm workspace. Use `pnpm` for workspace

@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
 
-import { filenameWithExtension, getExportBounds, isExportFormatSupported, sanitizeFilename } from "./export-actions";
+import {
+  decodeDiagramUrlPayload,
+  encodeDiagramUrlPayload,
+  filenameWithExtension,
+  getExportBounds,
+  isExportFormatSupported,
+  sanitizeFilename,
+} from "./export-actions";
 
 describe("export filenames", () => {
   it("does not advertise WebP when the browser silently encodes PNG", () => {
@@ -59,5 +66,24 @@ describe("export filenames", () => {
       w: 528,
       h: 132,
     });
+  });
+});
+
+describe("diagram URL payloads", () => {
+  it("round-trips UTF-8 source through a URL-safe payload", () => {
+    const source = "diagram résumé {\n  grammar aws\n}\n";
+    const encoded = encodeDiagramUrlPayload(source);
+    expect(encoded.ok).toBe(true);
+    if (!encoded.ok) return;
+    expect(encoded.payload).not.toMatch(/[+/=]/);
+    expect(decodeDiagramUrlPayload(encoded.payload)).toEqual({ ok: true, source });
+  });
+
+  it("rejects malformed and oversized URL payloads", () => {
+    expect(decodeDiagramUrlPayload("not valid!")).toMatchObject({ ok: false, code: "malformed" });
+    expect(decodeDiagramUrlPayload("A".repeat(Math.ceil((1024 * 1024) / 3) * 4 + 1)))
+      .toMatchObject({ ok: false, code: "oversize" });
+    const oversized = encodeDiagramUrlPayload("x".repeat(1024 * 1024 + 1));
+    expect(oversized).toMatchObject({ ok: false, code: "oversize" });
   });
 });

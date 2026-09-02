@@ -129,6 +129,7 @@ import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { clearDraft, loadDraft } from "./state/autosave";
 import {
+  decodeDiagramUrlPayload,
   downloadText,
   exportDgmFile,
   filenameWithExtension,
@@ -229,6 +230,31 @@ const SourceDrawer = lazy(() => import("./panels/SourceDrawer").then((module) =>
 const ExamplesModal = lazy(() => import("./panels/ExamplesModal").then((module) => ({
   default: module.ExamplesModal,
 })));
+type InitialUrlImport = {
+  source?: string;
+  error?: string;
+};
+
+const INITIAL_URL_IMPORT: InitialUrlImport = (() => {
+  if (typeof window === "undefined" || !window.location.hash) return {};
+  const hash = window.location.hash.slice(1);
+  const params = new URLSearchParams(hash);
+  if (params.size !== 1 || !params.has("diagram")) {
+    return { error: "Diagram URL contains an unsupported hash." };
+  }
+  const decoded = decodeDiagramUrlPayload(params.get("diagram") ?? "");
+  if (!decoded.ok) return { error: decoded.message };
+  try {
+    const doc = parseDgm(decoded.source);
+    if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) {
+      return { error: "Diagram URL contains invalid diagram source." };
+    }
+  } catch {
+    return { error: "Diagram URL contains invalid diagram source." };
+  }
+  return { source: decoded.source };
+})();
+
 const RECOVERY = (() => {
   const draft = loadDraft();
   if (!draft) return null;
@@ -277,6 +303,15 @@ function waitForPaint(): Promise<void> {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => window.setTimeout(resolve, 0));
   });
+}
+
+function clearDiagramHash(): void {
+  if (typeof window === "undefined" || !window.location.hash) return;
+  try {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  } catch {
+    window.location.hash = "";
+  }
 }
 
 function documentNameForDisplay(doc: DiagramDocument): string {
@@ -338,9 +373,9 @@ function App() {
     markTabSaved,
     setTabFilename,
   } = useWorkspace({
-    initialSource: RECOVERY?.source ?? BLANK_SOURCE,
-    initialSavedSource: RECOVERY ? "" : BLANK_SOURCE,
-    initialOrigin: RECOVERY ? "recovery" : "new",
+    initialSource: INITIAL_URL_IMPORT.source ?? RECOVERY?.source ?? BLANK_SOURCE,
+    initialSavedSource: (INITIAL_URL_IMPORT.source || RECOVERY) ? "" : BLANK_SOURCE,
+    initialOrigin: INITIAL_URL_IMPORT.source ? "import" : RECOVERY ? "recovery" : "new",
     initialViewport: INITIAL_VIEWPORT,
     blankSource: BLANK_SOURCE,
   });
@@ -392,6 +427,7 @@ function App() {
   const closeAnimationTimerRef = useRef<number | null>(null);
   const pendingClosePreviewsRef = useRef<WorkspacePreviewMap>({});
   const [operation, setOperation] = useState<OperationState>(null);
+  const initialUrlHandledRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -480,7 +516,10 @@ function App() {
     return true;
   };
 
-  const saveActive = () => { void saveTabSource(activeTab.id); };
+  const saveActive = () => {
+    if (!currentSourceValid) return;
+    void saveTabSource(activeTab.id);
+  };
 
   const exportCurrentSource = () => {
     const result = exportDgmFile(source, tabLabel(activeTab));
@@ -488,6 +527,7 @@ function App() {
   };
 
   const openSaveAs = () => {
+    if (!currentSourceValid) return;
     const picker = (window as FilePickerWindow).showSaveFilePicker;
     if (!picker) {
       setSaveAsDraft(activeTab.filename || filenameWithExtension(tabLabel(activeTab), "dgm"));
@@ -875,6 +915,11 @@ function App() {
       invariantFailures: [],
     };
   }, [compiledFromCache, displayCompiled, parsedDoc]);
+  // `compiled` may intentionally pair a parseable repair document with the
+  // last good geometry. This flag is the only source of truth for actions
+  // that require the current source to be valid.
+  const currentCompilation = compiledFromCache.ok ? compiledFromCache : null;
+  const currentSourceValid = currentCompilation !== null;
 
   useEffect(() => {
     if (
@@ -910,6 +955,28 @@ function App() {
     if (activeTab.origin === "recovery") setToast("Draft restored");
     clearDraft();
   }, [activeTab.origin, workspaceReady]);
+
+  useEffect(() => {
+    if (!workspaceReady || initialUrlHandledRef.current) return;
+    initialUrlHandledRef.current = true;
+    if (INITIAL_URL_IMPORT.source) {
+      const existingTab = tabs.find((tab) => tab.source === INITIAL_URL_IMPORT.source);
+      const alreadyOpen = Boolean(existingTab);
+      if (!alreadyOpen && tabs.length >= MAX_WORKSPACE_TABS) {
+        setToast(tabLimitMessage);
+      } else {
+        if (!alreadyOpen) {
+          openTab(INITIAL_URL_IMPORT.source, { origin: "import" });
+        } else if (existingTab) {
+          setActiveTab(existingTab.id);
+        }
+        setToast(alreadyOpen ? "Opened diagram URL" : "Opened diagram from URL");
+      }
+    } else if (INITIAL_URL_IMPORT.error) {
+      setToast(INITIAL_URL_IMPORT.error);
+    }
+    clearDiagramHash();
+  }, [openTab, setActiveTab, tabs, workspaceReady]);
 
   const displayCanvas = displayCompiled
     ? displayCompiled.layout.canvasBounds ?? {
@@ -962,15 +1029,14 @@ function App() {
 
   const journalIssues = useMemo<StudioIssue[]>(() => {
     if (!compiledFromCache.ok) {
-      const message = ("parseError" in compiledFromCache && compiledFromCache.parseError)
-        || compiledFromCache.issues.find((issue) => issue.level === "error")?.message
-        || compiledFromCache.issues[0]?.message;
-      if (message) {
-        return [{
-          severity: parsedDoc ? "warning" : "error",
-          message,
-        }];
+      if ("parseError" in compiledFromCache && compiledFromCache.parseError) {
+        return [{ severity: "error", message: compiledFromCache.parseError }];
       }
+      return compiledFromCache.issues.map((issue) => ({
+        severity: issue.level,
+        message: issue.message,
+        elementIds: issue.id ? [issue.id] : undefined,
+      }));
     }
     if (!compiled.ok) {
       return compiled.issues.map((issue) => ({ severity: "error" as const, message: issue.message }));
@@ -1681,15 +1747,15 @@ function App() {
     { id: "open", label: "Open .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => void openFromDisk() },
     { id: "recycle-bin", label: `Recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`, onSelect: () => setRecycleBinOpen(true) },
     { id: "file-divider-1", label: "", separator: true },
-    { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !compiled.ok, onSelect: saveActive },
-    { id: "save-as", label: "Save As…", shortcut: "⌘⇧S / Ctrl+Shift+S", disabled: !compiled.ok, onSelect: openSaveAs },
+    { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !currentSourceValid, onSelect: saveActive },
+    { id: "save-as", label: "Save As…", shortcut: "⌘⇧S / Ctrl+Shift+S", disabled: !currentSourceValid, onSelect: openSaveAs },
     {
       id: "export",
       label: "Export",
       submenu: [
-        { id: "export-studio", label: "Export…", disabled: !compiled.ok, onSelect: () => setExportDialogFormat("svg") },
-        { id: "export-png", label: "PNG image…", disabled: !compiled.ok, onSelect: () => setExportDialogFormat("png") },
-        { id: "export-pdf", label: "PDF document…", disabled: !compiled.ok, onSelect: () => setExportDialogFormat("pdf") },
+        { id: "export-studio", label: "Export…", disabled: !currentSourceValid, onSelect: () => setExportDialogFormat("svg") },
+        { id: "export-png", label: "PNG image…", disabled: !currentSourceValid, onSelect: () => setExportDialogFormat("png") },
+        { id: "export-pdf", label: "PDF document…", disabled: !currentSourceValid, onSelect: () => setExportDialogFormat("pdf") },
         { id: "export-source", label: "Source (.dgm)", onSelect: exportCurrentSource },
       ],
     },
@@ -1706,8 +1772,8 @@ function App() {
   const commands: Command[] = [
     { id: "command-new", label: "New diagram", section: "File", shortcut: "⌘N", onSelect: handleNewTab },
     { id: "command-open", label: "Open .dgm", section: "File", shortcut: "⌘O", onSelect: () => void openFromDisk() },
-    { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !compiled.ok, onSelect: saveActive },
-    { id: "command-save-as", label: "Save As", section: "File", shortcut: "⌘⇧S", disabled: !compiled.ok, onSelect: openSaveAs },
+    { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !currentSourceValid, onSelect: saveActive },
+    { id: "command-save-as", label: "Save As", section: "File", shortcut: "⌘⇧S", disabled: !currentSourceValid, onSelect: openSaveAs },
     { id: "command-duplicate-tab", label: "Duplicate tab", section: "Workspace", onSelect: duplicateActiveTab },
     { id: "command-close-tab", label: "Close tab", section: "Workspace", shortcut: "⌘W", disabled: isProtectedDefaultTab(tabs, BLANK_SOURCE, activeTab.id), onSelect: () => handleCloseTab(activeTab.id) },
     { id: "command-reopen-tab", label: "Reopen closed tab", section: "Workspace", disabled: recentlyClosed.length === 0, onSelect: reopenLastTab },
@@ -1915,7 +1981,7 @@ function App() {
           <div className="source-error-banner" role="alert">
             <strong>
               {parsedDoc
-                ? "Diagram warning — you can keep editing."
+                ? "Diagram error — repair the source to save or export."
                 : "Source error — showing the last valid diagram."}
             </strong>
             <span>{issues[0]?.message}</span>
@@ -2020,7 +2086,7 @@ function App() {
                   event.currentTarget.value = "";
                 }}
               />
-              {compiled.ok ? (
+              {currentSourceValid ? (
                 <ExportMenu
                   selectionCount={selection.length}
                   onOpenExport={setExportDialogFormat}
@@ -2274,6 +2340,7 @@ function App() {
                 issues={issues}
                 onChange={onSourceChange}
                 onCommit={onSourceCommit}
+                canFormat={currentSourceValid}
                 onFormat={() => {
                   try {
                     commitSource(printDgm(parseDgm(source)));
@@ -2553,16 +2620,16 @@ function App() {
           onClose={() => setCommandPaletteOpen(false)}
         />
 
-        {compiled.ok && (
+        {currentCompilation && (
           <ExportDialog
             open={exportDialogFormat !== null}
             initialFormat={exportDialogFormat ?? "svg"}
-            title={documentNameForDisplay(compiled.doc)}
+            title={documentNameForDisplay(currentCompilation.doc)}
             source={source}
-            doc={compiled.doc}
-            layout={compiled.layout}
+            doc={currentCompilation.doc}
+            layout={currentCompilation.layout}
             selection={selection}
-            getPortableSvg={() => renderPortableSvg(compiled.doc, compiled.layout)}
+            getPortableSvg={() => renderPortableSvg(currentCompilation.doc, currentCompilation.layout)}
             onClose={() => setExportDialogFormat(null)}
             onToast={setToast}
           />

@@ -30,13 +30,33 @@ test("keeps the last valid canvas and blocks save until source is repaired", asy
   await expect(page.getByRole("menuitem", { name: "Save As…", exact: true })).toBeDisabled();
   await page.keyboard.press("Escape");
   const drawer = page.getByRole("dialog", { name: "Source", exact: true });
-  await drawer.getByRole("button", { name: "Format", exact: true }).click();
-  await expect(page.locator(".toast")).toContainText("Cannot format invalid source");
+  await expect(drawer.getByRole("button", { name: "Format", exact: true })).toBeDisabled();
 
   await replaceSource(page, readFileSync(ASYNC_DOCS, "utf8"));
   await waitForStudioReady(page);
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.locator("#group-use1")).toHaveCount(1);
+});
+
+test("surfaces validation-invalid source and disables save and rendered export", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
+  await waitForStudioReady(page);
+  await replaceSource(page, `diagram invalid-edge {
+  grammar aws
+  generic.user client
+  client -> missing { id e1 kind flow }
+}
+`);
+
+  await expect(page.getByRole("alert")).toContainText("Diagram error");
+  await expect(page.getByRole("dialog", { name: "Source", exact: true }).locator(".issues")).toBeVisible();
+
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: "Save", exact: true })).toBeDisabled();
+  await expect(page.getByRole("menuitem", { name: "Save As…", exact: true })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeDisabled();
 });
 
 test("valid source edits sync to the canvas and survive reload", async ({ page }) => {
