@@ -16,6 +16,8 @@ If you want to use a coding agent, set it up separately. Codex, Claude Code, Cur
 
 A diagram is a normal text file. It describes resources, the groups they belong to, and the connections between them. When you make a visual adjustment in Studio, that decision can be saved in the same file.
 
+Diagrams as code keeps architecture in version-controlled text instead of a proprietary canvas. Coding agents can edit that text directly, while the local architecture diagram editor gives you visual controls for the final result.
+
 Keep `.dgm` files wherever they belong, review changes in Git, and ask a coding
 agent to update a diagram when the system changes. Studio is a generic file
 editor: use **Open** to select any local file.

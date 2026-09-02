@@ -4,14 +4,12 @@ description: Follow an agent-assisted Azure walkthrough from a plain-English upl
 section: Start here
 order: 2.6
 ---
-This is the Azure companion to the AWS walkthrough. I started with an initialized
-Dumb Diagrams project, opened it in Cursor, gave the agent one plain-English
-request, and reviewed the resulting pipeline in Studio.
+This Azure walkthrough starts with an initialized Dumb Diagrams project and a
+plain-English request for a document-processing pipeline. The agent turns that
+request into source, then Studio provides the rendered diagram for review.
 
-The same route works with Codex, Claude Code, Cursor, or any other coding agent
-that can read local project instructions and edit files. The agentic workflow is
-the quickest way to get a useful first draft: the model works beside the source
-files, while Dumb Diagrams validates and renders the diagram.
+I used Cursor for this session. Codex, Claude Code, and other coding agents work
+too, as long as they can read local project instructions and edit files.
 
 ## Start with an initialized project
 

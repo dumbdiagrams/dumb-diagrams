@@ -6,7 +6,7 @@ order: 2
 ---
 A coding agent can turn an architecture discussion into a structured file. It does not need to place hundreds of shapes on a canvas by hand.
 
-That is what **LLM-first** means here: the large language model works with readable source and explicit constraints, while the diagram engine handles deterministic placement and routing. The workflow is diagrams as code, with a visual editor when you need one. You stay in control of both the source and the final result.
+Here, **LLM-first** means the large language model works with readable source and explicit constraints. The diagram engine handles deterministic placement and routing. This is diagrams as code with a visual editor when you need one, so you can review the source and make the final visual changes yourself.
 
 Run `dumbdiagrams init` from the directory where you want the new project
 folder. It creates small agent entrypoints and shared instructions under

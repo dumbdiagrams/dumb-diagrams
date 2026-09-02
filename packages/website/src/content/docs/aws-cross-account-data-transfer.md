@@ -4,15 +4,13 @@ description: Follow a real agent-assisted walkthrough from dumbdiagrams init to 
 section: Start here
 order: 2.5
 ---
-This is a complete **AWS example** from a real working session. I started with a
-fresh Dumb Diagrams project, opened it in Cursor, gave the agent one plain-English
-architecture request, and reviewed the result in Studio.
+This **AWS example** follows a real working session from an empty project to a
+reviewed diagram. I used Cursor, but the same steps work with Codex, Claude Code,
+or another coding agent that can read local instructions and edit files.
 
-The same workflow works with Codex, Claude Code, Cursor, or any other coding
-agent that can read local project instructions and edit files. The important part
-is the agentic workflow: the model works beside the source files, while Dumb
-Diagrams validates and renders the diagram. For a quick first draft, opening the
-project in one of those agents is the easiest route.
+The model works beside the source files. Dumb Diagrams validates and renders
+what it writes, which makes the agent workflow a straightforward way to create
+a first draft.
 
 ## Start with a fresh project
 

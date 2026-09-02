@@ -58,7 +58,7 @@ export function createCliUi(options: CliUiOptions = {}) {
         .join("\n");
     },
     brand(): string {
-      return `${bold(paint("DUMB DIAGRAMS", PALETTE.orange))} ${dim("— LLM-first architecture diagrams that are hard to get wrong")}`;
+      return `${bold(paint("DUMB DIAGRAMS", PALETTE.orange))} ${dim(": LLM-first architecture diagrams that are hard to get wrong")}`;
     },
     heading(value: string): string {
       return bold(paint(value, PALETTE.orange));
