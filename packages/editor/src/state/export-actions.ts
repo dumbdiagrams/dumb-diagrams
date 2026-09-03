@@ -20,6 +20,12 @@ export type ExportScope = "all" | "selection";
 export type ExportSize = "diagram" | "selection" | "custom";
 export type ExportAppearance = "light" | "dark";
 
+/** Capabilities exposed by the export studio for each output format. */
+export type ExportFormatCapabilities = Readonly<{
+  visual: boolean;
+  sourceOption: boolean;
+}>;
+
 export type ExportErrorCode =
   | "portable-svg-preparation"
   | "rasterization"
@@ -150,6 +156,33 @@ export const EXPORT_FORMATS: ReadonlyArray<{
   { value: "json", label: "JSON", extension: "json", description: "Structured document data" },
   { value: "dgm", label: "DGM source", extension: "dgm", description: "Canonical source file" },
 ];
+
+/**
+ * Keep format-specific controls honest. `sourceOption` means the checkbox can
+ * change the resulting file; formats such as DGM, XML, and URL always carry
+ * source by definition and therefore do not expose that optional control.
+ */
+export const EXPORT_FORMAT_CAPABILITIES: Readonly<Record<ExportFormat, ExportFormatCapabilities>> = {
+  png: { visual: true, sourceOption: false },
+  jpeg: { visual: true, sourceOption: false },
+  webp: { visual: true, sourceOption: false },
+  gif: { visual: true, sourceOption: false },
+  svg: { visual: true, sourceOption: true },
+  pdf: { visual: true, sourceOption: false },
+  html: { visual: true, sourceOption: true },
+  xml: { visual: false, sourceOption: false },
+  url: { visual: false, sourceOption: false },
+  json: { visual: false, sourceOption: false },
+  dgm: { visual: false, sourceOption: false },
+};
+
+export function exportFormatCapabilities(value: ExportFormat): ExportFormatCapabilities {
+  return EXPORT_FORMAT_CAPABILITIES[value];
+}
+
+export function supportsExportSourceOption(value: ExportFormat): boolean {
+  return exportFormatCapabilities(value).sourceOption;
+}
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -472,7 +505,7 @@ export function prepareExportSvg(
     root.append(border);
   }
 
-  if (options.includeSource) {
+  if (options.includeSource && supportsExportSourceOption(options.format)) {
     const metadata = parsed.createElementNS(SVG_NS, "metadata");
     metadata.setAttribute("id", "dumb-diagrams-source");
     metadata.textContent = "DumbDiagrams\n" + (source ?? serializeSourceForMetadata(doc));
@@ -628,7 +661,11 @@ async function exportDiagramFileUnsafe(args: {
   if (options.format === "html") {
     let html: string;
     try {
-      html = toStandaloneHtml(title, svg, options.includeSource ? source : undefined);
+      html = toStandaloneHtml(
+        title,
+        svg,
+        supportsExportSourceOption(options.format) && options.includeSource ? source : undefined,
+      );
     } catch (cause) {
       failExport("encoding", "Could not encode the HTML export.", cause);
     }

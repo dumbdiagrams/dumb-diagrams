@@ -9,10 +9,12 @@ import {
   downloadTextResult,
   exportDgmFileResult,
   exportDiagramFile,
+  EXPORT_FORMAT_CAPABILITIES,
   filenameWithExtension,
   getExportBounds,
   isExportFormatSupported,
   sanitizeFilename,
+  supportsExportSourceOption,
 } from "./export-actions";
 
 afterEach(() => {
@@ -54,6 +56,18 @@ function stubDownload({ click = vi.fn() }: { click?: ReturnType<typeof vi.fn> } 
 }
 
 describe("export filenames", () => {
+  it("advertises source embedding only for formats that preserve it", () => {
+    expect(Object.entries(EXPORT_FORMAT_CAPABILITIES)
+      .filter(([, capabilities]) => capabilities.sourceOption)
+      .map(([format]) => format))
+      .toEqual(["svg", "html"]);
+    expect(supportsExportSourceOption("png")).toBe(false);
+    expect(supportsExportSourceOption("pdf")).toBe(false);
+    expect(supportsExportSourceOption("gif")).toBe(false);
+    expect(supportsExportSourceOption("svg")).toBe(true);
+    expect(supportsExportSourceOption("html")).toBe(true);
+  });
+
   it("does not advertise WebP when the browser silently encodes PNG", () => {
     const toDataURL = vi.fn(() => "data:image/png;base64,placeholder");
     vi.stubGlobal("document", { createElement: () => ({ width: 0, height: 0, toDataURL }) });

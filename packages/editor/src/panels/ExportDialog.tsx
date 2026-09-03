@@ -7,6 +7,7 @@ import {
   EXPORT_FORMATS,
   isExportFormatSupported,
   exportDiagramFile,
+  exportFormatCapabilities,
   exportFormat,
   getExportBounds,
   type ExportAppearance,
@@ -16,8 +17,6 @@ import {
   type ExportSize,
 } from "../state/export-actions";
 import { Modal } from "../ui/Modal";
-
-const VISUAL_FORMATS = new Set<ExportFormat>(["png", "jpeg", "webp", "gif", "svg", "pdf", "html"]);
 
 export function ExportDialog({
   open,
@@ -85,7 +84,7 @@ export function ExportDialog({
   const width = size === "custom" ? customWidth : automaticWidth;
   const height = size === "custom" ? customHeight : automaticHeight;
   const formatDetails = exportFormat(format);
-  const visualFormat = VISUAL_FORMATS.has(format);
+  const formatCapabilities = exportFormatCapabilities(format);
 
   const setNumeric = (setter: (value: number) => void, value: string, minimum: number) => {
     const parsed = Number(value);
@@ -100,7 +99,7 @@ export function ExportDialog({
       size,
       appearance,
       transparentBackground,
-      includeSource,
+      includeSource: formatCapabilities.sourceOption && includeSource,
       zoom: Math.max(1, zoom),
       width: Math.max(1, width),
       height: Math.max(1, height),
@@ -207,7 +206,7 @@ export function ExportDialog({
           <div className="export-section-heading">
             <div>
               <h3>Appearance</h3>
-              <p>{visualFormat ? "Make the exported canvas match the way you present it." : "Appearance is applied when this format supports a visual canvas."}</p>
+              <p>{formatCapabilities.visual ? "Make the exported canvas match the way you present it." : "Appearance is applied when this format supports a visual canvas."}</p>
             </div>
           </div>
           <div className="export-appearance-row">
@@ -231,14 +230,16 @@ export function ExportDialog({
               />
               <span>Transparent background</span>
             </label>
-            <label className="export-check-row">
-              <input
-                type="checkbox"
-                checked={includeSource}
-                onChange={(event) => setIncludeSource(event.target.checked)}
-              />
-              <span>Include a copy of my diagram</span>
-            </label>
+            {formatCapabilities.sourceOption && (
+              <label className="export-check-row">
+                <input
+                  type="checkbox"
+                  checked={includeSource}
+                  onChange={(event) => setIncludeSource(event.target.checked)}
+                />
+                <span>Include a copy of my diagram</span>
+              </label>
+            )}
           </div>
         </section>
 

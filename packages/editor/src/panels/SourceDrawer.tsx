@@ -1,13 +1,45 @@
-import { useEffect, useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
+import { useEffect, useRef, useState } from "react";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { EditorView } from "@codemirror/view";
 import { searchKeymap } from "@codemirror/search";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { oneDark } from "@codemirror/theme-one-dark";
 
+export type SourceLocation = Readonly<{
+  offset: number;
+  line: number;
+  column: number;
+}>;
+
+export type SourceDiagnostic = Readonly<{
+  message: string;
+  location?: SourceLocation;
+}>;
+
+/**
+ * Parser errors retain their original text and, where available, include a
+ * one-based character offset. Turn that offset into an editor-friendly
+ * location without changing the public parser error contract.
+ */
+export function sourceDiagnostic(source: string, message: string): SourceDiagnostic {
+  const match = message.match(/\bcharacter\s+(\d+)\b/i);
+  if (!match) return { message };
+  const character = Number(match[1]);
+  if (!Number.isSafeInteger(character)) return { message };
+  const offset = Math.max(0, Math.min(source.length, character - 1));
+  const before = source.slice(0, offset);
+  const line = before.split("\n").length;
+  const column = offset - before.lastIndexOf("\n");
+  return {
+    message: `Line ${line}, column ${column}: ${message}`,
+    location: { offset, line, column },
+  };
+}
+
 function useResolvedTheme(): "light" | "dark" {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "light";
     const attr = document.documentElement.dataset.theme;
     if (attr === "dark") return "dark";
     return "light";
@@ -70,6 +102,18 @@ export function SourceDrawer({
   onFormat: () => void;
 }) {
   const resolvedTheme = useResolvedTheme();
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const diagnostics = issues.map((issue) => sourceDiagnostic(source, issue.message));
+
+  const focusDiagnostic = (location: SourceLocation) => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    view.dispatch({
+      selection: { anchor: location.offset },
+      effects: EditorView.scrollIntoView(location.offset, { y: "center" }),
+    });
+    view.focus();
+  };
 
   return (
     <div className="source-drawer">
@@ -80,13 +124,26 @@ export function SourceDrawer({
         </button>
         {onReset && <button type="button" onClick={onReset}>Reset example</button>}
       </div>
-      {issues.length > 0 && (
-        <div className="issues" role="status">
-          {issues.map((issue, index) => <div key={index}>{issue.message}</div>)}
+      {diagnostics.length > 0 && (
+        <div className="issues" role="status" aria-live="polite" id="source-editor-diagnostics">
+          {diagnostics.map((diagnostic, index) => diagnostic.location ? (
+            <button
+              type="button"
+              className="source-diagnostic"
+              key={index}
+              title={`Jump to line ${diagnostic.location.line}, column ${diagnostic.location.column}`}
+              onClick={() => focusDiagnostic(diagnostic.location!)}
+            >
+              {diagnostic.message}
+            </button>
+          ) : <div key={index}>{diagnostic.message}</div>)}
         </div>
       )}
       <div className="source-editor-shell">
         <CodeMirror
+          ref={editorRef}
+          aria-label="Diagram source"
+          aria-describedby={diagnostics.length > 0 ? "source-editor-diagnostics" : undefined}
           value={source}
           height="100%"
           theme={resolvedTheme === "dark" ? oneDark : lightEditorTheme}
