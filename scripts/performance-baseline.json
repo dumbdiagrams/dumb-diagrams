@@ -1,16 +1,17 @@
 {
+  "schemaVersion": 1,
   "fixtures": {
-    "examples/diagrams/async-docs.dgm": { "medianMs": 10 },
-    "examples/diagrams/transfer-hub.dgm": { "medianMs": 10 },
-    "examples/curated/simple-serverless-web-application/diagram.dgm": { "medianMs": 10 },
-    "examples/curated/aws-high-availability-web-app/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/aws-data-transfer-hub/diagram.dgm": { "medianMs": 750 },
-    "examples/curated/bedrock-claims-processing/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/image-thumbnail-pipeline/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/asynchronous-report-generation/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/event-driven-order-fulfillment/diagram.dgm": { "medianMs": 500 },
-    "examples/curated/azure-private-app-service/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/gcp-streaming-analytics/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": { "medianMs": 100 }
+    "examples/diagrams/async-docs.dgm": { "medianMs": 10, "maxMedianMs": 500, "maxP95Ms": 1000 },
+    "examples/diagrams/transfer-hub.dgm": { "medianMs": 10, "maxMedianMs": 500, "maxP95Ms": 1000 },
+    "examples/curated/simple-serverless-web-application/diagram.dgm": { "medianMs": 10, "maxMedianMs": 500, "maxP95Ms": 1000 },
+    "examples/curated/aws-high-availability-web-app/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
+    "examples/curated/aws-data-transfer-hub/diagram.dgm": { "medianMs": 750, "maxMedianMs": 5000, "maxP95Ms": 8000 },
+    "examples/curated/bedrock-claims-processing/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
+    "examples/curated/image-thumbnail-pipeline/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
+    "examples/curated/asynchronous-report-generation/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
+    "examples/curated/event-driven-order-fulfillment/diagram.dgm": { "medianMs": 500, "maxMedianMs": 5000, "maxP95Ms": 8000 },
+    "examples/curated/azure-private-app-service/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
+    "examples/curated/gcp-streaming-analytics/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
+    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 }
   }
 }

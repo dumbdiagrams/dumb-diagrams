@@ -22,8 +22,7 @@ export default defineConfig({
       include: [
         "packages/cli/src/**/*.ts",
         "packages/runtime/src/**/*.ts",
-        "packages/editor/src/**/*.ts",
-        "packages/editor/src/ui/ErrorBoundary.tsx",
+        "packages/editor/src/**/*.{ts,tsx}",
       ],
       exclude: [
         "**/*.test.{ts,tsx}",
@@ -33,14 +32,13 @@ export default defineConfig({
         // These are browser-bound orchestration layers. Their behavior is
         // exercised by Playwright rather than by the Node-focused coverage
         // suite below. Required numeric floors live in scripts/warn-coverage.mjs.
-        "packages/editor/src/canvas/**",
-        "packages/editor/src/catalog-dnd.ts",
-        "packages/editor/src/diagram-compiler.worker.ts",
         "packages/editor/src/interactions/InteractionOverlay.tsx",
-        "packages/editor/src/state/**",
+        "packages/editor/src/diagram-compiler.worker.ts",
         "packages/editor/src/use-diagram-compilation.ts",
-        "packages/editor/src/ui/theme.ts",
-        "packages/editor/src/ui/IssueJournal.tsx",
+        // These are application/browser orchestration boundaries. Their
+        // behavior is owned by Playwright; all other production TS/TSX,
+        // including state, panels, and tested canvas helpers, is measured.
+        "packages/editor/src/main.tsx",
       ],
     },
   },
