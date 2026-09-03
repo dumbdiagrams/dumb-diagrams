@@ -128,7 +128,7 @@ import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
 import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
-import { clearDraft, loadDraft } from "./state/autosave";
+import { readFileHandles, type OpenFileEntry } from "./state/file-open";
 import {
   isAbortError,
   saveExistingFileHandle,
@@ -255,17 +255,6 @@ const INITIAL_URL_IMPORT: InitialUrlImport = (() => {
   return { source: decoded.source };
 })();
 
-const RECOVERY = (() => {
-  const draft = loadDraft();
-  if (!draft) return null;
-  const parsed = parseDgmResult(draft.source);
-  if (parsed.isErr() || hasErrors(validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules: false })) || documentHasUnsafeAssets(parsed.value)) {
-    clearDraft();
-    return null;
-  }
-  return draft;
-})();
-
 function documentHasUnsafeAssets(doc: DiagramDocument): boolean {
   return (doc.assets ?? []).some((asset) => sanitizeSvgResult(asset.content).isErr());
 }
@@ -373,9 +362,9 @@ function App() {
     setTabFilename,
     persistenceWarning,
   } = useWorkspace({
-    initialSource: INITIAL_URL_IMPORT.source ?? RECOVERY?.source ?? BLANK_SOURCE,
-    initialSavedSource: (INITIAL_URL_IMPORT.source || RECOVERY) ? "" : BLANK_SOURCE,
-    initialOrigin: INITIAL_URL_IMPORT.source ? "import" : RECOVERY ? "recovery" : "new",
+    initialSource: INITIAL_URL_IMPORT.source ?? BLANK_SOURCE,
+    initialSavedSource: INITIAL_URL_IMPORT.source ? "" : BLANK_SOURCE,
+    initialOrigin: INITIAL_URL_IMPORT.source ? "import" : "new",
     initialViewport: INITIAL_VIEWPORT,
     blankSource: BLANK_SOURCE,
   });
@@ -594,7 +583,6 @@ function App() {
       origin: "example",
       filename: activeTab.filename,
     });
-    clearDraft();
     resetTransientState();
     setDefaultFrameKey((current) => current + 1);
     setResetExampleOpen(false);
@@ -730,8 +718,8 @@ function App() {
     }
   };
 
-  const openFileEntries = async (entries: Array<{ file: File; handle?: FileSystemHandleLike }>) => {
-    if (!entries.length) return;
+  const openFileEntries = async (entries: OpenFileEntry[], initiallyRejected: string[] = []) => {
+    if (!entries.length && !initiallyRejected.length) return;
     // FileList is live and is cleared by the input after this handler returns.
     // Snapshot it before yielding so the browser can paint the progress state.
     const inputFiles = entries;
@@ -741,7 +729,7 @@ function App() {
     });
     await waitForPaint();
     const opened: string[] = [];
-    const rejected: string[] = [];
+    const rejected = [...initiallyRejected];
     const remainingSlots = Math.max(0, MAX_WORKSPACE_TABS - tabs.length);
     let limitReached = inputFiles.length > remainingSlots;
     try {
@@ -795,7 +783,7 @@ function App() {
         setToast(`Opened ${opened.length} diagram${opened.length === 1 ? "" : "s"}`);
       }
       if (rejected.length) {
-        setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}: invalid .dgm source`);
+        setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}`);
       }
       if (limitReached) setToast(tabLimitMessage);
     } finally {
@@ -819,11 +807,8 @@ function App() {
         multiple: true,
         types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
       });
-      const entries = await Promise.all(handles.map(async (handle) => ({
-        handle,
-        file: await handle.getFile(),
-      })));
-      await openFileEntries(entries);
+      const { entries, rejected } = await readFileHandles(handles);
+      await openFileEntries(entries, rejected);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setToast(error instanceof Error ? error.message : "Unable to open the selected diagram.");
@@ -1023,12 +1008,6 @@ function App() {
     if (!workspaceReady || activeTab.viewportCustomized) return;
     setDefaultFrameKey((current) => current + 1);
   }, [activeTab.viewportCustomized, activeTabId, workspaceReady]);
-
-  useEffect(() => {
-    if (!workspaceReady || !RECOVERY) return;
-    if (activeTab.origin === "recovery") setToast("Draft restored");
-    clearDraft();
-  }, [activeTab.origin, workspaceReady]);
 
   useEffect(() => {
     if (persistenceWarning) setToast(persistenceWarning);
