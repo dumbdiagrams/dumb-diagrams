@@ -192,7 +192,11 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
     execFileSync(
       npxCommand,
       ["--yes", `--package=${tarballPath}`, bin, ...args],
-      { cwd, stdio: ["ignore", "inherit", "inherit"], env: { ...process.env, npm_config_yes: "true" } },
+      {
+        cwd,
+        stdio: ["ignore", "inherit", "inherit"],
+        env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
+      },
     );
     return 0;
   } catch (error) {
@@ -205,6 +209,11 @@ function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
   return execFileSync(
     npxCommand,
     ["--yes", `--package=${tarballPath}`, bin, ...args],
-    { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, npm_config_yes: "true" } },
+    {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
+    },
   );
 }
