@@ -23,8 +23,10 @@
     "typecheck": "pnpm --filter @dumb-diagrams/editor typecheck",
     "check:versions": "node scripts/check-versions.mjs",
     "check:dependencies": "node scripts/check-dependencies.mjs",
-    "check:release": "pnpm icons:check && pnpm check:versions && pnpm check:dependencies && pnpm build && pnpm test:coverage && pnpm typecheck && pnpm check && pnpm check:routing && pnpm check:performance && pnpm check:assets && pnpm exec playwright install chromium webkit && pnpm test:e2e && pnpm test:e2e:packed && pnpm smoke:package && pnpm check:website",
+    "check:style": "biome ci",
+    "check:release": "pnpm check:style && pnpm icons:check && pnpm check:versions && pnpm check:dependencies && pnpm build && pnpm test:coverage && pnpm typecheck && pnpm check && pnpm check:routing && pnpm check:performance && pnpm check:assets && pnpm exec playwright install chromium webkit && pnpm test:e2e && pnpm test:e2e:packed && pnpm smoke:package && pnpm check:website",
     "smoke:package": "node scripts/smoke-cli-package.mjs",
+    "publish:metadata": "node scripts/set-cli-publish-metadata.mjs",
     "preflight:publish": "node scripts/preflight-npm.mjs",
     "test:e2e": "playwright test",
     "test:e2e:stress": "playwright test --repeat-each=3",
@@ -46,6 +48,7 @@
     "check:website": "pnpm --filter @dumb-diagrams/website check && pnpm build:website && pnpm --filter @dumb-diagrams/website test"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.11",
     "@playwright/test": "^1.62.1",
     "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.25.12",

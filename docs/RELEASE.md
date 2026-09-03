@@ -11,7 +11,8 @@ pnpm install --frozen-lockfile
 pnpm check:release
 ```
 
-`check:release` runs catalog inventory, version sync, dependency-boundary
+`check:release` starts with the repository Biome formatting/lint gate, then runs
+catalog inventory, version sync, dependency-boundary
 checks, build, unit/integration tests with a coverage report, editor
 typecheck, example validation plus the reviewed routing-warning baseline,
 static and packed-Studio Playwright journeys, the publishable package smoke
@@ -106,6 +107,15 @@ a known-good release, so it is rebuilt and deployed without assuming that an
 older tag contains today's test scripts. Normal CI also runs the packed CLI
 smoke on Windows so path handling and Windows package preparation cannot drift.
 
+The same tag also starts `.github/workflows/publish-cli.yml`. Configure npm's
+trusted publisher for the exact workflow filename and the protected
+`npm-production` environment before the first release. The workflow grants only
+read access plus the job-scoped OIDC identity permission, verifies that the tag
+matches `packages/cli/package.json`, installs with the frozen lockfile, runs the
+release preflight, and publishes the packed artifact with provenance. A manual
+run must name an existing semver tag; it does not publish the current branch.
+There is no long-lived npm token in the workflow.
+
 ## Rollback
 
 The rollback workflow is deliberately tag-based and does not mutate the
@@ -139,9 +149,11 @@ dynamic boundary instead of increasing the warning limit.
 
 - `assets/catalog/` — vendored provider SVGs, source locks, and collision policy.
   See [`assets/catalog/README.md`](../assets/catalog/README.md).
-- `examples/curated/` — canonical four-file bundles for curated AWS examples.
+- `examples/curated/` — canonical four-file bundles for curated AWS, Azure,
+  GCP, and cloud-agnostic examples.
 - `examples/diagrams/` and `examples/prompts/` — development fixtures, all
-  validated by CI. Studio ships the seven canonical AWS examples only.
+  validated by CI. Studio ships ten canonical examples spanning every supported
+  provider grammar.
 - `packages/runtime`, `packages/editor`, and `packages/cli` — the only workspace
   packages.
 - `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed

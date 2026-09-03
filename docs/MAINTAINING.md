@@ -38,10 +38,27 @@ regression guard for this fallback contract.
 
 ## Before merging
 
-Run `pnpm check:release`. That local gate now matches the Linux release
-surface, including `icons:check` and `pnpm check:website`. A routing-baseline
+Run `pnpm check:release`. The first step is `pnpm check:style`, a pinned Biome
+format/lint check over source files and package metadata; the gate then matches
+the Linux release surface, including `icons:check` and `pnpm check:website`. A routing-baseline
 change is exceptional: inspect the affected rendered examples before editing
 `examples/routing-warnings.json`. Every baselined warning needs a matching
 `reviews[]` note. Never delete a baseline warning merely to make a pipeline
 green. Coverage floors are required and fail the release gate when missed. The
-250 ms compile budget remains advisory and only warns when exceeded.
+`pnpm check:performance` reports seven warmed samples, median, and p95 for each
+fixture. Its wall-clock comparison is advisory until CI pins an exact Node and
+runner; the strict part of the gate is successful compilation, complete route
+retention, checked-in fixture coverage, and deterministic synthetic-budget
+fallback diagnostics.
+
+## Workflow and release maintenance
+
+Third-party GitHub Actions in `.github/workflows/` are pinned to full commit
+SHAs with a version comment. When upgrading one, resolve the release tag to its
+immutable commit, update the adjacent comment, and review the action's
+permissions and changelog. Do not replace a SHA with a floating major tag.
+
+The CLI publish workflow uses npm trusted publishing rather than an npm token.
+Keep the `npm-production` environment protected and configure npm's trusted
+publisher to the exact workflow filename. Keep `id-token: write` scoped to the
+publish job and retain semver-tag/version matching plus frozen-lockfile checks.
