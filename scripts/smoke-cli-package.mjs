@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 
 import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
 
@@ -11,7 +11,10 @@ const cliPackageRoot = join(root, "packages/cli");
 const cliManifest = JSON.parse(readFileSync(join(cliPackageRoot, "package.json"), "utf8"));
 const version = cliManifest.version;
 const tarballName = `create-dumb-diagrams-${version}.tgz`;
-const tarballPath = join(artifactsDir, tarballName);
+const requestedArtifact = process.env.DUMB_DIAGRAMS_ARTIFACT;
+const tarballPath = requestedArtifact
+  ? (isAbsolute(requestedArtifact) ? requestedArtifact : resolve(root, requestedArtifact))
+  : join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const curatedExampleIds = awsCuratedIds();
@@ -19,13 +22,15 @@ const curatedExampleFiles = ["user-prompt.md", "architecture-brief.md", "referen
 
 mkdirSync(artifactsDir, { recursive: true });
 
-execFileSync(pnpmCommand, ["--dir", cliPackageRoot, "pack", "--pack-destination", artifactsDir], {
-  cwd: root,
-  stdio: "inherit",
-});
+if (!requestedArtifact) {
+  execFileSync(pnpmCommand, ["--dir", cliPackageRoot, "pack", "--pack-destination", artifactsDir], {
+    cwd: root,
+    stdio: "inherit",
+  });
+}
 
 if (!existsSync(tarballPath)) {
-  throw new Error(`Expected tarball at ${tarballPath}`);
+  throw new Error(`Expected ${requestedArtifact ? "release artifact" : "tarball"} at ${tarballPath}`);
 }
 
 const entries = listTarballEntries(tarballPath);

@@ -18,12 +18,19 @@ typecheck, example validation plus the reviewed routing-warning baseline,
 static and packed-Studio Playwright journeys, the publishable package smoke
 test, and website check/build/tests.
 
-Build the standalone npm artifact from the compiled workspace:
+Prepare the publish metadata and build the standalone npm artifact from the
+compiled workspace. CI sets `GITHUB_REPOSITORY` automatically; locally, set it
+to the canonical `OWNER/REPO` value or let the script read `remote.origin`:
 
 ```bash
+export GITHUB_REPOSITORY=OWNER/REPO
+pnpm publish:metadata
 pnpm --filter create-dumb-diagrams run prepare:standalone
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+VERSION="$(node -p 'require("./packages/cli/package.json").version')"
+ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
+DUMB_DIAGRAMS_ARTIFACT="$ARTIFACT" pnpm smoke:package
 ```
 
 The resulting tarball contains the CLI, bundled diagram runtime, compiled
@@ -42,12 +49,14 @@ Recommended: pack locally and exercise the exact consumer boundary:
 
 ```bash
 pnpm build
+export GITHUB_REPOSITORY=OWNER/REPO
+pnpm publish:metadata
+pnpm --filter create-dumb-diagrams run prepare:standalone
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 VERSION="$(node -p 'require("./packages/cli/package.json").version')"
 ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-npx --yes --package="$ARTIFACT" dumbdiagrams init
-npx --yes --package="$ARTIFACT" dumbdiagrams studio
+DUMB_DIAGRAMS_ARTIFACT="$ARTIFACT" pnpm smoke:package
 ```
 
 This never uploads anything to npm.
@@ -91,8 +100,10 @@ dgm init
 dgm studio
 ```
 
-Create and push the release tag only after `pnpm check:release`,
-`pnpm preflight:publish`, branch CI, and the npm verification above pass:
+Create and push the release tag only after `pnpm check:release`, the exact
+metadata-bearing artifact smoke test, `pnpm preflight:publish`, and branch CI
+pass. The tag workflow publishes the same artifact only after rerunning the
+full release gate and verifying the package on npm:
 
 ```bash
 git tag -a v0.1.0 -m "Release v0.1.0"
@@ -110,11 +121,14 @@ smoke on Windows so path handling and Windows package preparation cannot drift.
 The same tag also starts `.github/workflows/publish-cli.yml`. Configure npm's
 trusted publisher for the exact workflow filename and the protected
 `npm-production` environment before the first release. The workflow grants only
-read access plus the job-scoped OIDC identity permission, verifies that the tag
-matches `packages/cli/package.json`, installs with the frozen lockfile, runs the
-release preflight, and publishes the packed artifact with provenance. A manual
-run must name an existing semver tag; it does not publish the current branch.
-There is no long-lived npm token in the workflow.
+read access plus the job-scoped OIDC identity permission, verifies that the
+exact tag exists and matches `packages/cli/package.json`, installs with the
+frozen lockfile, runs the complete `pnpm check:release`, applies the same
+metadata script, packs and smoke-tests one exact tarball, and publishes that
+file with provenance. It then polls npm until the version is visible and its
+registry integrity matches that exact tarball. A manual run must name an existing `vMAJOR.MINOR.PATCH` tag; it does
+not publish the current branch. There is no long-lived npm token in the
+workflow.
 
 ## Rollback
 
@@ -154,8 +168,8 @@ dynamic boundary instead of increasing the warning limit.
 - `examples/diagrams/` and `examples/prompts/` — development fixtures, all
   validated by CI. Studio ships ten canonical examples spanning every supported
   provider grammar.
-- `packages/runtime`, `packages/editor`, and `packages/cli` — the only workspace
-  packages.
+- `packages/brand`, `packages/runtime`, `packages/editor`, `packages/cli`, and
+  `packages/website` — the five workspace packages.
 - `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed
   tarballs.
 

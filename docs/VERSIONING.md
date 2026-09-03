@@ -20,9 +20,14 @@ Release requirements:
 1. Update every `packages/*/package.json` version to the same value.
 2. Add a dated entry to [CHANGELOG.md](../CHANGELOG.md).
 3. Run `pnpm check:release`.
-4. Run `pnpm preflight:publish` against the public npm registry.
-5. Create an annotated `vMAJOR.MINOR.PATCH` tag only after CI passes.
-6. Publish the CLI package and deploy the editor from that same tag.
+4. Prepare the metadata-bearing CLI artifact with
+   `GITHUB_REPOSITORY=OWNER/REPO pnpm publish:metadata` (the script also reads
+   `remote.origin` when available), then run the exact artifact smoke test.
+5. Run `pnpm preflight:publish` against the public npm registry.
+6. Create an annotated `vMAJOR.MINOR.PATCH` tag only after CI passes.
+7. Publish the exact tarball that passed the smoke test and deploy the editor
+   from that same tag. The publish workflow repeats `pnpm check:release` on the
+   tag and verifies the version is visible on npm after publishing.
 
 During the `0.x` series, the `.dgm` format is stable within each minor release
 line. Patch releases must remain backward compatible. A breaking grammar or

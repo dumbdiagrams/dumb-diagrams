@@ -39,7 +39,8 @@ Dumb Diagrams is a source-first diagram engine with a browser editor around it.
 - Studio lets a person edit the same document visually or as text.
 - `dumbdiagrams init` creates a named project folder for agents;
   `dumbdiagrams studio` serves the generic editor for files selected by the
-  user.
+  user; and `validate`, `format`, and `render` provide headless automation
+  workflows for `.dgm` files.
 - The npm tarball contains the CLI, the compiled Studio, templates, catalog
   assets, and buildable corresponding source.
 
@@ -195,15 +196,18 @@ export CLI="npx --yes --package=$ARTIFACT dumbdiagrams"
 
 ### Command reference
 
-The public CLI has two main commands:
+The public CLI has five main commands:
 
 | Command | Purpose |
 | --- | --- |
 | `dumbdiagrams init` | Create a named project folder for coding agents. The interactive prompt asks for its project name, uses a `dumb-diagrams-YYYY-MM-DD-HH-MM-SS` folder when blank, and writes agent entrypoints, `.dumbdiagrams/` guidance, and the documented `diagrams/` bundle convention. |
 | `dumbdiagrams studio` | Start the generic local Studio. It is independent of the launch directory; use **Open** to select any `.dgm` file on disk. |
+| `dumbdiagrams validate <path>` | Parse and fully validate a `.dgm` file, or read source from `-`, for CI and automation. |
+| `dumbdiagrams format <path>` | Print canonical source, or use `--check`/`--write` to verify or replace a file. |
+| `dumbdiagrams render <path>` | Produce deterministic SVG to stdout or an `--output` path. |
 
 `dgm` invokes the same entrypoint as a convenience shorthand. There are no
-file/folder positional arguments or project-registration options. Normal
+Studio file/folder positional arguments or project-registration options. Normal
 `--help` and `--version` handling remains available.
 
 ### Try the public workflow manually
@@ -233,13 +237,13 @@ optional shorthand.
 
 | Gate | CLI surface exercised |
 | --- | --- |
-| `packages/cli/src/index.test.ts` | `help`, `--version`, `init`, and `studio` |
+| `packages/cli/src/index.test.ts` | `help`, `--version`, `init`, `studio`, `validate`, `format`, and `render` |
 | `packages/cli/src/studio-server.test.ts` | Loopback-only static serving, security headers, and absence of file/project APIs |
 | `pnpm check` | Compiled CLI validates every checked-in `.dgm`, verifies the curated byte baseline, and runs the pilot semantic prompt ladder |
 | `pnpm check:routing` | Compares routing/layout warnings with the visually reviewed warning baseline |
 | `pnpm test:e2e` | Full Studio UI via **Vite** (not the CLI server) |
 | `pnpm test:e2e:packed` | Tarball → `studio` server → bundled generic Studio in a browser |
-| `pnpm smoke:package` | `npx` tarball: `init`, `studio`, `dgm` alias, and AGPL source rebuild |
+| `pnpm smoke:package` | `npx` tarball: `init`, `validate`, `format`, `render`, `studio`, `dgm` alias, and AGPL source rebuild |
 
 The main gap for manual spot-checking: browser UX through **workspace** `dev:cli`
 after editor changes (`pnpm build && pnpm dev:cli …`). Packed E2E covers the
@@ -265,7 +269,7 @@ there is no extra orchestration layer hiding how the packages fit together.
 | esbuild | Produces the standalone CLI bundle placed in the npm tarball |
 | GitHub Actions and Pages | Linux/Windows verification, exact-tag release checks, and static Studio deployment |
 
-There is deliberately no monorepo task framework. Four packages and a small
+There is deliberately no monorepo task framework. Five packages and a small
 set of root scripts are still easier to understand directly through pnpm.
 
 ### Why Vite 8, and what React has to do with it

@@ -61,4 +61,8 @@ permissions and changelog. Do not replace a SHA with a floating major tag.
 The CLI publish workflow uses npm trusted publishing rather than an npm token.
 Keep the `npm-production` environment protected and configure npm's trusted
 publisher to the exact workflow filename. Keep `id-token: write` scoped to the
-publish job and retain semver-tag/version matching plus frozen-lockfile checks.
+publish job and retain exact-tag/version matching, frozen-lockfile checks, the
+full `pnpm check:release` gate, exact-artifact smoke testing, and post-publish
+registry integrity verification. Local release preparation should call the same
+`pnpm publish:metadata` script before `prepare:standalone` and pack; set
+`GITHUB_REPOSITORY=OWNER/REPO` when no GitHub remote is configured.
