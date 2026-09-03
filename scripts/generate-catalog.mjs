@@ -88,6 +88,11 @@ const CATEGORY_COLUMN = {
   Network: "ingress",
   Security: "auth",
   Observability: "observability",
+  Operations: "observability",
+  "Business Intelligence": "data",
+  "Hybrid & Multicloud": "compute",
+  "Security Identity": "auth",
+  "Serverless Computing": "compute",
 };
 
 const GCP_PRODUCT_CATEGORIES = {
@@ -139,6 +144,21 @@ const GCP_CATEGORY_ASSETS = [
   "Storage",
   "Web & Mobile",
   "Web3",
+];
+
+// Google publishes category artwork for products that do not have a distinct
+// product glyph in the checked-in core package. These are semantic catalog
+// entries, not claims that a unique service icon exists; each deliberately
+// points at the reviewed shared category glyph.
+const GCP_CURATED_PRODUCTS = [
+  { type: "gcp.cloud-functions", name: "Cloud Functions", category: "Serverless Computing", scope: "regional", column: "compute" },
+  { type: "gcp.pub-sub", name: "Pub/Sub", category: "Integration Services", scope: "regional", column: "queue" },
+  { type: "gcp.dataflow", name: "Dataflow", category: "Data Analytics", scope: "regional", column: "data" },
+  { type: "gcp.cloud-logging", name: "Cloud Logging", category: "Observability", scope: "regional", column: "observability" },
+  { type: "gcp.cloud-monitoring", name: "Cloud Monitoring", category: "Observability", scope: "regional", column: "observability" },
+  { type: "gcp.iam", name: "IAM", category: "Security Identity", scope: "global", column: "auth" },
+  { type: "gcp.cloud-load-balancing", name: "Cloud Load Balancing", category: "Networking", scope: "global", column: "ingress" },
+  { type: "gcp.secret-manager", name: "Secret Manager", category: "Security Identity", scope: "global", column: "auth" },
 ];
 
 const PROVIDER_GROUPS = [
@@ -531,6 +551,7 @@ function entry({
   allowedParents = ALL_PARENT_KINDS,
   allowRoot = false,
   scope = "regional",
+  column,
 }) {
   const icon = iconAsset(provider, assetKind, name, file, specificity);
   return {
@@ -550,7 +571,7 @@ function entry({
     allowedParents,
     allowRoot,
     scope,
-    column: CATEGORY_COLUMN[category ?? categories?.[0] ?? ""] ?? "edge",
+    column: column ?? CATEGORY_COLUMN[category ?? categories?.[0] ?? ""] ?? "edge",
     sizeTier: "primary",
     canonical: true,
     browsable: true,
@@ -664,6 +685,27 @@ function scanGcp(used, collisionLog) {
   });
 }
 
+function gcpCuratedEntries(used, collisionLog) {
+  const base = join(ROOT, "assets/catalog/sources/gcp/Category Icons");
+  return GCP_CURATED_PRODUCTS.map((product) => {
+    if (used.has(product.type)) throw new Error(`Duplicate curated GCP type: ${product.type}`);
+    used.add(product.type);
+    const files = walk(join(base, product.category)).filter((file) => file.endsWith(".svg"));
+    const file = files[0];
+    if (!file) throw new Error(`Missing GCP category glyph: ${product.category}`);
+    return entry({
+      ...product,
+      provider: "gcp",
+      assetKind: "resource",
+      aliases: [product.name, product.type],
+      file,
+      specificity: "shared-category",
+      allowedParents: ALL_PARENT_KINDS,
+      allowRoot: false,
+    });
+  });
+}
+
 function gcpCategoryAssets() {
   const base = join(ROOT, "assets/catalog/sources/gcp/Category Icons");
   return GCP_CATEGORY_ASSETS.map((category) => {
@@ -765,6 +807,7 @@ const entries = [
   ...scanAwsResourceIcons(usedTypes, collisionLog),
   ...scanAzure(usedTypes, collisionLog),
   ...scanGcp(usedTypes, collisionLog),
+  ...gcpCuratedEntries(usedTypes, collisionLog),
 ];
 
 const legacyAliases = {

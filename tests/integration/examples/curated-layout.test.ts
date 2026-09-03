@@ -11,14 +11,14 @@ import { compiledGeometry, diffCompiledGeometry } from "../../../scripts/lib/com
 const root = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const contracts = JSON.parse(readFileSync(resolve(root, "examples/layout-contracts.json"), "utf8"));
 
-describe("curated AWS layout contracts", () => {
-  const awsIds = readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })
+describe("curated provider layout contracts", () => {
+  const curatedIds = readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
 
-  it("covers every AWS curated example", () => {
-    expect(Object.keys(contracts.examples).sort()).toEqual(awsIds);
+  it("covers every curated provider example", () => {
+    expect(Object.keys(contracts.examples).sort()).toEqual(curatedIds);
   });
 
   it("names the moved entity when compiled geometry drifts", () => {

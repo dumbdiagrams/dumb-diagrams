@@ -224,12 +224,15 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 7…|Previews ready/);
-  await expect(examples.locator(".example-card")).toHaveCount(7);
-  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(7);
-  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(7);
-  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(7);
-  await expect(examples.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(7);
+  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 10…|Previews ready/);
+  await expect(examples.locator(".example-card")).toHaveCount(10);
+  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(10);
+  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(10);
+  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(10);
+  await expect(examples.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(10);
+  await expect(examples.getByText("Private Azure App Service", { exact: true })).toBeVisible();
+  await expect(examples.getByText("Google Cloud streaming analytics", { exact: true })).toBeVisible();
+  await expect(examples.getByText("Cloud-agnostic order processing", { exact: true })).toBeVisible();
 
   const claims = examples.locator(".example-card").filter({ hasText: "Claims processing with Amazon Bedrock" });
   await expect(claims.locator(".example-prompt pre").first()).toContainText(

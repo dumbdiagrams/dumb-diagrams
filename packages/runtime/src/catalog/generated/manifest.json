@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generationVersion": "2026-08-20",
-  "count": 1518,
+  "count": 1526,
   "sources": [
     "aws",
     "azure",
@@ -2281,7 +2281,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -2328,7 +2328,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -3616,7 +3616,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -3664,7 +3664,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -4662,7 +4662,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -6219,7 +6219,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -6267,7 +6267,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -6315,7 +6315,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -6363,7 +6363,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -7588,7 +7588,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8250,7 +8250,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8298,7 +8298,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8346,7 +8346,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8394,7 +8394,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8442,7 +8442,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8490,7 +8490,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8538,7 +8538,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8586,7 +8586,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8634,7 +8634,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8682,7 +8682,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8730,7 +8730,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8778,7 +8778,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8826,7 +8826,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -8873,7 +8873,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -13084,7 +13084,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -13132,7 +13132,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -14128,7 +14128,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -14176,7 +14176,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -14837,7 +14837,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -14884,7 +14884,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15213,7 +15213,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15354,7 +15354,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15401,7 +15401,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15448,7 +15448,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15496,7 +15496,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15543,7 +15543,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15731,7 +15731,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15779,7 +15779,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -15826,7 +15826,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18681,7 +18681,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18729,7 +18729,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18777,7 +18777,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18825,7 +18825,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18873,7 +18873,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18921,7 +18921,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -18969,7 +18969,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -19017,7 +19017,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -20231,7 +20231,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -21328,7 +21328,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -21848,7 +21848,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -26758,7 +26758,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -26805,7 +26805,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -26853,7 +26853,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -27751,7 +27751,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -31405,7 +31405,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -33826,7 +33826,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -70588,7 +70588,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "compute",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -70688,6 +70688,194 @@
       "browsable": true
     },
     {
+      "type": "gcp.cloud-functions",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Cloud Functions",
+      "serviceName": "Cloud Functions",
+      "categories": [
+        "Serverless Computing"
+      ],
+      "category": "Serverless Computing",
+      "aliases": [
+        "Cloud Functions",
+        "gcp.cloud-functions"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-cloud-functions-971fec34-ca062aa8",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Serverless Computing/SVG/ServerlessComputing-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-cloud-functions-971fec34-ca062aa8.svg",
+        "sha256": "971fec343a13520b4f1edb49f34d33f5611ca427a9b09e36c4537b07e9d62721",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Serverless Computing/SVG/ServerlessComputing-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-functions-971fec34-ca062aa8.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "regional",
+      "column": "compute",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
+      "type": "gcp.cloud-load-balancing",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Cloud Load Balancing",
+      "serviceName": "Cloud Load Balancing",
+      "categories": [
+        "Networking"
+      ],
+      "category": "Networking",
+      "aliases": [
+        "Cloud Load Balancing",
+        "gcp.cloud-load-balancing"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-cloud-load-balancing-c88d1b7d-7da1d66c",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-cloud-load-balancing-c88d1b7d-7da1d66c.svg",
+        "sha256": "c88d1b7d3bcba21ba984d92a7762e1f940b70d922f83449370870f76caaf5787",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-load-balancing-c88d1b7d-7da1d66c.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "global",
+      "column": "ingress",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
+      "type": "gcp.cloud-logging",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Cloud Logging",
+      "serviceName": "Cloud Logging",
+      "categories": [
+        "Observability"
+      ],
+      "category": "Observability",
+      "aliases": [
+        "Cloud Logging",
+        "gcp.cloud-logging"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-cloud-logging-f22fe17c-0538d4e3",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Observability/SVG/Observability-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-cloud-logging-f22fe17c-0538d4e3.svg",
+        "sha256": "f22fe17c2e91d65d3109e499bb3b5d8d60216f678bf9fa41c541de7d8254216a",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Observability/SVG/Observability-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-logging-f22fe17c-0538d4e3.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "regional",
+      "column": "observability",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
+      "type": "gcp.cloud-monitoring",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Cloud Monitoring",
+      "serviceName": "Cloud Monitoring",
+      "categories": [
+        "Observability"
+      ],
+      "category": "Observability",
+      "aliases": [
+        "Cloud Monitoring",
+        "gcp.cloud-monitoring"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-cloud-monitoring-f22fe17c-0538d4e3",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Observability/SVG/Observability-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-cloud-monitoring-f22fe17c-0538d4e3.svg",
+        "sha256": "f22fe17c2e91d65d3109e499bb3b5d8d60216f678bf9fa41c541de7d8254216a",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Observability/SVG/Observability-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-monitoring-f22fe17c-0538d4e3.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "regional",
+      "column": "observability",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
       "type": "gcp.cloud-run",
       "provider": "gcp",
       "assetKind": "resource",
@@ -70729,7 +70917,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "compute",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -70923,6 +71111,53 @@
       "browsable": true
     },
     {
+      "type": "gcp.dataflow",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Dataflow",
+      "serviceName": "Dataflow",
+      "categories": [
+        "Data Analytics"
+      ],
+      "category": "Data Analytics",
+      "aliases": [
+        "Dataflow",
+        "gcp.dataflow"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-dataflow-b32c8b47-a1dd3c79",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Data Analytics/SVG/DataAnalytics-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-dataflow-b32c8b47-a1dd3c79.svg",
+        "sha256": "b32c8b4702fb90e9669e841e0410687471b7ca97ad236527f6dad8e3d90c87d9",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Data Analytics/SVG/DataAnalytics-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-dataflow-b32c8b47-a1dd3c79.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "regional",
+      "column": "data",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
       "type": "gcp.distributed-cloud",
       "provider": "gcp",
       "assetKind": "resource",
@@ -70964,7 +71199,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "compute",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -71064,6 +71299,53 @@
       "browsable": true
     },
     {
+      "type": "gcp.iam",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "IAM",
+      "serviceName": "IAM",
+      "categories": [
+        "Security Identity"
+      ],
+      "category": "Security Identity",
+      "aliases": [
+        "gcp.iam",
+        "IAM"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-iam-4e233138-01ad851e",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Security Identity/SVG/SecurityIdentity-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-iam-4e233138-01ad851e.svg",
+        "sha256": "4e233138e1170653522e4261779d51bb8f1383255845aba893bbb2381fa48e0e",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Security Identity/SVG/SecurityIdentity-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-iam-4e233138-01ad851e.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "global",
+      "column": "auth",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
       "type": "gcp.looker",
       "provider": "gcp",
       "assetKind": "resource",
@@ -71105,7 +71387,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "data",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -71152,7 +71434,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -71231,6 +71513,53 @@
       "browsable": true
     },
     {
+      "type": "gcp.pub-sub",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Pub/Sub",
+      "serviceName": "Pub/Sub",
+      "categories": [
+        "Integration Services"
+      ],
+      "category": "Integration Services",
+      "aliases": [
+        "gcp.pub-sub",
+        "Pub/Sub"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-pub-sub-f4a14bb1-8c379e25",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Integration Services/SVG/IntegrationServices-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-pub-sub-f4a14bb1-8c379e25.svg",
+        "sha256": "f4a14bb1f46b6b8ec2dd8bd69d8e37e9fac8f161801b781cf6e1f41772fc2101",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Integration Services/SVG/IntegrationServices-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-pub-sub-f4a14bb1-8c379e25.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "regional",
+      "column": "queue",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
       "type": "gcp.region",
       "provider": "gcp",
       "assetKind": "group",
@@ -71266,6 +71595,53 @@
       "allowRoot": true,
       "scope": "global",
       "column": "edge",
+      "sizeTier": "primary",
+      "canonical": true,
+      "browsable": true
+    },
+    {
+      "type": "gcp.secret-manager",
+      "provider": "gcp",
+      "assetKind": "resource",
+      "name": "Secret Manager",
+      "serviceName": "Secret Manager",
+      "categories": [
+        "Security Identity"
+      ],
+      "category": "Security Identity",
+      "aliases": [
+        "gcp.secret-manager",
+        "Secret Manager"
+      ],
+      "icon": {
+        "sourceId": "gcp-resource-secret-manager-4e233138-01ad851e",
+        "sourcePath": "assets/catalog/sources/gcp/Category Icons/Security Identity/SVG/SecurityIdentity-512-color.svg",
+        "browserPath": "catalog-icons/gcp/gcp-resource-secret-manager-4e233138-01ad851e.svg",
+        "sha256": "4e233138e1170653522e4261779d51bb8f1383255845aba893bbb2381fa48e0e",
+        "specificity": "shared-category"
+      },
+      "iconPath": "assets/catalog/sources/gcp/Category Icons/Security Identity/SVG/SecurityIdentity-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-secret-manager-4e233138-01ad851e.svg",
+      "specificity": "shared-category",
+      "allowedParents": [
+        "logical",
+        "region",
+        "account",
+        "cloud",
+        "subnet-public",
+        "subnet-private",
+        "subnet",
+        "az",
+        "vpc",
+        "auto-scaling",
+        "ec2-instance",
+        "elastic-beanstalk",
+        "spot-fleet",
+        "step-functions"
+      ],
+      "allowRoot": false,
+      "scope": "global",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -71312,7 +71688,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -71359,7 +71735,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "observability",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -71446,7 +71822,7 @@
       ],
       "allowRoot": false,
       "scope": "regional",
-      "column": "edge",
+      "column": "auth",
       "sizeTier": "primary",
       "canonical": true,
       "browsable": true
@@ -82777,6 +83153,34 @@
       "specificity": "unique"
     },
     {
+      "sourceId": "gcp-resource-cloud-functions-971fec34-ca062aa8",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Serverless Computing/SVG/ServerlessComputing-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-functions-971fec34-ca062aa8.svg",
+      "sha256": "971fec343a13520b4f1edb49f34d33f5611ca427a9b09e36c4537b07e9d62721",
+      "specificity": "shared-category"
+    },
+    {
+      "sourceId": "gcp-resource-cloud-load-balancing-c88d1b7d-7da1d66c",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-load-balancing-c88d1b7d-7da1d66c.svg",
+      "sha256": "c88d1b7d3bcba21ba984d92a7762e1f940b70d922f83449370870f76caaf5787",
+      "specificity": "shared-category"
+    },
+    {
+      "sourceId": "gcp-resource-cloud-logging-f22fe17c-0538d4e3",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Observability/SVG/Observability-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-logging-f22fe17c-0538d4e3.svg",
+      "sha256": "f22fe17c2e91d65d3109e499bb3b5d8d60216f678bf9fa41c541de7d8254216a",
+      "specificity": "shared-category"
+    },
+    {
+      "sourceId": "gcp-resource-cloud-monitoring-f22fe17c-0538d4e3",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Observability/SVG/Observability-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-cloud-monitoring-f22fe17c-0538d4e3.svg",
+      "sha256": "f22fe17c2e91d65d3109e499bb3b5d8d60216f678bf9fa41c541de7d8254216a",
+      "specificity": "shared-category"
+    },
+    {
       "sourceId": "gcp-resource-cloud-run-42a910e5-ad7f9314",
       "sourcePath": "assets/catalog/sources/gcp/Unique Icons/Cloud Run/SVG/CloudRun-512-color-rgb.svg",
       "browserPath": "catalog-icons/gcp/gcp-resource-cloud-run-42a910e5-ad7f9314.svg",
@@ -82812,6 +83216,13 @@
       "specificity": "unique"
     },
     {
+      "sourceId": "gcp-resource-dataflow-b32c8b47-a1dd3c79",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Data Analytics/SVG/DataAnalytics-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-dataflow-b32c8b47-a1dd3c79.svg",
+      "sha256": "b32c8b4702fb90e9669e841e0410687471b7ca97ad236527f6dad8e3d90c87d9",
+      "specificity": "shared-category"
+    },
+    {
       "sourceId": "gcp-resource-distributed-cloud-274d4a42-0bf3b54e",
       "sourcePath": "assets/catalog/sources/gcp/Unique Icons/Distributed Cloud/SVG/DistributedCloud-512-color.svg",
       "browserPath": "catalog-icons/gcp/gcp-resource-distributed-cloud-274d4a42-0bf3b54e.svg",
@@ -82833,6 +83244,13 @@
       "specificity": "unique"
     },
     {
+      "sourceId": "gcp-resource-iam-4e233138-01ad851e",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Security Identity/SVG/SecurityIdentity-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-iam-4e233138-01ad851e.svg",
+      "sha256": "4e233138e1170653522e4261779d51bb8f1383255845aba893bbb2381fa48e0e",
+      "specificity": "shared-category"
+    },
+    {
       "sourceId": "gcp-resource-looker-e35fa3f9-24b87b69",
       "sourcePath": "assets/catalog/sources/gcp/Unique Icons/Looker/SVG/Looker-512-color.svg",
       "browserPath": "catalog-icons/gcp/gcp-resource-looker-e35fa3f9-24b87b69.svg",
@@ -82845,6 +83263,20 @@
       "browserPath": "catalog-icons/gcp/gcp-resource-mandiant-3884408b-324f31cd.svg",
       "sha256": "3884408b49a5b96161cfc25a74295eb49243b6c29960103b2bbeda19cff3755c",
       "specificity": "unique"
+    },
+    {
+      "sourceId": "gcp-resource-pub-sub-f4a14bb1-8c379e25",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Integration Services/SVG/IntegrationServices-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-pub-sub-f4a14bb1-8c379e25.svg",
+      "sha256": "f4a14bb1f46b6b8ec2dd8bd69d8e37e9fac8f161801b781cf6e1f41772fc2101",
+      "specificity": "shared-category"
+    },
+    {
+      "sourceId": "gcp-resource-secret-manager-4e233138-01ad851e",
+      "sourcePath": "assets/catalog/sources/gcp/Category Icons/Security Identity/SVG/SecurityIdentity-512-color.svg",
+      "browserPath": "catalog-icons/gcp/gcp-resource-secret-manager-4e233138-01ad851e.svg",
+      "sha256": "4e233138e1170653522e4261779d51bb8f1383255845aba893bbb2381fa48e0e",
+      "specificity": "shared-category"
     },
     {
       "sourceId": "gcp-resource-security-command-center-d7cadf3c-76828b98",

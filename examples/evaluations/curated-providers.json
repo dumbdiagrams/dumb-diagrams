@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "description": "Provider-parameterized semantic contracts for reviewed curated bundles across all four grammars.",
+  "examples": {
+    "simple-serverless-web-application": {
+      "grammar": "aws",
+      "minimumCounts": {
+        "aws.cloudfront": 1,
+        "aws.simple-storage-service": 1,
+        "aws.api-gateway": 1,
+        "aws.aws-lambda": 1,
+        "aws.dynamodb": 1
+      },
+      "minimumGroupCounts": {
+        "aws.cloud": 1,
+        "cloud-agnostic.boundary": 1
+      }
+    },
+    "azure-private-app-service": {
+      "grammar": "azure",
+      "minimumCounts": {
+        "azure.app-services": 1,
+        "azure.function-apps": 1,
+        "azure.azure-managed-redis": 1,
+        "azure.sql-database": 1,
+        "azure.monitor": 1
+      },
+      "minimumGroupCounts": {
+        "azure.subscription": 1,
+        "azure.region": 1,
+        "azure.vnet": 1,
+        "cloud-agnostic.boundary": 2
+      }
+    },
+    "gcp-streaming-analytics": {
+      "grammar": "gcp",
+      "minimumCounts": {
+        "gcp.cloud-load-balancing": 1,
+        "gcp.cloud-functions": 1,
+        "gcp.compute-engine": 1,
+        "gcp.gke": 1,
+        "gcp.pub-sub": 1,
+        "gcp.dataflow": 1,
+        "gcp.bigquery": 1,
+        "gcp.cloud-storage": 1,
+        "gcp.iam": 1,
+        "gcp.secret-manager": 1
+      },
+      "minimumGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1,
+        "gcp.vpc": 1,
+        "cloud-agnostic.boundary": 3
+      }
+    },
+    "cloud-agnostic-order-processing": {
+      "grammar": "cloud-agnostic",
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.gateway": 1,
+        "cloud-agnostic.firewall": 1,
+        "cloud-agnostic.server": 1,
+        "cloud-agnostic.queue": 1,
+        "cloud-agnostic.function": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.object-storage": 1
+      },
+      "minimumGroupCounts": {
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.region": 1,
+        "cloud-agnostic.network": 1,
+        "cloud-agnostic.boundary": 3
+      }
+    }
+  }
+}

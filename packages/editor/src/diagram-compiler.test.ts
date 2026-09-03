@@ -129,7 +129,7 @@ describe("diagram compilation canvas bounds", () => {
     expect(autoFixRejectionReason(candidate, { ...candidate })).toBeUndefined();
   });
 
-  it("uses the canonical prompt/brief/reference roles for AWS examples", () => {
+  it("uses the canonical prompt/brief/reference roles for every provider example", () => {
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
       "bedrock-claims-processing",
       "aws-data-transfer-hub",
@@ -138,6 +138,9 @@ describe("diagram compilation canvas bounds", () => {
       "image-thumbnail-pipeline",
       "asynchronous-report-generation",
       "event-driven-order-fulfillment",
+      "azure-private-app-service",
+      "gcp-streaming-analytics",
+      "cloud-agnostic-order-processing",
     ]);
     for (const example of DIAGRAM_EXAMPLES) {
       expect(example.prompt.trim().length, example.id).toBeGreaterThan(40);

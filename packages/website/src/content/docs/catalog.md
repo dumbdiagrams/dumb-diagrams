@@ -19,14 +19,15 @@ Older aliases remain accepted for compatibility. Use canonical types in new file
 
 ## Check provider coverage
 
-AWS is the first-class grammar, examples, and visual-guidance path. Azure,
-Google Cloud, and cloud-agnostic authoring are experimental. They use their own
-catalog icons while currently inheriting AWS's composition, layout, and routing
-conventions.
+AWS, Azure, Google Cloud, and cloud-agnostic authoring each have catalog and
+curated-example coverage. Azure, GCP, and cloud-agnostic diagrams inherit the
+same deterministic composition, layout, and routing conventions; GCP products
+without a distinct official glyph are represented honestly with a reviewed
+shared-category icon and marked accordingly in the catalog.
 
-An available icon does not mean that the provider has the same semantic-guide
-coverage as AWS. When working outside the main AWS path, start with the
-experimental provider guide, catalog rules, and nearest checked-in example.
+An available icon does not imply that the provider offers a distinct product
+glyph. When working outside the AWS path, start with the provider catalog rules
+and nearest checked-in example.
 
 ## Asset pipeline
 

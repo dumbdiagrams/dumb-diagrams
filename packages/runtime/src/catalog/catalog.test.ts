@@ -49,4 +49,43 @@ describe("generated catalog", () => {
     expect(getCatalogEntry("azure.sql-database")).toBeDefined();
     expect(getCatalogEntry("gcp.bigquery")).toBeDefined();
   });
+
+  it("maps curated GCP services to reviewed shared category glyphs", () => {
+    const expected = [
+      ["gcp.cloud-functions", "Serverless Computing", "compute", "regional"],
+      ["gcp.pub-sub", "Integration Services", "queue", "regional"],
+      ["gcp.dataflow", "Data Analytics", "data", "regional"],
+      ["gcp.cloud-logging", "Observability", "observability", "regional"],
+      ["gcp.cloud-monitoring", "Observability", "observability", "regional"],
+      ["gcp.iam", "Security Identity", "auth", "global"],
+      ["gcp.cloud-load-balancing", "Networking", "ingress", "global"],
+      ["gcp.secret-manager", "Security Identity", "auth", "global"],
+    ] as const;
+    for (const [type, category, column, scope] of expected) {
+      const entry = getCatalogEntry(type);
+      expect(entry, type).toMatchObject({
+        provider: "gcp",
+        category,
+        column,
+        scope,
+        specificity: "shared-category",
+        browsable: true,
+      });
+    }
+  });
+
+  it("retains the reviewed unique glyphs for core GCP compute services", () => {
+    expect(getCatalogEntry("gcp.compute-engine")).toMatchObject({
+      provider: "gcp",
+      name: "Compute Engine",
+      category: "Compute",
+      specificity: "unique",
+    });
+    expect(getCatalogEntry("gcp.gke")).toMatchObject({
+      provider: "gcp",
+      name: "GKE",
+      category: "Containers",
+      specificity: "unique",
+    });
+  });
 });

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Reviewed byte baseline for the seven canonical AWS bundles.",
+  "description": "Reviewed byte baseline for the canonical AWS, Azure, GCP, and cloud-agnostic bundles.",
   "compatibilityMirrors": [],
   "curated": {
     "simple-serverless-web-application": {
@@ -72,6 +72,36 @@
       "architectureBriefSha256": "1087d66cb20f0f171f22844a03397beae2e549da3b53b69fa6bec2dcabd24f9d",
       "userPromptSha256": "64760bc796f155871ec5e6603cf224593912bd978cff742097daae8538d63d5e",
       "referenceSpecSha256": "2af25c967f137a9b32b33788fe7261251b1cc5165b77fccf05970528726e098b"
+    },
+    "azure-private-app-service": {
+      "diagram": "examples/curated/azure-private-app-service/diagram.dgm",
+      "architectureBrief": "examples/curated/azure-private-app-service/architecture-brief.md",
+      "userPrompt": "examples/curated/azure-private-app-service/user-prompt.md",
+      "referenceSpec": "examples/curated/azure-private-app-service/reference-spec.md",
+      "diagramSha256": "3ed2bd2e7f6cbdc2dedd2cb95c089267140d5ea01a310eb10440caa6a4fb1895",
+      "architectureBriefSha256": "79eaf61378f6d080ad082b790ea75548606194a7c94cf251b3ed51c353fd1cee",
+      "userPromptSha256": "6126274617ba166053c242659d2c14cc68999306fd3f94dbfde6547354970433",
+      "referenceSpecSha256": "83c1353dbfe78062412ead4c63efef4b19e924b65dafef74621793aad5693b63"
+    },
+    "gcp-streaming-analytics": {
+      "diagram": "examples/curated/gcp-streaming-analytics/diagram.dgm",
+      "architectureBrief": "examples/curated/gcp-streaming-analytics/architecture-brief.md",
+      "userPrompt": "examples/curated/gcp-streaming-analytics/user-prompt.md",
+      "referenceSpec": "examples/curated/gcp-streaming-analytics/reference-spec.md",
+      "diagramSha256": "9006ca4f1262ca56cbbddd583dea1a1aaf128524aa8523feb99f4aaf7fec010c",
+      "architectureBriefSha256": "5c0c2b6a9bf871ecf5d39d087cbcd3b2855c8a920aa8472d5c0275fc9b423639",
+      "userPromptSha256": "cd382f191179e1c83325740379b22d62cba65842b2aeb0a26a9e5982c5265c2b",
+      "referenceSpecSha256": "dad33498e3c11abafc8b04cffd20d5179f8b583737adefafd3c129d9dec2ff4f"
+    },
+    "cloud-agnostic-order-processing": {
+      "diagram": "examples/curated/cloud-agnostic-order-processing/diagram.dgm",
+      "architectureBrief": "examples/curated/cloud-agnostic-order-processing/architecture-brief.md",
+      "userPrompt": "examples/curated/cloud-agnostic-order-processing/user-prompt.md",
+      "referenceSpec": "examples/curated/cloud-agnostic-order-processing/reference-spec.md",
+      "diagramSha256": "ad7c618cb25e537a028579adfd9096ac3220f3d376f01d99defcb17595483441",
+      "architectureBriefSha256": "efd819b9c5b98b5c12c8767387497060e9af63a0816baa584530d4ecaf38048a",
+      "userPromptSha256": "954820f13d6c27199d820d085ca74d1b9d304dd54c608c9cb689658cc269cbe1",
+      "referenceSpecSha256": "cf88407bf0d3c398f28e1ca5dbba49541f7d2221794c36f2509e3ced38408f11"
     }
   }
 }

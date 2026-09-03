@@ -116,6 +116,9 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/gcp/Unique Icons",
     include: () => true,
     kinds: ["resource"],
+    // Semantic GCP products may intentionally reuse reviewed artwork from
+    // Category Icons; this parity check covers the distinct product source
+    // tree, while manifest asset validation covers reused category files.
     excluded: new Set(),
   },
   {
@@ -208,7 +211,8 @@ async function check() {
             entry.canonical !== false &&
             entry.browsable !== false,
         )
-        .map((entry) => entry.iconPath),
+        .map((entry) => entry.iconPath)
+        .filter((file) => file.startsWith(`${library.root}/`)),
     );
     const missing = [...sourcePaths].filter((file) => !catalogPaths.has(file));
     const extra = [...catalogPaths].filter((file) => !sourcePaths.has(file));

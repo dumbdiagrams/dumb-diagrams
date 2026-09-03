@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Reviewed layout contracts for the seven curated AWS Studio examples. Aspect and left-to-right chains document intent. geometry is an 8px-quantized compiled snapshot of nodes, groups, routes, and canvas size; update it with pnpm update:layout-contracts after a visual review.",
+  "description": "Reviewed layout contracts for the curated AWS, Azure, GCP, and cloud-agnostic Studio examples. Aspect and left-to-right chains document intent. geometry is an 8px-quantized compiled snapshot of nodes, groups, routes, and canvas size; update it with pnpm update:layout-contracts after a visual review.",
   "examples": {
     "simple-serverless-web-application": {
       "diagram": "examples/curated/simple-serverless-web-application/diagram.dgm",
@@ -348,7 +348,7 @@
       "minAspectRatio": 1.4,
       "maxAspectRatio": 2.2,
       "maxWidth": 1800,
-      "maxHeight": 1000,
+      "maxHeight": 1400,
       "leftToRight": [
         [
           "claims_analyst",
@@ -635,7 +635,7 @@
       "minAspectRatio": 1.8,
       "maxAspectRatio": 2.8,
       "maxWidth": 2000,
-      "maxHeight": 1000,
+      "maxHeight": 1400,
       "leftToRight": [
         [
           "user",
@@ -2089,6 +2089,733 @@
             },
             {
               "x": 1176,
+              "y": 248
+            }
+          ]
+        }
+      }
+    },
+    "azure-private-app-service": {
+      "diagram": "examples/curated/azure-private-app-service/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 0.5,
+      "maxAspectRatio": 3,
+      "maxWidth": 1800,
+      "maxHeight": 1400,
+      "leftToRight": [
+        [
+          "client",
+          "app_service",
+          "redis"
+        ]
+      ],
+      "geometry": {
+        "width": 1384,
+        "height": 704,
+        "nodes": {
+          "app_service": {
+            "x": 264,
+            "y": 280,
+            "w": 88,
+            "h": 88
+          },
+          "client": {
+            "x": 32,
+            "y": 296,
+            "w": 128,
+            "h": 104
+          },
+          "functions": {
+            "x": 376,
+            "y": 280,
+            "w": 168,
+            "h": 88
+          },
+          "monitor": {
+            "x": 720,
+            "y": 512,
+            "w": 104,
+            "h": 88
+          },
+          "redis": {
+            "x": 1160,
+            "y": 296,
+            "w": 144,
+            "h": 88
+          },
+          "redis_pe": {
+            "x": 800,
+            "y": 280,
+            "w": 160,
+            "h": 88
+          },
+          "sql": {
+            "x": 1000,
+            "y": 296,
+            "w": 136,
+            "h": 88
+          },
+          "sql_pe": {
+            "x": 800,
+            "y": 384,
+            "w": 152,
+            "h": 88
+          }
+        },
+        "groups": {
+          "application_tier": {
+            "x": 256,
+            "y": 208,
+            "w": 304,
+            "h": 176
+          },
+          "architecture": {
+            "x": 224,
+            "y": 96,
+            "w": 1088,
+            "h": 512
+          },
+          "region": {
+            "x": 208,
+            "y": 64,
+            "w": 1128,
+            "h": 576
+          },
+          "subscription": {
+            "x": 192,
+            "y": 32,
+            "w": 1160,
+            "h": 640
+          },
+          "vnet": {
+            "x": 240,
+            "y": 176,
+            "w": 736,
+            "h": 320
+          }
+        },
+        "routes": {
+          "app_telemetry": [
+            {
+              "x": 296,
+              "y": 328
+            },
+            {
+              "x": 296,
+              "y": 536
+            },
+            {
+              "x": 744,
+              "y": 536
+            }
+          ],
+          "authoritative_writes": [
+            {
+              "x": 488,
+              "y": 304
+            },
+            {
+              "x": 552,
+              "y": 304
+            },
+            {
+              "x": 552,
+              "y": 392
+            },
+            {
+              "x": 848,
+              "y": 392
+            }
+          ],
+          "cache_miss_reads": [
+            {
+              "x": 312,
+              "y": 328
+            },
+            {
+              "x": 312,
+              "y": 408
+            },
+            {
+              "x": 848,
+              "y": 408
+            }
+          ],
+          "cache_reads": [
+            {
+              "x": 312,
+              "y": 280
+            },
+            {
+              "x": 312,
+              "y": 256
+            },
+            {
+              "x": 784,
+              "y": 256
+            },
+            {
+              "x": 784,
+              "y": 288
+            },
+            {
+              "x": 856,
+              "y": 288
+            }
+          ],
+          "cache_updates": [
+            {
+              "x": 488,
+              "y": 296
+            },
+            {
+              "x": 856,
+              "y": 296
+            }
+          ],
+          "https_requests": [
+            {
+              "x": 120,
+              "y": 320
+            },
+            {
+              "x": 288,
+              "y": 320
+            }
+          ],
+          "redis_private_link": [
+            {
+              "x": 904,
+              "y": 304
+            },
+            {
+              "x": 976,
+              "y": 304
+            },
+            {
+              "x": 976,
+              "y": 280
+            },
+            {
+              "x": 1144,
+              "y": 280
+            },
+            {
+              "x": 1144,
+              "y": 320
+            },
+            {
+              "x": 1208,
+              "y": 320
+            }
+          ],
+          "redis_telemetry": [
+            {
+              "x": 1208,
+              "y": 328
+            },
+            {
+              "x": 1144,
+              "y": 328
+            },
+            {
+              "x": 1144,
+              "y": 536
+            },
+            {
+              "x": 792,
+              "y": 536
+            }
+          ],
+          "sql_private_link": [
+            {
+              "x": 896,
+              "y": 408
+            },
+            {
+              "x": 984,
+              "y": 408
+            },
+            {
+              "x": 984,
+              "y": 320
+            },
+            {
+              "x": 1040,
+              "y": 320
+            }
+          ],
+          "sql_telemetry": [
+            {
+              "x": 1064,
+              "y": 344
+            },
+            {
+              "x": 1064,
+              "y": 520
+            },
+            {
+              "x": 792,
+              "y": 520
+            }
+          ],
+          "writes": [
+            {
+              "x": 336,
+              "y": 304
+            },
+            {
+              "x": 440,
+              "y": 304
+            }
+          ]
+        }
+      }
+    },
+    "gcp-streaming-analytics": {
+      "diagram": "examples/curated/gcp-streaming-analytics/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 0.5,
+      "maxAspectRatio": 3,
+      "maxWidth": 1800,
+      "maxHeight": 1400,
+      "leftToRight": [],
+      "geometry": {
+        "width": 1448,
+        "height": 1200,
+        "nodes": {
+          "archive": {
+            "x": 1216,
+            "y": 552,
+            "w": 144,
+            "h": 104
+          },
+          "client": {
+            "x": 32,
+            "y": 544,
+            "w": 184,
+            "h": 104
+          },
+          "compute": {
+            "x": 688,
+            "y": 240,
+            "w": 160,
+            "h": 120
+          },
+          "dataflow": {
+            "x": 456,
+            "y": 480,
+            "w": 128,
+            "h": 104
+          },
+          "events": {
+            "x": 328,
+            "y": 480,
+            "w": 104,
+            "h": 104
+          },
+          "functions": {
+            "x": 504,
+            "y": 248,
+            "w": 168,
+            "h": 104
+          },
+          "gke": {
+            "x": 880,
+            "y": 248,
+            "w": 136,
+            "h": 104
+          },
+          "iam": {
+            "x": 376,
+            "y": 648,
+            "w": 64,
+            "h": 88
+          },
+          "load_balancer": {
+            "x": 328,
+            "y": 256,
+            "w": 152,
+            "h": 88
+          },
+          "logging": {
+            "x": 352,
+            "y": 960,
+            "w": 104,
+            "h": 88
+          },
+          "monitoring": {
+            "x": 344,
+            "y": 856,
+            "w": 120,
+            "h": 88
+          },
+          "secrets": {
+            "x": 352,
+            "y": 752,
+            "w": 112,
+            "h": 88
+          },
+          "warehouse": {
+            "x": 1072,
+            "y": 552,
+            "w": 128,
+            "h": 104
+          }
+        },
+        "groups": {
+          "governance": {
+            "x": 320,
+            "y": 616,
+            "w": 184,
+            "h": 440
+          },
+          "ingress": {
+            "x": 320,
+            "y": 160,
+            "w": 712,
+            "h": 216
+          },
+          "organization": {
+            "x": 248,
+            "y": 32,
+            "w": 1168,
+            "h": 1136
+          },
+          "pipeline": {
+            "x": 320,
+            "y": 400,
+            "w": 280,
+            "h": 200
+          },
+          "project": {
+            "x": 264,
+            "y": 64,
+            "w": 1136,
+            "h": 1080
+          },
+          "region": {
+            "x": 280,
+            "y": 96,
+            "w": 1096,
+            "h": 1016
+          },
+          "vpc": {
+            "x": 304,
+            "y": 128,
+            "w": 744,
+            "h": 952
+          }
+        },
+        "routes": {
+          "archive": [
+            {
+              "x": 552,
+              "y": 488
+            },
+            {
+              "x": 1288,
+              "y": 488
+            },
+            {
+              "x": 1288,
+              "y": 552
+            }
+          ],
+          "dispatch": [
+            {
+              "x": 432,
+              "y": 280
+            },
+            {
+              "x": 568,
+              "y": 280
+            }
+          ],
+          "ingest": [
+            {
+              "x": 152,
+              "y": 568
+            },
+            {
+              "x": 312,
+              "y": 568
+            },
+            {
+              "x": 312,
+              "y": 280
+            },
+            {
+              "x": 384,
+              "y": 280
+            }
+          ],
+          "load": [
+            {
+              "x": 552,
+              "y": 504
+            },
+            {
+              "x": 1056,
+              "y": 504
+            },
+            {
+              "x": 1056,
+              "y": 576
+            },
+            {
+              "x": 1112,
+              "y": 576
+            }
+          ],
+          "process": [
+            {
+              "x": 408,
+              "y": 504
+            },
+            {
+              "x": 504,
+              "y": 504
+            }
+          ],
+          "publish": [
+            {
+              "x": 592,
+              "y": 296
+            },
+            {
+              "x": 592,
+              "y": 456
+            },
+            {
+              "x": 384,
+              "y": 456
+            },
+            {
+              "x": 384,
+              "y": 480
+            }
+          ]
+        }
+      }
+    },
+    "cloud-agnostic-order-processing": {
+      "diagram": "examples/curated/cloud-agnostic-order-processing/diagram.dgm",
+      "flow": "lr",
+      "minAspectRatio": 0.5,
+      "maxAspectRatio": 3,
+      "maxWidth": 1800,
+      "maxHeight": 1400,
+      "leftToRight": [],
+      "geometry": {
+        "width": 800,
+        "height": 1016,
+        "nodes": {
+          "client": {
+            "x": 32,
+            "y": 456,
+            "w": 128,
+            "h": 104
+          },
+          "database": {
+            "x": 280,
+            "y": 632,
+            "w": 104,
+            "h": 104
+          },
+          "firewall": {
+            "x": 360,
+            "y": 240,
+            "w": 88,
+            "h": 104
+          },
+          "gateway": {
+            "x": 272,
+            "y": 248,
+            "w": 64,
+            "h": 88
+          },
+          "order_service": {
+            "x": 272,
+            "y": 464,
+            "w": 96,
+            "h": 104
+          },
+          "queue": {
+            "x": 392,
+            "y": 464,
+            "w": 80,
+            "h": 104
+          },
+          "storage": {
+            "x": 280,
+            "y": 760,
+            "w": 112,
+            "h": 104
+          },
+          "worker": {
+            "x": 496,
+            "y": 464,
+            "w": 128,
+            "h": 104
+          }
+        },
+        "groups": {
+          "account": {
+            "x": 208,
+            "y": 64,
+            "w": 480,
+            "h": 896
+          },
+          "cloud": {
+            "x": 192,
+            "y": 32,
+            "w": 512,
+            "h": 952
+          },
+          "data": {
+            "x": 256,
+            "y": 600,
+            "w": 144,
+            "h": 280
+          },
+          "edge": {
+            "x": 256,
+            "y": 160,
+            "w": 200,
+            "h": 200
+          },
+          "network": {
+            "x": 240,
+            "y": 128,
+            "w": 408,
+            "h": 776
+          },
+          "processing": {
+            "x": 256,
+            "y": 384,
+            "w": 376,
+            "h": 200
+          },
+          "region": {
+            "x": 224,
+            "y": 96,
+            "w": 448,
+            "h": 840
+          }
+        },
+        "routes": {
+          "consume": [
+            {
+              "x": 456,
+              "y": 488
+            },
+            {
+              "x": 536,
+              "y": 488
+            }
+          ],
+          "enqueue": [
+            {
+              "x": 344,
+              "y": 488
+            },
+            {
+              "x": 408,
+              "y": 488
+            }
+          ],
+          "orders": [
+            {
+              "x": 280,
+              "y": 272
+            },
+            {
+              "x": 256,
+              "y": 272
+            },
+            {
+              "x": 256,
+              "y": 488
+            },
+            {
+              "x": 296,
+              "y": 488
+            }
+          ],
+          "persist": [
+            {
+              "x": 560,
+              "y": 464
+            },
+            {
+              "x": 560,
+              "y": 440
+            },
+            {
+              "x": 632,
+              "y": 440
+            },
+            {
+              "x": 632,
+              "y": 880
+            },
+            {
+              "x": 256,
+              "y": 880
+            },
+            {
+              "x": 256,
+              "y": 656
+            },
+            {
+              "x": 304,
+              "y": 656
+            }
+          ],
+          "receipt": [
+            {
+              "x": 560,
+              "y": 512
+            },
+            {
+              "x": 560,
+              "y": 784
+            },
+            {
+              "x": 360,
+              "y": 784
+            }
+          ],
+          "requests": [
+            {
+              "x": 120,
+              "y": 480
+            },
+            {
+              "x": 176,
+              "y": 480
+            },
+            {
+              "x": 176,
+              "y": 216
+            },
+            {
+              "x": 400,
+              "y": 216
+            },
+            {
+              "x": 400,
+              "y": 240
+            }
+          ],
+          "screened": [
+            {
+              "x": 376,
+              "y": 248
+            },
+            {
+              "x": 328,
               "y": 248
             }
           ]

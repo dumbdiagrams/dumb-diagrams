@@ -148,6 +148,7 @@ describe("catalog icon previews", () => {
             entry.browsable !== false,
         )
         .map((entry) => entry.iconPath)
+        .filter((file) => file.startsWith(`${root}/`))
         .sort();
 
       expect(catalogPaths).toEqual(sourcePaths);

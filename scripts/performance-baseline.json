@@ -8,6 +8,9 @@
     "examples/curated/bedrock-claims-processing/diagram.dgm": { "medianMs": 100 },
     "examples/curated/image-thumbnail-pipeline/diagram.dgm": { "medianMs": 100 },
     "examples/curated/asynchronous-report-generation/diagram.dgm": { "medianMs": 100 },
-    "examples/curated/event-driven-order-fulfillment/diagram.dgm": { "medianMs": 500 }
+    "examples/curated/event-driven-order-fulfillment/diagram.dgm": { "medianMs": 500 },
+    "examples/curated/azure-private-app-service/diagram.dgm": { "medianMs": 100 },
+    "examples/curated/gcp-streaming-analytics/diagram.dgm": { "medianMs": 100 },
+    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": { "medianMs": 100 }
   }
 }
