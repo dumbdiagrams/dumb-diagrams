@@ -1,0 +1,13 @@
+{
+  "fixtures": {
+    "examples/diagrams/async-docs.dgm": { "medianMs": 10 },
+    "examples/diagrams/transfer-hub.dgm": { "medianMs": 10 },
+    "examples/curated/simple-serverless-web-application/diagram.dgm": { "medianMs": 10 },
+    "examples/curated/aws-high-availability-web-app/diagram.dgm": { "medianMs": 100 },
+    "examples/curated/aws-data-transfer-hub/diagram.dgm": { "medianMs": 750 },
+    "examples/curated/bedrock-claims-processing/diagram.dgm": { "medianMs": 100 },
+    "examples/curated/image-thumbnail-pipeline/diagram.dgm": { "medianMs": 100 },
+    "examples/curated/asynchronous-report-generation/diagram.dgm": { "medianMs": 100 },
+    "examples/curated/event-driven-order-fulfillment/diagram.dgm": { "medianMs": 500 }
+  }
+}

@@ -112,12 +112,92 @@ interface Grid {
   blocked: Uint8Array;
 }
 
+export type RoutingBudgetOptions = {
+  maxScorePathCalls?: number;
+  maxRouteConflictChecks?: number;
+  maxAstarExpansions?: number;
+  maxRepairCandidates?: number;
+};
+
+export type RoutingDiagnostics = {
+  scorePathCalls: number;
+  routeConflictChecks: number;
+  astarExpansions: number;
+  repairCandidates: number;
+  exhausted: boolean;
+  limits: Required<RoutingBudgetOptions>;
+};
+
+type RoutingBudgetKind = keyof Pick<RoutingDiagnostics,
+  "scorePathCalls" | "routeConflictChecks" | "astarExpansions" | "repairCandidates"
+>;
+const ROUTING_BUDGET_LIMIT_KEYS: Record<RoutingBudgetKind, keyof Required<RoutingBudgetOptions>> = {
+  scorePathCalls: "maxScorePathCalls",
+  routeConflictChecks: "maxRouteConflictChecks",
+  astarExpansions: "maxAstarExpansions",
+  repairCandidates: "maxRepairCandidates",
+};
+
+export type RoutingOptions = RoutingBudgetOptions & {
+  onBudgetExhausted?: (diagnostics: RoutingDiagnostics) => void;
+};
+
+export const ROUTING_BUDGET_WARNING_CODE = "routing-budget";
+export const ROUTING_BUDGET_WARNING_MESSAGE =
+  "Routing work budget exhausted; retained the best available routes.";
+
+const DEFAULT_ROUTING_BUDGET: Required<RoutingBudgetOptions> = {
+  maxScorePathCalls: 60_000,
+  maxRouteConflictChecks: 20_000,
+  maxAstarExpansions: 2_000_000,
+  maxRepairCandidates: 20_000,
+};
+
+class RoutingBudget {
+  readonly limits: Required<RoutingBudgetOptions>;
+  readonly counts = {
+    scorePathCalls: 0,
+    routeConflictChecks: 0,
+    astarExpansions: 0,
+    repairCandidates: 0,
+  };
+  exhausted = false;
+
+  constructor(options: RoutingBudgetOptions, complexity: number) {
+    const scale = Math.max(1, complexity / 100);
+    const scaled = (key: keyof RoutingBudgetOptions, fallback: number, minimum: number) =>
+      options[key] ?? Math.max(minimum, Math.floor(fallback / scale));
+    this.limits = {
+      maxScorePathCalls: scaled("maxScorePathCalls", DEFAULT_ROUTING_BUDGET.maxScorePathCalls, 2_000),
+      maxRouteConflictChecks: scaled("maxRouteConflictChecks", DEFAULT_ROUTING_BUDGET.maxRouteConflictChecks, 1_000),
+      maxAstarExpansions: scaled("maxAstarExpansions", DEFAULT_ROUTING_BUDGET.maxAstarExpansions, 5_000),
+      maxRepairCandidates: scaled("maxRepairCandidates", DEFAULT_ROUTING_BUDGET.maxRepairCandidates, 1_000),
+    };
+  }
+
+  consume(kind: RoutingBudgetKind): boolean {
+    if (this.exhausted) return false;
+    const count = ++this.counts[kind];
+    if (count > this.limits[ROUTING_BUDGET_LIMIT_KEYS[kind]]) this.exhausted = true;
+    return !this.exhausted;
+  }
+
+  diagnostics(): RoutingDiagnostics {
+    return { ...this.counts, exhausted: this.exhausted, limits: { ...this.limits } };
+  }
+}
+
 export function routeEdges(
   doc: DiagramDocument,
   layout: LayoutResult,
+  options: RoutingOptions = {},
 ): RoutedEdge[] {
   const nodeMap = new Map(layout.nodes.map((n) => [n.id, n]));
   const obstacles = buildObstacles(layout);
+  const budget = new RoutingBudget(
+    options,
+    doc.resources.length + doc.groups.length * 2 + doc.edges.length * 2 + obstacles.length,
+  );
   const boundaries = buildGroupBoundaries(layout);
   const vGutters = verticalGutters(layout, obstacles);
   const hGutters = horizontalGutters(layout, obstacles);
@@ -216,6 +296,7 @@ export function routeEdges(
       : baseHGutters;
 
     for (const port of ports) {
+      if (budget.exhausted) break;
       // No orthogonal path between these ports can be shorter than their
       // Manhattan distance. Once another port has already reached or beaten
       // that lower bound, generating and scoring this port's large template
@@ -227,6 +308,7 @@ export function routeEdges(
       if (lowerBound >= bestScore) continue;
       const context = createRouteContext(source, target, port, edge.style, containment);
       for (const candidate of templates(port, routeVGutters, routeHGutters, source, target)) {
+        if (budget.exhausted) break;
         const path = simplify(candidate);
         const s = scorePath(
           path,
@@ -234,6 +316,8 @@ export function routeEdges(
           context,
           existing,
           bestScore - port.preferenceCost,
+          [],
+          budget,
         ) + port.preferenceCost;
         if (s < bestScore) {
           bestScore = s;
@@ -247,7 +331,7 @@ export function routeEdges(
       }
     }
 
-    if (!best || bestScore >= CROSSING_COST) {
+    if (!budget.exhausted && (!best || bestScore >= CROSSING_COST)) {
       // Every port variant searches the same grid against the same established
       // routes. Cache per-grid-segment conflict costs across those searches;
       // calculating them repeatedly was the dominant cost in dense diagrams.
@@ -265,15 +349,18 @@ export function routeEdges(
           target,
           existing,
           conflictCostCache,
+          budget,
         );
         if (!astarPath) continue;
-        const smoothed = shortcut(simplify(astarPath), obstacles, context, existing);
+        const smoothed = shortcut(simplify(astarPath), obstacles, context, existing, [], budget);
         const s = scorePath(
           smoothed,
           obstacles,
           context,
           existing,
           bestScore - port.preferenceCost,
+          [],
+          budget,
         ) + port.preferenceCost;
         if (s < bestScore) {
           bestScore = s;
@@ -287,17 +374,17 @@ export function routeEdges(
       }
     }
 
-    if (!best) {
+    if (!budget.exhausted && !best) {
       // Established connectors can occasionally form a closed grid wall. In
       // that case, crossing a connector is preferable to falling back to a
       // direct elbow through service icons or labels. Rip up this edge's
       // corridor constraints, but keep every content obstacle hard.
       for (const port of representativePortChoices(ports, 6)) {
         const context = createRouteContext(source, target, port, edge.style, containment);
-        const astarPath = routeAStar(grid, port, source, target, []);
+        const astarPath = routeAStar(grid, port, source, target, [], undefined, budget);
         if (!astarPath) continue;
-        const smoothed = shortcut(simplify(astarPath), obstacles, context);
-        const score = scorePath(smoothed, obstacles, context, []) +
+        const smoothed = shortcut(simplify(astarPath), obstacles, context, [], [], budget);
+        const score = scorePath(smoothed, obstacles, context, [], Infinity, [], budget) +
           port.preferenceCost;
         if (score < bestScore) {
           best = smoothed;
@@ -307,7 +394,7 @@ export function routeEdges(
       }
     }
 
-    if (!best) {
+    if (!budget.exhausted && !best) {
       // The perimeter search is the last automatic escape hatch. It still
       // scores every candidate against hard content obstacles; never replace
       // an exhausted search with an unchecked direct elbow through a card.
@@ -321,9 +408,10 @@ export function routeEdges(
           obstacles,
           context,
           existing,
+          budget,
         );
         if (!candidate) continue;
-        const score = scorePath(candidate, obstacles, context, existing) +
+        const score = scorePath(candidate, obstacles, context, existing, Infinity, [], budget) +
           port.preferenceCost;
         if (score < bestScore) {
           best = candidate;
@@ -331,7 +419,7 @@ export function routeEdges(
           bestPort = port;
         }
       }
-      if (!best) {
+      if (!budget.exhausted && !best) {
         // Connector conflicts are soft: if established routes surround the
         // available lanes, retry the same hard-obstacle-safe perimeter search
         // without them and allow this edge to cross a connector.
@@ -345,9 +433,10 @@ export function routeEdges(
             obstacles,
             context,
             [],
+            budget,
           );
           if (!candidate) continue;
-          const score = scorePath(candidate, obstacles, context, []) +
+          const score = scorePath(candidate, obstacles, context, [], Infinity, [], budget) +
             port.preferenceCost;
           if (score < bestScore) {
             best = candidate;
@@ -371,6 +460,8 @@ export function routeEdges(
       obstacles,
       createRouteContext(source, target, bestPort, edge.style, containment),
       existing,
+      [],
+      budget,
     );
     points = simplify(points);
     const routeOverride = view.routes[edge.id];
@@ -425,6 +516,7 @@ export function routeEdges(
     vGutters,
     hGutters,
     view.routes,
+    budget,
   );
   nudgeAutomaticRoutesOffBoundaries(
     layout,
@@ -432,12 +524,14 @@ export function routeEdges(
     obstacles,
     boundaries,
     view.routes,
+    budget,
   );
   placeEdgeDecorations(
     documentRoutes,
     view.routes,
     buildDecorationObstacles(layout),
   );
+  if (budget.exhausted) options.onBudgetExhausted?.(budget.diagnostics());
   return documentRoutes;
 }
 
@@ -450,17 +544,20 @@ function repairAutomaticRouteCrossings(
   vGutters: number[],
   hGutters: number[],
   routeOverrides: Record<string, RouteOverride>,
+  budget: RoutingBudget,
 ): void {
   // Dense diagrams already use the global A* pass above. Exhaustively ripping
   // up every crossing in that case is quadratic in both routes and template
   // lanes; keep this deterministic refinement for the small/medium diagrams
   // where it stays comfortably inside the interactive compilation budget.
-  if (edges.length > 16) return;
+  if (edges.length > 16 || budget.exhausted) return;
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
   const edgeDefinitions = new Map(doc.edges.map((edge) => [edge.id, edge]));
   for (let pass = 0; pass < 3; pass++) {
+    if (budget.exhausted) return;
     let changed = false;
     for (const edge of edges) {
+      if (budget.exhausted) return;
       if (routeOverrides[edge.id]?.pin || edge.points.length < 4) continue;
       const source = nodes.get(edge.source);
       const target = nodes.get(edge.target);
@@ -474,7 +571,7 @@ function repairAutomaticRouteCrossings(
           targetId: candidate.target,
           style: candidate.style,
         }));
-      if (routeConflictCount(edge.points, otherRoutes) < 10) continue;
+      if (routeConflictCount(edge.points, otherRoutes, budget) < 10) continue;
       const sourceAnchor = nearestPortAnchor(source.icon, edge.points[0]!);
       const targetAnchor = nearestPortAnchor(target.icon, edge.points.at(-1)!);
       const containment = containmentForEdge(doc, layout, edge.source, edge.target);
@@ -489,18 +586,19 @@ function repairAutomaticRouteCrossings(
         containment,
       };
       let best = edge.points;
-      let bestConflicts = routeConflictCount(best, otherRoutes);
-      let bestScore = scorePath(best, obstacles, context, []);
+      let bestConflicts = routeConflictCount(best, otherRoutes, budget);
+      let bestScore = scorePath(best, obstacles, context, [], Infinity, [], budget);
       const considerRepair = (
         candidate: Point[],
         candidateContext: RouteContext,
         preferenceCost = 0,
       ) => {
+        if (!budget.consume("repairCandidates")) return;
         const normalized = normalizeOrthogonalRoute(simplify(candidate));
-        const score = scorePath(normalized, obstacles, candidateContext, []) +
+        const score = scorePath(normalized, obstacles, candidateContext, [], Infinity, [], budget) +
           preferenceCost;
         if (!Number.isFinite(score)) return;
-        const conflicts = routeConflictCount(normalized, otherRoutes);
+        const conflicts = routeConflictCount(normalized, otherRoutes, budget);
         if (
           conflicts < bestConflicts ||
           (conflicts === bestConflicts && score < bestScore)
@@ -563,14 +661,16 @@ function repairAutomaticRouteCrossings(
           if (bestConflicts === 0) break;
         }
         if (bestConflicts === 0) break;
-        const routed = routeAStar(grid, port, source, target, otherRoutes) ??
-          routeAStar(grid, port, source, target, []);
+        const routed = routeAStar(grid, port, source, target, otherRoutes, undefined, budget) ??
+          routeAStar(grid, port, source, target, [], undefined, budget);
         if (routed) {
           const candidate = shortcut(
             simplify(routed),
             obstacles,
             retryContext,
             otherRoutes,
+            [],
+            budget,
           );
           considerRepair(candidate, retryContext, port.preferenceCost);
         }
@@ -604,9 +704,9 @@ function repairAutomaticRouteCrossings(
             candidate[index + 1]!.x = value;
           }
           const simplified = simplify(candidate);
-          const score = scorePath(simplified, obstacles, context, []);
+          const score = scorePath(simplified, obstacles, context, [], Infinity, [], budget);
           if (!Number.isFinite(score)) continue;
-          const conflicts = routeConflictCount(simplified, otherRoutes);
+          const conflicts = routeConflictCount(simplified, otherRoutes, budget);
           if (
             conflicts < bestConflicts ||
             (conflicts === bestConflicts && score < bestScore)
@@ -625,7 +725,12 @@ function repairAutomaticRouteCrossings(
   }
 }
 
-function routeConflictCount(points: Point[], existing: ExistingRoute[]): number {
+function routeConflictCount(
+  points: Point[],
+  existing: ExistingRoute[],
+  budget?: RoutingBudget,
+): number {
+  if (budget && !budget.consume("routeConflictChecks")) return Infinity;
   let conflicts = 0;
   for (let index = 0; index < points.length - 1; index++) {
     const a = points[index]!;
@@ -676,6 +781,7 @@ function perimeterFallback(
   obstacles: Obstacle[],
   context: RouteContext,
   existing: ExistingRoute[],
+  budget?: RoutingBudget,
 ): Point[] | null {
   const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
   const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
@@ -751,7 +857,7 @@ function perimeterFallback(
     let best: Point[] | null = null;
     let bestScore = Infinity;
     for (const candidate of simplifiedCandidates) {
-      const score = scorePath(candidate, obstacles, context, routes);
+      const score = scorePath(candidate, obstacles, context, routes, Infinity, [], budget);
       if (score < bestScore) {
         best = candidate;
         bestScore = score;
@@ -818,6 +924,7 @@ function nudgeAutomaticRoutesOffBoundaries(
   obstacles: Obstacle[],
   boundaries: GroupBoundary[],
   routeOverrides: Record<string, RouteOverride>,
+  budget: RoutingBudget,
 ): void {
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
   for (const edge of edges) {
@@ -848,6 +955,7 @@ function nudgeAutomaticRoutesOffBoundaries(
           targetId: candidate.target,
           style: candidate.style,
         })),
+      budget,
     );
   }
 }
@@ -1862,7 +1970,9 @@ function scorePath(
   existing: ExistingRoute[],
   scoreCeiling = Infinity,
   boundaries: GroupBoundary[] = [],
+  budget?: RoutingBudget,
 ): number {
+  if (budget && !budget.consume("scorePathCalls")) return Infinity;
   if (points.length < 2) return Infinity;
   if (
     samePoint(points[0]!, context.sourcePoint) &&
@@ -1961,6 +2071,24 @@ function overlapLength(a: Point, b: Point, path: Point[]): number {
   return n;
 }
 
+function segmentOverlapLength(a: Point, b: Point, c: Point, d: Point): number {
+  if (a.x === b.x && c.x === d.x && a.x === c.x) {
+    return Math.max(
+      0,
+      Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) -
+        Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
+    );
+  }
+  if (a.y === b.y && c.y === d.y && a.y === c.y) {
+    return Math.max(
+      0,
+      Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) -
+        Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
+    );
+  }
+  return 0;
+}
+
 function segmentIntersectionKind(
   a: Point,
   b: Point,
@@ -2040,9 +2168,11 @@ function nudgePathOffBoundaries(
   obstacles: Obstacle[],
   context: RouteContext,
   existing: ExistingRoute[],
+  budget?: RoutingBudget,
 ): Point[] {
   let path = simplify(points);
   for (let pass = 0; pass < boundaries.length; pass++) {
+    if (budget?.exhausted) return path;
     let changed = false;
     for (let index = 1; index < path.length - 2; index++) {
       const a = path[index]!;
@@ -2073,13 +2203,13 @@ function nudgePathOffBoundaries(
 
       let best: Point[] | null = null;
       let bestScore = Infinity;
-      const baselineScore = scorePath(path, obstacles, context, existing);
+      const baselineScore = scorePath(path, obstacles, context, existing, Infinity, [], budget);
       // Existing diagrams may already contain a reviewed crossing or shared
       // corridor. Do not turn a local visibility correction into a global
       // reroute or silently exchange one reviewed conflict for another.
       if (!Number.isFinite(baselineScore) || pathHasRouteIntersection(path, existing)) continue;
       for (const candidate of candidates) {
-        const conflictScore = scorePath(candidate, obstacles, context, existing);
+        const conflictScore = scorePath(candidate, obstacles, context, existing, Infinity, [], budget);
         // A cosmetic clearance correction must not buy visibility by adding a
         // resource collision, connector overlap, or crossing. Small changes
         // in path length are expected when the adjacent legs are adjusted.
@@ -2091,6 +2221,7 @@ function nudgePathOffBoundaries(
           existing,
           bestScore,
           boundaries,
+          budget,
         );
         if (score < bestScore) {
           best = candidate;
@@ -2145,12 +2276,15 @@ function shortcut(
   context: RouteContext,
   existing: ExistingRoute[] = [],
   boundaries: GroupBoundary[] = [],
+  budget?: RoutingBudget,
 ): Point[] {
   let path = simplify(points);
   for (let iter = 0; iter < 12; iter++) {
+    if (budget?.exhausted) return path;
     let changed = false;
     outer: for (let i = 0; i < path.length - 2; i++) {
       for (let j = path.length - 1; j >= i + 2; j--) {
+        if (budget?.exhausted) return path;
         const a = path[i]!;
         const b = path[j]!;
         const options: Point[][] = [];
@@ -2160,6 +2294,7 @@ function shortcut(
         const current = path.slice(i, j + 1);
         const currentLen = pathLength(current);
         const currentBends = Math.max(0, current.length - 2);
+        let currentScore: number | undefined;
         for (const opt of options) {
           const next = simplify(opt);
           if (next.length > current.length) continue;
@@ -2169,11 +2304,12 @@ function shortcut(
           ) {
             continue;
           }
-          if (!pathClear(next, obstacles, context, existing, boundaries)) continue;
+          if (!pathClear(next, obstacles, context, existing, boundaries, budget)) continue;
           const candidate = simplify([...path.slice(0, i), ...next, ...path.slice(j + 1)]);
+          currentScore ??= scorePath(path, obstacles, context, existing, Infinity, boundaries, budget);
           if (
-            scorePath(candidate, obstacles, context, existing, Infinity, boundaries) >
-            scorePath(path, obstacles, context, existing, Infinity, boundaries)
+            scorePath(candidate, obstacles, context, existing, Infinity, boundaries, budget) >
+            currentScore
           ) continue;
           path = candidate;
           changed = true;
@@ -2192,8 +2328,9 @@ function pathClear(
   context: RouteContext,
   existing: ExistingRoute[] = [],
   boundaries: GroupBoundary[] = [],
+  budget?: RoutingBudget,
 ): boolean {
-  return scorePath(points, obstacles, context, existing, Infinity, boundaries) < HEADER_COST;
+  return scorePath(points, obstacles, context, existing, Infinity, boundaries, budget) < HEADER_COST;
 }
 
 function samePoint(a: Point, b: Point): boolean {
@@ -2220,10 +2357,11 @@ function routeAStar(
   target: NodeGeom,
   existing: ExistingRoute[],
   conflictCostCache?: Map<number, number>,
+  budget?: RoutingBudget,
 ): Point[] | null {
   const start = stepOut(source, ports.src, ports.srcSide);
   const goal = stepOut(target, ports.tgt, ports.tgtSide);
-  const mid = astar(grid, start, goal, existing, conflictCostCache);
+  const mid = astar(grid, start, goal, existing, conflictCostCache, budget);
   if (!mid) return null;
   return [ports.src, ...mid, ports.tgt];
 }
@@ -2274,6 +2412,7 @@ function astar(
   goal: Point,
   existing: ExistingRoute[],
   conflictCostCache?: Map<number, number>,
+  budget?: RoutingBudget,
 ): Point[] | null {
   const sc = worldToCell(grid, start.x, start.y);
   const gc = worldToCell(grid, goal.x, goal.y);
@@ -2298,6 +2437,7 @@ function astar(
   const closed = new Uint8Array(size);
 
   while (heap.size > 0) {
+    if (budget && !budget.consume("astarExpansions")) return null;
     const current = heap.pop();
     if (current === undefined || closed[current]) continue;
     if (current === goalIdx) return reconstruct(grid, came, current, start, goal);
@@ -2344,7 +2484,7 @@ function segmentRouteConflictCost(
     for (let i = 0; i < route.points.length - 1; i++) {
       const c = route.points[i]!;
       const d = route.points[i + 1]!;
-      const overlap = overlapLength(a, b, [c, d]);
+      const overlap = segmentOverlapLength(a, b, c, d);
       cost += overlap * OVERLAP_COST;
       const intersection = segmentIntersectionKind(a, b, c, d);
       if (intersection === "cross") cost += CROSSING_COST;

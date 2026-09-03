@@ -555,6 +555,24 @@ reviewed warning fingerprint in `examples/routing-warnings.json`, so a new or
 removed warning requires deliberate visual review. The precise priority list is
 in [`packages/runtime/ROUTING.md`](../packages/runtime/ROUTING.md).
 
+Routing has an explicit compile-wide work budget for candidate scoring,
+crossing repair, and A* expansion. This bounds pathological fan-out diagrams
+without imposing a small arbitrary resource or edge count. If the budget is
+exhausted, the router retains every best route already found and uses its
+deterministic fallback for remaining edges; Studio adds a stable
+`routing-budget` warning to the compilation issues. The performance contract is
+checked by a bounded synthetic fan-out regression and by
+`scripts/performance-baseline.json`. Fixture wall-clock regressions remain
+advisory until the CI Node patch and runner are pinned.
+
+The small-diagram ceilings are 60,000 scored candidates, 20,000 route-conflict
+checks, 2,000,000 A* expansions, and 20,000 crossing-repair candidates per
+compile. Effective defaults scale down deterministically as resource, group,
+edge, and obstacle complexity rises, so the declared 500-resource envelope does
+not inherit the full small-diagram search budget. Tests may set explicit limits
+to exercise the fallback; production code retains the best route rather than
+silently discarding it.
+
 ### Rendering and export
 
 The renderer produces SVG from the final geometry. Provider icons are resolved
@@ -723,7 +741,7 @@ resolution.
 | `pnpm check` | Every checked-in example through the compiled CLI |
 | `pnpm test:integration` | Curated AWS layout contracts: aspect, LTR chains, and 8px compiled node/route/canvas geometry |
 | `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings; every warning needs a reviews[] note |
-| `pnpm check:performance` | Median compile time for the representative examples against a 250 ms advisory ceiling |
+| `pnpm check:performance` | Seven warmed compile samples with median/p95 reporting, checked-in relative baselines, and a strict deterministic routing-budget stress contract |
 | `pnpm check:assets` | Branding image dimensions and byte budgets |
 | `pnpm test:e2e` | Chromium and WebKit Studio interactions and every format supported by each engine (WebP is hidden where encoding is unavailable) |
 | `pnpm test:e2e:packed` | Real tarball → CLI server → bundled generic Studio |

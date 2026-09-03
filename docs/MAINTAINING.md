@@ -29,6 +29,13 @@ tie-breaking. Extract pure geometry or scoring helpers only in behavior-neutral
 changes, and run `pnpm check:routing` plus the browser suite after each
 extraction. Do not combine a file split with route-quality tuning.
 
+Routing also has a compile-wide deterministic work budget. It accounts for
+candidate scoring, route-conflict repair, and A* expansions. When the budget is
+exhausted, the router keeps the best routes found so far and the editor reports
+the stable `routing-budget` warning; it must not reject the document or silently
+drop every edge. The synthetic fan-out case in the router/compiler tests is the
+regression guard for this fallback contract.
+
 ## Before merging
 
 Run `pnpm check:release`. That local gate now matches the Linux release

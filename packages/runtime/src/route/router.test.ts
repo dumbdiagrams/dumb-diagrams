@@ -744,6 +744,39 @@ describe("routeEdgePreview", () => {
     expect(sharedLength(existingRoute.points, convergingRoute.points)).toBeLessThanOrEqual(12);
   });
 
+  it("bounds a synthetic fan-out without dropping the best available routes", () => {
+    const doc = createEmptyDocument("routing-budget-fanout");
+    doc.flow = "lr";
+    doc.resources = Array.from({ length: 10 }, (_, index) => ({
+      id: `resource${index}`,
+      type: "generic.user",
+      label: { service: `Resource ${index}` },
+      role: "primary" as const,
+      props: {},
+    }));
+    doc.edges = Array.from({ length: 9 }, (_, index) => ({
+      id: `edge${index}`,
+      source: "resource0",
+      target: `resource${index + 1}`,
+      style: "solid" as const,
+      kind: "flow" as const,
+    }));
+
+    let diagnostics;
+    const routes = routeEdges(doc, layoutDocument(doc), {
+      maxScorePathCalls: 10,
+      maxRouteConflictChecks: 10,
+      maxAstarExpansions: 10,
+      maxRepairCandidates: 10,
+      onBudgetExhausted: (result) => { diagnostics = result; },
+    });
+
+    expect(routes).toHaveLength(doc.edges.length);
+    expect(diagnostics?.exhausted).toBe(true);
+    expect(diagnostics?.scorePathCalls).toBeLessThanOrEqual(11);
+    expect(routes.every((route) => route.points.length >= 2)).toBe(true);
+  });
+
   it("takes the short top approach instead of crossing CloudFront like the example regression", () => {
     const { doc, layout } = gatewayRoutingRegressionLayout(false);
     const routes = routeEdges(doc, layout);

@@ -1,10 +1,12 @@
 import {
   createAsyncDocsFixture,
+  createEmptyDocument,
   getDefaultView,
 } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
+import type { RoutingDiagnostics } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -19,6 +21,44 @@ import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
+  it("retains fan-out routes and propagates a deterministic routing budget warning", () => {
+    const doc = createEmptyDocument("routing-budget-fanout");
+    doc.flow = "lr";
+    doc.resources = Array.from({ length: 10 }, (_, index) => ({
+      id: `resource${index}`,
+      type: "generic.user",
+      label: { service: `Resource ${index}` },
+      role: "primary" as const,
+      props: {},
+    }));
+    doc.edges = Array.from({ length: 9 }, (_, index) => ({
+      id: `edge${index}`,
+      source: "resource0",
+      target: `resource${index + 1}`,
+      style: "solid" as const,
+      kind: "flow" as const,
+    }));
+
+    let callerDiagnostics: RoutingDiagnostics | undefined;
+    const result = compileDiagramSource(printDgm(doc), false, {
+      maxScorePathCalls: 10,
+      maxRouteConflictChecks: 10,
+      maxAstarExpansions: 10,
+      maxRepairCandidates: 10,
+      onBudgetExhausted: (diagnostics) => { callerDiagnostics = diagnostics; },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.layout.edges).toHaveLength(doc.edges.length);
+    expect(result.issues).toContainEqual({
+      level: "warning",
+      code: "routing-budget",
+      message: "Routing work budget exhausted; retained the best available routes.",
+    });
+    expect(callerDiagnostics?.exhausted).toBe(true);
+  });
+
   it("always reserves generous free space around the laid-out canvas", () => {
     const result = compileDiagramSource(printDgm(createAsyncDocsFixture()), false);
     expect(result.ok).toBe(true);
@@ -284,7 +324,9 @@ describe("diagram compilation canvas bounds", () => {
       (candidate) => candidate.id === "simple-serverless-web-application",
     )!;
     const doc = parseDgm(example.source);
-    const entry = getCatalogEntry("azure.abs-member")!;
+    // Keep the staged item provider-neutral: provider validation now rejects
+    // unrelated Azure entries in this AWS document before routing is reached.
+    const entry = getCatalogEntry("cloud-agnostic.server")!;
     const added = addResource(doc, entry, undefined, { x: -320, y: 720 });
     // Documents authored before explicit editor placements were marked as
     // manual still contain pinned root items in this form.

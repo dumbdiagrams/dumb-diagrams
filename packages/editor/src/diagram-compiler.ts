@@ -10,7 +10,13 @@ import {
   renderSvg,
   type InvariantFailure,
 } from "@dumb-diagrams/runtime/render";
-import { attachRoutes, routeEdges } from "@dumb-diagrams/runtime/route";
+import {
+  attachRoutes,
+  routeEdges,
+  ROUTING_BUDGET_WARNING_CODE,
+  ROUTING_BUDGET_WARNING_MESSAGE,
+  type RoutingOptions,
+} from "@dumb-diagrams/runtime/route";
 
 import { snapLayoutToGrid } from "./grid";
 
@@ -91,14 +97,22 @@ export function getCachedDiagramCompilation(
   return cached;
 }
 
-export function compileDiagramSource(source: string, snapToGrid: boolean): DiagramCompilation {
-  const cached = getCachedDiagramCompilation(source, snapToGrid);
+export function compileDiagramSource(
+  source: string,
+  snapToGrid: boolean,
+  routingOptions: RoutingOptions = {},
+): DiagramCompilation {
+  const usesCustomRoutingOptions = Object.keys(routingOptions).length > 0;
+  const cached = usesCustomRoutingOptions
+    ? undefined
+    : getCachedDiagramCompilation(source, snapToGrid);
   if (cached) return cached;
 
   const key = cacheKey(source, snapToGrid);
   try {
     const doc = parseDgm(source);
-    return remember(key, compileParsedDocument(doc, snapToGrid));
+    const compilation = compileParsedDocument(doc, snapToGrid, routingOptions);
+    return usesCustomRoutingOptions ? compilation : remember(key, compilation);
   } catch (error) {
     return remember(key, {
       ok: false,
@@ -115,13 +129,15 @@ export function compileDiagramSource(source: string, snapToGrid: boolean): Diagr
 export function compileDocument(
   doc: DiagramDocument,
   snapToGrid: boolean,
+  routingOptions: RoutingOptions = {},
 ): DiagramCompilation {
-  return compileParsedDocument(doc, snapToGrid);
+  return compileParsedDocument(doc, snapToGrid, routingOptions);
 }
 
 function compileParsedDocument(
   doc: DiagramDocument,
   snapToGrid: boolean,
+  routingOptions: RoutingOptions,
 ): DiagramCompilation {
   const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
   if (hasErrors(issues)) {
@@ -138,7 +154,17 @@ function compileParsedDocument(
   let routedEdges: RoutedEdge[];
   const routingWarnings: ValidationIssue[] = [];
   try {
-    routedEdges = routeEdges(doc, placedLayout);
+    routedEdges = routeEdges(doc, placedLayout, {
+      ...routingOptions,
+      onBudgetExhausted: (diagnostics) => {
+        routingOptions.onBudgetExhausted?.(diagnostics);
+        routingWarnings.push({
+          level: "warning",
+          code: ROUTING_BUDGET_WARNING_CODE,
+          message: ROUTING_BUDGET_WARNING_MESSAGE,
+        });
+      },
+    });
   } catch (error) {
     routingWarnings.push({
       level: "warning",
