@@ -1,3 +1,5 @@
+import { err, ok, type Result } from "neverthrow";
+
 function hashContent(content: string): string {
   let hash = 2166136261;
   for (let i = 0; i < content.length; i++) {
@@ -50,6 +52,14 @@ export interface SanitizedSvg {
   hash: string;
 }
 
+export type SvgSanitizeError = {
+  readonly code: "invalid-svg";
+  readonly message: string;
+};
+
+/** @deprecated Prefer the workflow-oriented `SvgSanitizeError` name. */
+export type SanitizeSvgError = SvgSanitizeError;
+
 export function sanitizeSvg(input: string): SanitizedSvg {
   validateMarkupSafety(input);
   if (typeof DOMParser === "undefined") {
@@ -75,6 +85,16 @@ export function sanitizeSvg(input: string): SanitizedSvg {
     intrinsicH: Math.max(16, Math.round(height)),
     hash,
   };
+}
+
+/** Safe boundary for untrusted SVG input; the legacy sanitizer remains throwing. */
+export function sanitizeSvgResult(input: string): Result<SanitizedSvg, SvgSanitizeError> {
+  try {
+    return ok(sanitizeSvg(input));
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    return err({ code: "invalid-svg", message: error.message });
+  }
 }
 
 function walkAndSanitize(node: Element): void {

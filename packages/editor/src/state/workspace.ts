@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DIAGRAM_LIMITS, characterLength, hasErrors, utf8ByteLength, validateDocument } from "@dumb-diagrams/runtime/core";
 import { getCatalogMap } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
-import { sanitizeSvg } from "@dumb-diagrams/runtime/render";
+import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
+import { sanitizeSvgResult } from "@dumb-diagrams/runtime/render";
+import { err, ok, ResultAsync, type Result } from "neverthrow";
 
 import type { Viewport } from "../canvas/CanvasStage";
 
@@ -44,6 +45,8 @@ export interface WorkspaceOptions {
   initialFilename?: string;
   initialViewport: Viewport;
   blankSource: string;
+  /** Injectable storage boundary for deterministic recovery tests and hosts. */
+  persistencePlatform?: WorkspacePersistencePlatform;
 }
 
 interface HistoryState {
@@ -70,7 +73,36 @@ export type WorkspacePreviewMap = Readonly<Record<string, string | undefined>>;
 export type WorkspacePersistenceOutcome = {
   status: "ok" | "degraded";
   warning?: string;
+  errors?: readonly StorageError[];
 };
+
+export type StorageErrorCode = "unavailable" | "quota-exceeded" | "corrupt" | "transaction-failed";
+
+export type StorageError = {
+  readonly code: StorageErrorCode;
+  readonly layer: "journal" | "indexeddb" | "fallback";
+  readonly operation: "read" | "write" | "clear";
+  readonly message: string;
+  readonly cause: unknown;
+  readonly relatedErrors?: readonly StorageError[];
+};
+
+export interface WorkspaceStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+export interface WorkspaceIndexedDb {
+  read(key: string): Promise<unknown | undefined>;
+  write(key: string, value: WorkspaceState): Promise<void>;
+}
+
+export interface WorkspacePersistencePlatform {
+  journal: WorkspaceStorage;
+  indexedDb: WorkspaceIndexedDb;
+  fallback: WorkspaceStorage;
+}
 
 export type WorkspaceLoadOutcome = WorkspacePersistenceOutcome & {
   workspace: WorkspaceState | null;
@@ -127,15 +159,14 @@ export function isDisposableTab(tab: WorkspaceTab, blankSource: string): boolean
     if (tab.source === blankSource) return true;
     // Empty drafts may have been serialized with a filename or formatting
     // changes. Keep intentionally renamed empty diagrams recoverable.
-    try {
-      const document = parseDgm(tab.source);
+    const parsed = parseDgmResult(tab.source);
+    if (parsed.isOk()) {
+      const document = parsed.value;
       const empty = document.resources.length === 0 && document.groups.length === 0 &&
         document.edges.length === 0 && document.annotations.length === 0 &&
         (document.assets?.length ?? 0) === 0;
       const title = document.title?.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
       if (empty && (!title || title === "untitled diagram")) return true;
-    } catch {
-      // Invalid drafts remain recoverable.
     }
   }
   return (tab.origin === "fixture" || tab.origin === "example") &&
@@ -279,6 +310,7 @@ export function useWorkspace(options: WorkspaceOptions) {
   const [workspace, setWorkspace] = useState<WorkspaceState>(initialState);
   const workspaceRef = useRef(workspace);
   workspaceRef.current = workspace;
+  const persistencePlatformRef = useRef(options.persistencePlatform ?? createDefaultPersistencePlatform());
   const historiesRef = useRef(new Map<string, HistoryState>());
   const persistTimerRef = useRef<number | null>(null);
   const pendingPersistRef = useRef<WorkspaceState | null>(null);
@@ -319,12 +351,21 @@ export function useWorkspace(options: WorkspaceOptions) {
     }
     // Keep a synchronous write-ahead snapshot so an immediate reload cannot
     // outrun the debounced IndexedDB transaction (notably in WebKit).
-    const journalResult = persistWorkspaceJournal(serialized);
-    reportPersistenceWarning(journalResult.warning);
+    const journal = persistWorkspaceJournal(serialized, persistencePlatformRef.current);
+    if (journal.isErr()) reportPersistenceWarning(storageWarning(journal.error));
     persistQueueRef.current = persistQueueRef.current
       .catch(() => undefined)
-      .then(() => persistWorkspace(next, serialized))
-      .then((result) => reportPersistenceWarning(result.warning));
+      .then(() => persistWorkspace(next, serialized, persistencePlatformRef.current, journal))
+      .then((result) => {
+        result.match(
+          (outcome) => {
+            // A journal failure was already surfaced synchronously above;
+            // keep the queued result for diagnostics without duplicating it.
+            if (journal.isOk()) reportPersistenceWarning(outcome.warning);
+          },
+          (error) => reportPersistenceWarning(storageWarning(error)),
+        );
+      });
   }, [reportPersistenceWarning]);
 
   const updateWorkspace = useCallback(
@@ -343,10 +384,16 @@ export function useWorkspace(options: WorkspaceOptions) {
   useEffect(() => {
     let cancelled = false;
 
-    void loadPersistedWorkspace().then((outcome) => {
+    void loadPersistedWorkspace(persistencePlatformRef.current).then((result) => {
       if (cancelled) return;
-      reportPersistenceWarning(outcome.warning);
-      const next = outcome.workspace ?? initialState;
+      let outcome: WorkspaceLoadOutcome | undefined;
+      if (result.isOk()) {
+        outcome = result.value;
+        reportPersistenceWarning(outcome.warning);
+      } else {
+        reportPersistenceWarning(storageWarning(result.error));
+      }
+      const next = outcome?.workspace ?? initialState;
       historiesRef.current = new Map(next.tabs.map((tab) => [tab.id, createHistory()]));
       workspaceRef.current = next;
       setWorkspace(next);
@@ -813,92 +860,248 @@ function isDocumentOrigin(value: unknown): value is DocumentOrigin {
   return value === "fixture" || value === "new" || value === "import" || value === "example" || value === "recovery" || value === "duplicate" || value === "file";
 }
 
-async function loadPersistedWorkspace(): Promise<WorkspaceLoadOutcome> {
+export function loadPersistedWorkspace(platform = createDefaultPersistencePlatform()): ResultAsync<WorkspaceLoadOutcome, StorageError> {
+  return ResultAsync.fromPromise(
+    readPersistedWorkspace(platform),
+    (cause) => isStorageError(cause) ? cause : storageError("indexeddb", "read", cause),
+  );
+}
+
+async function readPersistedWorkspace(platform: WorkspacePersistencePlatform): Promise<WorkspaceLoadOutcome> {
   const warnings: string[] = [];
-  try {
-    const raw = localStorage.getItem(PENDING_WORKSPACE_KEY) ?? "";
-    const normalized = deserializeWorkspace(raw);
-    const validated = normalized ? validateRestoredWorkspace(normalized) : null;
-    if (validated) return { status: "ok", workspace: validated };
-    if (raw) warnings.push("The latest workspace recovery snapshot was unreadable.");
-  } catch {
-    warnings.push("Workspace recovery storage is unavailable; trying other local storage.");
+  const errors: StorageError[] = [];
+  let failedSources = 0;
+  const addFailure = (error: StorageError) => {
+    failedSources += 1;
+    errors.push(error);
+    warnings.push(storageWarning(error));
+  };
+
+  const journal = readStorage(platform.journal, PENDING_WORKSPACE_KEY, "journal");
+  if (journal.isErr()) {
+    addFailure(journal.error);
+  } else if (journal.value !== undefined) {
+    const restored = restoreSerializedWorkspace(journal.value, "journal");
+    if (restored.isOk()) return persistenceLoadResult(restored.value, warnings, errors);
+    failedSources += 1;
+    errors.push(restored.error);
+    warnings.push(storageWarning(restored.error));
   }
+
+  const database = await readIndexedDb(platform.indexedDb);
+  if (database.isErr()) {
+    addFailure(database.error);
+  } else if (database.value !== undefined) {
+    const restored = restoreWorkspaceValue(database.value, "indexeddb");
+    if (restored.isOk()) return persistenceLoadResult(restored.value, warnings, errors);
+    failedSources += 1;
+    errors.push(restored.error);
+    warnings.push(storageWarning(restored.error));
+  }
+
+  const fallback = readStorage(platform.fallback, FALLBACK_KEY, "fallback");
+  if (fallback.isErr()) {
+    addFailure(fallback.error);
+  } else if (fallback.value !== undefined) {
+    const restored = restoreSerializedWorkspace(fallback.value, "fallback");
+    if (restored.isOk()) return persistenceLoadResult(restored.value, warnings, errors);
+    failedSources += 1;
+    errors.push(restored.error);
+    warnings.push(storageWarning(restored.error));
+  }
+
+  if (failedSources === 3) throw combineStorageErrors(errors);
+  if (!warnings.length && failedSources === 0) return { status: "ok", workspace: null };
+  return {
+    status: "degraded",
+    workspace: null,
+    warning: warnings[0] ?? "Local workspace persistence is unavailable; edits may not survive reload.",
+    errors,
+  };
+}
+
+function persistenceLoadResult(workspace: WorkspaceState, warnings: string[], errors: StorageError[]): WorkspaceLoadOutcome {
+  return warnings.length
+    ? { status: "degraded", workspace, warning: warnings[0], errors }
+    : { status: "ok", workspace };
+}
+
+function restoreSerializedWorkspace(raw: string, layer: StorageError["layer"]): Result<WorkspaceState, StorageError> {
+  const normalized = deserializeWorkspace(raw);
+  const restored = normalized ? validateRestoredWorkspace(normalized) : null;
+  return restored ? ok(restored) : err(corruptStorageError(layer, raw));
+}
+
+function restoreWorkspaceValue(value: unknown, layer: StorageError["layer"]): Result<WorkspaceState, StorageError> {
+  const normalized = normalizeWorkspaceState(value);
+  const restored = normalized ? validateRestoredWorkspace(normalized) : null;
+  return restored ? ok(restored) : err(corruptStorageError(layer, value));
+}
+
+export function persistWorkspaceJournal(
+  serialized: string,
+  platform: WorkspacePersistencePlatform,
+): Result<void, StorageError> {
+  const result = writeStorage(platform.journal, PENDING_WORKSPACE_KEY, serialized, "journal");
+  if (result.isOk()) return result;
   try {
-    const db = await openDatabase();
-    try {
-      const value = await readWorkspaceValue(db);
-      const normalized = normalizeWorkspaceState(value);
-      const validated = normalized ? validateRestoredWorkspace(normalized) : null;
-      if (validated) return { status: warnings.length ? "degraded" : "ok", workspace: validated, warning: warnings[0] };
-      if (value !== undefined) warnings.push("The stored workspace could not be restored; starting with a local workspace.");
-    } finally {
-      db.close();
+    platform.journal.removeItem(PENDING_WORKSPACE_KEY);
+  } catch {
+    // Storage may be completely disabled; the durable/fallback write still runs.
+  }
+  return result;
+}
+
+export function persistWorkspace(
+  workspace: WorkspaceState,
+  serialized: string,
+  platform: WorkspacePersistencePlatform,
+  journalResult?: Result<void, StorageError>,
+): ResultAsync<WorkspacePersistenceOutcome, StorageError> {
+  const journal = journalResult ?? persistWorkspaceJournal(serialized, platform);
+  return ResultAsync.fromPromise(
+    persistWorkspaceValue(workspace, serialized, platform, journal),
+    (cause) => isStorageError(cause) ? cause : storageError("indexeddb", "write", cause),
+  );
+}
+
+async function persistWorkspaceValue(
+  workspace: WorkspaceState,
+  serialized: string,
+  platform: WorkspacePersistencePlatform,
+  journal: Result<void, StorageError>,
+): Promise<WorkspacePersistenceOutcome> {
+  const journalError = journal.isErr() ? journal.error : undefined;
+
+  const database = await writeIndexedDb(platform.indexedDb, workspace);
+  if (database.isOk()) {
+    const clear = clearJournalIfCurrent(platform.journal, serialized);
+    if (clear.isErr()) {
+      return {
+        status: "degraded",
+        warning: storageWarning(clear.error),
+        errors: journalError ? [journalError, clear.error] : [clear.error],
+      };
     }
-  } catch {
-    warnings.push("IndexedDB workspace persistence is unavailable; trying recovery storage.");
+    return journalError
+      ? { status: "degraded", warning: storageWarning(journalError), errors: [journalError] }
+      : { status: "ok" };
   }
-  try {
-    const raw = localStorage.getItem(FALLBACK_KEY) ?? "";
-    const normalized = deserializeWorkspace(raw);
-    const validated = normalized ? validateRestoredWorkspace(normalized) : null;
-    if (raw && !validated) warnings.push("The fallback workspace could not be restored; starting with a local workspace.");
-    return {
-      status: warnings.length ? "degraded" : "ok",
-      workspace: validated,
-      warning: warnings[0],
-    };
-  } catch {
-    warnings.push("Local workspace persistence is unavailable; edits may not survive reload.");
+
+  const fallback = writeStorage(platform.fallback, FALLBACK_KEY, serialized, "fallback");
+  if (fallback.isOk()) {
     return {
       status: "degraded",
-      workspace: null,
-      warning: warnings[0],
+      warning: "IndexedDB workspace persistence is unavailable; using recovery storage.",
+      errors: journalError ? [journalError, database.error] : [database.error],
     };
+  }
+  throw {
+    ...fallback.error,
+    message: "IndexedDB and recovery storage failed.",
+    relatedErrors: journalError ? [journalError, database.error] : [database.error],
+  } satisfies StorageError;
+}
+
+function readStorage(storage: WorkspaceStorage, key: string, layer: StorageError["layer"]): Result<string | undefined, StorageError> {
+  try {
+    const value = storage.getItem(key);
+    return ok(value === null ? undefined : value);
+  } catch (cause) {
+    return err(storageError(layer, "read", cause));
   }
 }
 
-function persistWorkspaceJournal(serialized: string): WorkspacePersistenceOutcome {
+function writeStorage(
+  storage: WorkspaceStorage,
+  key: string,
+  value: string,
+  layer: StorageError["layer"],
+): Result<void, StorageError> {
   try {
-    localStorage.setItem(PENDING_WORKSPACE_KEY, serialized);
-    return { status: "ok" };
-  } catch {
-    try {
-      localStorage.removeItem(PENDING_WORKSPACE_KEY);
-    } catch {
-      // Storage may be completely disabled; the queued IndexedDB write still runs.
-    }
-    return {
-      status: "degraded",
-      warning: "Workspace recovery snapshot could not be written; edits may not survive an immediate reload.",
-    };
+    storage.setItem(key, value);
+    return ok(undefined);
+  } catch (cause) {
+    return err(storageError(layer, "write", cause));
   }
 }
 
-async function persistWorkspace(workspace: WorkspaceState, serialized: string): Promise<WorkspacePersistenceOutcome> {
+function clearJournalIfCurrent(storage: WorkspaceStorage, serialized: string): Result<void, StorageError> {
+  const current = readStorage(storage, PENDING_WORKSPACE_KEY, "journal");
+  if (current.isErr()) return err(current.error);
+  if (current.value !== serialized) return ok(undefined);
   try {
-    const db = await openDatabase();
-    try {
-      await writeWorkspaceValue(db, workspace);
-    } finally {
-      db.close();
-    }
-    try {
-      // A later edit may already have replaced the journal while this queued
-      // write was in flight. Only clear the snapshot that just reached disk.
-      if (localStorage.getItem(PENDING_WORKSPACE_KEY) === serialized) {
-        localStorage.removeItem(PENDING_WORKSPACE_KEY);
-      }
-    } catch {
-      // A valid journal can safely remain if storage becomes unavailable.
-    }
-    return { status: "ok" };
-  } catch {
-    return {
-      status: "degraded",
-      warning: "Workspace persistence failed; edits remain local and may not survive reload.",
-    };
+    storage.removeItem(PENDING_WORKSPACE_KEY);
+    return ok(undefined);
+  } catch (cause) {
+    return err(storageError("journal", "clear", cause));
   }
+}
+
+function readIndexedDb(indexedDb: WorkspaceIndexedDb): ResultAsync<unknown | undefined, StorageError> {
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => indexedDb.read(WORKSPACE_KEY)),
+    (cause) => storageError("indexeddb", "read", cause),
+  );
+}
+
+function writeIndexedDb(indexedDb: WorkspaceIndexedDb, workspace: WorkspaceState): ResultAsync<void, StorageError> {
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => indexedDb.write(WORKSPACE_KEY, workspace)),
+    (cause) => storageError("indexeddb", "write", cause),
+  );
+}
+
+function storageError(
+  layer: StorageError["layer"],
+  operation: StorageError["operation"],
+  cause: unknown,
+): StorageError {
+  const text = cause instanceof Error ? `${cause.name} ${cause.message}` : String(cause);
+  const quota = /quota|storage.?full|exceed/i.test(text);
+  const transaction = layer === "indexeddb" && /transaction|abort|indexeddb/i.test(text);
+  return {
+    code: quota ? "quota-exceeded" : transaction ? "transaction-failed" : "unavailable",
+    layer,
+    operation,
+    message: text,
+    cause,
+  };
+}
+
+function isStorageError(value: unknown): value is StorageError {
+  return Boolean(value && typeof value === "object" && "code" in value && "layer" in value && "operation" in value);
+}
+
+function combineStorageErrors(errors: readonly StorageError[]): StorageError {
+  const [first, ...related] = errors;
+  if (!first) return storageError("indexeddb", "read", new Error("No workspace storage source was available."));
+  return {
+    ...first,
+    message: "All workspace storage sources failed.",
+    relatedErrors: [...(first.relatedErrors ?? []), ...related],
+  };
+}
+
+function storageWarning(error: StorageError): string {
+  if (error.code === "corrupt") {
+    if (error.layer === "journal") return "The latest workspace recovery snapshot was unreadable.";
+    if (error.layer === "indexeddb") return "The stored workspace could not be restored; starting with a local workspace.";
+    return "The fallback workspace could not be restored; starting with a local workspace.";
+  }
+  if (error.layer === "journal") return "Workspace recovery storage is unavailable; trying other local storage.";
+  if (error.layer === "indexeddb") return "IndexedDB workspace persistence is unavailable; trying recovery storage.";
+  return "Local workspace persistence is unavailable; edits may not survive reload.";
+}
+
+function corruptStorageError(layer: StorageError["layer"], value: unknown): StorageError {
+  return {
+    code: "corrupt",
+    layer,
+    operation: "read",
+    message: "Persisted workspace data is malformed or failed validation.",
+    cause: value,
+  };
 }
 
 function finiteCoordinate(value: unknown): value is number {
@@ -907,14 +1110,11 @@ function finiteCoordinate(value: unknown): value is number {
 
 function validateRestoredWorkspace(workspace: WorkspaceState): WorkspaceState | null {
   const valid = (tab: WorkspaceTab) => {
-    try {
-      const doc = parseDgm(tab.source);
-      if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) return false;
-      for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
-      return true;
-    } catch {
-      return false;
-    }
+    const parsed = parseDgmResult(tab.source);
+    if (parsed.isErr()) return false;
+    const doc = parsed.value;
+    if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) return false;
+    return (doc.assets ?? []).every((asset) => sanitizeSvgResult(asset.content).isOk());
   };
   const tabs = workspace.tabs.filter(valid);
   if (!tabs.length) return null;
@@ -927,10 +1127,40 @@ function validateRestoredWorkspace(workspace: WorkspaceState): WorkspaceState | 
   };
 }
 
+function createDefaultPersistencePlatform(): WorkspacePersistencePlatform {
+  const browserStorage: WorkspaceStorage = {
+    getItem: (key) => globalThis.localStorage.getItem(key),
+    setItem: (key, value) => globalThis.localStorage.setItem(key, value),
+    removeItem: (key) => globalThis.localStorage.removeItem(key),
+  };
+  return {
+    journal: browserStorage,
+    fallback: browserStorage,
+    indexedDb: {
+      read: async (key) => {
+        const db = await openDatabase();
+        try {
+          return await readWorkspaceValue(db, key);
+        } finally {
+          db.close();
+        }
+      },
+      write: async (key, workspace) => {
+        const db = await openDatabase();
+        try {
+          await writeWorkspaceValue(db, key, workspace);
+        } finally {
+          db.close();
+        }
+      },
+    },
+  };
+}
+
 function openDatabase(): Promise<IDBDatabase> {
-  if (typeof indexedDB === "undefined") return Promise.reject(new Error("IndexedDB is unavailable."));
+  if (typeof globalThis.indexedDB === "undefined") return Promise.reject(new Error("IndexedDB is unavailable."));
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = globalThis.indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       request.result.createObjectStore(STORE_NAME);
     };
@@ -939,10 +1169,10 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-function readWorkspaceValue(db: IDBDatabase): Promise<unknown> {
+function readWorkspaceValue(db: IDBDatabase, key: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readonly");
-    const request = transaction.objectStore(STORE_NAME).get(WORKSPACE_KEY);
+    const request = transaction.objectStore(STORE_NAME).get(key);
     let value: unknown;
     request.onsuccess = () => {
       value = request.result;
@@ -954,11 +1184,11 @@ function readWorkspaceValue(db: IDBDatabase): Promise<unknown> {
   });
 }
 
-function writeWorkspaceValue(db: IDBDatabase, workspace: WorkspaceState): Promise<void> {
+function writeWorkspaceValue(db: IDBDatabase, key: string, workspace: WorkspaceState): Promise<void> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     try {
-      transaction.objectStore(STORE_NAME).put(workspace, WORKSPACE_KEY);
+      transaction.objectStore(STORE_NAME).put(workspace, key);
     } catch (error) {
       reject(error);
       return;

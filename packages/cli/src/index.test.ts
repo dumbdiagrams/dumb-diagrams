@@ -4,6 +4,10 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
+import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
+
+import { parseCliError } from "./cli-errors.js";
 import { runCli } from "./index.js";
 import { readCliVersion } from "./version.js";
 
@@ -18,12 +22,57 @@ describe("runCli", () => {
     expect(version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it("rejects unknown commands and invalid command arguments", async () => {
+  it("returns one for unknown commands and invalid command arguments", async () => {
     expect(await runCli(["not-a-command"])).toBe(1);
     expect(await runCli(["legacy-command"])).toBe(1);
     expect(await runCli(["init", "nested-repository"])).toBe(1);
-    await expect(runCli(["studio", "diagram.dgm"])).rejects.toThrow(/does not accept/);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["studio", "diagram.dgm"])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain("studio does not accept file paths");
+    } finally {
+      error.mockRestore();
+    }
     expect(await runCli(["validate"])).toBe(1);
+  });
+
+  it("maps input and parse failures to actionable terminal messages", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["validate", "missing.dgm"])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain("Unable to read diagram: missing.dgm");
+
+      const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-parse-"));
+      try {
+        const sourcePath = join(workRoot, "broken.dgm");
+        writeFileSync(sourcePath, "diagram broken { grammar aws");
+        expect(await runCli(["validate", sourcePath])).toBe(1);
+        expect(error.mock.calls.flat().join("\n")).toContain("Invalid diagram");
+      } finally {
+        rmSync(workRoot, { recursive: true, force: true });
+      }
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it("preserves the runtime parse code for oversized and malformed sources", () => {
+    const oversized = parseDgmResult("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1));
+    const malformed = parseDgmResult("diagram broken { grammar aws");
+    expect(oversized.isErr()).toBe(true);
+    expect(malformed.isErr()).toBe(true);
+    if (oversized.isErr() && malformed.isErr()) {
+      expect(parseCliError("large.dgm", oversized.error)).toMatchObject({
+        code: "parse-failed",
+        parseCode: "source-too-large",
+        message: "Diagram exceeds the 1 MiB source limit",
+      });
+      expect(parseCliError("broken.dgm", malformed.error)).toMatchObject({
+        code: "parse-failed",
+        parseCode: "invalid-syntax",
+        message: "Unterminated block; expected }",
+      });
+    }
   });
 
   it("validates a complete diagram before Studio handoff", async () => {
@@ -174,6 +223,15 @@ describe("runCli", () => {
       const sourcePilot = join(ROOT, "examples/curated/simple-serverless-web-application");
       for (const file of ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"]) {
         expect(readFileSync(join(generatedPilot, file), "utf8")).toBe(readFileSync(join(sourcePilot, file), "utf8"));
+      }
+      for (const id of [
+        "azure-private-app-service",
+        "gcp-streaming-analytics",
+        "cloud-agnostic-order-processing",
+      ]) {
+        expect(readFileSync(join(projectRoot, `.dumbdiagrams/examples/${id}/diagram.dgm`), "utf8")).toBe(
+          readFileSync(join(ROOT, `examples/curated/${id}/diagram.dgm`), "utf8"),
+        );
       }
       expect(existsSync(join(projectRoot, "README.md"))).toBe(false);
     } finally {

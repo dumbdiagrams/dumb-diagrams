@@ -1,6 +1,7 @@
 import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
+import { err, ok, ResultAsync, type Result } from "neverthrow";
 
 export type ExportFormat =
   | "png"
@@ -18,6 +19,45 @@ export type ExportFormat =
 export type ExportScope = "all" | "selection";
 export type ExportSize = "diagram" | "selection" | "custom";
 export type ExportAppearance = "light" | "dark";
+
+export type ExportErrorCode =
+  | "portable-svg-preparation"
+  | "rasterization"
+  | "canvas-context"
+  | "encoding"
+  | "download"
+  | "url";
+
+export type ExportError = Readonly<{
+  code: ExportErrorCode;
+  message: string;
+  cause?: unknown;
+}>;
+
+export type ExportReceipt = Readonly<{
+  filename: string;
+  format: ExportFormat;
+}>;
+
+class ExportFailure extends Error {
+  constructor(readonly error: ExportError) {
+    super(error.message);
+    this.name = "ExportFailure";
+  }
+}
+
+function exportError(code: ExportErrorCode, message: string, cause?: unknown): ExportError {
+  return cause === undefined ? { code, message } : { code, message, cause };
+}
+
+function failExport(code: ExportErrorCode, message: string, cause?: unknown): never {
+  throw new ExportFailure(exportError(code, message, cause));
+}
+
+function rethrowExportFailure(cause: unknown, code: ExportErrorCode, message: string): never {
+  if (cause instanceof ExportFailure) throw cause;
+  failExport(code, message, cause);
+}
 
 const DIAGRAM_URL_HASH_KEY = "diagram";
 const MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS = Math.ceil(DIAGRAM_LIMITS.sourceBytes / 3) * 4;
@@ -148,22 +188,67 @@ export function sanitizeFilename(value: string): string {
   return Array.from(clean).slice(0, DIAGRAM_LIMITS.filenameCharacters).join("");
 }
 
-export function downloadBlob(blob: Blob, name: string): boolean {
+function blobOrThrow(parts: BlobPart[], type: string, formatLabel: string): Blob {
   try {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = name;
-    anchor.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    return true;
-  } catch {
-    return false;
+    return new Blob(parts, { type });
+  } catch (cause) {
+    failExport("encoding", `Could not encode the ${formatLabel} export.`, cause);
   }
 }
 
-export function downloadText(text: string, name: string, mime = "text/plain"): boolean {
-  return downloadBlob(new Blob([text], { type: mime }), name);
+export function downloadBlobResult(blob: Blob, name: string): Result<void, ExportError> {
+  let objectUrl: string | null = null;
+  try {
+    objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = name;
+    anchor.click();
+    return ok(undefined);
+  } catch (cause) {
+    return err(exportError("download", "Your browser blocked the export download.", cause));
+  } finally {
+    if (objectUrl) {
+      const url = objectUrl;
+      const revoke = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // Cleanup failure must not mask the export outcome.
+        }
+      };
+      try {
+        window.setTimeout(revoke, 0);
+      } catch {
+        revoke();
+      }
+    }
+  }
+}
+
+export function downloadTextResult(text: string, name: string, mime = "text/plain"): Result<void, ExportError> {
+  let blob: Blob;
+  try {
+    blob = new Blob([text], { type: mime });
+  } catch (cause) {
+    return err(exportError("encoding", `Could not encode the ${mime} export.`, cause));
+  }
+  return downloadBlobResult(blob, name);
+}
+
+export function createDiagramUrlResult(source: string): Result<string, ExportError> {
+  const encoded = encodeDiagramUrlPayload(source);
+  if (!encoded.ok) return err(exportError("url", encoded.message));
+  try {
+    return ok(`${window.location.origin}${window.location.pathname}#${DIAGRAM_URL_HASH_KEY}=${encoded.payload}`);
+  } catch (cause) {
+    return err(exportError("url", "The diagram URL could not be created.", cause));
+  }
+}
+
+function requireExportSuccess<T>(result: Result<T, ExportError>): T {
+  if (result.isErr()) throw new ExportFailure(result.error);
+  return result.value;
 }
 
 export function filenameWithExtension(value: string, extension: string): string {
@@ -466,7 +551,7 @@ function collectSelectionEntities(
   return { groups, resources, edges, annotations };
 }
 
-export async function exportDiagramFile(args: {
+export function exportDiagramFile(args: {
   title: string;
   source: string;
   doc: DiagramDocument;
@@ -474,53 +559,109 @@ export async function exportDiagramFile(args: {
   selection: ExportSelectionItem[];
   options: ExportOptions;
   getPortableSvg: () => Promise<string>;
-}): Promise<ExportResult> {
+}): ResultAsync<ExportReceipt, ExportError> {
+  return ResultAsync.fromPromise(exportDiagramFileUnsafe(args), (cause) => {
+    if (cause instanceof ExportFailure) return cause.error;
+    return exportError("encoding", "The export could not be prepared.", cause);
+  });
+}
+
+async function exportDiagramFileUnsafe(args: {
+  title: string;
+  source: string;
+  doc: DiagramDocument;
+  layout: LayoutResult;
+  selection: ExportSelectionItem[];
+  options: ExportOptions;
+  getPortableSvg: () => Promise<string>;
+}): Promise<ExportReceipt> {
   const { title, source, doc, layout, selection, options, getPortableSvg } = args;
   const format = exportFormat(options.format);
   const filename = filenameWithExtension(title, format.extension);
-  try {
-    if (options.format === "dgm") {
-      return { ok: downloadText(source, filename), filename };
-    }
-    if (options.format === "json") {
-      return { ok: downloadText(JSON.stringify(doc, null, 2), filename, "application/json"), filename };
-    }
-    if (options.format === "xml") {
-      return { ok: downloadText(toDiagramXml(doc, source), filename, "application/xml"), filename };
-    }
-    if (options.format === "url") {
-      const diagramUrl = createDiagramUrl(source);
-      return {
-        ok: diagramUrl !== null && downloadText(diagramUrl, filename, "text/plain"),
-        filename,
-        ...(diagramUrl === null ? { error: "Diagram source cannot be encoded as a URL." } : {}),
-      };
-    }
-
-    const baseSvg = await getPortableSvg();
-    const svg = prepareExportSvg(baseSvg, doc, layout, selection, options, source);
-    if (options.format === "svg") {
-      return { ok: downloadBlob(new Blob([svg], { type: "image/svg+xml" }), filename), filename };
-    }
-    if (options.format === "html") {
-      return { ok: downloadText(toStandaloneHtml(title, svg, options.includeSource ? source : undefined), filename, "text/html"), filename };
-    }
-
-    const canvas = await rasterizeSvg(svg, options);
-    if (options.format === "pdf") {
-      const pdf = makeImagePdf(canvas, options.dpi);
-      return { ok: downloadBlob(bytesToBlob(pdf, "application/pdf"), filename), filename };
-    }
-    if (options.format === "gif") {
-      const gif = encodeGif(canvas);
-      return { ok: downloadBlob(bytesToBlob(gif, "image/gif"), filename), filename };
-    }
-    const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
-    const blob = await canvasToBlob(canvas, mime, options.format === "jpeg" ? 0.92 : 0.95);
-    return { ok: Boolean(blob?.type === mime && downloadBlob(blob, filename)), filename };
-  } catch {
-    return { ok: false, filename };
+  const receipt = (): ExportReceipt => ({ filename, format: options.format });
+  if (options.format === "dgm") {
+    requireExportSuccess(downloadBlobResult(blobOrThrow([source], "text/plain", "source"), filename));
+    return receipt();
   }
+  if (options.format === "json") {
+    let json: string;
+    try {
+      json = JSON.stringify(doc, null, 2);
+    } catch (cause) {
+      failExport("encoding", "Could not encode the JSON export.", cause);
+    }
+    requireExportSuccess(downloadBlobResult(blobOrThrow([json], "application/json", "JSON"), filename));
+    return receipt();
+  }
+  if (options.format === "xml") {
+    let xml: string;
+    try {
+      xml = toDiagramXml(doc, source);
+    } catch (cause) {
+      failExport("encoding", "Could not encode the XML export.", cause);
+    }
+    requireExportSuccess(downloadBlobResult(blobOrThrow([xml], "application/xml", "XML"), filename));
+    return receipt();
+  }
+  if (options.format === "url") {
+    const diagramUrl = requireExportSuccess(createDiagramUrlResult(source));
+    requireExportSuccess(downloadBlobResult(blobOrThrow([diagramUrl], "text/plain", "diagram URL"), filename));
+    return receipt();
+  }
+
+  let baseSvg: string;
+  try {
+    baseSvg = await getPortableSvg();
+  } catch (cause) {
+    failExport("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
+  }
+  let svg: string;
+  try {
+    svg = prepareExportSvg(baseSvg, doc, layout, selection, options, source);
+  } catch (cause) {
+    failExport("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
+  }
+  if (options.format === "svg") {
+    requireExportSuccess(downloadBlobResult(blobOrThrow([svg], "image/svg+xml", "SVG"), filename));
+    return receipt();
+  }
+  if (options.format === "html") {
+    let html: string;
+    try {
+      html = toStandaloneHtml(title, svg, options.includeSource ? source : undefined);
+    } catch (cause) {
+      failExport("encoding", "Could not encode the HTML export.", cause);
+    }
+    requireExportSuccess(downloadBlobResult(blobOrThrow([html], "text/html", "HTML"), filename));
+    return receipt();
+  }
+
+  const canvas = await rasterizeSvg(svg, options);
+  if (options.format === "pdf") {
+    let pdf: Uint8Array;
+    try {
+      pdf = makeImagePdf(canvas, options.dpi);
+    } catch (cause) {
+      rethrowExportFailure(cause, "encoding", "Could not encode the PDF export.");
+    }
+    requireExportSuccess(downloadBlobResult(blobOrThrow([bytesToBlob(pdf, "application/pdf")], "application/pdf", "PDF"), filename));
+    return receipt();
+  }
+  if (options.format === "gif") {
+    let gif: Uint8Array;
+    try {
+      gif = encodeGif(canvas);
+    } catch (cause) {
+      rethrowExportFailure(cause, "encoding", "Could not encode the GIF export.");
+    }
+    requireExportSuccess(downloadBlobResult(blobOrThrow([bytesToBlob(gif, "image/gif")], "image/gif", "GIF"), filename));
+    return receipt();
+  }
+  const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
+  const blob = await canvasToBlob(canvas, mime, options.format === "jpeg" ? 0.92 : 0.95);
+  if (!blob || blob.type !== mime) failExport("encoding", `The browser could not encode the ${format.label} export.`);
+  requireExportSuccess(downloadBlobResult(blob, filename));
+  return receipt();
 }
 
 function bytesToBlob(bytes: Uint8Array, type: string): Blob {
@@ -530,8 +671,19 @@ function bytesToBlob(bytes: Uint8Array, type: string): Blob {
 }
 
 async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCanvasElement> {
-  const image = new Image();
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  let image: HTMLImageElement;
+  try {
+    image = new Image();
+  } catch (cause) {
+    failExport("rasterization", "The exported SVG image could not be loaded.", cause);
+  }
+  const sourceBlob = blobOrThrow([svg], "image/svg+xml", "SVG rasterization");
+  let url: string;
+  try {
+    url = URL.createObjectURL(sourceBlob);
+  } catch (cause) {
+    failExport("rasterization", "The exported SVG image URL could not be created.", cause);
+  }
   try {
     await new Promise<void>((resolve, reject) => {
       image.onload = () => resolve();
@@ -545,20 +697,35 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCa
     canvas.width = Math.max(1, Math.round(logicalWidth * scale));
     canvas.height = Math.max(1, Math.round(logicalHeight * scale));
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas export is unavailable");
+    if (!context) failExport("canvas-context", "Your browser could not create a 2D canvas context.");
     if (!options.transparentBackground || options.format === "jpeg") {
       context.fillStyle = options.appearance === "dark" ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     return canvas;
+  } catch (cause) {
+    return rethrowExportFailure(cause, "rasterization", "The exported SVG image could not be rasterized.");
   } finally {
-    URL.revokeObjectURL(url);
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // Cleanup failure must not mask a successful or classified export.
+    }
   }
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, mime, quality));
+function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new ExportFailure(exportError("encoding", `The browser could not encode the ${mime} export.`)));
+      }, mime, quality);
+    } catch (cause) {
+      reject(new ExportFailure(exportError("encoding", `The browser could not encode the ${mime} export.`, cause)));
+    }
+  });
 }
 
 function toDiagramXml(doc: DiagramDocument, source: string): string {
@@ -572,12 +739,6 @@ function toStandaloneHtml(title: string, svg: string, source?: string): string {
     ? `<details><summary>Diagram source</summary><pre>${escapeHtml(source)}</pre></details>`
     : "";
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>html,body{margin:0;min-height:100%;background:#f4f7fb;color:#172033;font-family:system-ui,sans-serif}main{display:grid;gap:24px;justify-items:center;padding:32px}svg{max-width:100%;height:auto;box-shadow:0 18px 50px rgba(18,32,58,.14);border-radius:12px}details{width:min(1100px,100%);background:#fff;border:1px solid #dbe3ee;border-radius:12px;padding:14px 18px}pre{white-space:pre-wrap;overflow:auto;font:12px/1.5 ui-monospace,monospace}</style></head><body><main>${svg}${sourceBlock}</main></body></html>\n`;
-}
-
-export function createDiagramUrl(source: string): string | null {
-  const encoded = encodeDiagramUrlPayload(source);
-  if (!encoded.ok) return null;
-  return `${window.location.origin}${window.location.pathname}#${DIAGRAM_URL_HASH_KEY}=${encoded.payload}`;
 }
 
 function escapeHtml(value: string): string {
@@ -599,7 +760,7 @@ function writeU16(target: number[], value: number): void {
 
 function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas export is unavailable");
+  if (!context) failExport("canvas-context", "Your browser could not create a 2D canvas context.");
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
   const bytes: number[] = [];
   for (const char of "GIF89a") bytes.push(char.charCodeAt(0));
@@ -736,65 +897,7 @@ function concatBytes(...values: Uint8Array[]): Uint8Array {
   return output;
 }
 
-export interface ExportResult {
-  ok: boolean;
-  filename: string;
-  error?: string;
-}
-
-export async function exportSvgFile(
-  title: string,
-  getPortableSvg: () => Promise<string>,
-): Promise<ExportResult> {
-  const filename = filenameWithExtension(title, "svg");
-  try {
-    const svg = await getPortableSvg();
-    return {
-      ok: downloadBlob(new Blob([svg], { type: "image/svg+xml" }), filename),
-      filename,
-    };
-  } catch {
-    return { ok: false, filename };
-  }
-}
-
-export function exportDgmFile(source: string, title: string): ExportResult {
+export function exportDgmFileResult(source: string, title: string): Result<ExportReceipt, ExportError> {
   const filename = filenameWithExtension(title, "dgm");
-  return {
-    ok: downloadText(source, filename),
-    filename,
-  };
-}
-
-export async function exportPngFile(
-  title: string,
-  getPortableSvg: () => Promise<string>,
-): Promise<ExportResult> {
-  const filename = filenameWithExtension(title, "png");
-  let svg: string;
-  try {
-    svg = await getPortableSvg();
-  } catch {
-    return { ok: false, filename };
-  }
-
-  return new Promise((resolve) => {
-    const image = new Image();
-    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-      canvas.getContext("2d")?.drawImage(image, 0, 0);
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(url);
-        resolve({ ok: Boolean(blob && downloadBlob(blob, filename)), filename });
-      }, "image/png");
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({ ok: false, filename });
-    };
-    image.src = url;
-  });
+  return downloadTextResult(source, filename).map(() => ({ filename, format: "dgm" }));
 }

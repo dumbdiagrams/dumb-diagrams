@@ -2,6 +2,7 @@ import { getCatalogMap } from "../catalog/index.js";
 import { validateDocument, hasErrors } from "../core/index.js";
 import type { ValidationIssue } from "../core/index.js";
 import { layoutDocument } from "../layout/index.js";
+import { err, ok, type Result } from "neverthrow";
 import {
   routeEdges,
   attachRoutes,
@@ -39,4 +40,30 @@ export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
     layout: fullLayout,
     svg,
   };
+}
+
+export type CompiledDiagram = Extract<ReturnType<typeof compileDiagram>, { ok: true }>;
+
+export type DiagramValidationError = {
+  readonly code: "validation";
+  readonly message: string;
+  readonly issues: readonly ValidationIssue[];
+};
+
+/** @deprecated Prefer the workflow-oriented `DiagramValidationError` name. */
+export type CompileDiagramError = DiagramValidationError;
+
+/** Safe boundary for validation failures; warnings and invariants remain success. */
+export function compileDiagramResult(
+  doc: Parameters<typeof layoutDocument>[0],
+): Result<CompiledDiagram, DiagramValidationError> {
+  const result = compileDiagram(doc);
+  if (!result.ok) {
+    return err({
+      code: "validation",
+      message: "Diagram failed validation",
+      issues: result.issues,
+    });
+  }
+  return ok(result);
 }

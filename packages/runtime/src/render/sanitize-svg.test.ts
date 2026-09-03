@@ -1,10 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizeSvg } from "./sanitize-svg.js";
+import { sanitizeSvg, sanitizeSvgResult } from "./index.js";
 import { embedAssetsInSvg } from "./assets.js";
 import { createEmptyDocument } from "../core/index.js";
 
 describe("sanitizeSvg", () => {
+  it("returns typed results without changing legacy throwing behavior", () => {
+    const safe = sanitizeSvgResult('<svg viewBox="0 0 8 8"><rect/></svg>');
+    expect(safe.isOk()).toBe(true);
+    if (safe.isErr()) return;
+    expect(safe.value.intrinsicW).toBe(16);
+
+    const unsafe = sanitizeSvgResult('<svg><script>alert(1)</script></svg>');
+    expect(unsafe.isErr()).toBe(true);
+    if (unsafe.isOk()) return;
+    expect(unsafe.error).toEqual({
+      code: "invalid-svg",
+      message: "SVG element <script> is not allowed",
+    });
+    expect(() => sanitizeSvg('<svg><script>alert(1)</script></svg>')).toThrow();
+  });
+
   it("accepts valid svg and rejects scripts", () => {
     const safe = sanitizeSvg(
       '<svg viewBox="0 0 32 32"><rect width="32" height="32"/></svg>',

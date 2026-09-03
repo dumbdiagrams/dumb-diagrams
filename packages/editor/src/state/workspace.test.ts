@@ -7,20 +7,219 @@ import {
   deserializeWorkspace,
   isTabDirty,
   isDisposableTab,
+  loadPersistedWorkspace,
   MAX_RECYCLED_PREVIEW_BYTES,
   MAX_RECENTLY_CLOSED,
   MAX_WORKSPACE_TABS,
   normalizeWorkspacePreview,
   normalizeWorkspaceState,
   restoreWorkspaceTab,
+  persistWorkspace,
+  persistWorkspaceJournal,
   serializeWorkspace,
+  type WorkspacePersistencePlatform,
+  type WorkspaceState,
+  type WorkspaceStorage,
 } from "./workspace";
 import { createEmptyDocument, DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 import { printDgm } from "@dumb-diagrams/runtime/dsl";
 
 const viewport = { panX: 12, panY: 24, zoom: 0.9 };
 
+function createStorage(initial: Record<string, string> = {}, options: { set?: (key: string, value: string) => void } = {}) {
+  const values = new Map(Object.entries(initial));
+  const storage: WorkspaceStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      options.set?.(key, value);
+      values.set(key, value);
+    },
+    removeItem: (key) => values.delete(key),
+  };
+  return { storage, values };
+}
+
+function createPersistencePlatform(overrides: Partial<WorkspacePersistencePlatform> = {}): WorkspacePersistencePlatform {
+  const journal = createStorage();
+  const fallback = createStorage();
+  return {
+    journal: journal.storage,
+    fallback: fallback.storage,
+    indexedDb: { read: async () => undefined, write: async () => undefined },
+    ...overrides,
+  };
+}
+
+function sampleWorkspace(): WorkspaceState {
+  const source = printDgm(createEmptyDocument("recovery"));
+  return createWorkspaceState({ initialSource: source, initialViewport: viewport, blankSource: source });
+}
+
 describe("workspace state", () => {
+  it("loads no workspace successfully and preserves journal, IndexedDB, fallback order", async () => {
+    const calls: string[] = [];
+    const journal = createStorage({}, { set: () => undefined });
+    const fallback = createStorage();
+    const platform = createPersistencePlatform({
+      journal: {
+        getItem: (key) => { calls.push(`journal.read:${key}`); return journal.storage.getItem(key); },
+        setItem: journal.storage.setItem,
+        removeItem: journal.storage.removeItem,
+      },
+      indexedDb: {
+        read: async (key) => { calls.push(`indexeddb.read:${key}`); return undefined; },
+        write: async () => undefined,
+      },
+      fallback: {
+        getItem: (key) => { calls.push(`fallback.read:${key}`); return fallback.storage.getItem(key); },
+        setItem: fallback.storage.setItem,
+        removeItem: fallback.storage.removeItem,
+      },
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toMatchObject({ status: "ok", workspace: null });
+    expect(calls).toEqual([
+      "journal.read:dumb-diagrams:workspace-pending",
+      "indexeddb.read:current",
+      "fallback.read:dumb-diagrams:workspace",
+    ]);
+  });
+
+  it("recovers from a corrupt journal with a degraded warning and closed error cause", async () => {
+    const workspace = sampleWorkspace();
+    const platform = createPersistencePlatform({
+      journal: createStorage({ "dumb-diagrams:workspace-pending": "{broken" }).storage,
+      indexedDb: { read: async () => workspace, write: async () => undefined },
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isOk()).toBe(true);
+    const outcome = result._unsafeUnwrap();
+    expect(outcome.status).toBe("degraded");
+    expect(outcome.workspace?.tabs).toHaveLength(1);
+    expect(outcome.errors?.[0]).toMatchObject({ code: "corrupt", layer: "journal", cause: "{broken" });
+  });
+
+  it("falls back to local storage after an IndexedDB transaction failure", async () => {
+    const workspace = sampleWorkspace();
+    const platform = createPersistencePlatform({
+      indexedDb: {
+        read: () => { throw new Error("transaction aborted"); },
+        write: async () => undefined,
+      },
+      fallback: createStorage({ "dumb-diagrams:workspace": serializeWorkspace(workspace) }).storage,
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isOk()).toBe(true);
+    const outcome = result._unsafeUnwrap();
+    expect(outcome.status).toBe("degraded");
+    expect(outcome.workspace?.tabs[0]?.source).toBe(workspace.tabs[0]?.source);
+    expect(outcome.errors?.[0]?.code).toBe("transaction-failed");
+  });
+
+  it("returns an error when every storage source is unavailable", async () => {
+    const unavailable = () => { throw new Error("storage unavailable"); };
+    const platform = createPersistencePlatform({
+      journal: { getItem: unavailable, setItem: unavailable, removeItem: unavailable },
+      indexedDb: { read: unavailable, write: unavailable },
+      fallback: { getItem: unavailable, setItem: unavailable, removeItem: unavailable },
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({ code: "unavailable", message: "All workspace storage sources failed." });
+    expect(result._unsafeUnwrapErr().relatedErrors).toHaveLength(2);
+  });
+
+  it("returns an error when every storage source is corrupt", async () => {
+    const platform = createPersistencePlatform({
+      journal: createStorage({ "dumb-diagrams:workspace-pending": "{broken" }).storage,
+      indexedDb: { read: async () => ({ broken: true }), write: async () => undefined },
+      fallback: createStorage({ "dumb-diagrams:workspace": "{broken" }).storage,
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({ code: "corrupt", message: "All workspace storage sources failed." });
+    expect(result._unsafeUnwrapErr().relatedErrors).toHaveLength(2);
+  });
+
+  it("reports quota errors for the synchronous journal without blocking IndexedDB", async () => {
+    const journal: WorkspaceStorage = {
+      getItem: () => null,
+      setItem: () => { throw Object.assign(new Error("quota exceeded"), { name: "QuotaExceededError" }); },
+      removeItem: () => undefined,
+    };
+    const platform = createPersistencePlatform({ journal });
+    const result = await persistWorkspaceJournal("snapshot", platform);
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({ code: "quota-exceeded", layer: "journal", cause: expect.any(Error) });
+  });
+
+  it("writes the journal before the asynchronous IndexedDB operation starts", async () => {
+    const events: string[] = [];
+    let release: (() => void) | undefined;
+    const journal = createStorage({}, { set: () => events.push("journal") });
+    const workspace = sampleWorkspace();
+    const platform = createPersistencePlatform({
+      journal: journal.storage,
+      indexedDb: {
+        read: async () => undefined,
+        write: async () => {
+          events.push("indexeddb");
+          await new Promise<void>((resolve) => { release = resolve; });
+        },
+      },
+    });
+
+    const pending = persistWorkspace(workspace, "snapshot", platform);
+    expect(events).toEqual(["journal"]);
+    while (!release) await Promise.resolve();
+    expect(events).toEqual(["journal", "indexeddb"]);
+    release();
+    expect((await pending).isOk()).toBe(true);
+  });
+
+  it("writes fallback storage after an IndexedDB write failure", async () => {
+    const workspace = sampleWorkspace();
+    const fallback = createStorage();
+    const platform = createPersistencePlatform({
+      indexedDb: { read: async () => undefined, write: async () => { throw new Error("transaction failed"); } },
+      fallback: fallback.storage,
+    });
+
+    const result = await persistWorkspace(workspace, serializeWorkspace(workspace), platform);
+    expect(result.isOk()).toBe(true);
+    const outcome = result._unsafeUnwrap();
+    expect(outcome.status).toBe("degraded");
+    expect(outcome.errors?.[0]?.code).toBe("transaction-failed");
+    expect(fallback.values.get("dumb-diagrams:workspace")).toBe(serializeWorkspace(workspace));
+  });
+
+  it("does not clear a newer journal when an older IndexedDB write finishes", async () => {
+    const oldWorkspace = sampleWorkspace();
+    const journal = createStorage({ "dumb-diagrams:workspace-pending": "old" });
+    let release: (() => void) | undefined;
+    const platform = createPersistencePlatform({
+      journal: journal.storage,
+      indexedDb: {
+        read: async () => undefined,
+        write: async () => await new Promise<void>((resolve) => { release = resolve; }),
+      },
+    });
+
+    const pending = persistWorkspace(oldWorkspace, "old", platform);
+    while (!release) await Promise.resolve();
+    journal.storage.setItem("dumb-diagrams:workspace-pending", "new");
+    release?.();
+    const result = await pending;
+    expect(result.isOk()).toBe(true);
+    expect(journal.values.get("dumb-diagrams:workspace-pending")).toBe("new");
+  });
+
   it("creates a clean initial tab and detects source changes", () => {
     const workspace = createWorkspaceState({
       initialSource: "diagram initial",
@@ -214,6 +413,7 @@ describe("workspace state", () => {
 
     expect(isDisposableTab(untitled, "different blank source")).toBe(true);
     expect(isDisposableTab(namedTab, "different blank source")).toBe(false);
+    expect(isDisposableTab(createWorkspaceTab("diagram {", { origin: "new", viewport }), "different blank source")).toBe(false);
   });
 
   it("attaches the latest render preview when tabs are archived", () => {

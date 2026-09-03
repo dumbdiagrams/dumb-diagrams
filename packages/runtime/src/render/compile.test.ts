@@ -8,7 +8,7 @@ import {
   getDefaultView,
 } from "../core/index.js";
 import type { LayoutResult } from "../core/index.js";
-import { compileDiagram, renderSvg } from "../render/index.js";
+import { compileDiagram, compileDiagramResult, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
 import { parseDgm } from "../dsl/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
@@ -21,6 +21,48 @@ import {
 import { checkInvariants } from "./invariants.js";
 
 describe("async-docs fixture", () => {
+  it("returns validation issues as a typed error while keeping warnings successful", () => {
+    const invalid = createEmptyDocument("invalid-result");
+    invalid.resources = [{
+      id: "unknown",
+      type: "not-a-catalog-type",
+      label: { service: "Unknown" },
+      role: "primary",
+      props: {},
+    }];
+    const error = compileDiagramResult(invalid);
+    expect(error.isErr()).toBe(true);
+    if (error.isOk()) return;
+    expect(error.error.code).toBe("validation");
+    expect(error.error.message).toBe("Diagram failed validation");
+    expect(error.error.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "unknown-type", id: "unknown" }),
+    ]));
+
+    const warningDoc = createEmptyDocument("warning-result");
+    warningDoc.groups = [
+      { id: "region", kind: "region", label: "Region", children: ["vpc"] },
+      { id: "vpc", kind: "vpc", parent: "region", label: "VPC", children: ["service"] },
+    ];
+    warningDoc.resources = [{
+      id: "service",
+      type: "aws.api-gateway",
+      parent: "vpc",
+      label: { service: "API Gateway" },
+      role: "primary",
+      props: {},
+    }];
+    const success = compileDiagramResult(warningDoc);
+    expect(success.isOk()).toBe(true);
+    if (success.isErr()) return;
+    expect(success.value.ok).toBe(true);
+    expect(success.value.issues).toContainEqual(expect.objectContaining({
+      level: "warning",
+      code: "regional-in-vpc",
+      id: "service",
+    }));
+  });
+
   it("compiles a top-level external boundary beside a provider cloud", () => {
     const doc = parseDgm(`diagram gcp-data-analytics {
   grammar gcp

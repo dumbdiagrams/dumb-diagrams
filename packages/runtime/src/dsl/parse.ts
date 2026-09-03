@@ -11,6 +11,7 @@ import type {
   View,
 } from "../core/index.js";
 import { createEmptyDocument, DIAGRAM_LIMITS, normalizePortOffset, utf8ByteLength } from "../core/index.js";
+import { err, ok, type Result } from "neverthrow";
 
 type Token =
   | { type: "id"; value: string }
@@ -777,6 +778,32 @@ export function parseDgm(source: string): DiagramDocument {
   }
   const tokens = tokenize(source);
   return new Parser(tokens).parse();
+}
+
+export type DgmParseError =
+  | { readonly code: "source-too-large"; readonly message: string }
+  | { readonly code: "invalid-syntax"; readonly message: string };
+
+/** @deprecated Prefer the workflow-oriented `DgmParseError` name. */
+export type ParseDgmError = DgmParseError;
+
+/** Safe boundary for callers that need typed parse failures instead of throws. */
+export function parseDgmResult(source: string): Result<DiagramDocument, DgmParseError> {
+  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
+    return err({
+      code: "source-too-large",
+      message: "Diagram exceeds the 1 MiB source limit",
+    });
+  }
+  try {
+    return ok(parseDgm(source));
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    return err({
+      code: "invalid-syntax",
+      message: error.message,
+    });
+  }
 }
 
 export function printDgm(doc: DiagramDocument): string {

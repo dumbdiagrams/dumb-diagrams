@@ -1,7 +1,7 @@
 import type { DiagramDocument, LayoutResult, RoutedEdge, ValidationIssue } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/runtime/core";
 import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, type DgmParseError } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import {
   checkInvariants,
@@ -33,6 +33,7 @@ export type DiagramCompilation = {
   svg: null;
   invariantFailures: InvariantFailure[];
   parseError?: string;
+  parseErrorCode?: DgmParseError["code"];
   layout?: null;
 };
 
@@ -109,20 +110,20 @@ export function compileDiagramSource(
   if (cached) return cached;
 
   const key = cacheKey(source, snapToGrid);
-  try {
-    const doc = parseDgm(source);
-    const compilation = compileParsedDocument(doc, snapToGrid, routingOptions);
-    return usesCustomRoutingOptions ? compilation : remember(key, compilation);
-  } catch (error) {
+  const parsed = parseDgmResult(source);
+  if (parsed.isErr()) {
     return remember(key, {
       ok: false,
-      parseError: (error as Error).message,
+      parseError: parsed.error.message,
+      parseErrorCode: parsed.error.code,
       issues: [],
       svg: null,
       layout: null,
       invariantFailures: [],
     });
   }
+  const compilation = compileParsedDocument(parsed.value, snapToGrid, routingOptions);
+  return usesCustomRoutingOptions ? compilation : remember(key, compilation);
 }
 
 /** Compile a parsed document without consulting the source-string cache. */

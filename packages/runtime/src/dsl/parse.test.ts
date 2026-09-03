@@ -4,9 +4,31 @@ import { createAsyncDocsFixture } from "../core/index.js";
 import { getDefaultView } from "../core/index.js";
 import { DIAGRAM_LIMITS } from "../core/index.js";
 
-import { parseDgm, printDgm } from "./parse.js";
+import { parseDgm, parseDgmResult, printDgm } from "./index.js";
 
 describe("parseDgm / printDgm round-trip", () => {
+  it("returns typed results for valid and invalid source", () => {
+    const valid = parseDgmResult("diagram safe {}");
+    expect(valid.isOk()).toBe(true);
+    if (valid.isErr()) return;
+    expect(valid.value.id).toBe("safe");
+
+    const invalid = parseDgmResult('diagram bad { title "unterminated }');
+    expect(invalid.isErr()).toBe(true);
+    if (invalid.isOk()) return;
+    expect(invalid.error).toEqual({
+      code: "invalid-syntax",
+      message: "Unterminated quoted string",
+    });
+  });
+
+  it("preserves the source-size error as a distinct typed result", () => {
+    const result = parseDgmResult("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1));
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error.code).toBe("source-too-large");
+  });
+
   it.each(["aws", "azure", "gcp", "cloud-agnostic"] as const)(
     "retains and prints the %s grammar",
     (grammar) => {

@@ -41,6 +41,9 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
+  "dependencies": {
+    "neverthrow": "8.2.0"
+  },
   "devDependencies": {
     "typescript": "^5.7.3",
     "vitest": "^4.1.11"

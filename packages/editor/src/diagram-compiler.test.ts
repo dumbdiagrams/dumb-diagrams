@@ -1,6 +1,7 @@
 import {
   createAsyncDocsFixture,
   createEmptyDocument,
+  DIAGRAM_LIMITS,
   getDefaultView,
 } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
@@ -21,6 +22,24 @@ import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
+  it("preserves the typed parser code for invalid syntax", () => {
+    const result = compileDiagramSource('diagram bad { title "unterminated }', false);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.parseErrorCode).toBe("invalid-syntax");
+    expect(result.parseError).toBe("Unterminated quoted string");
+  });
+
+  it("preserves the typed parser code for source-size rejection", () => {
+    const result = compileDiagramSource("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1), false);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.parseErrorCode).toBe("source-too-large");
+    expect(result.parseError).toBe("Diagram exceeds the 1 MiB source limit");
+  });
+
   it("retains fan-out routes and propagates a deterministic routing budget warning", () => {
     const doc = createEmptyDocument("routing-budget-fanout");
     doc.flow = "lr";

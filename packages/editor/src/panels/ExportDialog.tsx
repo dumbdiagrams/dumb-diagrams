@@ -119,8 +119,13 @@ export function ExportDialog({
         options,
         getPortableSvg,
       });
-      onToast(result.ok ? `Downloaded ${result.filename}` : `${formatDetails.label} export failed.`);
-      if (result.ok) onClose();
+      result.match(
+        (receipt) => {
+          onToast(`Downloaded ${receipt.filename}`);
+          onClose();
+        },
+        (error) => onToast(error.message),
+      );
     } finally {
       setExporting(false);
     }

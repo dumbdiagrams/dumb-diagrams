@@ -34,9 +34,9 @@ import {
   getCatalogEntry,
   type CatalogEntry,
 } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgm, parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
-import { renderPortableSvg, sanitizeSvg } from "@dumb-diagrams/runtime/render";
+import { renderPortableSvg, sanitizeSvgResult } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import {
@@ -137,8 +137,8 @@ import {
 } from "./state/file-save";
 import {
   decodeDiagramUrlPayload,
-  downloadText,
-  exportDgmFile,
+  downloadTextResult,
+  exportDgmFileResult,
   filenameWithExtension,
   type ExportFormat,
 } from "./state/export-actions";
@@ -244,32 +244,31 @@ const INITIAL_URL_IMPORT: InitialUrlImport = (() => {
   }
   const decoded = decodeDiagramUrlPayload(params.get("diagram") ?? "");
   if (!decoded.ok) return { error: decoded.message };
-  try {
-    const doc = parseDgm(decoded.source);
-    if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) {
-      return { error: "Diagram URL contains invalid diagram source." };
-    }
-  } catch {
+  const parsed = parseDgmResult(decoded.source);
+  if (parsed.isErr()) {
     return { error: "Diagram URL contains invalid diagram source." };
   }
+  if (hasErrors(validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules: false }))) {
+    return { error: "Diagram URL contains invalid diagram source." };
+  }
+  if (documentHasUnsafeAssets(parsed.value)) return { error: "Diagram URL contains invalid diagram source." };
   return { source: decoded.source };
 })();
 
 const RECOVERY = (() => {
   const draft = loadDraft();
   if (!draft) return null;
-  try {
-    const doc = parseDgm(draft.source);
-    if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) {
-      clearDraft();
-      return null;
-    }
-    return draft;
-  } catch {
+  const parsed = parseDgmResult(draft.source);
+  if (parsed.isErr() || hasErrors(validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules: false })) || documentHasUnsafeAssets(parsed.value)) {
     clearDraft();
     return null;
   }
+  return draft;
 })();
+
+function documentHasUnsafeAssets(doc: DiagramDocument): boolean {
+  return (doc.assets ?? []).some((asset) => sanitizeSvgResult(asset.content).isErr());
+}
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
 type ContextMenuState = { x: number; y: number; selection: Selection; canvasPoint?: Point } | null;
@@ -457,14 +456,10 @@ function App() {
   }, []);
 
   const sourceIsValid = (candidate: string): boolean => {
-    try {
-      const doc = parseDgm(candidate);
-      if (hasErrors(validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }))) return false;
-      for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
-      return true;
-    } catch {
-      return false;
-    }
+    const parsed = parseDgmResult(candidate);
+    if (parsed.isErr()) return false;
+    if (hasErrors(validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules: false }))) return false;
+    return !documentHasUnsafeAssets(parsed.value);
   };
 
   const saveTabSource = async (
@@ -530,13 +525,17 @@ function App() {
     }
     const baseName = requestedFilename || tab.filename || tabLabel(tab);
     const filename = filenameWithExtension(baseName, "dgm");
-    if (!downloadText(tab.source, filename)) {
-      setToast("Save failed. Your browser blocked the download.");
-      return { status: "error", filename, code: "download-failed", message: "Your browser blocked the download." };
-    }
-    markTabSaved(tab.id, tab.source, filename);
-    setToast(`Downloaded ${filename}`);
-    return { status: "saved", filename };
+    return downloadTextResult(tab.source, filename).match(
+      () => {
+        markTabSaved(tab.id, tab.source, filename);
+        setToast(`Downloaded ${filename}`);
+        return { status: "saved", filename };
+      },
+      (error) => {
+        setToast(`Save failed: ${error.message}`);
+        return { status: "error", filename, code: "download-failed", message: error.message };
+      },
+    );
   };
 
   const saveActive = () => {
@@ -545,8 +544,10 @@ function App() {
   };
 
   const exportCurrentSource = () => {
-    const result = exportDgmFile(source, tabLabel(activeTab));
-    setToast(result.ok ? `Downloaded ${result.filename}` : "Source export failed.");
+    exportDgmFileResult(source, tabLabel(activeTab)).match(
+      (receipt) => setToast(`Downloaded ${receipt.filename}`),
+      (error) => setToast(`Source export failed: ${error.message}`),
+    );
   };
 
   const openSaveAs = () => {
@@ -754,13 +755,27 @@ function App() {
             rejected.push(file.name);
             continue;
           }
-          const candidate = await file.text();
-          const doc = parseDgm(candidate);
+          let candidate: string;
+          try {
+            candidate = await file.text();
+          } catch {
+            rejected.push(file.name);
+            continue;
+          }
+          const parsed = parseDgmResult(candidate);
+          if (parsed.isErr()) {
+            rejected.push(file.name);
+            continue;
+          }
+          const doc = parsed.value;
           if (hasErrors(validateDocument(doc, getCatalogMap()))) {
             rejected.push(file.name);
             continue;
           }
-          for (const asset of doc.assets ?? []) sanitizeSvg(asset.content);
+          if (documentHasUnsafeAssets(doc)) {
+            rejected.push(file.name);
+            continue;
+          }
           const filename = normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters);
           const tabId = openTab(candidate, { filename, origin: "import" });
           if (!tabId) {

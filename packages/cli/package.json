@@ -37,6 +37,9 @@
     "prepack": "node ../../scripts/prepare-cli-package.mjs",
     "test": "vitest run"
   },
+  "dependencies": {
+    "neverthrow": "8.2.0"
+  },
   "devDependencies": {
     "@dumb-diagrams/runtime": "workspace:*",
     "@types/node": "^24.13.3",
