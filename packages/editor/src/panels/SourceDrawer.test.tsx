@@ -1,7 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { SourceDrawer, sourceDiagnostic } from "./SourceDrawer";
+import {
+  SourceDrawer,
+  sourceDiagnostic,
+  sourceEditorAccessibilityAttributes,
+  sourceEditorAccessibilityExtension,
+} from "./SourceDrawer";
 
 describe("source editor diagnostics", () => {
   it("converts parser character offsets into line and column context", () => {
@@ -17,7 +22,13 @@ describe("source editor diagnostics", () => {
     });
   });
 
-  it("gives the CodeMirror source editor an accessible name", () => {
+  it("configures the actual CodeMirror contenteditable with an accessible name", () => {
+    expect(sourceEditorAccessibilityAttributes(true)).toEqual({
+      "aria-label": "Diagram source",
+      "aria-describedby": "source-editor-diagnostics",
+    });
+    expect(sourceEditorAccessibilityExtension(true)).toBeDefined();
+
     const html = renderToStaticMarkup(
       <SourceDrawer
         source={'diagram demo {\n  grammar aws\n  !\n}'}
@@ -29,7 +40,6 @@ describe("source editor diagnostics", () => {
       />,
     );
 
-    expect(html).toContain('aria-label="Diagram source"');
     expect(html).toContain("Line 3, column 2");
     expect(html).toContain('title="Jump to line 3, column 2"');
   });

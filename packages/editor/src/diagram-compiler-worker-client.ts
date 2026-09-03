@@ -37,15 +37,72 @@ type WorkerClientOptions = {
   onFailure: (request: CompilationRequest | null, failure: WorkerFailure) => void;
 };
 
-function isCompilationResponse(value: unknown): value is CompilationResponse {
-  if (typeof value !== "object" || value === null) return false;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isValidationIssue(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    (value.level === "error" || value.level === "warning") &&
+    typeof value.code === "string" &&
+    typeof value.message === "string" &&
+    (value.id === undefined || typeof value.id === "string")
+  );
+}
+
+function isInvariantFailure(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.code === "string" &&
+    typeof value.message === "string" &&
+    Array.isArray(value.elementIds) &&
+    value.elementIds.every((id) => typeof id === "string")
+  );
+}
+
+function isSuccessfulCompilation(value: Record<string, unknown>): boolean {
+  return (
+    value.ok === true &&
+    Array.isArray(value.issues) && value.issues.every(isValidationIssue) &&
+    typeof value.svg === "string" &&
+    Array.isArray(value.invariantFailures) && value.invariantFailures.every(isInvariantFailure) &&
+    isRecord(value.doc) &&
+    Array.isArray(value.doc.resources) &&
+    Array.isArray(value.doc.groups) &&
+    Array.isArray(value.doc.edges) &&
+    Array.isArray(value.doc.annotations) &&
+    isRecord(value.layout) &&
+    Array.isArray(value.layout.nodes) &&
+    Array.isArray(value.layout.groups) &&
+    Array.isArray(value.layout.edges) &&
+    Array.isArray(value.layout.symmetries) &&
+    Number.isFinite(value.layout.width) &&
+    Number.isFinite(value.layout.height)
+  );
+}
+
+function isFailedCompilation(value: Record<string, unknown>): boolean {
+  return (
+    value.ok === false &&
+    Array.isArray(value.issues) && value.issues.every(isValidationIssue) &&
+    value.svg === null &&
+    Array.isArray(value.invariantFailures) && value.invariantFailures.every(isInvariantFailure) &&
+    (value.layout === undefined || value.layout === null) &&
+    (value.parseError === undefined || typeof value.parseError === "string") &&
+    (value.parseErrorCode === undefined || typeof value.parseErrorCode === "string")
+  );
+}
+
+export function isCompilationResponse(value: unknown): value is CompilationResponse {
+  if (!isRecord(value)) return false;
   const response = value as Partial<CompilationResponse>;
   return (
     typeof response.id === "number" &&
     typeof response.source === "string" &&
     typeof response.snapToGrid === "boolean" &&
-    typeof response.compilation === "object" &&
-    response.compilation !== null
+    isRecord(response.compilation) &&
+    (isSuccessfulCompilation(response.compilation) || isFailedCompilation(response.compilation))
   );
 }
 
@@ -118,6 +175,20 @@ export class DiagramCompilerWorkerClient {
           this.fail(
             "invalid-message",
             new Error("Invalid compiler worker response"),
+            currentWorker,
+            activeRequest,
+          );
+          return;
+        }
+        if (
+          !activeRequest ||
+          data.id !== activeRequest.id ||
+          data.source !== activeRequest.source ||
+          data.snapToGrid !== activeRequest.snapToGrid
+        ) {
+          this.fail(
+            "invalid-message",
+            new Error("Compiler worker response does not match its active request"),
             currentWorker,
             activeRequest,
           );

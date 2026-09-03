@@ -17,6 +17,18 @@ export type SourceDiagnostic = Readonly<{
   location?: SourceLocation;
 }>;
 
+/** Accessibility attributes for CodeMirror's actual editable element. */
+export function sourceEditorAccessibilityAttributes(hasDiagnostics: boolean): Record<string, string> {
+  return {
+    "aria-label": "Diagram source",
+    ...(hasDiagnostics ? { "aria-describedby": "source-editor-diagnostics" } : {}),
+  };
+}
+
+export function sourceEditorAccessibilityExtension(hasDiagnostics: boolean) {
+  return EditorView.contentAttributes.of(sourceEditorAccessibilityAttributes(hasDiagnostics));
+}
+
 /**
  * Parser errors retain their original text and, where available, include a
  * one-based character offset. Turn that offset into an editor-friendly
@@ -142,8 +154,6 @@ export function SourceDrawer({
       <div className="source-editor-shell">
         <CodeMirror
           ref={editorRef}
-          aria-label="Diagram source"
-          aria-describedby={diagnostics.length > 0 ? "source-editor-diagnostics" : undefined}
           value={source}
           height="100%"
           theme={resolvedTheme === "dark" ? oneDark : lightEditorTheme}
@@ -155,6 +165,7 @@ export function SourceDrawer({
           }}
           extensions={[
             EditorView.lineWrapping,
+            sourceEditorAccessibilityExtension(diagnostics.length > 0),
             keymap.of([...defaultKeymap, ...searchKeymap]),
           ]}
           onChange={onChange}

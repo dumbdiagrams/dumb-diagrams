@@ -125,6 +125,84 @@ describe("DiagramCompilerWorkerClient", () => {
     expect(client.isBusy()).toBe(false);
   });
 
+  it("accepts complete successful and failed compilation variants", () => {
+    const worker = createWorker();
+    const onResponse = vi.fn();
+    const client = new DiagramCompilerWorkerClient({
+      createWorker: () => worker,
+      onResponse,
+      onFailure: vi.fn(),
+    });
+    const active = request(1);
+    client.request(active);
+    worker.onmessage?.({
+      data: {
+        ...active,
+        compilation: {
+          ok: true,
+          issues: [],
+          svg: "<svg />",
+          invariantFailures: [],
+          doc: { resources: [], groups: [], edges: [], annotations: [] },
+          layout: { nodes: [], groups: [], edges: [], symmetries: [], width: 0, height: 0 },
+        },
+      },
+    } as MessageEvent<unknown>);
+
+    expect(onResponse).toHaveBeenCalledOnce();
+    expect(client.isBusy()).toBe(false);
+  });
+
+  it.each([
+    { ...request(1), compilation: { ok: false } },
+    { ...request(1), compilation: { ok: true, issues: [], svg: "", invariantFailures: [] } },
+    { ...request(1), compilation: { ...compilation, issues: [null] } },
+  ])("rejects malformed compilation payloads instead of passing them to the editor", (data) => {
+    const worker = createWorker();
+    const onFailure = vi.fn();
+    const onResponse = vi.fn();
+    const client = new DiagramCompilerWorkerClient({
+      createWorker: () => worker,
+      onResponse,
+      onFailure,
+    });
+    const active = request(1);
+    client.request(active);
+
+    worker.onmessage?.({ data } as MessageEvent<unknown>);
+
+    expect(onResponse).not.toHaveBeenCalled();
+    expect(onFailure).toHaveBeenCalledWith(
+      active,
+      expect.objectContaining({ kind: "invalid-message" }),
+    );
+    expect(client.isBusy()).toBe(false);
+  });
+
+  it("rejects a well-shaped response that does not match the active request", () => {
+    const worker = createWorker();
+    const onFailure = vi.fn();
+    const onResponse = vi.fn();
+    const client = new DiagramCompilerWorkerClient({
+      createWorker: () => worker,
+      onResponse,
+      onFailure,
+    });
+    const active = request(1);
+    client.request(active);
+
+    worker.onmessage?.({
+      data: { ...active, source: "diagram wrong {}", compilation },
+    } as MessageEvent<unknown>);
+
+    expect(onResponse).not.toHaveBeenCalled();
+    expect(onFailure).toHaveBeenCalledWith(
+      active,
+      expect.objectContaining({ kind: "invalid-message" }),
+    );
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
+
   it("ignores replies from a replaced worker while preserving request ids", () => {
     const firstWorker = createWorker();
     const secondWorker = createWorker();

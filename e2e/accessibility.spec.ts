@@ -64,7 +64,8 @@ test("source copy reports clipboard permission failures", async ({ page }) => {
   });
   await page.goto("/");
   await page.getByRole("button", { name: "Source", exact: true }).click();
-  await page.getByRole("dialog", { name: "Source", exact: true })
-    .getByRole("button", { name: "Copy", exact: true }).click();
+  const sourceDialog = page.getByRole("dialog", { name: "Source", exact: true });
+  await expect(sourceDialog.locator(".cm-content")).toHaveAttribute("aria-label", "Diagram source");
+  await sourceDialog.getByRole("button", { name: "Copy", exact: true }).click();
   await expect(page.locator(".toast")).toContainText("Could not copy source");
 });

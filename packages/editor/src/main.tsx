@@ -783,7 +783,7 @@ function App() {
         setToast(`Opened ${opened.length} diagram${opened.length === 1 ? "" : "s"}`);
       }
       if (rejected.length) {
-        setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}`);
+        setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}: unreadable or invalid .dgm source`);
       }
       if (limitReached) setToast(tabLimitMessage);
     } finally {

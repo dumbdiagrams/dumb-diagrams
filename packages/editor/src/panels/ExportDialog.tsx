@@ -166,7 +166,7 @@ export function ExportDialog({
           </label>
         </section>
 
-        <section className="export-dialog-section">
+        {formatCapabilities.visual && <section className="export-dialog-section">
           <div className="export-section-heading">
             <div>
               <h3>What to include</h3>
@@ -200,9 +200,9 @@ export function ExportDialog({
               <span>{hasSelection ? `${selection.length} item${selection.length === 1 ? "" : "s"} selected` : "Select items on the canvas first"}</span>
             </button>
           </div>
-        </section>
+        </section>}
 
-        <section className="export-dialog-section export-appearance-section">
+        {formatCapabilities.visual && <section className="export-dialog-section export-appearance-section">
           <div className="export-section-heading">
             <div>
               <h3>Appearance</h3>
@@ -241,9 +241,9 @@ export function ExportDialog({
               </label>
             )}
           </div>
-        </section>
+        </section>}
 
-        <details className="export-advanced">
+        {formatCapabilities.visual && <details className="export-advanced">
           <summary>
             <span>Advanced</span>
             <span className="export-advanced-summary">{width} × {height}px · {dpi} dpi</span>
@@ -294,7 +294,7 @@ export function ExportDialog({
           <div className="export-advanced-checks">
             <label className="export-check-row"><input type="checkbox" checked={grid} onChange={(event) => setGrid(event.target.checked)} /><span>Grid</span></label>
           </div>
-        </details>
+        </details>}
 
         <div className="export-dialog-footer">
           <div className="export-dimension-note">
