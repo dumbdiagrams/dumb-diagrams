@@ -21,6 +21,19 @@ import {
   portPoint,
 } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES, snap } from "../grammar-aws/index.js";
+import {
+  RoutingBudget,
+  type RoutingOptions,
+} from "./routing-budget.js";
+export {
+  ROUTING_BUDGET_WARNING_CODE,
+  ROUTING_BUDGET_WARNING_MESSAGE,
+} from "./routing-budget.js";
+export type {
+  RoutingBudgetOptions,
+  RoutingDiagnostics,
+  RoutingOptions,
+} from "./routing-budget.js";
 
 const CELL = GRAMMAR.grid;
 const GROUP_CONTAINMENT_INSET = 8;
@@ -110,81 +123,6 @@ interface Grid {
   cols: number;
   rows: number;
   blocked: Uint8Array;
-}
-
-export type RoutingBudgetOptions = {
-  maxScorePathCalls?: number;
-  maxRouteConflictChecks?: number;
-  maxAstarExpansions?: number;
-  maxRepairCandidates?: number;
-};
-
-export type RoutingDiagnostics = {
-  scorePathCalls: number;
-  routeConflictChecks: number;
-  astarExpansions: number;
-  repairCandidates: number;
-  exhausted: boolean;
-  limits: Required<RoutingBudgetOptions>;
-};
-
-type RoutingBudgetKind = keyof Pick<RoutingDiagnostics,
-  "scorePathCalls" | "routeConflictChecks" | "astarExpansions" | "repairCandidates"
->;
-const ROUTING_BUDGET_LIMIT_KEYS: Record<RoutingBudgetKind, keyof Required<RoutingBudgetOptions>> = {
-  scorePathCalls: "maxScorePathCalls",
-  routeConflictChecks: "maxRouteConflictChecks",
-  astarExpansions: "maxAstarExpansions",
-  repairCandidates: "maxRepairCandidates",
-};
-
-export type RoutingOptions = RoutingBudgetOptions & {
-  onBudgetExhausted?: (diagnostics: RoutingDiagnostics) => void;
-};
-
-export const ROUTING_BUDGET_WARNING_CODE = "routing-budget";
-export const ROUTING_BUDGET_WARNING_MESSAGE =
-  "Routing work budget exhausted; retained the best available routes.";
-
-const DEFAULT_ROUTING_BUDGET: Required<RoutingBudgetOptions> = {
-  maxScorePathCalls: 60_000,
-  maxRouteConflictChecks: 20_000,
-  maxAstarExpansions: 2_000_000,
-  maxRepairCandidates: 20_000,
-};
-
-class RoutingBudget {
-  readonly limits: Required<RoutingBudgetOptions>;
-  readonly counts = {
-    scorePathCalls: 0,
-    routeConflictChecks: 0,
-    astarExpansions: 0,
-    repairCandidates: 0,
-  };
-  exhausted = false;
-
-  constructor(options: RoutingBudgetOptions, complexity: number) {
-    const scale = Math.max(1, complexity / 100);
-    const scaled = (key: keyof RoutingBudgetOptions, fallback: number, minimum: number) =>
-      options[key] ?? Math.max(minimum, Math.floor(fallback / scale));
-    this.limits = {
-      maxScorePathCalls: scaled("maxScorePathCalls", DEFAULT_ROUTING_BUDGET.maxScorePathCalls, 2_000),
-      maxRouteConflictChecks: scaled("maxRouteConflictChecks", DEFAULT_ROUTING_BUDGET.maxRouteConflictChecks, 1_000),
-      maxAstarExpansions: scaled("maxAstarExpansions", DEFAULT_ROUTING_BUDGET.maxAstarExpansions, 5_000),
-      maxRepairCandidates: scaled("maxRepairCandidates", DEFAULT_ROUTING_BUDGET.maxRepairCandidates, 1_000),
-    };
-  }
-
-  consume(kind: RoutingBudgetKind): boolean {
-    if (this.exhausted) return false;
-    const count = ++this.counts[kind];
-    if (count > this.limits[ROUTING_BUDGET_LIMIT_KEYS[kind]]) this.exhausted = true;
-    return !this.exhausted;
-  }
-
-  diagnostics(): RoutingDiagnostics {
-    return { ...this.counts, exhausted: this.exhausted, limits: { ...this.limits } };
-  }
 }
 
 export function routeEdges(
