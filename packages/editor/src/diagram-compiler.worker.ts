@@ -1,12 +1,7 @@
 /// <reference lib="webworker" />
 
 import { compileDiagramSource } from "./diagram-compiler";
-
-type CompilationRequest = {
-  id: number;
-  source: string;
-  snapToGrid: boolean;
-};
+import type { CompilationRequest } from "./diagram-compiler-worker-client";
 
 declare const self: DedicatedWorkerGlobalScope;
 

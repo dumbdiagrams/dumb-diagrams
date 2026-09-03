@@ -10,13 +10,11 @@ import {
   getCommittedCompilationEpoch,
   type DiagramCompilation,
 } from "./diagram-compiler";
-
-type CompilationResponse = {
-  id: number;
-  source: string;
-  snapToGrid: boolean;
-  compilation: DiagramCompilation;
-};
+import {
+  DiagramCompilerWorkerClient,
+  type CompilationRequest,
+  type CompilationResponse,
+} from "./diagram-compiler-worker-client";
 
 const COMPILATION_DEBOUNCE_MS = 75;
 
@@ -40,16 +38,22 @@ export function useDiagramCompilation(
   const [compilation, setCompilation] = useState<DiagramCompilation>(() =>
     compileDiagramSource(source, snapToGrid)
   );
-  const workerRef = useRef<Worker | null>(null);
-  const workerBusyRef = useRef(false);
-  const restartWorkerRef = useRef<(() => Worker | null) | null>(null);
+  const workerClientRef = useRef<DiagramCompilerWorkerClient | null>(null);
   const requestIdRef = useRef(0);
   const committedEpochRef = useRef(getCommittedCompilationEpoch());
   const committedEpoch = getCommittedCompilationEpoch();
 
   const invalidateInFlightCompilation = () => {
     requestIdRef.current += 1;
-    if (workerBusyRef.current) restartWorkerRef.current?.();
+    if (workerClientRef.current?.isBusy()) workerClientRef.current.restart();
+  };
+
+  const compileSynchronously = (request: CompilationRequest) => {
+    const prepared = prepareForDisplay(
+      compileDiagramSource(request.source, request.snapToGrid),
+    );
+    cacheDiagramCompilation(request.source, request.snapToGrid, prepared);
+    if (request.id === requestIdRef.current) setCompilation(prepared);
   };
 
   useLayoutEffect(() => {
@@ -62,35 +66,31 @@ export function useDiagramCompilation(
 
   useEffect(() => {
     if (typeof Worker === "undefined") return;
-    const startWorker = (): Worker => {
-      workerRef.current?.terminate();
-      workerBusyRef.current = false;
-      const worker = new Worker(
-        new URL("./diagram-compiler.worker.ts", import.meta.url),
-        { type: "module" },
-      );
-      workerRef.current = worker;
-      worker.onmessage = (event: MessageEvent<CompilationResponse>) => {
-        if (workerRef.current !== worker) return;
-        workerBusyRef.current = false;
-        if (event.data.id !== requestIdRef.current) return;
-        const prepared = prepareForDisplay(event.data.compilation);
-        cacheDiagramCompilation(
-          event.data.source,
-          event.data.snapToGrid,
-          prepared,
-        );
-        setCompilation(prepared);
-      };
-      return worker;
-    };
-    restartWorkerRef.current = startWorker;
-    startWorker();
+    const workerClient = new DiagramCompilerWorkerClient({
+      createWorker: () =>
+        new Worker(new URL("./diagram-compiler.worker.ts", import.meta.url), {
+          type: "module",
+        }),
+      onResponse: (response: CompilationResponse) => {
+        if (response.id !== requestIdRef.current) return;
+        try {
+          const prepared = prepareForDisplay(response.compilation);
+          cacheDiagramCompilation(response.source, response.snapToGrid, prepared);
+          setCompilation(prepared);
+        } catch {
+          // A malformed worker payload must not leave the editor pending.
+          compileSynchronously(response);
+        }
+      },
+      onFailure: (request) => {
+        if (request && request.id === requestIdRef.current) compileSynchronously(request);
+      },
+    });
+    workerClientRef.current = workerClient;
+    workerClient.start();
     return () => {
-      workerRef.current?.terminate();
-      restartWorkerRef.current = null;
-      workerRef.current = null;
-      workerBusyRef.current = false;
+      workerClient.dispose();
+      if (workerClientRef.current === workerClient) workerClientRef.current = null;
     };
   }, []);
 
@@ -106,23 +106,19 @@ export function useDiagramCompilation(
     requestIdRef.current = id;
     const timer = window.setTimeout(() => {
       if (id !== requestIdRef.current) return;
-      let worker = workerRef.current;
       // A Worker cannot interrupt a route already in progress. Replacing a
       // busy instance keeps stale edits from forming an unbounded queue.
-      if (worker && workerBusyRef.current) {
-        worker = restartWorkerRef.current?.() ?? null;
-      }
-      if (worker) {
-        workerBusyRef.current = true;
-        worker.postMessage({ id, source, snapToGrid });
+      const request = { id, source, snapToGrid };
+      const workerClient = workerClientRef.current;
+      if (workerClient) {
+        if (workerClient.isBusy()) workerClient.restart();
+        workerClient.request(request);
         return;
       }
 
       // Older embedded browsers still work; schedule the synchronous fallback
       // after the current interaction has painted.
-      const prepared = prepareForDisplay(compileDiagramSource(source, snapToGrid));
-      cacheDiagramCompilation(source, snapToGrid, prepared);
-      setCompilation(prepared);
+      compileSynchronously(request);
     }, COMPILATION_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [snapToGrid, source]);
