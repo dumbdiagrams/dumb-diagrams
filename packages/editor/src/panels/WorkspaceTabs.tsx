@@ -33,6 +33,7 @@ export function WorkspaceTabs({
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const tabRefs = useRef(new Map<string, HTMLDivElement>());
+  const tabButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const knownTabIdsRef = useRef(new Set(tabs.map((tab) => tab.id)));
   const labelCacheRef = useRef(new Map<string, { source: string; label: string }>());
   const labels = useMemo(() => {
@@ -58,6 +59,19 @@ export function WorkspaceTabs({
   const newTabLabel = atTabLimit
     ? `Maximum reached: ${tabLimit} open diagrams. Close a tab to create another.`
     : "New diagram";
+
+  const moveTabFocus = (tabId: string, index: number, key: string) => {
+    if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") return;
+    const nextIndex = key === "Home"
+      ? 0
+      : key === "End"
+        ? tabs.length - 1
+        : (index + (key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const next = tabs[nextIndex];
+    if (!next) return;
+    onSelect(next.id);
+    tabButtonRefs.current.get(next.id)?.focus();
+  };
 
   useEffect(() => {
     const tab = tabRefs.current.get(activeTabId);
@@ -170,11 +184,22 @@ export function WorkspaceTabs({
               <button
                 type="button"
                 role="tab"
+                id={`workspace-tab-${tab.id}`}
+                tabIndex={active ? 0 : -1}
                 aria-selected={active}
                 aria-controls="diagram-canvas"
                 className="workspace-tab-select"
                 onClick={() => {
                   if (!closing) onSelect(tab.id);
+                }}
+                onKeyDown={(event) => {
+                  if (closing) return;
+                  moveTabFocus(tab.id, tabs.findIndex((candidate) => candidate.id === tab.id), event.key);
+                  if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) event.preventDefault();
+                }}
+                ref={(element) => {
+                  if (element) tabButtonRefs.current.set(tab.id, element);
+                  else tabButtonRefs.current.delete(tab.id);
                 }}
                 title={tab.filename ?? label}
               >

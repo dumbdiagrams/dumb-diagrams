@@ -91,6 +91,7 @@ export function defaultViewportForContent(
 
 export function CanvasStage({
   children,
+  id,
   viewport,
   onViewportChange,
   onBackgroundClick,
@@ -105,6 +106,7 @@ export function CanvasStage({
   defaultFrameKey = 0,
 }: {
   children: ReactNode;
+  id?: string;
   viewport: Viewport;
   onViewportChange: (next: Viewport, options?: ViewportChangeOptions) => void;
   onBackgroundClick: () => void;
@@ -310,8 +312,12 @@ export function CanvasStage({
   return (
     <div
       ref={ref}
+      id={id}
       className={`canvas-stage${panning ? " is-panning" : ""}`}
       data-testid="canvas-stage"
+      role="tabpanel"
+      tabIndex={0}
+      aria-label="Diagram canvas"
       data-marquee-enabled={marqueeEnabled ? "true" : "false"}
       onDragOver={onCatalogDragOver}
       onDrop={(event) => {

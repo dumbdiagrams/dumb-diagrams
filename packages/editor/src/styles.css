@@ -342,6 +342,77 @@ textarea:focus-visible {
   gap: 6px;
 }
 
+.entity-navigator {
+  position: relative;
+}
+
+.entity-navigator-trigger {
+  min-height: 30px;
+  padding: 4px 9px;
+}
+
+.entity-navigator-popover {
+  position: absolute;
+  z-index: 110;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  width: min(320px, 72vw);
+  max-height: min(420px, 60vh);
+  gap: 3px;
+  overflow: auto;
+  padding: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.entity-navigator-list {
+  display: grid;
+  gap: 3px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.entity-navigator-item,
+.entity-navigator-focus {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  text-align: left;
+}
+
+.entity-navigator-item:hover,
+.entity-navigator-item:focus-visible,
+.entity-navigator-focus:hover,
+.entity-navigator-focus:focus-visible {
+  background: var(--accent-soft);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.entity-navigator-kind {
+  min-width: 68px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.entity-navigator-empty {
+  padding: 10px 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.canvas-stage:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
 .status-pill {
   padding: 4px 10px;
   border-radius: var(--radius-pill);
@@ -4628,7 +4699,12 @@ textarea:focus-visible {
 .workspace-tab-close:hover,
 .workspace-tab-close:focus-visible {
   background: var(--surface-muted);
-  outline: none;
+}
+
+.workspace-tab-select:focus-visible,
+.workspace-tab-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .workspace-tab-label {
@@ -5890,7 +5966,8 @@ textarea:focus-visible {
 .workspace-tab-select:hover,
 .workspace-tab-select:focus-visible {
   background: transparent;
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .workspace-tab-close {
@@ -5931,7 +6008,8 @@ textarea:focus-visible {
     inset 0 0 0 1px color-mix(in srgb, var(--surface-solid) 16%, transparent);
   color: var(--ink);
   opacity: 1;
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
   transform: scale(1);
 }
 
@@ -5942,7 +6020,8 @@ textarea:focus-visible {
     inset 0 0 0 1px color-mix(in srgb, var(--surface-solid) 16%, transparent);
   color: var(--ink);
   opacity: 0.82;
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
   pointer-events: auto;
   transform: scale(1);
 }

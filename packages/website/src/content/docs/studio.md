@@ -27,6 +27,14 @@ The canvas gives you pan, zoom, fit-to-content, selection, and visual adjustment
 
 A partially typed source edit may be temporarily invalid. Studio can keep the last valid compilation visible while you fix the source. If the picture seems unchanged after an edit, check the validation feedback before assuming the change was saved successfully.
 
+Studio is keyboard-friendly: use Left/Right/Home/End on the workspace tabs to
+move and activate tabs. The **Canvas items** control opens an accessible list of
+groups, resources, edges, and annotations; use the arrow keys to select an item,
+Delete or Backspace to invoke its normal safe delete action, and **Focus canvas**
+to move keyboard focus to the diagram. Clipboard permission failures are reported
+with recovery guidance, while Studio keeps its internal source/selection copy
+available when possible.
+
 Start with automatic layout, then move the items that need attention. For dense connections, use a manual route rather than trying to trick the layout with unrelated changes.
 
 ## Understand where saves go

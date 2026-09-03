@@ -55,6 +55,7 @@ export function SourceDrawer({
   issues,
   onChange,
   onCommit,
+  onCopy,
   canFormat = true,
   onReset,
   onFormat,
@@ -63,6 +64,7 @@ export function SourceDrawer({
   issues: Array<{ message: string }>;
   onChange: (source: string) => void;
   onCommit: () => void;
+  onCopy: () => void;
   canFormat?: boolean;
   onReset?: () => void;
   onFormat: () => void;
@@ -73,7 +75,7 @@ export function SourceDrawer({
     <div className="source-drawer">
       <div className="code-actions">
         <button type="button" onClick={onFormat} disabled={!canFormat}>Format</button>
-        <button type="button" onClick={() => navigator.clipboard.writeText(source)}>
+        <button type="button" onClick={onCopy}>
           Copy
         </button>
         {onReset && <button type="button" onClick={onReset}>Reset example</button>}

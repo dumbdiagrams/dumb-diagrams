@@ -119,6 +119,7 @@ import {
 import { AssetBrowser } from "./panels/AssetBrowser";
 import { ContextMenu, type ContextMenuItem } from "./panels/ContextMenu";
 import { EdgePanel } from "./panels/EdgePanel";
+import { EntityNavigator, type NavigableEntity } from "./panels/EntityNavigator";
 import { ExportDialog } from "./panels/ExportDialog";
 import { ExportMenu } from "./panels/ExportMenu";
 import { HelpModal } from "./panels/HelpModal";
@@ -1124,6 +1125,33 @@ function App() {
   }, [compiled, compiledFromCache, parsedDoc, persistenceWarning]);
   const issues = useMemo(() => journalIssues.map(({ message }) => ({ message })), [journalIssues]);
 
+  const navigableEntities = useMemo<NavigableEntity[]>(() => {
+    if (!compiled.ok) return [];
+    return [
+      ...compiled.doc.groups.map((group) => ({ kind: "group" as const, id: group.id, label: group.label })),
+      ...compiled.doc.resources.map((resource) => ({
+        kind: "resource" as const,
+        id: resource.id,
+        label: resource.label.service ?? resource.type,
+      })),
+      ...compiled.doc.edges.map((edge) => ({ kind: "edge" as const, id: edge.id, label: edge.label || `Connector ${edge.id}` })),
+      ...compiled.doc.annotations.map((annotation) => ({
+        kind: "annotation" as const,
+        id: annotation.id,
+        label: annotation.text || "Untitled note",
+      })),
+    ];
+  }, [compiled]);
+
+  const selectNavigatedEntity = (item: SelectionItem) => {
+    setSelection([item]);
+    setTool("select");
+  };
+
+  const focusCanvas = () => {
+    document.querySelector<HTMLElement>('[data-testid="canvas-stage"]')?.focus();
+  };
+
   const handleIssueSelect = (issue: StudioIssue) => {
     if (issue.severity === "error") {
       setTool("code");
@@ -1495,13 +1523,18 @@ function App() {
       return false;
     }
     internalClipboardRef.current = payload;
+    let usedInternalClipboard = false;
     try {
-      await navigator.clipboard?.writeText(payload);
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
+      await navigator.clipboard.writeText(payload);
     } catch {
-      // The internal clipboard keeps copy/cut/duplicate reliable when the
-      // browser denies clipboard access (for example outside a secure origin).
+      usedInternalClipboard = true;
     }
-    if (showToast) setToast("Copied selection");
+    if (showToast) {
+      setToast(usedInternalClipboard
+        ? "Copied selection internally; system clipboard access was unavailable."
+        : "Copied selection");
+    }
     return true;
   };
 
@@ -1524,6 +1557,7 @@ function App() {
   const pasteSelection = async (requestedPoint?: Point) => {
     if (!compiled.ok) return;
     const at = snapPoint(requestedPoint ?? insertionPoint(compiled.layout), snapToGrid);
+    let clipboardWarning = false;
     try {
       const clipboardItems = await navigator.clipboard?.read?.();
       const imageItem = clipboardItems?.find((item) =>
@@ -1559,13 +1593,13 @@ function App() {
         setToast(message);
         return;
       }
-      // Clipboard image reads may be unavailable; continue with diagram text.
+      clipboardWarning = true;
     }
     let systemPayload: string | null = null;
     try {
       systemPayload = (await navigator.clipboard?.readText()) ?? null;
     } catch {
-      // Fall back to the app clipboard below.
+      clipboardWarning = true;
     }
     const payloads = [systemPayload, internalClipboardRef.current].filter(
       (payload, index, all): payload is string => Boolean(payload) && all.indexOf(payload) === index,
@@ -1575,13 +1609,27 @@ function App() {
         const result = pasteClipboard(compiled.doc, payload, at);
         if (!updateDocument(result.doc)) return;
         setSelection(result.selection);
-        setToast("Pasted selection");
+        setToast(clipboardWarning
+          ? "Pasted selection from Studio clipboard; system clipboard access was unavailable."
+          : "Pasted selection");
         return;
       } catch {
         // A non-diagram system clipboard entry should not block the app copy.
       }
     }
-    setToast("Paste failed");
+    setToast(clipboardWarning
+      ? "Paste failed: clipboard access was denied. Copy a selection in Studio or allow clipboard access."
+      : "Paste failed: copy a diagram selection first.");
+  };
+
+  const copySource = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
+      await navigator.clipboard.writeText(source);
+      setToast("Copied source");
+    } catch {
+      setToast("Could not copy source. Allow clipboard access and try again.");
+    }
   };
 
   const duplicateCurrentSelection = (items: Selection = selection) => {
@@ -1724,6 +1772,9 @@ function App() {
       }
 
       if (isEditableKeyboardTarget(event.target)) return;
+      const navigationControl = event.target instanceof Element
+        && event.target.closest(".workspace-tabs, .entity-navigator");
+      if (navigationControl && !mod) return;
 
       if (modifierShortcut(event, "KeyG")) {
         event.preventDefault();
@@ -1916,8 +1967,9 @@ function App() {
 
   return (
     <div className="app" aria-busy={!workspaceReady || Boolean(operation)}>
-      <section id="diagram-canvas" className="canvas-pane">
+      <section className="canvas-pane">
         <CanvasStage
+          id="diagram-canvas"
           viewport={viewport}
           onViewportChange={updateViewport}
           contentSize={displayCanvas ? {
@@ -2115,6 +2167,13 @@ function App() {
             </button>
           </div>
           <div className="topbar-right">
+            <EntityNavigator
+              entities={navigableEntities}
+              selected={selection}
+              onSelect={selectNavigatedEntity}
+              onDelete={(item) => removeCurrentSelection([item])}
+              onFocusCanvas={focusCanvas}
+            />
             <IssueJournal issues={journalIssues} onIssueSelect={handleIssueSelect} />
             {isTabDirty(activeTab) && <span className="dirty-pill">Unsaved</span>}
             <div className="history-controls">
@@ -2406,6 +2465,7 @@ function App() {
                 issues={issues}
                 onChange={onSourceChange}
                 onCommit={onSourceCommit}
+                onCopy={() => void copySource()}
                 canFormat={currentSourceValid}
                 onFormat={() => {
                   try {
