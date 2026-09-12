@@ -118,3 +118,43 @@ test("surfaces local persistence degradation without blocking editing", async ({
   await page.getByRole("button", { name: "Source", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Source", exact: true })).toBeVisible();
 });
+
+test("blocks workspace shortcuts until persisted tabs finish restoring", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = indexedDB.open.bind(indexedDB);
+    Object.assign(window, { __releaseRestore: undefined });
+    indexedDB.open = (...args) => {
+      const request = original(...args);
+      return new Proxy(request, {
+        get(target, property) {
+          const value = Reflect.get(target, property, target);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+        set(target, property, value) {
+          if (property === "onsuccess") {
+            target.onsuccess = (event) => {
+              Object.assign(window, { __releaseRestore: () => value.call(target, event) });
+            };
+            return true;
+          }
+          return Reflect.set(target, property, value, target);
+        },
+      });
+    };
+  });
+  await page.goto("/");
+  await expect(page.locator(".workspace-loading")).toBeVisible();
+  await page.waitForFunction(() => typeof (
+    window as unknown as { __releaseRestore: unknown }
+  ).__releaseRestore === "function");
+
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
+  await expect(page.locator(".workspace-tab")).toHaveCount(1);
+
+  await page.evaluate(() => (
+    window as unknown as { __releaseRestore: () => void }
+  ).__releaseRestore());
+  await expect(page.locator(".workspace-loading")).toHaveCount(0);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+n" : "Control+n");
+  await expect(page.locator(".workspace-tab")).toHaveCount(2);
+});

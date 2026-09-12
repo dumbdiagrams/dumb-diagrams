@@ -1737,6 +1737,10 @@ function App() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
+      if (!workspaceReady) {
+        if (mod) event.preventDefault();
+        return;
+      }
 
       if (modifierShortcut(event, "KeyK")) {
         event.preventDefault();
@@ -1851,7 +1855,7 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [selection, source, undo, redo, compiled, snapToGrid]);
+  }, [selection, source, undo, redo, compiled, snapToGrid, workspaceReady]);
 
   const fileMenuItems: TopMenuItem[] = [
     { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
