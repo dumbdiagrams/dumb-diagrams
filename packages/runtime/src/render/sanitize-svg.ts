@@ -42,6 +42,7 @@ const ALLOWED_ATTRS = new Set([
   "preserveaspectratio", "marker-start", "marker-mid", "marker-end", "href",
 ]);
 const LOCAL_REFERENCE_ATTRS = new Set(["clip-path", "mask", "marker-start", "marker-mid", "marker-end"]);
+const PAINT_REFERENCE_ATTRS = new Set(["fill", "stroke"]);
 const MAX_INTRINSIC_SIZE = 10_000;
 const EMBEDDED_RASTER_DATA = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/;
 
@@ -219,7 +220,7 @@ function validateAttributes(rawAttributes: string): void {
   while ((attribute = attributePattern.exec(rawAttributes))) {
     if (rawAttributes.slice(consumed, attribute.index).trim()) throw new Error("SVG contains malformed attributes");
     const name = attribute[1]!.toLowerCase();
-    const value = attribute[3]!;
+    const value = decodeReferenceEscapes(attribute[3]!);
     if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") {
       throw new Error(`SVG attribute ${name} is not allowed`);
     }
@@ -230,12 +231,34 @@ function validateAttributes(rawAttributes: string): void {
     if (LOCAL_REFERENCE_ATTRS.has(name) && !/^url\(#[A-Za-z_][\w:.-]*\)$/.test(value)) {
       throw new Error(`SVG ${name} must use a local fragment reference`);
     }
+    if (PAINT_REFERENCE_ATTRS.has(name) && /url\s*\(/i.test(value) && !/^url\(#[A-Za-z_][\w:.-]*\)$/.test(value)) {
+      throw new Error(`SVG ${name} must use a local fragment reference`);
+    }
     if (!embeddedRaster && /javascript:|data:|https?:|\/\//i.test(value)) {
       throw new Error("SVG contains an external or executable reference");
     }
     consumed = attributePattern.lastIndex;
   }
   if (rawAttributes.slice(consumed).trim()) throw new Error("SVG contains malformed attributes");
+}
+
+function decodeReferenceEscapes(value: string): string {
+  const xmlDecoded = value.replace(
+    /&(?:#(\d+)|#x([\da-f]+)|amp|lt|gt|quot|apos);/gi,
+    (entity, decimal: string | undefined, hexadecimal: string | undefined) => {
+      if (decimal) return String.fromCodePoint(Number.parseInt(decimal, 10));
+      if (hexadecimal) return String.fromCodePoint(Number.parseInt(hexadecimal, 16));
+      const named = entity.toLowerCase();
+      if (named === "&amp;") return "&";
+      if (named === "&lt;") return "<";
+      if (named === "&gt;") return ">";
+      if (named === "&quot;") return '"';
+      return "'";
+    },
+  );
+  return xmlDecoded.replace(/\\([\da-f]{1,6})(?:\s)?|\\(.)/gi, (_escape, hex: string | undefined, char: string | undefined) => (
+    hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : char
+  ));
 }
 
 function boundedDimension(value: number, name: string): number {

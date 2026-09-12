@@ -49,6 +49,11 @@ describe("sanitizeSvg", () => {
     expect(() => sanitizeSvg("plain text")).toThrow(/Invalid SVG/);
     expect(() => sanitizeSvg('<svg width="-1" height="10"/>')).toThrow(/width/i);
     expect(() => sanitizeSvg('<svg><rect fill="url(#paint0)"/></svg>')).not.toThrow();
+    expect(() => sanitizeSvg('<svg><rect fill="url(relative.svg#paint)"/></svg>')).toThrow(/local fragment/i);
+    expect(() => sanitizeSvg(
+      '<svg><rect fill="url(&#104;ttp:&#47;&#47;127.0.0.1/paint.svg#paint)"/></svg>',
+    )).toThrow(/local fragment/i);
+    expect(() => sanitizeSvg('<svg><rect stroke="u\\72l(https://example.com/paint.svg)"/></svg>')).toThrow(/local fragment/i);
     expect(() => sanitizeSvg('<svg><rect></svg>')).toThrow(/unbalanced/i);
     expect(() => sanitizeSvg('<svg></svg><svg></svg>')).toThrow(/multiple root/i);
     expect(() => sanitizeSvg('<svg></svg>trailing text')).toThrow(/outside root/i);
