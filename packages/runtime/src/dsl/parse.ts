@@ -470,8 +470,12 @@ class Parser {
     const source = this.expect("id").value;
     this.expect("arrow");
     const target = this.expect("id").value;
+    const baseId = `${source}-${target}`;
+    const usedIds = new Set(this.doc.edges.map((candidate) => candidate.id));
+    let id = baseId;
+    for (let suffix = 2; usedIds.has(id); suffix++) id = `${baseId}-${suffix}`;
     const edge: Edge = {
-      id: `${source}-${target}`,
+      id,
       source,
       target,
       style: "solid",

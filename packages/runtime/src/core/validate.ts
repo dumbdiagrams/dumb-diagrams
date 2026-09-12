@@ -43,6 +43,18 @@ export function validateDocument(
     ids.add(r.id);
   }
 
+  for (const e of doc.edges) {
+    if (ids.has(e.id)) {
+      issues.push({
+        level: "error",
+        code: "duplicate-id",
+        message: `Duplicate id: ${e.id}`,
+        id: e.id,
+      });
+    }
+    ids.add(e.id);
+  }
+
   for (const r of doc.resources) {
     const rule = catalog.get(r.type);
     if (!rule) {

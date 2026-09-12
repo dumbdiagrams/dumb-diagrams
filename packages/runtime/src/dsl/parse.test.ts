@@ -123,6 +123,23 @@ ${declarations}
     );
   });
 
+  it("assigns stable unique IDs to parallel implicit edges", () => {
+    const source = `diagram parallel_edges {
+  grammar aws
+  generic.custom api "API"
+  generic.custom db "DB"
+  api -> db { label "read" }
+  api -> db { label "write" }
+}`;
+
+    const parsed = parseDgm(source);
+    expect(parsed.edges.map((edge) => [edge.id, edge.label])).toEqual([
+      ["api-db", "read"],
+      ["api-db-2", "write"],
+    ]);
+    expect(parseDgm(printDgm(parsed))).toEqual(parsed);
+  });
+
   it("round-trips the bidirectional connector meaning", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.kind = "bidirectional";
