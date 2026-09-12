@@ -43,8 +43,9 @@ export function validateDocument(
     ids.add(r.id);
   }
 
+  const edgeIds = new Set<string>();
   for (const e of doc.edges) {
-    if (ids.has(e.id)) {
+    if (edgeIds.has(e.id)) {
       issues.push({
         level: "error",
         code: "duplicate-id",
@@ -52,7 +53,7 @@ export function validateDocument(
         id: e.id,
       });
     }
-    ids.add(e.id);
+    edgeIds.add(e.id);
   }
 
   for (const r of doc.resources) {

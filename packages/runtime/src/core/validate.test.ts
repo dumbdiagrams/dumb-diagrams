@@ -80,7 +80,7 @@ describe("document validation modes", () => {
     expect(codes).toContain("route-point-limit");
   });
 
-  it("rejects duplicate edge IDs and edge IDs shared with another element", () => {
+  it("rejects duplicate edge IDs without conflating edge and node namespaces", () => {
     const doc = stagedDocument();
     doc.edges = [
       { id: "connection", source: "service", target: "service", style: "solid" },
@@ -88,12 +88,10 @@ describe("document validation modes", () => {
       { id: "service", source: "service", target: "service", style: "solid" },
     ];
 
-    expect(validateDocument(doc, catalog, { enforceCatalogRules: false })).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: "duplicate-id", id: "connection" }),
-        expect.objectContaining({ code: "duplicate-id", id: "service" }),
-      ]),
-    );
+    const duplicateIds = validateDocument(doc, catalog, { enforceCatalogRules: false })
+      .filter((issue) => issue.code === "duplicate-id")
+      .map((issue) => issue.id);
+    expect(duplicateIds).toEqual(["connection"]);
   });
 
   it("accepts text at the boundary and rejects object and asset size overflow", () => {
