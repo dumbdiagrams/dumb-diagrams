@@ -5,8 +5,8 @@ section: Make diagrams
 order: 4
 ---
 Studio is the generic visual editor around the diagram engine. You can pan and
-zoom, move and resize items, change source, adjust connectors, work with tabs
-and recent files, and export the result.
+zoom, move resources, move and resize boundaries and annotations, change source,
+adjust connectors, work with tabs and recent files, and export the result.
 
 The diagram you see is the runtime’s SVG. The editor adds interaction around it; it does not maintain a separate drawing format.
 
@@ -23,7 +23,7 @@ running while Studio is connected.
 
 ## Edit the picture or the source
 
-The canvas gives you pan, zoom, fit-to-content, selection, and visual adjustments. The source editor lets you change the architecture directly. Both work with the same document.
+The canvas gives you pan, zoom, fit-to-content, selection, and visual adjustments. Resources retain their catalog-defined icon size and can be moved; boundaries and annotations can be moved and resized. The source editor lets you change the architecture directly. Both work with the same document.
 
 A partially typed source edit may be temporarily invalid. Studio can keep the last valid compilation visible while you fix the source. If the picture seems unchanged after an edit, check the validation feedback before assuming the change was saved successfully.
 

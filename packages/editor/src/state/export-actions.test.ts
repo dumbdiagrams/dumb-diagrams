@@ -13,6 +13,8 @@ import {
   filenameWithExtension,
   getExportBounds,
   isExportFormatSupported,
+  RASTER_EXPORT_LIMITS,
+  validateRasterDimensions,
   sanitizeFilename,
   supportsExportSourceOption,
 } from "./export-actions";
@@ -145,6 +147,61 @@ describe("diagram URL payloads", () => {
 });
 
 describe("typed diagram exports", () => {
+  it("accepts the raster limits at the boundary and rejects excess pixels", () => {
+    expect(validateRasterDimensions(RASTER_EXPORT_LIMITS.maxAxisPixels, 1)).toEqual({
+      ok: true,
+      width: RASTER_EXPORT_LIMITS.maxAxisPixels,
+      height: 1,
+    });
+    expect(validateRasterDimensions(4_096, 4_096)).toEqual({
+      ok: true,
+      width: 4_096,
+      height: 4_096,
+    });
+    expect(validateRasterDimensions(4_097, 4_096)).toMatchObject({ ok: false });
+    expect(validateRasterDimensions(RASTER_EXPORT_LIMITS.maxAxisPixels + 1, 1)).toMatchObject({ ok: false });
+  });
+
+  it("rejects DPI-scaled raster dimensions before allocating a canvas", async () => {
+    const imageConstructed = vi.fn();
+    class LoadedImage {
+      width = 0;
+      height = 0;
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor() { imageConstructed(); }
+      set src(_value: string) { queueMicrotask(() => this.onload?.()); }
+    }
+    const createElement = vi.fn(() => ({ getContext: vi.fn() }));
+    vi.stubGlobal("Image", LoadedImage);
+    vi.stubGlobal("Blob", class TestBlob { type = "image/svg+xml"; });
+    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:svg"), revokeObjectURL: vi.fn() });
+    vi.stubGlobal("document", { createElement });
+    const args = exportArgs("png");
+    args.options.width = 8_192;
+    args.options.height = 8_192;
+    args.options.dpi = 300;
+
+    const result = await exportDiagramFile(args);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("raster-dimensions");
+    expect(imageConstructed).not.toHaveBeenCalled();
+    expect(createElement).not.toHaveBeenCalled();
+  });
+
+  it("leaves vector exports unaffected by raster limits", async () => {
+    stubDownload();
+    const args = exportArgs("svg");
+    args.options.width = RASTER_EXPORT_LIMITS.maxLogicalDimension * 2;
+    args.options.height = RASTER_EXPORT_LIMITS.maxLogicalDimension * 2;
+    args.options.dpi = 300;
+
+    const result = await exportDiagramFile(args);
+
+    expect(result.isOk()).toBe(true);
+  });
+
   it("returns a typed source-download failure for the save fallback", () => {
     stubDownload({ click: vi.fn(() => { throw new Error("blocked"); }) });
 

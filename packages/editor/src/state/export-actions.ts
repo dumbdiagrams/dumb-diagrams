@@ -28,6 +28,7 @@ export type ExportFormatCapabilities = Readonly<{
 
 export type ExportErrorCode =
   | "portable-svg-preparation"
+  | "raster-dimensions"
   | "rasterization"
   | "canvas-context"
   | "encoding"
@@ -138,6 +139,13 @@ export interface ExportOptions {
   grid: boolean;
 }
 
+/** Safety limits applied to the final pixel-sized raster, before canvas allocation. */
+export const RASTER_EXPORT_LIMITS = Object.freeze({
+  maxAxisPixels: 16_384,
+  maxPixels: 16_777_216,
+  maxLogicalDimension: 16_384,
+});
+
 export const EXPORT_FORMATS: ReadonlyArray<{
   value: ExportFormat;
   label: string;
@@ -175,6 +183,10 @@ export const EXPORT_FORMAT_CAPABILITIES: Readonly<Record<ExportFormat, ExportFor
   json: { visual: false, sourceOption: false },
   dgm: { visual: false, sourceOption: false },
 };
+
+export function isRasterExportFormat(value: ExportFormat): boolean {
+  return value === "png" || value === "jpeg" || value === "webp" || value === "gif" || value === "pdf";
+}
 
 export function exportFormatCapabilities(value: ExportFormat): ExportFormatCapabilities {
   return EXPORT_FORMAT_CAPABILITIES[value];
@@ -708,6 +720,13 @@ function bytesToBlob(bytes: Uint8Array, type: string): Blob {
 }
 
 async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCanvasElement> {
+  const scale = Math.max(0.25, options.dpi / 96);
+  const requestedDimensions = validateRasterDimensions(
+    Math.round(options.width * scale),
+    Math.round(options.height * scale),
+  );
+  if (!requestedDimensions.ok) failExport("raster-dimensions", requestedDimensions.message);
+
   let image: HTMLImageElement;
   try {
     image = new Image();
@@ -729,10 +748,13 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCa
     });
     const logicalWidth = image.width || options.width;
     const logicalHeight = image.height || options.height;
-    const scale = Math.max(0.25, options.dpi / 96);
+    const pixelWidth = Math.round(logicalWidth * scale);
+    const pixelHeight = Math.round(logicalHeight * scale);
+    const dimensions = validateRasterDimensions(pixelWidth, pixelHeight);
+    if (!dimensions.ok) failExport("raster-dimensions", dimensions.message);
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(logicalWidth * scale));
-    canvas.height = Math.max(1, Math.round(logicalHeight * scale));
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
     const context = canvas.getContext("2d");
     if (!context) failExport("canvas-context", "Your browser could not create a 2D canvas context.");
     if (!options.transparentBackground || options.format === "jpeg") {
@@ -750,6 +772,28 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCa
       // Cleanup failure must not mask a successful or classified export.
     }
   }
+}
+
+export function validateRasterDimensions(
+  width: number,
+  height: number,
+): { ok: true; width: number; height: number } | { ok: false; message: string } {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) {
+    return { ok: false, message: "Raster export dimensions must be finite positive values." };
+  }
+  if (width > RASTER_EXPORT_LIMITS.maxAxisPixels || height > RASTER_EXPORT_LIMITS.maxAxisPixels) {
+    return {
+      ok: false,
+      message: `Raster export dimensions exceed the ${RASTER_EXPORT_LIMITS.maxAxisPixels}px per-axis limit.`,
+    };
+  }
+  if (width * height > RASTER_EXPORT_LIMITS.maxPixels) {
+    return {
+      ok: false,
+      message: `Raster export exceeds the ${RASTER_EXPORT_LIMITS.maxPixels.toLocaleString()} pixel limit.`,
+    };
+  }
+  return { ok: true, width, height };
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob> {

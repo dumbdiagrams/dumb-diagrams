@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
 
       - name: Verify release tag and package version
@@ -50,19 +50,11 @@ jobs:
         env:
           RELEASE_REF: ${{ inputs.ref || github.ref_name }}
         run: |
+          node scripts/validate-release-ref.mjs
           node --input-type=module <<'NODE'
-          import { execFileSync } from "node:child_process";
           import { readFileSync } from "node:fs";
 
           const ref = process.env.RELEASE_REF;
-          if (!/^v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/.test(ref)) {
-            throw new Error(`Expected an exact semver tag such as v0.1.0, got ${ref}`);
-          }
-          try {
-            execFileSync("git", ["show-ref", "--verify", "--quiet", `refs/tags/${ref}`]);
-          } catch {
-            throw new Error(`${ref} is not an existing tag in the checked-out repository`);
-          }
           const version = JSON.parse(readFileSync("packages/cli/package.json", "utf8")).version;
           if (version !== ref.slice(1)) throw new Error(`Tag ${ref} does not match CLI package version ${version}`);
           NODE

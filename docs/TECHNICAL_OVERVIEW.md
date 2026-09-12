@@ -322,8 +322,9 @@ Generated output is ignored:
 
 ### `@dumb-diagrams/runtime`
 
-The runtime is the engine and has no React dependency. Its public subpaths make
-the stages explicit:
+The runtime is the engine and has no React dependency. It is a private workspace
+package bundled into `create-dumb-diagrams`, not a separately supported npm API.
+Its internal subpaths make the repository stages explicit:
 
 | Subpath | Responsibility |
 | --- | --- |
@@ -567,7 +568,8 @@ deterministic fallback for remaining edges; Studio adds a stable
 `routing-budget` warning to the compilation issues. The performance contract is
 checked by a bounded synthetic fan-out regression and by
 `scripts/performance-baseline.json`. Fixture wall-clock regressions remain
-advisory until the CI Node patch and runner are pinned.
+advisory because hosted CI runner hardware is not pinned, even though the
+repository and workflows use the exact Node version from `.nvmrc`.
 
 The small-diagram ceilings are 60,000 scored candidates, 20,000 route-conflict
 checks, 2,000,000 A* expansions, and 20,000 crossing-repair candidates per
@@ -741,14 +743,14 @@ resolution.
 | Gate | Boundary covered |
 | --- | --- |
 | `pnpm test` | Runtime, editor logic, CLI, and local Studio HTTP integration |
-| `pnpm test:coverage` | Node-focused CLI, runtime, editor-model, and crash-recovery coverage report with required 70/70/75/70 floors; browser-bound canvas, workspace, drag/drop, and worker orchestration are exercised by the Playwright suites |
+| `pnpm test:coverage` | Node-focused CLI, runtime, editor state/model, and crash-recovery coverage report with required global and per-package floors; browser-bound canvas, workspace orchestration, drag/drop, and worker orchestration are exercised by the Playwright suites |
 | `pnpm check` | Every checked-in example through the compiled CLI |
 | `pnpm test:integration` | Curated AWS layout contracts: aspect, LTR chains, and 8px compiled node/route/canvas geometry |
 | `pnpm check:routing` | Exact fingerprint of reviewed example routing warnings; every warning needs a reviews[] note |
 | `pnpm check:performance` | Seven warmed compile samples with median/p95 reporting, checked-in relative baselines, and a strict deterministic routing-budget stress contract |
 | `pnpm check:assets` | Branding image dimensions and byte budgets |
 | `pnpm test:e2e` | Chromium and WebKit Studio interactions and every format supported by each engine (WebP is hidden where encoding is unavailable) |
-| `pnpm test:e2e:packed` | Real tarball → CLI server → bundled generic Studio |
+| `pnpm test:e2e:packed` | Real tarball → CLI server → bundled Studio import, render/edit, and export journey |
 | `pnpm smoke:package` | Local `npx` consumer flows, tarball contents, aliases, failure codes, and clean corresponding-source rebuild |
 | `pnpm check:release` | Aggregate local Linux/macOS release gate |
 

@@ -10,6 +10,8 @@ import {
   exportFormatCapabilities,
   exportFormat,
   getExportBounds,
+  isRasterExportFormat,
+  RASTER_EXPORT_LIMITS,
   type ExportAppearance,
   type ExportFormat,
   type ExportOptions,
@@ -85,6 +87,10 @@ export function ExportDialog({
   const height = size === "custom" ? customHeight : automaticHeight;
   const formatDetails = exportFormat(format);
   const formatCapabilities = exportFormatCapabilities(format);
+  const rasterFormat = isRasterExportFormat(format);
+  const rasterLogicalAxisLimit = Math.max(1, Math.floor(
+    RASTER_EXPORT_LIMITS.maxAxisPixels / Math.max(0.25, dpi / 96),
+  ));
 
   const setNumeric = (setter: (value: number) => void, value: string, minimum: number) => {
     const parsed = Number(value);
@@ -141,6 +147,7 @@ export function ExportDialog({
     >
       <form
         className="export-dialog-form"
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
@@ -271,11 +278,11 @@ export function ExportDialog({
             </label>
             <label className="export-input-label">
               <span>Width</span>
-              <div className="export-input-with-suffix"><input type="number" min={1} value={width} readOnly={size !== "custom"} onChange={(event) => { setSize("custom"); setNumeric(setCustomWidth, event.target.value, 1); }} /><b>px</b></div>
+              <div className="export-input-with-suffix"><input type="number" min={1} max={rasterFormat ? rasterLogicalAxisLimit : undefined} value={width} readOnly={size !== "custom"} onChange={(event) => { setSize("custom"); setNumeric(setCustomWidth, event.target.value, 1); }} /><b>px</b></div>
             </label>
             <label className="export-input-label">
               <span>Height</span>
-              <div className="export-input-with-suffix"><input type="number" min={1} value={height} readOnly={size !== "custom"} onChange={(event) => { setSize("custom"); setNumeric(setCustomHeight, event.target.value, 1); }} /><b>px</b></div>
+              <div className="export-input-with-suffix"><input type="number" min={1} max={rasterFormat ? rasterLogicalAxisLimit : undefined} value={height} readOnly={size !== "custom"} onChange={(event) => { setSize("custom"); setNumeric(setCustomHeight, event.target.value, 1); }} /><b>px</b></div>
             </label>
             <label className="export-input-label">
               <span>DPI</span>
@@ -299,7 +306,7 @@ export function ExportDialog({
         <div className="export-dialog-footer">
           <div className="export-dimension-note">
             <span className="export-status-dot" />
-            Auto-filled from {scope === "selection" ? "your selection" : "the full canvas"}: <strong>{width} × {height}px</strong>
+            Auto-filled from {scope === "selection" ? "your selection" : "the full canvas"}: <strong>{width} × {height}px</strong>{rasterFormat && <> · raster limit {rasterLogicalAxisLimit}px/axis at {dpi} dpi</>}
           </div>
           <div className="modal-actions">
             <button type="button" className="text-button" onClick={onClose} disabled={exporting}>Cancel</button>

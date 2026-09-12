@@ -3,7 +3,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { err, errAsync, ok, okAsync, type Result, ResultAsync } from "neverthrow";
@@ -16,7 +15,7 @@ import { createCliUi } from "./cli-ui.js";
 import { errorMessage, parseCliError, type CliError } from "./cli-errors.js";
 import { renderInitTemplate } from "./init-templates.js";
 import { resolveInitOptions } from "./init-options.js";
-import { browserLaunchCommand } from "./platform-launch.js";
+import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
@@ -143,7 +142,7 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
     console.log(ui.info("local", ui.command(handle.url)));
     console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
     console.log(ui.info("stop", "Ctrl+C"));
-    if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") openBrowser(handle.url);
+    if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") launchBrowser(handle.url);
     return ResultAsync.fromPromise(
       waitForShutdown(handle.server),
       (cause): CliError => ({ code: "studio-start-failed", message: errorMessage(cause), cause }),
@@ -687,12 +686,6 @@ function existsAsFileOrDirectory(path: string): boolean {
 function relativeForLog(path: string): string {
   const relativePath = relative(process.cwd(), path);
   return relativePath || ".";
-}
-
-function openBrowser(url: string): void {
-  const { command, args } = browserLaunchCommand(process.platform, url);
-  const child = spawn(command, args, { detached: true, stdio: "ignore" });
-  child.unref();
 }
 
 function waitForShutdown(server: { close(callback?: (error?: Error) => void): void }): Promise<void> {

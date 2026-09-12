@@ -28,7 +28,9 @@ Studio follows these stages and adds editor concerns such as snap-to-grid, artbo
 
 ## The runtime owns the diagram
 
-`@dumb-diagrams/runtime` has no React dependency. Its public subpaths make the responsibilities visible:
+`@dumb-diagrams/runtime` has no React dependency. It is a private workspace
+package bundled into the published CLI, not a separately supported npm API.
+Its internal subpaths make repository responsibilities visible:
 
 | Subpath | Responsibility |
 | --- | --- |

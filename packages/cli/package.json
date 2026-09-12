@@ -32,7 +32,7 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm --filter @dumb-diagrams/runtime build && tsc -p tsconfig.json",
     "prepare:standalone": "node ../../scripts/prepare-cli-package.mjs",
     "prepack": "node ../../scripts/prepare-cli-package.mjs",
     "test": "vitest run"

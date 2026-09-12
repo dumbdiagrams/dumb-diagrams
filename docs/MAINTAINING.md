@@ -46,9 +46,10 @@ change is exceptional: inspect the affected rendered examples before editing
 `reviews[]` note. Never delete a baseline warning merely to make a pipeline
 green. Coverage floors are required and fail the release gate when missed. The
 `pnpm check:performance` reports seven warmed samples, median, and p95 for each
-fixture. Its wall-clock comparison is advisory until CI pins an exact Node and
-runner; the strict part of the gate is successful compilation, complete route
-retention, checked-in fixture coverage, and deterministic synthetic-budget
+fixture. Its wall-clock comparison is advisory because hosted CI runner hardware
+is not pinned; Node itself is fixed by `.nvmrc`. The strict part of the gate is
+successful compilation, complete route retention, checked-in fixture coverage,
+and deterministic synthetic-budget
 fallback diagnostics.
 
 ## Workflow and release maintenance

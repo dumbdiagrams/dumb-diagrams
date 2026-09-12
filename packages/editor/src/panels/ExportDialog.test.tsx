@@ -7,7 +7,7 @@ import { ExportDialog } from "./ExportDialog";
 
 const layout = { width: 640, height: 480 } as LayoutResult;
 
-function renderExport(format: "xml" | "svg") {
+function renderExport(format: "xml" | "svg" | "png") {
   return renderToStaticMarkup(
     <ExportDialog
       open
@@ -43,5 +43,15 @@ describe("export capability controls", () => {
     expect(html).toContain("Advanced");
     expect(html).toContain("Transparent background");
     expect(html).toContain("Include a copy of my diagram");
+    expect(html).not.toContain("raster limit");
+    expect(html).not.toContain('max="15728"');
+  });
+
+  it("exposes the DPI-adjusted raster axis limit", () => {
+    const html = renderExport("png");
+
+    expect(html).toContain("noValidate=\"\"");
+    expect(html).toContain('max="15728"');
+    expect(html).toContain("raster limit 15728px/axis at 100 dpi");
   });
 });

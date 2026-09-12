@@ -2,9 +2,9 @@
 
 ## Release
 
-Use Node.js 24 or newer and the pinned pnpm version from `packageManager` in the
-root `package.json`. From a clean branch, update the workspace package versions
-and the changelog, then run:
+Use the exact Node.js version from `.nvmrc` and the pinned pnpm version from
+`packageManager` in the root `package.json`. From a clean branch, update the
+workspace package versions and the changelog, then run:
 
 ```bash
 pnpm install --frozen-lockfile
@@ -16,7 +16,8 @@ catalog inventory, version sync, dependency-boundary
 checks, build, unit/integration tests with a coverage report, editor
 typecheck, example validation plus the reviewed routing-warning baseline,
 static and packed-Studio Playwright journeys, the publishable package smoke
-test, and website check/build/tests.
+test, a high-severity production dependency advisory check, and website
+check/build/tests.
 
 Prepare the publish metadata and build the standalone npm artifact from the
 compiled workspace. CI sets `GITHUB_REPOSITORY` automatically; locally, set it
@@ -178,10 +179,13 @@ are reproducible build outputs and are not committed.
 
 ## Supply-chain policy
 
-The workspace pins pnpm exactly, uses isolated linking, strict peer and engine
-checks, a 24-hour minimum package release age, and a lifecycle allowlist that
-permits only reviewed `esbuild` postinstall execution. Run `pnpm check:dependencies`
-after changing imports or package manifests.
+The workspace pins Node and pnpm exactly, uses isolated linking, strict peer and
+engine checks, a 24-hour minimum package release age, and a lifecycle allowlist
+that permits only reviewed `esbuild` postinstall execution. Run
+`pnpm check:dependencies` after changing imports or package manifests. The
+maintained CI and release workflows also run the production advisory gate;
+registry alerts remain a useful second signal rather than a substitute for that
+blocking check.
 
 ## Future website and docs
 

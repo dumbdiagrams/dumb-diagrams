@@ -67,8 +67,9 @@ diagram that is ready to discuss and refine.
   flows, labels, ports, and manual overrides are first-class concepts.
 - **Opinionated automatic layout.** New diagrams begin with a coherent visual
   hierarchy instead of an empty infinite canvas.
-- **A human editing surface.** Studio supports moving and resizing items,
-  editing source, adjusting routes, recent files, and exporting.
+- **A human editing surface.** Studio supports moving resources, moving and
+  resizing boundaries and annotations, editing source, adjusting routes,
+  recent files, and exporting.
 - **Portable local files, not a hidden database.** `.dgm` files can live
   anywhere on disk, work with Git, and can be edited by Cursor, Codex, Claude,
   or another coding agent.
