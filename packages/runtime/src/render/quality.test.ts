@@ -46,6 +46,23 @@ describe("diagram quality assessment", () => {
     expect(quality.clean).toBe(false);
   });
 
+  it("reports overlapping resource icons as non-clean soft quality", () => {
+    const overlap: InvariantFailure = {
+      code: "resource-icon-overlap",
+      message: "Resources api and db icons overlap",
+      elementIds: ["api", "db"],
+    };
+
+    expect(invariantTier(overlap.code)).toBe("soft");
+    expect(assessQuality(qualityFindings([], [overlap]))).toEqual({
+      hard: 0,
+      soft: 1,
+      warnings: 0,
+      score: 50_000,
+      clean: false,
+    });
+  });
+
   it("rejects regressions that introduce new findings", () => {
     const baseline = qualityFindings([], [{
       code: "edge-crossing",

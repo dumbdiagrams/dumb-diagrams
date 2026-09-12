@@ -510,6 +510,26 @@ describe("async-docs fixture", () => {
     expect(overlaps).toBe(false);
   });
 
+  it("reports overlapping manually pinned root resources", () => {
+    const doc = parseDgm(`diagram overlapping_roots {
+  grammar aws
+  generic.custom api "API"
+  generic.custom db "Database"
+}`);
+    const view = getDefaultView(doc);
+    view.places.api = { x: 160, y: 160, pin: true, manual: true };
+    view.places.db = { x: 160, y: 160, pin: true, manual: true };
+
+    const result = compileDiagram(doc);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invariantFailures).toContainEqual({
+      code: "resource-icon-overlap",
+      message: "Resources api and db icons overlap",
+      elementIds: ["api", "db"],
+    });
+  });
+
   it("repacks pinned siblings that extend outside their group", () => {
     const doc = createAsyncDocsFixture();
     const view = getDefaultView(doc);

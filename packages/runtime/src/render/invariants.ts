@@ -9,6 +9,19 @@ export interface InvariantFailure {
 export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
   const failures: InvariantFailure[] = [];
 
+  for (let i = 0; i < layout.nodes.length; i++) {
+    for (let j = i + 1; j < layout.nodes.length; j++) {
+      const a = layout.nodes[i]!;
+      const b = layout.nodes[j]!;
+      if (!rectsOverlap(a.icon, b.icon, 0)) continue;
+      failures.push({
+        code: "resource-icon-overlap",
+        message: `Resources ${a.id} and ${b.id} icons overlap`,
+        elementIds: [a.id, b.id],
+      });
+    }
+  }
+
   for (const edge of layout.edges) {
     const source = layout.nodes.find((node) => node.id === edge.source);
     const target = layout.nodes.find((node) => node.id === edge.target);

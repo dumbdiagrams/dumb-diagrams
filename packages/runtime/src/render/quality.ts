@@ -26,6 +26,7 @@ const HARD_INVARIANT_CODES = new Set([
 ]);
 
 const SOFT_INVARIANT_CODES = new Set([
+  "resource-icon-overlap",
   "edge-crossing",
   "edge-corridor-overlap",
   "edge-reverse-overlap",
@@ -41,6 +42,7 @@ const SOFT_INVARIANT_CODES = new Set([
 ]);
 
 const INVARIANT_WEIGHTS: Record<string, number> = {
+  "resource-icon-overlap": 50_000,
   "edge-icon-collision": 1_000_000,
   "edge-obstacle-collision": 1_000_000,
   "edge-port-detached": 1_000_000,
