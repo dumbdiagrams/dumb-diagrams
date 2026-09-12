@@ -317,6 +317,15 @@ view default {
     );
   });
 
+  it("rejects a second view instead of merging authored placements", () => {
+    expect(() => parseDgm(`diagram multiple_views {
+  grammar aws
+  generic.custom service "Service"
+}
+view first { place service { x 100 y 100 pin } }
+view second { place service { x 500 y 500 pin } }`)).toThrow(/Only one view block is supported/);
+  });
+
   it("round-trips note style variants", () => {
     const source = `diagram notes {
   grammar aws

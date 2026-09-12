@@ -98,6 +98,7 @@ class Parser {
   private doc: DiagramDocument;
   private currentGroupStack: string[] = [];
   private view: View = { id: "default", places: {}, routes: {} };
+  private viewParsed = false;
 
   constructor(private tokens: Token[]) {
     this.doc = createEmptyDocument("diagram");
@@ -560,6 +561,8 @@ class Parser {
   }
 
   private parseViewBlock(): void {
+    if (this.viewParsed) throw new Error("Only one view block is supported");
+    this.viewParsed = true;
     this.expect("id", "view");
     const id = this.expect("id").value;
     this.view.id = id;
