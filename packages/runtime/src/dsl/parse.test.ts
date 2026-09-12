@@ -22,6 +22,11 @@ describe("parseDgm / printDgm round-trip", () => {
     });
   });
 
+  it("rejects input without a diagram declaration and trailing top-level tokens", () => {
+    expect(() => parseDgm("hello world")).toThrow(/Expected diagram declaration/);
+    expect(() => parseDgm("diagram valid {}\n}\nextra words")).toThrow(/Unexpected token/);
+  });
+
   it("preserves the source-size error as a distinct typed result", () => {
     const result = parseDgmResult("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1));
     expect(result.isErr()).toBe(true);
@@ -356,7 +361,7 @@ view default {
     expect(() => parseDgm('diagram bad { title "unterminated }')).toThrow(/Unterminated/);
     expect(() => parseDgm('diagram bad { title "bad\\q" }')).toThrow(/Unsupported escape/);
     expect(() => parseDgm("diagram bad {")).toThrow(/Unterminated block/);
-    const nested = `${Array.from({ length: DIAGRAM_LIMITS.hierarchyDepth + 1 }, (_, index) => `aws.region g${index} {`).join(" ")} ${"}".repeat(DIAGRAM_LIMITS.hierarchyDepth + 1)}`;
+    const nested = `diagram nested { ${Array.from({ length: DIAGRAM_LIMITS.hierarchyDepth + 1 }, (_, index) => `aws.region g${index} {`).join(" ")} ${"}".repeat(DIAGRAM_LIMITS.hierarchyDepth + 1)} }`;
     expect(() => parseDgm(nested)).toThrow(/hierarchy depth/);
   });
 });

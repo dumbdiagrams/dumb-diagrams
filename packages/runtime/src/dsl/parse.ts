@@ -104,14 +104,14 @@ class Parser {
   }
 
   parse(): DiagramDocument {
+    while (this.peek()?.type === "newline") this.pos++;
+    if (!this.is("id", "diagram")) throw new Error("Expected diagram declaration");
+    this.parseDiagramHeader();
+
     while (this.pos < this.tokens.length) {
       const t = this.peek();
       if (!t || t.type === "newline") {
         this.pos++;
-        continue;
-      }
-      if (t.type === "id" && t.value === "diagram") {
-        this.parseDiagramHeader();
         continue;
       }
       if (t.type === "id" && t.value === "assets") {
@@ -122,19 +122,7 @@ class Parser {
         this.parseViewBlock();
         continue;
       }
-      if (t.type === "id" && t.value.includes(".")) {
-        this.parseResourceOrGroup();
-        continue;
-      }
-      if (t.type === "id" && t.value === "group") {
-        this.parseLogicalGroup();
-        continue;
-      }
-      if (t.type === "id" && this.lookaheadArrow()) {
-        this.parseEdge();
-        continue;
-      }
-      this.pos++;
+      throw new Error(`Unexpected token ${"value" in t ? JSON.stringify(t.value) : t.type} after diagram`);
     }
     this.doc.views = [this.view];
     return this.doc;
