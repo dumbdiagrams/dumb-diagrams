@@ -2823,7 +2823,7 @@ function App() {
             <div className="modal-actions modal-actions-spread">
               <button type="button" className="text-button" onClick={() => setFileConflictRequest(null)}>Cancel</button>
               <button type="button" className="text-button" onClick={reloadConflictingFile}>Reload from disk</button>
-              <button type="button" className="danger-button" onClick={() => void overwriteConflictingFile}>Overwrite anyway</button>
+              <button type="button" className="danger-button" onClick={() => void overwriteConflictingFile()}>Overwrite anyway</button>
             </div>
           </div>
         </Modal>
