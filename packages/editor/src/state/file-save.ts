@@ -10,7 +10,7 @@ export type FileSystemHandleLike = {
   createWritable(): Promise<FileSystemWritableLike>;
 };
 
-export type FileSaveErrorCode = "invalid-source" | "missing-tab" | "read-failed" | "write-failed" | "download-failed";
+export type FileSaveErrorCode = "invalid-source" | "missing-tab" | "read-failed" | "write-failed" | "download-failed" | "external-file-too-large";
 
 export type FileSaveResult =
   | { status: "saved"; filename: string }
@@ -36,7 +36,16 @@ export async function saveExistingFileHandle(
   if (!options.overwrite) {
     let diskSource: string;
     try {
-      diskSource = await (await handle.getFile()).text();
+      const file = await handle.getFile();
+      if (file.size > DIAGRAM_LIMITS.sourceBytes) {
+        return {
+          status: "error",
+          filename,
+          code: "external-file-too-large",
+          message: `${filename} exceeds the 1 MiB source limit after being changed on disk.`,
+        };
+      }
+      diskSource = await file.text();
     } catch (error) {
       return {
         status: "error",
@@ -62,3 +71,4 @@ export async function saveExistingFileHandle(
     };
   }
 }
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 
 import { isAbortError, saveExistingFileHandle, type FileSystemHandleLike } from "./file-save";
 
@@ -35,6 +36,22 @@ describe("existing file saves", () => {
     const result = await saveExistingFileHandle(handle, "new source", "old source", { overwrite: true });
     expect(result.status).toBe("saved");
     expect(handle.getFile).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized external file without reading it", async () => {
+    const text = vi.fn(async () => "unreachable");
+    const handle = fakeHandle("old source");
+    handle.getFile = vi.fn(async () => ({
+      size: DIAGRAM_LIMITS.sourceBytes + 1,
+      text,
+    }) as unknown as File);
+
+    expect(await saveExistingFileHandle(handle, "new source", "old source")).toMatchObject({
+      status: "error",
+      code: "external-file-too-large",
+    });
+    expect(text).not.toHaveBeenCalled();
+    expect(handle.createWritable).not.toHaveBeenCalled();
   });
 
   it("distinguishes read and write failures and cancellation", async () => {
