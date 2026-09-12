@@ -257,7 +257,7 @@ function decodeReferenceEscapes(value: string): string {
     },
   );
   return xmlDecoded.replace(/\\([\da-f]{1,6})(?:\s)?|\\(.)/gi, (_escape, hex: string | undefined, char: string | undefined) => (
-    hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : char
+    hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : (char ?? "")
   ));
 }
 
