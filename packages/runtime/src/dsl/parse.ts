@@ -10,7 +10,7 @@ import type {
   TextFontFamily,
   View,
 } from "../core/index.js";
-import { createEmptyDocument, DIAGRAM_LIMITS, normalizePortOffset, utf8ByteLength } from "../core/index.js";
+import { createEmptyDocument, createEmptyView, DIAGRAM_LIMITS, normalizePortOffset, utf8ByteLength } from "../core/index.js";
 import { err, ok, type Result } from "neverthrow";
 
 type Token =
@@ -97,7 +97,7 @@ class Parser {
   private pos = 0;
   private doc: DiagramDocument;
   private currentGroupStack: string[] = [];
-  private view: View = { id: "default", places: {}, routes: {} };
+  private view: View = createEmptyView();
   private viewParsed = false;
 
   constructor(private tokens: Token[]) {
@@ -164,16 +164,16 @@ class Parser {
         this.parseAnnotation();
         continue;
       }
-      if (t.type === "id" && t.value.includes(".")) {
-        this.parseResourceOrGroup();
-        continue;
-      }
       if (t.type === "id" && t.value === "group") {
         this.parseLogicalGroup();
         continue;
       }
       if (t.type === "id" && this.lookaheadArrow()) {
         this.parseEdge();
+        continue;
+      }
+      if (t.type === "id" && t.value.includes(".")) {
+        this.parseResourceOrGroup();
         continue;
       }
       break;
@@ -656,7 +656,9 @@ class Parser {
           }
         }
         this.expect("rbrace");
-        if (!this.view.annotations) this.view.annotations = {};
+        if (!this.view.annotations) {
+          this.view.annotations = Object.create(null) as NonNullable<View["annotations"]>;
+        }
         this.view.annotations[annotationId] = place;
         continue;
       }

@@ -7,6 +7,15 @@ import type {
   View,
 } from "./types.js";
 
+export function createEmptyView(id: ID = "default"): View {
+  return {
+    id,
+    places: Object.create(null) as View["places"],
+    routes: Object.create(null) as View["routes"],
+    annotations: Object.create(null) as NonNullable<View["annotations"]>,
+  };
+}
+
 export function createEmptyDocument(id: ID): DiagramDocument {
   return {
     id,
@@ -16,7 +25,7 @@ export function createEmptyDocument(id: ID): DiagramDocument {
     groups: [],
     edges: [],
     annotations: [],
-    views: [{ id: "default", places: {}, routes: {} }],
+    views: [createEmptyView()],
   };
 }
 

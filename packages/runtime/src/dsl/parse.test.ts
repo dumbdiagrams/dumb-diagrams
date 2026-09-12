@@ -145,6 +145,17 @@ ${declarations}
     expect(parseDgm(printDgm(parsed))).toEqual(parsed);
   });
 
+  it("round-trips dotted resource IDs used as edge endpoints", () => {
+    const doc = parseDgm(`diagram dotted_id {
+  grammar aws
+  generic.custom api.v1 "API"
+  generic.custom db "Database"
+  api.v1 -> db { label "query" }
+}`);
+
+    expect(parseDgm(printDgm(doc))).toEqual(doc);
+  });
+
   it("round-trips the bidirectional connector meaning", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.kind = "bidirectional";
@@ -324,6 +335,20 @@ view default {
 }
 view first { place service { x 100 y 100 pin } }
 view second { place service { x 500 y 500 pin } }`)).toThrow(/Only one view block is supported/);
+  });
+
+  it("preserves prototype-key placement IDs as own properties", () => {
+    const parsed = parseDgm(`diagram reserved_key {
+  grammar aws
+  generic.custom __proto__ "Reserved"
+}
+view default { place __proto__ { x 120 y 80 pin } }`);
+
+    expect(Object.hasOwn(getDefaultView(parsed).places, "__proto__")).toBe(true);
+    expect(getDefaultView(parsed).places.__proto__).toMatchObject({ x: 120, y: 80, pin: true });
+    const printed = printDgm(parsed);
+    expect(printed).toContain("place __proto__");
+    expect(parseDgm(printed)).toEqual(parsed);
   });
 
   it("round-trips note style variants", () => {
