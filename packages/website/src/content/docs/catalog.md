@@ -1,10 +1,16 @@
 ---
 title: Icons and providers
 description: Use canonical catalog types, preserve provider boundaries, and understand how assets are staged.
-section: Under the hood
-order: 9
+section: Make diagrams
+order: 11
 ---
 The catalog is more than a folder of icons. Each type includes provider information, a label, an icon, and rules that tell the engine where it belongs.
+
+<figure class="mechanic-figure compact-doc-visual" aria-labelledby="catalog-contract-title">
+  <div class="figure-heading"><div><span class="figure-kicker">CATALOG CONTRACT</span><h3 id="catalog-contract-title">A type carries rules with its icon</h3></div></div>
+  <div class="catalog-flow"><span>provider<br/><b>aws</b></span><i>→</i><span>type<br/><b>aws.aws-lambda</b></span><i>→</i><span>icon + label<br/><b>AWS Lambda</b></span><i>→</i><span>containment<br/><b>allowed parents</b></span></div>
+  <figcaption>Insertion and validation use the same catalog metadata, so a recognizable icon is not enough when its provider or parent is invalid.</figcaption>
+</figure>
 
 The grammar adds visual conventions so resources from the catalog work together as a system.
 

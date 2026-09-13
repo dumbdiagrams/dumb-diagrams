@@ -25,6 +25,7 @@ import {
   RoutingBudget,
   type RoutingOptions,
 } from "./routing-budget.js";
+import { routePathBaseCost, ROUTE_PATH_COSTS } from "./mechanics.js";
 export {
   ROUTING_BUDGET_WARNING_CODE,
   ROUTING_BUDGET_WARNING_MESSAGE,
@@ -37,24 +38,23 @@ export type {
 
 const CELL = GRAMMAR.grid;
 const GROUP_CONTAINMENT_INSET = 8;
-const BEND_COST = 320;
 const HEADER_COST = 100_000;
 // Routing quality rules, in descending priority: never hit content; avoid
 // crossings and unrelated junctions; do not share or crowd a corridor; then
 // prefer authored faces, fewer bends, and the shortest remaining path.
 // Authored face-only ports are preferences. An authored fractional offset is
 // an exact attachment and therefore locks that endpoint to its requested face.
-const CROSSING_COST = 300_000;
-const JUNCTION_COST = 20_000;
-const OVERLAP_COST = 4_000;
-const NEAR_PARALLEL_COST = 160;
+const CROSSING_COST = ROUTE_PATH_COSTS.crossing;
+const JUNCTION_COST = ROUTE_PATH_COSTS.junction;
+const OVERLAP_COST = ROUTE_PATH_COSTS.astarOverlapPerUnit;
+const NEAR_PARALLEL_COST = ROUTE_PATH_COSTS.nearParallelPerUnit;
 const MIN_CONNECTOR_GAP = CELL;
-const PORT_SIDE_FALLBACK_COST = 900;
-const PORT_OFFSET_FALLBACK_COST = 120;
-const PORT_BACKTRACK_COST = 4_000;
-const LABEL_SIDE_FALLBACK_COST = 6_000;
+const PORT_SIDE_FALLBACK_COST = ROUTE_PATH_COSTS.portSideFallback;
+const PORT_OFFSET_FALLBACK_COST = ROUTE_PATH_COSTS.portOffsetFallback;
+const PORT_BACKTRACK_COST = ROUTE_PATH_COSTS.portBacktrack;
+const LABEL_SIDE_FALLBACK_COST = ROUTE_PATH_COSTS.labelSideFallback;
 const VISIBLE_PORTS_PER_FACE = 3;
-const TURN_COST = 140;
+const TURN_COST = ROUTE_PATH_COSTS.astarTurn;
 // A near-aligned pair of opposing ports should read as one straight
 // connector. Anything shorter than a full routing cell is visual noise: at
 // normal zoom it looks like a broken arrow rather than a deliberate lane
@@ -1921,11 +1921,7 @@ function scorePath(
     !followsAttachmentDirection(points.at(-1)!, points.at(-2)!, context.targetSide)
   ) return Infinity;
   if (!pathRespectsContainment(points, context.containment)) return Infinity;
-  let score = (points.length - 2) * BEND_COST + pathLength(points);
-  const manhattan =
-    Math.abs(points[0]!.x - points[points.length - 1]!.x) +
-    Math.abs(points[0]!.y - points[points.length - 1]!.y);
-  score += Math.max(0, pathLength(points) - manhattan) * 3;
+  let score = routePathBaseCost(points).score;
   if (score >= scoreCeiling) return score;
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i]!;

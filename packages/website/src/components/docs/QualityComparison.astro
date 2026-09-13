@@ -1,0 +1,39 @@
+---
+import { assessQuality, compareQuality, qualityFindings } from '@dumb-diagrams/runtime/render';
+const invariant = (code: string, index: number) => ({ code, message: `${code} example ${index}`, elementIds: [`a${index}`, `b${index}`] });
+const quality = (codes: string[]) => assessQuality(qualityFindings([], codes.map(invariant)));
+const tuple = (value: ReturnType<typeof quality>) => [value.hard, value.soft, value.warnings, value.score] as const;
+const definePreset = (id: string, label: string, aCodes: string[], bCodes: string[], reason: (winner: 'A' | 'B') => string) => {
+  const aQuality = quality(aCodes);
+  const bQuality = quality(bCodes);
+  const winner = compareQuality(aQuality, bQuality) < 0 ? 'A' : 'B';
+  return { id, label, a: tuple(aQuality), b: tuple(bQuality), winner, reason: reason(winner) };
+};
+const presets = [
+  definePreset('hard', 'Hard findings first', ['edge-icon-collision'], ['edge-crossing', 'edge-crossing', 'edge-crossing'], winner => `Candidate ${winner} wins because hard findings are compared before every other column.`),
+  definePreset('counts', 'Counts before weights', ['edge-crossing'], ['edge-corridor-overlap', 'edge-corridor-overlap'], winner => `Candidate ${winner} wins with fewer soft findings, even though its penalty is larger.`),
+  definePreset('penalty', 'Penalty breaks the tie', ['edge-crossing'], ['edge-corridor-overlap'], winner => `The counts tie, so Candidate ${winner} wins on the lower penalty.`),
+];
+const format = (value: number) => value.toLocaleString('en-US');
+const findingLabels = {
+  hard: ['1 hard collision', '3 soft crossings'],
+  counts: ['1 soft crossing', '2 soft overlaps'],
+  penalty: ['1 soft crossing', '1 soft overlap'],
+} as const;
+---
+<figure class="mechanic-figure quality-explainer" data-explainer="quality" data-active="hard" aria-labelledby="quality-title">
+  <div class="figure-heading"><div><h3 id="quality-title">The first different column decides</h3></div><span class="figure-chip">example findings</span></div>
+  <div class="quality-controls" role="tablist" aria-label="Quality comparison presets">{presets.map((preset, index) => <button type="button" role="tab" id={`quality-tab-${preset.id}`} aria-controls={`quality-panel-${preset.id}`} aria-selected={index === 0 ? 'true' : 'false'} data-explainer-control={preset.id}><span>0{index + 1}</span>{preset.label}</button>)}</div>
+  {presets.map(preset => {
+    const firstDifference = preset.a.findIndex((value, column) => value !== preset.b[column]);
+    const [aFinding, bFinding] = findingLabels[preset.id as keyof typeof findingLabels];
+    return <section class="quality-panel" role="tabpanel" id={`quality-panel-${preset.id}`} aria-labelledby={`quality-tab-${preset.id}`} data-explainer-panel={preset.id}>
+      <h4 class="panel-context">{preset.label}</h4>
+      <div class="candidate-thumbnails"><div class={preset.winner === 'A' ? 'candidate-card winner' : 'candidate-card'}><span>Candidate A</span><p class="candidate-finding">{aFinding}</p>{preset.winner === 'A' && <strong>Winner</strong>}</div><div class={preset.winner === 'B' ? 'candidate-card winner' : 'candidate-card'}><span>Candidate B</span><p class="candidate-finding">{bFinding}</p>{preset.winner === 'B' && <strong>Winner</strong>}</div></div>
+      <div class="tuple-table" role="table" aria-label={`${preset.label} comparison`}><div role="row" class="tuple-head"><span role="columnheader">Candidate</span><span role="columnheader">Hard</span><span role="columnheader">Soft</span><span role="columnheader">Warnings</span><span role="columnheader">Penalty</span></div>{[['A', ...preset.a], ['B', ...preset.b]].map(row => <div role="row"><strong role="rowheader">{row[0]}</strong>{row.slice(1).map((value, column) => <span role="cell" class={column === firstDifference ? 'deciding-cell' : undefined}>{typeof value === 'number' ? format(value) : value}</span>)}</div>)}</div>
+      <p class="quality-verdict"><span>{preset.winner}</span>{preset.reason}</p>
+    </section>;
+  })}
+  <figcaption>Compare from left to right: hard, soft, warnings, then penalty. The first difference wins.</figcaption>
+</figure>
+<script src="../../scripts/docs-explainers.ts"></script>

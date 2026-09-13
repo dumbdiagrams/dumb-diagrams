@@ -1,8 +1,8 @@
 ---
 title: Command reference
 description: Prepare a repository for agents and start the generic local Studio.
-section: Make diagrams
-order: 6
+section: Reference
+order: 32
 ---
 The published package is installed as `create-dumb-diagrams`; its canonical
 command is `dumbdiagrams`. `dgm` is a convenience shorthand for the same

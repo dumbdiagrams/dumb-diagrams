@@ -1,10 +1,16 @@
 ---
 title: The .dgm format
 description: Describe services, boundaries, and connections. Save visual decisions in the same file.
-section: Make diagrams
-order: 3
+section: Reference
+order: 30
 ---
 A `.dgm` document has an architecture description and, when needed, saved views. The architecture says what exists and how it connects. A view records the visual decisions you want to keep.
+
+<figure class="mechanic-figure compact-doc-visual" aria-labelledby="source-layers-title">
+  <div class="figure-heading"><div><span class="figure-kicker">ONE REVIEWABLE FILE</span><h3 id="source-layers-title">Architecture and view share stable IDs</h3></div></div>
+  <div class="source-layer-flow"><span><b>Architecture</b>resources · groups · edges</span><i>stable IDs</i><span><b>View</b>places · routes · visibility</span></div>
+  <figcaption>An agent can change what exists without discarding the human-authored view decisions attached to unchanged IDs.</figcaption>
+</figure>
 
 ## A complete example
 

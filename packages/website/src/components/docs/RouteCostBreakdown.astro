@@ -1,0 +1,11 @@
+---
+import { routePathBaseCost, ROUTE_PATH_COSTS } from '@dumb-diagrams/runtime/route';
+const clear = routePathBaseCost([{ x: 0, y: 0 }, { x: 0, y: 40 }, { x: 160, y: 40 }, { x: 160, y: 0 }]);
+const crossing = 160 + ROUTE_PATH_COSTS.crossing;
+---
+<figure class="mechanic-figure formula-figure" aria-labelledby="route-cost-title" data-path-score={clear.score} data-crossing-score={crossing}>
+  <div class="figure-heading"><div><h3 id="route-cost-title">The clear path costs 1,120 points</h3></div></div>
+  <div class="formula"><span>{ROUTE_PATH_COSTS.bend} × bends</span><b>+</b><span>length</span><b>+</b><span>{ROUTE_PATH_COSTS.excessLengthMultiplier} × excess length</span><b>+</b><span>conflict penalties</span></div>
+  <div class="cost-ledger"><div><span>{clear.bends} bends</span><strong>{(clear.bends * ROUTE_PATH_COSTS.bend).toLocaleString('en-US')}</strong></div><div><span>{clear.length}-unit path</span><strong>{clear.length}</strong></div><div><span>{clear.excessLength} excess units × {ROUTE_PATH_COSTS.excessLengthMultiplier}</span><strong>{clear.excessLength * ROUTE_PATH_COSTS.excessLengthMultiplier}</strong></div><div class="cost-total"><span>clear path total</span><strong>{clear.score.toLocaleString('en-US')}</strong></div></div>
+  <figcaption>Excess length is the distance beyond the direct 160-unit path. One crossing adds 300,000 points; other routing stages can add costs or reject a path.</figcaption>
+</figure>

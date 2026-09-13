@@ -1,8 +1,8 @@
 ---
 title: Brand and interface
 description: The typography, colors, and components shared by the website and Studio.
-section: Under the hood
-order: 11
+section: Reference
+order: 31
 ---
 The visual system uses four brand colors and restrained typography. The website
 uses open spacing; Studio keeps its controls compact so the diagram remains

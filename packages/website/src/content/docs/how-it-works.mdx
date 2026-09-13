@@ -1,0 +1,24 @@
+---
+title: How the engine works
+description: Follow your diagram from a text file to a finished drawing.
+section: How it works
+order: 20
+---
+import EnginePipeline from '../../components/docs/EnginePipeline.astro';
+import DiagramAsset from '../../components/docs/DiagramAsset.astro';
+
+You describe the resources, groups, and connections in a `.dgm` file. The engine checks that description, arranges the diagram, and turns it into SVG. The same source, catalog, and saved view produce the same result.
+
+<EnginePipeline />
+
+<DiagramAsset id="core-flow" title="From source to diagram" description="Follow the request from the client through the API and worker to storage. Open the source to see how these resources and connections are described." />
+
+## What the checks tell you
+
+The engine checks the source before drawing it, then looks for visual problems such as collisions and crossings. [Layout](../layout/) explains how cards are placed; [routing](../routing/) shows how connections find their way between them.
+
+[Quality scoring](../quality-and-scoring/) compares drawing problems so that [Auto-fix](../auto-fix/) can choose a useful repair. A clean drawing can still describe the wrong system: [architecture evaluation](../architecture-evaluation/) checks it against requirements separately.
+
+Studio runs the engine as you edit. If you make a syntax error, it shows the error and keeps the last good preview while you fix it. Saving requires valid source.
+
+For contributors, the runtime owns compilation and SVG rendering, the editor provides Studio, and the CLI creates projects and serves Studio locally. The website uses precompiled examples.

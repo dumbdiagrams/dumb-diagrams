@@ -1,8 +1,8 @@
 ---
 title: "Azure example: Serverless document processing pipeline"
 description: Follow an agent-assisted Azure walkthrough from a plain-English upload request to a reviewed document-processing diagram.
-section: Start here
-order: 2.6
+section: Make diagrams
+order: 13
 ---
 This Azure walkthrough starts with an initialized Dumb Diagrams project and a
 plain-English request for a document-processing pipeline. The agent turns that

@@ -188,8 +188,9 @@ function compileParsedDocument(
 }
 
 /**
- * Auto-fix is destructive, so only commit a candidate that introduces no new
- * compiler warnings or rendered-diagram invariant failures.
+ * Auto-fix can remove authored overrides, so reject any candidate that
+ * introduces a new hard finding. Soft findings and warnings may trade only
+ * when the complete quality tuple strictly improves.
  */
 export function autoFixRejectionReason(
   current: DiagramCompilation,

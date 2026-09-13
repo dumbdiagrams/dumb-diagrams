@@ -1,0 +1,45 @@
+---
+title: Quality and scoring
+description: Understand drawing problems and see how the engine compares possible fixes.
+section: How it works
+order: 23
+---
+import QualityComparison from '../../components/docs/QualityComparison.astro';
+
+The quality check looks for drawing problems, such as a connection running through a card or a label covering another label. It helps you decide what to fix and lets [Auto-fix](../auto-fix/) compare possible repairs.
+
+The engine compares **hard findings, soft findings, warnings, then penalty points**, from left to right. Lower is better. The first difference decides, so fewer hard problems always wins, regardless of the later columns.
+
+<QualityComparison />
+
+## Read the result
+
+| Result | What it means | What to do |
+| --- | --- | --- |
+| Invalid source | The diagram cannot be compiled | Fix the reported syntax or validation error |
+| Hard finding | Something breaks the drawing, such as a detached connection or a line through a card | Fix this first |
+| Soft finding | The drawing works but is harder to read, for example because lines cross | Adjust the layout or routing |
+| Warning | The engine reached a limit or used a fallback | Read the message; a simpler view may help |
+| No findings | The checks found no drawing problems | Review whether the architecture matches your intent |
+
+A clean drawing does not prove that the system is secure, economical, or faithful to the brief. [Architecture evaluation](../architecture-evaluation/) checks a different question: whether the required resources and relationships are present.
+
+<details>
+<summary>Penalty weights, when the counts tie</summary>
+
+| Finding | Penalty points |
+| --- | ---: |
+| Parse failure | 10,000,000 |
+| Other hard finding | 5,000,000 |
+| Routing warning (`routing`) | 500,000 |
+| Crossing | 300,000 |
+| Availability-zone asymmetry or resource icon overlap | 50,000 |
+| Label or badge collision | 10,000 |
+| Corridor or reverse overlap | 4,000 |
+| Other warning, including a routing search limit (`routing-budget`) | 1,000 |
+
+These weights break ties after the finding counts. The engine also orders findings for display; those internal weights are not added again.
+
+</details>
+
+To improve a drawing, start with its first reported problem. Shorten a label, adjust a group, or unpin a route that no longer fits. Auto-fix can try these kinds of view changes for you.

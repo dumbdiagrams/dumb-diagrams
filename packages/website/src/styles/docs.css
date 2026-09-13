@@ -84,6 +84,12 @@
   .not-found h1 { margin: 20px 0; font-size: 70px; }
   .not-found p { color: var(--muted); margin-bottom: 30px; }
 }
+@layer pages {
+  .prose > details { margin: 24px 0; padding: 16px 20px; border: 1px solid var(--line); border-radius: 6px; }
+  .prose > details > summary { cursor: pointer; font-weight: 600; }
+  .prose > details > summary:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: 5px; }
+  .prose > details[open] > summary { margin-bottom: 16px; }
+}
 @layer responsive {
   @media (max-width: 1200px) { .docs-layout { grid-template-columns: 165px minmax(0,1fr) 130px; gap: 30px; } .doc-header h1 { font-size: 42px; } }
   @media (max-width: 1000px) { .docs-layout { grid-template-columns: 160px minmax(0,1fr); gap: 35px; } .docs-toc { display: none; } }
@@ -96,7 +102,7 @@
     .docs-sidebar { position: static; }
     .docs-navigation { border-bottom: 1px solid var(--line); }
     .docs-navigation > summary { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 10px 0 15px; cursor: pointer; }
-    .docs-navigation nav { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; }
+    .docs-navigation nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; }
     .nav-group a { font-size: 10px; }
     .sidebar-note { display: none; }
     .doc-header h1 { font-size: 41px; }

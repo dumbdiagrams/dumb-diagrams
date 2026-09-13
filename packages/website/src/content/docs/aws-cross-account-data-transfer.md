@@ -1,8 +1,8 @@
 ---
 title: "AWS example: Cross-account data transfer platform"
 description: Follow a real agent-assisted walkthrough from dumbdiagrams init to a rendered cross-account AWS architecture diagram.
-section: Start here
-order: 2.5
+section: Make diagrams
+order: 12
 ---
 This **AWS example** follows a real working session from an empty project to a
 reviewed diagram. I used Cursor, but the same steps work with Codex, Claude Code,

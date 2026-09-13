@@ -25,7 +25,7 @@ async function walk(directory) {
 
 test('every internal page, anchor, and referenced asset resolves in the static build', async () => {
   const files = (await walk(dist)).filter(file => extname(file) === '.html' && !file.includes('~partytown'));
-  assert.ok(files.length >= 13);
+  assert.ok(files.length >= 19);
   for (const file of files) {
     const html = await readFile(file, 'utf8');
     const pagePath = file.slice(dist.length + 1).replace(/index\.html$/, '');
@@ -58,7 +58,7 @@ test('complete documentation and homepage examples compile through the actual ru
   let checked = 0;
   for (const file of await walk(join(site, 'src'))) {
     const source = await readFile(file, 'utf8');
-    const snippets = file.endsWith('.dgm') ? [source] : file.endsWith('.md')
+    const snippets = file.endsWith('.dgm') ? [source] : /\.mdx?$/.test(file)
       ? [...source.matchAll(/```dgm\n([\s\S]*?)```/g)].map(match => match[1]) : [];
     for (const snippet of snippets) {
       const result = compileDiagram(parseDgm(snippet));
@@ -111,6 +111,61 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
     assert.ok(image.includes(`width="${dimensions[1]}"`), `${example.id}: reserved preview width matches the SVG`);
     assert.ok(image.includes(`height="${dimensions[2]}"`), `${example.id}: reserved preview height matches the SVG`);
   }
+});
+
+test('mechanics documentation is generated, ordered, and grounded in runtime output', async () => {
+  const expectedPages = [
+    'how-it-works',
+    'layout',
+    'routing',
+    'quality-and-scoring',
+    'auto-fix',
+    'architecture-evaluation',
+  ];
+  for (const slug of expectedPages) {
+    const html = await readFile(join(dist, 'docs', slug, 'index.html'), 'utf8');
+    assert.match(html, /class="mechanic-figure/, `${slug}: contains a teaching visual`);
+  }
+
+  const quality = await readFile(join(dist, 'docs/quality-and-scoring/index.html'), 'utf8');
+  assert.match(quality, /data-explainer="quality"/);
+  assert.match(quality, />300,000</);
+  assert.match(quality, />8,000</);
+  assert.match(quality, /Candidate A wins with fewer soft findings/);
+  assert.match(quality, /Candidate B wins on the lower penalty/);
+
+  const routing = await readFile(join(dist, 'docs/routing/index.html'), 'utf8');
+  assert.match(routing, /300,160/);
+  assert.match(routing, /1,120/);
+
+  const manifest = JSON.parse(await readFile(join(dist, 'docs-explainers/manifest.json'), 'utf8'));
+  assert.equal(manifest.diagrams['core-flow'].provenance, 'runtime-compiled');
+  assert.equal(
+    await readFile(join(dist, 'docs-explainers/core-flow.dgm'), 'utf8'),
+    await readFile(join(site, 'src/examples/mechanics/core-flow.dgm'), 'utf8'),
+  );
+  const svg = await readFile(join(dist, 'docs-explainers/core-flow.svg'), 'utf8');
+  assert.match(svg, /data:image\/svg\+xml/);
+  assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
+
+  const docsIndex = await readFile(join(dist, 'docs/index.html'), 'utf8');
+  for (const section of ['Start here', 'Make diagrams', 'How it works', 'Reference']) {
+    assert.ok(docsIndex.includes(section), `docs navigation includes ${section}`);
+  }
+});
+
+test('mechanics explainers stay tiny and preserve their no-JavaScript fallback', async () => {
+  const html = await readFile(join(dist, 'docs/quality-and-scoring/index.html'), 'utf8');
+  const sources = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map(([, source]) => source);
+  let scriptBytes = 0;
+  for (const source of sources) {
+    const path = new URL(source.replaceAll('&amp;', '&'), origin + base).pathname.slice(base.length);
+    const script = await readFile(join(dist, path), 'utf8');
+    scriptBytes += gzipSync(script).byteLength;
+    assert.doesNotMatch(script, /parseDgm|compileDiagram|catalog-icons/, 'browser bundle excludes the runtime compiler and catalog');
+  }
+  assert.ok(scriptBytes < 15_000, `mechanics JavaScript under 15 KB compressed (actual ${scriptBytes})`);
+  assert.doesNotMatch(html, /data-explainer-panel="[^"]+"[^>]* hidden/, 'all comparison panels exist in the static fallback');
 });
 
 test('landing page stays small and loads no third-party scripts by default', async () => {

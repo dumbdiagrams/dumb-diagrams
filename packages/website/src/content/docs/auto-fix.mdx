@@ -1,0 +1,24 @@
+---
+title: Auto-fix
+description: What Auto-fix tries and how it decides whether a change helps.
+section: How it works
+order: 24
+---
+import AutoFixFlow from '../../components/docs/AutoFixFlow.astro';
+
+Auto-fix tries a small set of changes to routes and positions, then compares the resulting drawings. It applies a change only when quality improves. When two repairs work equally well, it keeps the one that changes less.
+
+<AutoFixFlow />
+
+A repair cannot introduce a new hard finding, even if it removes several others. The engine checks which elements each finding affects, not just the total. Soft findings and warnings can change if the overall [quality comparison](../quality-and-scoring/) improves.
+
+## What the result means
+
+| Result | Meaning |
+| --- | --- |
+| `repaired` | A better view was found and applied |
+| `unchanged` | The drawing is clean or needs no edit |
+| `unresolved` | None of the candidates safely improved it |
+| `blocked` | Source or validation errors need fixing first |
+
+Review the result before keeping it. Auto-fix can remove manual routes or saved positions; it does not rewrite the architecture or its brief.

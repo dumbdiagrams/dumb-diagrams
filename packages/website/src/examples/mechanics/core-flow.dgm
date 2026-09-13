@@ -1,0 +1,14 @@
+diagram core_flow {
+  grammar aws
+  flow lr
+  title "Request to durable storage"
+
+  generic.user client "Client"
+  generic.custom api "API"
+  generic.custom worker "Worker"
+  generic.custom storage "Storage"
+
+  client -> api { id request label "request" }
+  api -> worker { id dispatch label "dispatch" }
+  worker -> storage { id persist label "persist" }
+}

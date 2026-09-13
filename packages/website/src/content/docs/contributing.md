@@ -1,8 +1,8 @@
 ---
 title: Work on the project
 description: Find the package to change, choose the appropriate development loop, and run the checks for that boundary.
-section: Under the hood
-order: 10
+section: Reference
+order: 33
 ---
 The repository uses Node.js 24 or newer and the pnpm version pinned in its root `packageManager` field. Use pnpm for repository development; the npm commands in the quick start are for people consuming the published CLI.
 

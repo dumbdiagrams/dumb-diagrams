@@ -1,0 +1,41 @@
+---
+title: Connections and routing
+description: How connections find a clear path, and how to guide them when needed.
+section: How it works
+order: 22
+---
+import RouteCandidates from '../../components/docs/RouteCandidates.astro';
+import RouteCostBreakdown from '../../components/docs/RouteCostBreakdown.astro';
+
+The router draws right-angle connections between the placed cards. It tries simple paths first, then uses A* grid search when it needs to find a way around obstacles. Later passes resolve conflicts and place labels.
+
+A short path is useful only if you can follow it. Select a candidate below to see why a clear detour can beat a direct line.
+
+<RouteCandidates />
+
+## How the costs add up
+
+Each bend and extra unit of distance adds to a route's cost. Crossings carry a much larger penalty, so the router usually prefers a longer, clearer path. This score helps choose a connection; it is separate from the [quality comparison](../quality-and-scoring/) for the whole drawing.
+
+<RouteCostBreakdown />
+
+The search has limits. If it cannot find a suitable route within its budget, it uses a fallback and reports a warning. Dense diagrams may still need an adjustment in Studio.
+
+## Guide a connection
+
+`from e` prefers the east side of a card, but lets the router choose another side if needed. Adding a fractional offset fixes the attachment point: `from e 0.25` attaches a quarter of the way down that side.
+
+```dgm
+diagram port_strength {
+  grammar aws
+  flow lr
+  generic.user client "Client"
+  generic.custom api "API"
+  client -> api { id preferred from e to w }
+  api -> client { id fixed from w 0.25 to e 0.75 style dashed }
+}
+```
+
+If a connection is hard to read, try clearer grouping, fewer relationships, or removing an old route override. Use a manual route in Studio when you want to keep a particular shape.
+
+Contributors can find the stage-specific penalties and rejection rules in `packages/runtime/ROUTING.md`.

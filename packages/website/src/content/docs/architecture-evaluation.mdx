@@ -1,0 +1,21 @@
+---
+title: Architecture evaluation
+description: Check whether a diagram includes what its brief asks for.
+section: How it works
+order: 25
+---
+import EvaluationTrace from '../../components/docs/EvaluationTrace.astro';
+
+A diagram can look good and still leave out an important part of the system. Architecture evaluation checks whether it contains the resources, boundaries, and connections required by a brief.
+
+<EvaluationTrace />
+
+Checks can require a service, count instances, forbid a service type, or verify that a resource sits inside the right boundary. Connections have a direction: a worker sending to a queue is different from a queue delivering work to a worker. Provider checks also verify that the grammar and catalog agree.
+
+A requirement can pass or fail. If it was never included in the checks, it is **not asserted**; silence is not a pass.
+
+## How the repository uses this
+
+The test fixtures pair vague, everyday, and detailed AWS prompts with saved `.dgm` outputs and a curated reference. They make those examples reviewable; they are not a live benchmark or a prediction of what an agent will produce next.
+
+The full prompt comparison covers AWS. Cross-provider tests cover core contracts. These checks run separately from [visual quality](../quality-and-scoring/), routing, and performance checks.

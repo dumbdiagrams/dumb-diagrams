@@ -1,4 +1,10 @@
-export const sections = ['Start here', 'Make diagrams', 'Under the hood'] as const;
+export const sections = ['Start here', 'Make diagrams', 'How it works', 'Reference'] as const;
+export function orderDocs<T extends { id: string; data: { section: string; order: number } }>(docs: T[]): T[] {
+  return [...docs].sort((a, b) => {
+    const sectionDifference = sections.indexOf(a.data.section as typeof sections[number]) - sections.indexOf(b.data.section as typeof sections[number]);
+    return sectionDifference || a.data.order - b.data.order || a.id.localeCompare(b.id);
+  });
+}
 export const createCommand = 'npm install -g create-dumb-diagrams';
 export const installCommand = 'dumbdiagrams init';
 export const repository = import.meta.env.PUBLIC_REPOSITORY_URL || '';

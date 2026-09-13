@@ -1,0 +1,10 @@
+---
+import { url } from '../../lib/site';
+interface Props { id: string; title: string; description: string; }
+const { id, title, description } = Astro.props;
+---
+<figure class="mechanic-figure diagram-asset" aria-labelledby={`${id}-title`}>
+  <div class="figure-heading"><div><span class="figure-kicker">RUNTIME-COMPILED EXAMPLE</span><h3 id={`${id}-title`}>{title}</h3></div><a class="figure-chip" href={url(`docs-explainers/${id}.dgm`)}>source .dgm</a></div>
+  <img src={url(`docs-explainers/${id}.svg`)} alt={description} loading="lazy" />
+  <figcaption>Generated from the downloadable source during the website build.</figcaption>
+</figure>
