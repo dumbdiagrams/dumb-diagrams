@@ -2275,11 +2275,11 @@ function App() {
 
         {tool === "note" && (
           <FloatingPanel
-            className="note-composer-sheet"
+            className="drawer-sheet"
             title="Choose note style"
             subtitle="Pick a format before placing it on the canvas"
             onClose={() => setTool("select")}
-            width={340}
+            width={LEFT_DRAWER_WIDTH}
           >
             <NoteComposer
               style={noteComposerStyle}

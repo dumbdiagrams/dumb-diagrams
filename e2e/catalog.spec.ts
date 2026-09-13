@@ -685,8 +685,18 @@ test("supports paper, code, callout, and checklist note styles", async ({ page }
   expect(stageBox).not.toBeNull();
   const composer = page.getByRole("dialog", { name: "Choose note style", exact: true });
   await expect(composer).toHaveCount(1);
+  await expect(composer).toHaveClass(/drawer-sheet/);
+  await expect(composer).toHaveCSS("transform", "none");
+  const drawerLayer = await composer.evaluate((element) => Number(getComputedStyle(element).zIndex));
+  const toolDockLayer = await page
+    .locator(".tool-dock")
+    .evaluate((element) => Number(getComputedStyle(element).zIndex));
+  expect(drawerLayer).toBeLessThan(toolDockLayer);
   const composerBox = await composer.boundingBox();
   expect(composerBox).not.toBeNull();
+  expect(composerBox!.x).toBe(48);
+  expect(composerBox!.y).toBe(96);
+  expect(composerBox!.width).toBe(420);
   expect(composerBox!.x).toBeLessThan(stageBox!.x + stageBox!.width / 2);
   await expect(composer.locator(".note-style-grid-with-previews [data-note-style-preview]")).toHaveCount(4);
   const selectedNote = page.locator('[data-entity-kind="annotation"][aria-selected="true"]');

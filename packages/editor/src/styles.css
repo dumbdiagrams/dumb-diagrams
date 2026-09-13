@@ -657,7 +657,7 @@ textarea:focus-visible {
   border-radius: var(--radius-lg);
   background: var(--surface-elevated);
   box-shadow: var(--shadow-lg);
-  animation: panel-in 0.22s ease;
+  animation: panel-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .floating-panel.drawer-sheet {
@@ -665,6 +665,7 @@ textarea:focus-visible {
   left: 68px;
   min-height: 320px;
   height: min(72vh, calc(100% - 96px));
+  animation-name: drawer-in-left;
 }
 
 .floating-panel.edge-sheet {
@@ -673,11 +674,13 @@ textarea:focus-visible {
   min-height: 240px;
   height: auto;
   max-height: min(52vh, calc(100% - 220px));
+  animation-name: drawer-in-right;
 }
 
 .floating-panel.inspector-sheet {
   top: 72px;
   right: 12px;
+  animation-name: drawer-in-right;
 }
 
 @keyframes panel-in {
@@ -688,6 +691,28 @@ textarea:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes drawer-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -1329,16 +1354,6 @@ textarea:focus-visible {
   height: 3px;
   border-radius: 999px;
   background: #8bc39d;
-}
-
-.note-composer-sheet {
-  top: 72px;
-  right: auto;
-  left: 68px;
-  min-height: 0;
-  height: auto;
-  max-height: calc(100% - 96px);
-  z-index: 20;
 }
 
 .note-composer {
@@ -6235,8 +6250,7 @@ textarea:focus-visible {
 
 .tool-dock,
 .floating-panel.drawer-sheet,
-.floating-panel.inspector-sheet,
-.note-composer-sheet {
+.floating-panel.inspector-sheet {
   top: 120px;
 }
 
@@ -6407,8 +6421,7 @@ textarea:focus-visible {
 .tool-dock,
 .floating-panel.drawer-sheet,
 .floating-panel.inspector-sheet,
-.floating-panel.edge-sheet,
-.note-composer-sheet {
+.floating-panel.edge-sheet {
   top: 120px;
 }
 
@@ -7419,8 +7432,7 @@ textarea:focus-visible {
  * chrome, matching the right-side panels. They remain non-modal, so the
  * canvas stays interactive wherever the drawer is not covering it. */
 .tool-dock,
-.floating-panel.drawer-sheet:not(.edge-sheet),
-.note-composer-sheet {
+.floating-panel.drawer-sheet:not(.edge-sheet) {
   top: 96px;
 }
 
