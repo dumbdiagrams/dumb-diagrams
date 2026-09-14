@@ -676,6 +676,27 @@ test("places a new root group outside the tiled canvas with resize controls", as
   await expect.poll(async () => Number(await newGroup.getAttribute("width"))).toBeGreaterThan(beforeWidth);
 });
 
+test("aligns left drawers with the tool rail and animates closed", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Resources", exact: true });
+  const toolDock = page.locator(".tool-dock");
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toHaveCSS("transform", "none");
+
+  const toolBox = await toolDock.boundingBox();
+  const drawerBox = await drawer.boundingBox();
+  expect(toolBox).not.toBeNull();
+  expect(drawerBox).not.toBeNull();
+  expect(drawerBox!.y).toBe(toolBox!.y);
+  expect(drawerBox!.x).toBe(toolBox!.x + toolBox!.width);
+
+  await drawer.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(drawer).toHaveClass(/is-closing/);
+  await expect(drawer).toHaveCount(0);
+});
+
 test("supports paper, code, callout, and checklist note styles", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Add note", exact: true }).click();

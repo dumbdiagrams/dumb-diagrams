@@ -1,18 +1,15 @@
 ---
 title: Using Studio
-description: Edit any .dgm file locally in Studio, wherever the file lives.
+description: Edit source and fine-tune a diagram visually in the local Studio.
 section: Make diagrams
 order: 10
 ---
-Studio lets you edit the source and adjust the diagram in one place. You can pan and zoom, move resources, move and resize boundaries and annotations, change source, adjust connectors, work with tabs and recent files, and export the result.
+Studio is where you review a generated diagram and make it yours. Edit the `.dgm` source, move and resize items on the canvas, add resources or notes, organise layers, adjust connectors, and export the result. Source and visual changes stay together in the same file.
 
-<figure class="mechanic-figure compact-doc-visual" aria-labelledby="studio-state-title">
-  <div class="figure-heading"><div><span class="figure-kicker">EDITOR STATE</span><h3 id="studio-state-title">Source, preview, and disk are separate</h3></div></div>
-  <div class="compact-flow"><span>edited source</span><b>compile</b><span>last good preview</span><b>save</b><span>disk file</span></div>
-  <figcaption>A compile error keeps the last good preview. An external file change opens a conflict choice before Studio writes.</figcaption>
+<figure class="studio-overview">
+  <img src="../../docs-assets/studio-overview.png" alt="Dumb Diagrams Studio showing an AWS serverless architecture, the canvas, and the boundaries panel" width="2000" height="1051" />
+  <figcaption>The left dock opens boundaries, resources, text, notes, layers, and source. Select an item on the canvas to edit its details on the right.</figcaption>
 </figure>
-
-The diagram you see is the runtime’s SVG. The editor adds interaction around it; it does not maintain a separate drawing format.
 
 ## Open and edit a file
 
@@ -23,20 +20,39 @@ dumbdiagrams studio
 
 Studio is independent of the directory where it was launched. Choose **Open** to select any `.dgm` file from anywhere on disk. Keep the terminal process running while Studio is connected.
 
-The canvas provides pan, zoom, fit-to-content, selection, and visual adjustments. Resources retain their catalog-defined icon size and can be moved; boundaries and annotations can be moved and resized. The source editor changes the architecture directly. Both work with the same document.
+Use the canvas to pan, zoom, select, and position items. The left dock adds architecture content and opens the layer list or source editor. Start with automatic layout, then move only what needs attention.
 
 A partially typed source edit may be temporarily invalid. Studio keeps the last valid compilation visible while you fix it. If the picture seems unchanged, check the validation feedback before assuming the edit was saved.
 
-Studio is keyboard-friendly: use Left/Right/Home/End on the workspace tabs to move and activate tabs. The **Canvas items** control opens an accessible list of groups, resources, edges, and annotations; use the arrow keys to select an item, Delete or Backspace to invoke its normal safe delete action, and **Focus canvas** to move keyboard focus to the diagram. Clipboard permission failures include recovery guidance, while Studio keeps its internal source and selection copy available when possible.
+For a keyboard-friendly overview of the diagram, open **Canvas items**. It lists boundaries, resources, connectors, and annotations and lets you focus or safely delete the selected item.
 
-Start with automatic layout, then move the items that need attention. For dense connections, use a manual route rather than trying to influence the layout with unrelated changes.
+## Fine-tune the details
+
+Select a boundary, resource, or connector to open its details on the right. Defaults give you a sensible architecture diagram immediately. AWS boundaries, for example, begin with colours based on the official AWS architecture guidelines. You can still change the line and fill, use a solid or dashed style, and move the label.
+
+Resources keep their provider icon by default, while the inspector lets you change details such as icon size and label position. For connectors, you can add a step number, choose a solid or dashed line, change its colour and meaning, or adjust its route. These are optional refinements, not a checklist you need to work through.
+
+<div class="studio-detail-grid">
+  <figure>
+    <img src="../../docs-assets/studio-boundary-details.png" alt="Boundary details with label position, line style, colour, and fill controls" width="570" height="850" loading="lazy" />
+    <figcaption>Boundary appearance</figcaption>
+  </figure>
+  <figure>
+    <img src="../../docs-assets/studio-service-details.png" alt="Resource details with icon size and label position controls" width="556" height="700" loading="lazy" />
+    <figcaption>Icon and label</figcaption>
+  </figure>
+  <figure>
+    <img src="../../docs-assets/studio-connector-details.png" alt="Connector details with line style, colour, and meaning controls" width="722" height="900" loading="lazy" />
+    <figcaption>Connector appearance</figcaption>
+  </figure>
+</div>
 
 ## Save and work with other editors
 
-In browsers with the File System Access API, **Open** keeps a handle to the selected file and **Save** writes back to it. **Save As** asks for a new destination. File handles are not retained across a page reload, so reopen the file when needed.
+In browsers with the File System Access API, **Save** writes back to the file you opened and **Save As** asks for a new destination. Reopen the file after a page reload.
 
-Other browsers use a standard file chooser and download the updated `.dgm` when you save. In either case, the source remains an ordinary portable file; Studio does not register it with a project or upload it to a Dumb Diagrams service.
+Other browsers download the updated `.dgm` when you save. Either way, Studio does not register the file with a project or upload it to a Dumb Diagrams service.
 
-Studio does not watch selected files live. File System Access saves compare the on-disk text with the last source snapshot before overwriting. If another editor changed or deleted the file, Studio stops and offers a reload or explicit overwrite choice. Standard chooser/download saves cannot perform that comparison, so reopen the file when coordinating edits through that fallback.
+Studio does not watch files live. Before writing through the File System Access API, it checks whether another editor changed or deleted the file and asks you to reload or explicitly overwrite. The download fallback cannot make that check.
 
-Studio binds to `127.0.0.1` and is intended for local use. It is not a hosted service or a public server. The site works on a phone, but detailed diagram editing is more comfortable in a wide desktop window.
+Studio runs locally on `127.0.0.1`; it is not a hosted workspace or a public server. A wide desktop window works best.

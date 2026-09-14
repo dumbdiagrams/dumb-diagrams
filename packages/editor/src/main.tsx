@@ -192,7 +192,22 @@ initTheme();
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
+const LEFT_DRAWER_CLOSE_FALLBACK_MS = 220;
 const LEFT_DRAWER_WIDTH = 420;
+
+const LEFT_DRAWER_TOOLS = new Set<ToolId>([
+  "note",
+  "text",
+  "resources",
+  "groups",
+  "connector",
+  "code",
+  "layers",
+]);
+
+function isLeftDrawerTool(tool: ToolId): boolean {
+  return LEFT_DRAWER_TOOLS.has(tool);
+}
 type FilePickerWindow = Window & {
   showOpenFilePicker?: (options?: {
     multiple?: boolean;
@@ -419,6 +434,8 @@ function App() {
   const [resetExampleOpen, setResetExampleOpen] = useState(false);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
   const closeAnimationTimerRef = useRef<number | null>(null);
+  const [closingLeftDrawer, setClosingLeftDrawer] = useState<ToolId | null>(null);
+  const drawerCloseAnimationTimerRef = useRef<number | null>(null);
   const pendingClosePreviewsRef = useRef<WorkspacePreviewMap>({});
   const [operation, setOperation] = useState<OperationState>(null);
   const initialUrlHandledRef = useRef(false);
@@ -427,6 +444,9 @@ function App() {
     return () => {
       if (closeAnimationTimerRef.current !== null) {
         window.clearTimeout(closeAnimationTimerRef.current);
+      }
+      if (drawerCloseAnimationTimerRef.current !== null) {
+        window.clearTimeout(drawerCloseAnimationTimerRef.current);
       }
     };
   }, []);
@@ -637,6 +657,42 @@ function App() {
       closeTab(tabId, consumeClosingPreviews());
       setClosingTabId(null);
     });
+  };
+
+  const clearLeftDrawerClose = () => {
+    if (drawerCloseAnimationTimerRef.current !== null) {
+      window.clearTimeout(drawerCloseAnimationTimerRef.current);
+      drawerCloseAnimationTimerRef.current = null;
+    }
+    setClosingLeftDrawer(null);
+  };
+
+  const beginLeftDrawerClose = (drawerTool: ToolId) => {
+    setClosingLeftDrawer(drawerTool);
+    setTool("select");
+    if (drawerTool === "connector") setPendingPort(null);
+    if (drawerCloseAnimationTimerRef.current !== null) {
+      window.clearTimeout(drawerCloseAnimationTimerRef.current);
+    }
+    drawerCloseAnimationTimerRef.current = window.setTimeout(() => {
+      drawerCloseAnimationTimerRef.current = null;
+      setClosingLeftDrawer((current) => (current === drawerTool ? null : current));
+    }, LEFT_DRAWER_CLOSE_FALLBACK_MS);
+  };
+
+  const finishLeftDrawerClose = (drawerTool: ToolId) => {
+    if (drawerCloseAnimationTimerRef.current !== null) {
+      window.clearTimeout(drawerCloseAnimationTimerRef.current);
+      drawerCloseAnimationTimerRef.current = null;
+    }
+    window.requestAnimationFrame(() => {
+      setClosingLeftDrawer((current) => (current === drawerTool ? null : current));
+    });
+  };
+
+  const requestLeftDrawerClose = (drawerTool: ToolId) => {
+    if (closingLeftDrawer === drawerTool) return;
+    beginLeftDrawerClose(drawerTool);
   };
 
   const handleNewTab = () => {
@@ -2260,6 +2316,7 @@ function App() {
         <ToolDock
           active={tool}
           onChange={(next) => {
+            clearLeftDrawerClose();
             if (next === "note") {
               openNoteComposer();
               return;
@@ -2268,17 +2325,23 @@ function App() {
               openTextComposer();
               return;
             }
+            if (isLeftDrawerTool(tool) && next === "select") {
+              beginLeftDrawerClose(tool);
+              return;
+            }
             setTool(next);
             if (next !== "connector") setPendingPort(null);
           }}
         />
 
-        {tool === "note" && (
+        {(tool === "note" || closingLeftDrawer === "note") && (
           <FloatingPanel
             className="drawer-sheet"
             title="Choose note style"
             subtitle="Pick a format before placing it on the canvas"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("note")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("note")}
+            closing={closingLeftDrawer === "note"}
             width={LEFT_DRAWER_WIDTH}
           >
             <NoteComposer
@@ -2289,12 +2352,14 @@ function App() {
           </FloatingPanel>
         )}
 
-        {tool === "text" && (
+        {(tool === "text" || closingLeftDrawer === "text") && (
           <FloatingPanel
             className="drawer-sheet text-composer-sheet"
             title="Add text"
             subtitle="Place editable text on the canvas"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("text")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("text")}
+            closing={closingLeftDrawer === "text"}
             width={LEFT_DRAWER_WIDTH}
           >
             <TextComposer
@@ -2311,12 +2376,14 @@ function App() {
           </FloatingPanel>
         )}
 
-        {tool === "resources" && (
+        {(tool === "resources" || closingLeftDrawer === "resources") && (
           <FloatingPanel
             className="drawer-sheet asset-sheet"
             title="Resources"
             subtitle="Browse services by provider and category"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("resources")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("resources")}
+            closing={closingLeftDrawer === "resources"}
             width={LEFT_DRAWER_WIDTH}
           >
             <AssetBrowser
@@ -2355,12 +2422,14 @@ function App() {
           </FloatingPanel>
         )}
 
-        {tool === "groups" && (
+        {(tool === "groups" || closingLeftDrawer === "groups") && (
           <FloatingPanel
             className="drawer-sheet asset-sheet"
             title="Boundaries"
             subtitle="Logical and infrastructure scopes by provider"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("groups")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("groups")}
+            closing={closingLeftDrawer === "groups"}
             width={LEFT_DRAWER_WIDTH}
           >
             <AssetBrowser
@@ -2373,12 +2442,14 @@ function App() {
           </FloatingPanel>
         )}
 
-        {tool === "connector" && (
+        {(tool === "connector" || closingLeftDrawer === "connector") && (
           <FloatingPanel
             className="drawer-sheet"
             title="Connector"
             subtitle="Pick ports on two icons"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("connector")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("connector")}
+            closing={closingLeftDrawer === "connector"}
             width={LEFT_DRAWER_WIDTH}
           >
             <ConnectorDrawer pendingPort={pendingPort} />
@@ -2449,12 +2520,14 @@ function App() {
             </FloatingPanel>
           )}
 
-        {tool === "code" && (
+        {(tool === "code" || closingLeftDrawer === "code") && (
           <FloatingPanel
             className="drawer-sheet source-sheet"
             title="Source"
             subtitle="Valid edits sync to the canvas"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("code")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("code")}
+            closing={closingLeftDrawer === "code"}
             width={LEFT_DRAWER_WIDTH}
           >
             <Suspense fallback={<div className="source-drawer"><div className="source-editor-shell source-drawer-loading">Loading source editor…</div></div>}>
@@ -2479,12 +2552,14 @@ function App() {
           </FloatingPanel>
         )}
 
-        {tool === "layers" && compiled.ok && (
+        {compiled.ok && (tool === "layers" || closingLeftDrawer === "layers") && (
           <FloatingPanel
             className="drawer-sheet layers-sheet"
             title="Layers"
             subtitle="Hierarchy, visibility, and lock"
-            onClose={() => setTool("select")}
+            onClose={() => requestLeftDrawerClose("layers")}
+            onCloseAnimationEnd={() => finishLeftDrawerClose("layers")}
+            closing={closingLeftDrawer === "layers"}
             width={LEFT_DRAWER_WIDTH}
           >
             <LayersPanel

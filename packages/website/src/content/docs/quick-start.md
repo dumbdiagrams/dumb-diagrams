@@ -1,25 +1,24 @@
 ---
 title: Quick start
-description: Set up a project and open a .dgm file in Studio.
+description: Install the CLI, create a project, and open your first diagram in Studio.
 section: Start here
 order: 1
 ---
 You need **Node.js 24 or newer**. Check your version with `node --version`. The install command below uses npm, which comes with Node.js.
 
-The **agent workflow** uses a separate coding agent, such as **Codex, Claude Code, Cursor, Gemini**, or an open-source alternative. Dumb Diagrams provides the source format, agent guidance, and Studio; it does not bundle an agent.
-
-## Create a project
-
-Install the CLI and run `init` from the directory where you want the new project folder:
+Install `create-dumb-diagrams` once. The main command is `dumbdiagrams`; `dgm` is a shorter alias for the same thing.
 
 ```bash
 npm install -g create-dumb-diagrams
 cd path/to/your-projects
 dumbdiagrams init
 cd <project-folder>
+dumbdiagrams studio
 ```
 
-The initializer asks for a project name and uses it for the new folder. Leave the prompt blank, or run without a terminal, to create a timestamped `dumb-diagrams-YYYY-MM-DD-HH-MM-SS` folder in the current directory. It prints the exact folder path when it finishes.
+`init` asks for a project name and creates that folder in the current directory. Leave the name blank to use a timestamped folder. Then `studio` opens the local editor; choose **Open** to select any `.dgm` file on your machine. Keep the command running while you work and stop it with `Ctrl+C`.
+
+## What the project contains
 
 The project contains agent instructions, `.dumbdiagrams/` knowledge, and a documented `diagrams/` workspace:
 
@@ -31,22 +30,25 @@ The project contains agent instructions, `.dumbdiagrams/` knowledge, and a docum
   GEMINI.md          Another agent entry point
 ```
 
-Keep `.dumbdiagrams/examples/` as reference material. By default, agents create `diagrams/<name>/diagram.dgm` together with `diagrams/<name>/architecture-brief.md`. The brief records the normalized goal, explicit requirements, relationships and containment, and inferred decisions and exclusions for review and debugging. If you choose another source location, Studio can still open the `.dgm` by file selection.
-
-Start Studio separately:
-
-```bash
-dumbdiagrams studio
-```
-
-Studio is independent of the repository where it was launched. Select **Open** to choose any `.dgm` file from anywhere on disk. Keep the CLI process running while you work; stop it with `Ctrl+C` when finished.
+Keep `.dumbdiagrams/examples/` as reference material. By default, an agent creates `diagrams/<name>/diagram.dgm` beside an `architecture-brief.md` that records the goal and important decisions. Studio can open the `.dgm` wherever you decide to keep it.
 
 ## Create and edit a first draft
 
-Ask your coding agent to read `AGENTS.md` and the relevant `.dumbdiagrams/` guidance, describe your architecture, and create a `.dgm` file. Then open it in Studio to review and refine it. [Work with an agent](../agent-workflow/) includes a prompt you can adapt. If you are working manually, use Studio’s source editor instead.
+Ask your coding agent to read `AGENTS.md` and the relevant `.dumbdiagrams/` guidance, then describe the architecture you want. [Work with an agent](../agent-workflow/) includes a prompt you can adapt. You can also write the source yourself or use Studio’s source editor.
 
-Open a diagram in Studio and change a service label in the source editor. A valid edit recompiles into a new diagram. You can also select and move an item on the canvas.
+Open the new diagram in Studio. Change a label in the source editor, move an item on the canvas, and save. Both kinds of change stay in the same portable `.dgm` file.
 
-In local Studio, saves go back to the selected `.dgm` file. Look at the file in your editor to review its source and saved visual decisions. [Using Studio](../studio/) explains file selection and save conflicts.
+[Using Studio](../studio/) shows the editor and explains its visual controls and save behavior.
 
-`dgm init` and `dgm studio` are optional shorthand forms. Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).
+## Command reference
+
+| Command | What it does |
+| --- | --- |
+| `dumbdiagrams init` | Create a project folder with agent guidance and a diagram workspace. |
+| `dumbdiagrams studio` | Start the local editor, then use **Open** to choose a `.dgm` file. |
+| `dumbdiagrams validate <file.dgm>` | Parse and fully validate a diagram. Use `-` to read from standard input. |
+| `dumbdiagrams format <file.dgm>` | Print canonical source. Add `--check` to verify formatting or `--write` to update the file. |
+| `dumbdiagrams render <file.dgm> -o diagram.svg` | Render a portable SVG. Omit `-o` to write it to standard output. |
+| `dumbdiagrams --help` | Show command help. Use `--version` to print the installed version. |
+
+Every command also works with the `dgm` alias. Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).

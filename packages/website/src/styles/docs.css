@@ -50,10 +50,16 @@
   .prose table { width: 100%; border-collapse: collapse; font-size: 11px; display: block; overflow-x: auto; }
   .prose th, .prose td { text-align: left; border-bottom: 1px solid var(--line); padding: 11px 12px; vertical-align: top; }
   .prose th { color: var(--ink); background: var(--brand-navy-soft); font-weight: 650; }
-  .prose img { width: 100%; border: 1px solid var(--line); background: #fffefa; }
+  .prose img { width: 100%; height: auto; border: 1px solid var(--line); background: #fffefa; }
   .prose figure { margin: 0 0 26px; }
   .prose figure img { display: block; }
   .prose figcaption { margin-top: 8px; color: var(--muted); font-size: 11px; line-height: 1.65; }
+  .studio-overview img { border-radius: 6px; }
+  .studio-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; margin: 0 0 26px; }
+  .prose .studio-detail-grid figure { min-width: 0; margin: 0; }
+  .studio-detail-grid figure:last-child { grid-column: 1 / -1; width: calc(50% - 7px); justify-self: center; }
+  .studio-detail-grid img { display: block; width: 100%; border-radius: 6px; }
+  .studio-detail-grid figcaption { text-align: center; }
   .docs-toc > span { font-size: 8px; letter-spacing: .06em; }
   .docs-toc nav { margin: 15px 0 24px; display: grid; gap: 12px; border-left: 1px solid var(--line); padding-left: 14px; }
   .docs-toc a { font-size: 10px; color: var(--muted); line-height: 1.7; }
@@ -109,6 +115,8 @@
     .doc-header > p { font-size: 15px; }
     .prose { font-size: 14px; }
     .prose pre { font-size: 10px; padding-left: 12px; }
+    .studio-detail-grid { grid-template-columns: 1fr; gap: 22px; }
+    .studio-detail-grid figure:last-child { grid-column: auto; width: 100%; }
     .doc-pagination { gap: 12px; }
     .doc-pagination > a { padding: 13px; }
     .not-found h1 { font-size: 50px; }

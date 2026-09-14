@@ -16,6 +16,9 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 
+  --studio-chrome-height: 96px;
+  --tool-rail-width: 48px;
+
   /* Brand palette and fonts come from @dumb-diagrams/brand. */
 
   --ink: var(--brand-navy);
@@ -714,6 +717,22 @@ textarea:focus-visible {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+@keyframes drawer-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+.floating-panel.drawer-sheet.is-closing:not(.edge-sheet) {
+  pointer-events: none;
+  animation: drawer-out-left 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .floating-panel-header {
@@ -1641,7 +1660,7 @@ textarea:focus-visible {
 }
 
 .tool-dock {
-  padding: 7px;
+  padding: 4px;
   border-color: color-mix(in srgb, var(--line-strong) 72%, transparent);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
 }
@@ -3409,8 +3428,11 @@ textarea:focus-visible {
 }
 
 .tool-dock {
-  top: 52px;
+  top: var(--studio-chrome-height);
   left: 0;
+  width: var(--tool-rail-width);
+  height: calc(100% - var(--studio-chrome-height));
+  box-sizing: border-box;
   border-width: 0 1px 0 0;
   border-radius: 0;
   background: var(--surface-solid);
@@ -3424,9 +3446,9 @@ textarea:focus-visible {
 }
 
 .floating-panel.drawer-sheet {
-  top: 52px;
-  left: 48px;
-  height: calc(100% - 52px);
+  top: var(--studio-chrome-height);
+  left: var(--tool-rail-width);
+  height: calc(100% - var(--studio-chrome-height));
   max-height: none;
   border-radius: 0;
 }
@@ -3701,9 +3723,9 @@ textarea:focus-visible {
 }
 
 .floating-panel.drawer-sheet {
-  top: 52px;
+  top: var(--studio-chrome-height);
   right: auto;
-  left: 48px;
+  left: var(--tool-rail-width);
   border-top: 0;
   border-right: 1px solid var(--line);
   border-bottom: 0;
@@ -3714,7 +3736,7 @@ textarea:focus-visible {
 
 .floating-panel.drawer-sheet,
 .floating-panel.inspector-sheet {
-  height: calc(100% - 52px);
+  height: calc(100% - var(--studio-chrome-height));
   max-height: none;
   min-height: 0;
 }
@@ -3742,7 +3764,7 @@ textarea:focus-visible {
 @media (max-width: 900px) {
   .floating-panel.drawer-sheet {
     right: auto;
-    left: 48px;
+    left: var(--tool-rail-width);
     width: min(100%, 420px) !important;
     border-right: 1px solid var(--line);
     border-left: 0;
@@ -5435,12 +5457,12 @@ textarea:focus-visible {
 }
 
 .tool-dock {
-  top: 112px;
+  top: var(--studio-chrome-height);
 }
 
 .floating-panel.drawer-sheet,
 .floating-panel.inspector-sheet {
-  top: 156px;
+  top: var(--studio-chrome-height);
 }
 
 /* Chrome-like document strip: tabs own the top edge, app actions live on the right. */
@@ -6251,7 +6273,7 @@ textarea:focus-visible {
 .tool-dock,
 .floating-panel.drawer-sheet,
 .floating-panel.inspector-sheet {
-  top: 120px;
+  top: var(--studio-chrome-height);
 }
 
 /* Compact confirmation dialogs keep the decision hierarchy calm and deliberate. */
@@ -6422,21 +6444,21 @@ textarea:focus-visible {
 .floating-panel.drawer-sheet,
 .floating-panel.inspector-sheet,
 .floating-panel.edge-sheet {
-  top: 120px;
+  top: var(--studio-chrome-height);
 }
 
 .floating-panel.drawer-sheet,
 .floating-panel.inspector-sheet {
-  height: calc(100% - 120px);
+  height: calc(100% - var(--studio-chrome-height));
 }
 
 .floating-panel.edge-sheet {
-  max-height: calc(100% - 120px);
+  max-height: calc(100% - var(--studio-chrome-height));
 }
 
 .floating-panel.drawer-sheet.edge-sheet {
-  top: 120px;
-  max-height: calc(100% - 120px);
+  top: var(--studio-chrome-height);
+  max-height: calc(100% - var(--studio-chrome-height));
 }
 
 .floating-panel.edge-sheet .floating-panel-body {
@@ -7433,11 +7455,17 @@ textarea:focus-visible {
  * canvas stays interactive wherever the drawer is not covering it. */
 .tool-dock,
 .floating-panel.drawer-sheet:not(.edge-sheet) {
-  top: 96px;
+  top: var(--studio-chrome-height);
+}
+
+.tool-dock {
+  width: var(--tool-rail-width);
+  height: calc(100% - var(--studio-chrome-height));
 }
 
 .floating-panel.drawer-sheet:not(.edge-sheet) {
-  height: calc(100% - 96px);
+  left: var(--tool-rail-width);
+  height: calc(100% - var(--studio-chrome-height));
 }
 
 @media (max-width: 900px) {

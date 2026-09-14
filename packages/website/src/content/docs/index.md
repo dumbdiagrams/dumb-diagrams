@@ -30,6 +30,6 @@ Keeping architecture in version-controlled text makes it easy for people and cod
 | Work on the visual identity or interface | [Brand and interface](./design-system/) |
 | Understand what happens inside the engine | [How the engine works](./how-it-works/) |
 
-Nested cloud boundaries, service icons, numbered request paths, and right-angle connectors are part of the diagram model. AWS is the first-class provider path. Azure, Google Cloud, and cloud-agnostic authoring are experimental: they use their own catalog icons while currently sharing AWS composition, layout, and routing conventions.
+AWS is the most mature provider path. Azure, Google Cloud, and cloud-agnostic diagrams are available but still experimental.
 
-Dumb Diagrams is a local architecture editor, not a freeform illustration tool, a live cloud inventory, or a hosted collaborative whiteboard. It is designed for desktop use; around 1280 pixels wide is a comfortable starting point. Automatic layout is a first pass, so dense diagrams may still need a human decision about a connector. Studio provides manual routes for those cases.
+Dumb Diagrams is a local architecture editor, not a freeform illustration tool, live cloud inventory, or hosted whiteboard. Automatic layout gives you a first pass; Studio is where you make the final visual decisions.
