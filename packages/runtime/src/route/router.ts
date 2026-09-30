@@ -71,6 +71,7 @@ const LABEL_CONTENT_CLEARANCE = 4;
 const LABEL_TO_LABEL_CLEARANCE = 6;
 const LABEL_TO_CONNECTOR_CLEARANCE = 4;
 const LABEL_COLLISION_COST = 10_000_000;
+const LABEL_OWNERSHIP_COST_PER_UNIT = 1_000;
 // Four-bend candidates combine one vertical and one horizontal corridor. A
 // dense diagram can expose dozens of each, and trying their full Cartesian
 // product for every port pair makes routing grow explosively. Single-corridor
@@ -2848,8 +2849,8 @@ function getEdgeLabelPlacement(
   const usefulSegments = [...segments]
     .filter((segment) => segment.len >= Math.max(MINIMUM_BADGE_RUN, textW / 2))
     .sort((a, b) => b.len - a.len || a.index - b.index);
-  // Probe long runs densely enough to find a nearby clear pocket before
-  // increasing the perpendicular clearance and visually detaching the label.
+  // Probe long runs densely enough to find a clear pocket while keeping the
+  // same perpendicular gap as an explicitly placed or dragged label.
   const candidateTs = [...new Set([
     t,
     clamp01(t + tStep),
@@ -2866,7 +2867,7 @@ function getEdgeLabelPlacement(
       0.875,
     ].map((offset) => (segment.start + segment.len * offset) / total)),
   ])];
-  const candidates: EdgeLabelPlacement[] = [];
+  const candidates: Array<{ candidate: EdgeLabelPlacement; attached: boolean }> = [];
 
   for (const candidateT of candidateTs) {
     const candidateProjection = pointAtPath(segments, total, candidateT);
@@ -2883,25 +2884,25 @@ function getEdgeLabelPlacement(
       const baseClearance = candidateHorizontal
         ? side === "top" ? 8 : 20
         : textW / 2 + 12;
-      // A connector label should remain visually attached to its line. Prefer
-      // another point along the route over pushing the copy into a remote,
-      // seemingly unrelated lane.
       for (const extra of [0, 16, 32]) {
-        candidates.push(labelPlacementAt(
-          candidateProjection,
-          textW,
-          side,
-          candidateT,
-          baseClearance + extra,
-        ));
+        candidates.push({
+          candidate: labelPlacementAt(
+            candidateProjection,
+            textW,
+            side,
+            candidateT,
+            baseClearance + extra,
+          ),
+          attached: extra === 0,
+        });
       }
     }
   }
 
-  let best = candidates[0];
-  let bestScore = Infinity;
-  for (const candidate of candidates) {
-    const score = labelCollisionScore(
+  const scored = candidates.map(({ candidate, attached }) => ({
+    candidate,
+    attached,
+    score: labelCollisionScore(
       candidate,
       t,
       preferredSide,
@@ -2909,7 +2910,15 @@ function getEdgeLabelPlacement(
       otherEdges,
       allBadges,
       occupiedLabels,
-    );
+      points,
+    ),
+  }));
+  // Prefer the drag gap when it avoids content; expand only as a last resort.
+  const attached = scored.filter((entry) => entry.attached && entry.score < LABEL_COLLISION_COST);
+  const eligible = attached.length ? attached : scored;
+  let best = eligible[0]?.candidate;
+  let bestScore = Infinity;
+  for (const { candidate, score } of eligible) {
     if (score < bestScore) {
       best = candidate;
       bestScore = score;
@@ -2926,6 +2935,7 @@ function labelCollisionScore(
   otherEdges: RoutedEdge[],
   badges: EdgeBadgePlacement[],
   occupiedLabels: Rect[],
+  ownRoute: Point[],
 ): number {
   let score = Math.abs(candidate.t - preferredT) * 1_000;
   if (candidate.side !== preferredSide) score += 20;
@@ -2955,7 +2965,17 @@ function labelCollisionScore(
     }
   }
   const inflatedLabel = inflate(candidate.rect, LABEL_TO_CONNECTOR_CLEARANCE);
+  // Even the standard gap can be closer to a tightly parallel connector.
+  // Prefer the owning side/segment over a misleading nearby route.
+  const ownDistance = distanceToPolyline(candidate.point, ownRoute);
   for (const edge of otherEdges) {
+    const foreignDistance = distanceToPolyline(candidate.point, edge.points);
+    const nearForeignJunction = distanceToPolyline(candidate.anchor, edge.points) <=
+      LABEL_TO_CONNECTOR_CLEARANCE;
+    if (!nearForeignJunction && foreignDistance + LABEL_TO_CONNECTOR_CLEARANCE < ownDistance) {
+      score += (ownDistance - foreignDistance - LABEL_TO_CONNECTOR_CLEARANCE) *
+        LABEL_OWNERSHIP_COST_PER_UNIT;
+    }
     for (let index = 0; index < edge.points.length - 1; index++) {
       if (segmentHits(edge.points[index]!, edge.points[index + 1]!, inflatedLabel)) {
         // Crossing copy is a soft placement cost. Keep it below the cost of

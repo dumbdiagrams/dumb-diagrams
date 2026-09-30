@@ -24,6 +24,53 @@ import {
 } from "./router.js";
 
 describe("routeEdgePreview", () => {
+  it.each([
+    { name: "crowded parallel route", label: "call API", headerWidth: 120, maxGap: 52 },
+    { name: "parallel route with a clear nearby pocket", label: "call", headerWidth: 70, maxGap: 20 },
+  ])("keeps automatic labels attached to their owner beside a $name", ({ label, headerWidth, maxGap }) => {
+    const doc = createEmptyDocument("parallel-label-ownership");
+    doc.resources = [
+      routingResource("actor", "generic.client", "Actor"),
+      routingResource("api", "generic.server", "API"),
+      routingResource("s3", "generic.server", "S3"),
+    ];
+    doc.edges = [
+      { id: "actor_api", source: "actor", target: "api", label, style: "solid", kind: "flow" },
+      { id: "actor_s3", source: "actor", target: "s3", label: "a very long storage label", style: "solid", kind: "flow" },
+    ];
+    doc.views[0]!.routes.actor_api = { pin: true, mode: "manual", points: [{ x: 120, y: 397 }, { x: 220, y: 397 }] };
+    doc.views[0]!.routes.actor_s3 = { pin: true, mode: "manual", points: [{ x: 120, y: 359 }, { x: 220, y: 359 }], labelT: 0.5, labelSide: "bottom" };
+    const layout: LayoutResult = {
+      nodes: [routingNode("actor", 72, 373, 48), routingNode("api", 220, 373, 48), routingNode("s3", 220, 335, 48)],
+      groups: [{
+        id: "storage",
+        kind: "region",
+        bounds: { x: 100, y: 400, w: headerWidth, h: 80 },
+        header: { x: 100, y: 400, w: headerWidth, h: 24 },
+        content: { x: 100, y: 424, w: headerWidth, h: 56 },
+        label: "Storage",
+        labelRect: { x: 100, y: 407, w: headerWidth, h: 14 },
+      }],
+      edges: [], width: 420, height: 500, symmetries: [],
+    };
+    const routes = routeEdges(doc, layout);
+    const own = routes.find((edge) => edge.id === "actor_api")!;
+    const foreign = routes.find((edge) => edge.id === "actor_s3")!;
+
+    expect(own.labelPoint).toBeDefined();
+    expect(distanceToPath(own.labelPoint!, own.points)).toBeLessThanOrEqual(maxGap);
+    expect(distanceToPath(own.labelPoint!, own.points))
+      .toBeLessThan(distanceToPath(own.labelPoint!, foreign.points));
+    if (maxGap === 20) {
+      // A clear pocket uses the drag preview's gap, avoiding an initial snap.
+      expect(own.labelPoint).toEqual(getEdgeLabelPlacementOnPath(
+        own.points,
+        own.label!,
+        own.labelT!,
+        own.labelSide!,
+      )?.point);
+    }
+  });
   it("routes blocked edges with an emergency elbow instead of throwing", () => {
     const doc = createEmptyDocument("blocked-edge");
     doc.resources = [
