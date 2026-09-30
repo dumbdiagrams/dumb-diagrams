@@ -20,11 +20,11 @@ describe("render assets", () => {
       intrinsicH: 12,
     }];
 
-    expect(resolveResourceIcon(doc, "generic.user", { iconAsset: "custom&icon" })).toMatchObject({
+    expect(resolveResourceIcon(doc, "cloud-agnostic.actor", { iconAsset: "custom&icon" })).toMatchObject({
       kind: "asset",
       assetId: "custom&icon",
     });
-    expect(resolveResourceIcon(doc, "generic.user", { iconAsset: "missing" }).kind).toBe("catalog");
+    expect(resolveResourceIcon(doc, "cloud-agnostic.actor", { iconAsset: "missing" }).kind).toBe("catalog");
     expect(resolveResourceIcon(doc, "unknown.type", {}).kind).toBe("none");
   });
 
@@ -47,7 +47,7 @@ describe("render assets", () => {
   });
 
   it("inlines each known catalog icon once and skips data or unknown URLs", async () => {
-    const entry = getCatalogEntry("generic.user")!;
+    const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const loader = vi.fn(async () => '<svg viewBox="0 0 16 16"><path d="M0 0"/></svg>');
     const svg = `<svg><image href="${entry.browserPath}"/><image href="${entry.browserPath}"/><image href="data:image/svg+xml,already"/><image href="catalog-icons/unknown.svg"/></svg>`;
 
@@ -60,7 +60,7 @@ describe("render assets", () => {
   });
 
   it("rejects malformed or unsafe catalog icon responses", async () => {
-    const entry = getCatalogEntry("generic.user")!;
+    const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const href = `<svg><image href="${entry.browserPath}"/></svg>`;
 
     await expect(inlineCatalogIcons(href, {
@@ -72,7 +72,7 @@ describe("render assets", () => {
   });
 
   it("uses the default fetch loader for browser catalog paths", async () => {
-    const entry = getCatalogEntry("generic.user")!;
+    const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const fetchMock = vi.fn(async () => ({
       ok: true,
       text: async () => '<svg viewBox="0 0 16 16"><path d="M0 0"/></svg>',
@@ -89,7 +89,7 @@ describe("render assets", () => {
   });
 
   it("reports unavailable and failed default loaders clearly", async () => {
-    const entry = getCatalogEntry("generic.user")!;
+    const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const svg = `<svg><image href="${entry.browserPath}"/></svg>`;
 
     vi.stubGlobal("fetch", undefined);

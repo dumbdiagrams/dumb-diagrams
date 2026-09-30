@@ -52,13 +52,7 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
-    // Legacy generic glyphs remain resolvable but are intentionally absent
-    // from the agent/Studio-facing catalog. `cloud-agnostic.boundary` is the
-    // only general-purpose logical container exposed for new diagrams.
-    excluded: [
-      "assets/catalog/sources/cloud-agnostic/custom.svg",
-      "assets/catalog/sources/cloud-agnostic/logical.svg",
-    ],
+    excluded: [],
   },
 ] as const;
 
@@ -144,7 +138,6 @@ describe("catalog icon previews", () => {
           (entry) =>
             entry.provider === provider &&
             catalogKinds.has(entry.assetKind) &&
-            entry.canonical !== false &&
             entry.browsable !== false,
         )
         .map((entry) => entry.iconPath)
@@ -159,7 +152,7 @@ describe("catalog icon previews", () => {
     const assetsBySourceId = new Map(manifest.assetFiles.map((asset) => [asset.sourceId, asset]));
     const problems: string[] = [];
     for (const entry of manifest.entries) {
-      if (entry.canonical === false || entry.browsable === false) continue;
+      if (entry.browsable === false) continue;
       const asset = assetsBySourceId.get(entry.icon.sourceId);
       if (!asset) {
         problems.push(`${entry.type} -> missing asset record`);

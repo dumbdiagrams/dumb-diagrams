@@ -8,7 +8,7 @@ describe("assets round-trip", () => {
   grammar aws
   flow lr
 
-  generic.custom box "Custom" { icon logo1 }
+  cloud-agnostic.server box "Custom" { icon logo1 }
 }
 
 assets {

@@ -21,7 +21,7 @@ const FLAT_CLOUD_BRANCH = `diagram autofix-branch {
   grammar aws
   flow lr
 
-  generic.client client "Client"
+  cloud-agnostic.client client "Client"
   aws.cloud aws_cloud "AWS Cloud" {
     aws.cloudfront cloudfront "CloudFront"
     aws.api-gateway api_gateway "API Gateway"
@@ -74,8 +74,8 @@ describe("planAutoFix", () => {
   it("reuses the supplied baseline and winning compilation without changing the fix", () => {
     const doc = parseDgm(`diagram small_overlap {
   grammar aws
-  generic.custom api "API"
-  generic.custom db "Database"
+  cloud-agnostic.server api "API"
+  cloud-agnostic.server db "Database"
   api -> db
 }`);
     const view = getDefaultView(doc);

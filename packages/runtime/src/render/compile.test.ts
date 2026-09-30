@@ -319,7 +319,7 @@ describe("async-docs fixture", () => {
         label: { x: 20, y: 92, w: 88, h: 20 },
         obstacle: { x: 20, y: 40, w: 88, h: 72 },
         role: "primary",
-        resourceType: "generic.server",
+        resourceType: "cloud-agnostic.server",
         serviceLabel: "Service",
       }],
       groups: [],
@@ -536,8 +536,8 @@ describe("async-docs fixture", () => {
   it("reports overlapping manually pinned root resources", () => {
     const doc = parseDgm(`diagram overlapping_roots {
   grammar aws
-  generic.custom api "API"
-  generic.custom db "Database"
+  cloud-agnostic.server api "API"
+  cloud-agnostic.server db "Database"
 }`);
     const view = getDefaultView(doc);
     view.places.api = { x: 160, y: 160, pin: true, manual: true };

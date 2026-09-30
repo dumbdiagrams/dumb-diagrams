@@ -3,7 +3,7 @@ diagram aws-high-availability-web-app {
   flow lr
   title "Highly available AWS web application"
 
-  generic.client browser "Web client"
+  cloud-agnostic.client browser "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary public_edge "Frontend services" {

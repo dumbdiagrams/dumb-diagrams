@@ -12,7 +12,7 @@ import { findDiagramRoots, isEmptyRootBoundary, orderRootsForFlow } from "./root
 function resource(id: string, parent?: string): Resource {
   return {
     id,
-    type: "aws.lambda",
+    type: "aws.aws-lambda",
     parent,
     label: { service: id },
     role: "primary",
@@ -475,7 +475,7 @@ describe("flat cloud flow layout", () => {
   grammar aws
   flow lr
 
-  generic.client client "Client"
+  cloud-agnostic.client client "Client"
   aws.cloud aws_cloud "AWS Cloud" {
     aws.cloudfront cloudfront "CloudFront"
     aws.api-gateway api_gateway "API Gateway"

@@ -7,7 +7,7 @@ test("a modal owns keyboard input without changing the diagram behind it", async
   await page.locator('input[type="file"]').setInputFiles({
     name: "modal-keyboard.dgm",
     mimeType: "text/plain",
-    buffer: Buffer.from('diagram modal-keyboard { grammar aws generic.user client "Client" }'),
+    buffer: Buffer.from('diagram modal-keyboard { grammar aws cloud-agnostic.actor client "Client" }'),
   });
   await waitForStudioReady(page);
   const resource = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');

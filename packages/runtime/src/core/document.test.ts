@@ -16,7 +16,7 @@ describe("document helpers", () => {
     const doc = createEmptyDocument("helpers");
     doc.resources = [{
       id: "resource",
-      type: "generic.user",
+      type: "cloud-agnostic.actor",
       label: { role: "User" },
       role: "primary",
       props: {},

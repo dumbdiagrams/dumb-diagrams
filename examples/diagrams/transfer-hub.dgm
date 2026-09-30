@@ -2,10 +2,10 @@ diagram transfer-hub {
   grammar aws
   flow lr
 
-  generic.user user
+  cloud-agnostic.actor user
   aws.cloud cloud "AWS Cloud" {
     aws.account customer "Customer's AWS Account" {
-      generic.client ui
+      cloud-agnostic.client ui
       cloud-agnostic.boundary auth "Authentication" { aws.cognito cognito }
       aws.aws-appsync appsync
       aws.cloudfront cloudfront

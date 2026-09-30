@@ -14,7 +14,7 @@ diagram website_stack {
     aws.api-gateway endpoint "HTTP API"
   }
 
-  generic.client browser "Browser"
+  cloud-agnostic.client browser "Browser"
 
   browser -> delivery
   delivery -> bucket { label "static content" }

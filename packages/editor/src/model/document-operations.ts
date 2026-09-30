@@ -31,7 +31,7 @@ export function addCustomResourceResult(
   const id = uniqueId(next, "custom");
   next.resources.push({
     id,
-    type: getCatalogEntry("generic.custom")?.type ?? "generic.custom",
+    type: getCatalogEntry("cloud-agnostic.server")?.type ?? "cloud-agnostic.server",
     parent,
     label: { role: label },
     role: "primary",

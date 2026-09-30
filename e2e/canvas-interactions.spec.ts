@@ -578,7 +578,7 @@ test("moves a group when dragging from its empty center", async ({ page }) => {
   flow lr
 
   aws.cloud cloud "Cloud" {
-    cloud-agnostic.boundary group "Group" { aws.s3 bucket "Bucket" }
+    cloud-agnostic.boundary group "Group" { aws.simple-storage-service bucket "Bucket" }
   }
 }
 

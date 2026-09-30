@@ -79,9 +79,9 @@ function compilableDocument(grouped = false): DiagramDocument {
   const doc = createEmptyDocument("compiled-preservation");
   doc.flow = "lr";
   doc.resources = [
-    { id: "source", type: "generic.user", label: { service: "Source" }, role: "primary", props: {}, ...(grouped ? { parent: "services" } : {}) },
-    { id: "target", type: "generic.server", label: { service: "Target" }, role: "primary", props: {}, ...(grouped ? { parent: "services" } : {}) },
-    { id: "other", type: "generic.database", label: { service: "Other" }, role: "primary", props: {} },
+    { id: "source", type: "cloud-agnostic.actor", label: { service: "Source" }, role: "primary", props: {}, ...(grouped ? { parent: "services" } : {}) },
+    { id: "target", type: "cloud-agnostic.server", label: { service: "Target" }, role: "primary", props: {}, ...(grouped ? { parent: "services" } : {}) },
+    { id: "other", type: "cloud-agnostic.database", label: { service: "Other" }, role: "primary", props: {} },
   ];
   if (grouped) {
     doc.groups = [{ id: "services", kind: "logical", label: "Services", children: ["source", "target"] }];

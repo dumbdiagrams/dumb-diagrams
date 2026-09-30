@@ -45,7 +45,7 @@ test("surfaces validation-invalid source and disables save and rendered export",
   await waitForStudioReady(page);
   await replaceSource(page, `diagram invalid-edge {
   grammar aws
-  generic.user client
+  cloud-agnostic.actor client
   client -> missing { id e1 kind flow }
 }
 `);
@@ -77,7 +77,7 @@ test("valid source edits sync to the canvas and survive reload", async ({ page }
 
 for (const [kind, draft] of [
   ["syntax", "diagram unfinished { grammar aws"],
-  ["validation", "diagram unfinished { grammar aws generic.user client client -> missing { id e1 kind flow } }"],
+  ["validation", "diagram unfinished { grammar aws cloud-agnostic.actor client client -> missing { id e1 kind flow } }"],
 ]) {
   test(`recovers the only tab with a ${kind}-invalid draft`, async ({ page }) => {
     await page.goto("/");

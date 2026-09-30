@@ -3,7 +3,7 @@ diagram event-driven-order-fulfillment {
   flow lr
   title "Event-driven order fulfillment"
 
-  generic.user customer "Customer"
+  cloud-agnostic.actor customer "Customer"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary customer_experience "Customer experience" {

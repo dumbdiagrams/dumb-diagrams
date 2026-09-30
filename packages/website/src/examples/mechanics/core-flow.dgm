@@ -3,10 +3,10 @@ diagram core_flow {
   flow lr
   title "Request to durable storage"
 
-  generic.user client "Client"
-  generic.custom api "API"
-  generic.custom worker "Worker"
-  generic.custom storage "Storage"
+  cloud-agnostic.actor client "Client"
+  cloud-agnostic.server api "API"
+  cloud-agnostic.server worker "Worker"
+  cloud-agnostic.server storage "Storage"
 
   client -> api { id request label "request" }
   api -> worker { id dispatch label "dispatch" }

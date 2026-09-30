@@ -146,7 +146,7 @@ function formatFailure(failure) {
 function runFanoutStress(createEmptyDocument, layoutDocument, routeEdges) {
   const doc = createEmptyDocument("routing-budget-stress");
   doc.flow = "lr";
-  doc.resources = Array.from({ length: 500 }, (_, index) => ({ id: `resource${index}`, type: "generic.user", label: { service: `Resource ${index}` }, role: "primary", props: {} }));
+  doc.resources = Array.from({ length: 500 }, (_, index) => ({ id: `resource${index}`, type: "cloud-agnostic.actor", label: { service: `Resource ${index}` }, role: "primary", props: {} }));
   doc.edges = Array.from({ length: 499 }, (_, index) => ({ id: `edge${index}`, source: "resource0", target: `resource${index + 1}`, style: "solid", kind: "flow" }));
   let diagnostics;
   const start = performance.now();

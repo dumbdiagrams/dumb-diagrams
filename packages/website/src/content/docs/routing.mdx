@@ -39,8 +39,8 @@ In Studio, moving an icon redraws only the connections attached to it, using the
 diagram port_strength {
   grammar aws
   flow lr
-  generic.user client "Client"
-  generic.custom api "API"
+  cloud-agnostic.actor client "Client"
+  cloud-agnostic.server api "API"
   client -> api { id preferred from e to w }
   api -> client { id fixed from w offset 0.25 to e offset 0.75 style dashed }
 }

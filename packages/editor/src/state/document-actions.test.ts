@@ -49,8 +49,8 @@ describe("document action preparation", () => {
   it("keeps a canvas edit exactly where it was placed instead of repairing it", () => {
     const source = `diagram small_overlap {
       grammar aws
-      generic.custom api "API"
-      generic.custom db "Database"
+      cloud-agnostic.server api "API"
+      cloud-agnostic.server db "Database"
       api -> db
     }`;
     const result = prepareDocumentMutation(source, (doc) =>
@@ -104,7 +104,7 @@ describe("document action preparation", () => {
   it("leaves a gesture drop's compile to the display worker but still validates it", () => {
     const source = `diagram deferred_drop {
       grammar aws
-      generic.custom api "API"
+      cloud-agnostic.server api "API"
     }`;
     const moved = prepareDocumentMutation(source, (doc) => setPlace(doc, "api", 240, 96), true, true);
     expect(moved.isOk() && getCachedDiagramCompilation(moved.value.source, true)).toBeUndefined();

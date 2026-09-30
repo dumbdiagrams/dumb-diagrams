@@ -126,13 +126,7 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
-    // Legacy generic glyphs remain resolvable but are intentionally hidden
-    // from the agent/Studio-facing catalog. They are not catalog items for
-    // source/catalog inventory purposes.
-    excluded: new Set([
-      "assets/catalog/sources/cloud-agnostic/custom.svg",
-      "assets/catalog/sources/cloud-agnostic/logical.svg",
-    ]),
+    excluded: new Set(),
   },
 ];
 
@@ -208,7 +202,6 @@ async function check() {
           (entry) =>
             entry.provider === library.provider &&
             library.kinds.includes(entry.assetKind) &&
-            entry.canonical !== false &&
             entry.browsable !== false,
         )
         .map((entry) => entry.iconPath)
@@ -267,7 +260,7 @@ async function check() {
     browserPaths.set(asset.browserPath, asset.sourceId);
   }
   for (const entry of manifest.entries) {
-    if (entry.canonical === false || entry.browsable === false) continue;
+    if (entry.browsable === false) continue;
     const asset = assetsBySourceId.get(entry.icon?.sourceId);
     if (!asset) {
       console.error(`entry has no staged asset record: ${entry.type}`);

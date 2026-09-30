@@ -10,7 +10,7 @@ const INSIDE_CLOUD = `diagram crossed-fanout {
   grammar aws
   flow lr
   aws.cloud aws_cloud "AWS Cloud" {
-    generic.client client "Client"
+    cloud-agnostic.client client "Client"
     aws.cloudfront cloudfront
     aws.api-gateway api-gateway
     aws.simple-storage-service simple-storage-service

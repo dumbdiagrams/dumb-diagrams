@@ -71,7 +71,7 @@ describe("diagram compilation canvas bounds", () => {
     doc.flow = "lr";
     doc.resources = Array.from({ length: 10 }, (_, index) => ({
       id: `resource${index}`,
-      type: "generic.user",
+      type: "cloud-agnostic.actor",
       label: { service: `Resource ${index}` },
       role: "primary" as const,
       props: {},
@@ -109,14 +109,14 @@ describe("diagram compilation canvas bounds", () => {
     doc.resources = [
       {
         id: "source",
-        type: "generic.user",
+        type: "cloud-agnostic.actor",
         label: { service: "Source" },
         role: "primary",
         props: {},
       },
       {
         id: "target",
-        type: "generic.user",
+        type: "cloud-agnostic.actor",
         label: { service: "Target" },
         role: "primary",
         props: {},

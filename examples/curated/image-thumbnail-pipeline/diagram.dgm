@@ -3,7 +3,7 @@ diagram image-thumbnail-pipeline {
   flow lr
   title "Image thumbnail pipeline"
 
-  generic.client image_uploader "Image uploader"
+  cloud-agnostic.client image_uploader "Image uploader"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary upload_experience "Upload experience" {

@@ -20,8 +20,8 @@ Start with automatic layout. When you need a particular arrangement, save a posi
 diagram placement_example {
   grammar aws
   flow lr
-  generic.user client "Client"
-  generic.custom api "Public API"
+  cloud-agnostic.actor client "Client"
+  cloud-agnostic.server api "Public API"
   client -> api { id request label "request" }
 }
 view default {

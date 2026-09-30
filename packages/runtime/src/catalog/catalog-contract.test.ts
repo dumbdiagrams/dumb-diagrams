@@ -20,10 +20,11 @@ describe("canonical catalog contract", () => {
     expect(manifest.entries.filter((entry) => entry.provider === "azure")).toHaveLength(720);
   });
 
-  it("exposes four libraries and keeps legacy provider names as lookup aliases", () => {
+  it("exposes four libraries and no pre-release type names", () => {
     expect(listProviders()).toEqual(["aws", "azure", "gcp", "cloud-agnostic"]);
-    expect(getCatalogEntry("generic.user")?.provider).toBe("cloud-agnostic");
-    expect(getCatalogEntry("neutral.region")?.groupKind).toBe("region");
+    for (const legacy of ["generic.user", "neutral.region", "aws.lambda", "cloud-agnostic.logical"]) {
+      expect(getCatalogEntry(legacy)).toBeUndefined();
+    }
   });
 
   it("keeps cloud-agnostic groups distinct from similarly named resources", () => {
@@ -37,11 +38,6 @@ describe("canonical catalog contract", () => {
     expect(getCatalogEntry("cloud-agnostic.cloud-resource")).toMatchObject({
       assetKind: "resource",
       name: "Cloud Resource",
-    });
-    expect(getCatalogEntry("cloud-agnostic.logical")).toMatchObject({
-      assetKind: "group",
-      groupKind: "logical",
-      browsable: false,
     });
   });
 
@@ -57,7 +53,6 @@ describe("canonical catalog contract", () => {
       "cloud-agnostic.cluster": "#879196",
       "cloud-agnostic.datacenter": "#879196",
       "cloud-agnostic.boundary": "#879196",
-      "cloud-agnostic.logical": "#879196",
       "cloud-agnostic.trust-boundary": "#E7157B",
     };
 

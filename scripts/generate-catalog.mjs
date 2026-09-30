@@ -373,7 +373,6 @@ const CLOUD_GROUPS = [
     "assets/catalog/sources/cloud-agnostic/boundary.svg",
     "logical",
   ],
-  ["cloud-agnostic.logical", "Logical Group", "assets/catalog/sources/cloud-agnostic/logical.svg", "logical"],
   [
     "cloud-agnostic.trust-boundary",
     "Trust Boundary",
@@ -571,7 +570,6 @@ function entry({
     scope,
     column: column ?? CATEGORY_COLUMN[category ?? categories?.[0] ?? ""] ?? "edge",
     sizeTier: "primary",
-    canonical: true,
     browsable: true,
   };
 }
@@ -755,13 +753,13 @@ function cloudAgnosticEntries(used, collisionLog) {
     const file = join(ROOT, relativeIcon);
     if (used.has(type)) throw new Error(`Duplicate curated group type: ${type}`);
     used.add(type);
-    const group = entry({
+    return entry({
       type,
       provider: "cloud-agnostic",
       assetKind: "group",
       name,
       category: "Groups",
-      aliases: [name, type.replace("cloud-agnostic.", "neutral.")],
+      aliases: [name],
       file,
       specificity: "semantic-neutral",
       groupKind: kind,
@@ -771,11 +769,6 @@ function cloudAgnosticEntries(used, collisionLog) {
       allowRoot: type === "cloud-agnostic.boundary" || ["cloud", "account", "region"].includes(kind),
       scope: "global",
     });
-    // `cloud-agnostic.boundary` is the single general-purpose logical
-    // container exposed to Studio and generated project instructions. Keep
-    // the older logical type resolvable for compatibility without teaching it
-    // to agents or offering it as a second creation path.
-    return type === "cloud-agnostic.logical" ? { ...group, browsable: false } : group;
   });
   const resources = CLOUD_RESOURCES.map(([type, name, category, iconPath, aliases]) => {
     const file = join(ROOT, iconPath);
@@ -808,29 +801,6 @@ const entries = [
   ...gcpCuratedEntries(usedTypes, collisionLog),
 ];
 
-const legacyAliases = {
-  "generic.user": "cloud-agnostic.actor",
-  "generic.users": "cloud-agnostic.actor",
-  "generic.client": "cloud-agnostic.client",
-  "generic.mobile-client": "cloud-agnostic.client",
-  "generic.server": "cloud-agnostic.server",
-  "generic.database": "cloud-agnostic.database",
-  "generic.firewall": "cloud-agnostic.firewall",
-  "generic.custom": "cloud-agnostic.server",
-  "neutral.cloud": "cloud-agnostic.cloud",
-  "neutral.tenant": "cloud-agnostic.account",
-  "neutral.region": "cloud-agnostic.region",
-  "neutral.zone": "cloud-agnostic.zone",
-  "neutral.network": "cloud-agnostic.network",
-  "neutral.subnet": "cloud-agnostic.subnet",
-  "neutral.security-group": "cloud-agnostic.security-group",
-  "neutral.cluster": "cloud-agnostic.cluster",
-  "neutral.datacenter": "cloud-agnostic.datacenter",
-  "neutral.boundary": "cloud-agnostic.boundary",
-  "neutral.logical": "cloud-agnostic.logical",
-  "neutral.trust-boundary": "cloud-agnostic.trust-boundary",
-};
-
 const iconFiles = new Map();
 for (const item of entries.map((candidate) => candidate.icon)) {
   iconFiles.set(item.sourceId, item);
@@ -855,7 +825,6 @@ const manifest = {
   count: entries.length,
   sources: lock.sources.map((source) => source.provider),
   entries: entries.sort((a, b) => a.type.localeCompare(b.type)),
-  aliases: legacyAliases,
   collisions: collisionLog.sort((a, b) => a.resolvedType.localeCompare(b.resolvedType)),
   assetFiles,
 };
@@ -867,7 +836,7 @@ if (missing.length) {
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, `${JSON.stringify(manifest, null, 2)}\n`);
-const runtimeManifest = JSON.stringify({ aliases: legacyAliases, entries: manifest.entries });
+const runtimeManifest = JSON.stringify({ entries: manifest.entries });
 writeFileSync(
   RUNTIME_OUT,
   `const manifest = JSON.parse(${JSON.stringify(runtimeManifest)}) as {\n` +

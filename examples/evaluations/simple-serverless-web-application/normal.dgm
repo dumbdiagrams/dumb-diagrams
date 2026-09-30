@@ -3,7 +3,7 @@ diagram app_flow {
   flow lr
   title "AWS serverless site"
 
-  generic.client visitor "Visitor"
+  cloud-agnostic.client visitor "Visitor"
 
   aws.cloud aws "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {

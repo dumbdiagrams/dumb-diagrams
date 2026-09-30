@@ -90,7 +90,7 @@ diagram payments {
   flow lr
   title "Payments platform"
 
-  generic.user customer "Customer"
+  cloud-agnostic.actor customer "Customer"
   aws.region region "AWS Region" {
     aws.api-gateway api "Payments API"
     aws.aws-lambda handler "Payment handler"

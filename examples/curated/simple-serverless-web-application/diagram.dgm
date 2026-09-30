@@ -3,7 +3,7 @@ diagram simple-serverless-web-application {
   flow lr
   title "Simple serverless web application"
 
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {

@@ -31,9 +31,9 @@ describe("routeEdgePreview", () => {
   ])("keeps automatic labels attached to their owner beside a $name", ({ label, headerWidth, maxGap }) => {
     const doc = createEmptyDocument("parallel-label-ownership");
     doc.resources = [
-      routingResource("actor", "generic.client", "Actor"),
-      routingResource("api", "generic.server", "API"),
-      routingResource("s3", "generic.server", "S3"),
+      routingResource("actor", "cloud-agnostic.client", "Actor"),
+      routingResource("api", "cloud-agnostic.server", "API"),
+      routingResource("s3", "cloud-agnostic.server", "S3"),
     ];
     doc.edges = [
       { id: "actor_api", source: "actor", target: "api", label, style: "solid", kind: "flow" },
@@ -195,8 +195,8 @@ describe("routeEdgePreview", () => {
   it("moves an automatic badge around an independently authored label", () => {
     const doc = createEmptyDocument("shared-decoration-space");
     doc.resources = [
-      routingResource("source", "generic.client", "Source"),
-      routingResource("target", "generic.server", "Target"),
+      routingResource("source", "cloud-agnostic.client", "Source"),
+      routingResource("target", "cloud-agnostic.server", "Target"),
     ];
     doc.edges = [{
       id: "request",
@@ -277,7 +277,7 @@ describe("routeEdgePreview", () => {
   it("moves a later badge to the clear side instead of covering an earlier arrow", () => {
     const doc = createEmptyDocument("badge-clearance");
     doc.resources = [
-      routingResource("browser", "generic.client", "Browser"),
+      routingResource("browser", "cloud-agnostic.client", "Browser"),
       routingResource("dns", "aws.route-53", "Route 53"),
       routingResource("identity", "aws.cognito", "Identity"),
     ];
@@ -568,7 +568,7 @@ describe("routeEdgePreview", () => {
   it("rejects a face-only hint that would approach a target from the far side", () => {
     const doc = createEmptyDocument("short-side-routing");
     doc.resources = [
-      routingResource("source", "generic.client", "Source"),
+      routingResource("source", "cloud-agnostic.client", "Source"),
       routingResource("target", "azure.sql-database", "Target"),
     ];
     doc.edges = [{
@@ -600,7 +600,7 @@ describe("routeEdgePreview", () => {
   it("goes straight past a facing display label, otherwise attaching away from it", () => {
     const doc = createEmptyDocument("label-clearance");
     doc.resources = [
-      routingResource("source", "generic.client", "Source"),
+      routingResource("source", "cloud-agnostic.client", "Source"),
       routingResource("target", "aws.cognito", "Target"),
     ];
     doc.edges = [{
@@ -777,7 +777,7 @@ describe("routeEdgePreview", () => {
     doc.resources = [
       {
         id: "ecs",
-        type: "aws.ecs",
+        type: "aws.elastic-container-service",
         parent: "subnet",
         label: { service: "ECS", role: "Service" },
         role: "primary",
@@ -986,7 +986,7 @@ describe("routeEdgePreview", () => {
     doc.flow = "lr";
     doc.resources = Array.from({ length: 10 }, (_, index) => ({
       id: `resource${index}`,
-      type: "generic.user",
+      type: "cloud-agnostic.actor",
       label: { service: `Resource ${index}` },
       role: "primary" as const,
       props: {},
@@ -1212,7 +1212,7 @@ describe("routeEdgePreview", () => {
 
   it("preserves a manual endpoint already on the icon perimeter and reanchors it only after movement", () => {
     const doc = createEmptyDocument("manual-endpoint-stability");
-    doc.resources = [routingResource("source", "generic.server", "Source"), routingResource("target", "generic.server", "Target")];
+    doc.resources = [routingResource("source", "cloud-agnostic.server", "Source"), routingResource("target", "cloud-agnostic.server", "Target")];
     doc.edges = [{ id: "connection", source: "source", target: "target", style: "solid" }];
     const points = [{ x: 68, y: 46 }, { x: 220, y: 46 }];
     doc.views[0]!.routes.connection = { pin: true, mode: "manual", points };

@@ -499,7 +499,7 @@ describe("editor commands", () => {
           label: { x: 10, y: 74, w: 64, h: 24 },
           obstacle: { x: 10, y: 10, w: 64, h: 88 },
           role: "primary" as const,
-          resourceType: "generic.user",
+          resourceType: "cloud-agnostic.actor",
           serviceLabel: "Client",
         },
         {
@@ -509,7 +509,7 @@ describe("editor commands", () => {
           label: { x: 80, y: 104, w: 64, h: 24 },
           obstacle: { x: 80, y: 40, w: 64, h: 88 },
           role: "primary" as const,
-          resourceType: "aws.alb",
+          resourceType: "aws.elastic-load-balancing",
           serviceLabel: "ALB",
         },
       ],
@@ -838,7 +838,7 @@ describe("editor commands", () => {
   flow lr
   title "Simple serverless web application"
 
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {
@@ -897,7 +897,7 @@ describe("editor commands", () => {
     const doc = parseDgm(`diagram simple-serverless-web-application {
   grammar aws
   flow lr
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {
       aws.cloudfront cdn "Web delivery"
@@ -948,7 +948,7 @@ describe("editor commands", () => {
   grammar aws
   flow lr
   title "Image thumbnail pipeline"
-  generic.client image_uploader "Image uploader"
+  cloud-agnostic.client image_uploader "Image uploader"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary upload_experience "Upload experience" {
       aws.cloudfront cdn "Web delivery"
@@ -1014,7 +1014,7 @@ describe("editor commands", () => {
     const initialSource = `diagram image-thumbnail-pipeline {
   grammar aws
   flow lr
-  generic.client image_uploader "Image uploader"
+  cloud-agnostic.client image_uploader "Image uploader"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary upload_experience "Upload experience" {
       aws.cloudfront cdn "Web delivery"
@@ -1063,7 +1063,7 @@ describe("editor commands", () => {
     const doc = parseDgm(`diagram simple-serverless-web-application {
   grammar aws
   flow lr
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {
       aws.cloudfront cdn "Web delivery"
@@ -1087,7 +1087,7 @@ describe("editor commands", () => {
     const doc = parseDgm(`diagram simple-serverless-web-application {
   grammar aws
   flow lr
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
   aws.cloud aws_cloud "AWS Cloud" {
     aws.api-gateway gateway
   }
@@ -1154,7 +1154,7 @@ describe("editor commands", () => {
     const doc = parseDgm(`diagram simple-serverless-web-application {
   grammar aws
   flow lr
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {
       aws.cloudfront cdn "Web delivery"
@@ -1333,7 +1333,7 @@ describe("editor commands", () => {
     const doc = createAsyncDocsFixture();
     while (doc.resources.length < DIAGRAM_LIMITS.resources) {
       const id = `extra-${doc.resources.length}`;
-      doc.resources.push({ id, type: "generic.user", label: { role: id }, role: "primary", props: {} });
+      doc.resources.push({ id, type: "cloud-agnostic.actor", label: { role: id }, role: "primary", props: {} });
     }
     const source = createAsyncDocsFixture();
     const serialized = serializeClipboardResult(source, [{ kind: "resource", id: source.resources[0]!.id }]);

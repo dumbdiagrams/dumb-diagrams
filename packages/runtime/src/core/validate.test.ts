@@ -167,11 +167,11 @@ describe("document validation modes", () => {
       { id: "azure-group", kind: "logical", label: "Azure group", children: [] },
     ];
     doc.resources = [
-      { id: "neutral", type: "neutral.service", parent: "region", label: {}, role: "primary", props: {} },
+      { id: "neutral", type: "cloud-agnostic.service", parent: "region", label: {}, role: "primary", props: {} },
       { id: "azure-resource", type: "azure.service", parent: "region", label: {}, role: "primary", props: {} },
     ];
     const catalog = new Map<string, CatalogRule>([
-      ["neutral.service", { type: "neutral.service", provider: "cloud-agnostic", allowedParents: ["region"], scope: "any" }],
+      ["cloud-agnostic.service", { type: "cloud-agnostic.service", provider: "cloud-agnostic", allowedParents: ["region"], scope: "any" }],
       ["azure.service", { type: "azure.service", provider: "azure", allowedParents: ["region"], scope: "any" }],
       ["azure.group", { type: "azure.group", provider: "azure", allowedParents: ["region"], scope: "any" }],
     ]);

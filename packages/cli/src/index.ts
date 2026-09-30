@@ -410,7 +410,7 @@ async function createInitProject(options: Awaited<ReturnType<typeof resolveInitO
 }
 
 function createCatalogReference(): { markdown: string; json: string } {
-  const entries = listAssets("all", { includeAliases: false })
+  const entries = listAssets("all")
     .sort((left, right) => {
       const provider = left.provider.localeCompare(right.provider);
       if (provider) return provider;
@@ -420,18 +420,6 @@ function createCatalogReference(): { markdown: string; json: string } {
       if (category) return category;
       return left.name.localeCompare(right.name) || left.type.localeCompare(right.type);
     });
-  const canonicalByIcon = new Map(entries.map((entry) => [entry.icon.sourceId, entry]));
-  const legacyAliases = listAssets("all", { includeAliases: true })
-    .filter((entry) => !entry.canonical && canonicalByIcon.has(entry.icon.sourceId))
-    .map((entry) => ({
-      alias: entry.type,
-      canonicalType: canonicalByIcon.get(entry.icon.sourceId)!.type,
-      name: entry.name,
-      provider: entry.provider,
-      assetKind: entry.assetKind,
-      iconSourceId: entry.icon.sourceId,
-    }))
-    .sort((left, right) => left.alias.localeCompare(right.alias));
 
   const jsonEntries = entries.map((entry) => ({
     type: entry.type,
@@ -461,7 +449,6 @@ function createCatalogReference(): { markdown: string; json: string } {
     description: "Canonical browsable Dumb Diagrams catalog entries. Use type for .dgm icons; labels are separate display text.",
     entryCount: jsonEntries.length,
     providerCounts,
-    legacyAliases,
     entries: jsonEntries,
   };
 
@@ -486,12 +473,9 @@ function createCatalogReference(): { markdown: string; json: string } {
     "- The quoted label changes display text only; it does not select the icon.",
     "- Use `assetKind: group` entries for cloud/account/region/network/subnet",
     "  boundaries. Use `assetKind: resource` entries for service/resource nodes.",
-    "- For a general logical container, always use `cloud-agnostic.boundary`.",
-    "  Never author the legacy `group` shorthand or `cloud-agnostic.logical`.",
+    "- For a general logical container, use `cloud-agnostic.boundary`.",
     "- Check `allowedParents` before nesting a node. Check `allowRoot` before",
     "  placing it outside a boundary.",
-    "- Prefer canonical types. Aliases are listed for recognition, but should not",
-    "  be used when a canonical type is available.",
     "- Do not add an `icon` option for normal catalog icons. That option is only",
     "  for explicitly embedded/custom assets.",
     "",
@@ -501,13 +485,6 @@ function createCatalogReference(): { markdown: string; json: string } {
     "rg -n \"DynamoDB|aws\\.dynamodb\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
     "rg -n \"API Gateway|aws\\.api-gateway\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
     "```",
-    "",
-    "## Legacy aliases",
-    "",
-    "The following legacy aliases are still accepted for compatibility. Prefer",
-    "the canonical type on the right when creating new diagrams:",
-    "",
-    ...legacyAliases.map((entry) => `- \`${entry.alias}\` → \`${entry.canonicalType}\``),
     "",
     "## Full catalog",
     "",

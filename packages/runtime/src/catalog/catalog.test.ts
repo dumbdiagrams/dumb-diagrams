@@ -27,7 +27,7 @@ describe("generated catalog", () => {
       ["aws", "azure", "gcp", "cloud-agnostic"],
     );
     expect(listCategories("aws")).toContain("Databases");
-    expect(listCategories("generic", "resources")).toContain("Actors");
+    expect(listCategories("cloud-agnostic", "resources")).toContain("Actors");
   });
 
   it("searches across providers", () => {

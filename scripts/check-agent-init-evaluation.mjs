@@ -14,7 +14,7 @@ const DEFAULT_ROOT = resolve(
 const CURATED_ROOT = resolve(fileURLToPath(new URL("../examples/curated/", import.meta.url)));
 const CURATED_CONTRACT = resolve(fileURLToPath(new URL("../examples/evaluations/curated-aws.json", import.meta.url)));
 const canonicalTypeByIcon = new Map(
-  listAssets("all", { includeAliases: false }).map((entry) => [entry.icon.sourceId, entry.type]),
+  listAssets("all").map((entry) => [entry.icon.sourceId, entry.type]),
 );
 const LEVELS = {
   vague: { prompt: "vague.md", source: "vague.dgm" },

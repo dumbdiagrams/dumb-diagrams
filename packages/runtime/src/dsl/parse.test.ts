@@ -98,8 +98,8 @@ describe("parseDgm / printDgm round-trip", () => {
   });
 
   it.each([
-    "diagram truncated { generic.client client {",
-    "diagram truncated { generic.client client",
+    "diagram truncated { cloud-agnostic.client client {",
+    "diagram truncated { cloud-agnostic.client client",
   ])("returns an error for truncated blocks without fabricating tokens: %s", (source) => {
     const result = parseDgmResult(source);
     expect(result.isErr()).toBe(true);
@@ -149,7 +149,7 @@ describe("parseDgm / printDgm round-trip", () => {
       cloud-agnostic.boundary account "Account" {
         step 3
         cloud-agnostic.boundary storage "Storage" {
-          aws.s3 bucket
+          aws.simple-storage-service bucket
         }
       }
     }`);
@@ -165,7 +165,7 @@ describe("parseDgm / printDgm round-trip", () => {
     expect(doc.resources[0]?.parent).toBe("storage");
     expect(doc.resources[0]?.label.role).toBeUndefined();
     expect(printDgm(doc)).toContain('cloud-agnostic.boundary account "Account" {');
-    expect(printDgm(doc)).toContain("aws.s3 bucket\n");
+    expect(printDgm(doc)).toContain("aws.simple-storage-service bucket\n");
     expect(parseDgm(printDgm(doc))).toEqual(doc);
   });
 
@@ -214,8 +214,8 @@ ${declarations}
   it("assigns stable unique IDs to parallel implicit edges", () => {
     const source = `diagram parallel_edges {
   grammar aws
-  generic.custom api "API"
-  generic.custom db "DB"
+  cloud-agnostic.server api "API"
+  cloud-agnostic.server db "DB"
   api -> db { label "read" }
   api -> db { label "write" }
 }`;
@@ -231,8 +231,8 @@ ${declarations}
   it("round-trips dotted resource IDs used as edge endpoints", () => {
     const doc = parseDgm(`diagram dotted_id {
   grammar aws
-  generic.custom api.v1 "API"
-  generic.custom db "Database"
+  cloud-agnostic.server api.v1 "API"
+  cloud-agnostic.server db "Database"
   api.v1 -> db { label "query" }
 }`);
 
@@ -252,7 +252,7 @@ ${declarations}
   grammar aws
   cloud-agnostic.boundary shell "Shell" {
     label-position top-right
-    aws.sns notice "Claims notification" { service "Amazon SNS" label-position top }
+    aws.simple-notification-service notice "Claims notification" { service "Amazon SNS" label-position top }
   }
 }`);
 
@@ -268,8 +268,8 @@ ${declarations}
   it("rejects deprecated resource and group label positions", () => {
     expect(() => parseDgm(`diagram old_resource_label {
   grammar aws
-  aws.sns notice { label-position right }
-}`)).toThrow('3:35 Invalid resource label-position "right"; expected top, bottom');
+  aws.simple-notification-service notice { label-position right }
+}`)).toThrow('3:59 Invalid resource label-position "right"; expected top, bottom');
     expect(() => parseDgm(`diagram old_group_label {
   grammar aws
   cloud-agnostic.boundary shell "Shell" { label-position bottom-left }
@@ -295,7 +295,7 @@ ${declarations}
     color purple
     fill none
     step 4
-    aws.lambda worker
+    aws.aws-lambda worker
   }
 }`);
 
@@ -316,7 +316,7 @@ ${declarations}
   flow lr
   title "Async Docs"
 
-  generic.user client "External Client"
+  cloud-agnostic.actor client "External Client"
 
   annotation note1 "Callout" { anchor client }
 
@@ -385,7 +385,7 @@ view default {
   flow lr
 
   cloud-agnostic.boundary services "Services" {
-    aws.lambda worker
+    aws.aws-lambda worker
   }
 }
 
@@ -414,7 +414,7 @@ view default {
   it("rejects a second view instead of merging authored placements", () => {
     expect(() => parseDgm(`diagram multiple_views {
   grammar aws
-  generic.custom service "Service"
+  cloud-agnostic.server service "Service"
 }
 view first { place service { x 100 y 100 pin } }
 view second { place service { x 500 y 500 pin } }`)).toThrow(/Only one view block is supported/);
@@ -423,7 +423,7 @@ view second { place service { x 500 y 500 pin } }`)).toThrow(/Only one view bloc
   it("preserves prototype-key placement IDs as own properties", () => {
     const parsed = parseDgm(`diagram reserved_key {
   grammar aws
-  generic.custom __proto__ "Reserved"
+  cloud-agnostic.server __proto__ "Reserved"
 }
 view default { place __proto__ { x 120 y 80 pin } }`);
 

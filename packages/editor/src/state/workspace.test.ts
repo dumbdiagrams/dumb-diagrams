@@ -127,7 +127,7 @@ describe("workspace state", () => {
     });
     const semanticInvalid = createWorkspaceTab(`diagram semantic-invalid {
   grammar aws
-  generic.user client
+  cloud-agnostic.actor client
   client -> missing { id e1 kind flow }
 }`, {
       id: "semantic-invalid",

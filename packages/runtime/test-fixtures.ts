@@ -8,14 +8,14 @@ export function createAsyncDocsFixture(): DiagramDocument {
   doc.resources = [
     {
       id: "client",
-      type: "generic.user",
+      type: "cloud-agnostic.actor",
       label: { service: "External Client" },
       role: "primary",
       props: {},
     },
     {
       id: "api_alb",
-      type: "aws.alb",
+      type: "aws.elastic-load-balancing",
       parent: "pubA",
       label: {
         service: "Elastic Load Balancing",
@@ -26,7 +26,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "api_alb_b",
-      type: "aws.alb",
+      type: "aws.elastic-load-balancing",
       parent: "pubB",
       label: {
         service: "Elastic Load Balancing",
@@ -37,7 +37,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "apiA",
-      type: "aws.ecs",
+      type: "aws.elastic-container-service",
       parent: "appA",
       label: { service: "Amazon ECS", role: "Document API" },
       role: "primary",
@@ -45,7 +45,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "apiB",
-      type: "aws.ecs",
+      type: "aws.elastic-container-service",
       parent: "appB",
       label: { service: "Amazon ECS", role: "Document API" },
       role: "primary",
@@ -53,7 +53,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "workerA",
-      type: "aws.ecs",
+      type: "aws.elastic-container-service",
       parent: "appA",
       label: { service: "Amazon ECS", role: "Document worker" },
       role: "primary",
@@ -61,7 +61,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "workerB",
-      type: "aws.ecs",
+      type: "aws.elastic-container-service",
       parent: "appB",
       label: { service: "Amazon ECS", role: "Document worker" },
       role: "primary",
@@ -69,7 +69,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "jobs",
-      type: "aws.sqs",
+      type: "aws.simple-queue-service",
       parent: "queues",
       label: { service: "Amazon SQS", role: "Processing queue" },
       role: "primary",
@@ -77,7 +77,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "jobs_dlq",
-      type: "aws.sqs",
+      type: "aws.simple-queue-service",
       parent: "queues",
       label: { service: "Amazon SQS", role: "DLQ" },
       role: "secondary",
@@ -85,7 +85,7 @@ export function createAsyncDocsFixture(): DiagramDocument {
     },
     {
       id: "artifacts",
-      type: "aws.s3",
+      type: "aws.simple-storage-service",
       parent: "storage",
       label: { service: "Amazon S3", role: "Processed artifacts" },
       role: "primary",
@@ -221,14 +221,14 @@ export function createTransferHubFixture(): DiagramDocument {
   doc.resources = [
     {
       id: "user",
-      type: "generic.user",
+      type: "cloud-agnostic.actor",
       label: { service: "User" },
       role: "primary",
       props: {},
     },
     {
       id: "ui",
-      type: "generic.client",
+      type: "cloud-agnostic.client",
       parent: "customer",
       label: { service: "Data Transfer Hub UI" },
       role: "primary",

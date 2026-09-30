@@ -3,7 +3,7 @@ diagram asynchronous-report-generation {
   flow lr
   title "Asynchronous report generation"
 
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {

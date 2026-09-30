@@ -17,7 +17,7 @@ describe("pure document operations", () => {
     if (result.isErr()) return;
     expect(result.value.doc.resources.at(-1)).toMatchObject({
       id: result.value.id,
-      type: "generic.custom",
+      type: "cloud-agnostic.server",
       props: { iconAsset: imported.value.assetId },
     });
   });
