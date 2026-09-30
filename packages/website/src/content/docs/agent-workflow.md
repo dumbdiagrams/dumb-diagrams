@@ -51,6 +51,22 @@ Do not change the other diagrams or the reference examples.
 Keep the `.dgm` source valid after the edit.
 ```
 
+### Ask an agent to refine the picture
+
+You can give the same separate coding agent or LLM an existing `.dgm` file and ask it to refine the presentation while preserving the architecture. It can change horizontal or vertical orientation, grouping, labels, connector styles, or move supporting services away from the main path. You can also ask for architecture changes, such as adding a service. You can make these changes manually in Studio too.
+
+For example, this request asks for a vertical arrangement and gives the agent permission to resolve layout conflicts while keeping the system intact:
+
+```text
+Refine diagrams/payments/diagram.dgm into a top-to-bottom flow.
+Preserve every existing service and relationship. You may adjust conflicting
+saved placements and manual connector routes so the vertical layout is clear.
+Keep the service labels, group membership, and connector meanings intact.
+Keep the `.dgm` source valid and validate it after the edit.
+```
+
+An explicit orientation request may require revising saved manual placements or routes. If those placements stay in the file, they can prevent the engine from reorganizing the diagram. Review the result in Studio after the agent saves it; Studio does not live-reload edits made by another editor.
+
 Validation finds structural mistakes, but it cannot tell whether the diagram matches the real system. Open the file in Studio and check the boundaries, service choices, and connection directions yourself. Refine dense connections with a manual route if needed, then commit the diagram with the implementation or proposal it explains.
 
 For automation, pin the CLI version you have tested instead of resolving `@latest` on every run.

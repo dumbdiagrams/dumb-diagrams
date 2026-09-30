@@ -192,6 +192,9 @@ describe("runCli", () => {
       expect(instructions).toContain("stop and ask the user");
       expect(instructions).toContain("single-provider");
       expect(instructions).toContain("dumbdiagrams validate <path-to-diagram.dgm>");
+      expect(instructions).toContain("unless\nthe user explicitly requests vertical/top-to-bottom flow");
+      expect(instructions).toContain("preserve its orientation unless the user");
+      expect(instructions).toContain("adjusting saved positions, ports, or manual routes");
       expect(readFileSync(join(projectRoot, ".dumbdiagrams/architecture.md"), "utf8")).toContain(
         "cloud-agnostic` (Experimental)",
       );
@@ -199,9 +202,11 @@ describe("runCli", () => {
       for (const grammar of ["aws", "azure", "gcp", "cloud-agnostic"]) {
         expect(dgmGuide).toContain(grammar);
       }
-      expect(dgmGuide).toContain("Use `flow lr` for primary sequential pipelines");
-      expect(dgmGuide).toContain("Stack vertically only parallel or same-level");
-      expect(dgmGuide).toContain("use `flow tb` only when requested");
+      expect(dgmGuide).toContain("Default every new diagram to horizontal left-to-right layout (`flow lr`)");
+      expect(dgmGuide).toContain("primary sequential pipelines and order causally sequential children");
+      expect(dgmGuide).toContain("Stack vertically only");
+      expect(dgmGuide).toContain("use `flow tb` only when requested explicitly by the user");
+      expect(dgmGuide).toContain("including inside nested boundaries");
       expect(dgmGuide).toContain("Separate the primary request/data path from IAM, Monitoring, Logging, and");
       expect(dgmGuide).toContain("support boundary and connect them with dashed peer/support edges");
       for (const [provider, marker] of [

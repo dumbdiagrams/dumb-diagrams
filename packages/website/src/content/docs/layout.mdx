@@ -10,7 +10,7 @@ Layout decides where resources go before the router connects them. It measures t
 
 <LayoutExplainer />
 
-`flow lr` arranges the diagram from left to right; `flow tb` arranges it from top to bottom. Choose the direction that makes the main story easiest to follow. The engine also considers connections, resource roles, spacing, and availability-zone symmetry. Experimental providers reuse some AWS layout rules.
+The default flow is `lr`, which arranges the diagram from left to right. Use `flow tb` for a top-to-bottom diagram when you explicitly request that direction. An unrelated edit keeps the diagram's existing flow. The engine also considers connections, resource roles, spacing, and availability-zone symmetry. Experimental providers reuse some AWS layout rules.
 
 ## Keep a position you chose
 
@@ -32,3 +32,5 @@ view default {
 Moving a group in Studio moves its children with it. Resizing a group changes the boundary's space without scaling its contents.
 
 The layout follows repeatable rules rather than trying every possible arrangement. If an old manual position gets in the way after the architecture changes, remove it and let the engine place that resource again.
+
+Grid snapping is independent of flow direction, so a grid-aligned position does not by itself turn a horizontal diagram vertical. Saved manual placements can also constrain a new orientation; remove or revise those placements when you want the engine to reorganize the diagram.

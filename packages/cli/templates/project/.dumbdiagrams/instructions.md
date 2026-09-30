@@ -59,6 +59,28 @@ Infer only what makes an underspecified request coherent, and do not add
 merely plausible best-practice services. Preserve saved view/layout metadata
 when revising an existing diagram.
 
+## Layout defaults and refinements
+
+For every new diagram, use horizontal left-to-right flow (`flow lr`) unless
+the user explicitly requests vertical/top-to-bottom flow (`flow tb`). Apply
+this default to every provider. Keep the primary sequence left-to-right
+inside nested boundaries too; a horizontal outer flow alone is not enough.
+Use vertical stacking for parallel branches and supporting resources, not
+for successive stages of the main flow.
+
+When editing an existing diagram, preserve its orientation unless the user
+asks to change it. A request to switch orientation authorizes changing the
+flow and adjusting saved positions, ports, or manual routes that conflict
+with that request. Preserve unrelated view metadata and the architecture's
+services, relationships, and labels unless the user also asks to change them.
+Changing flow direction changes layout, not grid snapping.
+
+Users can ask for visual refinements in ordinary language: change orientation,
+simplify grouping, rename labels, distinguish connector styles, or move
+supporting resources away from the main path. Make the requested edit in the
+named `.dgm` file, validate it, and inspect the result using the working order
+above. Pure visual refinements do not require rewriting the architecture brief.
+
 Briefs must use the same shape as the bundled examples: `Goal`, `Explicit
 requirements`, `Relationships and containment`, and `Inferred decisions and
 exclusions`. Capture the enriched interpretation—not a transcript or hidden
