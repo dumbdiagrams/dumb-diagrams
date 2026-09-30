@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, unlinkSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -39,16 +39,51 @@ describe("local Studio server", () => {
     const response = await fetch(`${handle.url}%2e%2e%2fsecret.txt`);
     expect(response.status).toBe(403);
   });
+
+  it("serves a symlink whose real target stays inside the editor root", async () => {
+    const { handle, editorRoot } = await createTestServer();
+    symlinkSync("index.html", join(editorRoot, "index-link.html"));
+
+    const response = await fetch(`${handle.url}index-link.html`);
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("Studio test");
+  });
+
+  it("forbids a symlink whose real target is outside the editor root", async () => {
+    const { handle, editorRoot, outsideRoot } = await createTestServer();
+    writeFileSync(join(outsideRoot, "secret.txt"), "do not serve", "utf8");
+    symlinkSync(join(outsideRoot, "secret.txt"), join(editorRoot, "secret.txt"));
+
+    const response = await fetch(`${handle.url}secret.txt`);
+
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("Forbidden");
+  });
+  it("checks the real target of the history fallback too", async () => {
+    const { handle, editorRoot, outsideRoot } = await createTestServer();
+    writeFileSync(join(outsideRoot, "secret.html"), "do not serve", "utf8");
+    unlinkSync(join(editorRoot, "index.html"));
+    symlinkSync(join(outsideRoot, "secret.html"), join(editorRoot, "index.html"));
+
+    const response = await fetch(`${handle.url}missing-page`);
+
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("Forbidden");
+  });
+
 });
 
-async function createTestServer(): Promise<{ handle: StudioServerHandle }> {
+async function createTestServer(): Promise<{ handle: StudioServerHandle; editorRoot: string; outsideRoot: string }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
+  const outsideRoot = join(root, "outside");
   mkdirSync(editorRoot);
+  mkdirSync(outsideRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
   const handle = await startStudioServer({ editorRoot, port: 0 });
   handles.push(handle);
-  return { handle };
+  return { handle, editorRoot, outsideRoot };
 }
 
 function closeServer(handle: StudioServerHandle): Promise<void> {

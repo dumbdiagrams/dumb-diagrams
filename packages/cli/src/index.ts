@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
@@ -46,45 +46,26 @@ export async function runCli(argv: string[]): Promise<number> {
   const [command, ...rawArgs] = argv;
   const parsed = parseArgs(rawArgs, command);
 
-  let outcome: ResultAsync<number, CliError>;
-  if (parsed.flags.has("help")) {
-    outcome = okAsync(0).andTee(() => printHelp());
-  } else if (parsed.flags.has("version") || command === "--version" || command === "-v") {
-    outcome = okAsync(0).andTee(() => console.log(`${ui.heading("DUMB DIAGRAMS")} ${ui.muted(`v${VERSION}`)}`));
-  } else {
-    switch (command) {
-      case undefined:
-      case "help":
-      case "--help":
-      case "-h":
-        outcome = okAsync(0).andTee(() => printHelp());
-        break;
-      case "studio":
-        outcome = cmdStudio(parsed);
-        break;
-      case "init":
-        outcome = cmdInit(parsed);
-        break;
-      case "validate":
-        outcome = cmdValidate(parsed);
-        break;
-      case "format":
-        outcome = cmdFormat(parsed);
-        break;
-      case "render":
-        outcome = cmdRender(parsed);
-        break;
-      default:
-        outcome = errAsync({
-          code: "unknown-command",
-          command: command ?? "",
-          message: `Unknown command: ${command}`,
-        });
-        break;
-    }
-  }
+  return dispatchCommand(command, parsed).match((code) => code, reportCliError);
+}
 
-  return await outcome.match((code) => code, reportCliError);
+function dispatchCommand(command: string | undefined, parsed: ParsedArgs): ResultAsync<number, CliError> {
+  if (parsed.flags.has("help")) return okAsync(0).andTee(() => printHelp());
+  if (parsed.flags.has("version") || command === "--version" || command === "-v") {
+    return okAsync(0).andTee(() => console.log(`${ui.heading("DUMB DIAGRAMS")} ${ui.muted(`v${VERSION}`)}`));
+  }
+  switch (command) {
+    case undefined:
+    case "help":
+    case "--help":
+    case "-h": return okAsync(0).andTee(() => printHelp());
+    case "studio": return cmdStudio(parsed);
+    case "init": return cmdInit(parsed);
+    case "validate": return cmdValidate(parsed);
+    case "format": return cmdFormat(parsed);
+    case "render": return cmdRender(parsed);
+    default: return errAsync({ code: "unknown-command", command, message: `Unknown command: ${command}` });
+  }
 }
 
 function printHelp(): void {

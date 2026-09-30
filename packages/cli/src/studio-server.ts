@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
 
@@ -22,13 +22,16 @@ export interface StudioServerHandle {
 export async function startStudioServer(
   options: StudioServerOptions = {},
 ): Promise<StudioServerHandle> {
-  const editorRoot = resolveStudioEditorRoot(options.editorRoot);
-  if (!existsSync(join(editorRoot, "index.html"))) {
+  const configuredEditorRoot = resolveStudioEditorRoot(options.editorRoot);
+  if (!existsSync(join(configuredEditorRoot, "index.html"))) {
     throw new Error(
-      `Studio assets are missing at ${editorRoot}. Build the editor first with ` +
+      `Studio assets are missing at ${configuredEditorRoot}. Build the editor first with ` +
       "pnpm --filter @dumb-diagrams/editor build.",
     );
   }
+  // Resolve the bundle root once so a symlinked editor directory is supported
+  // while every request is checked against the directory actually served.
+  const editorRoot = realpathSync(configuredEditorRoot);
 
   const server = createServer((request, response) => {
     applySecurityHeaders(response);
@@ -75,9 +78,7 @@ function serveEditorAsset(editorRoot: string, request: IncomingMessage, response
   }
   const relativePath = decodedPath === "/" ? "index.html" : decodedPath.replace(/^\/+/, "");
   const candidate = resolve(editorRoot, relativePath);
-  const rootPrefix = `${editorRoot.endsWith("/") ? editorRoot : `${editorRoot}/`}`;
-  const isInsideRoot = candidate === editorRoot || candidate.startsWith(rootPrefix);
-  if (!isInsideRoot) {
+  if (!isPathInsideRoot(editorRoot, candidate)) {
     response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Forbidden");
     return;
@@ -85,7 +86,19 @@ function serveEditorAsset(editorRoot: string, request: IncomingMessage, response
 
   // Vite history fallback keeps client-side routes useful without exposing
   // any filesystem outside the bundled editor root.
-  const target = existsSync(candidate) ? candidate : join(editorRoot, "index.html");
+  let target: string;
+  try {
+    target = realpathSync(existsSync(candidate) ? candidate : join(editorRoot, "index.html"));
+  } catch {
+    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Not found");
+    return;
+  }
+  if (!isPathInsideRoot(editorRoot, target)) {
+    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Forbidden");
+    return;
+  }
   try {
     const body = readFileSync(target);
     response.writeHead(200, {
@@ -99,6 +112,11 @@ function serveEditorAsset(editorRoot: string, request: IncomingMessage, response
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");
   }
+}
+
+function isPathInsideRoot(root: string, candidate: string): boolean {
+  const path = relative(root, candidate);
+  return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path));
 }
 
 function contentTypeFor(filePath: string): string {
