@@ -73,6 +73,20 @@ describe("moveOrthogonalBend", () => {
 });
 
 describe("anchorOrthogonalRouteEndpoints", () => {
+  it("makes a side-port preview approach horizontally instead of sliding down its face", () => {
+    const route = anchorOrthogonalRouteEndpoints([
+      { x: 48, y: 24 }, { x: 200, y: 24 }, { x: 200, y: 124 },
+    ], { x: 0, y: 0, w: 48, h: 48 }, { x: 200, y: 100, w: 48, h: 48 });
+    const end = route.at(-1)!;
+    const neighbor = route.at(-2)!;
+    expect(end).toEqual({ x: 200, y: 124 });
+    expect(neighbor.y).toBe(end.y);
+    expect(neighbor.x).toBeLessThan(end.x);
+    expect(route).toEqual([
+      { x: 48, y: 24 }, { x: 184, y: 24 }, { x: 184, y: 124 }, { x: 200, y: 124 },
+    ]);
+  });
+
   it("keeps an edited final leg before snapping back to the target port", () => {
     expect(anchorOrthogonalRouteEndpoints([
       { x: 40, y: 40 },

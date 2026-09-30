@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 
-import type { Viewport } from "../model/types";
+import type { LayoutEditingMode, Viewport } from "../model/types";
 import {
   beginSourceDraft,
   beginTransaction as beginHistoryTransaction,
@@ -419,7 +419,7 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const openTab = useCallback(
-    (source: string, tabOptions: Partial<Pick<WorkspaceTab, "initialSource" | "savedSource" | "filename" | "origin" | "viewport">> = {}) => {
+    (source: string, tabOptions: Partial<Pick<WorkspaceTab, "initialSource" | "savedSource" | "filename" | "origin" | "layoutMode" | "viewport">> = {}) => {
       commitSourceDraft();
       if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
           (tabOptions.initialSource !== undefined && utf8ByteLength(tabOptions.initialSource) > DIAGRAM_LIMITS.sourceBytes) ||
@@ -430,6 +430,7 @@ export function useWorkspace(options: WorkspaceOptions) {
         savedSource: tabOptions.savedSource ?? source,
         filename: tabOptions.filename,
         origin: tabOptions.origin ?? "new",
+        layoutMode: tabOptions.layoutMode,
         viewport: tabOptions.viewport ?? options.initialViewport,
       });
       historiesRef.current.set(tab.id, createHistory());
@@ -521,6 +522,7 @@ export function useWorkspace(options: WorkspaceOptions) {
         savedSource: sourceTab.savedSource,
         filename: duplicateFilename(sourceTab.filename),
         origin: "duplicate",
+        layoutMode: sourceTab.layoutMode,
         viewport: sourceTab.viewport,
         viewportCustomized: sourceTab.viewportCustomized,
       });
@@ -582,6 +584,16 @@ export function useWorkspace(options: WorkspaceOptions) {
     [updateWorkspace],
   );
 
+  const setTabLayoutMode = useCallback(
+    (tabId: string, layoutMode: LayoutEditingMode) => {
+      updateWorkspace((current) => ({
+        ...current,
+        tabs: current.tabs.map((tab) => tab.id === tabId ? { ...tab, layoutMode } : tab),
+      }));
+    },
+    [updateWorkspace],
+  );
+
   const activeHistory = ensureHistory(activeTab.id);
   const canUndo = historyVersion >= 0 && canUndoHistory(activeHistory, activeTab.source);
   const canRedo = historyVersion >= 0 && canRedoHistory(activeHistory, activeTab.source);
@@ -623,6 +635,7 @@ export function useWorkspace(options: WorkspaceOptions) {
     markSaved,
     markTabSaved,
     setTabFilename,
+    setTabLayoutMode,
     persistenceWarning,
   };
 }

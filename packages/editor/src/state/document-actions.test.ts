@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramSource } from "../diagram-compiler";
-import { deleteSelection, moveSelection, setGroupBounds } from "../editor-model";
+import { DIAGRAM_EXAMPLES } from "../examples";
+import { deleteSelection, moveSelection, setGroupBounds, setPlace } from "../editor-model";
 import { resizeRect } from "../interactions/move-resize-gestures";
 import { preserveLayout, preserveUnplacedLayout } from "../model/layout-preservation";
 import { prepareDocument, prepareDocumentMutation } from "./document-actions";
@@ -46,6 +47,50 @@ const azureAppSource = `diagram azure-private-app-service {
 }`;
 
 describe("document action preparation", () => {
+  it("repairs an existing Manual overlap on the next Automatic edit", () => {
+    const source = DIAGRAM_EXAMPLES.find((example) => example.id === "simple-serverless-web-application")!.source;
+    const original = compileDiagramSource(source, true);
+    expect(original.ok).toBe(true);
+    if (!original.ok) return;
+    const handler = original.layout.nodes.find((node) => node.id === "handler")!.obstacle;
+    const manual = prepareDocumentMutation(source, (doc) => setPlace(doc, "gateway", handler.x, handler.y), true, "manual");
+    expect(manual.isOk()).toBe(true);
+    if (manual.isErr()) return;
+    const automatic = prepareDocumentMutation(manual.value.source, (doc) =>
+      moveSelection(doc, [{ kind: "resource", id: "web_client" }], 40, 0), true, "automatic");
+    expect(automatic.isOk()).toBe(true);
+    if (automatic.isErr()) return;
+    const after = compileDiagramSource(automatic.value.source, true);
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+    const gatewayAfter = after.layout.nodes.find((node) => node.id === "gateway")!.obstacle;
+    const handlerAfter = after.layout.nodes.find((node) => node.id === "handler")!.obstacle;
+    expect(gatewayAfter.x === handlerAfter.x && gatewayAfter.y === handlerAfter.y).toBe(false);
+  });
+
+  it.each(["manual", "automatic"] as const)("applies the %s editing policy only when preparing a canvas edit", (mode) => {
+    const source = `diagram small_overlap {
+      grammar aws
+      generic.custom api "API"
+      generic.custom db "Database"
+      api -> db
+    }`;
+    const result = prepareDocumentMutation(source, (doc) =>
+      setPlace(setPlace(doc, "api", 200, 80), "db", 200, 80), false, mode);
+    expect(result.isOk()).toBe(true);
+    if (result.isErr()) return;
+    const compiled = compileDiagramSource(result.value.source, false);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    if (mode === "manual") {
+      expect(getDefaultView(result.value.doc).places.api).toMatchObject({ x: 200, y: 80 });
+      expect(getDefaultView(result.value.doc).places.db).toMatchObject({ x: 200, y: 80 });
+      expect(compiled.invariantFailures.length).toBeGreaterThan(0);
+    } else {
+      expect(compiled.invariantFailures).toEqual([]);
+    }
+  });
+
   it("does not invoke a mutation on an invalid source draft", () => {
     const change = vi.fn((doc) => doc);
     const result = prepareDocumentMutation("diagram { unfinished", change, true);
@@ -240,6 +285,26 @@ view default {
     for (const original of baseline.layout.nodes) {
       expect(after.layout.nodes.find((candidate) => candidate.id === original.id)?.obstacle, original.id)
         .toEqual(original.obstacle);
+    }
+  });
+
+  it("moves a group's internal connector with its endpoints in Manual mode", () => {
+    const before = compileDiagramSource(azureAppSource, true);
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+    const result = prepareDocumentMutation(azureAppSource, (doc) =>
+      moveSelection(doc, [{ kind: "group", id: "application_tier" }], 64, 32), true, "manual");
+    expect(result.isOk()).toBe(true);
+    if (result.isErr()) return;
+    const after = compileDiagramSource(result.value.source, true);
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+    const original = before.layout.edges.find((edge) => edge.id === "writes")!;
+    const moved = after.layout.edges.find((edge) => edge.id === "writes")!;
+    expect(moved.points.length).toBe(original.points.length);
+    for (const [index, point] of original.points.entries()) {
+      expect(moved.points[index]!.x - point.x).toBeCloseTo(64, 0);
+      expect(moved.points[index]!.y - point.y).toBeCloseTo(32, 0);
     }
   });
 });

@@ -3,14 +3,16 @@ import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramSource, type DiagramCompilation } from "../diagram-compiler";
-import { preserveUnplacedLayout } from "../model/layout-preservation";
+import { preserveManualLayout, preserveUnplacedLayout, preserveUnplacedManualLayout, reconcileManualRouteMoves } from "../model/layout-preservation";
+import type { LayoutEditingMode } from "../model/types";
 import { planAutoFix } from "../auto-fix";
-import { prepareDocument, prepareDocumentMutation, type DocumentActionError, type PreparedDocument } from "./document-actions";
+import { prepareCanvasEdit, prepareDocument, prepareDocumentMutation, type DocumentActionError, type PreparedDocument } from "./document-actions";
 
 type DocumentCommandOptions = {
   source: string;
   tabId: string;
   snapToGrid: boolean;
+  layoutMode: LayoutEditingMode;
   commitSource: (source: string) => void;
   replaceSource: (source: string) => void;
   editSourceDraft: (source: string) => void;
@@ -52,14 +54,24 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
   };
   const commitDocument = (doc: DiagramDocument, compilation?: DiagramCompilation, preservePositions = true) => {
     const baseline = preservePositions ? compileDiagramSource(sourceRef.current, options.snapToGrid) : null;
-    const nextDoc = baseline?.ok ? preserveUnplacedLayout(doc, baseline.layout) : doc;
-    const result = prepareDocument(nextDoc, options.snapToGrid, nextDoc === doc ? compilation : undefined);
+    const preserved = baseline?.ok
+      ? options.layoutMode === "manual"
+        ? preserveUnplacedManualLayout(doc, baseline.layout, baseline.doc)
+        : preserveUnplacedLayout(doc, baseline.layout)
+      : doc;
+    const nextDoc = baseline?.ok && options.layoutMode === "manual"
+      ? reconcileManualRouteMoves(preserveManualLayout(baseline.doc, baseline.layout), preserved)
+      : preserved;
+    const cached = nextDoc === doc ? compilation : undefined;
+    const result = preservePositions
+      ? prepareCanvasEdit(nextDoc, options.snapToGrid, options.layoutMode, cached)
+      : prepareDocument(nextDoc, options.snapToGrid, cached);
     if (result.isErr()) { reportFailure(result.error); return false; }
     publish(result.value, false);
     return true;
   };
   const mutate = (change: (doc: DiagramDocument) => DiagramDocument, preview = false): PreparedDocument | null => {
-    const result = prepareDocumentMutation(sourceRef.current, change, options.snapToGrid);
+    const result = prepareDocumentMutation(sourceRef.current, change, options.snapToGrid, options.layoutMode);
     if (result.isErr()) { reportFailure(result.error); return null; }
     publish(result.value, preview);
     return result.value;

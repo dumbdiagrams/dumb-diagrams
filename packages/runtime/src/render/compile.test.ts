@@ -12,6 +12,7 @@ import { layoutDocument } from "../layout/index.js";
 import { parseDgm } from "../dsl/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 import {
+  anchorRouteEndpoints,
   eraseOrthogonalRouteLoops,
   normalizeOrthogonalRoute,
   routeEdges,
@@ -704,13 +705,14 @@ describe("async-docs fixture", () => {
     const edges = routeEdges(doc, layout);
     const edge = edges.find((candidate) => candidate.id === "e2")!;
     expect(edge.points).toEqual(
-      eraseOrthogonalRouteLoops(normalizeOrthogonalRoute([
+      anchorRouteEndpoints(eraseOrthogonalRouteLoops(normalizeOrthogonalRoute([
         edge.points[0]!,
         ...view.routes.e2!.waypoints!,
         edge.points.at(-1)!,
-      ])),
+      ])), layout.nodes.find((node) => node.id === edge.source)!.icon,
+      layout.nodes.find((node) => node.id === edge.target)!.icon),
     );
-    expect(edge.points.length).toBeLessThan(6);
+    expect(edge.points.length).toBeLessThan(10);
   });
 });
 

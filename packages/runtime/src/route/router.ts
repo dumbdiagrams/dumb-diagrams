@@ -49,6 +49,7 @@ const JUNCTION_COST = ROUTE_PATH_COSTS.junction;
 const OVERLAP_COST = ROUTE_PATH_COSTS.astarOverlapPerUnit;
 const NEAR_PARALLEL_COST = ROUTE_PATH_COSTS.nearParallelPerUnit;
 const MIN_CONNECTOR_GAP = CELL;
+const MIN_TERMINAL_STEM = 16;
 const PORT_SIDE_FALLBACK_COST = ROUTE_PATH_COSTS.portSideFallback;
 const PORT_OFFSET_FALLBACK_COST = ROUTE_PATH_COSTS.portOffsetFallback;
 const PORT_BACKTRACK_COST = ROUTE_PATH_COSTS.portBacktrack;
@@ -466,6 +467,12 @@ export function routeEdges(
     view.routes,
     budget,
   );
+  for (const edge of documentRoutes) {
+    const source = nodeMap.get(edge.source);
+    const target = nodeMap.get(edge.target);
+    if (!source || !target) continue;
+    edge.points = anchorRouteEndpoints(edge.points, source.icon, target.icon);
+  }
   placeEdgeDecorations(
     documentRoutes,
     view.routes,
@@ -1732,9 +1739,238 @@ function snapRouteEndpoints(
 ): Point[] {
   if (points.length < 2) return points.map((point) => ({ ...point }));
   const next = points.map((point) => ({ ...point }));
-  next[0] = nearestPortAnchor(source.icon, next[0]!).point;
-  next[next.length - 1] = nearestPortAnchor(target.icon, next.at(-1)!).point;
+  next[0] = preserveAttachedEndpoint(source.icon, next[0]!);
+  next[next.length - 1] = preserveAttachedEndpoint(target.icon, next.at(-1)!);
   return next;
+}
+
+function preserveAttachedEndpoint(icon: Rect, point: Point): Point {
+  // Automatic routes can align nearby ports at a fractional offset. Freezing
+  // such a path for manual editing must not quantize a valid attachment and
+  // introduce a tiny elbow. Detached endpoints still follow a moved icon.
+  const epsilon = 0.000001;
+  const onVerticalEdge =
+    (Math.abs(point.x - icon.x) <= epsilon || Math.abs(point.x - icon.x - icon.w) <= epsilon) &&
+    point.y >= icon.y - epsilon && point.y <= icon.y + icon.h + epsilon;
+  const onHorizontalEdge =
+    (Math.abs(point.y - icon.y) <= epsilon || Math.abs(point.y - icon.y - icon.h) <= epsilon) &&
+    point.x >= icon.x - epsilon && point.x <= icon.x + icon.w + epsilon;
+  return onVerticalEdge || onHorizontalEdge ? { ...point } : nearestPortAnchor(icon, point).point;
+}
+
+/**
+ * Keep route endpoints on their authored perimeter positions while enforcing
+ * the direction of the terminal legs. Source legs leave their icon and target
+ * legs approach their icon from outside the corresponding face. A detached
+ * endpoint is reattached to the nearest authored port before its face is
+ * inferred.
+ */
+export function anchorRouteEndpoints(
+  points: Point[],
+  sourceIcon: Rect,
+  targetIcon: Rect,
+): Point[] {
+  const normalized = normalizeOrthogonalRoute(points);
+  if (normalized.length < 2) return normalized;
+
+  const out = normalized.map((point) => ({ ...point }));
+  out[0] = preserveAttachedEndpoint(sourceIcon, out[0]!);
+  out[out.length - 1] = preserveAttachedEndpoint(targetIcon, out.at(-1)!);
+
+  const sourceSide = perimeterSide(sourceIcon, out[0]!);
+  const targetSide = perimeterSide(targetIcon, out.at(-1)!);
+  repairTerminalDirection(out, true, sourceSide);
+  repairTerminalDirection(out, false, targetSide);
+  collapseInteriorBacktracks(out);
+  return normalizeOrthogonalRoute(out);
+}
+
+function perimeterSide(icon: Rect, point: Point): Side {
+  const epsilon = 0.000001;
+  const onWest = Math.abs(point.x - icon.x) <= epsilon &&
+    point.y >= icon.y - epsilon && point.y <= icon.y + icon.h + epsilon;
+  const onEast = Math.abs(point.x - icon.x - icon.w) <= epsilon &&
+    point.y >= icon.y - epsilon && point.y <= icon.y + icon.h + epsilon;
+  const onNorth = Math.abs(point.y - icon.y) <= epsilon &&
+    point.x >= icon.x - epsilon && point.x <= icon.x + icon.w + epsilon;
+  const onSouth = Math.abs(point.y - icon.y - icon.h) <= epsilon &&
+    point.x >= icon.x - epsilon && point.x <= icon.x + icon.w + epsilon;
+  const sides = [
+    onWest ? "w" : undefined,
+    onEast ? "e" : undefined,
+    onNorth ? "n" : undefined,
+    onSouth ? "s" : undefined,
+  ].filter((side): side is Side => side !== undefined);
+  // Corners belong to two faces. The nearest authored port gives a stable
+  // deterministic choice and is also the fallback for any unusual detached
+  // point that reached this helper directly.
+  return sides.length === 1 ? sides[0]! : nearestPortAnchor(icon, point).side;
+}
+
+function repairTerminalDirection(
+  points: Point[],
+  source: boolean,
+  side: Side,
+): void {
+  if (points.length < 2) return;
+  const endpointIndex = source ? 0 : points.length - 1;
+  const neighborIndex = source ? 1 : points.length - 2;
+  const endpoint = points[endpointIndex]!;
+  const neighbor = points[neighborIndex]!;
+  const adjacent = source ? points[2] : points.at(-3);
+  const terminalReversal = adjacent !== undefined && (source
+    ? immediateReversal(endpoint, neighbor, adjacent)
+    : immediateReversal(adjacent, neighbor, endpoint));
+  if (followsOutwardDirection(endpoint, neighbor, side) && !terminalReversal) return;
+
+  const stem = outwardStem(endpoint, side);
+  const axis = side === "e" || side === "w" ? "horizontal" : "vertical";
+  const bridgeNeighbor = terminalReversal ? adjacent! : neighbor;
+  const sameAxis = axis === "horizontal"
+    ? bridgeNeighbor.y === endpoint.y
+    : bridgeNeighbor.x === endpoint.x;
+  const replacement = source
+    ? sourceTerminalBridge(endpoint, bridgeNeighbor, stem, axis, sameAxis)
+    : targetTerminalBridge(bridgeNeighbor, endpoint, stem, axis, sameAxis);
+  if (sameAxis) {
+    const beforeBridge = source ? points[2] : points.at(-4);
+    const afterBridge = source ? points[3] : points.at(-3);
+    const bridgeReversal = source
+      ? beforeBridge !== undefined &&
+        afterBridge !== undefined &&
+        immediateReversal(replacement.at(-2)!, replacement.at(-1)!, afterBridge)
+      : beforeBridge !== undefined &&
+        immediateReversal(beforeBridge, replacement[0]!, replacement[1]!);
+    if (bridgeReversal) flipTerminalBridgeOffset(replacement, axis, endpoint, source);
+  }
+  // If the authored elbow turns straight back into the existing route, move
+  // that elbow onto the exterior bridge. This preserves the route's body and
+  // avoids leaving a visible 180-degree spur before the new terminal stem.
+  if (adjacent) {
+    if (source && replacement.length >= 2 &&
+      immediateReversal(replacement.at(-2)!, replacement.at(-1)!, adjacent)) {
+      replacement[replacement.length - 1] = replacement.at(-2)!;
+    }
+    if (!source && replacement.length >= 2 &&
+      immediateReversal(adjacent, replacement[0]!, replacement[1]!)) {
+      replacement[0] = replacement[1]!;
+    }
+  }
+  if (source) {
+    points.splice(0, terminalReversal ? 3 : 2, ...replacement);
+  } else {
+    points.splice(points.length - (terminalReversal ? 3 : 2), terminalReversal ? 3 : 2, ...replacement);
+  }
+}
+
+function flipTerminalBridgeOffset(
+  replacement: Point[],
+  axis: "horizontal" | "vertical",
+  endpoint: Point,
+  source: boolean,
+): void {
+  if (replacement.length < 4) return;
+  const firstOffsetIndex = source ? 2 : 1;
+  const secondOffsetIndex = source ? 3 : 2;
+  if (axis === "horizontal") {
+    const current = replacement[firstOffsetIndex]!.y;
+    const alternate = endpoint.y * 2 - current;
+    replacement[firstOffsetIndex]!.y = alternate;
+    replacement[secondOffsetIndex]!.y = alternate;
+  } else {
+    const current = replacement[firstOffsetIndex]!.x;
+    const alternate = endpoint.x * 2 - current;
+    replacement[firstOffsetIndex]!.x = alternate;
+    replacement[secondOffsetIndex]!.x = alternate;
+  }
+}
+
+function immediateReversal(a: Point, b: Point, c: Point): boolean {
+  if (a.x === b.x && b.x === c.x) {
+    return (b.y - a.y) * (c.y - b.y) < 0;
+  }
+  if (a.y === b.y && b.y === c.y) {
+    return (b.x - a.x) * (c.x - b.x) < 0;
+  }
+  return false;
+}
+
+function collapseInteriorBacktracks(points: Point[]): void {
+  let changed = true;
+  while (changed && points.length > 4) {
+    changed = false;
+    // Keep both terminal stems intact. Only remove a malformed interior elbow
+    // that makes the route immediately retrace its preceding segment.
+    for (let index = 2; index <= points.length - 3; index++) {
+      if (!immediateReversal(points[index - 1]!, points[index]!, points[index + 1]!)) continue;
+      points.splice(index, 1);
+      changed = true;
+      break;
+    }
+  }
+}
+
+function followsOutwardDirection(endpoint: Point, neighbor: Point, side: Side): boolean {
+  switch (side) {
+    case "e": return neighbor.x > endpoint.x && neighbor.y === endpoint.y;
+    case "w": return neighbor.x < endpoint.x && neighbor.y === endpoint.y;
+    case "n": return neighbor.y < endpoint.y && neighbor.x === endpoint.x;
+    case "s": return neighbor.y > endpoint.y && neighbor.x === endpoint.x;
+  }
+}
+
+function outwardStem(point: Point, side: Side): Point {
+  switch (side) {
+    case "e": return { x: point.x + MIN_TERMINAL_STEM, y: point.y };
+    case "w": return { x: point.x - MIN_TERMINAL_STEM, y: point.y };
+    case "n": return { x: point.x, y: point.y - MIN_TERMINAL_STEM };
+    case "s": return { x: point.x, y: point.y + MIN_TERMINAL_STEM };
+  }
+}
+
+function sourceTerminalBridge(
+  endpoint: Point,
+  neighbor: Point,
+  stem: Point,
+  axis: "horizontal" | "vertical",
+  sameAxis: boolean,
+): Point[] {
+  if (!sameAxis) {
+    return [endpoint, stem, axis === "horizontal"
+      ? { x: stem.x, y: neighbor.y }
+      : { x: neighbor.x, y: stem.y }, neighbor];
+  }
+  const offset = perpendicularOffset(endpoint, neighbor, axis);
+  return axis === "horizontal"
+    ? [endpoint, stem, { x: stem.x, y: offset }, { x: neighbor.x, y: offset }, neighbor]
+    : [endpoint, stem, { x: offset, y: stem.y }, { x: offset, y: neighbor.y }, neighbor];
+}
+
+function targetTerminalBridge(
+  neighbor: Point,
+  endpoint: Point,
+  stem: Point,
+  axis: "horizontal" | "vertical",
+  sameAxis: boolean,
+): Point[] {
+  if (!sameAxis) {
+    return [neighbor, axis === "horizontal"
+      ? { x: stem.x, y: neighbor.y }
+      : { x: neighbor.x, y: stem.y }, stem, endpoint];
+  }
+  const offset = perpendicularOffset(endpoint, neighbor, axis);
+  return axis === "horizontal"
+    ? [neighbor, { x: neighbor.x, y: offset }, { x: stem.x, y: offset }, stem, endpoint]
+    : [neighbor, { x: offset, y: neighbor.y }, { x: offset, y: stem.y }, stem, endpoint];
+}
+
+function perpendicularOffset(endpoint: Point, neighbor: Point, axis: "horizontal" | "vertical"): number {
+  if (axis === "horizontal") {
+    const positive = endpoint.y + MIN_TERMINAL_STEM;
+    return neighbor.y === positive ? endpoint.y - MIN_TERMINAL_STEM : positive;
+  }
+  const positive = endpoint.x + MIN_TERMINAL_STEM;
+  return neighbor.x === positive ? endpoint.x - MIN_TERMINAL_STEM : positive;
 }
 
 function templates(
@@ -3296,7 +3532,7 @@ export function routeConnectionPreview(
   } else {
     points = nudgePathOffBoundaries(points, boundaries, obstacles, context, []);
   }
-  points = normalizeOrthogonalRoute(points);
+  points = anchorRouteEndpoints(points, source.icon, target.icon);
   return points;
 }
 

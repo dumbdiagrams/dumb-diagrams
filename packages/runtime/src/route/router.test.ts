@@ -14,6 +14,7 @@ import { layoutDocument } from "../layout/index.js";
 import {
   collapseOrthogonalRouteArtifacts,
   eraseOrthogonalRouteLoops,
+  anchorRouteEndpoints,
   getEdgeBadgePlacement,
   getEdgeLabelPlacementOnPath,
   normalizeOrthogonalRoute,
@@ -1061,13 +1062,190 @@ describe("routeEdgePreview", () => {
       manual[1]!,
       nearestPortAnchor(target.icon, manual.at(-1)!).point,
     ];
-    expect(route?.points).toEqual(collapseOrthogonalRouteArtifacts(snapped));
+    expect(route?.points[0]).toEqual(snapped[0]);
+    expect(route?.points.at(-1)).toEqual(snapped.at(-1));
     expect(route?.points.slice(0, -1).every((point, index) => {
       const next = route.points[index + 1]!;
       return point.x === next.x || point.y === next.y;
     })).toBe(true);
+    expectTerminalLegOutward(
+      route!.points,
+      route!.points[0]!,
+      nearestPortAnchor(source.icon, route!.points[0]!).side,
+      true,
+    );
+    expectTerminalLegOutward(
+      route!.points,
+      route!.points.at(-1)!,
+      nearestPortAnchor(target.icon, route!.points.at(-1)!).side,
+      false,
+    );
+  });
+
+  it("preserves a manual endpoint already on the icon perimeter and reanchors it only after movement", () => {
+    const doc = createEmptyDocument("manual-endpoint-stability");
+    doc.resources = [routingResource("source", "generic.server", "Source"), routingResource("target", "generic.server", "Target")];
+    doc.edges = [{ id: "connection", source: "source", target: "target", style: "solid" }];
+    const points = [{ x: 68, y: 46 }, { x: 220, y: 46 }];
+    doc.views[0]!.routes.connection = { pin: true, mode: "manual", points };
+    const layout: LayoutResult = {
+      nodes: [routingNode("source", 20, 20, 80), routingNode("target", 220, 22, 80)],
+      groups: [], edges: [], width: 340, height: 160, symmetries: [],
+    };
+    expect(routeEdges(doc, layout)[0]!.points).toEqual(points);
+    const moved = { ...layout, nodes: [routingNode("source", 36, 28, 80), layout.nodes[1]!] };
+    const movedPoints = routeEdges(doc, moved)[0]!.points;
+    expect(movedPoints[0]).toEqual(nearestPortAnchor(moved.nodes[0]!.icon, points[0]!).point);
+    expect(movedPoints.at(-1)).toEqual(points.at(-1));
+  });
+
+  it.each(["n", "e", "s", "w"] as const)(
+    "leaves and approaches every terminal face outward (%s)",
+    (side) => {
+      const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
+      const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
+      const source = portPoint(sourceIcon, side, 0.5);
+      const target = portPoint(targetIcon, side, 0.5);
+      const inward = (point: { x: number; y: number }) => {
+        switch (side) {
+          case "n": return { x: point.x, y: point.y + 32 };
+          case "e": return { x: point.x - 32, y: point.y };
+          case "s": return { x: point.x, y: point.y - 32 };
+          case "w": return { x: point.x + 32, y: point.y };
+        }
+      };
+      const route = anchorRouteEndpoints(
+        [source, inward(source), inward(target), target],
+        sourceIcon,
+        targetIcon,
+      );
+      expect(route[0]).toEqual(source);
+      expect(route.at(-1)).toEqual(target);
+      expectTerminalLegOutward(route, source, side, true);
+      expectTerminalLegOutward(route, target, side, false);
+      expectNoImmediateReversals(route);
+      expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
+      expect(route.slice(0, -1).every((point, index) => {
+        const next = route[index + 1]!;
+        return point.x === next.x || point.y === next.y;
+      })).toBe(true);
+    },
+  );
+
+  it("repairs a west terminal that approaches from the inside with a visible stem", () => {
+    const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
+    const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
+    const source = portPoint(sourceIcon, "w", 0.5);
+    const target = portPoint(targetIcon, "e", 0.5);
+    const route = anchorRouteEndpoints([
+      source,
+      { x: source.x + 48, y: source.y },
+      { x: target.x + 32, y: target.y },
+      target,
+    ], sourceIcon, targetIcon);
+
+    expectTerminalLegOutward(route, source, "w", true);
+    expect(route[1]!.x).toBe(source.x - 16);
+    expect(route[1]!.y).toBe(source.y);
+    expectTerminalLegOutward(route, target, "e", false);
+    expectNoImmediateReversals(route);
+    expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
+    expect(route.slice(0, -1).every((point, index) => {
+      const next = route[index + 1]!;
+      return point.x === next.x || point.y === next.y;
+    })).toBe(true);
+  });
+
+  it("reattaches detached endpoints while keeping a valid perimeter attachment exact", () => {
+    const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
+    const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
+    const source = portPoint(sourceIcon, "e", 0.25);
+    const target = portPoint(targetIcon, "w", 0.75);
+    const route = anchorRouteEndpoints([
+      { x: source.x + 8, y: source.y },
+      { x: 180, y: source.y },
+      { x: 220, y: target.y },
+      target,
+    ], sourceIcon, targetIcon);
+    expect(route[0]).toEqual(source);
+    expect(route.at(-1)).toEqual(target);
+    expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
+  });
+
+  it("keeps terminal repairs idempotent across face pairs and body bends", () => {
+    const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
+    const targetIcon = { x: 240, y: 200, w: 40, h: 40 };
+    const sides = ["n", "e", "s", "w"] as const;
+    for (const sourceSide of sides) {
+      for (const targetSide of sides) {
+        const source = portPoint(sourceIcon, sourceSide, 0.5);
+        const target = portPoint(targetIcon, targetSide, 0.5);
+        for (let x = 60; x <= 300; x += 40) {
+          for (let y = 60; y <= 280; y += 40) {
+            const route = anchorRouteEndpoints(
+              [source, { x, y }, target],
+              sourceIcon,
+              targetIcon,
+            );
+            expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
+            expectTerminalLegOutward(route, source, sourceSide, true);
+            expectTerminalLegOutward(route, target, targetSide, false);
+            expect(reversalCount(route)).toBeLessThanOrEqual(reversalCount(
+              normalizeOrthogonalRoute([source, { x, y }, target]),
+            ));
+          }
+        }
+      }
+    }
   });
 });
+
+function expectTerminalLegOutward(
+  route: Array<{ x: number; y: number }>,
+  endpoint: { x: number; y: number },
+  side: "n" | "e" | "s" | "w",
+  source: boolean,
+): void {
+  const neighbor = source ? route[1]! : route.at(-2)!;
+  const delta = { x: neighbor.x - endpoint.x, y: neighbor.y - endpoint.y };
+  const sign = side === "e" ? [1, 0] : side === "w" ? [-1, 0] : side === "s" ? [0, 1] : [0, -1];
+  expect(delta.x * sign[0] + delta.y * sign[1]).toBeGreaterThan(0);
+  expect(delta.x * sign[1] - delta.y * sign[0]).toBe(0);
+}
+
+function expectNoImmediateReversals(route: Array<{ x: number; y: number }>): void {
+  for (let index = 1; index < route.length - 1; index++) {
+    const before = route[index - 1]!;
+    const current = route[index]!;
+    const after = route[index + 1]!;
+    const horizontal = before.y === current.y && current.y === after.y;
+    const vertical = before.x === current.x && current.x === after.x;
+    if (horizontal) {
+      expect((current.x - before.x) * (after.x - current.x)).toBeGreaterThanOrEqual(0);
+    }
+    if (vertical) {
+      expect((current.y - before.y) * (after.y - current.y)).toBeGreaterThanOrEqual(0);
+    }
+  }
+}
+
+function reversalCount(route: Array<{ x: number; y: number }>): number {
+  let count = 0;
+  for (let index = 1; index < route.length - 1; index++) {
+    const before = route[index - 1]!;
+    const current = route[index]!;
+    const after = route[index + 1]!;
+    if (
+      before.y === current.y && current.y === after.y &&
+      (current.x - before.x) * (after.x - current.x) < 0
+    ) count++;
+    if (
+      before.x === current.x && current.x === after.x &&
+      (current.y - before.y) * (after.y - current.y) < 0
+    ) count++;
+  }
+  return count;
+}
 
 function gatewayRoutingRegressionLayout(movedGateway: boolean): {
   doc: DiagramDocument;

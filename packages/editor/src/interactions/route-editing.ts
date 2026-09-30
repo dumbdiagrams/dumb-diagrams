@@ -1,7 +1,7 @@
 import type { Point, Rect } from "@dumb-diagrams/runtime/core";
 
 import { nearestPortAnchor } from "@dumb-diagrams/runtime/core";
-import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+import { anchorRouteEndpoints, normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import { GRID_SIZE } from "../grid.js";
 
@@ -68,9 +68,9 @@ export function moveOrthogonalBend(
 }
 
 /**
- * Reattach a manually edited route without discarding the orientation of its
- * first and last legs. If an edit moved an endpoint with its segment, retain
- * that endpoint as an orthogonal stub before snapping back to the icon.
+ * Reattach a manually edited route while preserving its interior bends. If an
+ * edit moved an endpoint with its segment, bridge it back to the icon, then
+ * enforce perpendicular departure and arrival at the attached faces.
  */
 export function anchorOrthogonalRouteEndpoints(
   points: Point[],
@@ -105,7 +105,7 @@ export function anchorOrthogonalRouteEndpoints(
   if (approach) out.push(approach);
   out.push({ ...targetAnchor });
 
-  return collapseOrthogonalRoute(out);
+  return anchorRouteEndpoints(collapseOrthogonalRoute(out), sourceIcon, targetIcon);
 }
 
 export function collapseOrthogonalRoute(points: Point[]): Point[] {

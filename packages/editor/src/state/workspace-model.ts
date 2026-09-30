@@ -2,7 +2,7 @@ import { DIAGRAM_LIMITS, characterLength, utf8ByteLength } from "@dumb-diagrams/
 import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { sanitizeSvgResult } from "@dumb-diagrams/runtime/render";
 
-import type { Viewport } from "../model/types";
+import type { LayoutEditingMode, Viewport } from "../model/types";
 
 export type DocumentOrigin =
   | "fixture"
@@ -23,6 +23,7 @@ export interface WorkspaceTab {
   /** A bounded render snapshot used only while the tab is in the recycle bin. */
   previewSvg?: string;
   origin: DocumentOrigin;
+  layoutMode: LayoutEditingMode;
   viewport: Viewport;
   viewportCustomized: boolean;
 }
@@ -74,6 +75,7 @@ export function createWorkspaceTab(
     savedSource?: string;
     filename?: string;
     origin?: DocumentOrigin;
+    layoutMode?: LayoutEditingMode;
     viewport: Viewport;
     viewportCustomized?: boolean;
     id?: string;
@@ -86,6 +88,7 @@ export function createWorkspaceTab(
     savedSource: options.savedSource ?? source,
     filename: options.filename,
     origin: options.origin ?? "new",
+    layoutMode: options.layoutMode ?? "manual",
     viewport: { ...options.viewport },
     viewportCustomized: options.viewportCustomized ?? false,
   };
@@ -255,6 +258,7 @@ function normalizeTab(input: unknown): WorkspaceTab | null {
   if (typeof tab.savedSource === "string" && utf8ByteLength(tab.savedSource) > DIAGRAM_LIMITS.sourceBytes) return null;
   const savedSource = typeof tab.savedSource === "string" ? tab.savedSource : tab.source;
   const origin = isDocumentOrigin(tab.origin) ? tab.origin : "new";
+  const layoutMode = isLayoutEditingMode(tab.layoutMode) ? tab.layoutMode : "manual";
   const initialSource = typeof tab.initialSource === "string"
     ? tab.initialSource
     : origin === "example" ? savedSource : tab.source;
@@ -270,6 +274,7 @@ function normalizeTab(input: unknown): WorkspaceTab | null {
     filename: normalizeSourceFilename(typeof tab.filename === "string" ? tab.filename : undefined),
     ...(previewSvg ? { previewSvg } : {}),
     origin,
+    layoutMode,
     viewport: { panX: viewport.panX, panY: viewport.panY, zoom: viewport.zoom },
     viewportCustomized: tab.viewportCustomized === true,
   };
@@ -291,6 +296,10 @@ function normalizeSourceFilename(filename?: string): string | undefined {
 
 function isDocumentOrigin(value: unknown): value is DocumentOrigin {
   return value === "fixture" || value === "new" || value === "import" || value === "example" || value === "recovery" || value === "duplicate" || value === "file";
+}
+
+function isLayoutEditingMode(value: unknown): value is LayoutEditingMode {
+  return value === "manual" || value === "automatic";
 }
 
 function finiteCoordinate(value: unknown): value is number {

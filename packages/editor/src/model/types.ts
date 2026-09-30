@@ -1,4 +1,6 @@
 /** View state shared by the canvas and the workspace model. */
+export type LayoutEditingMode = "manual" | "automatic";
+
 export interface Viewport {
   panX: number;
   panY: number;
