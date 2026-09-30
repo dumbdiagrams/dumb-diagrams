@@ -55,15 +55,9 @@ export type WorkspacePreviewMap = Readonly<Record<string, string | undefined>>;
  */
 export function normalizeWorkspacePreview(value: unknown): string | undefined {
   if (typeof value !== "string" || utf8ByteLength(value) > MAX_RECYCLED_PREVIEW_BYTES) return undefined;
-  // The renderer's strict attribute policy intentionally rejects external
-  // references, while generated SVGs carry the inert SVG namespace URL.
-  // Validate that namespace separately and sanitize the remaining markup.
-  const namespace = value.match(/\s+xmlns=(['"])http:\/\/www\.w3\.org\/2000\/svg\1/i)?.[0];
-  const sanitized = sanitizeSvgResult(namespace ? value.replace(namespace, "") : value);
+  const sanitized = sanitizeSvgResult(value);
   if (sanitized.isErr()) return undefined;
-  const content = !namespace || /\bxmlns\s*=/i.test(sanitized.value.content)
-    ? sanitized.value.content
-    : sanitized.value.content.replace(/^\s*<svg\b/i, (tag) => `${tag}${namespace}`);
+  const content = sanitized.value.content;
   return utf8ByteLength(content) <= MAX_RECYCLED_PREVIEW_BYTES ? content : undefined;
 }
 

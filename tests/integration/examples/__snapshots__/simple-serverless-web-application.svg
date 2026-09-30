@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="865" height="600" viewBox="0 0 865 600">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-aws_cloud">
+  <rect class="group-border-contrast" x="140.5" y="32" width="691.6000000000001" height="256"
+    fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"  rx="0"/>
+  <rect class="group-border" x="140.5" y="32" width="691.6000000000001" height="256"
+    fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/aws/aws-group-aws-cloud-8caea10d-6f947a0e.svg" x="140.5" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="172.5" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Cloud</text>
+  
+</g>
+
+<g id="group-frontend">
+  <rect class="group-border" x="156.5" y="64" width="279.45000000000005" height="200"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="164.5" y="79.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Frontend services</text>
+  
+</g>
+
+<g id="edge-client_to_cdn" class="edge edge-flow edge-solid">
+  <path d="M 94 131 L 152 131 L 152 164 L 188.5 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="123" cy="115" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="123" y="119" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  
+</g>
+
+<g id="edge-cdn_to_assets" class="edge edge-flow edge-solid">
+  <path d="M 236.5 164 L 339.5 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="cdn_to_assets" x="288" y="156" text-anchor="middle" font-size="11" fill="#163964">static content</text>
+</g>
+
+<g id="edge-cdn_to_api" class="edge edge-flow edge-solid">
+  <path d="M 236.5 176 L 272 176 L 272 256 L 448 256 L 448 144 L 480.5 144" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="360" cy="272" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="360" y="276" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  
+</g>
+
+<g id="edge-api_to_handler" class="edge edge-flow edge-solid">
+  <path d="M 528.5 144 L 601.5 144" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="565" cy="128" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="565" y="132" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  
+</g>
+
+<g id="edge-handler_to_data" class="edge edge-flow edge-solid">
+  <path d="M 649.5 136 L 732.5 136" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="691" cy="120" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="691" y="124" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  
+</g>
+
+<g id="res-web_client">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="46" y="107" width="48" height="48"/>
+  <text x="70.25" y="171" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="70.25" y="189" text-anchor="middle" font-size="11" font-style="italic">Web client</text>
+</g>
+
+<g id="res-cdn">
+  <image href="catalog-icons/aws/aws-resource-cloudfront-66491998-3e3ea365.svg" x="188.5" y="140" width="48" height="48"/>
+  <text x="212.8" y="204" text-anchor="middle" font-size="12" font-weight="500">CloudFront</text>
+  <text x="212.8" y="222" text-anchor="middle" font-size="11" font-style="italic">Web delivery</text>
+</g>
+
+<g id="res-static_assets">
+  <image href="catalog-icons/aws/aws-resource-s3-b92c5101-c4cde455.svg" x="339.5" y="140" width="48" height="48"/>
+  <text x="363.925" y="204" text-anchor="middle" font-size="12" font-weight="500">S3</text>
+  <text x="363.925" y="222" text-anchor="middle" font-size="11" font-style="italic">Static web assets</text>
+</g>
+
+<g id="res-gateway">
+  <image href="catalog-icons/aws/aws-resource-api-gateway-a91afd65-2aabe4b4.svg" x="480.5" y="120" width="48" height="48"/>
+  <text x="504.8" y="184" text-anchor="middle" font-size="12" font-weight="500">API Gateway</text>
+  
+</g>
+
+<g id="res-handler">
+  <image href="catalog-icons/aws/aws-resource-lambda-5818c80c-4738d75e.svg" x="601.5" y="112" width="48" height="48"/>
+  <text x="625.875" y="176" text-anchor="middle" font-size="12" font-weight="500">Lambda</text>
+  <text x="625.875" y="194" text-anchor="middle" font-size="11" font-style="italic">Request handler</text>
+</g>
+
+<g id="res-app_data">
+  <image href="catalog-icons/aws/aws-resource-dynamodb-ed169f04-fd4e8732.svg" x="732.5" y="112" width="48" height="48"/>
+  <text x="756.9" y="176" text-anchor="middle" font-size="12" font-weight="500">DynamoDB</text>
+  <text x="756.9" y="194" text-anchor="middle" font-size="11" font-style="italic">Application data</text>
+</g>
+</svg>

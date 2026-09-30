@@ -807,9 +807,6 @@ export type DgmParseError =
   | { readonly code: "source-too-large"; readonly message: string }
   | { readonly code: "invalid-syntax"; readonly message: string };
 
-/** @deprecated Prefer the workflow-oriented `DgmParseError` name. */
-export type ParseDgmError = DgmParseError;
-
 /** Safe boundary for callers that need typed parse failures instead of throws. */
 export function parseDgmResult(source: string): Result<DiagramDocument, DgmParseError> {
   if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {

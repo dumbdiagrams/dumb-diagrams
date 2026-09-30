@@ -1,7 +1,6 @@
 {
   "version": 1,
   "description": "Reviewed byte baseline for the canonical AWS, Azure, GCP, and cloud-agnostic bundles.",
-  "compatibilityMirrors": [],
   "curated": {
     "simple-serverless-web-application": {
       "diagram": "examples/curated/simple-serverless-web-application/diagram.dgm",

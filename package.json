@@ -20,7 +20,7 @@
     "test:integration": "vitest run tests/integration",
     "pretest:coverage": "pnpm catalog:stage",
     "test:coverage": "vitest run --coverage && pnpm check:coverage",
-    "check:coverage": "node scripts/warn-coverage.mjs",
+    "check:coverage": "node scripts/check-coverage.mjs",
     "typecheck": "pnpm --filter @dumb-diagrams/editor typecheck",
     "check:versions": "node scripts/check-versions.mjs",
     "check:dependencies": "node scripts/check-dependencies.mjs",

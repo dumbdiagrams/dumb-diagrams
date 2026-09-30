@@ -51,7 +51,6 @@
         "noArrayIndexKey": "off",
         "noAssignInExpressions": "off",
         "noControlCharactersInRegex": "off",
-        "noDuplicateObjectKeys": "off",
         "noImplicitAnyLet": "off",
         "useIterableCallbackReturn": "off",
         "noPrototypeBuiltins": "off",

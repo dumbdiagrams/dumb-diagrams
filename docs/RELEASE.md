@@ -166,8 +166,7 @@ dynamic boundary instead of increasing the warning limit.
   See [`assets/catalog/README.md`](../assets/catalog/README.md).
 - `examples/curated/` — canonical four-file bundles for curated AWS, Azure,
   GCP, and cloud-agnostic examples.
-- `examples/diagrams/` and `examples/prompts/` — development fixtures, all
-  validated by CI. Studio ships ten canonical examples: seven AWS, one Azure,
+- `examples/diagrams/` — development fixtures, all validated by CI. Studio ships ten canonical examples: seven AWS, one Azure,
   one GCP, and one cloud-agnostic.
 - `packages/brand`, `packages/runtime`, `packages/editor`, `packages/cli`, and
   `packages/website` — the five workspace packages.

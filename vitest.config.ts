@@ -34,7 +34,7 @@ export default defineConfig({
         "**/vite-env.d.ts",
         // These are browser-bound orchestration layers. Their behavior is
         // exercised by Playwright rather than by the Node-focused coverage
-        // suite below. Required numeric floors live in scripts/warn-coverage.mjs.
+        // suite below. Required numeric floors live in scripts/check-coverage.mjs.
         "packages/editor/src/interactions/InteractionOverlay.tsx",
         "packages/editor/src/diagram-compiler.worker.ts",
         "packages/editor/src/use-diagram-compilation.ts",

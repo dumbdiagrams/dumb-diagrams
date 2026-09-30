@@ -51,9 +51,6 @@ export type DiagramValidationError = {
   readonly issues: readonly ValidationIssue[];
 };
 
-/** @deprecated Prefer the workflow-oriented `DiagramValidationError` name. */
-export type CompileDiagramError = DiagramValidationError;
-
 /** Safe boundary for validation failures; warnings and invariants remain success. */
 export function compileDiagramResult(
   doc: Parameters<typeof layoutDocument>[0],

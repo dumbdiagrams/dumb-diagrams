@@ -86,6 +86,19 @@ describe("sanitizeSvg", () => {
     expect(defaults.intrinsicH).toBe(64);
   });
 
+  it.each([
+    ["Figma", '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h20v20H2z" fill="#232F3E"/></svg>'],
+    ["Illustrator", '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 48 48"><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient></defs><rect width="48" height="48" fill="url(#g)"/></svg>'],
+    ["Inkscape plain SVG", '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="32" height="32" viewBox="0 0 32 32" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg"><defs id="defs1"/><g id="layer1"><circle cx="16" cy="16" r="12"/></g></svg>'],
+  ])("accepts real-world %s exports with standard namespaces", (_tool, svg) => {
+    expect(sanitizeSvgResult(svg).isOk()).toBe(true);
+  });
+
+  it("rejects non-standard namespace declarations", () => {
+    expect(() => sanitizeSvg('<svg xmlns="https://example.com/ns"><rect/></svg>')).toThrow(/standard namespace/);
+    expect(() => sanitizeSvg('<svg xmlns:xlink="javascript:alert(1)"><rect/></svg>')).toThrow(/standard namespace/);
+  });
+
   it("allows only base64-embedded raster images", () => {
     const safe = sanitizeSvg(
       '<svg width="2" height="2"><image href="data:image/png;base64,iVBORw0KGgo=" x="0" y="0" width="2" height="2"/></svg>',

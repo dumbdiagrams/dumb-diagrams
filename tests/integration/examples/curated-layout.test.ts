@@ -37,7 +37,7 @@ describe("curated provider layout contracts", () => {
   });
 
   for (const [id, contract] of Object.entries(contracts.examples)) {
-    it(`keeps ${id} within its reviewed layout contract`, () => {
+    it(`keeps ${id} within its reviewed layout contract`, async () => {
       const doc = parseDgm(readFileSync(resolve(root, contract.diagram), "utf8"));
       expect(doc.flow, `${id} flow`).toBe(contract.flow);
 
@@ -71,6 +71,7 @@ describe("curated provider layout contracts", () => {
 
       const diffs = diffCompiledGeometry(contract.geometry, compiledGeometry(layout));
       expect(diffs, diffs.join("\n")).toEqual([]);
+      await expect(result.svg).toMatchFileSnapshot(`__snapshots__/${id}.svg`);
     });
   }
 });

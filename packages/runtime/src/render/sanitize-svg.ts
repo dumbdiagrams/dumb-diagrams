@@ -43,8 +43,13 @@ const ALLOWED_ATTRS = new Set([
   "fill-rule", "stroke", "stroke-width", "stroke-opacity", "stroke-linecap", "stroke-linejoin",
   "stroke-dasharray", "stroke-dashoffset", "opacity", "clip-path", "clip-rule", "mask",
   "offset", "stop-color", "stop-opacity", "gradientunits", "gradienttransform", "spreadmethod",
-  "preserveaspectratio", "marker-start", "marker-mid", "marker-end", "href",
+  "preserveaspectratio", "marker-start", "marker-mid", "marker-end", "href", "version",
 ]);
+// Namespace declarations are inert only with their standard values.
+const NAMESPACE_ATTRS: Record<string, string> = {
+  xmlns: "http://www.w3.org/2000/svg",
+  "xmlns:xlink": "http://www.w3.org/1999/xlink",
+};
 const LOCAL_REFERENCE_ATTRS = new Set(["clip-path", "mask", "marker-start", "marker-mid", "marker-end"]);
 const PAINT_REFERENCE_ATTRS = new Set(["fill", "stroke"]);
 const MAX_INTRINSIC_SIZE = 10_000;
@@ -61,9 +66,6 @@ export type SvgSanitizeError = {
   readonly code: "invalid-svg";
   readonly message: string;
 };
-
-/** @deprecated Prefer the workflow-oriented `SvgSanitizeError` name. */
-export type SanitizeSvgError = SvgSanitizeError;
 
 /** Safe boundary for untrusted SVG input; defects still propagate to the caller. */
 export function sanitizeSvgResult(input: string): Result<SanitizedSvg, SvgSanitizeError> {
@@ -224,6 +226,11 @@ function validateAttributes(rawAttributes: string): Result<void, SvgSanitizeErro
     if (rawAttributes.slice(consumed, attribute.index).trim()) return err(invalidSvg("SVG contains malformed attributes"));
     const name = attribute[1]!.toLowerCase();
     const value = decodeReferenceEscapes(attribute[3]!);
+    if (Object.hasOwn(NAMESPACE_ATTRS, name)) {
+      if (value !== NAMESPACE_ATTRS[name]) return err(invalidSvg(`SVG ${name} must use the standard namespace`));
+      consumed = attributePattern.lastIndex;
+      continue;
+    }
     if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") {
       return err(invalidSvg(`SVG attribute ${name} is not allowed`));
     }

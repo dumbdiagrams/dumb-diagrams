@@ -336,7 +336,7 @@ describe("routeEdgePreview", () => {
 
   it("keeps Azure step badges clear of resource cards and subnet headers", () => {
     const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/diagrams/azure-private-app-service.dgm", import.meta.url),
+      new URL("../../../../examples/curated/azure-private-app-service/diagram.dgm", import.meta.url),
       "utf8",
     ));
     const layout = layoutDocument(doc);
@@ -344,7 +344,7 @@ describe("routeEdgePreview", () => {
     const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
     const groups = new Map(layout.groups.map((group) => [group.id, group]));
     const requestBadge = routes.find((edge) => edge.id === "https_requests")!.badge!;
-    const readBadge = routes.find((edge) => edge.id === "read_requests")!.badge!;
+    const readBadge = routes.find((edge) => edge.id === "cache_reads")!.badge!;
 
     expect(circleIntersectsRectForTest(
       requestBadge,

@@ -67,7 +67,7 @@ export const SOURCE_MANIFEST = Object.freeze({
     { path: "e2e-packed", extensions: [".ts"] },
     { path: "examples/curated", fileNames: ["architecture-brief.md", "diagram.dgm", "reference-spec.md", "user-prompt.md"] },
     { path: "examples/evaluations", fileNames: ["curated-aws.json", "curated-providers.json", "detailed.dgm", "detailed.md", "expected.json", "normal.dgm", "normal.md", "vague.dgm", "vague.md"] },
-    { path: "examples/diagrams", fileNames: ["async-docs.dgm", "azure-private-app-service.dgm", "transfer-hub.dgm"] },
+    { path: "examples/diagrams", fileNames: ["async-docs.dgm", "transfer-hub.dgm"] },
     { path: "packages/cli/src", extensions: [".ts"] },
     { path: "packages/cli/templates", extensions: [".md"] },
     { path: "packages/editor/src", extensions: [".css", ".ts", ".tsx"] },

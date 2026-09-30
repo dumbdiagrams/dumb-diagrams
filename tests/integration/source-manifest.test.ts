@@ -17,7 +17,6 @@ describe("source manifest", () => {
 
     expect(files).toEqual(expect.arrayContaining([
       "examples/diagrams/async-docs.dgm",
-      "examples/diagrams/azure-private-app-service.dgm",
       "examples/diagrams/transfer-hub.dgm",
       "packages/runtime/test-fixtures.ts",
     ]));

@@ -15,8 +15,8 @@ const entries = Object.entries(baseline.curated ?? {});
 const actualIds = new Set(entries.map(([id]) => id));
 
 for (const [id, entry] of entries) {
-  checkFile(id, "diagram", entry.diagram, entry.diagramSha256, ["examples/diagrams", "examples/curated"]);
-  checkFile(id, "reference spec", entry.referenceSpec, entry.referenceSpecSha256, ["examples/prompts", "examples/curated"]);
+  checkFile(id, "diagram", entry.diagram, entry.diagramSha256, ["examples/curated"]);
+  checkFile(id, "reference spec", entry.referenceSpec, entry.referenceSpecSha256, ["examples/curated"]);
   if (entry.architectureBrief) {
     checkFile(id, "architecture brief", entry.architectureBrief, entry.architectureBriefSha256, ["examples/curated"]);
   }
@@ -25,27 +25,7 @@ for (const [id, entry] of entries) {
   }
 }
 
-for (const mirror of baseline.compatibilityMirrors ?? []) {
-  const canonical = safePath(mirror.canonical, ["examples/curated"]);
-  const compatibility = safePath(mirror.mirror, ["examples/diagrams", "examples/prompts"]);
-  if (!canonical || !compatibility) continue;
-  if (!existsSync(canonical) || !existsSync(compatibility)) {
-    failures.push(`compatibility mirror file missing: ${mirror.canonical} or ${mirror.mirror}`);
-    continue;
-  }
-  if (!readFileSync(canonical).equals(readFileSync(compatibility))) {
-    failures.push(`compatibility mirror drifted: ${mirror.mirror} differs from ${mirror.canonical}`);
-  }
-}
-
 const discoveredIds = new Set();
-for (const file of readdirSync(resolve(root, "examples/diagrams"))) {
-  if (!file.endsWith(".dgm") || ["async-docs.dgm", "transfer-hub.dgm", "azure-private-app-service.dgm"].includes(file)) continue;
-  discoveredIds.add(file.replace(/\.dgm$/, ""));
-}
-for (const file of readdirSync(resolve(root, "examples/prompts"))) {
-  if (file.endsWith(".md") && file !== "azure-private-app-service.md") discoveredIds.add(file.replace(/\.md$/, ""));
-}
 for (const directory of readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })) {
   if (directory.isDirectory()) discoveredIds.add(directory.name);
 }
@@ -57,7 +37,7 @@ if (failures.length) {
   console.error("Update hashes only after reviewing intentional source/spec changes.");
   process.exitCode = 1;
 } else {
-  console.log(`OK curated baseline: ${entries.length} diagram/reference pairs and ${(baseline.compatibilityMirrors ?? []).length} compatibility mirrors`);
+  console.log(`OK curated baseline: ${entries.length} diagram/reference pairs`);
 }
 
 function checkFile(id, role, path, expectedHash, allowedRoots) {
