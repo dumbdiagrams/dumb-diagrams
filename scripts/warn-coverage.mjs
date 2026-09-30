@@ -3,10 +3,9 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const COVERAGE_TARGETS = Object.freeze({
-  // These floors include the complete production TS/TSX source set. React
-  // components whose deterministic behavior is owned by Playwright lower the
-  // aggregate percentage, so the thresholds are intentionally reviewable and
-  // conservative rather than pretending those files are not shipped.
+  // Applied to the instrumented source set in vitest.config.ts. Browser
+  // orchestration exclusions are explicit there; Playwright coverage is not
+  // included in these percentages.
   statements: 65,
   branches: 60,
   functions: 60,
@@ -22,7 +21,7 @@ export const PACKAGE_COVERAGE_TARGETS = Object.freeze({
   runtime: Object.freeze({ statements: 80, branches: 70, functions: 80, lines: 80 }),
   // Most editor React components are exercised by Playwright rather than the
   // Node Vitest runner. Keep a deliberately conservative floor while still
-  // counting every production TS/TSX file and deterministic state seam.
+  // counting panels and deterministic state seams.
   editor: Object.freeze({ statements: 45, branches: 38, functions: 40, lines: 45 }),
 });
 

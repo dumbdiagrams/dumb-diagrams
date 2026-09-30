@@ -77,6 +77,9 @@ jobs:
       - name: Build all packages and editor
         run: pnpm build
 
+      - name: Check typed Result consumption
+        run: pnpm check:results
+
       - name: Run unit tests with coverage
         run: pnpm test:coverage
 
@@ -117,7 +120,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium webkit --with-deps
+        run: pnpm exec playwright install chromium --with-deps
 
       - name: Build editor assets
         run: pnpm build

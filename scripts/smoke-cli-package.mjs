@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
 import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
+import { collectSourceManifestFiles } from "./lib/source-manifest.mjs";
 
 const root = repoRoot();
 const artifactsDir = join(root, ".artifacts/packages");
@@ -70,6 +71,19 @@ for (const path of required) {
   if (!entries.includes(path)) {
     throw new Error(`Tarball missing required path: ${path}`);
   }
+}
+
+const expectedSourceEntries = new Set([
+  ...collectSourceManifestFiles(root).map((path) => `package/dist/source/${path}`),
+  "package/dist/source/CORRESPONDING_SOURCE.md",
+  "package/dist/source/registry.npmrc",
+]);
+const sourceEntries = new Set(entries.filter((entry) => entry.startsWith("package/dist/source/") && !entry.endsWith("/")));
+for (const path of expectedSourceEntries) {
+  if (!sourceEntries.has(path)) throw new Error(`Tarball missing corresponding-source path: ${path}`);
+}
+for (const path of sourceEntries) {
+  if (!expectedSourceEntries.has(path)) throw new Error(`Tarball includes undeclared corresponding-source path: ${path}`);
 }
 
 const forbiddenPatterns = [".test.js", ".test.d.ts", ".map", "studio-server"];
@@ -178,6 +192,10 @@ function verifyCorrespondingSource(tarballPath) {
     const commands = [
       ["install", "--frozen-lockfile"],
       ["build"],
+      ["check:results"],
+      ["exec", "vitest", "run", "packages/editor/src/editor-model.test.ts", "tests/integration/source-manifest.test.ts"],
+      ["check:performance"],
+      ["exec", "playwright", "test", "--project=chromium", "--list"],
     ];
     for (const args of commands) {
       execFileSync(pnpmCommand, args, { cwd: sourceRoot, stdio: "inherit" });

@@ -7,9 +7,7 @@ export default defineConfig({
   testDir: "./e2e",
   outputDir: ".artifacts/playwright/test-results",
   timeout: 45_000,
-  // Catalog rendering and two browser engines are intentionally heavy. Keep
-  // enough parallelism for speed without starving the compilation workers and
-  // turning interaction coverage into timeout noise on developer machines.
+  // Limit contention between browser tests and compilation workers.
   workers: 4,
   expect: {
     timeout: 10_000,

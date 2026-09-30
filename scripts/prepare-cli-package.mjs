@@ -12,6 +12,7 @@ import {
 import { dirname, join } from "node:path";
 
 import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
+import { copySourceManifest } from "./lib/source-manifest.mjs";
 
 const root = repoRoot();
 const cliPackageRoot = join(root, "packages/cli");
@@ -20,8 +21,8 @@ const editorDist = join(root, "packages/editor/dist");
 const standaloneEditor = join(cliDist, "studio");
 const sourceSnapshot = join(cliDist, "source");
 const packagedExamples = join(cliDist, "templates/examples");
-const projectTemplatesSource = join(cliPackageRoot, "templates");
-const projectTemplatesTarget = join(cliDist, "templates");
+const projectTemplatesSource = join(cliPackageRoot, "templates/project");
+const projectTemplatesTarget = join(cliDist, "templates/project");
 const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
 const entry = join(cliDist, "index.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
@@ -57,11 +58,23 @@ mkdirSync(standaloneEditor, { recursive: true });
 cpSync(editorDist, standaloneEditor, { recursive: true });
 
 rmSync(projectTemplatesTarget, { recursive: true, force: true });
-cpSync(projectTemplatesSource, projectTemplatesTarget, { recursive: true });
+copyFiles(projectTemplatesSource, projectTemplatesTarget, [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "GEMINI.md",
+  "diagrams/README.md",
+  ".dumbdiagrams/architecture.md",
+  ".dumbdiagrams/dgm.md",
+  ".dumbdiagrams/instructions.md",
+  ".dumbdiagrams/providers/aws.md",
+  ".dumbdiagrams/providers/azure.md",
+  ".dumbdiagrams/providers/cloud-agnostic.md",
+  ".dumbdiagrams/providers/gcp.md",
+]);
 
 rmSync(packagedExamples, { recursive: true, force: true });
 mkdirSync(packagedExamples, { recursive: true });
-cpSync(exampleTemplateSource, packagedExamples, { recursive: true });
+copyFiles(exampleTemplateSource, packagedExamples, ["README.md"]);
 for (const fileName of exampleFiles) {
   const target = join(packagedExamples, fileName);
   mkdirSync(dirname(target), { recursive: true });
@@ -97,69 +110,8 @@ function cleanupDistArtifacts(distDir) {
 }
 
 function buildSourceSnapshot() {
-  const files = [
-    ".nvmrc",
-    "CHANGELOG.md",
-    "ICON-NOTICES.md",
-    "LICENSE",
-    "README.md",
-    "examples/curated-baseline.json",
-    "examples/routing-warnings.json",
-    "package.json",
-    "playwright.config.ts",
-    "playwright.packed.config.ts",
-    "pnpm-lock.yaml",
-    "pnpm-workspace.yaml",
-    "tsconfig.base.json",
-    "vitest.config.ts",
-    "packages/runtime/package.json",
-    "packages/runtime/ROUTING.md",
-    "packages/runtime/tsconfig.json",
-    "packages/editor/index.html",
-    "packages/editor/package.json",
-    "packages/editor/tsconfig.json",
-    "packages/editor/vite.config.ts",
-    "packages/editor/public/LICENSE",
-    "packages/editor/public/favicon.png",
-    "packages/editor/public/logo_dumbdiagrams.png",
-    "packages/cli/ICON-NOTICES.md",
-    "packages/cli/LICENSE",
-    "packages/cli/README.md",
-    "packages/cli/package.json",
-    "packages/cli/tsconfig.json",
-    "packages/website/package.json",
-    "packages/website/astro.config.mjs",
-    "packages/website/tsconfig.json",
-    "packages/website/README.md",
-    "packages/brand/package.json",
-    "packages/brand/styles.css",
-    "packages/brand/README.md",
-    "packages/brand/FONT-LICENSES.txt",
-  ];
-  const directories = [
-    "assets/catalog",
-    "docs",
-    "e2e",
-    "e2e-packed",
-    "examples/prompts",
-    "examples/diagrams",
-    "examples/curated",
-    "examples/evaluations",
-    "packages/cli/src",
-    "packages/cli/templates",
-    "packages/editor/src",
-    "packages/runtime/src",
-    "packages/website/src",
-    "packages/website/scripts",
-    "scripts",
-  ];
-
   rmSync(sourceSnapshot, { recursive: true, force: true });
-  for (const path of [...files, ...directories]) {
-    const target = join(sourceSnapshot, path);
-    mkdirSync(dirname(target), { recursive: true });
-    cpSync(join(root, path), target, { recursive: true });
-  }
+  copySourceManifest(root, sourceSnapshot);
   const npmrcSource = existsSync(join(root, ".npmrc"))
     ? join(root, ".npmrc")
     : join(root, "registry.npmrc");
@@ -191,4 +143,13 @@ dot-prefixed file directly.
 Requires Node.js 24 or newer.
 `,
   );
+}
+
+function copyFiles(sourceRoot, destinationRoot, files) {
+  for (const file of files) {
+    const source = join(sourceRoot, file);
+    const destination = join(destinationRoot, file);
+    mkdirSync(dirname(destination), { recursive: true });
+    cpSync(source, destination);
+  }
 }

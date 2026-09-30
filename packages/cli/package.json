@@ -35,7 +35,7 @@
     "build": "pnpm --filter @dumb-diagrams/runtime build && tsc -p tsconfig.json",
     "prepare:standalone": "node ../../scripts/prepare-cli-package.mjs",
     "prepack": "node ../../scripts/prepare-cli-package.mjs",
-    "test": "vitest run"
+    "test": "vitest run --root ../.. packages/cli/src"
   },
   "dependencies": {
     "neverthrow": "8.2.0"

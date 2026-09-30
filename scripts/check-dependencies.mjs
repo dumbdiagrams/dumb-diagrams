@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { importBoundaryError } from "./lib/import-boundaries.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"]);
@@ -48,6 +49,8 @@ for (const scope of scopes) {
 
   for (const file of scope.files) {
     for (const specifier of importsIn(file)) {
+      const boundaryError = importBoundaryError(root, file, specifier);
+      if (boundaryError) errors.push(`${relative(root, file)}: ${boundaryError}`);
       const packageName = externalPackageName(specifier);
       if (packageName && !declared.has(packageName)) {
         errors.push(
@@ -87,7 +90,7 @@ if (errors.length > 0) {
   console.error(errors.sort().map((error) => `- ${error}`).join("\n"));
   process.exitCode = 1;
 } else {
-  console.log("Dependency declarations match external imports");
+  console.log("Dependency declarations and workspace import boundaries pass");
 }
 
 function sourceFiles(directory) {

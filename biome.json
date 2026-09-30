@@ -7,6 +7,8 @@
       "packages/*/src/**/*.ts",
       "packages/*/src/**/*.tsx",
       "!packages/runtime/src/catalog/generated/**",
+      "!!**/dist",
+      "!!.artifacts",
       "scripts/**/*.mjs",
       "scripts/**/*.js"
     ]
@@ -65,6 +67,47 @@
     }
   },
   "overrides": [
+    {
+      "includes": [
+        "packages/editor/src/**/*.ts",
+        "packages/editor/src/**/*.tsx",
+        "packages/runtime/src/**/*.ts",
+        "packages/cli/src/**/*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "error",
+            "noUnusedVariables": "error",
+            "noUnusedFunctionParameters": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/editor/src/state/workspace.ts",
+        "packages/editor/src/state/use-file-actions.ts",
+        "packages/editor/src/state/use-document-commands.ts",
+        "packages/editor/src/ui/Modal.tsx",
+        "packages/editor/src/ui/FloatingPanel.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "error"
+          },
+          "a11y": {
+            "noLabelWithoutControl": "error",
+            "useAriaPropsForRole": "error",
+            "useAriaPropsSupportedByRole": "error",
+            "useKeyWithClickEvents": "error",
+            "useFocusableInteractive": "error",
+            "noStaticElementInteractions": "error"
+          }
+        }
+      }
+    },
     {
       "includes": ["package.json", "biome.json"],
       "formatter": {
