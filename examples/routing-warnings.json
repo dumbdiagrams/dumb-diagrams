@@ -23,8 +23,8 @@
     },
     {
       "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-label-group-collision",
-      "message": "Label of edge authorize_payment overlaps boundary label event_backbone"
+      "code": "edge-label-node-collision",
+      "message": "Label of edge authorize_payment overlaps resource payment_service"
     }
   ],
   "reviews": [
@@ -54,9 +54,9 @@
     },
     {
       "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-label-group-collision",
-      "message": "Label of edge authorize_payment overlaps boundary label event_backbone",
-      "decision": "Baselined after visual review. The rendered texts are horizontally and vertically separated; the invariant uses a conservatively clamped full-width group header rectangle. Shortening the edge label would violate the preserved reference specification, so the golden source remains unchanged."
+      "code": "edge-label-node-collision",
+      "message": "Label of edge authorize_payment overlaps resource payment_service",
+      "decision": "PENDING VISUAL REVIEW. Introduced by the attached-label placement change, which replaced the previous boundary-label overlap with this resource-card overlap."
     }
   ]
 }

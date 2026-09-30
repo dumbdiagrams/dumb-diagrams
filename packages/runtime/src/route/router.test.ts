@@ -421,7 +421,6 @@ describe("routeEdgePreview", () => {
     )!;
     const readBlob = routes.find((candidate) => candidate.id === "read_blob")!;
 
-    expect(edge.badgeSide).toBe("top");
     expect(edge.badge).toBeDefined();
     expect(edge.labelRect).toBeDefined();
     expect(circleIntersectsRectForTest(
@@ -433,6 +432,56 @@ describe("routeEdgePreview", () => {
     expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(52);
     expect(readBlob.labelPoint).toBeDefined();
     expect(distanceToPath(readBlob.labelPoint!, readBlob.points)).toBeLessThanOrEqual(20);
+  });
+
+  it("moves a short run's badge aside rather than labelling a neighbouring arrow", () => {
+    const doc = parseDgm(`diagram report-generation {
+  grammar cloud-agnostic
+  flow lr
+  cloud-agnostic.actor user "User"
+  cloud-agnostic.cloud application_cloud "Application" {
+    cloud-agnostic.boundary web_tier "Web application" {
+      cloud-agnostic.server web_application "Web application"
+    }
+    cloud-agnostic.boundary api_tier "API" {
+      cloud-agnostic.server api "API"
+    }
+    cloud-agnostic.boundary async_processing "Async processing" {
+      cloud-agnostic.queue report_jobs "Report jobs"
+      cloud-agnostic.queue dead_letter_queue "Dead-letter queue" { role secondary }
+      cloud-agnostic.function report_worker "Background worker"
+    }
+    cloud-agnostic.boundary data "Data" {
+      cloud-agnostic.database job_database "Job database"
+      cloud-agnostic.object-storage report_storage "Report storage"
+    }
+  }
+  user -> web_application { id request_report step 1 label "request report" }
+  web_application -> api { id submit_request step 2 label "report request" }
+  api -> job_database { id create_job step 3 label "create job record" }
+  api -> report_jobs { id enqueue_job step 4 label "enqueue job" }
+  report_jobs -> report_worker { id consume_message step 1 label "consume message" }
+  report_worker -> report_storage { id save_report step 2 label "save report" }
+  report_worker -> job_database { id update_status step 3 label "update job status" }
+  report_jobs -> dead_letter_queue { id failed_jobs style dashed label "failed jobs" }
+  web_application -> api { id poll_status label "poll status" style dashed }
+  api -> web_application { id download_link label "download link" style dashed }
+}`);
+    const routes = routeEdges(doc, layoutDocument(doc));
+    const edge = routes.find((candidate) => candidate.id === "consume_message")!;
+    const own = distanceToPath(edge.labelPoint!, edge.points);
+
+    expect(own).toBeLessThanOrEqual(20);
+    for (const other of routes.filter((candidate) => candidate !== edge)) {
+      expect(distanceToPath(edge.labelPoint!, other.points), other.id).toBeGreaterThan(own);
+    }
+    expect(circleIntersectsRectForTest(edge.badge!, 10, edge.labelRect!, 4)).toBe(false);
+    for (const route of routes.filter((candidate) => candidate.labelPoint)) {
+      const label = doc.edges.find((candidate) => candidate.id === route.id)!.label!;
+      expect(route.labelPoint, route.id).toEqual(
+        getEdgeLabelPlacementOnPath(route.points, label, route.labelT!, route.labelSide!)!.point,
+      );
+    }
   });
 
   it("keeps order-flow labels visibly attached to their connectors", () => {

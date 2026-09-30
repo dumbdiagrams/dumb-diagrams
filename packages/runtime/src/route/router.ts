@@ -68,12 +68,16 @@ const EDGE_BADGE_CLEARANCE = 6;
 const BADGE_CONNECTOR_CLEARANCE = GRAMMAR.badgeRadius + EDGE_BADGE_CLEARANCE;
 const BADGE_TO_BADGE_CLEARANCE = GRAMMAR.badgeRadius * 2 + 6;
 const BADGE_CONTENT_CLEARANCE = 4;
+const BADGE_COLLISION_COST = 1_000_000;
 const BADGE_CONTENT_COLLISION_COST = 10_000_000;
 const LABEL_CONTENT_CLEARANCE = 4;
 const LABEL_TO_LABEL_CLEARANCE = 6;
 const LABEL_TO_CONNECTOR_CLEARANCE = 4;
 const LABEL_COLLISION_COST = 10_000_000;
+const LABEL_OWNERSHIP_COST = 1_000_000;
 const LABEL_OWNERSHIP_COST_PER_UNIT = 1_000;
+// The widest drag gap: copy beside a vertical run sits this far from it.
+const MAX_ATTACHED_LABEL_GAP = 12;
 // Four-bend candidates combine one vertical and one horizontal corridor. A
 // dense diagram can expose dozens of each, and trying their full Cartesian
 // product for every port pair makes routing grow explosively. Single-corridor
@@ -985,6 +989,7 @@ function placeEdgeDecorations(
     const override = routeOverrides[edge.id];
     return override?.badgeT === undefined && override?.badgeSide === undefined;
   });
+  const automaticBadgeIds = new Set(automaticBadges.map(({ edge }) => edge.id));
   const automaticLabels = labelOrder.filter(({ edge }) => {
     const override = routeOverrides[edge.id];
     return override?.labelT === undefined && override?.labelSide === undefined;
@@ -1013,19 +1018,47 @@ function placeEdgeDecorations(
     }
 
     for (const { edge } of automaticLabels) {
-      const next = getEdgeLabelPlacement(
+      const otherEdges = edges.filter((candidate) => candidate.id !== edge.id);
+      const otherBadges = [...badges.entries()]
+        .filter(([id]) => id !== edge.id)
+        .map(([, placement]) => placement);
+      const otherLabels = [...labels.entries()]
+        .filter(([id]) => id !== edge.id)
+        .map(([, placement]) => placement.rect);
+      const place = (badge: EdgeBadgePlacement | undefined) => getEdgeLabelPlacement(
         edge.points,
         edge.label!,
         obstacles,
-        badges.get(edge.id),
+        badge,
         undefined,
         undefined,
-        edges.filter((candidate) => candidate.id !== edge.id),
-        [...badges.values()],
-        [...labels.entries()]
-          .filter(([id]) => id !== edge.id)
-          .map(([, placement]) => placement.rect),
+        otherEdges,
+        badge ? [...otherBadges, badge] : otherBadges,
+        otherLabels,
       );
+      let next = place(badges.get(edge.id));
+      if (next && !next.clean && automaticBadgeIds.has(edge.id)) {
+        // A short run may hold both decorations only with the badge off-centre.
+        // Neither finds that spot alone, so offer the label each clear badge spot.
+        for (const { candidate, score } of rankedBadgePlacements(
+          edge,
+          otherEdges,
+          otherBadges.map((placement) => placement.point),
+          otherLabels,
+          obstacles,
+        )) {
+          if (score >= BADGE_COLLISION_COST) break;
+          const label = place(candidate);
+          if (!label?.clean) continue;
+          badges.set(edge.id, candidate);
+          edge.badge = candidate.point;
+          edge.badgeT = candidate.t;
+          edge.badgeSide = candidate.side;
+          next = label;
+          changed = true;
+          break;
+        }
+      }
       const previous = labels.get(edge.id);
       if (!next || sameLabelPlacement(previous, next)) continue;
       labels.set(edge.id, next);
@@ -1063,10 +1096,21 @@ function getSafeEdgeBadgePlacement(
   occupiedLabels: Rect[],
   obstacles: Obstacle[],
 ): EdgeBadgePlacement | undefined {
+  return rankedBadgePlacements(edge, otherEdges, occupiedBadges, occupiedLabels, obstacles)[0]?.candidate;
+}
+
+/** Badge candidates from best to worst; ties keep their probing order. */
+function rankedBadgePlacements(
+  edge: RoutedEdge,
+  otherEdges: RoutedEdge[],
+  occupiedBadges: Point[],
+  occupiedLabels: Rect[],
+  obstacles: Obstacle[],
+): Array<{ candidate: EdgeBadgePlacement; score: number }> {
   const preferred = getEdgeBadgePlacement(edge.points);
-  if (!preferred) return undefined;
+  if (!preferred) return [];
   const total = pathLength(edge.points);
-  if (!total) return preferred;
+  if (!total) return [{ candidate: preferred, score: 0 }];
 
   const tStep = Math.min(0.18, Math.max(0.04, CELL * 2 / total));
   const tOffsets = [0, tStep, -tStep, tStep * 2, -tStep * 2];
@@ -1075,18 +1119,18 @@ function getSafeEdgeBadgePlacement(
     .filter((segment) => segment.len >= MINIMUM_BADGE_RUN)
     .sort((a, b) => b.len - a.len)
     .map((segment) => (segment.start + segment.len / 2) / total);
-  const segmentQuarterPoints = pathSegments(edge.points)
+  // The eighths leave room beside the badge for its label on a short run.
+  const segmentOffsetPoints = pathSegments(edge.points)
     .filter((segment) => segment.len >= MINIMUM_BADGE_RUN)
-    .flatMap((segment) => [0.25, 0.75].map(
+    .flatMap((segment) => [0.25, 0.75, 0.125, 0.875].map(
       (offset) => (segment.start + segment.len * offset) / total,
     ));
   const candidateTs = [...new Set([
     ...tOffsets.map((offset) => clamp01(preferred.t + offset)),
     ...segmentMidpoints,
-    ...segmentQuarterPoints,
+    ...segmentOffsetPoints,
   ])];
-  let best = preferred;
-  let bestScore = Infinity;
+  const ranked: Array<{ candidate: EdgeBadgePlacement; score: number }> = [];
 
   for (const t of candidateTs) {
     for (const side of sides) {
@@ -1100,13 +1144,10 @@ function getSafeEdgeBadgePlacement(
         occupiedLabels,
         obstacles,
       );
-      if (score < bestScore) {
-        bestScore = score;
-        best = candidate;
-      }
+      ranked.push({ candidate, score });
     }
   }
-  return best;
+  return ranked.sort((a, b) => a.score - b.score);
 }
 
 function badgeCollisionScore(
@@ -1132,14 +1173,14 @@ function badgeCollisionScore(
   for (const other of otherEdges) {
     const distance = distanceToPolyline(candidate.point, other.points);
     if (distance < BADGE_CONNECTOR_CLEARANCE) {
-      score += 1_000_000 +
+      score += BADGE_COLLISION_COST +
         (BADGE_CONNECTOR_CLEARANCE - distance) * 10_000;
     }
   }
   for (const badge of occupiedBadges) {
     const distance = Math.hypot(candidate.point.x - badge.x, candidate.point.y - badge.y);
     if (distance < BADGE_TO_BADGE_CLEARANCE) {
-      score += 1_000_000 +
+      score += BADGE_COLLISION_COST +
         (BADGE_TO_BADGE_CLEARANCE - distance) * 10_000;
     }
   }
@@ -1167,6 +1208,20 @@ function badgeCollisionScore(
 
 function distanceToPolyline(point: Point, points: Point[]): number {
   return projectPointToPolyline(point, points)?.distance ?? Infinity;
+}
+
+// ponytail: measures each segment by its bounding box, exact for orthogonal
+// routes and generous for a diagonal straight connector.
+function distanceFromRectToPolyline(rect: Rect, points: Point[]): number {
+  let best = Infinity;
+  for (let index = 0; index < points.length - 1; index++) {
+    const a = points[index]!;
+    const b = points[index + 1]!;
+    const dx = Math.max(0, rect.x - Math.max(a.x, b.x), Math.min(a.x, b.x) - (rect.x + rect.w));
+    const dy = Math.max(0, rect.y - Math.max(a.y, b.y), Math.min(a.y, b.y) - (rect.y + rect.h));
+    best = Math.min(best, Math.hypot(dx, dy));
+  }
+  return best;
 }
 
 function oppositeBadgeSide(side: EdgeBadgeSide): EdgeBadgeSide {
@@ -3043,7 +3098,7 @@ function getEdgeLabelPlacement(
   otherEdges: RoutedEdge[] = [],
   allBadges: EdgeBadgePlacement[] = badge ? [badge] : [],
   occupiedLabels: Rect[] = [],
-): EdgeLabelPlacement | undefined {
+): (EdgeLabelPlacement & { clean?: boolean }) | undefined {
   const reference = badge ?? getEdgeBadgePlacement(points);
   if (!reference) return undefined;
   const textW = Math.max(16, label.length * 11 * 0.55);
@@ -3097,9 +3152,15 @@ function getEdgeLabelPlacement(
       0.875,
     ].map((offset) => (segment.start + segment.len * offset) / total)),
   ])];
+  // A crowded run may leave only a narrow clear pocket between neighbours. Only
+  // the drag gap is probed there, so the pockets never add a distant lane.
+  const pocketTs = usefulSegments.flatMap((segment) => Array.from(
+    { length: Math.floor(segment.len / CELL) },
+    (_, index) => (segment.start + CELL * (index + 0.5)) / total,
+  )).filter((candidateT) => !candidateTs.includes(candidateT));
   const candidates: Array<{ candidate: EdgeLabelPlacement; attached: boolean }> = [];
 
-  for (const candidateT of candidateTs) {
+  for (const candidateT of [...candidateTs, ...pocketTs]) {
     const candidateProjection = pointAtPath(segments, total, candidateT);
     if (!candidateProjection) continue;
     const candidateHorizontal =
@@ -3114,7 +3175,7 @@ function getEdgeLabelPlacement(
       const baseClearance = candidateHorizontal
         ? side === "top" ? 8 : 20
         : textW / 2 + 12;
-      for (const extra of [0, 16, 32]) {
+      for (const extra of candidateTs.includes(candidateT) ? [0, 16, 32] : [0]) {
         candidates.push({
           candidate: labelPlacementAt(
             candidateProjection,
@@ -3143,9 +3204,12 @@ function getEdgeLabelPlacement(
       points,
     ),
   }));
-  // Prefer the drag gap when it avoids content; expand only as a last resort.
+  // Prefer the drag gap when it avoids content, then a wider lane whose copy
+  // still touches the route (as beside an elbow), and a distant lane only last.
   const attached = scored.filter((entry) => entry.attached && entry.score < LABEL_COLLISION_COST);
-  const eligible = attached.length ? attached : scored;
+  const nearby = scored.filter((entry) => entry.score < LABEL_COLLISION_COST &&
+    distanceFromRectToPolyline(entry.candidate.rect, points) <= MAX_ATTACHED_LABEL_GAP);
+  const eligible = attached.length ? attached : nearby.length ? nearby : scored;
   let best = eligible[0]?.candidate;
   let bestScore = Infinity;
   for (const { candidate, score } of eligible) {
@@ -3154,7 +3218,7 @@ function getEdgeLabelPlacement(
       bestScore = score;
     }
   }
-  return best;
+  return best && { ...best, clean: attached.length > 0 };
 }
 
 function labelCollisionScore(
@@ -3195,16 +3259,34 @@ function labelCollisionScore(
     }
   }
   const inflatedLabel = inflate(candidate.rect, LABEL_TO_CONNECTOR_CLEARANCE);
-  // Even the standard gap can be closer to a tightly parallel connector.
-  // Prefer the owning side/segment over a misleading nearby route.
-  const ownDistance = distanceToPolyline(candidate.point, ownRoute);
+  // A label nearer another connector than its own labels the wrong arrow. That
+  // outranks every soft cost but not covering content; an automatic badge in
+  // the way moves aside in the refinement pass instead.
+  const centre = {
+    x: candidate.rect.x + candidate.rect.w / 2,
+    y: candidate.rect.y + candidate.rect.h / 2,
+  };
+  const ownDistance = distanceToPolyline(centre, ownRoute);
+  const horizontal = (a: Point, b: Point) => Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+  const ownHorizontal = horizontal(
+    ownRoute[candidate.segmentIndex] ?? ownRoute[0]!,
+    ownRoute[candidate.segmentIndex + 1] ?? ownRoute[ownRoute.length - 1]!,
+  );
   for (const edge of otherEdges) {
-    const foreignDistance = distanceToPolyline(candidate.point, edge.points);
+    // Only a run alongside the copy competes for it; a crossing is priced below.
+    let foreignDistance = Infinity;
+    for (let index = 0; index < edge.points.length - 1; index++) {
+      const a = edge.points[index]!;
+      const b = edge.points[index + 1]!;
+      if (horizontal(a, b) === ownHorizontal) {
+        foreignDistance = Math.min(foreignDistance, distanceToPolyline(centre, [a, b]));
+      }
+    }
     const nearForeignJunction = distanceToPolyline(candidate.anchor, edge.points) <=
       LABEL_TO_CONNECTOR_CLEARANCE;
     if (!nearForeignJunction && foreignDistance + LABEL_TO_CONNECTOR_CLEARANCE < ownDistance) {
-      score += (ownDistance - foreignDistance - LABEL_TO_CONNECTOR_CLEARANCE) *
-        LABEL_OWNERSHIP_COST_PER_UNIT;
+      score += LABEL_OWNERSHIP_COST +
+        (ownDistance - foreignDistance - LABEL_TO_CONNECTOR_CLEARANCE) * LABEL_OWNERSHIP_COST_PER_UNIT;
     }
     for (let index = 0; index < edge.points.length - 1; index++) {
       if (segmentHits(edge.points[index]!, edge.points[index + 1]!, inflatedLabel)) {

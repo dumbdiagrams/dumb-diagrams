@@ -695,10 +695,11 @@ function horizontalChildGap(
   const labelWidth = Math.max(16, estimateTextWidth(edge.label, 11));
   const badgeWidth = edge.step === undefined ? 0 : GRAMMAR.badgeRadius * 2 + 16;
   const requiredIconGap = labelWidth + badgeWidth + 16;
+  // A group measured again after placement already holds positioned cards.
   const iconGapAtBaseline =
-    left.w - (leftNode.icon.x + leftNode.icon.w) +
+    left.w - (leftNode.icon.x - leftNode.obstacle.x + leftNode.icon.w) +
     H_GAP +
-    rightNode.icon.x;
+    rightNode.icon.x - rightNode.obstacle.x;
   const extra = Math.max(0, requiredIconGap - iconGapAtBaseline);
   return H_GAP + Math.ceil(extra / GRAMMAR.grid) * GRAMMAR.grid;
 }
@@ -902,7 +903,9 @@ function genericChildGap(
   const rightResources = childResources(doc, right, state);
   if (!leftResources.length || !rightResources.length) return H_GAP;
 
-  let gap: number = H_GAP;
+  // Parallel connectors between the same two resources run too close for their
+  // decorations to stack, so they share the corridor end to end.
+  const corridors = new Map<string, { run: number; iconGap: number }>();
   for (const edge of doc.edges) {
     if (!edge.label && edge.step === undefined) continue;
     const leftResource = leftResources.find(({ id }) =>
@@ -915,11 +918,17 @@ function genericChildGap(
 
     const labelWidth = edge.label ? Math.max(16, estimateTextWidth(edge.label, 11)) : 0;
     const badgeWidth = edge.step === undefined ? 0 : GRAMMAR.badgeRadius * 2 + 16;
-    const requiredRun = labelWidth + badgeWidth + 16;
-    const iconGapAtBaseline =
-      left.w - (leftResource.icon.x + leftResource.icon.w) + H_GAP +
-      rightResource.icon.x;
-    const extra = Math.max(0, requiredRun - iconGapAtBaseline);
+    const key = `${leftResource.id}\0${rightResource.id}`;
+    const corridor = corridors.get(key) ?? {
+      run: 0,
+      iconGap: left.w - (leftResource.icon.x + leftResource.icon.w) + H_GAP + rightResource.icon.x,
+    };
+    corridor.run += labelWidth + badgeWidth + 16;
+    corridors.set(key, corridor);
+  }
+  let gap: number = H_GAP;
+  for (const { run, iconGap } of corridors.values()) {
+    const extra = Math.max(0, run - iconGap);
     gap = Math.max(gap, H_GAP + Math.ceil(extra / GRAMMAR.grid) * GRAMMAR.grid);
   }
   return gap;
@@ -937,7 +946,9 @@ function childResources(
 ): ChildResourceGeom[] {
   if (child.resource) {
     const node = state.nodeGeoms.get(child.resource.id);
-    return node ? [{ id: child.resource.id, icon: node.icon }] : [];
+    return node
+      ? [{ id: child.resource.id, icon: { ...node.icon, x: node.icon.x - node.obstacle.x } }]
+      : [];
   }
   if (!child.group) return [];
   return descendantResourceGeoms(doc, child.group.id, state);
