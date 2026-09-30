@@ -7,7 +7,7 @@ import type {
   View,
 } from "@dumb-diagrams/runtime/core";
 
-import type { Selection, SelectionItem } from "../editor-model.js";
+import type { Selection, SelectionItem } from "../model/types.js";
 
 const ICON_HIT_PADDING = 4;
 const LABEL_HIT_PADDING_X = 4;

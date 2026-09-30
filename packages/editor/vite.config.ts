@@ -34,6 +34,7 @@ export default defineConfig({
       "@dumb-diagrams/runtime/render": resolve(editorDir, "../runtime/src/render/browser.ts"),
       "@dumb-diagrams/runtime/route": resolve(editorDir, "../runtime/src/route/index.ts"),
       "@dumb-diagrams/runtime/grammar-aws": resolve(editorDir, "../runtime/src/grammar-aws/index.ts"),
+      "@dumb-diagrams/runtime/test-fixtures": resolve(editorDir, "../runtime/test-fixtures.ts"),
     },
   },
   server: {

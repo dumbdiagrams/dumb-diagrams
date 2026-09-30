@@ -1,12 +1,16 @@
 import {
   createAsyncDocsFixture,
-  getDefaultView,
-} from "@dumb-diagrams/runtime/core";
+} from "@dumb-diagrams/runtime/test-fixtures";
+import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { describe, expect, it } from "vitest";
 
 import { planAutoFix } from "./auto-fix";
-import { compileDocument } from "./diagram-compiler";
+import {
+  compileDiagramSource,
+  compileDocument,
+  warmDiagramCompilationCache,
+} from "./diagram-compiler";
 import {
   clearView,
   setRoute,
@@ -65,6 +69,44 @@ describe("planAutoFix", () => {
     expect(compiled.ok).toBe(true);
     if (!compiled.ok) return;
     expect(compiled.invariantFailures).toEqual([]);
+  });
+
+  it("reuses the supplied baseline and winning compilation without changing the fix", () => {
+    const doc = parseDgm(`diagram small_overlap {
+  grammar aws
+  generic.custom api "API"
+  generic.custom db "Database"
+  api -> db
+}`);
+    const view = getDefaultView(doc);
+    for (const id of ["api", "db"]) {
+      view.places[id] = { x: 200, y: 80, pin: true, manual: true };
+    }
+    const baseline = compileDocument(doc, false);
+    expect(baseline.ok).toBe(true);
+    if (!baseline.ok) return;
+
+    const freshPlan = planAutoFix(doc, false);
+    const reusedPlan = planAutoFix(doc, false, baseline);
+    expect(freshPlan.status).toBe("repaired");
+    expect(reusedPlan.status).toBe(freshPlan.status);
+    expect(reusedPlan.strategy).toBe(freshPlan.strategy);
+    expect(printDgm(reusedPlan.doc)).toBe(printDgm(freshPlan.doc));
+    expect(reusedPlan.compilation?.ok).toBe(true);
+    if (!reusedPlan.compilation?.ok) return;
+
+    const final = compileDocument(reusedPlan.doc, false);
+    expect(final.ok).toBe(true);
+    if (!final.ok) return;
+    expect(reusedPlan.compilation.layout).toEqual(final.layout);
+    expect(reusedPlan.compilation.issues).toEqual(final.issues);
+    expect(reusedPlan.compilation.invariantFailures).toEqual(final.invariantFailures);
+
+    const source = printDgm(reusedPlan.doc);
+    const warmed = warmDiagramCompilationCache(source, false, reusedPlan.compilation);
+    const cached = compileDiagramSource(source, false);
+    expect(cached).toBe(warmed);
+    expect(cached.layout).toBe(reusedPlan.compilation.layout);
   });
 
   it("prefers targeted route repair over clearing all placements", () => {

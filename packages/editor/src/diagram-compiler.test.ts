@@ -1,9 +1,9 @@
 import {
-  createAsyncDocsFixture,
   createEmptyDocument,
   DIAGRAM_LIMITS,
   getDefaultView,
 } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
@@ -12,16 +12,42 @@ import { describe, expect, it } from "vitest";
 
 import {
   autoFixRejectionReason,
+  compileDocument,
   compileDiagramSource,
   getCommittedCompilationEpoch,
   STUDIO_CANVAS_PADDING,
   warmDiagramCompilationCache,
 } from "./diagram-compiler";
-import { addResource, moveSelection, needsAutoFix, setRoute } from "./editor-model";
+import { moveSelection, needsAutoFix, setRoute } from "./editor-model";
+import { addResourceResult } from "./model/catalog-placement";
 import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
 
 describe("diagram compilation canvas bounds", () => {
+  it("reports malformed embedded SVGs as repairable compilation issues", () => {
+    const doc = createEmptyDocument("invalid-asset-editor");
+    doc.assets = [{
+      id: "unsafe",
+      kind: "svg",
+      content: "<svg><script>alert(1)</script></svg>",
+      intrinsicW: 64,
+      intrinsicH: 64,
+    }];
+
+    const result = compileDocument(doc, false);
+
+    expect(result).toMatchObject({
+      ok: false,
+      svg: null,
+      layout: null,
+      issues: [expect.objectContaining({
+        level: "error",
+        code: "invalid-asset",
+        id: "unsafe",
+      })],
+    });
+  });
+
   it("preserves the typed parser code for invalid syntax", () => {
     const result = compileDiagramSource('diagram bad { title "unterminated }', false);
 
@@ -76,6 +102,57 @@ describe("diagram compilation canvas bounds", () => {
       message: "Routing work budget exhausted; retained the best available routes.",
     });
     expect(callerDiagnostics?.exhausted).toBe(true);
+  });
+
+  it("returns a cloneable failed compilation when routing raises an unexpected error", () => {
+    const doc = createEmptyDocument("routing-fault");
+    doc.resources = [
+      {
+        id: "source",
+        type: "generic.user",
+        label: { service: "Source" },
+        role: "primary",
+        props: {},
+      },
+      {
+        id: "target",
+        type: "generic.user",
+        label: { service: "Target" },
+        role: "primary",
+        props: {},
+      },
+    ];
+    doc.edges = [{
+      id: "fault-edge",
+      source: "source",
+      target: "target",
+      style: "solid",
+      kind: "flow",
+    }];
+
+    const result = compileDiagramSource(printDgm(doc), false, {
+      maxScorePathCalls: 0,
+      maxRouteConflictChecks: 0,
+      maxAstarExpansions: 0,
+      maxRepairCandidates: 0,
+      onBudgetExhausted: () => {
+        throw new Error("injected routing fault");
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.compilationError).toEqual({
+      code: "compilation",
+      phase: "routing",
+      message: "Compilation failed during routing: injected routing fault",
+    });
+    expect(result.issues).toContainEqual({
+      level: "error",
+      code: "compilation",
+      message: "Compilation failed during routing: injected routing fault",
+    });
+    expect(structuredClone(result)).toEqual(result);
   });
 
   it("always reserves generous free space around the laid-out canvas", () => {
@@ -324,7 +401,10 @@ describe("diagram compilation canvas bounds", () => {
     if (!before.ok) return;
     const entry = getCatalogEntry("aws.simple-storage-service")!;
     const at = leftStagingInsertionPoint(doc, before.layout, 240);
-    const added = addResource(doc, entry, undefined, at);
+    const addedResult = addResourceResult(doc, entry, undefined, at);
+    expect(addedResult.isOk()).toBe(true);
+    if (addedResult.isErr()) return;
+    const added = addedResult.value;
     const after = compileDiagramSource(printDgm(added.doc), false);
     expect(after.ok).toBe(true);
     if (!after.ok) return;
@@ -349,7 +429,10 @@ describe("diagram compilation canvas bounds", () => {
     // Keep the staged item provider-neutral: provider validation now rejects
     // unrelated Azure entries in this AWS document before routing is reached.
     const entry = getCatalogEntry("cloud-agnostic.server")!;
-    const added = addResource(doc, entry, undefined, { x: -320, y: 720 });
+    const addedResult = addResourceResult(doc, entry, undefined, { x: -320, y: 720 });
+    expect(addedResult.isOk()).toBe(true);
+    if (addedResult.isErr()) return;
+    const added = addedResult.value;
     // Documents authored before explicit editor placements were marked as
     // manual still contain pinned root items in this form.
     delete getDefaultView(added.doc).places[added.id]!.manual;

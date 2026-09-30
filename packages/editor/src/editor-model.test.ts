@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
@@ -12,26 +13,20 @@ import { compileDiagramSource } from "./diagram-compiler.js";
 import {
   addAnnotation,
   addText,
-  addGroup,
-  addResource,
   alignSelection,
   annotationSize,
   annotationStyle,
-  canPlaceCatalogEntry,
   clearView,
   deleteSelection,
-  importSvgAsset,
   isSelected,
   MAX_EDGE_STEP,
   moveSelection,
   needsAutoFix,
   nudgeSelection,
   primarySelection,
-  pasteClipboard,
   reconnectEdge,
   renameResource,
   resourceIconSize,
-  serializeClipboard,
   sendToBack,
   sendToFront,
   setEdgeBadgePosition,
@@ -48,10 +43,6 @@ import {
   setGroupPlace,
   setGroupBounds,
   fitGroupToContents,
-  canGroupSelection,
-  groupSelection,
-  reparentPreservingAbsolutePosition,
-  ungroup,
   removeSelectionPreservingGroupContents,
   setRoute,
   setResourceIconSize,
@@ -60,6 +51,10 @@ import {
   updateEdge,
   updateEdgePreservingLayout,
 } from "./editor-model.js";
+import { addGroupResult, addResourceResult, canPlaceCatalogEntry } from "./model/catalog-placement.js";
+import { importSvgAssetResult } from "./model/asset-import.js";
+import { pasteClipboardResult, serializeClipboardResult } from "./model/clipboard.js";
+import { canGroupSelection, groupSelection, reparentPreservingAbsolutePosition, ungroup } from "./model/grouping.js";
 
 describe("editor commands", () => {
   it("keeps selection helpers and missing-target edits predictable", () => {
@@ -138,7 +133,10 @@ describe("editor commands", () => {
 
     expect(service.allowedParents).not.toContain("region");
     expect(canPlaceCatalogEntry(doc, service, "use1")).toEqual({ ok: true });
-    const placedService = addResource(doc, service, "use1", { x: 2_000, y: 48 });
+    const placedServiceResult = addResourceResult(doc, service, "use1", { x: 2_000, y: 48 });
+    expect(placedServiceResult.isOk()).toBe(true);
+    if (placedServiceResult.isErr()) return;
+    const placedService = placedServiceResult.value;
     expect(placedService.doc.resources.find((resource) => resource.id === placedService.id)).toMatchObject({
       type: service.type,
       parent: "use1",
@@ -146,7 +144,7 @@ describe("editor commands", () => {
 
     expect(boundary.allowRoot).toBe(false);
     expect(canPlaceCatalogEntry(doc, boundary)).toEqual({ ok: true });
-    const placedBoundary = addGroup(
+    const placedBoundaryResult = addGroupResult(
       doc,
       "vpc",
       boundary.name,
@@ -154,10 +152,55 @@ describe("editor commands", () => {
       { x: 2_000, y: 48 },
       boundary.type,
     );
+    expect(placedBoundaryResult.isOk()).toBe(true);
+    if (placedBoundaryResult.isErr()) return;
+    const placedBoundary = placedBoundaryResult.value;
     expect(placedBoundary.doc.groups.find((group) => group.id === placedBoundary.id)).toMatchObject({
       type: boundary.type,
       parent: undefined,
     });
+  });
+
+  it("returns catalog placement failures without mutating the document", () => {
+    const doc = createAsyncDocsFixture();
+    const service = getCatalogEntry("aws.elastic-container-service")!;
+    const group = getCatalogEntry("aws.vpc")!;
+
+    const missingResourceParent = addResourceResult(doc, service, "missing", { x: 40, y: 80 });
+    expect(missingResourceParent.isErr()).toBe(true);
+    if (missingResourceParent.isOk()) return;
+    expect(missingResourceParent.error).toEqual({
+      code: "parent-not-found",
+      message: "The selected parent group no longer exists.",
+    });
+
+    const missingGroupParent = addGroupResult(
+      doc,
+      "vpc",
+      group.name,
+      "missing",
+      { x: 40, y: 80 },
+      group.type,
+    );
+    expect(missingGroupParent.isErr()).toBe(true);
+    if (missingGroupParent.isOk()) return;
+    expect(missingGroupParent.error.code).toBe("parent-not-found");
+
+    const resourceAsGroup = addGroupResult(
+      doc,
+      "logical",
+      service.name,
+      undefined,
+      { x: 40, y: 80 },
+      service.type,
+    );
+    expect(resourceAsGroup.isErr()).toBe(true);
+    if (resourceAsGroup.isOk()) return;
+    expect(resourceAsGroup.error).toEqual({
+      code: "not-a-group",
+      message: `${service.name} is not a group.`,
+    });
+    expect(doc.groups.some((candidate) => candidate.type === service.type)).toBe(false);
   });
 
   it("renames resources without changing ids", () => {
@@ -325,7 +368,6 @@ describe("editor commands", () => {
   it("keeps a dragged resource at its pinned drop position", () => {
     const doc = createAsyncDocsFixture();
     const before = layoutDocument(doc);
-    const beforeNode = before.nodes.find((node) => node.id === "apiA")!;
     const next = moveSelection(
       doc,
       [{ kind: "resource", id: "apiA" }],
@@ -388,8 +430,13 @@ describe("editor commands", () => {
 
   it("pastes nested groups without duplicating child ids", () => {
     const doc = createAsyncDocsFixture();
-    const payload = serializeClipboard(doc, [{ kind: "group", id: "appA" }]);
-    const result = pasteClipboard(doc, payload, { x: 600, y: 600 });
+    const serialized = serializeClipboardResult(doc, [{ kind: "group", id: "appA" }]);
+    expect(serialized.isOk()).toBe(true);
+    if (serialized.isErr()) return;
+    const pasted = pasteClipboardResult(doc, serialized.value, { x: 600, y: 600 });
+    expect(pasted.isOk()).toBe(true);
+    if (pasted.isErr()) return;
+    const result = pasted.value;
     const pastedGroupId = result.selection.find((item) => item.kind === "group")?.id;
     const pastedGroup = result.doc.groups.find((group) => group.id === pastedGroupId);
     expect(pastedGroup).toBeTruthy();
@@ -399,8 +446,13 @@ describe("editor commands", () => {
 
   it("keeps a copied nested resource inside copied ancestor groups", () => {
     const doc = createAsyncDocsFixture();
-    const payload = serializeClipboard(doc, [{ kind: "resource", id: "artifacts" }]);
-    const result = pasteClipboard(doc, payload, { x: 600, y: 600 });
+    const serialized = serializeClipboardResult(doc, [{ kind: "resource", id: "artifacts" }]);
+    expect(serialized.isOk()).toBe(true);
+    if (serialized.isErr()) return;
+    const pasted = pasteClipboardResult(doc, serialized.value, { x: 600, y: 600 });
+    expect(pasted.isOk()).toBe(true);
+    if (pasted.isErr()) return;
+    const result = pasted.value;
     const pastedResourceId = result.selection.find((item) => item.kind === "resource")?.id;
     const pastedResource = result.doc.resources.find((resource) => resource.id === pastedResourceId);
     const pastedParent = result.doc.groups.find((group) => group.id === pastedResource?.parent);
@@ -423,10 +475,14 @@ describe("editor commands", () => {
   it("imports sanitized svg assets with deduplication", () => {
     const doc = createAsyncDocsFixture();
     const svg = '<svg viewBox="0 0 32 32"><rect width="32" height="32"/></svg>';
-    const first = importSvgAsset(doc, svg);
-    const second = importSvgAsset(first.doc, svg);
-    expect(first.assetId).toBe(second.assetId);
-    expect(first.doc.assets).toHaveLength(1);
+    const first = importSvgAssetResult(doc, svg);
+    expect(first.isOk()).toBe(true);
+    if (first.isErr()) return;
+    const second = importSvgAssetResult(first.value.doc, svg);
+    expect(second.isOk()).toBe(true);
+    if (second.isErr()) return;
+    expect(first.value.assetId).toBe(second.value.assetId);
+    expect(first.value.doc.assets).toHaveLength(1);
   });
 
   it("aligns selection to a shared edge", () => {
@@ -1264,11 +1320,13 @@ describe("editor commands", () => {
 
   it("rejects oversized and structurally invalid clipboard payloads", () => {
     const doc = createAsyncDocsFixture();
-    expect(() => pasteClipboard(doc, "x".repeat(DIAGRAM_LIMITS.clipboardBytes + 1), { x: 0, y: 0 })).toThrow(/512 KiB/);
-    expect(() => pasteClipboard(doc, JSON.stringify({
+    const oversized = pasteClipboardResult(doc, "x".repeat(DIAGRAM_LIMITS.clipboardBytes + 1), { x: 0, y: 0 });
+    expect(oversized.isErr() && oversized.error.code).toBe("clipboard-too-large");
+    const malformed = pasteClipboardResult(doc, JSON.stringify({
       type: "dumb-diagrams/clipboard",
       resources: [{ resource: { id: 42 } }],
-    }), { x: 0, y: 0 })).toThrow(/invalid resource/);
+    }), { x: 0, y: 0 });
+    expect(malformed.isErr() && malformed.error.code).toBe("clipboard-invalid-resource");
   });
 
   it("rejects a paste when the merged document would exceed an object limit", () => {
@@ -1278,8 +1336,11 @@ describe("editor commands", () => {
       doc.resources.push({ id, type: "generic.user", label: { role: id }, role: "primary", props: {} });
     }
     const source = createAsyncDocsFixture();
-    const payload = serializeClipboard(source, [{ kind: "resource", id: source.resources[0]!.id }]);
-    expect(() => pasteClipboard(doc, payload, { x: 0, y: 0 })).toThrow(/500-resources/);
+    const serialized = serializeClipboardResult(source, [{ kind: "resource", id: source.resources[0]!.id }]);
+    expect(serialized.isOk()).toBe(true);
+    if (serialized.isErr()) return;
+    const pasted = pasteClipboardResult(doc, serialized.value, { x: 0, y: 0 });
+    expect(pasted.isErr() && pasted.error.code).toBe("clipboard-document-invalid");
     expect(doc.resources).toHaveLength(DIAGRAM_LIMITS.resources);
   });
 });

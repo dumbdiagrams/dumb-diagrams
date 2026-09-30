@@ -4,9 +4,13 @@ import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 import { isAbortError, saveExistingFileHandle, type FileSystemHandleLike } from "./file-save";
 
 function fakeHandle(diskSource: string, filename = "diagram.dgm"): FileSystemHandleLike & {
-  writable: { write: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> };
+  writable: { write: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn>; abort: ReturnType<typeof vi.fn> };
 } {
-  const writable = { write: vi.fn(async () => undefined), close: vi.fn(async () => undefined) };
+  const writable = {
+    write: vi.fn(async () => undefined),
+    close: vi.fn(async () => undefined),
+    abort: vi.fn(async () => undefined),
+  };
   return {
     kind: "file",
     name: filename,
@@ -52,6 +56,34 @@ describe("existing file saves", () => {
     });
     expect(text).not.toHaveBeenCalled();
     expect(handle.createWritable).not.toHaveBeenCalled();
+  });
+
+  it("does not open or write after the source becomes stale", async () => {
+    const handle = fakeHandle("old source");
+    let current = true;
+    handle.getFile = vi.fn(async () => {
+      current = false;
+      return new File(["old source"], handle.name, { type: "text/plain" });
+    });
+    const result = await saveExistingFileHandle(handle, "new source", "old source", {
+      isCurrent: () => current,
+    });
+    expect(result).toMatchObject({ status: "error", code: "stale-source" });
+    expect(handle.createWritable).not.toHaveBeenCalled();
+    expect(handle.writable.write).not.toHaveBeenCalled();
+  });
+
+  it("aborts an opened stream if the source changes before writing", async () => {
+    const handle = fakeHandle("old source");
+    let checks = 0;
+    const result = await saveExistingFileHandle(handle, "new source", "old source", {
+      isCurrent: () => checks++ < 2,
+    });
+    expect(result).toMatchObject({ status: "error", code: "stale-source" });
+    expect(handle.createWritable).toHaveBeenCalledOnce();
+    expect(handle.writable.write).not.toHaveBeenCalled();
+    expect(handle.writable.abort).toHaveBeenCalledOnce();
+    expect(handle.writable.close).not.toHaveBeenCalled();
   });
 
   it("distinguishes read and write failures and cancellation", async () => {

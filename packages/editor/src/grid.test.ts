@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 
-import { addResource } from "./editor-model.js";
+import { addResourceResult } from "./model/catalog-placement.js";
 import {
   GRID_SIZE,
   leftStagingInsertionPoint,
@@ -133,7 +134,10 @@ describe("editor grid", () => {
     const layout = layoutDocument(doc);
     const first = leftStagingInsertionPoint(doc, layout, 240);
     const entry = getCatalogEntry("aws.simple-storage-service")!;
-    const added = addResource(doc, entry, undefined, first);
+    const addedResult = addResourceResult(doc, entry, undefined, first);
+    expect(addedResult.isOk()).toBe(true);
+    if (addedResult.isErr()) return;
+    const added = addedResult.value;
     const afterFirst = layoutDocument(added.doc);
     const second = leftStagingInsertionPoint(added.doc, afterFirst, 240);
 

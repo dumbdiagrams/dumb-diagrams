@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { resizeHandles, resizeRect, type ResizeHandle } from "./InteractionOverlay.js";
+import { resizeHandles } from "./InteractionOverlay.js";
+import { resizeRect, type ResizeHandle } from "./move-resize-gestures.js";
 
 describe("resizeHandles", () => {
   it("exposes all eight handles for groups", () => {

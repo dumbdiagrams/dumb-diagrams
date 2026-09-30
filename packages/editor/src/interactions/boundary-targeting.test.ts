@@ -1,4 +1,5 @@
-import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { attachRoutes, routeEdges } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";

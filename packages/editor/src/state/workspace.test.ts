@@ -120,6 +120,42 @@ describe("workspace state", () => {
     expect(outcome.errors?.[0]?.code).toBe("transaction-failed");
   });
 
+  it("restores bounded invalid source drafts without attempting to validate or render them", async () => {
+    const syntaxInvalid = createWorkspaceTab("diagram unfinished { grammar aws", {
+      id: "syntax-invalid",
+      viewport,
+    });
+    const semanticInvalid = createWorkspaceTab(`diagram semantic-invalid {
+  grammar aws
+  generic.user client
+  client -> missing { id e1 kind flow }
+}`, {
+      id: "semantic-invalid",
+      viewport,
+    });
+    const unsafeSvg = createWorkspaceTab("diagram unsafe-svg { asset <script>alert(1)</script>", {
+      id: "unsafe-svg",
+      viewport,
+    });
+    const workspace: WorkspaceState = {
+      version: 1,
+      tabs: [syntaxInvalid, semanticInvalid, unsafeSvg],
+      activeTabId: unsafeSvg.id,
+      recentlyClosed: [],
+    };
+    const result = await loadPersistedWorkspace(createPersistencePlatform({
+      indexedDb: { read: async () => workspace, write: async () => undefined },
+    }));
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().workspace?.tabs.map((tab) => tab.source)).toEqual([
+      syntaxInvalid.source,
+      semanticInvalid.source,
+      unsafeSvg.source,
+    ]);
+    expect(result._unsafeUnwrap().workspace?.activeTabId).toBe(unsafeSvg.id);
+  });
+
   it("returns an error when every storage source is unavailable", async () => {
     const unavailable = () => { throw new Error("storage unavailable"); };
     const platform = createPersistencePlatform({

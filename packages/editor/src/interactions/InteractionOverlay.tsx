@@ -2,8 +2,6 @@ import type {
   DiagramDocument,
   EdgeBadgeSide,
   EdgeLabelSide,
-  EdgeKind,
-  EdgeStyle,
   LayoutResult,
   Point,
   Rect,
@@ -27,13 +25,10 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   isSelected,
-  type Selection,
-  type SelectionItem,
 } from "../editor-model";
+import type { Selection, SelectionItem } from "../model/types";
 import {
   snapCoordinate,
-  snapDragDelta,
-  type AlignmentGuide,
 } from "../grid.js";
 import { nearestEdgeIdAt, nearestNodePortAt, resolvePortPointerAction } from "./edge-targeting.js";
 import {
@@ -56,9 +51,21 @@ import {
   isEntityVisible,
   type InteractionCandidates,
 } from "./interaction-index.js";
+import {
+  createFramePreview,
+  startOverlayPointerGesture,
+  type OverlayPointerGesture,
+} from "./overlay-gestures.js";
+import {
+  beginMove,
+  beginResize,
+  createAlignmentGuidePreview,
+  createMovePreview,
+  type ResizeHandle,
+  type StartOverlayGesture,
+} from "./move-resize-gestures.js";
 
 type Tool = "select" | "connector" | "resources" | "groups" | "code" | "layers" | "note" | "text";
-export type ResizeHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 type RewireTarget = { nodeId: string; side: Side; offset: number };
 type BadgeDrag = {
   edgeId: string;
@@ -93,6 +100,7 @@ function InteractionOverlayComponent({
   onReconnect,
   onGestureBegin,
   onGestureEnd,
+  onGestureCancel,
   onMove,
   onResize,
   onRoute,
@@ -129,6 +137,7 @@ function InteractionOverlayComponent({
   ) => void;
   onGestureBegin: () => void;
   onGestureEnd: () => void;
+  onGestureCancel?: () => void;
   onMove: (
     kind: "resource" | "group" | "annotation",
     id: string,
@@ -136,13 +145,13 @@ function InteractionOverlayComponent({
     y: number,
     dx: number,
     dy: number,
-  ) => void;
+  ) => boolean | undefined;
   onResize: (
     kind: "resource" | "group" | "annotation",
     id: string,
     bounds: Rect,
     unlockAspect?: boolean,
-  ) => void;
+  ) => boolean | undefined;
   onRoute: (edgeId: string, points: Point[]) => void;
   onBadgeMove: (edgeId: string, t: number, side: EdgeBadgeSide) => void;
   onLabelMove: (edgeId: string, t: number, side: EdgeLabelSide) => void;
@@ -185,6 +194,7 @@ function InteractionOverlayComponent({
   } | null>(null);
   const labelDragRef = useRef<LabelDrag>(null);
   const hoverFrameRef = useRef<number | null>(null);
+  const activeGestureRef = useRef<OverlayPointerGesture | null>(null);
   const pendingHoverRef = useRef<{
     clientX: number;
     clientY: number;
@@ -203,7 +213,18 @@ function InteractionOverlayComponent({
     if (hoverFrameRef.current !== null) {
       window.cancelAnimationFrame(hoverFrameRef.current);
     }
+    activeGestureRef.current?.dispose();
   }, []);
+
+  const startGesture = (
+    event: React.PointerEvent<SVGElement>,
+    options: Omit<Parameters<typeof startOverlayPointerGesture>[0], "event">,
+  ) => {
+    activeGestureRef.current?.dispose();
+    const gesture = startOverlayPointerGesture({ event, ...options });
+    activeGestureRef.current = gesture;
+    return gesture;
+  };
 
   const groups = useMemo(
     () => [...layout.groups].sort((a, b) => {
@@ -394,12 +415,10 @@ function InteractionOverlayComponent({
           ),
         }
       : null;
-    const pointerId = event.pointerId;
     const dragStart = { x: event.clientX, y: event.clientY };
     let didDrag = false;
     let latestTarget: RewireTarget | null = null;
 
-    handle.setPointerCapture(pointerId);
     onGestureBegin();
     setRewire({ edgeId, endpoint });
     setRewireTarget(null);
@@ -445,11 +464,8 @@ function InteractionOverlayComponent({
       latestTarget = target;
       preview.schedule({ cursor, target });
     };
-    const finish = (next?: PointerEvent) => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      if (next) move(next);
+    const finish = (next: PointerEvent) => {
+      move(next);
       preview.flush();
       // Commit the exact mount represented by the last rendered preview.
       // Re-resolving on pointerup can see a different DOM layer after React
@@ -472,17 +488,21 @@ function InteractionOverlayComponent({
       setRewireTarget(null);
       setRewirePreview(null);
       onGestureEnd();
-      try {
-        handle.releasePointerCapture(pointerId);
-      } catch {
-        // Pointer capture may already have been released by the browser.
-      }
     };
-    const up = (next: PointerEvent) => finish(next);
-    const cancel = () => finish();
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
+    const cancelGesture = () => {
+      preview.cancel();
+      setRewire(null);
+      setRewireTarget(null);
+      setRewirePreview(null);
+      onGestureEnd();
+    };
+    startGesture(event, {
+      onMove: move,
+      onUp: finish,
+      onCancel: cancelGesture,
+      onCleanup: preview.cancel,
+      onDispose: cancelGesture,
+    });
   };
 
   const beginConnectorDrag = (
@@ -495,7 +515,6 @@ function InteractionOverlayComponent({
     const sourcePoint = sourceNode
       ? portPoint(sourceNode.icon, source.side, source.offset)
       : pointFromClient(svg, event.clientX, event.clientY, zoom);
-    const pointerId = event.pointerId;
     let latestTarget: RewireTarget | null = null;
 
     const previewFor = (cursor: Point, target: RewireTarget | null): Point[] => {
@@ -530,13 +549,10 @@ function InteractionOverlayComponent({
       latestTarget = target;
       preview.schedule({ cursor, target });
     };
-    const finish = (next?: PointerEvent) => {
-      window.removeEventListener("pointermove", update);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      if (next) update(next);
+    const finish = (next: PointerEvent) => {
+      update(next);
       preview.flush();
-      const target = next ? latestTarget : null;
+      const target = latestTarget;
       if (target) {
         onConnectPorts(
           source.nodeId,
@@ -548,24 +564,21 @@ function InteractionOverlayComponent({
         );
       }
       setConnectorDrag(null);
-      try {
-        handle.releasePointerCapture(pointerId);
-      } catch {
-        // Pointer capture may already have been released by the browser.
-      }
     };
-    const up = (next: PointerEvent) => finish(next);
-    const cancel = () => finish();
-
-    try {
-      handle.setPointerCapture(pointerId);
-    } catch {
-      // Some synthetic/browser pointer events do not support capture.
-    }
     setConnectorDrag({ source, cursor: sourcePoint, target: null, preview: [sourcePoint, sourcePoint] });
-    window.addEventListener("pointermove", update);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
+    startGesture(event, {
+      onMove: update,
+      onUp: finish,
+      onCancel: () => {
+        preview.cancel();
+        setConnectorDrag(null);
+      },
+      onCleanup: preview.cancel,
+      onDispose: () => {
+        preview.cancel();
+        setConnectorDrag(null);
+      },
+    });
   };
 
   const beginBadgeMove = (
@@ -577,7 +590,6 @@ function InteractionOverlayComponent({
   ) => {
     const handle = event.currentTarget;
     const svg = handle.ownerSVGElement;
-    const pointerId = event.pointerId;
     let lastT = initialT;
     let lastSide = initialSide;
     const renderedBadge = handle
@@ -593,7 +605,6 @@ function InteractionOverlayComponent({
       setBadgeDrag({ edgeId, t: placement.t, side: placement.side });
     });
 
-    handle.setPointerCapture(pointerId);
     onGestureBegin();
     setBadgeDrag({ edgeId, t: initialT, side: initialSide });
 
@@ -605,13 +616,10 @@ function InteractionOverlayComponent({
       lastSide = badgeSideAt(pointer, projection.point, projection.tangent);
       preview.schedule({ t: lastT, side: lastSide });
     };
-    const finish = (next?: PointerEvent) => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      if (next) move(next);
+    const finish = (next: PointerEvent) => {
+      move(next);
       preview.flush();
-      const changed = Boolean(next && (lastT !== initialT || lastSide !== initialSide));
+      const changed = lastT !== initialT || lastSide !== initialSide;
       if (changed) {
         onBadgeMove(edgeId, lastT, lastSide);
       }
@@ -622,17 +630,20 @@ function InteractionOverlayComponent({
         setBadgeDrag(null);
       }
       onGestureEnd();
-      try {
-        handle.releasePointerCapture(pointerId);
-      } catch {
-        // Pointer capture may already have been released by the browser.
-      }
     };
-    const up = (next: PointerEvent) => finish(next);
-    const cancel = () => finish();
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
+    const cancelGesture = () => {
+      preview.cancel();
+      for (const part of renderedBadgeParts) part.removeAttribute("visibility");
+      setBadgeDrag(null);
+      onGestureEnd();
+    };
+    startGesture(event, {
+      onMove: move,
+      onUp: finish,
+      onCancel: cancelGesture,
+      onCleanup: preview.cancel,
+      onDispose: cancelGesture,
+    });
   };
 
   const beginLabelMove = (
@@ -647,7 +658,6 @@ function InteractionOverlayComponent({
   ) => {
     const handle = event.currentTarget;
     const svg = handle.ownerSVGElement;
-    const pointerId = event.pointerId;
     let lastT = initialT;
     let lastSide = initialSide;
     let didDrag = false;
@@ -691,7 +701,6 @@ function InteractionOverlayComponent({
       rect: initialRect,
     });
 
-    handle.setPointerCapture(pointerId);
     onGestureBegin();
     setHoveredItem(null);
     labelDragRef.current = { edgeId, t: initialT, side: initialSide };
@@ -707,30 +716,26 @@ function InteractionOverlayComponent({
       labelDragRef.current = { edgeId, t: lastT, side: lastSide };
       applyPlacement(getEdgeLabelPlacementOnPath(points, label, lastT, lastSide));
     };
-    const finish = (next?: PointerEvent) => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      if (next && didDrag) move(next);
+    const finish = (next: PointerEvent) => {
+      if (didDrag) move(next);
       const final = labelDragRef.current;
-      if (next && didDrag && final && (final.t !== initialT || final.side !== initialSide)) {
+      if (didDrag && final && (final.t !== initialT || final.side !== initialSide)) {
         onLabelMove(final.edgeId, final.t, final.side);
-      } else if (!next && didDrag) {
-        restoreInitialPlacement();
       }
       labelDragRef.current = null;
       onGestureEnd();
-      try {
-        handle.releasePointerCapture(pointerId);
-      } catch {
-        // Pointer capture may already have been released by the browser.
-      }
     };
-    const up = (next: PointerEvent) => finish(next);
-    const cancel = () => finish();
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
+    const cancelGesture = () => {
+      if (didDrag) restoreInitialPlacement();
+      labelDragRef.current = null;
+      onGestureEnd();
+    };
+    startGesture(event, {
+      onMove: move,
+      onUp: finish,
+      onCancel: cancelGesture,
+      onDispose: cancelGesture,
+    });
   };
 
   const beginGroupMove = (
@@ -754,8 +759,10 @@ function InteractionOverlayComponent({
       createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
       alignmentTargets(layout, doc, active),
       createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+      startGesture,
       onGestureBegin,
       onGestureEnd,
+      onGestureCancel,
     );
   };
 
@@ -797,7 +804,6 @@ function InteractionOverlayComponent({
       />
       <g data-alignment-guides />
       {groups.map((group) => {
-        const place = view.places[group.id];
         if (!isEntityVisible(doc, view, group.id)) return null;
         return (
           <rect
@@ -961,7 +967,6 @@ function InteractionOverlayComponent({
       })()}
 
       {nodes.map((node) => {
-        const place = view.places[node.id];
         if (!isEntityVisible(doc, view, node.id)) return null;
         const hitRects = resourceHitRects(node);
         const onNodePointerDown = (event: React.PointerEvent<SVGRectElement>) => {
@@ -984,10 +989,12 @@ function InteractionOverlayComponent({
               { ...targetNode.icon },
               (x, y, dx, dy) => onMove("resource", target.id, x, y, dx, dy),
               createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
-              alignmentTargets(layout, doc, active),
-              createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
-              onGestureBegin,
-              onGestureEnd,
+                alignmentTargets(layout, doc, active),
+                createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+                startGesture,
+                onGestureBegin,
+                onGestureEnd,
+                onGestureCancel,
             );
           }
         };
@@ -1071,8 +1078,10 @@ function InteractionOverlayComponent({
                   createMovePreview(event.currentTarget.ownerSVGElement, doc, active),
                   alignmentTargets(layout, doc, active),
                   createAlignmentGuidePreview(event.currentTarget.ownerSVGElement),
+                  startGesture,
                   onGestureBegin,
                   onGestureEnd,
+                  onGestureCancel,
                 );
               }
             }}
@@ -1315,8 +1324,10 @@ function InteractionOverlayComponent({
                         event.shiftKey,
                       ),
                     () => setResizePreview(null),
+                    startGesture,
                     onGestureBegin,
                     onGestureEnd,
+                    onGestureCancel,
                   );
                 }}
               />
@@ -1598,6 +1609,7 @@ function InteractionOverlayComponent({
                     (points) => setRouteEditPreview({ edgeId: edgeGeom.id, points }),
                     commitRoute.bind(null, edgeGeom.id),
                     () => setRouteEditPreview(null),
+                    startGesture,
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -1640,6 +1652,7 @@ function InteractionOverlayComponent({
                     (points) => setRouteEditPreview({ edgeId: edgeGeom.id, points }),
                     commitRoute.bind(null, edgeGeom.id),
                     () => setRouteEditPreview(null),
+                    startGesture,
                     onGestureBegin,
                     onGestureEnd,
                   );
@@ -1981,402 +1994,6 @@ export function resizeHandles(rect: Rect, allDirections = false): Array<{
   ];
 }
 
-interface MovePreviewController {
-  update: (dx: number, dy: number) => void;
-  commit: () => void;
-  finish: () => void;
-}
-
-interface AlignmentGuidePreviewController {
-  update: (guides: AlignmentGuide[]) => void;
-  finish: () => void;
-}
-
-function createAlignmentGuidePreview(
-  overlay: SVGSVGElement | null,
-): AlignmentGuidePreviewController {
-  const layer = overlay?.querySelector<SVGGElement>("[data-alignment-guides]") ?? null;
-  const clear = () => layer?.replaceChildren();
-  return {
-    update: (guides) => {
-      if (!layer) return;
-      clear();
-      for (const guide of guides) {
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("data-alignment-guide", guide.axis);
-        line.setAttribute("data-alignment-anchor", guide.anchor);
-        line.setAttribute("class", `alignment-guide is-${guide.anchor}`);
-        line.setAttribute("x1", String(guide.axis === "x" ? guide.position : guide.from - 12));
-        line.setAttribute("y1", String(guide.axis === "x" ? guide.from - 12 : guide.position));
-        line.setAttribute("x2", String(guide.axis === "x" ? guide.position : guide.to + 12));
-        line.setAttribute("y2", String(guide.axis === "x" ? guide.to + 12 : guide.position));
-        layer.append(line);
-      }
-    },
-    finish: clear,
-  };
-}
-
-function createMovePreview(
-  overlay: SVGSVGElement | null,
-  doc: DiagramDocument,
-  selection: Selection,
-): MovePreviewController {
-  if (!overlay) return { update: () => {}, commit: () => {}, finish: () => {} };
-
-  const view = getDefaultView(doc);
-  const moving = new Map<string, SelectionItem>();
-  const add = (item: SelectionItem) => {
-    if (item.kind === "edge") return;
-    const locked = item.kind === "annotation"
-      ? view.annotations?.[item.id]?.locked
-      : view.places[item.id]?.locked;
-    if (!locked) moving.set(`${item.kind}:${item.id}`, item);
-  };
-  const addGroupChildren = (groupId: string) => {
-    const group = doc.groups.find((candidate) => candidate.id === groupId);
-    for (const childId of group?.children ?? []) {
-      const childGroup = doc.groups.find((candidate) => candidate.id === childId);
-      if (childGroup) {
-        add({ kind: "group", id: childId });
-        addGroupChildren(childId);
-        continue;
-      }
-      if (doc.resources.some((candidate) => candidate.id === childId)) {
-        add({ kind: "resource", id: childId });
-      } else if (doc.annotations.some((candidate) => candidate.id === childId)) {
-        add({ kind: "annotation", id: childId });
-      }
-    }
-  };
-
-  for (const item of selection) {
-    add(item);
-    if (item.kind === "group") addGroupChildren(item.id);
-  }
-
-  type Target = {
-    element: SVGElement;
-    transform: string | null;
-    willChange: string;
-  };
-  let targets: Target[] | null = null;
-  let settleFrame: number | null = null;
-  const resolveTargets = (): Target[] => {
-    const elements = new Set<SVGElement>();
-    const resourceIds = new Set(
-      [...moving.values()]
-        .filter((item) => item.kind === "resource")
-        .map((item) => item.id),
-    );
-
-    for (const item of moving.values()) {
-      const renderedId = item.kind === "resource"
-        ? `res-${item.id}`
-        : item.kind === "group"
-          ? `group-${item.id}`
-          : `annotation-${item.id}`;
-      const rendered = document.getElementById(renderedId);
-      if (rendered instanceof SVGElement) elements.add(rendered);
-    }
-    for (const edge of doc.edges) {
-      if (!resourceIds.has(edge.source) || !resourceIds.has(edge.target)) continue;
-      const rendered = document.getElementById(`edge-${edge.id}`);
-      if (rendered instanceof SVGElement) elements.add(rendered);
-    }
-
-    for (const element of overlay.querySelectorAll<SVGElement>(
-      "[data-entity-kind][data-entity-id], [data-hover-kind][data-hover-id], [data-drag-overlay-kind][data-drag-overlay-id], [data-quick-connect]",
-    )) {
-      const kind = element.getAttribute("data-entity-kind")
-        ?? element.getAttribute("data-hover-kind")
-        ?? element.getAttribute("data-drag-overlay-kind");
-      const id = element.getAttribute("data-entity-id")
-        ?? element.getAttribute("data-hover-id")
-        ?? element.getAttribute("data-drag-overlay-id")
-        ?? element.getAttribute("data-quick-connect");
-      if (id && [...moving.values()].some((item) => item.id === id && (!kind || item.kind === kind))) {
-        elements.add(element);
-      }
-    }
-
-    return [...elements].map((element) => ({
-      element,
-      transform: element.getAttribute("transform"),
-      willChange: element.style.willChange,
-    }));
-  };
-
-  const finish = () => {
-    if (settleFrame !== null) window.cancelAnimationFrame(settleFrame);
-    settleFrame = null;
-    for (const target of targets ?? []) {
-      if (target.transform === null) target.element.removeAttribute("transform");
-      else target.element.setAttribute("transform", target.transform);
-      target.element.style.willChange = target.willChange;
-    }
-    targets = null;
-  };
-
-  return {
-    update: (dx, dy) => {
-      targets ??= resolveTargets();
-      for (const target of targets) {
-        const base = target.transform ? `${target.transform} ` : "";
-        target.element.style.willChange = "transform";
-        target.element.setAttribute("transform", `${base}translate(${dx} ${dy})`);
-      }
-    },
-    commit: () => {
-      const renderedTargets = (targets ?? [])
-        .map((target) => target.element)
-        .filter((element) => element.closest(".diagram-svg"));
-      if (!renderedTargets.length) {
-        finish();
-        return;
-      }
-      // A cold worker has to load the compiler/catalog chunks before its first
-      // route. Keep the optimistic position through that startup (and through
-      // unusually complex routes) without ever blocking the pointer-up frame.
-      const deadline = Date.now() + 15_000;
-      const settle = () => {
-        settleFrame = null;
-        // dangerouslySetInnerHTML replaces the rendered SVG descendants when
-        // the worker result lands. Keep the preview attached until then so
-        // there is no flash back to the pre-drag position.
-        if (renderedTargets.some((element) => !element.isConnected) || Date.now() >= deadline) {
-          finish();
-          return;
-        }
-        settleFrame = window.requestAnimationFrame(settle);
-      };
-      settleFrame = window.requestAnimationFrame(settle);
-    },
-    finish,
-  };
-}
-
-function beginMove(
-  event: React.PointerEvent<SVGElement>,
-  zoom: number,
-  snapToGrid: boolean,
-  rect: { x: number; y: number; w: number; h: number },
-  onMove: (x: number, y: number, dx: number, dy: number) => void,
-  preview: MovePreviewController,
-  targets: Array<{ x: number; y: number; w: number; h: number }>,
-  guidePreview: AlignmentGuidePreviewController,
-  onGestureBegin: () => void,
-  onGestureEnd: () => void,
-) {
-  const start = { x: event.clientX, y: event.clientY };
-  const origin = { x: rect.x, y: rect.y };
-  let dragging = false;
-  let rawDx = 0;
-  let rawDy = 0;
-  let dx = 0;
-  let dy = 0;
-  let previewDx = 0;
-  let previewDy = 0;
-  let guides: AlignmentGuide[] = [];
-  let frame = 0;
-  const thresholdPx = 3;
-
-  onGestureBegin();
-
-  const move = (next: PointerEvent) => {
-    rawDx = (next.clientX - start.x) / zoom;
-    rawDy = (next.clientY - start.y) / zoom;
-    if (Math.hypot(next.clientX - start.x, next.clientY - start.y) >= thresholdPx) {
-      dragging = true;
-    }
-    const snapped = snapDragDelta(rect, targets, rawDx, rawDy, snapToGrid, zoom);
-    dx = snapped.dx;
-    dy = snapped.dy;
-    guides = snapped.guides;
-    // Grid quantisation is committed on release, while peer alignment is a
-    // gentle magnetic constraint during the gesture. This preserves smooth
-    // pixel-level tracking without allowing an aligned drop to drift.
-    previewDx = guides.some((guide) => guide.axis === "x") ? dx : rawDx;
-    previewDy = guides.some((guide) => guide.axis === "y") ? dy : rawDy;
-    if (!frame) {
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        preview.update(previewDx, previewDy);
-        guidePreview.update(guides);
-      });
-    }
-  };
-  const up = () => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
-    if (frame) window.cancelAnimationFrame(frame);
-    guidePreview.finish();
-    if (!dragging) {
-      preview.finish();
-      onGestureEnd();
-      return;
-    }
-    preview.update(dx, dy);
-    onMove(origin.x + dx, origin.y + dy, dx, dy);
-    preview.commit();
-    onGestureEnd();
-  };
-  const cancel = () => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
-    if (frame) window.cancelAnimationFrame(frame);
-    guidePreview.finish();
-    preview.finish();
-    onGestureEnd();
-  };
-  window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", up);
-  window.addEventListener("pointercancel", cancel);
-}
-
-function createFramePreview<T>(apply: (value: T) => void) {
-  let frame: number | null = null;
-  let pending: T | undefined;
-  let hasPending = false;
-
-  const flush = () => {
-    if (frame !== null) {
-      window.cancelAnimationFrame(frame);
-      frame = null;
-    }
-    if (!hasPending) return;
-    const value = pending as T;
-    pending = undefined;
-    hasPending = false;
-    apply(value);
-  };
-
-  return {
-    schedule(value: T) {
-      pending = value;
-      hasPending = true;
-      if (frame !== null) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = null;
-        if (!hasPending) return;
-        const next = pending as T;
-        pending = undefined;
-        hasPending = false;
-        apply(next);
-      });
-    },
-    flush,
-  };
-}
-
-/**
- * Calculate a resized rectangle from the original bounds and pointer delta.
- *
- * The dragged edge is snapped in world coordinates before the minimum-size
- * clamp is applied. This keeps the opposite edge fixed for north/west drags,
- * including when the pointer crosses the minimum-size boundary.
- */
-export function resizeRect(
-  origin: Rect,
-  handle: ResizeHandle,
-  dx: number,
-  dy: number,
-  minimum: number | { w: number; h: number } = 32,
-  snap = false,
-): Rect {
-  const minW = typeof minimum === "number" ? minimum : minimum.w;
-  const minH = typeof minimum === "number" ? minimum : minimum.h;
-  const leftEdge = origin.x;
-  const rightEdge = origin.x + origin.w;
-  const topEdge = origin.y;
-  const bottomEdge = origin.y + origin.h;
-  let left = leftEdge;
-  let right = rightEdge;
-  let top = topEdge;
-  let bottom = bottomEdge;
-
-  if (handle.includes("w")) left = snapCoordinate(leftEdge + dx, snap);
-  if (handle.includes("e")) right = snapCoordinate(rightEdge + dx, snap);
-  if (handle.includes("n")) top = snapCoordinate(topEdge + dy, snap);
-  if (handle.includes("s")) bottom = snapCoordinate(bottomEdge + dy, snap);
-
-  if (handle.includes("w")) left = Math.min(left, right - minW);
-  if (handle.includes("e")) right = Math.max(right, left + minW);
-  if (handle.includes("n")) top = Math.min(top, bottom - minH);
-  if (handle.includes("s")) bottom = Math.max(bottom, top + minH);
-
-  return {
-    x: left,
-    y: top,
-    w: right - left,
-    h: bottom - top,
-  };
-}
-
-function beginResize(
-  event: React.PointerEvent<SVGElement>,
-  zoom: number,
-  snapToGrid: boolean,
-  rect: Rect,
-  handle: ResizeHandle,
-  onPreview: (bounds: Rect) => void,
-  onCommit: (bounds: Rect) => void,
-  onCancel: () => void,
-  onBegin?: () => void,
-  onEnd?: () => void,
-) {
-  onBegin?.();
-  const handleElement = event.currentTarget;
-  const pointerId = event.pointerId;
-  const start = { x: event.clientX, y: event.clientY };
-  const origin = { ...rect };
-  let latest: Rect = origin;
-  const preview = createFramePreview<Rect>((bounds) => onPreview(bounds));
-  try {
-    handleElement.setPointerCapture(pointerId);
-  } catch {
-    // Pointer capture is unavailable in some synthetic test events.
-  }
-  const move = (next: PointerEvent) => {
-    const dx = (next.clientX - start.x) / zoom;
-    const dy = (next.clientY - start.y) / zoom;
-    latest = resizeRect(origin, handle, dx, dy, 32, snapToGrid);
-    preview.schedule(latest);
-  };
-  const up = (next: PointerEvent) => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
-    move(next);
-    preview.flush();
-    onCommit(latest);
-    onEnd?.();
-    try {
-      handleElement.releasePointerCapture(pointerId);
-    } catch {
-      // Pointer capture may already have been released by the browser.
-    }
-  };
-  const cancel = () => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
-    preview.flush();
-    onCancel();
-    onEnd?.();
-    try {
-      handleElement.releasePointerCapture(pointerId);
-    } catch {
-      // Pointer capture may already have been released by the browser.
-    }
-  };
-  window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", up);
-  window.addEventListener("pointercancel", cancel);
-}
-
 function beginSegmentMove(
   event: React.PointerEvent<SVGElement>,
   zoom: number,
@@ -2386,6 +2003,7 @@ function beginSegmentMove(
   onPreview: (points: Point[]) => void,
   onCommit: (points: Point[]) => void,
   onCancel: () => void,
+  startGesture: StartOverlayGesture,
   onBegin?: () => void,
   onEnd?: () => void,
 ) {
@@ -2416,25 +2034,23 @@ function beginSegmentMove(
     preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
     move(next);
     preview.flush();
     onCommit(latest);
     onEnd?.();
   };
   const cancel = () => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
     preview.flush();
     onCancel();
     onEnd?.();
   };
-  window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", up);
-  window.addEventListener("pointercancel", cancel);
+  startGesture(event, {
+    onMove: move,
+    onUp: up,
+    onCancel: cancel,
+    onCleanup: preview.cancel,
+    onDispose: cancel,
+  });
 }
 
 function beginPointMove(
@@ -2446,6 +2062,7 @@ function beginPointMove(
   onPreview: (points: Point[]) => void,
   onCommit: (points: Point[]) => void,
   onCancel: () => void,
+  startGesture: StartOverlayGesture,
   onBegin?: () => void,
   onEnd?: () => void,
 ) {
@@ -2469,25 +2086,23 @@ function beginPointMove(
     preview.schedule(latest);
   };
   const up = (next: PointerEvent) => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
     move(next);
     preview.flush();
     onCommit(latest);
     onEnd?.();
   };
   const cancel = () => {
-    window.removeEventListener("pointermove", move);
-    window.removeEventListener("pointerup", up);
-    window.removeEventListener("pointercancel", cancel);
     preview.flush();
     onCancel();
     onEnd?.();
   };
-  window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", up);
-  window.addEventListener("pointercancel", cancel);
+  startGesture(event, {
+    onMove: move,
+    onUp: up,
+    onCancel: cancel,
+    onCleanup: preview.cancel,
+    onDispose: cancel,
+  });
 }
 
 function portPoints(rect: { x: number; y: number; w: number; h: number }) {
@@ -2524,14 +2139,5 @@ function pointFromClient(
   return {
     x: (viewBox?.x ?? 0) + ((clientX - rect.left) / rect.width) * width,
     y: (viewBox?.y ?? 0) + ((clientY - rect.top) / rect.height) * height,
-  };
-}
-
-function rectFromPoints(a: Point, b: Point) {
-  return {
-    x: Math.min(a.x, b.x),
-    y: Math.min(a.y, b.y),
-    w: Math.abs(a.x - b.x),
-    h: Math.abs(a.y - b.y),
   };
 }

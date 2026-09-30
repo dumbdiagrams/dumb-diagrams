@@ -7,9 +7,12 @@ export default defineConfig({
       "@dumb-diagrams/runtime/dsl": resolve("packages/runtime/src/dsl/index.ts"),
       "@dumb-diagrams/runtime/catalog": resolve("packages/runtime/src/catalog/index.ts"),
       "@dumb-diagrams/runtime/render": resolve("packages/runtime/src/render/index.ts"),
+      "@dumb-diagrams/runtime/test-fixtures": resolve("packages/runtime/test-fixtures.ts"),
     },
   },
   test: {
+    // Routing and coverage instrumentation compete for CPU during parallel runs.
+    maxWorkers: 4,
     include: [
       "packages/**/src/**/*.test.{ts,tsx}",
       "tests/integration/**/*.test.{ts,tsx}",

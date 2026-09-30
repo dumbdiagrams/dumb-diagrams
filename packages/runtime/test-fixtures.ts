@@ -1,5 +1,5 @@
-import { createEmptyDocument } from "./document.js";
-import type { DiagramDocument } from "./types.js";
+import { createEmptyDocument } from "./src/core/document.js";
+import type { DiagramDocument } from "./src/core/types.js";
 
 export function createAsyncDocsFixture(): DiagramDocument {
   const doc = createEmptyDocument("async-docs");

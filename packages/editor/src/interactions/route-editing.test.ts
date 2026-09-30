@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { routeEdges } from "@dumb-diagrams/runtime/route";
 

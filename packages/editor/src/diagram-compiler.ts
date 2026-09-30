@@ -1,4 +1,4 @@
-import type { DiagramDocument, LayoutResult, RoutedEdge, ValidationIssue } from "@dumb-diagrams/runtime/core";
+import type { DiagramDocument, LayoutResult, ValidationIssue } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/runtime/core";
 import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, type DgmParseError } from "@dumb-diagrams/runtime/dsl";
@@ -8,6 +8,7 @@ import {
   qualityFindings,
   qualityHardRegressionReason,
   renderSvg,
+  validateEmbeddedAssets,
   type InvariantFailure,
 } from "@dumb-diagrams/runtime/render";
 import {
@@ -32,9 +33,17 @@ export type DiagramCompilation = {
   issues: ValidationIssue[];
   svg: null;
   invariantFailures: InvariantFailure[];
+  compilationError?: CompilationError;
   parseError?: string;
   parseErrorCode?: DgmParseError["code"];
   layout?: null;
+};
+
+/** A plain diagnostic safe to include in a worker response. */
+export type CompilationError = {
+  readonly code: "compilation";
+  readonly phase: "prepare" | "layout" | "routing" | "render";
+  readonly message: string;
 };
 
 const MAX_CACHED_COMPILATIONS = 12;
@@ -73,16 +82,21 @@ export function cacheDiagramCompilation(
 export function warmDiagramCompilationCache(
   source: string,
   snapToGrid: boolean,
+  precompiled?: DiagramCompilation,
 ): DiagramCompilation {
   committedCompilationEpoch += 1;
-  const compilation = compileDiagramSource(source, snapToGrid);
+  const compilation = precompiled ?? compileDiagramSource(source, snapToGrid);
   if (!compilation.ok) return compilation;
-  return cacheDiagramCompilation(source, snapToGrid, {
-    ...compilation,
-    svg: renderSvg(compilation.doc, compilation.layout, {
-      resolveIconHref: catalogIconUrl,
-    }),
-  });
+  try {
+    return cacheDiagramCompilation(source, snapToGrid, {
+      ...compilation,
+      svg: renderSvg(compilation.doc, compilation.layout, {
+        resolveIconHref: catalogIconUrl,
+      }),
+    });
+  } catch (error) {
+    return compilationFailure(compilation.issues, error, "render");
+  }
 }
 
 export function getCachedDiagramCompilation(
@@ -140,22 +154,27 @@ function compileParsedDocument(
   snapToGrid: boolean,
   routingOptions: RoutingOptions,
 ): DiagramCompilation {
-  const issues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
+  const issues = [
+    ...validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }),
+    ...validateEmbeddedAssets(doc),
+  ];
   if (hasErrors(issues)) {
     return {
       ok: false,
       issues,
       svg: null,
+      layout: null,
       invariantFailures: [],
     };
   }
-  const placedLayout = snapToGrid
-    ? snapLayoutToGrid(layoutDocument(doc), true, doc)
-    : layoutDocument(doc);
-  let routedEdges: RoutedEdge[];
-  const routingWarnings: ValidationIssue[] = [];
+  let phase: CompilationError["phase"] = "layout";
   try {
-    routedEdges = routeEdges(doc, placedLayout, {
+    const placedLayout = snapToGrid
+      ? snapLayoutToGrid(layoutDocument(doc), true, doc)
+      : layoutDocument(doc);
+    phase = "routing";
+    const routingWarnings: ValidationIssue[] = [];
+    const routedEdges = routeEdges(doc, placedLayout, {
       ...routingOptions,
       onBudgetExhausted: (diagnostics) => {
         routingOptions.onBudgetExhausted?.(diagnostics);
@@ -166,25 +185,72 @@ function compileParsedDocument(
         });
       },
     });
+    phase = "render";
+    const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routedEdges));
+    const invariantFailures = checkInvariants(layout);
+    const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
+    return {
+      ok: true,
+      issues: [...issues, ...routingWarnings],
+      invariantFailures,
+      doc,
+      layout,
+      svg,
+    };
   } catch (error) {
-    routingWarnings.push({
-      level: "warning",
-      code: "routing",
-      message: (error as Error).message,
-    });
-    routedEdges = [];
+    return compilationFailure(issues, error, phase);
   }
-  const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routedEdges));
-  const invariantFailures = checkInvariants(layout);
-  const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
+}
+
+/** Convert an unexpected compiler/display failure into a worker-safe DTO. */
+export function compilationFailure(
+  issues: ValidationIssue[],
+  error: unknown,
+  phase: CompilationError["phase"],
+): Extract<DiagramCompilation, { ok: false }> {
+  const compilationError = toCompilationError(error, phase);
   return {
-    ok: true,
-    issues: [...issues, ...routingWarnings],
-    invariantFailures,
-    doc,
-    layout,
-    svg,
+    ok: false,
+    issues: [...issues, {
+      level: "error",
+      code: compilationError.code,
+      message: compilationError.message,
+    }],
+    svg: null,
+    invariantFailures: [],
+    compilationError,
+    layout: null,
   };
+}
+
+function toCompilationError(error: unknown, phase: CompilationError["phase"]): CompilationError {
+  const detail = compilerErrorMessage(error);
+  const message = detail.trim() || "Unknown compiler error";
+  return {
+    code: "compilation",
+    phase,
+    message: `Compilation failed during ${phase}: ${message}`,
+  };
+}
+
+function compilerErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message || error.name;
+  if (typeof error === "string") return error;
+  if (isRecordWithMessage(error)) return error.message;
+  try {
+    const serialized = JSON.stringify(error);
+    if (serialized !== undefined) return serialized;
+  } catch {
+    // Fall through to a stable generic message for values that cannot be serialized.
+  }
+  return "Unknown compiler error";
+}
+
+function isRecordWithMessage(value: unknown): value is { message: string } {
+  return typeof value === "object"
+    && value !== null
+    && "message" in value
+    && typeof value.message === "string";
 }
 
 /**

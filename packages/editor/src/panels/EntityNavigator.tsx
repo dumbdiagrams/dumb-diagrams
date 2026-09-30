@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { SelectionItem } from "../editor-model";
+import type { SelectionItem } from "../model/types";
 
 export type NavigableEntity = SelectionItem & { label: string };
 

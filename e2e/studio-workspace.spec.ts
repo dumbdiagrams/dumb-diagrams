@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { ROOT } from "./support/helpers";
+import { ROOT, MOD, waitForStudioReady } from "./support/helpers";
 
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");
@@ -403,7 +403,8 @@ test("reopens the most recently closed tab", async ({ page }) => {
   await page.getByRole("dialog", { name: "Unsaved changes" }).getByRole("button", { name: "Discard", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(1);
 
-  await page.keyboard.press("Control+KeyK");
+  await waitForStudioReady(page);
+  await page.keyboard.press(`${MOD}+KeyK`);
   const palette = page.getByRole("dialog", { name: "Command palette" });
   await expect(palette).toBeVisible();
   const search = palette.getByRole("searchbox", { name: "Search commands" });
@@ -462,7 +463,8 @@ test("restores open tabs after a reload", async ({ page }) => {
 
 test("opens the command palette with the keyboard shortcut", async ({ page }) => {
   await page.goto("/");
-  await page.keyboard.press("Control+KeyK");
+  await waitForStudioReady(page);
+  await page.keyboard.press(`${MOD}+KeyK`);
   const palette = page.getByRole("dialog", { name: "Command palette" });
   await expect(palette).toBeVisible();
   expect(await palette.getByRole("option").count()).toBeGreaterThanOrEqual(18);

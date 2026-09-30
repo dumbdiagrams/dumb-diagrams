@@ -116,7 +116,17 @@ test("surfaces local persistence degradation without blocking editing", async ({
   await expect(page.getByRole("button", { name: /warning/i })).toBeVisible();
   await expect(page.locator(".cm-content")).toHaveCount(0);
   await page.getByRole("button", { name: "Source", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Source", exact: true })).toBeVisible();
+  const drawer = page.getByRole("dialog", { name: "Source", exact: true });
+  await expect(drawer).toBeVisible();
+  const unfinished = "diagram recover-me { grammar aws";
+  await drawer.locator(".cm-content").fill(unfinished);
+  await drawer.getByRole("button", { name: "Close", exact: true }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download source", exact: true }).click();
+  const download = await downloadPromise;
+  const path = await download.path();
+  expect(path).not.toBeNull();
+  expect(readFileSync(path!, "utf8")).toBe(unfinished);
 });
 
 test("blocks workspace shortcuts until persisted tabs finish restoring", async ({ page }) => {

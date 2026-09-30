@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DEFAULT_VIEWPORT_LEFT_MARGIN,
   DEFAULT_VIEWPORT_RIGHT_MARGIN,
   DEFAULT_VIEWPORT_TOP_MARGIN,
   DEFAULT_VIEWPORT_ZOOM,

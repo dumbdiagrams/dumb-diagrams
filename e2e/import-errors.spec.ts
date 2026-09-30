@@ -81,3 +81,17 @@ test("reports validation failures for structurally invalid but parseable diagram
   await expect(page.locator(".toast")).toContainText("invalid .dgm source");
   await expect(page.getByRole("tab")).toHaveCount(1);
 });
+
+test("unsafe SVG typed into source reports an error and can be repaired", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Source", exact: true }).click();
+  const drawer = page.getByRole("dialog", { name: "Source", exact: true });
+  const source = drawer.getByRole("textbox", { name: "Diagram source", exact: true });
+  const unsafe = 'diagram asset-error { grammar aws generic.custom box "Custom" { icon logo } } assets { asset logo { svg "<svg><script>alert(1)</script></svg>" w 32 h 32 } }';
+  await source.fill(unsafe);
+  await expect(drawer).toContainText(/script.*not allowed|invalid.*asset|unsafe.*SVG/i);
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeDisabled();
+  await source.fill('diagram repaired { grammar aws generic.user client "Client" }');
+  await expect(page.locator('[data-entity-id="client"][data-entity-kind="resource"]')).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Export", exact: true })).toBeEnabled();
+});

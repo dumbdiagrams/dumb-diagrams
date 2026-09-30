@@ -1,18 +1,11 @@
-import { lazy, memo, startTransition, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent } from "react";
+import { lazy, memo, StrictMode, Suspense, useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { createRoot } from "react-dom/client";
 
 import type {
   AnnotationStyle,
-  BoundaryFill,
   DiagramDocument,
-  EdgeColor,
-  EdgeKind,
-  EdgeStyle,
-  GroupKind,
-  GroupLabelPosition,
   LayoutResult,
   Point,
-  ResourceLabelPosition,
   Side,
   TextAlign,
   TextFontFamily,
@@ -21,50 +14,50 @@ import {
   createEmptyDocument,
   characterLength,
   DIAGRAM_LIMITS,
-  EDGE_COLOR_VALUES,
-  getDefaultView,
   hasErrors,
   normalizeMultilineText,
   normalizeSingleLineText,
-  utf8ByteLength,
   validateDocument,
 } from "@dumb-diagrams/runtime/core";
 import {
   getCatalogMap,
-  getCatalogEntry,
-  type CatalogEntry,
 } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
-import { renderPortableSvg, sanitizeSvgResult } from "@dumb-diagrams/runtime/render";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { renderPortableSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+
+import { serializeClipboardResult, duplicateSelectionResult } from "./model/clipboard";
+import type { Selection, SelectionItem } from "./model/types";
+import { readClipboardSelection, writeClipboardText } from "./state/clipboard-actions";
+import { documentHasUnsafeAssets, importDocumentFiles, importSvgFile, validateImportedSource } from "./state/document-import";
+import { useDocumentCommands } from "./state/use-document-commands";
+import { createCatalogActions, insertionPoint } from "./state/catalog-actions";
+import { useEditorSelection } from "./state/use-editor-selection";
+import { groupSelection, canGroupSelection, ungroup } from "./model/grouping";
+import { useFileActions, type FilePickerWindow } from "./state/use-file-actions";
+import { useStudioShortcuts } from "./interactions/use-studio-shortcuts";
+import { Inspector } from "./panels/Inspector";
+import { NoteComposer, TextComposer } from "./panels/AnnotationControls";
+import { buildContextMenuItems } from "./panels/canvas-context-menu";
+import { rejectOversizedPaste } from "./ui/text-input";
 
 import {
   addAnnotation,
   addText,
-  ANNOTATION_STYLES,
   annotationSize,
-  annotationStyle,
   addEdge,
-  addGroup,
-  addResource,
   alignSelection,
   clearRoute,
-  clearView,
   deleteSelection,
   distributeSelection,
   fitGroupToContents,
-  groupSelection,
   nudgeSelection,
-  pasteClipboard,
   primarySelection,
   reconnectEdge,
   renameEdge,
   renameGroup,
   renameResource,
   updateGroupStep,
-  resourceIconSize,
-  serializeClipboard,
   setResourceIconSize,
   setResourceLabelPosition,
   setGroupLabelPosition,
@@ -72,7 +65,6 @@ import {
   setBoundaryAppearance,
   setRoute,
   setSize,
-  setPlace,
   setTitle,
   setLocked,
   setVisible,
@@ -83,22 +75,12 @@ import {
   swapEdgeDirection,
   updateEdge,
   updateEdgePreservingLayout,
-  addCustomResource,
-  canPlaceCatalogEntry,
-  canGroupSelection,
-  duplicateSelection,
-  importSvgAsset,
   moveSelection,
   removeSelectionPreservingGroupContents,
   setGroupBounds,
   updateAnnotationText,
   updateTextFormat,
   setAnnotationStyle,
-  ungroup,
-  type Selection,
-  type SelectionItem,
-  type ResourceIconSize,
-  MAX_EDGE_STEP,
 } from "./editor-model";
 import {
   CanvasStage,
@@ -108,8 +90,6 @@ import {
 } from "./canvas/CanvasStage";
 import { InteractionOverlay } from "./interactions/InteractionOverlay";
 import {
-  marqueeSelection,
-  mergeSelection,
   type SelectionMode,
 } from "./interactions/selection-targeting";
 import {
@@ -130,14 +110,7 @@ import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { readFileHandles, type OpenFileEntry } from "./state/file-open";
 import {
-  isAbortError,
-  saveExistingFileHandle,
-  type FileSaveResult,
-  type FileSystemHandleLike,
-} from "./state/file-save";
-import {
   decodeDiagramUrlPayload,
-  downloadTextResult,
   exportDgmFileResult,
   filenameWithExtension,
   type ExportFormat,
@@ -172,17 +145,13 @@ import { ThemeControl } from "./ui/ThemeControl";
 import { ToolDock, type ToolId } from "./ui/ToolDock";
 import { initTheme } from "./ui/theme";
 import { useDiagramCompilation } from "./use-diagram-compilation";
-import { planAutoFix } from "./auto-fix";
 import {
-  compileDiagramSource,
   getCachedDiagramCompilation,
-  warmDiagramCompilationCache,
   type DiagramCompilation,
 } from "./diagram-compiler";
 import {
   GRID_SIZE,
   leftStagingInsertionPoint,
-  snapLayoutToGrid,
   snapPoint,
 } from "./grid.js";
 import "./styles.css";
@@ -208,33 +177,6 @@ const LEFT_DRAWER_TOOLS = new Set<ToolId>([
 function isLeftDrawerTool(tool: ToolId): boolean {
   return LEFT_DRAWER_TOOLS.has(tool);
 }
-type FilePickerWindow = Window & {
-  showOpenFilePicker?: (options?: {
-    multiple?: boolean;
-    types?: Array<{ description?: string; accept: Record<string, string[]> }>;
-  }) => Promise<FileSystemHandleLike[]>;
-  showSaveFilePicker?: (options?: {
-    suggestedName?: string;
-    types?: Array<{ description?: string; accept: Record<string, string[]> }>;
-  }) => Promise<FileSystemHandleLike>;
-};
-
-function blobAsDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("Unable to read clipboard image"));
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function rasterDimensions(blob: Blob): Promise<{ width: number; height: number }> {
-  const bitmap = await createImageBitmap(blob);
-  const dimensions = { width: bitmap.width, height: bitmap.height };
-  bitmap.close();
-  return dimensions;
-}
-
 const RenderedDiagram = memo(function RenderedDiagram({ svg }: { svg: string }) {
   return <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
 });
@@ -270,9 +212,6 @@ const INITIAL_URL_IMPORT: InitialUrlImport = (() => {
   return { source: decoded.source };
 })();
 
-function documentHasUnsafeAssets(doc: DiagramDocument): boolean {
-  return (doc.assets ?? []).some((asset) => sanitizeSvgResult(asset.content).isErr());
-}
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
 type ContextMenuState = { x: number; y: number; selection: Selection; canvasPoint?: Point } | null;
@@ -290,11 +229,6 @@ type OperationState = {
   blocking?: boolean;
   awaitSource?: string;
 } | null;
-type CatalogPlacement = {
-  parent: string | undefined;
-  at: Point;
-  manual: boolean;
-};
 
 function canvasInteractionTool(tool: Tool): Tool {
   // Drawers are non-modal: opening one should not turn off selection, movement,
@@ -327,20 +261,6 @@ function documentNameForDisplay(doc: DiagramDocument): string {
   return readableId || "Untitled diagram";
 }
 
-function rejectOversizedPaste(
-  event: ReactClipboardEvent<HTMLInputElement | HTMLTextAreaElement>,
-  limit: number,
-  onReject: () => void,
-): void {
-  const target = event.currentTarget;
-  const start = target.selectionStart ?? target.value.length;
-  const end = target.selectionEnd ?? start;
-  const next = target.value.slice(0, start) + event.clipboardData.getData("text") + target.value.slice(end);
-  if (characterLength(next) <= limit) return;
-  event.preventDefault();
-  onReject();
-}
-
 function App() {
   const {
     ready: workspaceReady,
@@ -351,11 +271,14 @@ function App() {
     source,
     viewport,
     replaceSource,
+    editSourceDraft,
+    commitSourceDraft,
     commitSource,
     resetTab,
     resetActive,
     beginTransaction,
     endTransaction,
+    cancelTransaction,
     undo,
     redo,
     canUndo,
@@ -385,17 +308,16 @@ function App() {
   });
   const [tool, setTool] = useState<Tool>("select");
   const interactionTool = canvasInteractionTool(tool);
-  const [selection, setSelection] = useState<Selection>([]);
+  const editorSelection = useEditorSelection();
+  const { selection, setSelection } = editorSelection;
   const [stageMarquee, setStageMarquee] = useState<CanvasMarqueeGesture | null>(null);
   const [textEditRequest, setTextEditRequest] = useState<SelectionItem | null>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const [committedCompilationKey, setCommittedCompilationKey] = useState(0);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const sourceRef = useRef(source);
-  sourceRef.current = source;
-  const fileHandlesRef = useRef(new Map<string, FileSystemHandleLike>());
+  const activeTabRef = useRef(activeTabId);
+  activeTabRef.current = activeTabId;
   const fitRef = useRef<(() => void) | null>(null);
   const [layersQuery, setLayersQuery] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
@@ -416,7 +338,6 @@ function App() {
   const [bulkCloseRequest, setBulkCloseRequest] = useState<BulkCloseRequest>(null);
   const [recycleBinOpen, setRecycleBinOpen] = useState(false);
   const internalClipboardRef = useRef<string | null>(null);
-  const sourceCommitTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
@@ -456,96 +377,29 @@ function App() {
     setToastMessage(message);
   };
 
+  const documentCommands = useDocumentCommands({
+    source, tabId: activeTabId, snapToGrid,
+    commitSource, replaceSource, editSourceDraft, commitSourceDraft, notify: setToast,
+  });
+  const { sourceRef, committedCompilationKey, mutateCurrent, previewMutate,
+    onSourceChange, onSourceCommit, clearDraftTimer, commitDocument: updateDocument } = documentCommands;
+
   const tabLabel = useCallback((tab: WorkspaceTab): string => {
-    try {
-      return documentNameForDisplay(parseDgm(tab.source));
-    } catch {
-      return tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
-    }
+    const parsed = parseDgmResult(tab.source);
+    return parsed.isOk() ? documentNameForDisplay(parsed.value)
+      : tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
   }, []);
 
-  const sourceIsValid = (candidate: string): boolean => {
-    const parsed = parseDgmResult(candidate);
-    if (parsed.isErr()) return false;
-    if (hasErrors(validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules: false }))) return false;
-    return !documentHasUnsafeAssets(parsed.value);
-  };
+  const sourceIsValid = (candidate: string): boolean => validateImportedSource(candidate, false).isOk();
 
-  const saveTabSource = async (
-    tabId: string,
-    requestedFilename?: string,
-    options: { overwriteExisting?: boolean } = {},
-  ): Promise<FileSaveResult> => {
-    const tab = tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return {
-      status: "error",
-      filename: requestedFilename ?? "diagram.dgm",
-      code: "missing-tab",
-      message: "The diagram tab is no longer open.",
-    };
-    if (!sourceIsValid(tab.source)) {
-      setToast("Cannot save an invalid diagram. Fix the source errors first.");
-      return {
-        status: "error",
-        filename: requestedFilename ?? tab.filename ?? "diagram.dgm",
-        code: "invalid-source",
-        message: "Cannot save an invalid diagram. Fix the source errors first.",
-      };
-    }
-    const existingHandle = !requestedFilename ? fileHandlesRef.current.get(tabId) : undefined;
-    if (existingHandle) {
-      const result = await saveExistingFileHandle(existingHandle, tab.source, tab.savedSource, {
-        overwrite: options.overwriteExisting,
-      });
-      if (result.status === "saved") {
-        markTabSaved(tabId, tab.source, result.filename);
-        setToast(`Saved ${existingHandle.name}`);
-      }
-      if (result.status === "conflict") {
-        setFileConflictRequest({ ...result, tabId });
-      } else if (result.status === "error") {
-        setToast(`Could not save ${result.filename}: ${result.message}`);
-      }
-      return result;
-    }
-
-    if (requestedFilename) {
-      const picker = (window as FilePickerWindow).showSaveFilePicker;
-      if (picker) {
-        try {
-          const handle = await picker({
-            suggestedName: filenameWithExtension(requestedFilename, "dgm"),
-            types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
-          });
-          const writable = await handle.createWritable();
-          await writable.write(tab.source);
-          await writable.close();
-          fileHandlesRef.current.set(tabId, handle);
-          markTabSaved(tabId, tab.source, handle.name);
-          setToast(`Saved ${handle.name}`);
-          return { status: "saved", filename: handle.name };
-        } catch (error) {
-          if (isAbortError(error)) return { status: "cancelled" };
-          const message = error instanceof Error ? error.message : "The diagram could not be saved.";
-          setToast(message);
-          return { status: "error", filename: requestedFilename, code: "write-failed", message };
-        }
-      }
-    }
-    const baseName = requestedFilename || tab.filename || tabLabel(tab);
-    const filename = filenameWithExtension(baseName, "dgm");
-    return downloadTextResult(tab.source, filename).match(
-      () => {
-        markTabSaved(tab.id, tab.source, filename);
-        setToast(`Downloaded ${filename}`);
-        return { status: "saved", filename };
-      },
-      (error) => {
-        setToast(`Save failed: ${error.message}`);
-        return { status: "error", filename, code: "download-failed", message: error.message };
-      },
-    );
-  };
+  const { saveTabSource, attachFileHandle } = useFileActions({
+    tabs,
+    tabLabel,
+    sourceIsValid,
+    onMessage: setToast,
+    onSaved: markTabSaved,
+    onConflict: setFileConflictRequest,
+  });
 
   const saveActive = () => {
     if (!currentSourceValid) return;
@@ -582,7 +436,7 @@ function App() {
   };
 
   const resetTransientState = () => {
-    setSelection([]);
+    editorSelection.resetSelection();
     setPendingPort(null);
     setContextMenu(null);
     setTabContextMenu(null);
@@ -594,10 +448,7 @@ function App() {
       setResetExampleOpen(false);
       return;
     }
-    if (sourceCommitTimerRef.current !== null) {
-      window.clearTimeout(sourceCommitTimerRef.current);
-      sourceCommitTimerRef.current = null;
-    }
+    clearDraftTimer();
     resetActive(activeTab.initialSource, activeTab.initialSource, {
       initialSource: activeTab.initialSource,
       origin: "example",
@@ -784,56 +635,22 @@ function App() {
       blocking: true,
     });
     await waitForPaint();
-    const opened: string[] = [];
-    const rejected = [...initiallyRejected];
-    const remainingSlots = Math.max(0, MAX_WORKSPACE_TABS - tabs.length);
-    let limitReached = inputFiles.length > remainingSlots;
+    let openedAny = false;
     try {
-      for (const { file, handle } of inputFiles.slice(0, remainingSlots)) {
-        try {
-          if (file.size > DIAGRAM_LIMITS.sourceBytes) {
-            rejected.push(`${file.name} (over 1 MiB)`);
-            continue;
-          }
-          if (!/\.dgm$/i.test(file.name)) {
-            rejected.push(file.name);
-            continue;
-          }
-          let candidate: string;
-          try {
-            candidate = await file.text();
-          } catch {
-            rejected.push(file.name);
-            continue;
-          }
-          const parsed = parseDgmResult(candidate);
-          if (parsed.isErr()) {
-            rejected.push(file.name);
-            continue;
-          }
-          const doc = parsed.value;
-          if (hasErrors(validateDocument(doc, getCatalogMap()))) {
-            rejected.push(file.name);
-            continue;
-          }
-          if (documentHasUnsafeAssets(doc)) {
-            rejected.push(file.name);
-            continue;
-          }
-          const filename = normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters);
+      const { opened, rejected, unexpected, limitReached } = await importDocumentFiles(
+        inputFiles,
+        Math.max(0, MAX_WORKSPACE_TABS - tabs.length),
+        ({ source: candidate, filename }, { handle }) => {
           const tabId = openTab(candidate, { filename, origin: "import" });
-          if (!tabId) {
-            limitReached = true;
-            continue;
-          }
-          if (handle) fileHandlesRef.current.set(tabId, handle);
+          if (!tabId) return false;
+          if (handle) attachFileHandle(tabId, handle);
           setOperation((current) => current ? { ...current, awaitSource: candidate } : current);
-          opened.push(file.name);
-        } catch {
-          rejected.push(file.name);
-        }
-        await waitForPaint();
-      }
+          openedAny = true;
+          return true;
+        },
+        waitForPaint,
+        initiallyRejected,
+      );
       if (opened.length) {
         resetTransientState();
         setToast(`Opened ${opened.length} diagram${opened.length === 1 ? "" : "s"}`);
@@ -842,8 +659,17 @@ function App() {
         setToast(`Rejected ${rejected.slice(0, 3).join(", ")}${rejected.length > 3 ? ` and ${rejected.length - 3} more` : ""}: unreadable or invalid .dgm source`);
       }
       if (limitReached) setToast(tabLimitMessage);
+      if (unexpected.length) {
+        for (const failure of unexpected) {
+          console.error(`Document import failed for ${failure.filename}`, failure.error.cause);
+        }
+        setToast(`Import failed unexpectedly for ${unexpected.slice(0, 3).map((failure) => failure.filename).join(", ")}${unexpected.length > 3 ? ` and ${unexpected.length - 3} more` : ""}. Previously opened diagrams were preserved.`);
+      }
+    } catch (cause) {
+      console.error("Document import failed", cause);
+      setToast("Import failed unexpectedly. Previously opened diagrams were preserved.");
     } finally {
-      if (!opened.length) setOperation(null);
+      if (!openedAny) setOperation(null);
     }
   };
 
@@ -1005,13 +831,7 @@ function App() {
 
   const displayCompiled = compiledFromCache.ok ? compiledFromCache : lastGoodRef.current;
 
-  const parsedDoc = useMemo(() => {
-    try {
-      return parseDgm(source);
-    } catch {
-      return null;
-    }
-  }, [source]);
+  const parsedDoc = useMemo(() => parseDgmResult(source).unwrapOr(null), [source]);
 
   const compiled = useMemo((): DiagramCompilation => {
     if (compiledFromCache.ok) return compiledFromCache;
@@ -1052,10 +872,6 @@ function App() {
   }, [compiledFromCache]);
 
   useEffect(() => {
-    if (sourceCommitTimerRef.current) {
-      window.clearTimeout(sourceCommitTimerRef.current);
-      sourceCommitTimerRef.current = null;
-    }
     lastGoodRef.current = null;
     resetTransientState();
   }, [activeTabId]);
@@ -1112,7 +928,7 @@ function App() {
 
   const selectItem = (item: SelectionItem, mode: SelectionMode) => {
     if (item.kind === "edge") setPendingPort(null);
-    setSelection((current) => mergeSelection(current, [item], mode));
+    editorSelection.selectItem(item, mode);
   };
 
   const requestTextEdit = (item: SelectionItem) => {
@@ -1226,223 +1042,29 @@ function App() {
     fitRef.current?.();
   };
 
-  const commitDocument = (doc: DiagramDocument): boolean => {
-    const nextIssues = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false });
-    const error = nextIssues.find((issue) => issue.level === "error");
-    if (error) {
-      setToast(error.message);
-      return false;
-    }
-    const nextSource = printDgm(doc);
-    sourceRef.current = nextSource;
-    warmDiagramCompilationCache(nextSource, snapToGrid);
-    setCommittedCompilationKey((current) => current + 1);
-    commitSource(nextSource);
-    return true;
-  };
-
-  const updateDocument = (doc: DiagramDocument) => commitDocument(doc);
-
-  const previewMutate = (
-    change: (doc: DiagramDocument) => DiagramDocument,
-  ) => {
-    try {
-      const next = change(parseDgm(sourceRef.current));
-      if (hasErrors(validateDocument(next, getCatalogMap(), { enforceCatalogRules: false }))) return;
-      const nextSource = printDgm(next);
-      sourceRef.current = nextSource;
-      warmDiagramCompilationCache(nextSource, snapToGrid);
-      setCommittedCompilationKey((current) => current + 1);
-      replaceSource(nextSource);
-    } catch {
-      // Keep the source editor authoritative while it contains parse errors.
-    }
-  };
-
-  const mutateCurrent = (change: (doc: DiagramDocument) => DiagramDocument) => {
-    try {
-      const next = change(parseDgm(sourceRef.current));
-      startTransition(() => {
-        commitDocument(next);
-      });
-    } catch {
-      // Keep the source editor authoritative while it contains parse errors.
-    }
-  };
-
   const renameCurrent = () => {
-    try {
-      const title = normalizeSingleLineText(titleDraft);
-      const nextDoc = setTitle(parseDgm(sourceRef.current), title);
-      if (!commitDocument(nextDoc)) return;
-      setTitleDraft(title);
-      setTabFilename(activeTab.id, filenameWithExtension(documentNameForDisplay(nextDoc), "dgm"));
-    } catch {
-      // Keep the source editor authoritative while it contains parse errors.
-    }
-  };
-
-  const onSourceChange = (next: string) => {
-    if (utf8ByteLength(next) > DIAGRAM_LIMITS.sourceBytes) {
-      setToast("Diagram exceeds the 1 MiB source limit");
-      return;
-    }
-    replaceSource(next);
-    if (sourceCommitTimerRef.current) {
-      window.clearTimeout(sourceCommitTimerRef.current);
-    }
-    sourceCommitTimerRef.current = window.setTimeout(() => {
-      commitSource(next);
-      sourceCommitTimerRef.current = null;
-    }, 600);
-  };
-
-  const onSourceCommit = () => {
-    if (sourceCommitTimerRef.current) {
-      window.clearTimeout(sourceCommitTimerRef.current);
-      sourceCommitTimerRef.current = null;
-    }
-    commitSource(source);
+    const title = normalizeSingleLineText(titleDraft);
+    const prepared = documentCommands.mutate((doc) => setTitle(doc, title));
+    if (!prepared) return;
+    setTitleDraft(title);
+    setTabFilename(activeTab.id, filenameWithExtension(documentNameForDisplay(prepared.doc), "dgm"));
   };
 
   const autoFix = () => {
-    try {
-      setPendingPort(null);
-      const current = compiled.ok ? compiled.doc : parseDgm(sourceRef.current);
-      const plan = planAutoFix(current, snapToGrid);
-      if (plan.status === "unchanged") {
-        setToast(plan.message ?? "Diagram already passes Auto-fix checks");
-        return;
-      }
-      if (plan.status === "blocked" || plan.status === "unresolved") {
-        setToast(plan.message ?? "Auto-fix could not improve the diagram");
-        return;
-      }
-      if (commitDocument(plan.doc)) {
-        setToast(plan.message ?? "Diagram auto-fixed");
-      }
-    } catch {
-      // Keep the source editor authoritative while it contains parse errors.
-    }
+    setPendingPort(null);
+    documentCommands.autoFix(compiled);
   };
 
-  const selectMarquee = (
-    rect: { x: number; y: number; w: number; h: number },
-    mode: SelectionMode,
-  ) => {
-    if (!compiled.ok) return;
-    const hits = marqueeSelection(
-      compiled.doc,
-      compiled.layout,
-      getDefaultView(compiled.doc),
-      rect,
-    );
-    setSelection((current) => mergeSelection(current, hits, mode));
+  const selectMarquee = (rect: { x: number; y: number; w: number; h: number }, mode: SelectionMode) => {
+    if (compiled.ok) editorSelection.selectMarquee(compiled.doc, compiled.layout, rect, mode);
   };
-
-  const addCatalogResource = (entry: CatalogEntry, requestedPlacement?: CatalogPlacement) => {
-    if (!compiled.ok) return;
-    const parent = requestedPlacement
-      ? requestedPlacement.parent
-      : primarySelection(selection)?.kind === "group"
-        ? primarySelection(selection)!.id
-        : undefined;
-    const placement = canPlaceCatalogEntry(compiled.doc, entry, parent);
-    if (!placement.ok) {
-      setToast(placement.reason ?? "The selected parent group is no longer available.");
-      return;
-    }
-    const at = requestedPlacement?.at ?? snapPoint(
-      parent
-        ? insertionPoint(compiled.layout, parent)
-        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 240),
-      snapToGrid,
-    );
-    try {
-      const result = addResource(compiled.doc, entry, parent, at);
-      const placedDoc = requestedPlacement?.manual
-        ? setPlace(result.doc, result.id, at.x, at.y)
-        : result.doc;
-      if (!updateDocument(placedDoc)) return;
-      setSelection([{ kind: "resource", id: result.id }]);
-      setTool("select");
-    } catch (error) {
-      setToast((error as Error).message);
-    }
-  };
-
-  const addCatalogGroup = (
-    entry: CatalogEntry,
-    kind: GroupKind,
-    requestedPlacement?: CatalogPlacement,
-  ) => {
-    if (!compiled.ok) return;
-    const parent = requestedPlacement
-      ? requestedPlacement.parent
-      : primarySelection(selection)?.kind === "group"
-        ? primarySelection(selection)!.id
-        : undefined;
-    const at = requestedPlacement?.at ?? snapPoint(
-      parent
-        ? insertionPoint(compiled.layout, parent)
-        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 360),
-      snapToGrid,
-    );
-    try {
-      const result = addGroup(
-        compiled.doc,
-        kind,
-        entry.name,
-        parent,
-        at,
-        entry.type,
-      );
-      const placedDoc = requestedPlacement?.manual
-        ? setPlace(result.doc, result.id, at.x, at.y)
-        : result.doc;
-      if (!updateDocument(placedDoc)) return;
-      setSelection([{ kind: "group", id: result.id }]);
-      setTool("select");
-    } catch (error) {
-      setToast((error as Error).message);
-    }
-  };
-
-  const addBoundary = () => {
-    if (!compiled.ok) return;
-    const parent = primarySelection(selection)?.kind === "group"
-      ? primarySelection(selection)!.id
-      : undefined;
-    const at = snapPoint(
-      parent
-        ? insertionPoint(compiled.layout, parent)
-        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 360),
-      snapToGrid,
-    );
-    try {
-      const result = addGroup(
-        compiled.doc,
-        "logical",
-        "Boundary",
-        parent,
-        at,
-        "cloud-agnostic.boundary",
-      );
-      if (!updateDocument(result.doc)) return;
-      setSelection([{ kind: "group", id: result.id }]);
-      setTool("select");
-    } catch (error) {
-      setToast((error as Error).message);
-    }
-  };
-
-  const catalogGroupAt = (point: Point): string | undefined => {
-    if (!compiled.ok) return undefined;
-    return [...compiled.layout.groups]
-      .filter((group) => containsPoint(group.content, point))
-      .sort((a, b) => a.content.w * a.content.h - b.content.w * b.content.h)
-      .at(0)?.id;
-  };
+  const catalogActions = createCatalogActions({
+    context: compiled.ok ? { doc: compiled.doc, layout: compiled.layout, selection, snapToGrid } : null,
+    commit: updateDocument,
+    selectInserted: (item) => { editorSelection.selectInserted(item); setTool("select"); },
+    notify: setToast,
+  });
+  const { addCatalogResource, addCatalogGroup, addBoundary } = catalogActions;
 
   const handleCatalogDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
     if (!Array.from(event.dataTransfer.types).includes(CATALOG_DRAG_MIME)) return;
@@ -1450,30 +1072,11 @@ function App() {
     event.dataTransfer.dropEffect = "copy";
   };
 
-  const handleCatalogDrop = (
-    event: ReactDragEvent<HTMLDivElement>,
-    point: Point,
-  ) => {
-    const payload = parseCatalogDragPayload(
-      event.dataTransfer.getData(CATALOG_DRAG_MIME),
-    );
-    if (!payload) return;
+  const handleCatalogDrop = (event: ReactDragEvent<HTMLDivElement>, point: Point) => {
+    const payload = event.dataTransfer.getData(CATALOG_DRAG_MIME);
+    if (!parseCatalogDragPayload(payload)) return;
     event.preventDefault();
-    const entry = getCatalogEntry(payload.type);
-    if (!entry || (payload.assetKind && payload.assetKind !== entry.assetKind)) {
-      setToast("That catalog item is no longer available.");
-      return;
-    }
-    const placement: CatalogPlacement = {
-      parent: catalogGroupAt(point),
-      at: snapPoint(point, snapToGrid),
-      manual: true,
-    };
-    if (entry.assetKind === "group") {
-      addCatalogGroup(entry, (entry.groupKind as GroupKind) ?? "logical", placement);
-    } else {
-      addCatalogResource(entry, placement);
-    }
+    catalogActions.drop(payload, point);
   };
 
   const openNoteComposer = () => {
@@ -1560,142 +1163,83 @@ function App() {
     );
   };
 
-  const copySelection = async (
-    items: Selection = selection,
-    showToast = true,
-  ): Promise<boolean> => {
-    if (!compiled.ok || items.length === 0) return false;
-    let payload: string;
+  const copySelection = async (items: Selection = selection, showToast = true): Promise<boolean> => {
+    if (!compiled.ok || !items.length) return false;
     try {
-      payload = serializeClipboard(compiled.doc, items);
-    } catch (error) {
-      setToast((error as Error).message);
+    const payload = serializeClipboardResult(compiled.doc, items);
+    if (payload.isErr()) {
+      setToast(payload.error.message);
       return false;
     }
-    internalClipboardRef.current = payload;
-    let usedInternalClipboard = false;
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(payload);
-    } catch {
-      usedInternalClipboard = true;
-    }
-    if (showToast) {
-      setToast(usedInternalClipboard
-        ? "Copied selection internally; system clipboard access was unavailable."
-        : "Copied selection");
-    }
+    internalClipboardRef.current = payload.value;
+    const written = await writeClipboardText(payload.value);
+    if (showToast) setToast(written.isErr()
+      ? "Copied selection internally; system clipboard access was unavailable."
+      : "Copied selection");
     return true;
+    } catch (cause) {
+      console.error("Clipboard copy failed", cause);
+      setToast("Copy failed unexpectedly. Your diagram was not changed.");
+      return false;
+    }
   };
 
   const cutSelection = async (items: Selection = selection) => {
-    if (!compiled.ok || items.length === 0) return;
+    if (!compiled.ok || !items.length) return;
+    const tabId = activeTabId;
+    const originalSource = sourceRef.current;
     if (!(await copySelection(items, false))) return;
-    mutateCurrent((doc) => deleteSelection(doc, items));
-    setSelection((current) =>
-      current.filter(
-        (candidate) =>
-          !items.some(
-            (item) => item.kind === candidate.kind && item.id === candidate.id,
-          ),
-      ),
-    );
+    if (activeTabRef.current !== tabId || sourceRef.current !== originalSource) return;
+    if (!mutateCurrent((doc) => deleteSelection(doc, items))) return;
+    setSelection((current) => current.filter((candidate) =>
+      !items.some((item) => item.kind === candidate.kind && item.id === candidate.id)));
     setContextMenu(null);
     setToast("Cut selection");
   };
 
   const pasteSelection = async (requestedPoint?: Point) => {
     if (!compiled.ok) return;
+    const tabId = activeTabId;
+    const originalSource = sourceRef.current;
     const at = snapPoint(requestedPoint ?? insertionPoint(compiled.layout), snapToGrid);
-    let clipboardWarning = false;
-    try {
-      const clipboardItems = await navigator.clipboard?.read?.();
-      const imageItem = clipboardItems?.find((item) =>
-        item.types.some((type) => /^image\/(?:png|jpeg|webp|gif)$/.test(type)),
-      );
-      const imageType = imageItem?.types.find((type) =>
-        /^image\/(?:png|jpeg|webp|gif)$/.test(type),
-      );
-      if (imageItem && imageType) {
-        const blob = await imageItem.getType(imageType);
-        const [{ width, height }, dataUrl] = await Promise.all([
-          rasterDimensions(blob),
-          blobAsDataUrl(blob),
-        ]);
-        const rawSvg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><image href="${dataUrl}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/></svg>`;
-        const imported = importSvgAsset(compiled.doc, rawSvg);
-        const placed = addCustomResource(
-          imported.doc,
-          imported.assetId,
-          "Pasted image",
-          undefined,
-          at,
-        );
-        if (!updateDocument(placed.doc)) return;
-        setSelection([{ kind: "resource", id: placed.id }]);
-        setContextMenu(null);
-        setToast("Pasted image");
-        return;
-      }
-    } catch (error) {
-      const message = (error as Error).message;
-      if (message && !/permission|denied|not allowed/i.test(message)) {
-        setToast(message);
-        return;
-      }
-      clipboardWarning = true;
+    const result = await readClipboardSelection(compiled.doc, at, internalClipboardRef.current);
+    if (activeTabRef.current !== tabId || sourceRef.current !== originalSource) return;
+    if (result.isErr()) {
+      if (result.error.code === "unexpected") console.error("Clipboard paste failed", result.error.cause);
+      setToast(result.error.message);
+      return;
     }
-    let systemPayload: string | null = null;
-    try {
-      systemPayload = (await navigator.clipboard?.readText()) ?? null;
-    } catch {
-      clipboardWarning = true;
-    }
-    const payloads = [systemPayload, internalClipboardRef.current].filter(
-      (payload, index, all): payload is string => Boolean(payload) && all.indexOf(payload) === index,
-    );
-    for (const payload of payloads) {
-      try {
-        const result = pasteClipboard(compiled.doc, payload, at);
-        if (!updateDocument(result.doc)) return;
-        setSelection(result.selection);
-        setToast(clipboardWarning
-          ? "Pasted selection from Studio clipboard; system clipboard access was unavailable."
-          : "Pasted selection");
-        return;
-      } catch {
-        // A non-diagram system clipboard entry should not block the app copy.
-      }
-    }
-    setToast(clipboardWarning
-      ? "Paste failed: clipboard access was denied. Copy a selection in Studio or allow clipboard access."
-      : "Paste failed: copy a diagram selection first.");
+    if (!updateDocument(result.value.doc)) return;
+    setSelection(result.value.selection);
+    setContextMenu(null);
+    setToast(result.value.kind === "image" ? "Pasted image" : result.value.usedFallback
+      ? "Pasted selection from Studio clipboard; system clipboard access was unavailable."
+      : "Pasted selection");
   };
 
   const copySource = async () => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(source);
-      setToast("Copied source");
-    } catch {
-      setToast("Could not copy source. Allow clipboard access and try again.");
-    }
+    const result = await writeClipboardText(source);
+    setToast(result.isErr() ? result.error.message : "Copied source");
   };
 
   const duplicateCurrentSelection = (items: Selection = selection) => {
     if (!compiled.ok || items.length === 0) return;
-    const result = duplicateSelection(compiled.doc, items);
-    if (!updateDocument(result.doc)) return;
-    setSelection(result.selection);
+    const result = duplicateSelectionResult(compiled.doc, items);
+    if (result.isErr()) {
+      setToast(result.error.message);
+      return;
+    }
+    if (!updateDocument(result.value.doc)) return;
+    setSelection(result.value.selection);
     setContextMenu(null);
     setToast("Duplicated selection");
   };
 
   const removeCurrentSelection = (items: Selection = selection) => {
     if (!compiled.ok || items.length === 0) return;
-    mutateCurrent((doc) =>
+    if (!mutateCurrent((doc) =>
       removeSelectionPreservingGroupContents(doc, items, compiled.layout),
-    );
+    )) return;
     setSelection((current) =>
       current.filter(
         (candidate) =>
@@ -1708,25 +1252,11 @@ function App() {
     setToast("Deleted selection");
   };
 
-  const deleteCurrentSelection = (items: Selection = selection) => {
-    if (!compiled.ok || items.length === 0) return;
-    mutateCurrent((doc) => deleteSelection(doc, items));
-    setSelection((current) =>
-      current.filter(
-        (candidate) =>
-          !items.some(
-            (item) => item.kind === candidate.kind && item.id === candidate.id,
-          ),
-      ),
-    );
-    setContextMenu(null);
-    setToast("Deleted selection");
-  };
 
   const fitCurrentGroup = (items: Selection = selection) => {
     if (!compiled.ok || items.length !== 1 || items[0]?.kind !== "group") return;
     const groupId = items[0].id;
-    mutateCurrent((doc) => fitGroupToContents(doc, groupId, compiled.layout));
+    if (!mutateCurrent((doc) => fitGroupToContents(doc, groupId, compiled.layout))) return;
     setContextMenu(null);
     setToast("Fit group to contents");
   };
@@ -1756,7 +1286,7 @@ function App() {
 
   const deleteGroupAndContents = (items: Selection = selection) => {
     if (!compiled.ok || items.length !== 1 || items[0]?.kind !== "group") return;
-    mutateCurrent((doc) => deleteSelection(doc, items));
+    if (!mutateCurrent((doc) => deleteSelection(doc, items))) return;
     setSelection([]);
     setContextMenu(null);
     setToast("Deleted group and contents");
@@ -1790,129 +1320,6 @@ function App() {
       : sendToBack(doc, item.id));
   };
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const mod = event.metaKey || event.ctrlKey;
-      if (!workspaceReady) {
-        if (mod) event.preventDefault();
-        return;
-      }
-
-      if (modifierShortcut(event, "KeyK")) {
-        event.preventDefault();
-        setCommandPaletteOpen(true);
-        return;
-      }
-      if (modifierShortcut(event, "KeyN")) {
-        event.preventDefault();
-        handleNewTab();
-        return;
-      }
-      if (modifierShortcut(event, "KeyO")) {
-        event.preventDefault();
-        void openFromDisk();
-        return;
-      }
-      if (modifierShortcut(event, "KeyS")) {
-        event.preventDefault();
-        if (event.shiftKey) openSaveAs();
-        else saveActive();
-        return;
-      }
-      if (modifierShortcut(event, "KeyW")) {
-        event.preventDefault();
-        handleCloseTab(activeTab.id);
-        return;
-      }
-
-      if (isEditableKeyboardTarget(event.target)) return;
-      const navigationControl = event.target instanceof Element
-        && event.target.closest(".workspace-tabs, .entity-navigator");
-      if (navigationControl && !mod) return;
-
-      if (modifierShortcut(event, "KeyG")) {
-        event.preventDefault();
-        if (event.shiftKey) ungroupCurrentSelection();
-        else groupCurrentSelection();
-        return;
-      }
-
-      if (modifierShortcut(event, "KeyZ")) {
-        event.preventDefault();
-        if (event.shiftKey) redo();
-        else undo();
-        return;
-      }
-      if (modifierShortcut(event, "KeyY")) {
-        event.preventDefault();
-        redo();
-        return;
-      }
-
-      if (event.key === "Escape") {
-        setPendingPort(null);
-        setSelection([]);
-        setContextMenu(null);
-      }
-      if ((event.key === "Backspace" || event.key === "Delete") && selection.length) {
-        event.preventDefault();
-        removeCurrentSelection();
-        return;
-      }
-      if (modifierShortcut(event, "KeyA")) {
-        event.preventDefault();
-        if (!compiled.ok) return;
-        const all: Selection = [
-          ...compiled.doc.resources.map((resource) => ({
-            kind: "resource" as const,
-            id: resource.id,
-          })),
-          ...compiled.doc.groups.map((group) => ({
-            kind: "group" as const,
-            id: group.id,
-          })),
-          ...compiled.doc.edges.map((edge) => ({ kind: "edge" as const, id: edge.id })),
-          ...compiled.doc.annotations.map((annotation) => ({ kind: "annotation" as const, id: annotation.id })),
-        ];
-        setSelection(all);
-        return;
-      }
-      if (modifierShortcut(event, "KeyC")) {
-        event.preventDefault();
-        void copySelection();
-        return;
-      }
-      if (modifierShortcut(event, "KeyX")) {
-        event.preventDefault();
-        void cutSelection();
-        return;
-      }
-      if (modifierShortcut(event, "KeyV")) {
-        event.preventDefault();
-        void pasteSelection();
-        return;
-      }
-      if (modifierShortcut(event, "KeyD")) {
-        event.preventDefault();
-        duplicateCurrentSelection();
-        return;
-      }
-      if (event.code === "KeyV" && !mod) setTool("select");
-      if (event.code === "KeyT" && !mod) openTextComposer();
-      if (selection.length && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-        event.preventDefault();
-        const step = event.shiftKey ? 32 : 8;
-        const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
-        const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
-        mutateCurrent((doc) =>
-          nudgeSelection(doc, selection, dx, dy, { snapToGrid }),
-        );
-      }
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [selection, source, undo, redo, compiled, snapToGrid, workspaceReady]);
-
   const fileMenuItems: TopMenuItem[] = [
     { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
     { id: "open", label: "Open .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => void openFromDisk() },
@@ -1941,6 +1348,18 @@ function App() {
   ];
 
   const commands: Command[] = [
+    { id: "command-select", label: "Select tool", section: "Tools", shortcut: "V", onSelect: () => setTool("select") },
+    { id: "command-group", label: "Group selection", section: "Arrange", shortcut: "Cmd/Ctrl+G", disabled: !compiled.ok || !canGroupSelection(compiled.doc, selection), onSelect: groupCurrentSelection },
+    { id: "command-ungroup", label: "Ungroup selection", section: "Arrange", shortcut: "Cmd/Ctrl+Shift+G", disabled: !selection.some((item) => item.kind === "group"), onSelect: ungroupCurrentSelection },
+    { id: "command-select-all", label: "Select all", section: "Edit", shortcut: "Cmd/Ctrl+A", disabled: !compiled.ok, onSelect: () => {
+      if (!compiled.ok) return;
+      setSelection([
+        ...compiled.doc.resources.map(({ id }) => ({ kind: "resource" as const, id })),
+        ...compiled.doc.groups.map(({ id }) => ({ kind: "group" as const, id })),
+        ...compiled.doc.edges.map(({ id }) => ({ kind: "edge" as const, id })),
+        ...compiled.doc.annotations.map(({ id }) => ({ kind: "annotation" as const, id })),
+      ]);
+    } },
     { id: "command-new", label: "New diagram", section: "File", shortcut: "⌘N", onSelect: handleNewTab },
     { id: "command-open", label: "Open .dgm", section: "File", shortcut: "⌘O", onSelect: () => void openFromDisk() },
     { id: "command-save", label: "Save", section: "File", shortcut: "⌘S", disabled: !currentSourceValid, onSelect: saveActive },
@@ -1981,6 +1400,19 @@ function App() {
     { id: "command-resources", label: "Browse resources", section: "Tools", onSelect: () => setTool("resources") },
     { id: "command-text", label: "Add text", section: "Tools", shortcut: "T", onSelect: openTextComposer },
   ];
+  useStudioShortcuts({
+    ready: workspaceReady && !operation?.blocking,
+    commands,
+    onOpenPalette: () => setCommandPaletteOpen(true),
+    onEscape: () => {
+      setPendingPort(null);
+      setSelection([]);
+      setContextMenu(null);
+    },
+    onNudge: (dx, dy) => {
+      if (selection.length) mutateCurrent((doc) => nudgeSelection(doc, selection, dx, dy, { snapToGrid }));
+    },
+  });
   const requestedCloseTab = closeRequest
     ? tabs.find((tab) => tab.id === closeRequest)
     : undefined;
@@ -2094,10 +1526,11 @@ function App() {
                     ),
                   );
                 }}
-                onGestureBegin={beginTransaction}
-                onGestureEnd={endTransaction}
-                onMove={(kind, id, x, y, dx, dy) => {
-                  previewMutate((doc) => {
+                onGestureBegin={() => beginTransaction(activeTabId)}
+                onGestureEnd={() => endTransaction(activeTabId)}
+                onGestureCancel={() => cancelTransaction(activeTabId)}
+                onMove={(kind, id, _x, _y, dx, dy) => {
+                  return previewMutate((doc) => {
                     const item = { kind, id } as SelectionItem;
                     const active = selection.some((candidate) => candidate.kind === kind && candidate.id === id)
                       ? selection
@@ -2106,7 +1539,7 @@ function App() {
                   });
                 }}
                 onResize={(kind, id, bounds, unlockAspect) => {
-                  previewMutate((doc) =>
+                  return previewMutate((doc) =>
                     kind === "group"
                       ? setGroupBounds(doc, id, bounds)
                       : setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
@@ -2229,6 +1662,12 @@ function App() {
               onFocusCanvas={focusCanvas}
             />
             <IssueJournal issues={journalIssues} onIssueSelect={handleIssueSelect} />
+            {persistenceWarning && (
+              <button type="button" className="text-button" onClick={exportCurrentSource}
+                title="Keep a local copy of this tab, including unfinished source">
+                Download source
+              </button>
+            )}
             {isTabDirty(activeTab) && <span className="dirty-pill">Unsaved</span>}
             <div className="history-controls">
               <button
@@ -2392,31 +1831,21 @@ function App() {
               onAddGroup={() => {}}
               onImportSvg={async (file) => {
                 if (!compiled.ok) return;
-                try {
-                  if (file.size > DIAGRAM_LIMITS.svgBytes) throw new Error("SVG exceeds 256 KiB limit");
-                  const text = await file.text();
-                  const imported = importSvgAsset(compiled.doc, text);
-                  const importParent = primarySelection(selection)?.kind === "group"
-                    ? primarySelection(selection)!.id
-                    : undefined;
-                  const placed = addCustomResource(
-                    imported.doc,
-                    imported.assetId,
-                    normalizeSingleLineText(file.name.replace(/\.svg$/i, "")),
-                    importParent,
-                    snapPoint(
-                      importParent
-                        ? insertionPoint(compiled.layout, importParent)
-                        : leftStagingInsertionPoint(compiled.doc, compiled.layout, 240),
-                      snapToGrid,
-                    ),
-                  );
-                  if (!updateDocument(placed.doc)) return;
-                  setSelection([{ kind: "resource", id: placed.id }]);
-                  setToast(`Imported ${file.name}`);
-                } catch (error) {
-                  setToast((error as Error).message);
+                const tabId = activeTabId;
+                const originalSource = sourceRef.current;
+                const parent = primarySelection(selection)?.kind === "group" ? primarySelection(selection)!.id : undefined;
+                const at = snapPoint(parent ? insertionPoint(compiled.layout, parent)
+                  : leftStagingInsertionPoint(compiled.doc, compiled.layout, 240), snapToGrid);
+                const result = await importSvgFile(file, compiled.doc, parent, at);
+                if (activeTabRef.current !== tabId || sourceRef.current !== originalSource) return;
+                if (result.isErr()) {
+                  if (result.error.code === "unexpected") console.error("SVG import failed", result.error.cause);
+                  setToast(result.error.message);
+                  return;
                 }
+                if (!updateDocument(result.value.doc)) return;
+                setSelection([{ kind: "resource", id: result.value.id }]);
+                setToast(`Imported ${file.name}`);
               }}
             />
           </FloatingPanel>
@@ -2509,7 +1938,7 @@ function App() {
                       mutateCurrent((doc) => swapEdgeDirection(doc, edge.id))
                     }
                     onDelete={() => {
-                      mutateCurrent((doc) => deleteSelection(doc, [edgeItem]));
+                      if (!mutateCurrent((doc) => deleteSelection(doc, [edgeItem]))) return;
                       setSelection((current) =>
                         current.filter((item) => item.kind !== "edge"),
                       );
@@ -2539,12 +1968,9 @@ function App() {
                 onCopy={() => void copySource()}
                 canFormat={currentSourceValid}
                 onFormat={() => {
-                  try {
-                    commitSource(printDgm(parseDgm(source)));
-                    setToast("Formatted source");
-                  } catch {
-                    setToast("Cannot format invalid source");
-                  }
+                  const parsed = parseDgmResult(source);
+                  if (parsed.isErr()) setToast("Cannot format invalid source");
+                  else if (updateDocument(parsed.value)) setToast("Formatted source");
                 }}
                 onReset={activeTab.origin === "example" ? () => setResetExampleOpen(true) : undefined}
               />
@@ -3008,259 +2434,6 @@ function App() {
   );
 }
 
-function NoteComposer({
-  style,
-  onStyleChange,
-  onCreate,
-}: {
-  style: AnnotationStyle;
-  onStyleChange: (style: AnnotationStyle) => void;
-  onCreate: () => void;
-}) {
-  const selected = ANNOTATION_STYLES.find((candidate) => candidate.id === style) ?? ANNOTATION_STYLES[0]!;
-
-  return (
-    <div className="note-composer">
-      <div className="note-composer-intro">
-        <NoteStylePreview style={style} className="note-composer-preview" />
-        <div>
-          <strong>{selected.label}</strong>
-          <p>{selected.description}</p>
-        </div>
-      </div>
-
-      <div className="property-section note-composer-section">
-        <label>Choose a note type</label>
-        <NoteStyleOptions
-          selectedStyle={style}
-          onStyleChange={onStyleChange}
-          showPreviews
-          includeText={false}
-        />
-      </div>
-
-      <div className="note-composer-footer">
-        <button type="button" className="primary-button note-create-button" onClick={onCreate}>
-          Create {selected.label}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TextComposer({
-  value,
-  font,
-  fontSize,
-  align,
-  onChange,
-  onFontChange,
-  onFontSizeChange,
-  onAlignChange,
-  onCreate,
-}: {
-  value: string;
-  font: TextFontFamily;
-  fontSize: number;
-  align: TextAlign;
-  onChange: (value: string) => void;
-  onFontChange: (font: TextFontFamily) => void;
-  onFontSizeChange: (fontSize: number) => void;
-  onAlignChange: (align: TextAlign) => void;
-  onCreate: () => void;
-}) {
-  return (
-    <div className="text-composer">
-      <div className="property-section">
-        <label htmlFor="text-composer-content">Text content</label>
-        <textarea
-          id="text-composer-content"
-          data-autofocus
-          value={value}
-          maxLength={DIAGRAM_LIMITS.annotationCharacters}
-          rows={5}
-          placeholder="Type something…"
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") onCreate();
-          }}
-          aria-describedby="text-composer-hint"
-        />
-        <p id="text-composer-hint" className="property-hint">
-          Press ⌘Enter or Ctrl+Enter to place. You can edit or drag it afterward.
-        </p>
-      </div>
-      <TextFormattingControls
-        idPrefix="composer"
-        font={font}
-        fontSize={fontSize}
-        align={align}
-        onChange={({ font: nextFont, fontSize: nextSize, align: nextAlign }) => {
-          if (nextFont !== undefined) onFontChange(nextFont);
-          if (nextSize !== undefined) onFontSizeChange(nextSize);
-          if (nextAlign !== undefined) onAlignChange(nextAlign);
-        }}
-      />
-      <div className="note-composer-footer">
-        <button
-          type="button"
-          className="primary-button note-create-button"
-          onClick={onCreate}
-          disabled={!normalizeMultilineText(value)}
-        >
-          Place text
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TextFormattingControls({
-  idPrefix,
-  font,
-  fontSize,
-  align,
-  onChange,
-}: {
-  idPrefix: string;
-  font: TextFontFamily;
-  fontSize: number;
-  align: TextAlign;
-  onChange: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
-}) {
-  return (
-    <div className="property-section text-formatting">
-      <div className="property-control-row">
-        <label htmlFor={`${idPrefix}-text-font-family`}>Font</label>
-        <select
-          id={`${idPrefix}-text-font-family`}
-          value={font}
-          onChange={(event) => onChange({ font: event.target.value as TextFontFamily })}
-        >
-          <option value="sans">Sans serif</option>
-          <option value="serif">Serif</option>
-          <option value="mono">Monospace</option>
-        </select>
-      </div>
-      <div className="property-control-row">
-        <label htmlFor={`${idPrefix}-text-font-size`}>Size</label>
-        <select
-          id={`${idPrefix}-text-font-size`}
-          value={fontSize}
-          onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
-        >
-          {[12, 14, 16, 20, 24, 32].map((size) => (
-            <option key={size} value={size}>{size}px</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <span className="property-control-label">Alignment</span>
-        <div className="button-pair button-triplet" role="group" aria-label="Text alignment">
-          {(["left", "center", "right"] as const).map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              className={align === candidate ? "is-active" : ""}
-              aria-pressed={align === candidate}
-              onClick={() => onChange({ align: candidate })}
-            >
-              {candidate[0]!.toUpperCase() + candidate.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NoteStyleOptions({
-  selectedStyle,
-  onStyleChange,
-  showPreviews = false,
-  includeText = true,
-}: {
-  selectedStyle: AnnotationStyle;
-  onStyleChange: (style: AnnotationStyle) => void;
-  showPreviews?: boolean;
-  includeText?: boolean;
-}) {
-  const styles = includeText
-    ? ANNOTATION_STYLES
-    : ANNOTATION_STYLES.filter((candidate) => candidate.id !== "text");
-
-  return (
-    <div className={`note-style-grid${showPreviews ? " note-style-grid-with-previews" : ""}`}>
-      {styles.map((candidate) => (
-        <button
-          key={candidate.id}
-          type="button"
-          className={`note-style-button${selectedStyle === candidate.id ? " is-active" : ""}`}
-          aria-label={candidate.label}
-          aria-pressed={selectedStyle === candidate.id}
-          onClick={() => onStyleChange(candidate.id)}
-        >
-          {showPreviews && <NoteStylePreview style={candidate.id} />}
-          <strong>{candidate.label}</strong>
-          <span className="note-style-description">{candidate.description}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function NoteStylePreview({
-  style,
-  className = "",
-}: {
-  style: AnnotationStyle;
-  className?: string;
-}) {
-  return (
-    <span
-      className={`note-style-preview note-style-preview-${style}${className ? ` ${className}` : ""}`}
-      data-note-style-preview={style}
-      aria-hidden="true"
-    >
-      {style === "paper" && (
-        <>
-          <span className="note-preview-fold" />
-          <span className="note-preview-line note-preview-line-long" />
-          <span className="note-preview-line note-preview-line-short" />
-          <span className="note-preview-line note-preview-line-medium" />
-        </>
-      )}
-      {style === "code" && (
-        <>
-          <span className="note-preview-code-line note-preview-code-line-long" />
-          <span className="note-preview-code-line note-preview-code-line-medium" />
-          <span className="note-preview-code-line note-preview-code-line-short" />
-        </>
-      )}
-      {style === "text" && (
-        <>
-          <span className="note-preview-text-line note-preview-text-line-long">Text</span>
-          <span className="note-preview-text-line note-preview-text-line-short">editable</span>
-        </>
-      )}
-      {style === "callout" && (
-        <>
-          <span className="note-preview-callout-mark">i</span>
-          <span className="note-preview-callout-line note-preview-callout-line-long" />
-          <span className="note-preview-callout-line note-preview-callout-line-short" />
-        </>
-      )}
-      {style === "checklist" && (
-        <>
-          <span className="note-preview-check-row"><i>✓</i><b /></span>
-          <span className="note-preview-check-row"><i /><b /></span>
-          <span className="note-preview-check-row"><i /><b /></span>
-        </>
-      )}
-    </span>
-  );
-}
-
 function ConnectorDrawer({ pendingPort }: { pendingPort: PendingPort }) {
   return (
     <div className="callout">
@@ -3274,670 +2447,6 @@ function ConnectorDrawer({ pendingPort }: { pendingPort: PendingPort }) {
       )}
     </div>
   );
-}
-
-const INSPECTOR_KIND_LABELS: Record<SelectionItem["kind"], string> = {
-  resource: "Service",
-  group: "Boundary",
-  edge: "Connection",
-  annotation: "Note",
-};
-
-const BOUNDARY_COLOR_OPTIONS: Array<{ id: EdgeColor; label: string }> = [
-  { id: "graphite", label: "Navy" },
-  { id: "blue", label: "Slate" },
-  { id: "teal", label: "Teal" },
-  { id: "purple", label: "Purple" },
-  { id: "amber", label: "Orange" },
-  { id: "red", label: "Coral" },
-  { id: "green", label: "Green" },
-];
-
-function Inspector({
-  doc,
-  layout,
-  selection,
-  onRename,
-  onLimitError,
-  onAlign,
-  onDistribute,
-  onSetIconSize,
-  onSetResourceLabelPosition,
-  onSetGroupLabelPosition,
-  onSetGroupIconHidden,
-  onSetBoundaryAppearance,
-  onSetAnnotationStyle,
-  onSetTextFormat,
-  onUpdateGroupStep,
-  onUpdateEdge,
-  onPinRoute,
-  onAutoRoute,
-  onDelete,
-  onClose,
-}: {
-  doc: DiagramDocument;
-  layout: LayoutResult;
-  selection: Selection;
-  onRename: (label: string) => void;
-  onLimitError: (message: string) => void;
-  onAlign: (axis: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
-  onDistribute: (axis: "horizontal" | "vertical") => void;
-  onSetIconSize: (size: ResourceIconSize) => void;
-  onSetResourceLabelPosition: (position: ResourceLabelPosition) => void;
-  onSetGroupLabelPosition: (position: GroupLabelPosition) => void;
-  onSetGroupIconHidden: (hidden: boolean) => void;
-  onSetBoundaryAppearance: (patch: { style?: EdgeStyle; color?: EdgeColor; fill?: BoundaryFill }) => void;
-  onSetAnnotationStyle: (style: AnnotationStyle) => void;
-  onSetTextFormat: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
-  onUpdateGroupStep: (step?: number) => void;
-  onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
-  onPinRoute: () => void;
-  onAutoRoute: () => void;
-  onDelete: () => void;
-  onClose: () => void;
-}) {
-  const item = primarySelection(selection);
-  const edge = item?.kind === "edge"
-    ? doc.edges.find((candidate) => candidate.id === item.id)
-    : undefined;
-  const resource = item?.kind === "resource"
-    ? doc.resources.find((candidate) => candidate.id === item.id)
-    : undefined;
-  const group = item?.kind === "group"
-    ? doc.groups.find((candidate) => candidate.id === item.id)
-    : undefined;
-  const canHideGroupIcon = Boolean(
-    group?.type &&
-    group.type !== "cloud-agnostic.boundary" &&
-    getCatalogEntry(group.type)?.provider === "cloud-agnostic",
-  );
-  const annotation = item?.kind === "annotation"
-    ? doc.annotations.find((candidate) => candidate.id === item.id)
-    : undefined;
-  const routePinned = Boolean(item && doc.views[0]?.routes[item.id]?.pin);
-
-  const resourceServiceLabel = resource
-    ? layout.nodes.find((candidate) => candidate.id === resource.id)?.serviceLabel
-    : undefined;
-  const title =
-    resource?.label.role ??
-    resource?.label.service ??
-    resourceServiceLabel ??
-    group?.label ??
-    edge?.label ??
-    annotation?.text ??
-    edge?.id ??
-    item?.id ??
-    `${selection.length} selected`;
-
-  const editableLabel = resource ? resource.label.role ?? "" : title;
-  const [labelDraft, setLabelDraft] = useState(editableLabel);
-  useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
-  const authoredResourceLabelPosition: ResourceLabelPosition =
-    resource?.label.position === "top" ? "top" : "bottom";
-  const [resourceLabelPositionDraft, setResourceLabelPositionDraft] =
-    useState<ResourceLabelPosition>(authoredResourceLabelPosition);
-  useEffect(() => {
-    setResourceLabelPositionDraft(authoredResourceLabelPosition);
-  }, [resource?.id, authoredResourceLabelPosition]);
-  const authoredResourceIconSize = resource ? resourceIconSize(resource) : "normal";
-  const [resourceIconSizeDraft, setResourceIconSizeDraft] =
-    useState<ResourceIconSize>(authoredResourceIconSize);
-  useEffect(() => {
-    setResourceIconSizeDraft(authoredResourceIconSize);
-  }, [resource?.id, authoredResourceIconSize]);
-  const authoredGroupLabelPosition: GroupLabelPosition =
-    group?.labelPosition?.endsWith("right") ? "top-right" : "top-left";
-  const [groupLabelPositionDraft, setGroupLabelPositionDraft] =
-    useState<GroupLabelPosition>(authoredGroupLabelPosition);
-  useEffect(() => {
-    setGroupLabelPositionDraft(authoredGroupLabelPosition);
-  }, [group?.id, authoredGroupLabelPosition]);
-
-  return (
-    <FloatingPanel
-      className="inspector-sheet"
-      title={title}
-      subtitle={
-        selection.length > 1
-          ? `${selection.length} selected`
-          : item
-            ? item.kind === "annotation" && annotation && annotationStyle(annotation) === "text"
-              ? "Text"
-              : INSPECTOR_KIND_LABELS[item.kind]
-            : "Selection"
-      }
-      onClose={onClose}
-      width={280}
-    >
-      {selection.length > 1 && (
-        <div className="property-section">
-          <label>Alignment</label>
-          <div className="button-grid">
-            <button type="button" onClick={() => onAlign("left")}>Left</button>
-            <button type="button" onClick={() => onAlign("center")}>Center</button>
-            <button type="button" onClick={() => onAlign("right")}>Right</button>
-            <button type="button" onClick={() => onAlign("top")}>Top</button>
-            <button type="button" onClick={() => onAlign("middle")}>Middle</button>
-            <button type="button" onClick={() => onAlign("bottom")}>Bottom</button>
-          </div>
-          <div className="button-pair">
-            <button type="button" onClick={() => onDistribute("horizontal")}>Distribute H</button>
-            <button type="button" onClick={() => onDistribute("vertical")}>Distribute V</button>
-          </div>
-        </div>
-      )}
-      {(resource || group || edge || annotation) && (
-        <div className="property-section">
-          <label htmlFor="inspector-label">{annotation ? "Content" : "Display label"}</label>
-          {annotation ? (
-            <textarea
-              id="inspector-label"
-              value={labelDraft}
-              maxLength={DIAGRAM_LIMITS.annotationCharacters}
-              rows={5}
-              onChange={(event) => setLabelDraft(event.target.value)}
-              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.annotationCharacters, () => onLimitError(`Notes are limited to ${DIAGRAM_LIMITS.annotationCharacters} characters`))}
-              onBlur={() => onRename(labelDraft)}
-              aria-describedby="inspector-label-limit"
-            />
-          ) : (
-            <input
-              id="inspector-label"
-              value={labelDraft}
-              placeholder={resource ? "Optional label" : undefined}
-              maxLength={DIAGRAM_LIMITS.labelCharacters}
-              onChange={(event) => setLabelDraft(event.target.value)}
-              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.labelCharacters, () => onLimitError(`Labels are limited to ${DIAGRAM_LIMITS.labelCharacters} characters`))}
-              onBlur={() => onRename(labelDraft)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") event.currentTarget.blur();
-              }}
-              aria-describedby="inspector-label-limit"
-            />
-          )}
-          <span id="inspector-label-limit" className="input-limit" aria-live="polite">
-            {characterLength(labelDraft)} / {annotation ? DIAGRAM_LIMITS.annotationCharacters : DIAGRAM_LIMITS.labelCharacters}
-          </span>
-        </div>
-      )}
-      {annotation && (
-        <div className="property-section">
-          <label>Note style</label>
-          <NoteStyleOptions
-            selectedStyle={annotationStyle(annotation)}
-            onStyleChange={onSetAnnotationStyle}
-          />
-        </div>
-      )}
-      {annotation && annotationStyle(annotation) === "text" && (
-        <TextFormattingControls
-          idPrefix="inspector"
-          font={annotation.font ?? "sans"}
-          fontSize={annotation.fontSize ?? 14}
-          align={annotation.align ?? "left"}
-          onChange={onSetTextFormat}
-        />
-      )}
-      {resource && (
-        <div className="property-section">
-          <label>Icon size</label>
-          <div className="button-pair">
-            <button
-              type="button"
-              className={resourceIconSizeDraft === "normal" ? "is-active" : ""}
-              onClick={() => {
-                setResourceIconSizeDraft("normal");
-                onSetIconSize("normal");
-              }}
-            >
-              Normal ({GRAMMAR.iconPrimary}px)
-            </button>
-            <button
-              type="button"
-              className={resourceIconSizeDraft === "small" ? "is-active" : ""}
-              onClick={() => {
-                setResourceIconSizeDraft("small");
-                onSetIconSize("small");
-              }}
-            >
-              Small ({GRAMMAR.iconSecondary}px)
-            </button>
-          </div>
-        </div>
-      )}
-      {resource && (
-        <div className="property-section">
-          <label htmlFor="resource-label-position">Display label position</label>
-          <select
-            id="resource-label-position"
-            value={resourceLabelPositionDraft}
-            onChange={(event) => {
-              const position = event.target.value as ResourceLabelPosition;
-              setResourceLabelPositionDraft(position);
-              onSetResourceLabelPosition(position);
-            }}
-          >
-            <option value="top">Above icon</option>
-            <option value="bottom">Below icon</option>
-          </select>
-          <p className="property-hint">Automatic connectors avoid the side occupied by the label.</p>
-        </div>
-      )}
-      {group && (
-        <div className="property-section">
-          <label htmlFor="group-label-position">Display label position</label>
-          <select
-            id="group-label-position"
-            value={groupLabelPositionDraft}
-            onChange={(event) => {
-              const position = event.target.value as GroupLabelPosition;
-              setGroupLabelPositionDraft(position);
-              onSetGroupLabelPosition(position);
-            }}
-          >
-            <option value="top-left">Top left</option>
-            <option value="top-right">Top right</option>
-          </select>
-        </div>
-      )}
-      {group && (
-        <div className="property-section boundary-appearance-section">
-          <label>Boundary line</label>
-          <div className="button-pair" role="radiogroup" aria-label="Boundary line style">
-            {(["solid", "dashed"] as EdgeStyle[]).map((style) => {
-              const inheritedStyle = ["region", "az", "logical", "overlay"].includes(group.kind)
-                ? "dashed"
-                : "solid";
-              const selected = (group.style ?? inheritedStyle) === style;
-              return (
-                <button
-                  key={style}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  className={selected ? "is-active" : ""}
-                  onClick={() => onSetBoundaryAppearance({ style })}
-                >
-                  {style === "solid" ? "Solid" : "Dashed"}
-                </button>
-              );
-            })}
-          </div>
-          <label>Boundary color</label>
-          <div className="edge-color-options boundary-color-options" role="radiogroup" aria-label="Boundary color">
-            <button
-              className={`edge-color-option edge-color-auto${group.color === undefined ? " is-active" : ""}`}
-              type="button"
-              role="radio"
-              aria-checked={group.color === undefined}
-              onClick={() => onSetBoundaryAppearance({ color: undefined })}
-              title="Use the boundary type's default color"
-            >
-              <span className="edge-color-swatch is-auto" aria-hidden="true" />
-              <span>Default</span>
-            </button>
-            {BOUNDARY_COLOR_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                className={`edge-color-option${group.color === option.id ? " is-active" : ""}`}
-                type="button"
-                role="radio"
-                aria-checked={group.color === option.id}
-                onClick={() => onSetBoundaryAppearance({ color: option.id })}
-                title={option.label}
-              >
-                <span className="edge-color-swatch" style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }} aria-hidden="true" />
-                <span>{option.label}</span>
-              </button>
-            ))}
-          </div>
-          <label>Interior fill</label>
-          <div className="button-pair" role="radiogroup" aria-label="Boundary fill">
-            {(["subtle", "none"] as BoundaryFill[]).map((fill) => {
-              const selected = (group.fill ?? "subtle") === fill;
-              return (
-                <button
-                  key={fill}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  className={selected ? "is-active" : ""}
-                  onClick={() => onSetBoundaryAppearance({ fill })}
-                >
-                  {fill === "subtle" ? "Subtle" : "None"}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      {group && canHideGroupIcon && (
-        <div className="property-section">
-          <label>Boundary icon</label>
-          <div className="button-pair">
-            <button
-              type="button"
-              className={group.hideIcon ? "" : "is-active"}
-              onClick={() => onSetGroupIconHidden(false)}
-            >
-              Show icon
-            </button>
-            <button
-              type="button"
-              className={group.hideIcon ? "is-active" : ""}
-              onClick={() => onSetGroupIconHidden(true)}
-            >
-              Hide icon
-            </button>
-          </div>
-          <p className="property-hint">Hide the semantic icon while keeping this boundary type.</p>
-        </div>
-      )}
-      {group && (
-        <div className="property-section">
-          <label htmlFor="group-step">Boundary number</label>
-          <div className="edge-badge-editor">
-            <input
-              id="group-step"
-              aria-label="Boundary number"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={MAX_EDGE_STEP}
-              step={1}
-              placeholder="Add number"
-              value={group.step ?? ""}
-              onChange={(event) => {
-                const raw = event.target.value;
-                if (!raw) return onUpdateGroupStep(undefined);
-                if (!/^\d+$/.test(raw)) return;
-                const value = Number(raw);
-                if (Number.isSafeInteger(value) && value <= MAX_EDGE_STEP) onUpdateGroupStep(value);
-              }}
-            />
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => onUpdateGroupStep(group.step === undefined ? 1 : undefined)}
-            >
-              {group.step === undefined ? "Add" : "Remove"}
-            </button>
-          </div>
-          <p className="property-hint">Whole numbers only: 0–99.</p>
-        </div>
-      )}
-      {group && (
-        <details className="inspector-advanced">
-          <summary>Advanced details</summary>
-          <div className="inspector-advanced-body">
-            <div className="inspector-detail">
-              <span className="inspector-detail-label">Boundary kind</span>
-              <div className="readonly-value">{group.kind}</div>
-            </div>
-            <div className="inspector-detail">
-              <span className="inspector-detail-label">Children</span>
-              <div className="readonly-value">{group.children.length}</div>
-            </div>
-          </div>
-        </details>
-      )}
-      {resource && (
-        <details className="inspector-advanced">
-          <summary>Advanced details</summary>
-          <div className="inspector-advanced-body">
-            <div className="inspector-detail">
-              <span className="inspector-detail-label">Resource type</span>
-              <code className="readonly-value">{resource.type}</code>
-            </div>
-            <div className="inspector-detail">
-              <span className="inspector-detail-label">Parent group</span>
-              <div className="readonly-value">
-                {resource.parent
-                  ? doc.groups.find((candidate) => candidate.id === resource.parent)?.label ?? resource.parent
-                  : "Canvas"}
-              </div>
-            </div>
-          </div>
-        </details>
-      )}
-      {edge && (
-        <>
-          <div className="property-section">
-            <label>Line style</label>
-            <div className="button-pair">
-              {(["solid", "dashed"] as EdgeStyle[]).map((style) => (
-                <button
-                  key={style}
-                  className={edge.style === style ? "is-active" : ""}
-                  type="button"
-                  onClick={() => onUpdateEdge(style, edge.kind ?? "flow")}
-                >
-                  {style}
-                </button>
-              ))}
-            </div>
-            <label htmlFor="edge-kind">Meaning</label>
-            <select
-              id="edge-kind"
-              value={edge.kind ?? "flow"}
-              onChange={(event) =>
-                onUpdateEdge(edge.style, event.target.value as EdgeKind)
-              }
-            >
-              <option value="flow">Flow</option>
-              <option value="bidirectional">Bidirectional</option>
-              <option value="peer">Peer</option>
-              <option value="fail">Failure</option>
-            </select>
-          </div>
-          <div className="property-section">
-            <label>Route</label>
-            <button className="wide-button" type="button" onClick={routePinned ? onAutoRoute : onPinRoute}>
-              {routePinned ? "Use auto route" : "Pin current route"}
-            </button>
-          </div>
-        </>
-      )}
-      <div className="inspector-footer">
-        <button className="danger-button" type="button" onClick={onDelete}>Delete</button>
-      </div>
-    </FloatingPanel>
-  );
-}
-
-function isTypingField(element: HTMLElement): boolean {
-  if (element.closest(".cm-editor") || element.isContentEditable) return true;
-  if (element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) return true;
-  if (!(element instanceof HTMLInputElement)) return false;
-  return !["file", "button", "submit", "reset", "checkbox", "radio", "hidden", "range", "color"].includes(element.type);
-}
-
-function isEditableKeyboardTarget(target: EventTarget | null): boolean {
-  const candidates: HTMLElement[] = [];
-  if (target instanceof HTMLElement) candidates.push(target);
-  if (document.activeElement instanceof HTMLElement) candidates.push(document.activeElement);
-  return candidates.some(isTypingField);
-}
-
-function modifierShortcut(event: KeyboardEvent, code: string): boolean {
-  return (event.metaKey || event.ctrlKey) && event.code === code;
-}
-
-function insertionPoint(layout: LayoutResult, parent?: string): Point {
-  const group = parent
-    ? layout.groups.find((candidate) => candidate.id === parent)
-    : undefined;
-  if (group) {
-    return {
-      x: group.content.x + Math.max(24, group.content.w / 2 - 40),
-      y: group.content.y + Math.max(24, group.content.h / 2 - 40),
-    };
-  }
-  return {
-    x: Math.max(48, layout.width / 2 - 40),
-    y: Math.max(48, layout.height / 2 - 40),
-  };
-}
-
-function containsPoint(
-  rect: { x: number; y: number; w: number; h: number },
-  point: Point,
-): boolean {
-  return (
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.w &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.h
-  );
-}
-
-function snap(value: number): number {
-  return Math.round(value / 8) * 8;
-}
-
-function buildContextMenuItems(
-  selection: Selection,
-  doc: DiagramDocument,
-  actions: {
-    onCopy: () => void;
-    onCut: () => void;
-    onPaste: () => void;
-    onDuplicate: () => void;
-    onDelete: () => void;
-    onGroup: () => void;
-    onDeleteGroup: () => void;
-    onFitGroup: () => void;
-    onUngroup: () => void;
-    onDeleteGroupAndContents: () => void;
-    onMutate: (change: (doc: DiagramDocument) => DiagramDocument) => void;
-  },
-): ContextMenuItem[] {
-  const items: ContextMenuItem[] = [];
-  const hasSelection = selection.length > 0;
-
-  if (hasSelection) {
-    items.push(
-      {
-        id: "copy",
-        label: "Copy",
-        shortcut: "⌘C / Ctrl+C",
-        onSelect: actions.onCopy,
-      },
-      {
-        id: "cut",
-        label: "Cut",
-        shortcut: "⌘X / Ctrl+X",
-        onSelect: actions.onCut,
-      },
-      {
-        id: "duplicate",
-        label: "Duplicate",
-        shortcut: "⌘D / Ctrl+D",
-        onSelect: actions.onDuplicate,
-      },
-      { id: "selection-divider", label: "", separator: true },
-    );
-  }
-
-  items.push({
-    id: "paste",
-    label: "Paste image or selection",
-    shortcut: "⌘V / Ctrl+V",
-    onSelect: actions.onPaste,
-  });
-
-  if (!hasSelection) return items;
-
-  if (canGroupSelection(doc, selection)) {
-    items.push({
-      id: "group",
-      label: "Group",
-      shortcut: "⌘G / Ctrl+G",
-      onSelect: actions.onGroup,
-    });
-  }
-
-  if (selection.length === 1) {
-    const item = selection[0]!;
-    const view = doc.views[0];
-    const place =
-      item.kind === "annotation"
-        ? view?.annotations?.[item.id]
-        : view?.places[item.id];
-    const locked = Boolean(place?.locked);
-
-    items.push({ id: "object-divider", label: "", separator: true });
-    items.push({
-      id: "front",
-      label: "Bring to front",
-      onSelect: () => actions.onMutate((next) => sendToFront(next, item.id)),
-    });
-    items.push({
-      id: "back",
-      label: "Send to back",
-      onSelect: () => actions.onMutate((next) => sendToBack(next, item.id)),
-    });
-    items.push({
-      id: "lock",
-      label: locked ? "Unlock position" : "Lock position",
-      onSelect: () =>
-        actions.onMutate((next) =>
-          setLocked(
-            next,
-            item.kind as "resource" | "group" | "edge" | "annotation",
-            item.id,
-            !locked,
-          ),
-        ),
-    });
-
-    if (item.kind === "group") {
-      items.push({ id: "group-actions-divider", label: "", separator: true });
-      items.push({
-        id: "fit-group-to-contents",
-        label: "Fit to contents",
-        onSelect: actions.onFitGroup,
-      });
-      items.push({
-        id: "ungroup",
-        label: "Ungroup",
-        shortcut: "⌘⇧G / Ctrl+Shift+G",
-        onSelect: actions.onUngroup,
-      });
-      items.push({
-        id: "delete-group",
-        label: "Delete group",
-        onSelect: actions.onDeleteGroup,
-      });
-      items.push({
-        id: "delete-group-and-contents",
-        label: "Delete group and contents",
-        danger: true,
-        onSelect: actions.onDeleteGroupAndContents,
-      });
-    }
-  }
-
-  // A single selected group has explicit boundary actions above. Omitting a
-  // second generic Delete keeps destructive subtree deletion intentional.
-  if (!(selection.length === 1 && selection[0]?.kind === "group")) {
-    items.push({ id: "delete-divider", label: "", separator: true });
-    items.push({
-      id: "delete",
-      label:
-        selection.length > 1
-          ? `Delete ${selection.length} items`
-          : selection[0]?.kind === "edge"
-            ? "Delete connector"
-            : "Delete",
-      shortcut: "⌫ / Delete",
-      danger: true,
-      onSelect: actions.onDelete,
-    });
-  }
-
-  return items;
 }
 
 createRoot(document.getElementById("root")!).render(

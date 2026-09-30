@@ -33,6 +33,7 @@ export type AutoFixPlan = {
   doc: DiagramDocument;
   strategy: AutoFixStrategy;
   message?: string;
+  compilation?: DiagramCompilation;
 };
 
 type Candidate = {
@@ -54,8 +55,12 @@ const STRATEGY_RANK: Record<AutoFixStrategy, number> = {
 export function planAutoFix(
   doc: DiagramDocument,
   snapToGrid: boolean,
+  precompiled?: DiagramCompilation,
 ): AutoFixPlan {
-  const currentCompilation = compileDocument(doc, snapToGrid);
+  const currentCompilation =
+    precompiled?.ok && precompiled.doc === doc
+      ? precompiled
+      : compileDocument(doc, snapToGrid);
   if (!currentCompilation.ok) {
     const message =
       ("parseError" in currentCompilation && currentCompilation.parseError) ||
@@ -149,6 +154,7 @@ export function planAutoFix(
     doc: best.doc,
     strategy: best.strategy,
     message: strategyToast(best.strategy),
+    compilation: best.compilation,
   };
 }
 

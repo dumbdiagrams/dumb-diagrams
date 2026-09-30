@@ -3,11 +3,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
-  createAsyncDocsFixture,
   createEmptyDocument,
   nearestPortAnchor,
   portPoint,
 } from "../core/index.js";
+import { createAsyncDocsFixture } from "../../test-fixtures.js";
 import { parseDgm } from "../dsl/index.js";
 import type { DiagramDocument, LayoutResult, NodeGeom } from "../core/index.js";
 import { layoutDocument } from "../layout/index.js";

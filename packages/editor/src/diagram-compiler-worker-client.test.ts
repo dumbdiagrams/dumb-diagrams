@@ -46,6 +46,10 @@ describe("DiagramCompilerWorkerClient", () => {
       request(1),
       expect.objectContaining({ kind: "constructor" }),
     );
+    expect(onFailure.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      kind: "constructor",
+      error: expect.any(Error),
+    }));
   });
 
   it("terminates a worker and settles a request when postMessage fails", () => {
@@ -153,10 +157,45 @@ describe("DiagramCompilerWorkerClient", () => {
     expect(client.isBusy()).toBe(false);
   });
 
+  it("accepts a structured compiler failure diagnostic from the worker", () => {
+    const worker = createWorker();
+    const onResponse = vi.fn();
+    const client = new DiagramCompilerWorkerClient({
+      createWorker: () => worker,
+      onResponse,
+      onFailure: vi.fn(),
+    });
+    const active = request(1);
+    client.request(active);
+    worker.onmessage?.({
+      data: {
+        ...active,
+        compilation: {
+          ...compilation,
+          compilationError: {
+            code: "compilation",
+            phase: "routing",
+            message: "Compilation failed during routing: injected routing fault",
+          },
+        },
+      },
+    } as MessageEvent<unknown>);
+
+    expect(onResponse).toHaveBeenCalledOnce();
+    expect(client.isBusy()).toBe(false);
+  });
+
   it.each([
     { ...request(1), compilation: { ok: false } },
     { ...request(1), compilation: { ok: true, issues: [], svg: "", invariantFailures: [] } },
     { ...request(1), compilation: { ...compilation, issues: [null] } },
+    {
+      ...request(1),
+      compilation: {
+        ...compilation,
+        compilationError: { code: "compilation", phase: "unknown", message: "bad phase" },
+      },
+    },
   ])("rejects malformed compilation payloads instead of passing them to the editor", (data) => {
     const worker = createWorker();
     const onFailure = vi.fn();

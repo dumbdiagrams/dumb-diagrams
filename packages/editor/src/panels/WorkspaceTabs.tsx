@@ -60,7 +60,7 @@ export function WorkspaceTabs({
     ? `Maximum reached: ${tabLimit} open diagrams. Close a tab to create another.`
     : "New diagram";
 
-  const moveTabFocus = (tabId: string, index: number, key: string) => {
+  const moveTabFocus = (index: number, key: string) => {
     if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") return;
     const nextIndex = key === "Home"
       ? 0
@@ -194,7 +194,7 @@ export function WorkspaceTabs({
                 }}
                 onKeyDown={(event) => {
                   if (closing) return;
-                  moveTabFocus(tab.id, tabs.findIndex((candidate) => candidate.id === tab.id), event.key);
+                  moveTabFocus(tabs.findIndex((candidate) => candidate.id === tab.id), event.key);
                   if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) event.preventDefault();
                 }}
                 ref={(element) => {

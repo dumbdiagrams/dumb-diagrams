@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { catalogIconUrl } from "@dumb-diagrams/runtime/catalog";
-import { renderSvg } from "@dumb-diagrams/runtime/render";
+import { renderSvg, validateEmbeddedAssets } from "@dumb-diagrams/runtime/render";
 
 import {
   cacheDiagramCompilation,
   compileDiagramSource,
+  compilationFailure,
   getCachedDiagramCompilation,
   getCommittedCompilationEpoch,
   type DiagramCompilation,
@@ -18,17 +19,40 @@ import {
 
 const COMPILATION_DEBOUNCE_MS = 75;
 
+function compileForDisplay(source: string, snapToGrid: boolean): DiagramCompilation {
+  try {
+    return prepareForDisplay(compileDiagramSource(source, snapToGrid));
+  } catch (error) {
+    console.error("Synchronous diagram compilation failed", error);
+    return compilationFailure([], error, "prepare");
+  }
+}
+
 function prepareForDisplay(compilation: DiagramCompilation): DiagramCompilation {
   if (!compilation.ok) return compilation;
-  return {
-    ...compilation,
-    // Workers do not share document.baseURI. Rendering this inexpensive final
-    // string on the UI thread keeps catalog URLs correct for both `/` and
-    // sub-path deployments while layout and routing remain off-thread.
-    svg: renderSvg(compilation.doc, compilation.layout, {
-      resolveIconHref: catalogIconUrl,
-    }),
-  };
+  try {
+    const assetIssues = validateEmbeddedAssets(compilation.doc);
+    if (assetIssues.length > 0) {
+      return {
+        ok: false,
+        issues: [...compilation.issues, ...assetIssues],
+        svg: null,
+        layout: null,
+        invariantFailures: [],
+      };
+    }
+    return {
+      ...compilation,
+      // Workers do not share document.baseURI. Rendering this inexpensive final
+      // string on the UI thread keeps catalog URLs correct for both `/` and
+      // sub-path deployments while layout and routing remain off-thread.
+      svg: renderSvg(compilation.doc, compilation.layout, {
+        resolveIconHref: catalogIconUrl,
+      }),
+    };
+  } catch (error) {
+    return compilationFailure(compilation.issues, error, "render");
+  }
 }
 
 export function useDiagramCompilation(
@@ -36,7 +60,7 @@ export function useDiagramCompilation(
   snapToGrid: boolean,
 ): { compilation: DiagramCompilation; pending: boolean } {
   const [compilation, setCompilation] = useState<DiagramCompilation>(() =>
-    compileDiagramSource(source, snapToGrid)
+    compileForDisplay(source, snapToGrid)
   );
   const workerClientRef = useRef<DiagramCompilerWorkerClient | null>(null);
   const requestIdRef = useRef(0);
@@ -49,9 +73,7 @@ export function useDiagramCompilation(
   };
 
   const compileSynchronously = (request: CompilationRequest) => {
-    const prepared = prepareForDisplay(
-      compileDiagramSource(request.source, request.snapToGrid),
-    );
+    const prepared = compileForDisplay(request.source, request.snapToGrid);
     cacheDiagramCompilation(request.source, request.snapToGrid, prepared);
     if (request.id === requestIdRef.current) setCompilation(prepared);
   };
@@ -73,16 +95,12 @@ export function useDiagramCompilation(
         }),
       onResponse: (response: CompilationResponse) => {
         if (response.id !== requestIdRef.current) return;
-        try {
-          const prepared = prepareForDisplay(response.compilation);
-          cacheDiagramCompilation(response.source, response.snapToGrid, prepared);
-          setCompilation(prepared);
-        } catch {
-          // A malformed worker payload must not leave the editor pending.
-          compileSynchronously(response);
-        }
+        const prepared = prepareForDisplay(response.compilation);
+        cacheDiagramCompilation(response.source, response.snapToGrid, prepared);
+        setCompilation(prepared);
       },
-      onFailure: (request) => {
+      onFailure: (request, failure) => {
+        console.error("Diagram compiler worker failed", failure.kind, failure.error);
         if (request && request.id === requestIdRef.current) compileSynchronously(request);
       },
     });

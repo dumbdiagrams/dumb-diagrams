@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
+import type { Viewport } from "../model/types";
+
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
 const VIEWPORT_COMMIT_DELAY_MS = 120;
@@ -22,11 +24,7 @@ export const DEFAULT_VIEWPORT_BOTTOM_MARGIN = 96;
 export const DEFAULT_EMPTY_CANVAS_WIDTH = 480;
 export const DEFAULT_EMPTY_CANVAS_HEIGHT = 240;
 
-export interface Viewport {
-  panX: number;
-  panY: number;
-  zoom: number;
-}
+export type { Viewport } from "../model/types";
 
 export interface ViewportChangeOptions {
   userInitiated?: boolean;

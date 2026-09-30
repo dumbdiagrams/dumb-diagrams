@@ -46,24 +46,16 @@ export type ExportReceipt = Readonly<{
   format: ExportFormat;
 }>;
 
-class ExportFailure extends Error {
-  constructor(readonly error: ExportError) {
-    super(error.message);
-    this.name = "ExportFailure";
-  }
-}
-
 function exportError(code: ExportErrorCode, message: string, cause?: unknown): ExportError {
   return cause === undefined ? { code, message } : { code, message, cause };
 }
 
-function failExport(code: ExportErrorCode, message: string, cause?: unknown): never {
-  throw new ExportFailure(exportError(code, message, cause));
-}
-
-function rethrowExportFailure(cause: unknown, code: ExportErrorCode, message: string): never {
-  if (cause instanceof ExportFailure) throw cause;
-  failExport(code, message, cause);
+function captureExport<T>(code: ExportErrorCode, message: string, operation: () => T): Result<T, ExportError> {
+  try {
+    return ok(operation());
+  } catch (cause) {
+    return err(exportError(code, message, cause));
+  }
 }
 
 const DIAGRAM_URL_HASH_KEY = "diagram";
@@ -233,12 +225,20 @@ export function sanitizeFilename(value: string): string {
   return Array.from(clean).slice(0, DIAGRAM_LIMITS.filenameCharacters).join("");
 }
 
-function blobOrThrow(parts: BlobPart[], type: string, formatLabel: string): Blob {
-  try {
-    return new Blob(parts, { type });
-  } catch (cause) {
-    failExport("encoding", `Could not encode the ${formatLabel} export.`, cause);
-  }
+function blobResult(parts: BlobPart[], type: string, formatLabel: string): Result<Blob, ExportError> {
+  return captureExport("encoding", `Could not encode the ${formatLabel} export.`, () => new Blob(parts, { type }));
+}
+
+function bytesBlobResult(bytes: Uint8Array, type: string, formatLabel: string): Result<Blob, ExportError> {
+  return captureExport("encoding", `Could not encode the ${formatLabel} export.`, () => {
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    return buffer;
+  }).andThen((buffer) => blobResult([buffer], type, formatLabel));
+}
+
+function downloadPartsResult(parts: BlobPart[], type: string, formatLabel: string, name: string): Result<void, ExportError> {
+  return blobResult(parts, type, formatLabel).andThen((blob) => downloadBlobResult(blob, name));
 }
 
 export function downloadBlobResult(blob: Blob, name: string): Result<void, ExportError> {
@@ -289,11 +289,6 @@ export function createDiagramUrlResult(source: string): Result<string, ExportErr
   } catch (cause) {
     return err(exportError("url", "The diagram URL could not be created.", cause));
   }
-}
-
-function requireExportSuccess<T>(result: Result<T, ExportError>): T {
-  if (result.isErr()) throw new ExportFailure(result.error);
-  return result.value;
 }
 
 export function filenameWithExtension(value: string, extension: string): string {
@@ -605,13 +600,13 @@ export function exportDiagramFile(args: {
   options: ExportOptions;
   getPortableSvg: () => Promise<string>;
 }): ResultAsync<ExportReceipt, ExportError> {
-  return ResultAsync.fromPromise(exportDiagramFileUnsafe(args), (cause) => {
-    if (cause instanceof ExportFailure) return cause.error;
-    return exportError("encoding", "The export could not be prepared.", cause);
-  });
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => exportDiagramFileResult(args)),
+    (cause) => exportError("encoding", "The export could not be prepared.", cause),
+  ).andThen((result) => result);
 }
 
-async function exportDiagramFileUnsafe(args: {
+async function exportDiagramFileResult(args: {
   title: string;
   source: string;
   doc: DiagramDocument;
@@ -619,152 +614,134 @@ async function exportDiagramFileUnsafe(args: {
   selection: ExportSelectionItem[];
   options: ExportOptions;
   getPortableSvg: () => Promise<string>;
-}): Promise<ExportReceipt> {
+}): Promise<Result<ExportReceipt, ExportError>> {
   const { title, source, doc, layout, selection, options, getPortableSvg } = args;
   const format = exportFormat(options.format);
   const filename = filenameWithExtension(title, format.extension);
   const receipt = (): ExportReceipt => ({ filename, format: options.format });
   if (options.format === "dgm") {
-    requireExportSuccess(downloadBlobResult(blobOrThrow([source], "text/plain", "source"), filename));
-    return receipt();
+    return downloadPartsResult([source], "text/plain", "source", filename).map(receipt);
   }
   if (options.format === "json") {
-    let json: string;
-    try {
-      json = JSON.stringify(doc, null, 2);
-    } catch (cause) {
-      failExport("encoding", "Could not encode the JSON export.", cause);
-    }
-    requireExportSuccess(downloadBlobResult(blobOrThrow([json], "application/json", "JSON"), filename));
-    return receipt();
+    const json = captureExport("encoding", "Could not encode the JSON export.", () => JSON.stringify(doc, null, 2));
+    return json.isErr()
+      ? err(json.error)
+      : downloadPartsResult([json.value], "application/json", "JSON", filename).map(receipt);
   }
   if (options.format === "xml") {
-    let xml: string;
-    try {
-      xml = toDiagramXml(doc, source);
-    } catch (cause) {
-      failExport("encoding", "Could not encode the XML export.", cause);
-    }
-    requireExportSuccess(downloadBlobResult(blobOrThrow([xml], "application/xml", "XML"), filename));
-    return receipt();
+    const xml = captureExport("encoding", "Could not encode the XML export.", () => toDiagramXml(doc, source));
+    return xml.isErr()
+      ? err(xml.error)
+      : downloadPartsResult([xml.value], "application/xml", "XML", filename).map(receipt);
   }
   if (options.format === "url") {
-    const diagramUrl = requireExportSuccess(createDiagramUrlResult(source));
-    requireExportSuccess(downloadBlobResult(blobOrThrow([diagramUrl], "text/plain", "diagram URL"), filename));
-    return receipt();
+    return createDiagramUrlResult(source).andThen((diagramUrl) => downloadPartsResult([diagramUrl], "text/plain", "diagram URL", filename)).map(receipt);
   }
 
-  let baseSvg: string;
-  try {
-    baseSvg = await getPortableSvg();
-  } catch (cause) {
-    failExport("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
-  }
-  let svg: string;
-  try {
-    svg = prepareExportSvg(baseSvg, doc, layout, selection, options, source);
-  } catch (cause) {
-    failExport("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
-  }
+  const baseSvg = await ResultAsync.fromPromise(
+    Promise.resolve().then(() => getPortableSvg()),
+    (cause) => exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause),
+  );
+  if (baseSvg.isErr()) return err(baseSvg.error);
+  const svg = captureExport(
+    "portable-svg-preparation",
+    "The portable SVG could not be prepared.",
+    () => prepareExportSvg(baseSvg.value, doc, layout, selection, options, source),
+  );
+  if (svg.isErr()) return err(svg.error);
   if (options.format === "svg") {
-    requireExportSuccess(downloadBlobResult(blobOrThrow([svg], "image/svg+xml", "SVG"), filename));
-    return receipt();
+    return downloadPartsResult([svg.value], "image/svg+xml", "SVG", filename).map(receipt);
   }
   if (options.format === "html") {
-    let html: string;
-    try {
-      html = toStandaloneHtml(
+    const html = captureExport("encoding", "Could not encode the HTML export.", () => toStandaloneHtml(
         title,
-        svg,
+        svg.value,
         supportsExportSourceOption(options.format) && options.includeSource ? source : undefined,
-      );
-    } catch (cause) {
-      failExport("encoding", "Could not encode the HTML export.", cause);
-    }
-    requireExportSuccess(downloadBlobResult(blobOrThrow([html], "text/html", "HTML"), filename));
-    return receipt();
+      ));
+    return html.isErr()
+      ? err(html.error)
+      : downloadPartsResult([html.value], "text/html", "HTML", filename).map(receipt);
   }
 
-  const canvas = await rasterizeSvg(svg, options);
+  const canvas = await rasterizeSvg(svg.value, options);
+  if (canvas.isErr()) return err(canvas.error);
   if (options.format === "pdf") {
-    let pdf: Uint8Array;
-    try {
-      pdf = makeImagePdf(canvas, options.dpi);
-    } catch (cause) {
-      rethrowExportFailure(cause, "encoding", "Could not encode the PDF export.");
-    }
-    requireExportSuccess(downloadBlobResult(blobOrThrow([bytesToBlob(pdf, "application/pdf")], "application/pdf", "PDF"), filename));
-    return receipt();
+    const pdf = captureExport("encoding", "Could not encode the PDF export.", () => makeImagePdf(canvas.value, options.dpi));
+    if (pdf.isErr()) return err(pdf.error);
+    const blob = bytesBlobResult(pdf.value, "application/pdf", "PDF");
+    return blob.isErr()
+      ? err(blob.error)
+      : downloadBlobResult(blob.value, filename).map(receipt);
   }
   if (options.format === "gif") {
-    let gif: Uint8Array;
-    try {
-      gif = encodeGif(canvas);
-    } catch (cause) {
-      rethrowExportFailure(cause, "encoding", "Could not encode the GIF export.");
-    }
-    requireExportSuccess(downloadBlobResult(blobOrThrow([bytesToBlob(gif, "image/gif")], "image/gif", "GIF"), filename));
-    return receipt();
+    const gif = encodeGif(canvas.value);
+    if (gif.isErr()) return err(gif.error);
+    const blob = bytesBlobResult(gif.value, "image/gif", "GIF");
+    return blob.isErr()
+      ? err(blob.error)
+      : downloadBlobResult(blob.value, filename).map(receipt);
   }
   const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
-  const blob = await canvasToBlob(canvas, mime, options.format === "jpeg" ? 0.92 : 0.95);
-  if (!blob || blob.type !== mime) failExport("encoding", `The browser could not encode the ${format.label} export.`);
-  requireExportSuccess(downloadBlobResult(blob, filename));
-  return receipt();
+  const blob = await canvasToBlob(canvas.value, mime, options.format === "jpeg" ? 0.92 : 0.95);
+  return blob.andThen((encoded) => {
+    if (encoded.type !== mime) return err(exportError("encoding", `The browser could not encode the ${format.label} export.`));
+    return downloadBlobResult(encoded, filename);
+  }).map(receipt);
 }
 
-function bytesToBlob(bytes: Uint8Array, type: string): Blob {
-  const buffer = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(buffer).set(bytes);
-  return new Blob([buffer], { type });
-}
-
-async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCanvasElement> {
+async function rasterizeSvg(svg: string, options: ExportOptions): Promise<Result<HTMLCanvasElement, ExportError>> {
   const scale = Math.max(0.25, options.dpi / 96);
   const requestedDimensions = validateRasterDimensions(
     Math.round(options.width * scale),
     Math.round(options.height * scale),
   );
-  if (!requestedDimensions.ok) failExport("raster-dimensions", requestedDimensions.message);
+  if (!requestedDimensions.ok) return err(exportError("raster-dimensions", requestedDimensions.message));
 
-  let image: HTMLImageElement;
+  const image = captureExport("rasterization", "The exported SVG image could not be loaded.", () => new Image());
+  if (image.isErr()) return err(image.error);
+  const sourceBlob = blobResult([svg], "image/svg+xml", "SVG rasterization");
+  if (sourceBlob.isErr()) return err(exportError("rasterization", "The exported SVG could not be encoded for rasterization.", sourceBlob.error));
+  const objectUrl = captureExport("rasterization", "The exported SVG image URL could not be created.", () => URL.createObjectURL(sourceBlob.value));
+  if (objectUrl.isErr()) return err(objectUrl.error);
+  const url = objectUrl.value;
   try {
-    image = new Image();
-  } catch (cause) {
-    failExport("rasterization", "The exported SVG image could not be loaded.", cause);
-  }
-  const sourceBlob = blobOrThrow([svg], "image/svg+xml", "SVG rasterization");
-  let url: string;
-  try {
-    url = URL.createObjectURL(sourceBlob);
-  } catch (cause) {
-    failExport("rasterization", "The exported SVG image URL could not be created.", cause);
-  }
-  try {
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("Unable to rasterize SVG"));
-      image.src = url;
-    });
-    const logicalWidth = image.width || options.width;
-    const logicalHeight = image.height || options.height;
+    const loaded = await ResultAsync.fromPromise(
+      Promise.resolve().then(() => new Promise<void>((resolve, reject) => {
+        image.value.onload = () => resolve();
+        image.value.onerror = () => reject(new Error("Unable to rasterize SVG"));
+        image.value.src = url;
+      })),
+      (cause) => exportError("rasterization", "The exported SVG image could not be loaded.", cause),
+    );
+    if (loaded.isErr()) return err(loaded.error);
+    const logicalWidth = image.value.width || options.width;
+    const logicalHeight = image.value.height || options.height;
     const pixelWidth = Math.round(logicalWidth * scale);
     const pixelHeight = Math.round(logicalHeight * scale);
     const dimensions = validateRasterDimensions(pixelWidth, pixelHeight);
-    if (!dimensions.ok) failExport("raster-dimensions", dimensions.message);
-    const canvas = document.createElement("canvas");
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
-    const context = canvas.getContext("2d");
-    if (!context) failExport("canvas-context", "Your browser could not create a 2D canvas context.");
-    if (!options.transparentBackground || options.format === "jpeg") {
-      context.fillStyle = options.appearance === "dark" ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas;
-  } catch (cause) {
-    return rethrowExportFailure(cause, "rasterization", "The exported SVG image could not be rasterized.");
+    if (!dimensions.ok) return err(exportError("raster-dimensions", dimensions.message));
+    const canvasResult = captureExport("rasterization", "The exported canvas could not be created.", () => document.createElement("canvas"));
+    if (canvasResult.isErr()) return err(canvasResult.error);
+    const canvas = canvasResult.value;
+    const sized = captureExport("rasterization", "The exported canvas could not be sized.", () => {
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      return canvas;
+    });
+    if (sized.isErr()) return err(sized.error);
+    const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () => canvas.getContext("2d"));
+    if (contextResult.isErr()) return err(contextResult.error);
+    const context = contextResult.value;
+    if (!context) return err(exportError("canvas-context", "Your browser could not create a 2D canvas context."));
+    const drawn = captureExport("rasterization", "The exported SVG image could not be rasterized.", () => {
+      if (!options.transparentBackground || options.format === "jpeg") {
+        context.fillStyle = options.appearance === "dark" ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      context.drawImage(image.value, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    });
+    return drawn;
   } finally {
     try {
       URL.revokeObjectURL(url);
@@ -796,17 +773,17 @@ export function validateRasterDimensions(
   return { ok: true, width, height };
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): ResultAsync<Blob, ExportError> {
+  return ResultAsync.fromPromise(new Promise<Blob>((resolve, reject) => {
     try {
       canvas.toBlob((blob) => {
         if (blob) resolve(blob);
-        else reject(new ExportFailure(exportError("encoding", `The browser could not encode the ${mime} export.`)));
+        else reject(new Error(`The browser could not encode the ${mime} export.`));
       }, mime, quality);
     } catch (cause) {
-      reject(new ExportFailure(exportError("encoding", `The browser could not encode the ${mime} export.`, cause)));
+      reject(cause);
     }
-  });
+  }), (cause) => exportError("encoding", `The browser could not encode the ${mime} export.`, cause));
 }
 
 function toDiagramXml(doc: DiagramDocument, source: string): string {
@@ -839,10 +816,13 @@ function writeU16(target: number[], value: number): void {
   target.push(value & 0xff, (value >> 8) & 0xff);
 }
 
-function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
-  const context = canvas.getContext("2d");
-  if (!context) failExport("canvas-context", "Your browser could not create a 2D canvas context.");
-  const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+function encodeGif(canvas: HTMLCanvasElement): Result<Uint8Array, ExportError> {
+  const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () => canvas.getContext("2d"));
+  if (contextResult.isErr()) return err(contextResult.error);
+  const context = contextResult.value;
+  if (!context) return err(exportError("canvas-context", "Your browser could not create a 2D canvas context."));
+  const pixels = captureExport("encoding", "Could not encode the GIF export.", () => context.getImageData(0, 0, canvas.width, canvas.height).data);
+  if (pixels.isErr()) return err(pixels.error);
   const bytes: number[] = [];
   for (const char of "GIF89a") bytes.push(char.charCodeAt(0));
   writeU16(bytes, canvas.width);
@@ -860,9 +840,9 @@ function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
   bytes.push(0, 8);
   const indices = new Uint8Array(canvas.width * canvas.height);
   for (let index = 0, pixel = 0; index < indices.length; index++, pixel += 4) {
-    const r = Math.max(0, Math.min(5, Math.round(pixels[pixel]! / 51)));
-    const g = Math.max(0, Math.min(5, Math.round(pixels[pixel + 1]! / 51)));
-    const b = Math.max(0, Math.min(5, Math.round(pixels[pixel + 2]! / 51)));
+    const r = Math.max(0, Math.min(5, Math.round(pixels.value[pixel]! / 51)));
+    const g = Math.max(0, Math.min(5, Math.round(pixels.value[pixel + 1]! / 51)));
+    const b = Math.max(0, Math.min(5, Math.round(pixels.value[pixel + 2]! / 51)));
     indices[index] = r * 36 + g * 6 + b;
   }
   const compressed = lzwEncode(indices, 8);
@@ -871,7 +851,7 @@ function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
     bytes.push(length, ...compressed.slice(offset, offset + length));
   }
   bytes.push(0, 0x3b);
-  return Uint8Array.from(bytes);
+  return ok(Uint8Array.from(bytes));
 }
 
 function lzwEncode(values: Uint8Array, minimumCodeSize: number): number[] {

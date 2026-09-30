@@ -1,7 +1,7 @@
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 
-import type { Selection, SelectionItem } from "../editor-model";
+import type { Selection, SelectionItem } from "../model/types";
 import {
   selectionModeForModifiers,
   type SelectionMode,

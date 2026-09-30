@@ -61,6 +61,15 @@ function isInvariantFailure(value: unknown): boolean {
   );
 }
 
+function isCompilationError(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    value.code === "compilation" &&
+    (value.phase === "prepare" || value.phase === "layout" || value.phase === "routing" || value.phase === "render") &&
+    typeof value.message === "string"
+  );
+}
+
 function isSuccessfulCompilation(value: Record<string, unknown>): boolean {
   return (
     value.ok === true &&
@@ -89,6 +98,7 @@ function isFailedCompilation(value: Record<string, unknown>): boolean {
     value.svg === null &&
     Array.isArray(value.invariantFailures) && value.invariantFailures.every(isInvariantFailure) &&
     (value.layout === undefined || value.layout === null) &&
+    (value.compilationError === undefined || isCompilationError(value.compilationError)) &&
     (value.parseError === undefined || typeof value.parseError === "string") &&
     (value.parseErrorCode === undefined || typeof value.parseErrorCode === "string")
   );

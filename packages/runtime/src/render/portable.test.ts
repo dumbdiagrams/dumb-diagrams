@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { getCatalogEntryByBrowserPath } from "../catalog/index.js";
-import { createAsyncDocsFixture } from "../core/index.js";
+import { createAsyncDocsFixture } from "../../test-fixtures.js";
 import { layoutDocument } from "../layout/index.js";
 import { renderPortableSvg } from "./svg.js";
 

@@ -29,7 +29,7 @@ export function Modal({
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const bodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.setTimeout(() => {
+    const focusTimer = window.setTimeout(() => {
       const autofocus = dialogRef.current?.querySelector<HTMLElement>("[data-autofocus]");
       (autofocus ?? dialogRef.current?.querySelector<HTMLElement>("button, input, [tabindex='0']"))?.focus();
     }, 0);
@@ -42,22 +42,21 @@ export function Modal({
         return;
       }
       if (event.key !== "Tab") return;
-      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
         "button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href], [tabindex='0']",
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0]!;
-      const last = focusable[focusable.length - 1]!;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      ) ?? [])].filter((element) => element.getClientRects().length > 0);
+      if (!focusable.length) return;
+      // Explicitly advance focus: macOS browser preferences can otherwise
+      // omit buttons from the native Tab sequence.
+      event.preventDefault();
+      const index = focusable.indexOf(document.activeElement as HTMLElement);
+      const next = index < 0 ? (event.shiftKey ? focusable.length - 1 : 0)
+        : (index + (event.shiftKey ? -1 : 1) + focusable.length) % focusable.length;
+      focusable[next]?.focus();
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => {
+      window.clearTimeout(focusTimer);
       window.removeEventListener("keydown", onKeyDown, true);
       document.body.style.overflow = bodyOverflow;
       previousFocusRef.current?.focus();
@@ -67,6 +66,7 @@ export function Modal({
   if (!open) return null;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: Backdrop dismissal supplements the dialog close button and Escape key.
     <div
       className="modal-backdrop"
       role="presentation"

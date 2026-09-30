@@ -1,6 +1,6 @@
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 
-import type { WorkspaceState } from "./workspace";
+import type { WorkspaceState } from "./workspace-model";
 
 const DB_NAME = "dumb-diagrams-studio";
 const DB_VERSION = 1;
@@ -59,14 +59,14 @@ export function loadPersistedWorkspace(
 ): ResultAsync<WorkspaceLoadOutcome, StorageError> {
   return ResultAsync.fromPromise(
     readPersistedWorkspace(platform, codec),
-    (cause) => isStorageError(cause) ? cause : storageError("indexeddb", "read", cause),
-  );
+    (cause) => storageError("indexeddb", "read", cause),
+  ).andThen((result) => result);
 }
 
 async function readPersistedWorkspace(
   platform: WorkspacePersistencePlatform,
   codec: WorkspaceRestoreCodec,
-): Promise<WorkspaceLoadOutcome> {
+): Promise<Result<WorkspaceLoadOutcome, StorageError>> {
   const warnings: string[] = [];
   const errors: StorageError[] = [];
   let failedSources = 0;
@@ -81,7 +81,7 @@ async function readPersistedWorkspace(
     addFailure(journal.error);
   } else if (journal.value !== undefined) {
     const restored = restoreSerializedWorkspace(journal.value, "journal", codec);
-    if (restored.isOk()) return persistenceLoadResult(restored.value, warnings, errors);
+    if (restored.isOk()) return ok(persistenceLoadResult(restored.value, warnings, errors));
     failedSources += 1;
     errors.push(restored.error);
     warnings.push(storageWarning(restored.error));
@@ -92,7 +92,7 @@ async function readPersistedWorkspace(
     addFailure(database.error);
   } else if (database.value !== undefined) {
     const restored = restoreWorkspaceValue(database.value, "indexeddb", codec);
-    if (restored.isOk()) return persistenceLoadResult(restored.value, warnings, errors);
+    if (restored.isOk()) return ok(persistenceLoadResult(restored.value, warnings, errors));
     failedSources += 1;
     errors.push(restored.error);
     warnings.push(storageWarning(restored.error));
@@ -103,20 +103,20 @@ async function readPersistedWorkspace(
     addFailure(fallback.error);
   } else if (fallback.value !== undefined) {
     const restored = restoreSerializedWorkspace(fallback.value, "fallback", codec);
-    if (restored.isOk()) return persistenceLoadResult(restored.value, warnings, errors);
+    if (restored.isOk()) return ok(persistenceLoadResult(restored.value, warnings, errors));
     failedSources += 1;
     errors.push(restored.error);
     warnings.push(storageWarning(restored.error));
   }
 
-  if (failedSources === 3) throw combineStorageErrors(errors);
-  if (!warnings.length && failedSources === 0) return { status: "ok", workspace: null };
-  return {
+  if (failedSources === 3) return err(combineStorageErrors(errors));
+  if (!warnings.length && failedSources === 0) return ok({ status: "ok", workspace: null });
+  return ok({
     status: "degraded",
     workspace: null,
     warning: warnings[0] ?? "Local workspace persistence is unavailable; starting with a local workspace.",
     errors,
-  };
+  });
 }
 
 function persistenceLoadResult(
@@ -172,8 +172,8 @@ export function persistWorkspace(
   const journal = journalResult ?? persistWorkspaceJournal(serialized, platform);
   return ResultAsync.fromPromise(
     persistWorkspaceValue(workspace, serialized, platform, journal),
-    (cause) => isStorageError(cause) ? cause : storageError("indexeddb", "write", cause),
-  );
+    (cause) => storageError("indexeddb", "write", cause),
+  ).andThen((result) => result);
 }
 
 async function persistWorkspaceValue(
@@ -181,37 +181,37 @@ async function persistWorkspaceValue(
   serialized: string,
   platform: WorkspacePersistencePlatform,
   journal: Result<void, StorageError>,
-): Promise<WorkspacePersistenceOutcome> {
+): Promise<Result<WorkspacePersistenceOutcome, StorageError>> {
   const journalError = journal.isErr() ? journal.error : undefined;
 
   const database = await writeIndexedDb(platform.indexedDb, workspace);
   if (database.isOk()) {
     const clear = clearJournalIfCurrent(platform.journal, serialized);
     if (clear.isErr()) {
-      return {
+      return ok({
         status: "degraded",
         warning: storageWarning(clear.error),
         errors: journalError ? [journalError, clear.error] : [clear.error],
-      };
+      });
     }
-    return journalError
+    return ok(journalError
       ? { status: "degraded", warning: storageWarning(journalError), errors: [journalError] }
-      : { status: "ok" };
+      : { status: "ok" });
   }
 
   const fallback = writeStorage(platform.fallback, FALLBACK_KEY, serialized, "fallback");
   if (fallback.isOk()) {
-    return {
+    return ok({
       status: "degraded",
       warning: "IndexedDB workspace persistence is unavailable; using recovery storage.",
       errors: journalError ? [journalError, database.error] : [database.error],
-    };
+    });
   }
-  throw {
+  return err({
     ...fallback.error,
     message: "IndexedDB and recovery storage failed.",
     relatedErrors: journalError ? [journalError, database.error] : [database.error],
-  } satisfies StorageError;
+  });
 }
 
 function readStorage(
@@ -285,10 +285,6 @@ function storageError(
     message: text,
     cause,
   };
-}
-
-function isStorageError(value: unknown): value is StorageError {
-  return Boolean(value && typeof value === "object" && "code" in value && "layer" in value && "operation" in value);
 }
 
 function combineStorageErrors(errors: readonly StorageError[]): StorageError {

@@ -248,6 +248,16 @@ describe("typed diagram exports", () => {
     if (result.isErr()) expect(result.error.code).toBe("portable-svg-preparation");
   });
 
+  it("classifies a synchronous portable SVG preparation failure", async () => {
+    const args = exportArgs("svg");
+    args.getPortableSvg.mockImplementation(() => { throw new Error("compiler failed before returning a promise"); });
+
+    const result = await exportDiagramFile(args);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.code).toBe("portable-svg-preparation");
+  });
+
   it("classifies rasterization image-load failures", async () => {
     class BrokenImage {
       onload: (() => void) | null = null;

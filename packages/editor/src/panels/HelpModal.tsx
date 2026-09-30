@@ -27,8 +27,9 @@ export function HelpModal({
           </p>
           <p>
             Start Studio with <code>dumbdiagrams studio</code>, then use Open to choose any
-            <code>.dgm</code> file. Modern browsers save directly to the selected file; other
-            browsers download a portable source file.
+            <code>.dgm</code> file. Chromium-based desktop browsers are the primary supported browsers. They
+            can save directly to the selected file; other browsers use a download fallback
+            and receive best-effort compatibility.
           </p>
           <p>
             Keep one diagram per file. Diagram files may live anywhere and can be edited by
