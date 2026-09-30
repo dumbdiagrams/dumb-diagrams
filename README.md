@@ -41,12 +41,14 @@ You get:
 - exports including PNG, JPEG, WebP, GIF, SVG, PDF, standalone HTML, XML, URL
   payloads, JSON, and canonical `.dgm` source.
 
-AWS is the first-class provider path. Azure and cloud-agnostic authoring are
-experimental. **⚠️ GCP is experimental, with limited support; expect gaps in
-coverage and testing.** Experimental providers currently use their own catalog
-icons with the AWS composition, layout, and routing conventions. If no
-provider is named, agent workflows use cloud-agnostic; conflicting provider
-signals should be clarified before authoring.
+AWS is the first-class provider path. Azure, GCP, and cloud-agnostic authoring
+are experimental; they currently reuse AWS composition, layout, and routing
+conventions with their own catalog icons. If no provider is named, agent
+workflows use cloud-agnostic; conflicting provider signals should be clarified
+before authoring.
+
+Studio is designed for Chromium-based desktop browsers. WebKit and Firefox are
+best-effort compatibility targets, and native Safari is not a release target.
 
 ## Quick start
 
@@ -115,10 +117,11 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Use `pnpm build && pnpm dev:cli` for the compiled CLI and local Studio server.
-Run `pnpm smoke:package` to exercise the packed CLI artifact. The full release
-workflow and the detailed command, testing, packaging, and architecture notes
-are in [TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md) and
+Use `pnpm build`, then `pnpm dev:cli`, for the compiled CLI and local Studio
+server. Run `pnpm smoke:package` to exercise the packed CLI artifact. The
+canonical contributor commands and browser test matrix are in
+[CONTRIBUTING.md](./CONTRIBUTING.md); architecture and release details are in
+[TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md) and
 [RELEASE.md](./docs/RELEASE.md).
 
 For website work, see the [website guide](./packages/website/README.md). Other

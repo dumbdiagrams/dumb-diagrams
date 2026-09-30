@@ -60,26 +60,13 @@ the model to guess SVG coordinates or manually place every shape. The project
 instructions and catalog provide the source-language details; the renderer
 handles initial layout and routing.
 
-## Use a fast, inexpensive model for the first draft
-
-This run used Composer 2.5, one of the cheaper and faster model choices for this
-kind of work. The diagram took only a few seconds to generate, and the model was
-conservative with tokens. The usage capture records an on-demand `composer-2.5`
-run using 338.6K tokens at a cost of $0.08:
-
-<figure>
-  <img src="./composer-cost.jpeg" alt="Composer 2.5 usage showing 338.6K tokens and a cost of $0.08" loading="lazy" />
-  <figcaption>The exact price will vary with provider, account, and prompt. The usage capture makes the cost-efficiency visible. The useful lesson is that this kind of structured source generation does not require a top frontier model: a quick, inexpensive model can follow the local instructions and produce a valid first draft.</figcaption>
-</figure>
-
-## Separate the request from the generated interpretation
+## Turn the request into a brief
 
 The prompt above is the human input. The agent also writes an architecture
-brief beside the `.dgm` source. That brief is a reviewable, normalized
-interpretation of the request; it is not a second user instruction or hidden
-model reasoning.
+brief beside the `.dgm` source. The brief is a reviewable interpretation of the
+request; it does not replace the source or add hidden requirements.
 
-For this AWS example, the generated brief captures four things:
+For this AWS example, the brief captures four things:
 
 - **Goal:** model a cross-account data-transfer platform with a customer-facing
   control plane, a plugin deployment workflow, and managed-account artefacts.
@@ -96,11 +83,10 @@ For this AWS example, the generated brief captures four things:
   and avoid adding unrelated services such as queues, WAF, VPC networking, or
   monitoring that were not requested.
 
-Keep each prompt paired with its own brief. The repository also contains an
-image-thumbnail pipeline example, but its interpretation describes a different
-architecture and should not be substituted for this AWS data-transfer brief.
+Keep each prompt paired with its own brief. Choose the brief that matches the
+architecture you are documenting.
 
-## Inspect the generated `.dgm` source
+## Inspect the `.dgm` source
 
 The agent produces architecture source, not a pile of canvas coordinates. The
 source below is the canonical version of this example in the repository:
@@ -174,7 +160,7 @@ the workflow launches transfer workloads. The managed account supplies the
 templates and container artefacts without being flattened into the customer
 account.
 
-The complete files are available as [the `.dgm` source](../../diagrams/aws-data-transfer-hub.dgm), [the generated SVG](../../diagrams/aws-data-transfer-hub.svg), and [the detailed reference specification](../../diagrams/aws-data-transfer-hub-reference-spec.md). The last link is the reconstruction specification used to establish the reference example; the shorter architecture brief is the interpretation to read first.
+The complete files are available as [the `.dgm` source](../../diagrams/aws-data-transfer-hub.dgm), [the rendered SVG](../../diagrams/aws-data-transfer-hub.svg), and [the detailed reference specification](../../diagrams/aws-data-transfer-hub-reference-spec.md). Read the architecture brief first, then use the reference specification when you need exact composition or layout details.
 
 ## Open and review the result in Studio
 

@@ -12,12 +12,12 @@ pnpm check:release
 ```
 
 `check:release` starts with the repository Biome formatting/lint gate, then runs
-catalog inventory, version sync, dependency-boundary
-checks, build, unit/integration tests with a coverage report, editor
-typecheck, example validation plus the reviewed routing-warning baseline,
-static and packed-Studio Playwright journeys, the publishable package smoke
-test, a high-severity production dependency advisory check, and website
-check/build/tests.
+catalog inventory, version sync, dependency checks, build, unit/integration
+tests with a coverage report, editor typecheck, example validation, routing
+checks, Chromium Studio journeys, the packed-package smoke test, the production
+dependency advisory check, and website checks. WebKit compatibility runs
+separately with `pnpm test:e2e:compat`; Firefox and native Safari are not release
+gates.
 
 Prepare the publish metadata and build the standalone npm artifact from the
 compiled workspace. CI sets `GITHUB_REPOSITORY` automatically; locally, set it
@@ -167,8 +167,8 @@ dynamic boundary instead of increasing the warning limit.
 - `examples/curated/` — canonical four-file bundles for curated AWS, Azure,
   GCP, and cloud-agnostic examples.
 - `examples/diagrams/` and `examples/prompts/` — development fixtures, all
-  validated by CI. Studio ships ten canonical examples spanning every supported
-  provider grammar.
+  validated by CI. Studio ships ten canonical examples: seven AWS, one Azure,
+  one GCP, and one cloud-agnostic.
 - `packages/brand`, `packages/runtime`, `packages/editor`, `packages/cli`, and
   `packages/website` — the five workspace packages.
 - `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed
@@ -186,10 +186,3 @@ that permits only reviewed `esbuild` postinstall execution. Run
 maintained CI and release workflows also run the production advisory gate;
 registry alerts remain a useful second signal rather than a substitute for that
 blocking check.
-
-## Future website and docs
-
-Keep plain pnpm workspaces. Add a future private Astro app as
-`packages/docs` rather than introducing Nx or Turborepo until CI build time
-becomes a measured bottleneck. Use a separate docs build/deploy workflow so
-landing-page changes do not force npm packaging or Studio deployment.

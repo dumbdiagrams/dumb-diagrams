@@ -4,7 +4,7 @@ description: Export a diagram for a README, review, or presentation.
 section: Make diagrams
 order: 14
 ---
-Every export starts with the same compiled geometry. Changing formats does not trigger a different layout algorithm. Keep the `.dgm` file as the editable source when you share an image: the image is convenient to send, while the source lets you update the architecture later.
+Visual exports share the compiled geometry; changing image formats does not change the layout. Source and data exports serialize the source text or document model. Keep the `.dgm` file as the editable source when you share an image: the image is convenient to send, while the source lets you update the architecture later.
 
 ## Choose a format
 
@@ -22,7 +22,7 @@ Studio exposes the formats the browser supports. WebP, for example, is hidden wh
 
 ## Export from Studio
 
-Open the `.dgm` file in Studio, then use its export controls to produce SVG, PNG, PDF, or another supported format. The export uses the same geometry as the editor. Keep the original `.dgm` beside it so the diagram stays editable.
+Open the `.dgm` file in Studio, then use its export controls to produce SVG, PNG, PDF, or another supported format. Visual exports use the same geometry as the editor. Keep the original `.dgm` beside it so the diagram stays editable.
 
 Portable exports inline catalog icons, so they do not depend on a running local server to display correctly. User-embedded SVG is sanitized by the runtime. Provider icons retain their upstream terms in exports; see the project’s icon notices for provenance.
 

@@ -8,7 +8,7 @@ You already know the important parts of your architecture: its services, boundar
 
 **New here? [Make your first diagram](./quick-start/).** You need Node.js 24 or newer and a terminal. You do not need an account or a hosted workspace.
 
-If you use a coding agent, set it up separately. Codex, Claude Code, Cursor, Antigravity, and open-source alternatives can work with the project. [Work with an agent](./agent-workflow/) explains how to provide the project context.
+Coding agents are configured separately. [Work with an agent](./agent-workflow/) explains how to provide the project context.
 
 ## Diagrams as code
 

@@ -1,35 +1,34 @@
 # Example diagrams
 
-These are read-only secondary references. Canonical instructions live in
-`../instructions.md`; examples complement those rules and never override the
-user's explicit architecture decisions.
+These read-only examples complement the canonical instructions in
+`../instructions.md`. They provide patterns to adapt when a user's request
+does not specify every detail; they never override the user's architecture.
 
-Each migrated AWS example has four roles:
+Each bundle contains four files:
 
-- `<name>/user-prompt.md` — a realistic architecture request.
-- `<name>/architecture-brief.md` — normalized explicit and inferred semantics.
-- `<name>/reference-spec.md` — the preserved expert reconstruction specification.
-- `<name>/diagram.dgm` — the unchanged curated source.
+- `user-prompt.md` — a realistic architecture request.
+- `architecture-brief.md` — the interpreted requirements and decisions.
+- `reference-spec.md` — detailed composition and layout constraints.
+- `diagram.dgm` — the portable source.
 
-The `architecture-brief.md` files demonstrate the persistent diagnostic artifact
-used for new project diagrams. In an initialized project, new diagrams use
-the `diagrams/<descriptive-slug>/` bundle documented in `diagrams/README.md`.
+New agent-authored diagrams use the `diagrams/<descriptive-slug>/` bundle
+documented in `diagrams/README.md`. The brief records architecture decisions
+for review; it is not hidden model reasoning and does not replace the source.
 
-Available migrated AWS examples:
+Ten curated examples are included: seven AWS, one Azure, one GCP, and one
+cloud-agnostic.
 
-- `simple-serverless-web-application/`
-- `image-thumbnail-pipeline/`
-- `aws-data-transfer-hub/`
-- `bedrock-claims-processing/`
-- `aws-high-availability-web-app/`
-- `asynchronous-report-generation/`
-- `event-driven-order-fulfillment/`
+- `simple-serverless-web-application/`, `image-thumbnail-pipeline/`,
+  `aws-data-transfer-hub/`, `bedrock-claims-processing/`,
+  `aws-high-availability-web-app/`, `asynchronous-report-generation/`,
+  `event-driven-order-fulfillment/` (AWS)
+- `azure-private-app-service/` (Azure)
+- `gcp-streaming-analytics/` (GCP)
+- `cloud-agnostic-order-processing/` (cloud-agnostic)
 
-The detailed reference specifications are regression and advanced-documentation
-material, not a prompt language users must learn. Start from `user-prompt.md`,
-use `architecture-brief.md` to understand the intended normalization, and read
-the reference specification only when exact composition or layout constraints
-matter.
+Start from `user-prompt.md`, use the brief to understand the intended
+normalization, and read `reference-spec.md` when exact composition or layout
+constraints matter.
 
 Before authoring:
 

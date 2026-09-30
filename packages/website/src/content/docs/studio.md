@@ -6,6 +6,10 @@ order: 10
 ---
 Studio is where you review a generated diagram and make it yours. Edit the `.dgm` source, move and resize items on the canvas, add resources or notes, organise layers, adjust connectors, and export the result. Source and visual changes stay together in the same file.
 
+Chromium-based desktop browsers are the first-class Studio target. WebKit and
+Firefox are best-effort compatibility targets, and native Safari is not a
+release target.
+
 <figure class="studio-overview">
   <img src="../../docs-assets/studio-overview.png" alt="Dumb Diagrams Studio showing an AWS serverless architecture, the canvas, and the boundaries panel" width="2000" height="1051" />
   <figcaption>The left dock opens boundaries, resources, text, notes, layers, and source. Select an item on the canvas to edit its details on the right.</figcaption>

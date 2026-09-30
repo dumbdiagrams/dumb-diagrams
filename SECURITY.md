@@ -7,12 +7,13 @@ customer data in issue reports or example diagrams.
 
 ## Reporting a vulnerability
 
-Please do not report an unpatched vulnerability in a public issue. If private
-security advisories are enabled for this repository, use that channel; otherwise
-contact a project maintainer through the repository hosting service and request
-a private disclosure channel. Include the affected version, operating system,
-reproduction steps, and a minimal proof of impact. Redact secrets and personal
-data from all attachments.
+Please do not report an unpatched vulnerability in a public issue. A canonical
+private reporting endpoint is still being arranged for this project. Until it is
+published, use the repository host's private security-advisory channel when it
+is enabled, or ask a maintainer for a private disclosure channel through the
+hosting service. Include the affected version, operating system, reproduction
+steps, and a minimal proof of impact. Redact secrets and personal data from all
+attachments.
 
 Maintainers will acknowledge a report when practical, assess supported versions,
 and coordinate disclosure after a fix or mitigation is available. We do not

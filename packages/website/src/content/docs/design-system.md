@@ -14,9 +14,8 @@ purposes.
 <div class="brand-specimen" aria-label="Official Dumb Diagrams wordmark"><span class="dd-wordmark" aria-hidden="true">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span><span class="mono">THE OFFICIAL WORDMARK</span></div>
 
 The wordmark is **dumbdiagrams.** All lowercase, no space, with an orange period.
-In ordinary writing, we use **Dumb Diagrams**. The editor is **Dumb Diagrams
-Studio**. Use Studio in running text when the context makes the product clear. Nothing changes about the package
-name or the commands you type.
+Use **Dumb Diagrams** in prose and **Studio** for the editor. Package and command
+names remain lowercase and hyphenated.
 
 The lettering is **Manrope Variable**: weight 800 for “dumb”, 450 for “diagrams”,
 with letter spacing of −0.065em. The existing illustrated logo can sit beside

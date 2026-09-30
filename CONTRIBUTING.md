@@ -11,15 +11,20 @@ Use Node.js 24 or newer and the pinned pnpm version from `package.json`:
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm build
 pnpm test:unit
 pnpm check:style
+pnpm check:results
 pnpm typecheck
 ```
 
-Run the narrowest relevant package or integration test while iterating. Before
-opening a release-oriented change, run `pnpm check:release` when the required
-browser dependencies are available. Never commit generated catalog or build
-outputs by hand; use the documented generator and inventory checks.
+Run the narrowest relevant package or integration test while iterating. For
+Studio changes, `pnpm test:e2e` is the Chromium release gate and
+`pnpm test:e2e:compat` is the best-effort WebKit pass; Firefox and native Safari
+are not release gates. Before opening a release-oriented change, run
+`pnpm check:release` when the required browser dependencies are available.
+Never commit generated catalog or build outputs by hand; use the documented
+generator and inventory checks.
 
 ## Changes and review
 
@@ -33,6 +38,14 @@ fixtures, logs, screenshots, or issue discussions.
 Check third-party licenses and retain required notices when adding provider
 icons or other assets. New dependencies need a lockfile update and an explicit
 reason; prefer existing platform APIs and runtime packages.
+
+Use the ownership and error-handling boundaries in
+[the technical overview](docs/TECHNICAL_OVERVIEW.md#editor-ownership-and-failures).
+Biome owns general linting; the separate Result check runs only typed
+neverthrow consumption and unsafe-unwrap rules. Runtime and editor production
+source must remain browser-compatible, and imports between workspace packages
+must use their public exports. Shared test factories live outside runtime
+production exports.
 
 ## Release changes
 

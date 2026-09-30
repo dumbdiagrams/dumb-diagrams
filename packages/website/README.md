@@ -2,6 +2,12 @@
 
 The public website and documentation live here, independently of Studio. This is a static Astro 7 site: no server adapter, React runtime, hosted CMS, or external font requests. Markdown is checked with content collections. Pagefind builds a local search index and loads it only when a reader searches.
 
+## Studio browser support
+
+Chromium-based desktop browsers are the first-class Studio target. WebKit and
+Firefox are best-effort compatibility targets; native Safari is not a release
+target. The website itself is static and can be viewed in any modern browser.
+
 ## Work locally
 
 From the repository root, using Node.js 24+ and the pinned pnpm:
@@ -18,7 +24,11 @@ pnpm check:website
 pnpm preview:website
 ```
 
-The check runs Astro diagnostics, a production build, and tests for local links/anchors/assets, valid diagram examples, portable downloads, metadata, analytics consent, worker assets, and a small initial payload. Search needs the production index; test it in preview, not the dev server. Astro 7 preview runs in the background; use `pnpm --filter @dumb-diagrams/website exec astro preview stop` to stop it.
+The check runs Astro diagnostics, a production build, and tests for local links,
+anchors, assets, valid diagram examples, portable downloads, metadata, consent,
+worker assets, and the initial payload. Search needs the production index; test
+it in preview, not the dev server. Astro 7 preview runs in the background; use
+`pnpm --filter @dumb-diagrams/website exec astro preview stop` to stop it.
 
 ## Edit content and design
 
@@ -75,7 +85,12 @@ pnpm check:website
 pnpm preview:website
 ```
 
-Use shell/hosting build variables for this configuration; Astro config does not load `.env` files here. Without an ID, no analytics UI or Partytown bootstrap is rendered. `ENABLE_PARTYTOWN=true` remains available for integration-only testing. Development pages never render the GA4 component; use a production preview to test it.
+Use shell/hosting build variables for this configuration; Astro config does not
+load `.env` files here. Analytics is disabled by default: without a measurement
+ID, no analytics UI, Google request, or Partytown bootstrap is rendered.
+`ENABLE_PARTYTOWN=true` remains available for integration-only testing.
+Development pages never render the GA4 component; use a production preview to
+test it.
 
 The first-layer consent panel is deliberately concise. **Reject**, **Necessary only**, and **Accept all** are visible one-click choices, with **Accept all** as the primary action; the full details are linked. No Google script, request, or cookieless ping is made before an explicit opt-in. The choice is honored for 180 days; advertising storage, ad personalization, and Google signals stay disabled. The local Partytown worker can initialize before consent, but the Google tag runs in it only after consent. [Partytown’s GA4 setup](https://partytown.qwik.dev/google-tag-manager/) uses `text/partytown` and forwards `dataLayer.push`; no analytics proxy is needed.
 
@@ -100,7 +115,12 @@ Partytown and this consent UI are implementation details, not a guarantee of reg
 
 The homepage positions the product as **LLM-first architecture diagrams as code** for AI-first teams. The page title, description, visible copy, agent guide, and `llms.txt` use the same language. SoftwareApplication structured data describes the actual product; docs have matching visible breadcrumbs and BreadcrumbList data. Canonicals, robots sitemap links, and the sitemap require `SITE_URL`; no production domain is invented. `llms.txt` is a convenience for agents, not a search-ranking guarantee.
 
-Audit the **production preview**, not `astro dev`: the dev server sends unminified modules and a live-reload WebSocket, which can cause minification and back/forward-cache diagnostics. Production output is minified by Astro/Vite. The primary font is preloaded, the logo is generated at responsive sizes, the hero is visible without an entrance animation, and border accents animate opacity instead of background position.
+Check the **production preview**, not `astro dev`: the dev server sends
+unminified modules and a live-reload WebSocket, which can affect performance
+diagnostics. Production output is minified by Astro/Vite. The primary font is
+preloaded, the logo is generated at responsive sizes, the hero is visible
+without an entrance animation, and border accents animate opacity instead of
+background position.
 
 ```bash
 pnpm check:website

@@ -38,7 +38,7 @@ local agentic editing loop. There is no special Cursor integration required.
 
 <figure>
   <img src="./agent-in-cursor.png" alt="Cursor showing the initialized Azure project, the prompt, and the agent response" loading="lazy" />
-  <figcaption>The project tree, agent prompt, and generated-file summary are all visible in one working session. Composer 2.5 is the selected model in this capture.</figcaption>
+  <figcaption>The project tree, agent prompt, and resulting source are visible in one working session.</figcaption>
 </figure>
 
 ## Give the agent a plain-English request
@@ -54,21 +54,13 @@ does not prescribe canvas coordinates or ask the model to draw SVG by hand. The
 project guidance and catalog supply the `.dgm` details; the renderer handles the
 initial layout and connector routing.
 
-## Use a fast model for the first draft
-
-This Azure session used Composer 2.5, the same inexpensive, fast model choice
-used in the AWS walkthrough. It was enough to turn the structured request into a
-reviewable source file in a short pass. You do not need a top frontier model for
-every architecture diagram: when the project supplies clear instructions and a
-catalog, a quick model can do the translation from intent to source.
-
-## Separate the request from the generated interpretation
+## Turn the request into a brief
 
 The prompt above is the user input. The agent also produces an architecture
-brief. That brief is a reviewable interpretation of the request, not another
-instruction to pass to the agent and not hidden model reasoning.
+brief. The brief is a reviewable interpretation of the request; it does not
+replace the source or add hidden requirements.
 
-For this Azure example, the generated brief records:
+For this Azure example, the brief records:
 
 - **Goal:** represent a serverless document-upload and processing pipeline in an
   Azure subscription, with extracted results available for later retrieval.
@@ -90,7 +82,7 @@ That separation matters when reviewing an agent result. The short prompt is the
 architecture request; the brief explains how the agent made the request
 concrete; the `.dgm` source is the editable result.
 
-## Inspect the generated `.dgm` source
+## Inspect the `.dgm` source
 
 The agent writes the architecture as a portable text file. This is the reviewed
 source for the Azure document-processing pipeline. It keeps the same resources

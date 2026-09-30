@@ -34,3 +34,6 @@ line. Patch releases must remain backward compatible. A breaking grammar or
 model change requires the next minor version, a migration note, and an updated
 example corpus. The project may adopt a stronger v1 compatibility promise once
 the format has public usage history.
+
+Chromium is the release browser target. WebKit runs the compatibility suite;
+Firefox and native Safari do not define the release support promise.

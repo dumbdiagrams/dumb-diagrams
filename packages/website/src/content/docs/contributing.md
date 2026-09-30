@@ -32,11 +32,12 @@ pnpm dev
 `pnpm dev` starts Studio through Vite. Use it for browser UI work; the published
 CLI serves the same compiled editor on loopback.
 
-For local-file behavior:
+For local-file behavior, build the compiled editor and start the generic
+Studio server. Then use **Open** in Studio to choose a `.dgm` file:
 
 ```bash
 pnpm build
-pnpm dev:cli examples/curated/aws-high-availability-web-app/diagram.dgm
+pnpm dev:cli
 ```
 
 For the website:
@@ -53,12 +54,16 @@ The site uses Astro content collections, ordinary Markdown, and limited browser 
 | --- | --- |
 | Runtime or document behavior | `pnpm test`, `pnpm check` |
 | Connector planning | `pnpm check:routing`, visual review of changed examples |
-| Studio interactions | `pnpm typecheck`, `pnpm test:e2e` |
+| Studio interactions | `pnpm typecheck`, `pnpm test:e2e` (Chromium release gate), `pnpm test:e2e:compat` (WebKit compatibility) |
 | CLI or packaging | `pnpm smoke:package`, `pnpm test:e2e:packed` |
 | Website or docs | `pnpm check:website` |
 | A release | `pnpm check:release` and the release checklist |
 
-Prefer the existing tests that cover a behavior. Add coverage where a change introduces a meaningful gap, rather than merely restating a configuration value.
+Prefer the existing tests that cover a behavior. Add coverage where a change
+introduces a meaningful gap, rather than merely restating a configuration
+value. Unit coverage excludes browser and worker orchestration; Playwright
+covers those paths. Chromium is the release target, while WebKit and Firefox
+remain best-effort compatibility targets.
 
 ## Test the package people receive
 
@@ -70,7 +75,9 @@ The corresponding-source snapshot is also rebuilt in checks. Keep that boundary 
 
 ## Keep documentation current
 
-Public articles live in `packages/website/src/content/docs/`. Their foundation is `docs/TECHNICAL_OVERVIEW.md`, with exact contracts in focused files such as `packages/runtime/ROUTING.md`.
+Public articles live in `packages/website/src/content/docs/`. Their foundation
+is `docs/TECHNICAL_OVERVIEW.md`, with exact contracts in focused files such as
+`packages/runtime/ROUTING.md`.
 
 When behavior changes, update the public explanation and the technical reference together. Prefer a short example and a direct account of the tradeoff over a list of implementation symbols.
 

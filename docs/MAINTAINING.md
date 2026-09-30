@@ -13,7 +13,7 @@ For the broader system walkthrough, start with
 | Layout and Manhattan routing | `packages/runtime/src/layout`, `packages/runtime/src/route`, `packages/runtime/src/render/invariants.ts` | router/compiler unit tests and `pnpm check:routing` | Playwright canvas and all-format export tests |
 | Editor document operations | `packages/editor/src/editor-model.ts` | editor-model unit tests | Playwright canvas interactions |
 | Tabs, history, and persistence | `packages/editor/src/state/workspace.ts` | workspace unit tests | Playwright workspace tests |
-| Studio serving and local files | `packages/cli/src/studio-server.ts` and file-picker handling in `packages/editor/src/main.tsx` | Static-server integration tests and editor typecheck | `pnpm test:e2e:packed` |
+| Studio serving and local files | `packages/cli/src/studio-server.ts` and `packages/editor/src/state/use-file-actions.ts` (saving), with open-picker wiring in `main.tsx` | Static-server integration tests and editor typecheck | `pnpm test:e2e`, `pnpm test:e2e:packed` |
 | CLI packaging | `packages/cli/src/index.ts`, `scripts/prepare-cli-package.mjs` | CLI unit tests | Linux and Windows `pnpm smoke:package` |
 | Release and Pages | `.github/workflows/ci.yml`, `.github/workflows/deploy.yml` | workflow syntax review | exact-tag deployment repeats the Linux release gates |
 
@@ -38,19 +38,20 @@ regression guard for this fallback contract.
 
 ## Before merging
 
-Run `pnpm check:release`. The first step is `pnpm check:style`, a pinned Biome
-format/lint check over source files and package metadata; the gate then matches
-the Linux release surface, including `icons:check` and `pnpm check:website`. A routing-baseline
-change is exceptional: inspect the affected rendered examples before editing
-`examples/routing-warnings.json`. Every baselined warning needs a matching
-`reviews[]` note. Never delete a baseline warning merely to make a pipeline
-green. Coverage floors are required and fail the release gate when missed. The
-`pnpm check:performance` reports seven warmed samples, median, and p95 for each
-fixture. Its wall-clock comparison is advisory because hosted CI runner hardware
-is not pinned; Node itself is fixed by `.nvmrc`. The strict part of the gate is
-successful compilation, complete route retention, checked-in fixture coverage,
-and deterministic synthetic-budget
-fallback diagnostics.
+Run `pnpm check:release`; [CONTRIBUTING.md](../CONTRIBUTING.md) lists the
+canonical loops. The gate includes style, catalog, dependency, build,
+unit/integration coverage, typecheck, curated examples, routing, Chromium E2E,
+packed-package checks, and the website. WebKit compatibility uses
+`pnpm test:e2e:compat`; browser and worker orchestration are covered there
+rather than in the unit coverage report.
+
+A routing-baseline change requires visual inspection before editing
+`examples/routing-warnings.json`; every baselined warning needs a matching
+`reviews[]` note. Never delete a warning merely to make a pipeline green.
+Performance wall-clock comparisons are advisory because hosted runner hardware
+is not pinned; successful compilation, complete route retention, checked-in
+fixture coverage, and deterministic fallback diagnostics are the release
+contracts.
 
 ## Workflow and release maintenance
 

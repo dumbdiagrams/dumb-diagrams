@@ -37,15 +37,19 @@ dumbdiagrams studio
 `init` creates a new project folder inside the current directory. It asks for a
 project name and uses that name for the folder. Leave the prompt blank, or run
 without a terminal, to get a timestamped folder named
-`dumb-diagrams-2026-08-30-14-32-10`, independent of the current directory. The
-command prints the exact folder path when it finishes. It writes the agent entrypoints, `.dumbdiagrams/`
-guidance, and a documented `diagrams/` workspace there. New agent-authored
-diagrams default to `diagrams/<name>/diagram.dgm` with a persisted
+`dumb-diagrams-YYYY-MM-DD-HH-MM-SS`, independent of the current directory. The
+command prints the exact folder path when it finishes. It writes the agent
+entrypoints, `.dumbdiagrams/` guidance, and a documented `diagrams/` workspace
+there. New agent-authored diagrams default to
+`diagrams/<name>/diagram.dgm` with a persisted
 `diagrams/<name>/architecture-brief.md`. `studio` starts the generic local
 editor. Use **Open** inside Studio to select any `.dgm` file on disk.
 
 `dgm init` and `dgm studio` are convenience shorthands for the canonical
 `dumbdiagrams` commands.
+
+Studio targets Chromium-based desktop browsers first. WebKit and Firefox are
+best-effort compatibility targets; native Safari is not a release target.
 
 ## What `init` creates
 
@@ -83,7 +87,7 @@ Studio's **Open** action remains available for interactive editing of any local
 From a full repository checkout (not from an installed npm package):
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm build
 mkdir -p .artifacts/packages
 pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
