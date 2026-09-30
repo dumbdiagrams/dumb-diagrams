@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { sanitizeSvg, sanitizeSvgResult } from "./index.js";
 import { embedAssetsInSvg } from "./assets.js";
@@ -19,6 +19,20 @@ describe("sanitizeSvg", () => {
       message: "SVG element <script> is not allowed",
     });
     expect(() => sanitizeSvg('<svg><script>alert(1)</script></svg>')).toThrow();
+  });
+
+  it("does not classify sanitizer defects as invalid SVG input", () => {
+    class BrokenDomParser {
+      parseFromString() {
+        throw new TypeError("parser defect");
+      }
+    }
+    vi.stubGlobal("DOMParser", BrokenDomParser);
+    try {
+      expect(() => sanitizeSvgResult("<svg/>")).toThrow(TypeError);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("accepts valid svg and rejects scripts", () => {

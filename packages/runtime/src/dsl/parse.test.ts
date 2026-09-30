@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture } from "../core/index.js";
+import { createAsyncDocsFixture } from "../../test-fixtures.js";
 import { getDefaultView } from "../core/index.js";
 import { DIAGRAM_LIMITS } from "../core/index.js";
 
@@ -20,6 +20,30 @@ describe("parseDgm / printDgm round-trip", () => {
       code: "invalid-syntax",
       message: "Unterminated quoted string",
     });
+  });
+
+  it("does not classify parser defects as invalid syntax", () => {
+    const originalPush = Array.prototype.push;
+    Array.prototype.push = () => { throw new TypeError("parser defect"); };
+    let thrown: unknown;
+    try {
+      parseDgmResult("diagram safe {}");
+    } catch (error) {
+      thrown = error;
+    } finally {
+      Array.prototype.push = originalPush;
+    }
+    expect(thrown).toBeInstanceOf(TypeError);
+  });
+
+  it.each([
+    "diagram truncated { generic.client client {",
+    "diagram truncated { generic.client client",
+  ])("returns an error for truncated blocks without fabricating tokens: %s", (source) => {
+    const result = parseDgmResult(source);
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error.code).toBe("invalid-syntax");
   });
 
   it("rejects input without a diagram declaration and trailing top-level tokens", () => {
@@ -345,7 +369,7 @@ view second { place service { x 500 y 500 pin } }`)).toThrow(/Only one view bloc
 view default { place __proto__ { x 120 y 80 pin } }`);
 
     expect(Object.hasOwn(getDefaultView(parsed).places, "__proto__")).toBe(true);
-    expect(getDefaultView(parsed).places.__proto__).toMatchObject({ x: 120, y: 80, pin: true });
+    expect(Object.getOwnPropertyDescriptor(getDefaultView(parsed).places, "__proto__")?.value).toMatchObject({ x: 120, y: 80, pin: true });
     const printed = printDgm(parsed);
     expect(printed).toContain("place __proto__");
     expect(parseDgm(printed)).toEqual(parsed);

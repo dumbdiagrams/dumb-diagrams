@@ -11,7 +11,7 @@ import type {
   View,
 } from "../core/index.js";
 import { createEmptyDocument, createEmptyView, DIAGRAM_LIMITS, normalizePortOffset, utf8ByteLength } from "../core/index.js";
-import { err, ok, type Result } from "neverthrow";
+import { err, ok, safeTry, type Result } from "neverthrow";
 
 type Token =
   | { type: "id"; value: string }
@@ -22,7 +22,11 @@ type Token =
   | { type: "rbrace" }
   | { type: "newline" };
 
-function tokenize(input: string): Token[] {
+function parseError(message: string): DgmParseError {
+  return { code: "invalid-syntax", message };
+}
+
+function tokenize(input: string): Result<Token[], DgmParseError> {
   const tokens: Token[] = [];
   let i = 0;
   while (i < input.length) {
@@ -61,23 +65,23 @@ function tokenize(input: string): Token[] {
           s += current;
           continue;
         }
-        if (i >= input.length) throw new Error("Unterminated escape sequence in quoted string");
+        if (i >= input.length) return err(parseError("Unterminated escape sequence in quoted string"));
         const escaped = input[i++]!;
         if (escaped === '"' || escaped === "\\") s += escaped;
         else if (escaped === "n") s += "\n";
         else if (escaped === "r") s += "\r";
         else if (escaped === "t") s += "\t";
-        else throw new Error(`Unsupported escape sequence \\${escaped}`);
+        else return err(parseError(`Unsupported escape sequence \\${escaped}`));
       }
-      if (!terminated) throw new Error("Unterminated quoted string");
+      if (!terminated) return err(parseError("Unterminated quoted string"));
       tokens.push({ type: "string", value: s });
       continue;
     }
     if (/[0-9]/.test(ch) || (ch === "-" && /[0-9]/.test(input[i + 1] ?? ""))) {
       const match = input.slice(i).match(/^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/);
-      if (!match) throw new Error(`Invalid number at character ${i + 1}`);
+      if (!match) return err(parseError(`Invalid number at character ${i + 1}`));
       const value = Number(match[0]);
-      if (!Number.isFinite(value)) throw new Error(`Number is outside the supported range at character ${i + 1}`);
+      if (!Number.isFinite(value)) return err(parseError(`Number is outside the supported range at character ${i + 1}`));
       i += match[0].length;
       tokens.push({ type: "number", value });
       continue;
@@ -88,9 +92,9 @@ function tokenize(input: string): Token[] {
       tokens.push({ type: "id", value: id });
       continue;
     }
-    throw new Error(`Unexpected character ${JSON.stringify(ch)} at character ${i + 1}`);
+    return err(parseError(`Unexpected character ${JSON.stringify(ch)} at character ${i + 1}`));
   }
-  return tokens;
+  return ok(tokens);
 }
 
 class Parser {
@@ -104,569 +108,593 @@ class Parser {
     this.doc = createEmptyDocument("diagram");
   }
 
-  parse(): DiagramDocument {
-    while (this.peek()?.type === "newline") this.pos++;
-    if (!this.is("id", "diagram")) throw new Error("Expected diagram declaration");
-    this.parseDiagramHeader();
+  parse(): Result<DiagramDocument, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      while (parser.peek()?.type === "newline") parser.pos++;
+      if (!parser.is("id", "diagram")) return err(parseError("Expected diagram declaration"));
+      yield* parser.parseDiagramHeader();
 
-    while (this.pos < this.tokens.length) {
-      const t = this.peek();
-      if (!t || t.type === "newline") {
-        this.pos++;
-        continue;
-      }
-      if (t.type === "id" && t.value === "assets") {
-        this.parseAssetsBlock();
-        continue;
-      }
-      if (t.type === "id" && t.value === "view") {
-        this.parseViewBlock();
-        continue;
-      }
-      throw new Error(`Unexpected token ${"value" in t ? JSON.stringify(t.value) : t.type} after diagram`);
-    }
-    this.doc.views = [this.view];
-    return this.doc;
-  }
-
-  private parseDiagramHeader(): void {
-    this.expect("id", "diagram");
-    const id = this.expect("id").value;
-    this.doc.id = id;
-    this.expect("lbrace");
-    while (this.blockHasMore()) {
-      const t = this.peek();
-      if (!t || t.type === "newline") {
-        this.pos++;
-        continue;
-      }
-      if (t.type === "id" && t.value === "grammar") {
-        this.pos++;
-        const grammar = this.expect("id").value;
-        if (!isGrammar(grammar)) {
-          throw new Error(`Invalid grammar ${JSON.stringify(grammar)}; expected aws, azure, gcp, or cloud-agnostic`);
+      while (parser.pos < parser.tokens.length) {
+        const t = parser.peek();
+        if (!t || t.type === "newline") {
+          parser.pos++;
+          continue;
         }
-        this.doc.grammar = grammar;
-        continue;
+        if (t.type === "id" && t.value === "assets") {
+          yield* parser.parseAssetsBlock();
+          continue;
+        }
+        if (t.type === "id" && t.value === "view") {
+          yield* parser.parseViewBlock();
+          continue;
+        }
+        return err(parseError(`Unexpected token ${"value" in t ? JSON.stringify(t.value) : t.type} after diagram`));
       }
-      if (t.type === "id" && t.value === "flow") {
-        this.pos++;
-        const flow = this.expect("id").value;
-        if (flow === "lr" || flow === "tb") this.doc.flow = flow;
-        continue;
-      }
-      if (t.type === "id" && t.value === "title") {
-        this.pos++;
-        this.doc.title = this.expect("string").value;
-        continue;
-      }
-      if (t.type === "id" && t.value === "annotation") {
-        this.parseAnnotation();
-        continue;
-      }
-      if (t.type === "id" && t.value === "group") {
-        this.parseLogicalGroup();
-        continue;
-      }
-      if (t.type === "id" && this.lookaheadArrow()) {
-        this.parseEdge();
-        continue;
-      }
-      if (t.type === "id" && t.value.includes(".")) {
-        this.parseResourceOrGroup();
-        continue;
-      }
-      break;
-    }
-    this.expect("rbrace");
+      parser.doc.views = [parser.view];
+      return ok(parser.doc);
+    });
   }
 
-  private parseResourceOrGroup(): void {
-    const typeTok = this.expect("id");
-    const idTok = this.expect("id");
-    let label: string | undefined;
-    if (this.peek()?.type === "string") {
-      label = this.expect("string").value;
-    }
+  private parseDiagramHeader(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      yield* parser.expect("id", "diagram");
+      const id = (yield* parser.expect("id")).value;
+      parser.doc.id = id;
+      yield* parser.expect("lbrace");
+      while (yield* parser.blockHasMore()) {
+        const t = parser.peek();
+        if (!t || t.type === "newline") {
+          parser.pos++;
+          continue;
+        }
+        if (t.type === "id" && t.value === "grammar") {
+          parser.pos++;
+          const grammar = (yield* parser.expect("id")).value;
+          if (!isGrammar(grammar)) {
+            return err(parseError(`Invalid grammar ${JSON.stringify(grammar)}; expected aws, azure, gcp, or cloud-agnostic`));
+          }
+          parser.doc.grammar = grammar;
+          continue;
+        }
+        if (t.type === "id" && t.value === "flow") {
+          parser.pos++;
+          const flow = (yield* parser.expect("id")).value;
+          if (flow === "lr" || flow === "tb") parser.doc.flow = flow;
+          continue;
+        }
+        if (t.type === "id" && t.value === "title") {
+          parser.pos++;
+          parser.doc.title = (yield* parser.expect("string")).value;
+          continue;
+        }
+        if (t.type === "id" && t.value === "annotation") {
+          yield* parser.parseAnnotation();
+          continue;
+        }
+        if (t.type === "id" && t.value === "group") {
+          yield* parser.parseLogicalGroup();
+          continue;
+        }
+        if (t.type === "id" && parser.lookaheadArrow()) {
+          yield* parser.parseEdge();
+          continue;
+        }
+        if (t.type === "id" && t.value.includes(".")) {
+          yield* parser.parseResourceOrGroup();
+          continue;
+        }
+        break;
+      }
+      yield* parser.expect("rbrace");
+      return ok(undefined);
+    });
+  }
+  private parseResourceOrGroup(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      const typeTok = yield* parser.expect("id");
+      const idTok = yield* parser.expect("id");
+      let label: string | undefined;
+      if (parser.peek()?.type === "string") {
+        label = (yield* parser.expect("string")).value;
+      }
 
-    const kind = typeToGroupKind(typeTok.value);
-    if (kind) {
+      const kind = typeToGroupKind(typeTok.value);
+      if (kind) {
+        const group: Group = {
+          id: idTok.value,
+          kind,
+          type: typeTok.value,
+          parent: parser.currentGroupStack.at(-1),
+          label: label ?? idTok.value,
+          children: [],
+        };
+        parser.doc.groups.push(group);
+        if (parser.peek()?.type === "lbrace") {
+          parser.pos++;
+          if (parser.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) return err(parseError(`Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`));
+          parser.currentGroupStack.push(group.id);
+          while (yield* parser.blockHasMore()) {
+            const t = parser.peek();
+            if (!t || t.type === "newline") {
+              parser.pos++;
+              continue;
+            }
+            if (t.type === "id" && t.value.includes(".")) {
+              yield* parser.parseResourceOrGroup();
+              continue;
+            }
+            if (t.type === "id" && t.value === "step") {
+              parser.pos++;
+              group.step = (yield* parser.expect("number")).value;
+              continue;
+            }
+            if (t.type === "id" && t.value === "label-position") {
+              parser.pos++;
+              const position = (yield* parser.expect("id")).value;
+              if (!isGroupLabelPosition(position)) {
+                return err(parseError(`Invalid group label position ${position}; expected top-left or top-right`));
+              }
+              group.labelPosition = position;
+              continue;
+            }
+            if (t.type === "id" && t.value === "hide-icon") {
+              parser.pos++;
+              group.hideIcon = true;
+              continue;
+            }
+            if (t.type === "id" && t.value === "style") {
+              parser.pos++;
+              const style = (yield* parser.expect("id")).value;
+              if (style === "solid" || style === "dashed") group.style = style;
+              continue;
+            }
+            if (t.type === "id" && t.value === "color") {
+              parser.pos++;
+              const color = (yield* parser.expect("id")).value;
+              if (isEdgeColor(color)) group.color = color;
+              continue;
+            }
+            if (t.type === "id" && t.value === "fill") {
+              parser.pos++;
+              const fill = (yield* parser.expect("id")).value;
+              if (fill === "subtle" || fill === "none") group.fill = fill;
+              continue;
+            }
+            if (t.type === "id" && t.value === "group") {
+              yield* parser.parseLogicalGroup();
+              continue;
+            }
+            parser.pos++;
+          }
+          yield* parser.expect("rbrace");
+          parser.currentGroupStack.pop();
+        }
+        const parentId = group.parent;
+        if (parentId) {
+          const parent = parser.doc.groups.find((g) => g.id === parentId);
+          parent?.children.push(group.id);
+        }
+        return ok(undefined);
+      }
+
+      const resource: Resource = {
+        id: idTok.value,
+        type: typeTok.value,
+        parent: parser.currentGroupStack.at(-1),
+        label: label ? { role: label } : {},
+        role: "primary",
+        props: {},
+      };
+
+      if (parser.peek()?.type === "lbrace") {
+        parser.pos++;
+        while (yield* parser.blockHasMore()) {
+          const t = parser.peek();
+          if (!t || t.type === "newline") {
+            parser.pos++;
+            continue;
+          }
+          if (t.type === "id" && t.value === "role") {
+            parser.pos++;
+            const role = (yield* parser.expect("id")).value;
+            if (role === "secondary" || role === "border") resource.role = role;
+          } else if (t.type === "id" && t.value === "service") {
+            parser.pos++;
+            resource.label.service = (yield* parser.expect("string")).value;
+          } else if (t.type === "id" && t.value === "icon") {
+            parser.pos++;
+            resource.props.iconAsset = (yield* parser.expect("id")).value;
+          } else if (t.type === "id" && t.value === "label-position") {
+            parser.pos++;
+            const position = (yield* parser.expect("id")).value;
+            if (!isResourceLabelPosition(position)) {
+              return err(parseError(`Invalid resource label position ${position}; expected top or bottom`));
+            }
+            resource.label.position = position;
+          } else {
+            parser.pos++;
+          }
+        }
+        yield* parser.expect("rbrace");
+      }
+
+      parser.doc.resources.push(resource);
+      const parentId = resource.parent;
+      if (parentId) {
+        const parent = parser.doc.groups.find((g) => g.id === parentId);
+        parent?.children.push(resource.id);
+      }
+      return ok(undefined);
+    });
+  }
+  private parseLogicalGroup(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      yield* parser.expect("id", "group");
+      const idTok = yield* parser.expect("id");
+      let label = idTok.value;
+      if (parser.peek()?.type === "string") {
+        label = (yield* parser.expect("string")).value;
+      }
       const group: Group = {
         id: idTok.value,
-        kind,
-        type: typeTok.value,
-        parent: this.currentGroupStack.at(-1),
-        label: label ?? idTok.value,
+        kind: "logical",
+        type: "cloud-agnostic.boundary",
+        parent: parser.currentGroupStack.at(-1),
+        label,
         children: [],
       };
-      this.doc.groups.push(group);
-      if (this.peek()?.type === "lbrace") {
-        this.pos++;
-        if (this.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) throw new Error(`Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`);
-        this.currentGroupStack.push(group.id);
-        while (this.blockHasMore()) {
-          const t = this.peek();
+      parser.doc.groups.push(group);
+      const parentId = group.parent;
+      if (parentId) {
+        const parent = parser.doc.groups.find((g) => g.id === parentId);
+        parent?.children.push(group.id);
+      }
+      if (parser.peek()?.type === "lbrace") {
+        parser.pos++;
+        if (parser.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) return err(parseError(`Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`));
+        parser.currentGroupStack.push(group.id);
+        while (yield* parser.blockHasMore()) {
+          const t = parser.peek();
           if (!t || t.type === "newline") {
-            this.pos++;
+            parser.pos++;
             continue;
           }
           if (t.type === "id" && t.value.includes(".")) {
-            this.parseResourceOrGroup();
+            yield* parser.parseResourceOrGroup();
             continue;
           }
           if (t.type === "id" && t.value === "step") {
-            this.pos++;
-            group.step = this.expect("number").value;
+            parser.pos++;
+            group.step = (yield* parser.expect("number")).value;
             continue;
           }
           if (t.type === "id" && t.value === "label-position") {
-            this.pos++;
-            const position = this.expect("id").value;
+            parser.pos++;
+            const position = (yield* parser.expect("id")).value;
             if (!isGroupLabelPosition(position)) {
-              throw new Error(`Invalid group label position ${position}; expected top-left or top-right`);
+              return err(parseError(`Invalid group label position ${position}; expected top-left or top-right`));
             }
             group.labelPosition = position;
             continue;
           }
           if (t.type === "id" && t.value === "hide-icon") {
-            this.pos++;
+            parser.pos++;
             group.hideIcon = true;
             continue;
           }
           if (t.type === "id" && t.value === "style") {
-            this.pos++;
-            const style = this.expect("id").value;
+            parser.pos++;
+            const style = (yield* parser.expect("id")).value;
             if (style === "solid" || style === "dashed") group.style = style;
             continue;
           }
           if (t.type === "id" && t.value === "color") {
-            this.pos++;
-            const color = this.expect("id").value;
+            parser.pos++;
+            const color = (yield* parser.expect("id")).value;
             if (isEdgeColor(color)) group.color = color;
             continue;
           }
           if (t.type === "id" && t.value === "fill") {
-            this.pos++;
-            const fill = this.expect("id").value;
+            parser.pos++;
+            const fill = (yield* parser.expect("id")).value;
             if (fill === "subtle" || fill === "none") group.fill = fill;
             continue;
           }
           if (t.type === "id" && t.value === "group") {
-            this.parseLogicalGroup();
+            yield* parser.parseLogicalGroup();
             continue;
           }
-          this.pos++;
+          parser.pos++;
         }
-        this.expect("rbrace");
-        this.currentGroupStack.pop();
+        yield* parser.expect("rbrace");
+        parser.currentGroupStack.pop();
       }
-      const parentId = group.parent;
-      if (parentId) {
-        const parent = this.doc.groups.find((g) => g.id === parentId);
-        parent?.children.push(group.id);
+      return ok(undefined);
+    });
+  }
+  private parseAnnotation(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      yield* parser.expect("id", "annotation");
+      const idTok = yield* parser.expect("id");
+      let text = idTok.value;
+      if (parser.peek()?.type === "string") {
+        text = (yield* parser.expect("string")).value;
       }
-      return;
-    }
-
-    const resource: Resource = {
-      id: idTok.value,
-      type: typeTok.value,
-      parent: this.currentGroupStack.at(-1),
-      label: label ? { role: label } : {},
-      role: "primary",
-      props: {},
-    };
-
-    if (this.peek()?.type === "lbrace") {
-      this.pos++;
-      while (this.blockHasMore()) {
-        const t = this.peek();
-        if (!t || t.type === "newline") {
-          this.pos++;
-          continue;
-        }
-        if (t.type === "id" && t.value === "role") {
-          this.pos++;
-          const role = this.expect("id").value;
-          if (role === "secondary" || role === "border") resource.role = role;
-        } else if (t.type === "id" && t.value === "service") {
-          this.pos++;
-          resource.label.service = this.expect("string").value;
-        } else if (t.type === "id" && t.value === "icon") {
-          this.pos++;
-          resource.props.iconAsset = this.expect("id").value;
-        } else if (t.type === "id" && t.value === "label-position") {
-          this.pos++;
-          const position = this.expect("id").value;
-          if (!isResourceLabelPosition(position)) {
-            throw new Error(`Invalid resource label position ${position}; expected top or bottom`);
+      const annotation: {
+        id: string;
+        text: string;
+        anchor?: string;
+        style?: AnnotationStyle;
+        font?: TextFontFamily;
+        fontSize?: number;
+        align?: TextAlign;
+      } = {
+        id: idTok.value,
+        text,
+      };
+      if (parser.peek()?.type === "lbrace") {
+        parser.pos++;
+        while (yield* parser.blockHasMore()) {
+          const t = parser.peek();
+          if (!t || t.type === "newline") {
+            parser.pos++;
+            continue;
           }
-          resource.label.position = position;
-        } else {
-          this.pos++;
-        }
-      }
-      this.expect("rbrace");
-    }
-
-    this.doc.resources.push(resource);
-    const parentId = resource.parent;
-    if (parentId) {
-      const parent = this.doc.groups.find((g) => g.id === parentId);
-      parent?.children.push(resource.id);
-    }
-  }
-
-  private parseLogicalGroup(): void {
-    this.expect("id", "group");
-    const idTok = this.expect("id");
-    let label = idTok.value;
-    if (this.peek()?.type === "string") {
-      label = this.expect("string").value;
-    }
-    const group: Group = {
-      id: idTok.value,
-      kind: "logical",
-      type: "cloud-agnostic.boundary",
-      parent: this.currentGroupStack.at(-1),
-      label,
-      children: [],
-    };
-    this.doc.groups.push(group);
-    const parentId = group.parent;
-    if (parentId) {
-      const parent = this.doc.groups.find((g) => g.id === parentId);
-      parent?.children.push(group.id);
-    }
-    if (this.peek()?.type === "lbrace") {
-      this.pos++;
-      if (this.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) throw new Error(`Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`);
-      this.currentGroupStack.push(group.id);
-      while (this.blockHasMore()) {
-        const t = this.peek();
-        if (!t || t.type === "newline") {
-          this.pos++;
-          continue;
-        }
-        if (t.type === "id" && t.value.includes(".")) {
-          this.parseResourceOrGroup();
-          continue;
-        }
-        if (t.type === "id" && t.value === "step") {
-          this.pos++;
-          group.step = this.expect("number").value;
-          continue;
-        }
-        if (t.type === "id" && t.value === "label-position") {
-          this.pos++;
-          const position = this.expect("id").value;
-          if (!isGroupLabelPosition(position)) {
-            throw new Error(`Invalid group label position ${position}; expected top-left or top-right`);
+          if (t.type === "id" && t.value === "anchor") {
+            parser.pos++;
+            annotation.anchor = (yield* parser.expect("id")).value;
+          } else if (t.type === "id" && t.value === "style") {
+            parser.pos++;
+            const style = (yield* parser.expect("id")).value;
+            if (isAnnotationStyle(style)) annotation.style = style;
+          } else if (t.type === "id" && t.value === "font") {
+            parser.pos++;
+            const font = (yield* parser.expect("id")).value;
+            if (font === "sans" || font === "serif" || font === "mono") annotation.font = font;
+          } else if (t.type === "id" && t.value === "size") {
+            parser.pos++;
+            const size = (yield* parser.expect("number")).value;
+            if (size >= 10 && size <= 48) annotation.fontSize = size;
+          } else if (t.type === "id" && t.value === "align") {
+            parser.pos++;
+            const align = (yield* parser.expect("id")).value;
+            if (align === "left" || align === "center" || align === "right") annotation.align = align;
+          } else {
+            parser.pos++;
           }
-          group.labelPosition = position;
-          continue;
         }
-        if (t.type === "id" && t.value === "hide-icon") {
-          this.pos++;
-          group.hideIcon = true;
-          continue;
-        }
-        if (t.type === "id" && t.value === "style") {
-          this.pos++;
-          const style = this.expect("id").value;
-          if (style === "solid" || style === "dashed") group.style = style;
-          continue;
-        }
-        if (t.type === "id" && t.value === "color") {
-          this.pos++;
-          const color = this.expect("id").value;
-          if (isEdgeColor(color)) group.color = color;
-          continue;
-        }
-        if (t.type === "id" && t.value === "fill") {
-          this.pos++;
-          const fill = this.expect("id").value;
-          if (fill === "subtle" || fill === "none") group.fill = fill;
-          continue;
-        }
-        if (t.type === "id" && t.value === "group") {
-          this.parseLogicalGroup();
-          continue;
-        }
-        this.pos++;
+        yield* parser.expect("rbrace");
       }
-      this.expect("rbrace");
-      this.currentGroupStack.pop();
-    }
+      parser.doc.annotations.push(annotation);
+      return ok(undefined);
+    });
   }
-
-  private parseAnnotation(): void {
-    this.expect("id", "annotation");
-    const idTok = this.expect("id");
-    let text = idTok.value;
-    if (this.peek()?.type === "string") {
-      text = this.expect("string").value;
-    }
-    const annotation: {
-      id: string;
-      text: string;
-      anchor?: string;
-      style?: AnnotationStyle;
-      font?: TextFontFamily;
-      fontSize?: number;
-      align?: TextAlign;
-    } = {
-      id: idTok.value,
-      text,
-    };
-    if (this.peek()?.type === "lbrace") {
-      this.pos++;
-      while (this.blockHasMore()) {
-        const t = this.peek();
-        if (!t || t.type === "newline") {
-          this.pos++;
-          continue;
-        }
-        if (t.type === "id" && t.value === "anchor") {
-          this.pos++;
-          annotation.anchor = this.expect("id").value;
-        } else if (t.type === "id" && t.value === "style") {
-          this.pos++;
-          const style = this.expect("id").value;
-          if (isAnnotationStyle(style)) annotation.style = style;
-        } else if (t.type === "id" && t.value === "font") {
-          this.pos++;
-          const font = this.expect("id").value;
-          if (font === "sans" || font === "serif" || font === "mono") annotation.font = font;
-        } else if (t.type === "id" && t.value === "size") {
-          this.pos++;
-          const size = this.expect("number").value;
-          if (size >= 10 && size <= 48) annotation.fontSize = size;
-        } else if (t.type === "id" && t.value === "align") {
-          this.pos++;
-          const align = this.expect("id").value;
-          if (align === "left" || align === "center" || align === "right") annotation.align = align;
-        } else {
-          this.pos++;
-        }
-      }
-      this.expect("rbrace");
-    }
-    this.doc.annotations.push(annotation);
-  }
-
-  private parseEdge(): void {
-    const source = this.expect("id").value;
-    this.expect("arrow");
-    const target = this.expect("id").value;
-    const baseId = `${source}-${target}`;
-    const usedIds = new Set(this.doc.edges.map((candidate) => candidate.id));
-    let id = baseId;
-    for (let suffix = 2; usedIds.has(id); suffix++) id = `${baseId}-${suffix}`;
-    const edge: Edge = {
-      id,
-      source,
-      target,
-      style: "solid",
-    };
-    if (this.peek()?.type === "lbrace") {
-      this.pos++;
-      while (this.blockHasMore()) {
-        const t = this.peek();
-        if (!t || t.type === "newline") {
-          this.pos++;
-          continue;
-        }
-        if (t.type === "id" && t.value === "step") {
-          this.pos++;
-          edge.step = this.expect("number").value;
-        } else if (t.type === "id" && t.value === "id") {
-          this.pos++;
-          edge.id = this.expect("id").value;
-        } else if (t.type === "id" && t.value === "label") {
-          this.pos++;
-          edge.label = this.expect("string").value;
-        } else if (t.type === "id" && t.value === "style") {
-          this.pos++;
-          const style = this.expect("id").value;
-          if (style === "dashed" || style === "solid") edge.style = style;
-        } else if (t.type === "id" && t.value === "kind") {
-          this.pos++;
-          const kind = this.expect("id").value;
-          if (kind === "flow" || kind === "bidirectional" || kind === "peer" || kind === "fail")
+  private parseEdge(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      const source = (yield* parser.expect("id")).value;
+      yield* parser.expect("arrow");
+      const target = (yield* parser.expect("id")).value;
+      const baseId = `${source}-${target}`;
+      const usedIds = new Set(parser.doc.edges.map((candidate) => candidate.id));
+      let id = baseId;
+      for (let suffix = 2; usedIds.has(id); suffix++) id = `${baseId}-${suffix}`;
+      const edge: Edge = {
+        id,
+        source,
+        target,
+        style: "solid",
+      };
+      if (parser.peek()?.type === "lbrace") {
+        parser.pos++;
+        while (yield* parser.blockHasMore()) {
+          const t = parser.peek();
+          if (!t || t.type === "newline") {
+            parser.pos++;
+            continue;
+          }
+          if (t.type === "id" && t.value === "step") {
+            parser.pos++;
+            edge.step = (yield* parser.expect("number")).value;
+          } else if (t.type === "id" && t.value === "id") {
+            parser.pos++;
+            edge.id = (yield* parser.expect("id")).value;
+          } else if (t.type === "id" && t.value === "label") {
+            parser.pos++;
+            edge.label = (yield* parser.expect("string")).value;
+          } else if (t.type === "id" && t.value === "style") {
+            parser.pos++;
+            const style = (yield* parser.expect("id")).value;
+            if (style === "dashed" || style === "solid") edge.style = style;
+          } else if (t.type === "id" && t.value === "kind") {
+            parser.pos++;
+            const kind = (yield* parser.expect("id")).value;
+            if (kind === "flow" || kind === "bidirectional" || kind === "peer" || kind === "fail")
             edge.kind = kind;
-        } else if (t.type === "id" && t.value === "color") {
-          this.pos++;
-          const color = this.expect("id").value;
-          if (isEdgeColor(color)) edge.color = color;
-        } else if (t.type === "id" && t.value === "from") {
-          this.pos++;
-          const side = this.expect("id").value;
-          if (side === "n" || side === "s" || side === "e" || side === "w")
+          } else if (t.type === "id" && t.value === "color") {
+            parser.pos++;
+            const color = (yield* parser.expect("id")).value;
+            if (isEdgeColor(color)) edge.color = color;
+          } else if (t.type === "id" && t.value === "from") {
+            parser.pos++;
+            const side = (yield* parser.expect("id")).value;
+            if (side === "n" || side === "s" || side === "e" || side === "w")
             edge.sourcePort = side;
-          const sourceOffset = this.peek();
-          if (sourceOffset?.type === "id" && sourceOffset.value === "offset") {
-            this.pos++;
-            edge.sourcePortOffset = normalizePortOffset(this.expect("number").value);
-          }
-        } else if (t.type === "id" && t.value === "to") {
-          this.pos++;
-          const side = this.expect("id").value;
-          if (side === "n" || side === "s" || side === "e" || side === "w")
+            const sourceOffset = parser.peek();
+            if (sourceOffset?.type === "id" && sourceOffset.value === "offset") {
+              parser.pos++;
+              edge.sourcePortOffset = normalizePortOffset((yield* parser.expect("number")).value);
+            }
+          } else if (t.type === "id" && t.value === "to") {
+            parser.pos++;
+            const side = (yield* parser.expect("id")).value;
+            if (side === "n" || side === "s" || side === "e" || side === "w")
             edge.targetPort = side;
-          const targetOffset = this.peek();
-          if (targetOffset?.type === "id" && targetOffset.value === "offset") {
-            this.pos++;
-            edge.targetPortOffset = normalizePortOffset(this.expect("number").value);
+            const targetOffset = parser.peek();
+            if (targetOffset?.type === "id" && targetOffset.value === "offset") {
+              parser.pos++;
+              edge.targetPortOffset = normalizePortOffset((yield* parser.expect("number")).value);
+            }
+          } else {
+            parser.pos++;
           }
+        }
+        yield* parser.expect("rbrace");
+      }
+      parser.doc.edges.push(edge);
+      return ok(undefined);
+    });
+  }
+  private parseAssetsBlock(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      yield* parser.expect("id", "assets");
+      yield* parser.expect("lbrace");
+      if (!parser.doc.assets) parser.doc.assets = [];
+      while (yield* parser.blockHasMore()) {
+        const t = parser.peek();
+        if (!t || t.type === "newline") {
+          parser.pos++;
+          continue;
+        }
+        if (t.type === "id" && t.value === "asset") {
+          parser.pos++;
+          const id = (yield* parser.expect("id")).value;
+          yield* parser.expect("lbrace");
+          let content = "";
+          let intrinsicW = 64;
+          let intrinsicH = 64;
+          while (yield* parser.blockHasMore()) {
+            const key = (yield* parser.expect("id")).value;
+            if (key === "svg") content = (yield* parser.expect("string")).value;
+            else if (key === "w") intrinsicW = (yield* parser.expect("number")).value;
+            else if (key === "h") intrinsicH = (yield* parser.expect("number")).value;
+          }
+          yield* parser.expect("rbrace");
+          parser.doc.assets.push({ id, kind: "svg", content, intrinsicW, intrinsicH });
         } else {
-          this.pos++;
+          parser.pos++;
         }
       }
-      this.expect("rbrace");
-    }
-    this.doc.edges.push(edge);
+      yield* parser.expect("rbrace");
+      return ok(undefined);
+    });
   }
-
-  private parseAssetsBlock(): void {
-    this.expect("id", "assets");
-    this.expect("lbrace");
-    if (!this.doc.assets) this.doc.assets = [];
-    while (this.blockHasMore()) {
-      const t = this.peek();
-      if (!t || t.type === "newline") {
-        this.pos++;
-        continue;
-      }
-      if (t.type === "id" && t.value === "asset") {
-        this.pos++;
-        const id = this.expect("id").value;
-        this.expect("lbrace");
-        let content = "";
-        let intrinsicW = 64;
-        let intrinsicH = 64;
-        while (this.blockHasMore()) {
-          const key = this.expect("id").value;
-          if (key === "svg") content = this.expect("string").value;
-          else if (key === "w") intrinsicW = this.expect("number").value;
-          else if (key === "h") intrinsicH = this.expect("number").value;
+  private parseViewBlock(): Result<void, DgmParseError> {
+    const parser = this;
+    return safeTry(function* () {
+      if (parser.viewParsed) return err(parseError("Only one view block is supported"));
+      parser.viewParsed = true;
+      yield* parser.expect("id", "view");
+      const id = (yield* parser.expect("id")).value;
+      parser.view.id = id;
+      yield* parser.expect("lbrace");
+      while (yield* parser.blockHasMore()) {
+        const t = parser.peek();
+        if (!t || t.type === "newline") {
+          parser.pos++;
+          continue;
         }
-        this.expect("rbrace");
-        this.doc.assets.push({ id, kind: "svg", content, intrinsicW, intrinsicH });
-      } else {
-        this.pos++;
+        if (t.type === "id" && t.value === "place") {
+          parser.pos++;
+          const nodeId = (yield* parser.expect("id")).value;
+          yield* parser.expect("lbrace");
+          const place: NonNullable<View["places"][string]> = {};
+          while (yield* parser.blockHasMore()) {
+            const k = (yield* parser.expect("id")).value;
+            if (k === "x" || k === "y" || k === "w" || k === "h") {
+              place[k] = (yield* parser.expect("number")).value;
+            } else if (k === "pin") {
+              place.pin = true;
+            } else if (k === "manual") {
+              place.manual = true;
+            } else if (k === "locked") {
+              place.locked = true;
+            } else if (k === "visible") {
+              const visible = (yield* parser.expect("id")).value;
+              place.visible = visible !== "false";
+            } else if (k === "z") {
+              place.zIndex = (yield* parser.expect("number")).value;
+            }
+          }
+          yield* parser.expect("rbrace");
+          parser.view.places[nodeId] = place;
+          continue;
+        }
+        if (t.type === "id" && t.value === "route") {
+          parser.pos++;
+          const edgeId = (yield* parser.expect("id")).value;
+          yield* parser.expect("lbrace");
+          const route: NonNullable<View["routes"][string]> = { waypoints: [] };
+          while (yield* parser.blockHasMore()) {
+            const key = (yield* parser.expect("id")).value;
+            if (key === "point") {
+              route.waypoints!.push({
+                x: (yield* parser.expect("number")).value,
+                y: (yield* parser.expect("number")).value,
+              });
+            } else if (key === "pin") {
+              route.pin = true;
+            } else if (key === "mode") {
+              const mode = (yield* parser.expect("id")).value;
+              if (mode === "auto" || mode === "manual") route.mode = mode;
+            } else if (key === "badge") {
+              route.badgeT = Math.max(0, Math.min(1, (yield* parser.expect("number")).value));
+              const side = (yield* parser.expect("id")).value;
+              if (side === "top" || side === "bottom") route.badgeSide = side;
+            } else if (key === "label") {
+              route.labelT = Math.max(0, Math.min(1, (yield* parser.expect("number")).value));
+              const side = (yield* parser.expect("id")).value;
+              if (side === "top" || side === "bottom") route.labelSide = side;
+            }
+          }
+          yield* parser.expect("rbrace");
+          if (route.pin && route.waypoints?.length) {
+            route.points = [...route.waypoints];
+          }
+          parser.view.routes[edgeId] = route;
+          continue;
+        }
+        if (t.type === "id" && t.value === "annotation") {
+          parser.pos++;
+          const annotationId = (yield* parser.expect("id")).value;
+          yield* parser.expect("lbrace");
+          const place: NonNullable<View["places"][string]> = {};
+          while (yield* parser.blockHasMore()) {
+            const k = (yield* parser.expect("id")).value;
+            if (k === "x" || k === "y" || k === "w" || k === "h") {
+              place[k] = (yield* parser.expect("number")).value;
+            } else if (k === "pin") {
+              place.pin = true;
+            } else if (k === "manual") {
+              place.manual = true;
+            } else if (k === "locked") {
+              place.locked = true;
+            } else if (k === "visible") {
+              const visible = (yield* parser.expect("id")).value;
+              place.visible = visible !== "false";
+            } else if (k === "z") {
+              place.zIndex = (yield* parser.expect("number")).value;
+            }
+          }
+          yield* parser.expect("rbrace");
+          if (!parser.view.annotations) {
+            parser.view.annotations = Object.create(null) as NonNullable<View["annotations"]>;
+          }
+          parser.view.annotations[annotationId] = place;
+          continue;
+        }
+        parser.pos++;
       }
-    }
-    this.expect("rbrace");
+      yield* parser.expect("rbrace");
+      return ok(undefined);
+    });
   }
-
-  private parseViewBlock(): void {
-    if (this.viewParsed) throw new Error("Only one view block is supported");
-    this.viewParsed = true;
-    this.expect("id", "view");
-    const id = this.expect("id").value;
-    this.view.id = id;
-    this.expect("lbrace");
-    while (this.blockHasMore()) {
-      const t = this.peek();
-      if (!t || t.type === "newline") {
-        this.pos++;
-        continue;
-      }
-      if (t.type === "id" && t.value === "place") {
-        this.pos++;
-        const nodeId = this.expect("id").value;
-        this.expect("lbrace");
-        const place: NonNullable<View["places"][string]> = {};
-        while (this.blockHasMore()) {
-          const k = this.expect("id").value;
-          if (k === "x" || k === "y" || k === "w" || k === "h") {
-            place[k] = this.expect("number").value;
-          } else if (k === "pin") {
-            place.pin = true;
-          } else if (k === "manual") {
-            place.manual = true;
-          } else if (k === "locked") {
-            place.locked = true;
-          } else if (k === "visible") {
-            const visible = this.expect("id").value;
-            place.visible = visible !== "false";
-          } else if (k === "z") {
-            place.zIndex = this.expect("number").value;
-          }
-        }
-        this.expect("rbrace");
-        this.view.places[nodeId] = place;
-        continue;
-      }
-      if (t.type === "id" && t.value === "route") {
-        this.pos++;
-        const edgeId = this.expect("id").value;
-        this.expect("lbrace");
-        const route: NonNullable<View["routes"][string]> = { waypoints: [] };
-        while (this.blockHasMore()) {
-          const key = this.expect("id").value;
-          if (key === "point") {
-            route.waypoints!.push({
-              x: this.expect("number").value,
-              y: this.expect("number").value,
-            });
-          } else if (key === "pin") {
-            route.pin = true;
-          } else if (key === "mode") {
-            const mode = this.expect("id").value;
-            if (mode === "auto" || mode === "manual") route.mode = mode;
-          } else if (key === "badge") {
-            route.badgeT = Math.max(0, Math.min(1, this.expect("number").value));
-            const side = this.expect("id").value;
-            if (side === "top" || side === "bottom") route.badgeSide = side;
-          } else if (key === "label") {
-            route.labelT = Math.max(0, Math.min(1, this.expect("number").value));
-            const side = this.expect("id").value;
-            if (side === "top" || side === "bottom") route.labelSide = side;
-          }
-        }
-        this.expect("rbrace");
-        if (route.pin && route.waypoints?.length) {
-          route.points = [...route.waypoints];
-        }
-        this.view.routes[edgeId] = route;
-        continue;
-      }
-      if (t.type === "id" && t.value === "annotation") {
-        this.pos++;
-        const annotationId = this.expect("id").value;
-        this.expect("lbrace");
-        const place: NonNullable<View["places"][string]> = {};
-        while (this.blockHasMore()) {
-          const k = this.expect("id").value;
-          if (k === "x" || k === "y" || k === "w" || k === "h") {
-            place[k] = this.expect("number").value;
-          } else if (k === "pin") {
-            place.pin = true;
-          } else if (k === "manual") {
-            place.manual = true;
-          } else if (k === "locked") {
-            place.locked = true;
-          } else if (k === "visible") {
-            const visible = this.expect("id").value;
-            place.visible = visible !== "false";
-          } else if (k === "z") {
-            place.zIndex = this.expect("number").value;
-          }
-        }
-        this.expect("rbrace");
-        if (!this.view.annotations) {
-          this.view.annotations = Object.create(null) as NonNullable<View["annotations"]>;
-        }
-        this.view.annotations[annotationId] = place;
-        continue;
-      }
-      this.pos++;
-    }
-    this.expect("rbrace");
-  }
-
   private lookaheadArrow(): boolean {
     for (let i = this.pos + 1; i < this.tokens.length; i++) {
       const t = this.tokens[i]!;
@@ -676,9 +704,9 @@ class Parser {
     return false;
   }
 
-  private blockHasMore(): boolean {
-    if (!this.peek()) throw new Error("Unterminated block; expected }");
-    return !this.is("rbrace");
+  private blockHasMore(): Result<boolean, DgmParseError> {
+    if (!this.peek()) return err(parseError("Unterminated block; expected }"));
+    return ok(!this.is("rbrace"));
   }
 
   private peek(): Token | undefined {
@@ -695,25 +723,25 @@ class Parser {
     return true;
   }
 
-  private expect(type: "arrow"): Token;
-  private expect(type: "lbrace"): Token;
-  private expect(type: "rbrace"): Token;
-  private expect(type: "string"): Token & { value: string };
-  private expect(type: "number"): Token & { value: number };
-  private expect(type: "id", value?: string): Token & { value: string };
-  private expect(type: Token["type"], value?: string): Token {
+  private expect(type: "arrow"): Result<Extract<Token, { type: "arrow" }>, DgmParseError>;
+  private expect(type: "lbrace"): Result<Extract<Token, { type: "lbrace" }>, DgmParseError>;
+  private expect(type: "rbrace"): Result<Extract<Token, { type: "rbrace" }>, DgmParseError>;
+  private expect(type: "string"): Result<Extract<Token, { type: "string" }>, DgmParseError>;
+  private expect(type: "number"): Result<Extract<Token, { type: "number" }>, DgmParseError>;
+  private expect(type: "id", value?: string): Result<Extract<Token, { type: "id" }>, DgmParseError>;
+  private expect(type: Token["type"], value?: string): Result<Token, DgmParseError> {
     const t = this.peek();
     if (!t || t.type !== type) {
-      throw new Error(`Expected ${type}${value ? ` ${value}` : ""}`);
+      return err(parseError(`Expected ${type}${value ? ` ${value}` : ""}`));
     }
     if (value !== undefined && "value" in t && t.value !== value) {
-      throw new Error(`Expected ${value}, got ${(t as { value: string }).value}`);
+      return err(parseError(`Expected ${value}, got ${(t as { value: string }).value}`));
     }
     this.pos++;
-    return t;
+    return ok(t);
   }
-}
 
+}
 function typeToGroupKind(type: string): Group["kind"] | null {
   const map: Record<string, Group["kind"]> = {
     "aws.cloud": "cloud",
@@ -770,11 +798,9 @@ function typeToGroupKind(type: string): Group["kind"] | null {
 }
 
 export function parseDgm(source: string): DiagramDocument {
-  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
-    throw new Error("Diagram exceeds the 1 MiB source limit");
-  }
-  const tokens = tokenize(source);
-  return new Parser(tokens).parse();
+  const result = parseDgmResult(source);
+  if (result.isErr()) throw new Error(result.error.message);
+  return result.value;
 }
 
 export type DgmParseError =
@@ -792,15 +818,9 @@ export function parseDgmResult(source: string): Result<DiagramDocument, DgmParse
       message: "Diagram exceeds the 1 MiB source limit",
     });
   }
-  try {
-    return ok(parseDgm(source));
-  } catch (error) {
-    if (!(error instanceof Error)) throw error;
-    return err({
-      code: "invalid-syntax",
-      message: error.message,
-    });
-  }
+  const tokens = tokenize(source);
+  if (tokens.isErr()) return err(tokens.error);
+  return new Parser(tokens.value).parse();
 }
 
 export function printDgm(doc: DiagramDocument): string {

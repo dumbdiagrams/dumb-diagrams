@@ -2,11 +2,10 @@ import { readFileSync } from "node:fs";
 
 import { describe, it, expect } from "vitest";
 import {
-  createAsyncDocsFixture,
-  createTransferHubFixture,
   createEmptyDocument,
   getDefaultView,
 } from "../core/index.js";
+import { createAsyncDocsFixture, createTransferHubFixture } from "../../test-fixtures.js";
 import type { LayoutResult } from "../core/index.js";
 import { compileDiagram, compileDiagramResult, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
@@ -21,6 +20,29 @@ import {
 import { checkInvariants } from "./invariants.js";
 
 describe("async-docs fixture", () => {
+  it("reports malformed embedded SVGs before rendering", () => {
+    const invalid = createEmptyDocument("invalid-asset-result");
+    invalid.assets = [{
+      id: "unsafe",
+      kind: "svg",
+      content: "<svg><script>alert(1)</script></svg>",
+      intrinsicW: 64,
+      intrinsicH: 64,
+    }];
+
+    const result = compileDiagramResult(invalid);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error.code).toBe("validation");
+    expect(result.error.issues).toContainEqual({
+      level: "error",
+      code: "invalid-asset",
+      message: "Asset unsafe: SVG element <script> is not allowed",
+      id: "unsafe",
+    });
+  });
+
   it("returns validation issues as a typed error while keeping warnings successful", () => {
     const invalid = createEmptyDocument("invalid-result");
     invalid.resources = [{

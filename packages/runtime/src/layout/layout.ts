@@ -52,7 +52,7 @@ export function layoutDocument(doc: DiagramDocument): LayoutResult {
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
     if (group) layoutGroup(doc, group.id, state);
-    else if (resource) measureResource(doc, resource, state);
+    else if (resource) measureResource(resource, state);
   }
 
   equalizeSymmetry(doc, state);
@@ -1007,7 +1007,7 @@ function measureChildren(
     }
     const resource = getResource(doc, id);
     if (!resource) continue;
-    const size = measureResource(doc, resource, state);
+    const size = measureResource(resource, state);
     children.push({ id, resource, w: size.w, h: size.h });
   }
   return children;
@@ -1080,7 +1080,6 @@ function collectColumnRoles(
 }
 
 function measureResource(
-  doc: DiagramDocument,
   resource: Resource,
   state: LayoutState,
 ): Measured {
@@ -1406,11 +1405,6 @@ function centerResourcesInGroup(
   for (const node of nodes) {
     offsetNodeGeom(node, node.obstacle.x + dx, node.obstacle.y + dy);
   }
-}
-
-function findSymmetrySets(doc: DiagramDocument): ID[][] {
-  const azs = doc.groups.filter((g) => g.kind === "az").map((g) => g.id);
-  return azs.length >= 2 ? [azs] : [];
 }
 
 function applyPinnedViewOverrides(
@@ -1767,28 +1761,6 @@ function applyNodeSize(
 function shiftRect(rect: Rect, dx: number, dy: number): void {
   rect.x += dx;
   rect.y += dy;
-}
-
-function tightenGroups(state: LayoutState): void {
-  for (const geom of state.groupGeoms.values()) {
-    geom.bounds.w = snap(geom.bounds.w);
-    geom.bounds.h = snap(geom.bounds.h);
-  }
-}
-
-function unionBounds(rects: Rect[]): Rect {
-  if (rects.length === 0) return { x: 0, y: 0, w: 0, h: 0 };
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const r of rects) {
-    minX = Math.min(minX, r.x);
-    minY = Math.min(minY, r.y);
-    maxX = Math.max(maxX, r.x + r.w);
-    maxY = Math.max(maxY, r.y + r.h);
-  }
-  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
 function estimateTextWidth(text: string, fontSize: number): number {

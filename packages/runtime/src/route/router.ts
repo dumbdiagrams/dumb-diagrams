@@ -752,10 +752,6 @@ function perimeterFallback(
       left: Math.min(...obstacles.map((obstacle) => obstacle.x), 0) - margin,
     };
   }
-  const minX = lanes.left;
-  const maxX = lanes.right;
-  const minY = lanes.top;
-  const maxY = lanes.bottom;
   const candidates = [
     [portChoice.src, start, { x: start.x, y: lanes.top }, { x: goal.x, y: lanes.top }, goal, portChoice.tgt],
     [portChoice.src, start, { x: start.x, y: lanes.bottom }, { x: goal.x, y: lanes.bottom }, goal, portChoice.tgt],

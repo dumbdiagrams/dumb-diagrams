@@ -12,10 +12,11 @@ import {
 
 import { checkInvariants } from "./invariants.js";
 import { renderSvg } from "./svg.js";
+import { validateEmbeddedAssets } from "./validate-assets.js";
 
 export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
   const catalog = getCatalogMap();
-  const issues = validateDocument(doc, catalog);
+  const issues = [...validateDocument(doc, catalog), ...validateEmbeddedAssets(doc)];
   if (hasErrors(issues)) {
     return { ok: false as const, issues, svg: null, layout: null };
   }
