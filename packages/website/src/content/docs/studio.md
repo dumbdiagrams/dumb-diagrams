@@ -26,6 +26,8 @@ Studio is independent of the directory where it was launched. Choose **Open** to
 
 Use the canvas to pan, zoom, select, and position items. The left dock adds architecture content and opens the layer list or source editor. Start with automatic layout, then move only what needs attention.
 
+Moving an item never rearranges the rest of the diagram. Other items and connector paths stay where they are, and the moved item's connections redraw along the [straightest clear path](../routing/#default-connector-shape). **Auto-fix** repairs overlaps and crossings in one step. The button shows a spinner while it works, and Undo restores the previous layout.
+
 A partially typed source edit may be temporarily invalid. Studio keeps the last valid compilation visible while you fix it. If the picture seems unchanged, check the validation feedback before assuming the edit was saved.
 
 For a keyboard-friendly overview of the diagram, open **Canvas items**. It lists boundaries, resources, connectors, and annotations and lets you focus or safely delete the selected item.

@@ -2,10 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramSource } from "../diagram-compiler";
-import { DIAGRAM_EXAMPLES } from "../examples";
 import { deleteSelection, moveSelection, setGroupBounds, setPlace } from "../editor-model";
 import { resizeRect } from "../interactions/move-resize-gestures";
-import { preserveLayout, preserveUnplacedLayout } from "../model/layout-preservation";
+import { preserveManualLayout, preserveUnplacedManualLayout } from "../model/layout-preservation";
 import { prepareDocument, prepareDocumentMutation } from "./document-actions";
 
 const azureAppSource = `diagram azure-private-app-service {
@@ -47,28 +46,7 @@ const azureAppSource = `diagram azure-private-app-service {
 }`;
 
 describe("document action preparation", () => {
-  it("repairs an existing Manual overlap on the next Automatic edit", () => {
-    const source = DIAGRAM_EXAMPLES.find((example) => example.id === "simple-serverless-web-application")!.source;
-    const original = compileDiagramSource(source, true);
-    expect(original.ok).toBe(true);
-    if (!original.ok) return;
-    const handler = original.layout.nodes.find((node) => node.id === "handler")!.obstacle;
-    const manual = prepareDocumentMutation(source, (doc) => setPlace(doc, "gateway", handler.x, handler.y), true, "manual");
-    expect(manual.isOk()).toBe(true);
-    if (manual.isErr()) return;
-    const automatic = prepareDocumentMutation(manual.value.source, (doc) =>
-      moveSelection(doc, [{ kind: "resource", id: "web_client" }], 40, 0), true, "automatic");
-    expect(automatic.isOk()).toBe(true);
-    if (automatic.isErr()) return;
-    const after = compileDiagramSource(automatic.value.source, true);
-    expect(after.ok).toBe(true);
-    if (!after.ok) return;
-    const gatewayAfter = after.layout.nodes.find((node) => node.id === "gateway")!.obstacle;
-    const handlerAfter = after.layout.nodes.find((node) => node.id === "handler")!.obstacle;
-    expect(gatewayAfter.x === handlerAfter.x && gatewayAfter.y === handlerAfter.y).toBe(false);
-  });
-
-  it.each(["manual", "automatic"] as const)("applies the %s editing policy only when preparing a canvas edit", (mode) => {
+  it("keeps a canvas edit exactly where it was placed instead of repairing it", () => {
     const source = `diagram small_overlap {
       grammar aws
       generic.custom api "API"
@@ -76,19 +54,15 @@ describe("document action preparation", () => {
       api -> db
     }`;
     const result = prepareDocumentMutation(source, (doc) =>
-      setPlace(setPlace(doc, "api", 200, 80), "db", 200, 80), false, mode);
+      setPlace(setPlace(doc, "api", 200, 80), "db", 200, 80), false);
     expect(result.isOk()).toBe(true);
     if (result.isErr()) return;
     const compiled = compileDiagramSource(result.value.source, false);
     expect(compiled.ok).toBe(true);
     if (!compiled.ok) return;
-    if (mode === "manual") {
-      expect(getDefaultView(result.value.doc).places.api).toMatchObject({ x: 200, y: 80 });
-      expect(getDefaultView(result.value.doc).places.db).toMatchObject({ x: 200, y: 80 });
-      expect(compiled.invariantFailures.length).toBeGreaterThan(0);
-    } else {
-      expect(compiled.invariantFailures).toEqual([]);
-    }
+    expect(getDefaultView(result.value.doc).places.api).toMatchObject({ x: 200, y: 80 });
+    expect(getDefaultView(result.value.doc).places.db).toMatchObject({ x: 200, y: 80 });
+    expect(compiled.invariantFailures.length).toBeGreaterThan(0);
   });
 
   it("does not invoke a mutation on an invalid source draft", () => {
@@ -137,7 +111,7 @@ describe("document action preparation", () => {
     }
   });
 
-  it("snapshots compiled geometry without mutating the source document or routes", () => {
+  it("snapshots compiled geometry without mutating the source document or its pinned routes", () => {
     const source = `${azureAppSource}
 view default {
   place app_service { visible false z 3 }
@@ -150,7 +124,7 @@ view default {
     expect(compiled.ok).toBe(true);
     if (!compiled.ok) return;
 
-    const next = preserveLayout(doc, compiled.layout);
+    const next = preserveManualLayout(doc, compiled.layout);
     expect(doc).toEqual(before);
     expect(getDefaultView(next).routes.https_requests).toEqual(getDefaultView(doc).routes.https_requests);
     expect(getDefaultView(next).places.app_service).toMatchObject({ visible: false, zIndex: 3, pin: true, manual: true });
@@ -171,7 +145,7 @@ view default {
     expect(compiled.ok).toBe(true);
     if (!compiled.ok) return;
 
-    const next = preserveUnplacedLayout(doc, compiled.layout);
+    const next = preserveUnplacedManualLayout(doc, compiled.layout);
     expect(getDefaultView(next).places.app_service).toEqual(getDefaultView(doc).places.app_service);
     expect(getDefaultView(next).places.architecture).toMatchObject({
       x: compiled.layout.groups.find((group) => group.id === "architecture")!.bounds.x,
@@ -293,7 +267,7 @@ view default {
     expect(before.ok).toBe(true);
     if (!before.ok) return;
     const result = prepareDocumentMutation(azureAppSource, (doc) =>
-      moveSelection(doc, [{ kind: "group", id: "application_tier" }], 64, 32), true, "manual");
+      moveSelection(doc, [{ kind: "group", id: "application_tier" }], 64, 32), true);
     expect(result.isOk()).toBe(true);
     if (result.isErr()) return;
     const after = compileDiagramSource(result.value.source, true);
@@ -306,5 +280,53 @@ view default {
       expect(moved.points[index]!.x - point.x).toBeCloseTo(64, 0);
       expect(moved.points[index]!.y - point.y).toBeCloseTo(32, 0);
     }
+  });
+
+  it("re-routes a moved icon's connector straight instead of stretching its old path", () => {
+    const source = `diagram async_processing {
+      grammar aws
+      flow lr
+      aws.api-gateway api "API"
+      cloud-agnostic.boundary async_tier "Async processing" {
+        aws.simple-queue-service jobs "Processing jobs"
+        aws.simple-queue-service dlq "Dead-letter queue"
+        aws.aws-lambda worker "Worker"
+      }
+      api -> jobs { id enqueue style dashed }
+      jobs -> worker { id process label "process" }
+      jobs -> dlq { id failed label "failed processing" style dashed kind fail }
+    }
+    view default {
+      place async_tier { x 120 y 20 w 600 h 640 pin manual }
+      place api { x 20 y 120 pin manual }
+      place jobs { x 240 y 120 pin manual }
+      place worker { x 520 y 120 pin manual }
+      place dlq { x 400 y 300 pin manual }
+    }`;
+    const edge = (compiled: ReturnType<typeof compileDiagramSource>, id: string) => {
+      if (!compiled.ok) throw new Error("Expected the diagram to compile");
+      return compiled.layout.edges.find((candidate) => candidate.id === id)!.points;
+    };
+    const before = compileDiagramSource(source, true);
+    // Drop the dead-letter queue directly below the processing queue.
+    const moved = prepareDocumentMutation(source, (doc) =>
+      moveSelection(doc, [{ kind: "resource", id: "dlq" }], -160, 120), true);
+    expect(moved.isOk()).toBe(true);
+    if (moved.isErr()) return;
+    const after = compileDiagramSource(moved.value.source, true);
+
+    const [start, end, ...rest] = edge(after, "failed");
+    expect(rest).toEqual([]);
+    expect(start!.x).toBe(end!.x);
+    expect(end!.y).toBeGreaterThan(start!.y);
+    expect(edge(after, "enqueue")).toEqual(edge(before, "enqueue"));
+    expect(edge(after, "process")).toEqual(edge(before, "process"));
+
+    // The re-routed connector is frozen again by the next unrelated edit.
+    const next = prepareDocumentMutation(moved.value.source, (doc) =>
+      moveSelection(doc, [{ kind: "resource", id: "worker" }], 40, 0), true);
+    expect(next.isOk()).toBe(true);
+    if (next.isErr()) return;
+    expect(edge(compileDiagramSource(next.value.source, true), "failed")).toEqual([start, end]);
   });
 });

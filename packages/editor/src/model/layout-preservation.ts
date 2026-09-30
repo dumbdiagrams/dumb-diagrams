@@ -10,26 +10,6 @@ import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import { cloneDocument } from "./document-structure";
 
 /**
- * Copy the currently rendered entity geometry into a document view.
- *
- * Interactive document mutations use this snapshot to make the rendered
- * canvas the baseline for the next source edit. Connector routes are left
- * untouched so changing a resource or group does not accidentally turn an
- * automatically routed connector into an authored route.
- */
-export function preserveLayout(doc: DiagramDocument, layout: LayoutResult): DiagramDocument {
-  return snapshotLayout(doc, layout, false);
-}
-
-/**
- * Copy rendered geometry only for entities that are not already pinned.
- * Existing authored coordinates and flags therefore remain authoritative.
- */
-export function preserveUnplacedLayout(doc: DiagramDocument, layout: LayoutResult): DiagramDocument {
-  return snapshotLayout(doc, layout, true);
-}
-
-/**
  * Snapshot rendered places and connector paths as the manual editing baseline.
  *
  * Existing pinned routes are authored data, so they remain byte-for-byte
@@ -57,8 +37,10 @@ export function preserveUnplacedManualLayout(
 /**
  * Reconcile manual routes after a document mutation. When both endpoints of
  * an unchanged edge move by the same delta, shift its complete route so the
- * internal elbows follow them. A route whose geometry was explicitly edited
- * by the mutation is left alone, allowing that edit to win.
+ * internal elbows follow them. When only one endpoint moves, the old path no
+ * longer fits, so drop its geometry (keeping decorations) and let the router
+ * draw a clean connector. A route whose geometry was explicitly edited by the
+ * mutation is left alone, allowing that edit to win.
  */
 export function reconcileManualRouteMoves(
   beforeDoc: DiagramDocument,
@@ -81,9 +63,13 @@ export function reconcileManualRouteMoves(
 
     const sourceDelta = placeDelta(beforePlaces[edge.source], afterView.places[edge.source]);
     const targetDelta = placeDelta(beforePlaces[edge.target], afterView.places[edge.target]);
-    if (!sourceDelta || !targetDelta ||
-      sourceDelta.dx === 0 && sourceDelta.dy === 0 ||
-      !sameDeltaWithinRounding(sourceDelta, targetDelta)) {
+    if (!sourceDelta || !targetDelta) continue;
+    const moved = (delta: { dx: number; dy: number }) => delta.dx !== 0 || delta.dy !== 0;
+    if (!moved(sourceDelta) && !moved(targetDelta)) continue;
+    if (!sameDeltaWithinRounding(sourceDelta, targetDelta)) {
+      const { points, waypoints, pin, mode, ...decorations } = afterRoute;
+      if (Object.keys(decorations).length) routes[edge.id] = decorations;
+      else delete routes[edge.id];
       continue;
     }
     const shifted: RouteOverride = { ...afterRoute };

@@ -39,14 +39,12 @@ export function HelpModal({
         <section>
           <h3>Refine your draft</h3>
           <p>
-            Open an LLM-generated diagram and use Manual layout to tweak it. Other items and
-            connector paths stay in place; connected arrows remain attached when you move an item.
-            Warnings help you spot overlaps without changing your work.
+            Open an LLM-generated diagram and move items where you want them. Other items and
+            connector paths stay in place, while the arrows of a moved item redraw along the
+            straightest clear path. Warnings help you spot overlaps without changing your work.
           </p>
           <p>
-            Automatic layout repairs the diagram after future canvas edits and may move other
-            items. Switching modes leaves the current diagram untouched. Auto-fix now repairs
-            it in either mode, and Undo restores the entire edit. Each tab remembers its mode.
+            Auto-fix repairs overlaps and crossings in one step, and Undo restores the entire edit.
           </p>
         </section>
         <section>

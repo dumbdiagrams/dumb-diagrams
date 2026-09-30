@@ -24,27 +24,27 @@ const INSIDE_CLOUD = `diagram crossed-fanout {
   lambda -> dynamodb
 }`;
 
-function fanoutCrossingPins() {
+function fanoutCrossingPins(api = { x: 280, y: 20 }, storage = { x: 280, y: 200 }) {
   const doc = parseDgm(INSIDE_CLOUD);
   const view = getDefaultView(doc);
   view.places.cloudfront = { x: 200, y: 140, pin: true, manual: true };
-  view.places["api-gateway"] = { x: 280, y: 20, pin: true, manual: true };
-  view.places["simple-storage-service"] = { x: 280, y: 200, pin: true, manual: true };
+  view.places["api-gateway"] = { ...api, pin: true, manual: true };
+  view.places["simple-storage-service"] = { ...storage, pin: true, manual: true };
   view.places.lambda = { x: 380, y: 20, pin: true, manual: true };
   view.places.dynamodb = { x: 480, y: 20, pin: true, manual: true };
   return doc;
 }
 
 describe("planAutoFix crossed fan-out", () => {
-  it("repairs auto-routed CloudFront fan-out crossings by unpinning branch nodes", () => {
-    const doc = fanoutCrossingPins();
+  it("repairs auto-routed CloudFront crossings by unpinning branch nodes", () => {
+    const doc = fanoutCrossingPins({ x: 260, y: 80 }, { x: 260, y: 200 });
     const before = compileDocument(doc, true);
     expect(before.ok).toBe(true);
     if (!before.ok) return;
     expect(before.invariantFailures).toContainEqual(
       expect.objectContaining({
         code: "edge-crossing",
-        elementIds: ["cloudfront-simple-storage-service", "cloudfront-api-gateway"],
+        elementIds: ["client-cloudfront", "cloudfront-api-gateway"],
       }),
     );
 

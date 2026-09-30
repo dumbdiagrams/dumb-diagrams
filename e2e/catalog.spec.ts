@@ -417,6 +417,7 @@ test("auto-fix after grouping mixed roots preserves left-to-right architecture f
 
   await page.keyboard.press(process.platform === "darwin" ? "Meta+G" : "Control+G");
   await page.getByRole("button", { name: "Auto-fix" }).click();
+  await expect(page.getByRole("button", { name: "Auto-fix" })).toHaveAttribute("aria-busy", "false");
 
   const ordered = [
     await entityBox(page, "resource", "web_client"),
@@ -443,6 +444,7 @@ test("auto-fix after ungroup keeps the detached aws cloud fixed and preserves ar
   const gatewayBefore = await entityBox(page, "resource", "gateway");
 
   await page.getByRole("button", { name: "Auto-fix" }).click();
+  await expect(page.getByRole("button", { name: "Auto-fix" })).toHaveAttribute("aria-busy", "false");
 
   const cloudAfterAutoFix = await entityBox(page, "group", "aws_cloud");
   expect(Math.abs(cloudAfterAutoFix.x - cloudAfterUngroup.x)).toBeLessThan(12);

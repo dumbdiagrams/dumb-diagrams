@@ -264,7 +264,6 @@ describe("workspace state", () => {
     });
     expect(workspace.tabs).toHaveLength(1);
     expect(workspace.activeTabId).toBe(workspace.tabs[0]!.id);
-    expect(workspace.tabs[0]?.layoutMode).toBe("manual");
     expect(isTabDirty(workspace.tabs[0])).toBe(false);
 
     const dirty = createWorkspaceTab("changed", {
@@ -279,7 +278,6 @@ describe("workspace state", () => {
       initialSource: "original source",
       filename: "diagram.dgm",
       origin: "import",
-      layoutMode: "automatic",
       viewport,
     });
     const workspace = {
@@ -291,7 +289,6 @@ describe("workspace state", () => {
     const restored = deserializeWorkspace(serializeWorkspace(workspace));
     expect(restored).toEqual(workspace);
     expect(restored?.tabs[0]?.initialSource).toBe("original source");
-    expect(restored?.tabs[0]?.layoutMode).toBe("automatic");
   });
 
   it("normalizes malformed snapshots without accepting empty workspaces", () => {
@@ -313,22 +310,6 @@ describe("workspace state", () => {
       activeTabId: "tab-1",
       recentlyClosed: [],
     });
-    expect(valid?.tabs[0]?.layoutMode).toBe("manual");
-  });
-
-  it("normalizes missing and invalid layout modes to manual for legacy tabs", () => {
-    const restored = normalizeWorkspaceState({
-      version: 1,
-      tabs: [
-        { id: "missing-mode", source: "source", viewport },
-        { id: "invalid-mode", source: "source", layoutMode: "automatic-ish", viewport },
-      ],
-      activeTabId: "missing-mode",
-      recentlyClosed: [{ id: "closed", source: "source", layoutMode: "invalid", viewport }],
-    });
-
-    expect(restored?.tabs.map((tab) => tab.layoutMode)).toEqual(["manual", "manual"]);
-    expect(restored?.recentlyClosed[0]?.layoutMode).toBe("manual");
   });
 
   it("uses the last saved example source when migrating older tabs", () => {
@@ -518,7 +499,7 @@ describe("workspace state", () => {
 
   it("restores a selected recycle-bin entry and refuses recovery at the tab limit", () => {
     const open = createWorkspaceTab("open", { id: "open", viewport });
-    const closed = createWorkspaceTab("closed", { id: "closed", layoutMode: "automatic", viewport });
+    const closed = createWorkspaceTab("closed", { id: "closed", viewport });
     const workspace = {
       version: 1 as const,
       tabs: [open],
@@ -529,7 +510,6 @@ describe("workspace state", () => {
     const restored = restoreWorkspaceTab(workspace, closed.id);
     expect(restored?.tabs.map((tab) => tab.id)).toEqual(["open", "closed"]);
     expect(restored?.activeTabId).toBe("closed");
-    expect(restored?.tabs[1]?.layoutMode).toBe("automatic");
     expect(restored?.recentlyClosed).toEqual([]);
 
     const full = {

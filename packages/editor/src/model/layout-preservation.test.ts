@@ -176,6 +176,15 @@ describe("manual layout preservation", () => {
     ]);
   });
 
+  it("drops a connector's stale path, keeping its decorations, when only one endpoint moves", () => {
+    const { doc } = fixture();
+    const after = structuredClone(doc);
+    getDefaultView(after).places.other = { x: 400, y: 120, pin: true };
+
+    const next = reconcileManualRouteMoves(doc, after);
+    expect(getDefaultView(next).routes.other_edge).toEqual({ badgeT: 0.75, badgeSide: "top" });
+  });
+
   it("accepts subpixel differences from independently rounded common endpoint moves", () => {
     const { doc } = fixture();
     const before = structuredClone(doc);

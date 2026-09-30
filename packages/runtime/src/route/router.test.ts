@@ -548,7 +548,7 @@ describe("routeEdgePreview", () => {
     expect(pathManhattanLength(route.points)).toBeLessThan(500);
   });
 
-  it("moves automatic attachments away from the side occupied by a display label", () => {
+  it("goes straight past a facing display label, otherwise attaching away from it", () => {
     const doc = createEmptyDocument("label-clearance");
     doc.resources = [
       routingResource("source", "generic.client", "Source"),
@@ -563,16 +563,22 @@ describe("routeEdgePreview", () => {
       style: "solid",
     }];
     const source = routingNode("source", 60, 240, 100);
-    const target = routingNode("target", 60, 80, 112);
+    const stacked = routingNode("target", 60, 80, 112);
     const layout: LayoutResult = {
-      nodes: [source, target],
+      nodes: [source, stacked],
       groups: [],
       edges: [],
-      width: 260,
+      width: 460,
       height: 400,
       symmetries: [],
     };
+    expect(routeEdges(doc, layout)[0]!.points).toEqual([
+      portPoint(source.icon, "n", 0.5),
+      portPoint(stacked.icon, "s", 0.5),
+    ]);
 
+    const target = routingNode("target", 260, 80, 112);
+    layout.nodes = [source, target];
     const route = routeEdges(doc, layout)[0]!;
     expect(route.points.at(-1)).not.toEqual(portPoint(target.icon, "s", 0.5));
     expect(route.points.at(-1)!.y).not.toBe(target.icon.y + target.icon.h);
@@ -583,7 +589,7 @@ describe("routeEdgePreview", () => {
     expect(clearBelow.points.at(-1)!.y).toBe(target.icon.y + target.icon.h);
   });
 
-  it("keeps automatic dashed telemetry stems clear of a source label", () => {
+  it("keeps automatic dashed telemetry stems clear of a source label unless the line is straight", () => {
     const doc = createEmptyDocument("dashed-source-label-clearance");
     doc.resources = [
       routingResource("app", "azure.app-services", "App Service"),
@@ -597,18 +603,91 @@ describe("routeEdgePreview", () => {
       kind: "peer",
     }];
     const source = routingNode("app", 120, 60, 104);
-    const target = routingNode("insights", 120, 260, 104);
+    const stacked = routingNode("insights", 120, 260, 104);
     const layout: LayoutResult = {
-      nodes: [source, target],
+      nodes: [source, stacked],
       groups: [],
       edges: [],
-      width: 360,
+      width: 560,
       height: 440,
       symmetries: [],
     };
+    expect(routeEdges(doc, layout)[0]!.points).toEqual([
+      portPoint(source.icon, "s", 0.5),
+      portPoint(stacked.icon, "n", 0.5),
+    ]);
 
+    layout.nodes = [source, routingNode("insights", 320, 260, 104)];
     const route = routeEdges(doc, layout)[0]!;
     expect(segmentIntersects(route.points[0]!, route.points[1]!, source.label)).toBe(false);
+  });
+
+  it.each(["solid", "dashed"] as const)(
+    "draws one straight %s connector between stacked icons that share any column",
+    (style) => {
+      const doc = createEmptyDocument("stacked-straight");
+      doc.resources = [
+        routingResource("jobs", "aws.simple-queue-service", "Processing jobs"),
+        routingResource("dlq", "aws.simple-queue-service", "Dead-letter queue"),
+      ];
+      doc.edges = [{ id: "failed", source: "jobs", target: "dlq", style, kind: style === "dashed" ? "fail" : "flow" }];
+      // Neither icon center lies inside the shared column [130, 148].
+      const jobs = routingNode("jobs", 100, 60, 104);
+      const dlq = routingNode("dlq", 130, 260, 104);
+      const layout: LayoutResult = {
+        nodes: [jobs, dlq], groups: [], edges: [], width: 400, height: 440, symmetries: [],
+      };
+
+      const [start, end, ...rest] = routeEdges(doc, layout)[0]!.points;
+      expect(rest).toEqual([]);
+      expect(start!.y).toBe(jobs.icon.y + jobs.icon.h);
+      expect(end!.y).toBe(dlq.icon.y);
+      expect(start!.x).toBe(end!.x);
+      expect(start!.x).toBeGreaterThanOrEqual(dlq.icon.x);
+      expect(start!.x).toBeLessThanOrEqual(jobs.icon.x + jobs.icon.w);
+    },
+  );
+
+  it("enters a stacked dashed target through the face that looks back at its source", () => {
+    const doc = createEmptyDocument("stacked-facing-entry");
+    doc.resources = [
+      routingResource("jobs", "aws.simple-queue-service", "Processing jobs"),
+      routingResource("dlq", "aws.simple-queue-service", "Dead-letter queue"),
+    ];
+    doc.edges = [{ id: "failed", source: "jobs", target: "dlq", style: "dashed", kind: "fail" }];
+    const jobs = routingNode("jobs", 100, 60, 104);
+    const dlq = routingNode("dlq", 240, 260, 104);
+    const layout: LayoutResult = {
+      nodes: [jobs, dlq], groups: [], edges: [], width: 440, height: 440, symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!.points;
+    expect(route).toHaveLength(3);
+    expectTerminalLegOutward(route, route[0]!, "e", true);
+    expectTerminalLegOutward(route, route.at(-1)!, "n", false);
+    expect(route[0]!.x).toBe(jobs.icon.x + jobs.icon.w);
+    expect(route.at(-1)!.y).toBe(dlq.icon.y);
+  });
+
+  it("gives up the straight stacked connector when another icon sits in between", () => {
+    const doc = createEmptyDocument("stacked-blocked");
+    doc.resources = [
+      routingResource("jobs", "aws.simple-queue-service", "Processing jobs"),
+      routingResource("worker", "aws.aws-lambda", "Worker"),
+      routingResource("dlq", "aws.simple-queue-service", "Dead-letter queue"),
+    ];
+    doc.edges = [{ id: "failed", source: "jobs", target: "dlq", style: "dashed", kind: "fail" }];
+    const blocker = routingNode("worker", 100, 200, 104);
+    const layout: LayoutResult = {
+      nodes: [routingNode("jobs", 100, 60, 104), blocker, routingNode("dlq", 100, 360, 104)],
+      groups: [], edges: [], width: 440, height: 560, symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!.points;
+    expect(route.length).toBeGreaterThan(2);
+    for (let index = 0; index < route.length - 1; index++) {
+      expect(segmentIntersects(route[index]!, route[index + 1]!, blocker.obstacle)).toBe(false);
+    }
   });
 
   it("preserves an exact authored dashed attachment on a label side", () => {

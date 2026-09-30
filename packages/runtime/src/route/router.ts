@@ -207,20 +207,14 @@ export function routeEdges(
     if (!source || !target) continue;
 
     const isFailure = edge.kind === "fail" || edge.style === "dashed";
-    const ports = alignNearOpposingPorts(
-      candidatePorts(
-        source,
-        target,
-        isFailure,
-        edge.sourcePort,
-        edge.targetPort,
-        edge.sourcePortOffset,
-        edge.targetPortOffset,
-      ),
+    const ports = candidatePorts(
       source,
       target,
-      edge.sourcePortOffset !== undefined,
-      edge.targetPortOffset !== undefined,
+      isFailure,
+      edge.sourcePort,
+      edge.targetPort,
+      edge.sourcePortOffset,
+      edge.targetPortOffset,
     );
 
     let best: Point[] | null = null;
@@ -560,20 +554,14 @@ function repairAutomaticRouteCrossings(
       // cannot anticipate every later corridor. Once the complete route set is
       // known, retry every distinct attachment-face pair against that final
       // geometry before attempting local segment shifts.
-      const retryPorts = alignNearOpposingPorts(
-        candidatePorts(
-          source,
-          target,
-          definition.kind === "fail" || definition.style === "dashed",
-          definition.sourcePort,
-          definition.targetPort,
-          definition.sourcePortOffset,
-          definition.targetPortOffset,
-        ),
+      const retryPorts = candidatePorts(
         source,
         target,
-        definition.sourcePortOffset !== undefined,
-        definition.targetPortOffset !== undefined,
+        definition.kind === "fail" || definition.style === "dashed",
+        definition.sourcePort,
+        definition.targetPort,
+        definition.sourcePortOffset,
+        definition.targetPortOffset,
       );
       const retryVGutters = containment
         ? guttersInside(
@@ -1357,7 +1345,7 @@ function candidatePorts(
       });
     }
 
-    const choices = uniquePortChoices(preferred.flatMap(({ pair: [a, b], cost }) =>
+    const choices = alignNearOpposingPorts(preferred.flatMap(({ pair: [a, b], cost }) =>
       portOffsetVariants(
         a,
         b,
@@ -1366,19 +1354,13 @@ function candidatePorts(
         sourcePortOffset,
         targetPortOffset,
       )
-    ));
-    return avoidLabelPorts(
-      choices,
-      source,
-      target,
-      sourcePortOffset !== undefined,
-      targetPortOffset !== undefined,
-    );
+    ), source, target, sourceLocked, targetLocked);
+    return avoidLabelPorts(choices, source, target, sourceLocked, targetLocked);
   }
 
-  const choices = uniquePortChoices(pairs.flatMap(([a, b], index) =>
+  const choices = alignNearOpposingPorts(pairs.flatMap(([a, b], index) =>
     portOffsetVariants(a, b, make, index * PORT_SIDE_FALLBACK_COST)
-  ));
+  ), source, target, false, false);
   return avoidLabelPorts(choices, source, target, false, false);
 }
 
@@ -1419,7 +1401,9 @@ function avoidLabelPorts(
   const sourceLabelSide = labelSide(source);
   const targetLabelSide = labelSide(target);
   return choices
-    .map((choice) => ({
+    // A straight connector between facing ports may cross its own endpoint
+    // labels; any detour around them would be the less readable route.
+    .map((choice) => isStraightFacingChoice(choice) ? choice : {
       ...choice,
       preferenceCost: choice.preferenceCost +
         (!sourceLocked && choice.srcSide === sourceLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
@@ -1430,8 +1414,19 @@ function avoidLabelPorts(
         (!targetLocked && portStemHitsLabel(target, choice.tgtSide, choice.tgt)
           ? LABEL_PORT_COLLISION_COST
           : 0),
-    }))
+    })
     .sort((a, b) => a.preferenceCost - b.preferenceCost);
+}
+
+function isStraightFacingChoice(choice: PortChoice): boolean {
+  const { src, tgt } = choice;
+  switch (`${choice.srcSide}${choice.tgtSide}`) {
+    case "sn": return src.x === tgt.x && tgt.y > src.y;
+    case "ns": return src.x === tgt.x && tgt.y < src.y;
+    case "ew": return src.y === tgt.y && tgt.x > src.x;
+    case "we": return src.y === tgt.y && tgt.x < src.x;
+    default: return false;
+  }
 }
 
 function portStemHitsLabel(node: NodeGeom, side: Side, anchor: Point): boolean {
@@ -1474,9 +1469,11 @@ function geometricSidePairs(
         ? [["e", "w"], ["e", "n"], ["e", "e"], ["s", "w"], ["n", "w"]]
         : [["w", "e"], ["w", "n"], ["w", "w"], ["s", "e"], ["n", "e"]];
     }
+    // Enter a stacked target through the face that looks back at the source.
+    const toward: Side = dx >= 0 ? "e" : "w";
     return dy >= 0
-      ? [["s", "n"], ["e", "w"], ["w", "e"], ["s", "e"], ["s", "w"]]
-      : [["n", "s"], ["e", "w"], ["w", "e"], ["n", "e"], ["n", "w"]];
+      ? [["s", "n"], [toward, "n"], ["e", "w"], ["w", "e"], ["s", "e"], ["s", "w"]]
+      : [["n", "s"], [toward, "s"], ["e", "w"], ["w", "e"], ["n", "e"], ["n", "w"]];
   }
 
   const sameColumn =
@@ -1484,7 +1481,9 @@ function geometricSidePairs(
     target.obstacle.x < source.obstacle.x + source.obstacle.w;
 
   if (sameColumn && Math.abs(dy) > source.icon.h) {
-    return [["e", "e"], ["w", "w"], ["e", "w"]];
+    // The facing pair wins outright when it aligns into one straight line;
+    // otherwise its label penalty keeps it behind any clear side-wrapping shape.
+    return [dy >= 0 ? ["s", "n"] : ["n", "s"], ["e", "e"], ["w", "w"], ["e", "w"]];
   }
   if (Math.abs(dy) > Math.abs(dx)) {
     return dy >= 0
@@ -1570,56 +1569,31 @@ function alignNearOpposingPorts(
   targetOffsetLocked: boolean,
 ): PortChoice[] {
   const aligned = choices.map((choice) => {
-    const opposingHorizontalFaces =
-      (choice.srcSide === "e" && choice.tgtSide === "w") ||
-      (choice.srcSide === "w" && choice.tgtSide === "e");
-    if (opposingHorizontalFaces) {
-      const delta = Math.abs(choice.src.y - choice.tgt.y);
-      if (delta === 0 || delta > MICRO_JOG_THRESHOLD) return choice;
-
-      const commonTop = Math.max(source.icon.y, target.icon.y);
-      const commonBottom = Math.min(
-        source.icon.y + source.icon.h,
-        target.icon.y + target.icon.h,
-      );
-      const alignedY = sourceOffsetLocked
-        ? choice.src.y
-        : targetOffsetLocked
-          ? choice.tgt.y
-          : choice.src.y;
-      if (alignedY < commonTop || alignedY > commonBottom) return choice;
-
-      return {
-        ...choice,
-        src: sourceOffsetLocked ? choice.src : { ...choice.src, y: alignedY },
-        tgt: targetOffsetLocked ? choice.tgt : { ...choice.tgt, y: alignedY },
-      };
-    }
-
-    const opposingVerticalFaces =
-      (choice.srcSide === "s" && choice.tgtSide === "n") ||
-      (choice.srcSide === "n" && choice.tgtSide === "s");
-    if (!opposingVerticalFaces) return choice;
-
-    const delta = Math.abs(choice.src.x - choice.tgt.x);
-    if (delta === 0) return choice;
-
-    const commonLeft = Math.max(source.icon.x, target.icon.x);
-    const commonRight = Math.min(
-      source.icon.x + source.icon.w,
-      target.icon.x + target.icon.w,
-    );
-    const alignedX = sourceOffsetLocked
-      ? choice.src.x
+    const faces = `${choice.srcSide}${choice.tgtSide}`;
+    const axis = faces === "ew" || faces === "we" ? "y" : faces === "sn" || faces === "ns" ? "x" : null;
+    if (!axis || choice.src[axis] === choice.tgt[axis]) return choice;
+    // Horizontal flows keep centered attachments beyond a one-cell jog so
+    // parallel lanes and edge labels stay where the layout reserved them.
+    if (axis === "y" && Math.abs(choice.src.y - choice.tgt.y) > MICRO_JOG_THRESHOLD) return choice;
+    const size = axis === "x" ? "w" : "h";
+    const low = Math.max(source.icon[axis], target.icon[axis]);
+    const high = Math.min(source.icon[axis] + source.icon[size], target.icon[axis] + target.icon[size]);
+    // A shared row or column makes a straight connector possible. Keep the
+    // source lane when it already lies in that overlap, then the target lane,
+    // and otherwise meet in the middle of the overlap.
+    const within = (value: number) => value >= low && value <= high;
+    const value = sourceOffsetLocked
+      ? choice.src[axis]
       : targetOffsetLocked
-        ? choice.tgt.x
-        : choice.src.x;
-    if (alignedX < commonLeft || alignedX > commonRight) return choice;
-
+        ? choice.tgt[axis]
+        : within(choice.src[axis])
+          ? choice.src[axis]
+          : within(choice.tgt[axis]) ? choice.tgt[axis] : (low + high) / 2;
+    if (!within(value)) return choice;
     return {
       ...choice,
-      src: sourceOffsetLocked ? choice.src : { ...choice.src, x: alignedX },
-      tgt: targetOffsetLocked ? choice.tgt : { ...choice.tgt, x: alignedX },
+      src: sourceOffsetLocked ? choice.src : { ...choice.src, [axis]: value },
+      tgt: targetOffsetLocked ? choice.tgt : { ...choice.tgt, [axis]: value },
     };
   });
   return uniquePortChoices(aligned);
@@ -3448,20 +3422,14 @@ export function routeConnectionPreview(
   const hGutters = horizontalGutters(layout, obstacles);
   const grid = buildGrid(layout, obstacles);
   const isFailure = options.kind === "fail" || options.style === "dashed";
-  const ports = alignNearOpposingPorts(
-    candidatePorts(
-      source,
-      target,
-      isFailure,
-      options.sourcePort,
-      options.targetPort,
-      options.sourcePortOffset,
-      options.targetPortOffset,
-    ),
+  const ports = candidatePorts(
     source,
     target,
-    options.sourcePortOffset !== undefined,
-    options.targetPortOffset !== undefined,
+    isFailure,
+    options.sourcePort,
+    options.targetPort,
+    options.sourcePortOffset,
+    options.targetPortOffset,
   );
 
   let best: Point[] | null = null;

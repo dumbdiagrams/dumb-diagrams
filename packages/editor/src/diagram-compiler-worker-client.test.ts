@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
+import type { AutoFixPlan } from "./auto-fix";
 import type { DiagramCompilation } from "./diagram-compiler";
 import {
   DiagramCompilerWorkerClient,
+  planAutoFixInWorker,
   type CompilationRequest,
   type CompilationWorker,
 } from "./diagram-compiler-worker-client";
@@ -262,5 +265,39 @@ describe("DiagramCompilerWorkerClient", () => {
     expect(onResponse).not.toHaveBeenCalled();
     secondWorker.onmessage?.({ data: { ...second, compilation } } as MessageEvent<unknown>);
     expect(onResponse).toHaveBeenCalledWith({ ...second, compilation });
+  });
+});
+
+describe("planAutoFixInWorker", () => {
+  const doc = { resources: [], groups: [], edges: [] } as unknown as DiagramDocument;
+  const workerPlan: AutoFixPlan = { status: "repaired", doc, strategy: "clear-routes-all", compilation };
+  const localPlan: AutoFixPlan = { status: "unchanged", doc, strategy: "unchanged" };
+
+  it("uses the worker's plan and discards the worker", async () => {
+    const worker = createWorker();
+    const plan = planAutoFixInWorker(() => worker, doc, true, () => localPlan);
+
+    expect(worker.postMessage).toHaveBeenCalledWith({ autoFix: true, doc, snapToGrid: true });
+    worker.onmessage?.({ data: workerPlan } as MessageEvent<unknown>);
+
+    await expect(plan).resolves.toEqual(workerPlan);
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
+
+  it("plans on the calling thread when the worker cannot start, fails, or sends an unusable plan", async () => {
+    await expect(planAutoFixInWorker(() => {
+      throw new Error("worker unavailable");
+    }, doc, false, () => localPlan)).resolves.toEqual(localPlan);
+
+    const failing = createWorker();
+    const failed = planAutoFixInWorker(() => failing, doc, false, () => localPlan);
+    failing.onerror?.({} as ErrorEvent);
+    await expect(failed).resolves.toEqual(localPlan);
+
+    const invalid = createWorker();
+    const unusable = planAutoFixInWorker(() => invalid, doc, false, () => localPlan);
+    invalid.onmessage?.({ data: { ...workerPlan, doc: null } } as MessageEvent<unknown>);
+    await expect(unusable).resolves.toEqual(localPlan);
+    expect(invalid.terminate).toHaveBeenCalledOnce();
   });
 });

@@ -1,3 +1,5 @@
+import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
+import type { AutoFixPlan } from "./auto-fix";
 import type { DiagramCompilation } from "./diagram-compiler";
 
 export type CompilationRequest = {
@@ -10,9 +12,15 @@ export type CompilationResponse = CompilationRequest & {
   compilation: DiagramCompilation;
 };
 
+export type AutoFixRequest = {
+  autoFix: true;
+  doc: DiagramDocument;
+  snapToGrid: boolean;
+};
+
 /** The small part of Worker used by the compiler client. */
 export type CompilationWorker = {
-  postMessage(message: CompilationRequest): void;
+  postMessage(message: CompilationRequest | AutoFixRequest): void;
   terminate(): void;
   onmessage: ((event: MessageEvent<unknown>) => void) | null;
   onerror: ((event: ErrorEvent) => void) | null;
@@ -104,6 +112,10 @@ function isFailedCompilation(value: Record<string, unknown>): boolean {
   );
 }
 
+function isCompilation(value: unknown): value is DiagramCompilation {
+  return isRecord(value) && (isSuccessfulCompilation(value) || isFailedCompilation(value));
+}
+
 export function isCompilationResponse(value: unknown): value is CompilationResponse {
   if (!isRecord(value)) return false;
   const response = value as Partial<CompilationResponse>;
@@ -111,9 +123,62 @@ export function isCompilationResponse(value: unknown): value is CompilationRespo
     typeof response.id === "number" &&
     typeof response.source === "string" &&
     typeof response.snapToGrid === "boolean" &&
-    isRecord(response.compilation) &&
-    (isSuccessfulCompilation(response.compilation) || isFailedCompilation(response.compilation))
+    isCompilation(response.compilation)
   );
+}
+
+export function isAutoFixPlan(value: unknown): value is AutoFixPlan {
+  if (!isRecord(value)) return false;
+  return (
+    (value.status === "unchanged" || value.status === "repaired" || value.status === "unresolved" || value.status === "blocked") &&
+    typeof value.strategy === "string" &&
+    isRecord(value.doc) &&
+    Array.isArray(value.doc.resources) &&
+    Array.isArray(value.doc.groups) &&
+    Array.isArray(value.doc.edges) &&
+    (value.message === undefined || typeof value.message === "string") &&
+    (value.compilation === undefined || isCompilation(value.compilation))
+  );
+}
+
+/**
+ * Plan Auto-fix in a one-off worker so the canvas keeps painting. Any worker
+ * failure, including an unusable response, plans on the calling thread instead.
+ */
+export function planAutoFixInWorker(
+  createWorker: () => CompilationWorker,
+  doc: DiagramDocument,
+  snapToGrid: boolean,
+  fallback: () => AutoFixPlan,
+): Promise<AutoFixPlan> {
+  return new Promise((resolve, reject) => {
+    let worker: CompilationWorker | null = null;
+    let settled = false;
+    const settle = (plan: () => AutoFixPlan) => {
+      if (settled) return;
+      settled = true;
+      try {
+        worker?.terminate();
+      } catch {
+        // Termination is best effort; the plan below settles the request.
+      }
+      try {
+        resolve(plan());
+      } catch (cause) {
+        reject(cause);
+      }
+    };
+    try {
+      const current = createWorker();
+      worker = current;
+      current.onmessage = (event) => settle(() => isAutoFixPlan(event.data) ? event.data : fallback());
+      current.onerror = () => settle(fallback);
+      current.onmessageerror = () => settle(fallback);
+      current.postMessage({ autoFix: true, doc, snapToGrid });
+    } catch {
+      settle(fallback);
+    }
+  });
 }
 
 /**

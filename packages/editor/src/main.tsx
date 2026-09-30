@@ -27,8 +27,7 @@ import { renderPortableSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import { serializeClipboardResult, duplicateSelectionResult } from "./model/clipboard";
-import type { LayoutEditingMode, Selection, SelectionItem } from "./model/types";
-import { LayoutModeControl } from "./ui/LayoutModeControl";
+import type { Selection, SelectionItem } from "./model/types";
 import { readClipboardSelection, writeClipboardText } from "./state/clipboard-actions";
 import { documentHasUnsafeAssets, importDocumentFiles, importSvgFile, validateImportedSource } from "./state/document-import";
 import { useDocumentCommands } from "./state/use-document-commands";
@@ -299,7 +298,6 @@ function App() {
     updateViewport,
     markTabSaved,
     setTabFilename,
-    setTabLayoutMode,
     persistenceWarning,
   } = useWorkspace({
     initialSource: INITIAL_URL_IMPORT.source ?? BLANK_SOURCE,
@@ -380,19 +378,11 @@ function App() {
   };
 
   const documentCommands = useDocumentCommands({
-    source, tabId: activeTabId, snapToGrid, layoutMode: activeTab.layoutMode,
+    source, tabId: activeTabId, snapToGrid,
     commitSource, replaceSource, editSourceDraft, commitSourceDraft, notify: setToast,
   });
   const { sourceRef, committedCompilationKey, mutateCurrent, previewMutate,
     onSourceChange, onSourceCommit, clearDraftTimer, commitDocument: updateDocument } = documentCommands;
-
-  const changeLayoutMode = (mode: LayoutEditingMode) => {
-    if (mode === activeTab.layoutMode) return;
-    setTabLayoutMode(activeTabId, mode);
-    setToast(mode === "automatic"
-      ? "Automatic layout enabled. Future edits may move items; use Undo to restore them."
-      : "Manual layout enabled. Other items and connector paths stay in place.");
-  };
 
   const tabLabel = useCallback((tab: WorkspaceTab): string => {
     const parsed = parseDgmResult(tab.source);
@@ -1062,7 +1052,7 @@ function App() {
 
   const autoFix = () => {
     setPendingPort(null);
-    documentCommands.autoFix(compiled);
+    void documentCommands.autoFix(compiled);
   };
 
   const selectMarquee = (rect: { x: number; y: number; w: number; h: number }, mode: SelectionMode) => {
@@ -1399,9 +1389,7 @@ function App() {
     { id: "command-send-back", label: "Send to back", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: () => changeSelectedZIndex("back") },
     { id: "command-toggle-lock", label: "Toggle lock", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: toggleSelectedLocked },
     { id: "command-toggle-visibility", label: "Toggle visibility", section: "Arrange", disabled: selection.length !== 1 || !compiled.ok, onSelect: toggleSelectedVisible },
-    { id: "command-auto-fix", label: "Auto-fix diagram", section: "View", onSelect: autoFix },
-    { id: "command-manual-layout", label: "Use manual layout", section: "View", onSelect: () => changeLayoutMode("manual") },
-    { id: "command-automatic-layout", label: "Use automatic layout", section: "View", onSelect: () => changeLayoutMode("automatic") },
+    { id: "command-auto-fix", label: "Auto-fix diagram", section: "View", disabled: documentCommands.autoFixing, onSelect: autoFix },
     { id: "command-fit", label: "Fit to screen", section: "View", onSelect: () => fitRef.current?.() },
     { id: "command-zoom-in", label: "Zoom in", section: "View", onSelect: () => updateViewport({ ...viewport, zoom: clampZoom(viewport.zoom + 0.1) }) },
     { id: "command-zoom-out", label: "Zoom out", section: "View", onSelect: () => updateViewport({ ...viewport, zoom: clampZoom(viewport.zoom - 0.1) }) },
@@ -1519,7 +1507,6 @@ function App() {
                 tool={interactionTool}
                 zoom={viewport.zoom}
                 snapToGrid={snapToGrid}
-                layoutMode={activeTab.layoutMode}
                 selection={selection}
                 externalMarquee={stageMarquee}
                 pendingPort={pendingPort}
@@ -1646,16 +1633,17 @@ function App() {
             <span className="file-name">{activeTab.filename ?? ".dgm"}</span>
           </div>
           <div className="topbar-center">
-            <LayoutModeControl mode={activeTab.layoutMode} onChange={changeLayoutMode} />
             <button
               type="button"
               className="auto-fix-button"
-              aria-label="Auto-fix now"
-              title="Repair the current diagram in either mode. Undo restores the previous layout."
+              aria-label="Auto-fix"
+              aria-busy={documentCommands.autoFixing}
+              disabled={documentCommands.autoFixing}
+              title="Repair overlaps and crossings in the current diagram. Undo restores the previous layout."
               onClick={autoFix}
             >
-              <IconMagicWand />
-              <span>Auto-fix now</span>
+              {documentCommands.autoFixing ? <span className="loading-spinner is-small" aria-hidden="true" /> : <IconMagicWand />}
+              <span>{documentCommands.autoFixing ? "Fixing…" : "Auto-fix"}</span>
             </button>
             <button
               type="button"

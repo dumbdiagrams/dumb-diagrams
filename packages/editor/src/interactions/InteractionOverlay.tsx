@@ -26,7 +26,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   isSelected,
 } from "../editor-model";
-import type { LayoutEditingMode, Selection, SelectionItem } from "../model/types";
+import type { Selection, SelectionItem } from "../model/types";
 import {
   snapCoordinate,
 } from "../grid.js";
@@ -113,7 +113,6 @@ function InteractionOverlayComponent({
   tool: Tool;
   zoom: number;
   snapToGrid: boolean;
-  layoutMode: LayoutEditingMode;
   selection: Selection;
   externalMarquee?: { rect: Rect; mode: SelectionMode } | null;
   pendingPort: { nodeId: string; side: Side; offset: number } | null;
@@ -1701,8 +1700,6 @@ export const InteractionOverlay = memo(
     previous.tool === next.tool &&
     previous.zoom === next.zoom &&
     previous.snapToGrid === next.snapToGrid &&
-    // Mode changes replace the mutation callbacks used by the next gesture.
-    previous.layoutMode === next.layoutMode &&
     previous.selection === next.selection &&
     previous.externalMarquee === next.externalMarquee &&
     previous.pendingPort === next.pendingPort,

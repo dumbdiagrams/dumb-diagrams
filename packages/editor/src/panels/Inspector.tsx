@@ -254,7 +254,7 @@ export function Inspector({
             <option value="top">Above icon</option>
             <option value="bottom">Below icon</option>
           </select>
-          <p className="property-hint">Automatic connectors avoid the side occupied by the label.</p>
+          <p className="property-hint">Automatic connectors avoid the side occupied by the label unless a straight line to an aligned icon fits.</p>
         </div>
       )}
       {group && (
