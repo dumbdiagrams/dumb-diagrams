@@ -19,6 +19,12 @@ function installAnimationFrame() {
       return id;
     },
     cancelAnimationFrame: (id: number) => frames.delete(id),
+    runFrames: () => {
+      for (const [id, callback] of [...frames]) {
+        frames.delete(id);
+        callback(0);
+      }
+    },
   };
   vi.stubGlobal("window", fakeWindow);
   return fakeWindow;
@@ -95,6 +101,36 @@ describe("move gesture completion", () => {
     expect(noopPreview.commit).toHaveBeenCalledOnce();
     expect(end).toHaveBeenCalledOnce();
     expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it("keeps the preview under the pointer beside a peer and settles onto its line on release", () => {
+    const frames = installAnimationFrame();
+    const gesture = captureGesture();
+    const move = vi.fn(() => true);
+    const preview: MovePreviewController = { update: vi.fn(), commit: vi.fn(), finish: vi.fn() };
+    const guides: AlignmentGuidePreviewController = { update: vi.fn(), finish: vi.fn() };
+    beginMove(
+      event(),
+      1,
+      false,
+      { x: 0, y: 0, w: 20, h: 20 },
+      move,
+      preview,
+      [{ x: 100, y: 3, w: 20, h: 20 }],
+      guides,
+      gesture.startGesture,
+      vi.fn(),
+      vi.fn(),
+    );
+
+    gesture.options().onMove(pointer(10, 1));
+    frames.runFrames();
+    expect(preview.update).toHaveBeenLastCalledWith(10, 1);
+    expect(guides.update).toHaveBeenLastCalledWith([expect.objectContaining({ axis: "y", position: 13 })]);
+
+    gesture.options().onUp(pointer(10, 1));
+    expect(preview.update).toHaveBeenLastCalledWith(10, 3);
+    expect(move).toHaveBeenCalledWith(10, 3, 10, 3);
   });
 
   it("rolls back and cancels when publication rejects or throws", () => {

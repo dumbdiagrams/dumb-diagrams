@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { compileDiagramSource } from "../diagram-compiler";
+import { compileDiagramSource, getCachedDiagramCompilation } from "../diagram-compiler";
 import { deleteSelection, moveSelection, setGroupBounds, setPlace } from "../editor-model";
 import { resizeRect } from "../interactions/move-resize-gestures";
 import { preserveManualLayout, preserveUnplacedManualLayout } from "../model/layout-preservation";
@@ -99,6 +99,18 @@ describe("document action preparation", () => {
       invariantFailures: [],
     });
     expect(result.isErr() && result.error).toMatchObject({ code: "compilation", message: "Render failed" });
+  });
+
+  it("leaves a gesture drop's compile to the display worker but still validates it", () => {
+    const source = `diagram deferred_drop {
+      grammar aws
+      generic.custom api "API"
+    }`;
+    const moved = prepareDocumentMutation(source, (doc) => setPlace(doc, "api", 240, 96), true, true);
+    expect(moved.isOk() && getCachedDiagramCompilation(moved.value.source, true)).toBeUndefined();
+    const duplicated = prepareDocumentMutation(source, (doc) =>
+      ({ ...doc, resources: [...doc.resources, doc.resources[0]!] }), true, true);
+    expect(duplicated.isErr() && duplicated.error.code).toBe("invalid-document");
   });
 
   it("returns the serialized validated mutation for publication", () => {

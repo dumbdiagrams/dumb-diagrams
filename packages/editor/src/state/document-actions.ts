@@ -14,17 +14,23 @@ export type DocumentActionError = {
 
 export type PreparedDocument = { doc: DiagramDocument; source: string };
 
-/** Prepare completely before publishing source or changing history. */
+/**
+ * Prepare before publishing source or changing history. A deferred compile
+ * validates here and leaves layout and routing to the display worker, so a
+ * layout or routing defect surfaces as a diagram error instead of a rejection.
+ */
 export function prepareDocument(
   doc: DiagramDocument,
   snapToGrid: boolean,
   compilation?: DiagramCompilation,
+  deferCompile = false,
 ): Result<PreparedDocument, DocumentActionError> {
   try {
     const issue = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false })
       .find((candidate) => candidate.level === "error");
     if (issue) return err({ code: "invalid-document", message: issue.message });
     const source = printDgm(doc);
+    if (deferCompile) return ok({ doc, source });
     const prepared = warmDiagramCompilationCache(source, snapToGrid, compilation);
     if (!prepared.ok) {
       return err({
@@ -43,6 +49,7 @@ export function prepareDocumentMutation(
   source: string,
   change: (doc: DiagramDocument) => DiagramDocument,
   snapToGrid: boolean,
+  deferCompile = false,
 ): Result<PreparedDocument, DocumentActionError> {
   try {
     const parsed = parseDgmResult(source);
@@ -57,7 +64,12 @@ export function prepareDocumentMutation(
       });
     }
     const preserved = preserveManualLayout(parsed.value, baseline.layout);
-    return prepareDocument(reconcileManualRouteMoves(preserved, change(structuredClone(preserved))), snapToGrid);
+    return prepareDocument(
+      reconcileManualRouteMoves(preserved, change(structuredClone(preserved))),
+      snapToGrid,
+      undefined,
+      deferCompile,
+    );
   } catch (cause) {
     return err({ code: "unexpected", message: "The edit failed unexpectedly. Your diagram was not changed.", cause });
   }

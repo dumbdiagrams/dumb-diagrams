@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
-import { compileDiagramSource, type DiagramCompilation } from "../diagram-compiler";
+import {
+  compileDiagramSource,
+  getCachedDiagramCompilation,
+  isDeferredCompilation,
+  markDeferredCompilation,
+  warmDiagramCompilationCache,
+  type DiagramCompilation,
+} from "../diagram-compiler";
 import { planAutoFixInWorker } from "../diagram-compiler-worker-client";
 import { preserveManualLayout, preserveUnplacedManualLayout, reconcileManualRouteMoves } from "../model/layout-preservation";
 import { planAutoFix } from "../auto-fix";
@@ -40,6 +48,26 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
     }
     return clearDraftTimer;
   }, [clearDraftTimer, options.tabId]);
+  const snapToGridRef = useRef(options.snapToGrid);
+  snapToGridRef.current = options.snapToGrid;
+  // A capture listener on window runs before React collects its handlers, so
+  // the next input after a gesture drop never acts on the pre-drop geometry.
+  // Registered once, it also precedes the window-level shortcut listener.
+  useEffect(() => {
+    const settleDeferredCompilation = () => {
+      const source = sourceRef.current;
+      const snapToGrid = snapToGridRef.current;
+      if (!isDeferredCompilation(source, snapToGrid) || getCachedDiagramCompilation(source, snapToGrid)) return;
+      warmDiagramCompilationCache(source, snapToGrid);
+      flushSync(() => setCommittedCompilationKey((current) => current + 1));
+    };
+    window.addEventListener("pointerdown", settleDeferredCompilation, true);
+    window.addEventListener("keydown", settleDeferredCompilation, true);
+    return () => {
+      window.removeEventListener("pointerdown", settleDeferredCompilation, true);
+      window.removeEventListener("keydown", settleDeferredCompilation, true);
+    };
+  }, []);
 
   const reportFailure = (error: DocumentActionError) => {
     if (error.code === "invalid-source") return;
@@ -50,8 +78,10 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
     clearDraftTimer();
     sourceRef.current = prepared.source;
     setCommittedCompilationKey((current) => current + 1);
-    if (preview) options.replaceSource(prepared.source);
-    else options.commitSource(prepared.source);
+    if (preview) {
+      markDeferredCompilation(prepared.source, options.snapToGrid);
+      options.replaceSource(prepared.source);
+    } else options.commitSource(prepared.source);
   };
   const commitDocument = (doc: DiagramDocument, compilation?: DiagramCompilation, preservePositions = true) => {
     const baseline = preservePositions ? compileDiagramSource(sourceRef.current, options.snapToGrid) : null;
@@ -64,8 +94,10 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
     publish(result.value, false);
     return true;
   };
+  // Gesture drops keep their on-canvas preview until the worker's compile lands,
+  // so routing them here would only freeze the pointer release.
   const mutate = (change: (doc: DiagramDocument) => DiagramDocument, preview = false): PreparedDocument | null => {
-    const result = prepareDocumentMutation(sourceRef.current, change, options.snapToGrid);
+    const result = prepareDocumentMutation(sourceRef.current, change, options.snapToGrid, preview);
     if (result.isErr()) { reportFailure(result.error); return null; }
     publish(result.value, preview);
     return result.value;

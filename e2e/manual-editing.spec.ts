@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { SIMPLE_SERVERLESS, entityBox, waitForStudioReady } from "./support/helpers";
+import { MOD, ROOT, SIMPLE_SERVERLESS, entityBox, waitForStudioReady } from "./support/helpers";
 
 type Bounds = { x: number; y: number; w: number; h: number };
 type Geometry = Record<string, Bounds>;
@@ -68,8 +68,11 @@ test("Manual edits keep other nodes and routes stable, while Auto-fix repairs an
   const before = await geometry(page);
   const beforeRoutes = await routes(page);
   await dragResourceToResource(page, "gateway", "handler");
+  await expect.poll(async () => {
+    const current = await geometry(page);
+    return overlaps(current["res-gateway"]!, current["res-handler"]!);
+  }).toBe(true);
   const overlap = await geometry(page);
-  expect(overlaps(overlap["res-gateway"]!, overlap["res-handler"]!)).toBe(true);
   sameBoundsExcept(before, overlap, "res-gateway");
 
   const manualRoutes = await routes(page);
@@ -90,4 +93,28 @@ test("Manual edits keep other nodes and routes stable, while Auto-fix repairs an
   await undo.click();
   await expect.poll(() => geometry(page)).toEqual(overlap);
   await expect(undo).toBeEnabled();
+});
+
+test("A shortcut pressed while a drop is still routing builds on the dropped position", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/curated/aws-high-availability-web-app/diagram.dgm`);
+  await waitForStudioReady(page);
+  const resources = page.locator('.canvas-artboard .diagram-svg g[id^="res-"]');
+  const count = await resources.count();
+  const dragCdnDown = async () => {
+    const cdn = await entityBox(page, "resource", "cdn");
+    await page.mouse.move(cdn.x + cdn.width * 0.3, cdn.y + cdn.height * 0.3);
+    await page.mouse.down();
+    await page.mouse.move(cdn.x + cdn.width * 0.3, cdn.y + cdn.height * 0.3 + 60, { steps: 10 });
+    await page.mouse.up();
+  };
+  // The first manual edit authors every position, so a stale document would now revert the next drop.
+  const start = (await geometry(page))["res-cdn"]!.y;
+  await dragCdnDown();
+  await expect.poll(async () => (await geometry(page))["res-cdn"]!.y).toBeGreaterThan(start + 48);
+  const authored = (await geometry(page))["res-cdn"]!.y;
+  await dragCdnDown();
+  await page.keyboard.press(`${MOD}+KeyD`);
+  await expect(resources).toHaveCount(count + 1);
+  expect((await geometry(page))["res-cdn"]!.y).toBeGreaterThan(authored + 48);
 });

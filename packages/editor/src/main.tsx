@@ -1552,7 +1552,7 @@ function App() {
                   previewMutate((doc) => setEdgeBadgePosition(doc, edgeId, t, side))
                 }
                 onLabelMove={(edgeId, t, side) =>
-                  mutateCurrent((doc) => setEdgeLabelPosition(doc, edgeId, t, side))
+                  previewMutate((doc) => setEdgeLabelPosition(doc, edgeId, t, side))
                 }
                 onContextMenu={(clientX, clientY, item) => {
                   const itemIsSelected = Boolean(

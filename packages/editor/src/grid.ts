@@ -36,9 +36,9 @@ export function snapPoint(
 }
 
 /**
- * Resolve a drag against the visible grid and nearby peer bounds. Alignment
- * is deliberately magnetic: the pointer remains fluid until an edge or
- * centre is within a small, zoom-independent screen distance.
+ * Resolve a drag against the visible grid and nearby peer bounds. An edge or
+ * centre within a small, zoom-independent screen distance of a peer aligns
+ * with it; otherwise the position falls back to the grid.
  */
 export function snapDragDelta(
   moving: Rect,

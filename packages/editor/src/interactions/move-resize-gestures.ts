@@ -239,8 +239,6 @@ export function beginMove(
   let rawDy = 0;
   let dx = 0;
   let dy = 0;
-  let previewDx = 0;
-  let previewDy = 0;
   let guides: AlignmentGuide[] = [];
   let frame = 0;
   let completed = false;
@@ -280,14 +278,13 @@ export function beginMove(
     dx = snapped.dx;
     dy = snapped.dy;
     guides = snapped.guides;
-    // Grid quantisation is committed on release, while peer alignment remains
-    // a gentle magnetic constraint during the gesture.
-    previewDx = guides.some((guide) => guide.axis === "x") ? dx : rawDx;
-    previewDy = guides.some((guide) => guide.axis === "y") ? dy : rawDy;
+    // The preview tracks the pointer exactly. Holding it on a nearby peer's
+    // line would make it stick and then leap; the guides announce where the
+    // release settles instead, as grid quantisation already does.
     if (!frame) {
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        preview.update(previewDx, previewDy);
+        preview.update(rawDx, rawDy);
         guidePreview.update(guides);
       });
     }

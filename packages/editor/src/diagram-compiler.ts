@@ -50,6 +50,7 @@ const MAX_CACHED_COMPILATIONS = 12;
 export const STUDIO_CANVAS_PADDING = 128;
 const compilationCache = new Map<string, DiagramCompilation>();
 let committedCompilationEpoch = 0;
+let deferredCompilationKey: string | null = null;
 
 export function getCommittedCompilationEpoch(): number {
   return committedCompilationEpoch;
@@ -57,6 +58,15 @@ export function getCommittedCompilationEpoch(): number {
 
 function cacheKey(source: string, snapToGrid: boolean): string {
   return `${snapToGrid ? "grid" : "free"}\0${source}`;
+}
+
+/** Mark a gesture drop published before the display worker has compiled it. */
+export function markDeferredCompilation(source: string, snapToGrid: boolean): void {
+  deferredCompilationKey = cacheKey(source, snapToGrid);
+}
+
+export function isDeferredCompilation(source: string, snapToGrid: boolean): boolean {
+  return deferredCompilationKey === cacheKey(source, snapToGrid);
 }
 
 function remember(key: string, compilation: DiagramCompilation): DiagramCompilation {

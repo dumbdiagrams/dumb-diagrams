@@ -9,6 +9,7 @@ import {
   compilationFailure,
   getCachedDiagramCompilation,
   getCommittedCompilationEpoch,
+  isDeferredCompilation,
   type DiagramCompilation,
 } from "./diagram-compiler";
 import {
@@ -137,7 +138,7 @@ export function useDiagramCompilation(
       // Older embedded browsers still work; schedule the synchronous fallback
       // after the current interaction has painted.
       compileSynchronously(request);
-    }, COMPILATION_DEBOUNCE_MS);
+    }, isDeferredCompilation(source, snapToGrid) ? 0 : COMPILATION_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [snapToGrid, source]);
 
