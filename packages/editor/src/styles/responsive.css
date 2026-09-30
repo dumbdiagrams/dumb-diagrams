@@ -169,9 +169,9 @@
 @media (max-width: 900px) {
   .privacy-footer {
     bottom: 8px;
-    left: 8px;
+    left: calc(var(--tool-rail-width) + 8px);
     justify-content: flex-start;
-    max-width: min(390px, calc(100vw - 16px));
+    max-width: min(390px, calc(100vw - var(--tool-rail-width) - 16px));
   }
 
   .privacy-footer-message {

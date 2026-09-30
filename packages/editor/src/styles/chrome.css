@@ -1400,10 +1400,10 @@
   position: absolute;
   /* Stay above the canvas, but always below drawers, inspectors, and tool chrome. */
   z-index: 3;
-  left: 12px;
+  left: calc(var(--tool-rail-width) + 12px);
   bottom: 12px;
   display: inline-flex;
-  max-width: min(540px, calc(100vw - 24px));
+  max-width: min(540px, calc(100vw - var(--tool-rail-width) - 24px));
   align-items: center;
   gap: 8px;
   padding: 6px 10px 6px 9px;
@@ -1424,6 +1424,7 @@
 }
 
 .privacy-footer-brand {
+  flex-shrink: 0;
   color: var(--muted);
   font-weight: 700;
 }
