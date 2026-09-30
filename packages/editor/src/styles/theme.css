@@ -1,0 +1,105 @@
+/* Theme tokens and color modes */
+
+/* ── Adaptive tokens ─────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  font-family: var(--font-brand);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  --studio-chrome-height: 96px;
+  --tool-rail-width: 48px;
+
+  /* Brand palette and fonts come from @dumb-diagrams/brand. */
+
+  --ink: var(--brand-navy);
+  --muted: #5e6975;
+  --line: #ddd5cc;
+  --line-strong: #b7aa9c;
+  --surface: #fffbf5;
+  --surface-solid: #fffdf9;
+  --surface-elevated: #fffdfb;
+  --canvas-bg: #f5efe7;
+  --canvas-tint: #ddd3c7;
+  --accent: var(--brand-navy);
+  --accent-strong: var(--brand-navy-deep);
+  --accent-soft: var(--brand-navy-soft);
+  /* Keep interaction feedback light blue, independent of the brand accent. */
+  --highlight: #3154d4;
+  --highlight-soft: #e5eaff;
+  --accent-warm: var(--brand-orange);
+  --accent-warm-soft: var(--brand-orange-soft);
+  --action-fill: var(--brand-navy);
+  --action-hover: var(--brand-navy-deep);
+  --action-text: #ffffff;
+  --badge-fill: var(--brand-navy);
+  --badge-text: #ffffff;
+  --success: #2f7d62;
+  --danger: var(--brand-coral-deep);
+  --danger-soft: var(--brand-coral-soft);
+  --focus: var(--brand-navy);
+  --artboard: #ffffff;
+  --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.1);
+  --diagram-ink: var(--brand-navy);
+  --diagram-edge: var(--brand-navy);
+  --diagram-fallback: #eee8df;
+  --annotation-ink: var(--brand-navy);
+  --canvas-atmosphere: none;
+
+  --text-primary: var(--ink);
+  --panel-bg: var(--surface-elevated);
+  --panel-border: var(--line);
+  --surface-muted: color-mix(in srgb, var(--ink) 6%, var(--surface-solid));
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e6ebf0;
+  --muted: #adb9c8;
+  --line: #243447;
+  --line-strong: #3a5068;
+  --surface: #0a1525;
+  --surface-solid: #0d1a2c;
+  --surface-elevated: #122033;
+  --canvas-bg: #081525;
+  --canvas-tint: #ffffff;
+  --accent: #9eb5d2;
+  --accent-strong: #d5e0ef;
+  --accent-soft: #1a2a3f;
+  --highlight: #8da8ff;
+  --highlight-soft: #1a2840;
+  --accent-warm: var(--brand-orange);
+  --accent-warm-soft: #3d2a18;
+  --action-fill: var(--brand-navy);
+  --action-hover: var(--brand-navy-deep);
+  --action-text: #ffffff;
+  --badge-fill: var(--brand-orange);
+  --badge-text: var(--brand-navy-deep);
+  --success: #7bc4a0;
+  --danger: #ff9b75;
+  --danger-soft: #4a2824;
+  --focus: var(--brand-orange);
+  --artboard: #102033;
+  --diagram-ink: #e6ebf0;
+  --diagram-edge: #b8c2ce;
+  --diagram-fallback: #1a2a3f;
+  --annotation-ink: #e6ebf0;
+  --canvas-atmosphere: none;
+  --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.56);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+}

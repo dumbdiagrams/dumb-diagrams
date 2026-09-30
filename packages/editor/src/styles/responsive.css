@@ -1,0 +1,270 @@
+/* Responsive and reduced motion rules */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  body {
+    min-width: 0;
+  }
+
+  .floating-panel.drawer-sheet {
+    left: 12px;
+    right: 12px;
+    width: auto !important;
+    max-width: none;
+  }
+
+  .floating-panel.inspector-sheet {
+    left: 12px;
+    right: 12px;
+    width: auto !important;
+  }
+
+  .tool-dock {
+    top: auto;
+    bottom: 52px;
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .floating-panel.drawer-sheet,
+  .floating-panel.inspector-sheet,
+  .floating-panel.edge-sheet {
+    right: 0;
+    left: 0;
+    width: 100% !important;
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connector-drag-preview,
+  .connector-drag-cursor {
+    stroke-dasharray: none;
+    animation: none;
+  }
+}
+
+@media (max-width: 1119px) {
+  .floating-panel.drawer-sheet {
+    left: 48px;
+  }
+
+  .floating-panel.inspector-sheet {
+    right: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    min-width: 900px;
+  }
+
+}
+
+@media (max-width: 900px) {
+  .floating-panel.drawer-sheet {
+    right: auto;
+    left: var(--tool-rail-width);
+    width: min(100%, 420px) !important;
+    border-right: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .floating-panel.drawer-sheet.edge-sheet,
+  .floating-panel.inspector-sheet {
+    right: 0;
+    left: auto;
+    width: min(100%, 420px) !important;
+    border-left: 1px solid var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-capsule,
+  .callout,
+  .toast {
+    animation: none;
+  }
+
+  .selection-outline-halo,
+  .selection-outline {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .auto-fix-button span {
+    display: none;
+  }
+
+  .snap-toggle span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-outline,
+  .hover-edge,
+  .hover-edge-badge {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bend-handle-halo,
+  .bend-handle,
+  .segment-handle {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-actions button.layer-lock-toggle,
+  .layer-actions button.layer-visibility-toggle {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .example-preview-skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 1050px) {
+  .floating-topbar .brand-name {
+    display: none;
+  }
+
+  .topbar-left {
+    gap: 5px;
+  }
+
+  .examples-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-tab-new-tooltip {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .privacy-footer {
+    bottom: 8px;
+    left: 8px;
+    justify-content: flex-start;
+    max-width: min(390px, calc(100vw - 16px));
+  }
+
+  .privacy-footer-message {
+    overflow: hidden;
+  }
+
+  .privacy-footer-message > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 900px) {
+  .floating-panel.edge-sheet {
+    width: min(100%, 420px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .edge-panel-intro,
+  .edge-panel-section,
+  .edge-panel-footer {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .edge-style-option {
+    min-height: 78px;
+  }
+}
+
+/* The default export surface is deliberately dense enough to fit the common
+ * laptop heights. Keep the body stable in that case; genuinely constrained
+ * windows and expanded Advanced options retain an accessible scroll region. */
+@media (min-width: 701px) and (min-height: 700px) {
+  .export-dialog .modal-body {
+    overflow: hidden;
+    padding: 8px 10px 10px;
+  }
+
+  .export-dialog-form {
+    gap: 6px;
+  }
+
+  .export-dialog-section {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .export-choice-card {
+    min-height: 58px;
+    padding: 8px 10px;
+  }
+
+  .export-dialog:has(.export-advanced[open]) .modal-body {
+    overflow: auto;
+  }
+}
+
+@media (max-height: 699px), (max-width: 700px) {
+  .export-dialog .modal-body {
+    overflow: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .export-dialog .modal-body {
+    padding: 8px;
+  }
+
+  .export-scope-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .export-appearance-row,
+  .export-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .export-dialog-footer,
+  .export-dialog-footer .modal-actions {
+    width: 100%;
+  }
+
+  .export-dialog-footer .modal-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 900px) {
+  .tool-dock {
+    top: auto;
+    bottom: 52px;
+  }
+}

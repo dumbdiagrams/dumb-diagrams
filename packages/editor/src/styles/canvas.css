@@ -1,0 +1,1059 @@
+/* Canvas and interaction visuals */
+
+.canvas-stage {
+  position: absolute;
+  inset: 0;
+  cursor: default;
+  touch-action: none;
+}
+
+.canvas-stage.is-panning {
+  cursor: grabbing;
+}
+
+.canvas-world {
+  position: absolute;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.canvas-artboard {
+  position: absolute;
+}
+
+.diagram-svg {
+  position: relative;
+  z-index: 1;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.diagram-svg svg {
+  display: block;
+  border-radius: 2px;
+}
+
+.empty-canvas {
+  display: grid;
+  width: 480px;
+  height: 240px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  color: var(--muted);
+  font-size: 13px;
+  box-shadow: var(--shadow-md);
+}
+
+.canvas-stage:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* ── Interaction overlay ─────────────────────────────────────────── */
+.interaction-overlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.marquee-hit-surface {
+  fill: transparent;
+  stroke: none;
+}
+
+.hit-group,
+.hit-node,
+.hit-edge,
+.port-handle,
+.segment-handle {
+  pointer-events: all;
+}
+
+.hit-group {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.hit-group:hover {
+  stroke: color-mix(in srgb, var(--highlight) 45%, transparent);
+  stroke-dasharray: 4 3;
+}
+
+.hit-node {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: transparent;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.hit-node:hover,
+.hit-node.is-selected {
+  stroke: var(--highlight);
+}
+
+.hit-edge {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.port-handle {
+  vector-effect: non-scaling-stroke;
+  cursor: crosshair;
+}
+
+.port-handle:hover,
+.port-handle.is-pending {
+  fill: var(--accent);
+  stroke: #fff;
+}
+
+.segment-handle.is-horizontal {
+  cursor: ns-resize;
+}
+
+.segment-handle.is-vertical {
+  cursor: ew-resize;
+}
+
+/* ── Interaction and panel polish ───────────────────────────────── */
+.canvas-stage {
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+}
+
+.interaction-overlay.is-select-tool .hit-group,
+.interaction-overlay.is-select-tool .hit-node,
+.interaction-overlay.is-select-tool .hit-annotation {
+  cursor: grab;
+}
+
+.interaction-overlay.is-select-tool .hit-annotation-text {
+  cursor: grab;
+}
+
+.interaction-overlay.is-select-tool .hit-group[aria-selected="true"],
+.interaction-overlay.is-select-tool .hit-node[aria-selected="true"],
+.interaction-overlay.is-select-tool .hit-annotation[aria-selected="true"] {
+  cursor: move;
+}
+
+.interaction-overlay.is-select-tool .hit-annotation-text[aria-selected="true"] {
+  cursor: move;
+}
+
+.interaction-overlay.is-select-tool .hit-group:active,
+.interaction-overlay.is-select-tool .hit-node:active,
+.interaction-overlay.is-select-tool .hit-annotation:active {
+  cursor: grabbing;
+}
+
+.interaction-overlay.is-select-tool .hit-annotation-text:active {
+  cursor: grabbing;
+}
+
+.interaction-overlay.is-text-tool,
+.interaction-overlay.is-text-tool .hit-annotation-text {
+  cursor: text;
+}
+
+.interaction-overlay.is-select-tool .hit-edge {
+  cursor: pointer;
+}
+
+.interaction-overlay.is-select-tool.has-group-hover .hit-edge {
+  cursor: move;
+}
+
+.interaction-overlay.is-select-tool .hit-edge-label {
+  cursor: grab;
+}
+
+.interaction-overlay.is-select-tool .hit-edge-label:active {
+  cursor: grabbing;
+}
+
+.hit-group.is-selected {
+  stroke-width: 3;
+  stroke-dasharray: 9 5;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 38%, transparent));
+}
+
+.hit-node.is-selected {
+  stroke-width: 3;
+  stroke-dasharray: 7 4;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 34%, transparent));
+}
+
+.selection-outline {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--highlight) 26%, transparent));
+}
+
+.alignment-guide {
+  fill: none;
+  stroke: color-mix(in srgb, var(--highlight) 72%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 1px color-mix(in srgb, var(--artboard) 45%, transparent));
+}
+
+.alignment-guide.is-center {
+  stroke-opacity: 1;
+  stroke-dasharray: 3 3;
+}
+
+.selection-group {
+  stroke-dasharray: 11 5;
+}
+
+.connector-drag-preview {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 8 6;
+  opacity: 0.62;
+  pointer-events: none;
+  animation: connector-drag-flow 0.7s linear infinite;
+}
+
+.connector-drag-preview.is-snapped {
+  stroke-dasharray: none;
+  opacity: 0.82;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--accent) 26%, transparent));
+}
+
+.connector-preview-arrow {
+  fill: var(--accent);
+  opacity: 0.82;
+}
+
+.connector-drag-cursor {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  opacity: 0.75;
+  pointer-events: none;
+  animation: connector-drag-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes connector-drag-flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+@keyframes connector-drag-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.marquee {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.resize-handle,
+.bend-handle {
+  fill: #fff;
+  stroke: var(--accent);
+}
+
+.resize-handle {
+  pointer-events: all;
+  cursor: nwse-resize;
+}
+
+.resize-handle-n,
+.resize-handle-s {
+  cursor: ns-resize;
+}
+
+.resize-handle-e,
+.resize-handle-w {
+  cursor: ew-resize;
+}
+
+.resize-handle-ne,
+.resize-handle-sw {
+  cursor: nesw-resize;
+}
+
+.resize-handle-nw,
+.resize-handle-se {
+  cursor: nwse-resize;
+}
+
+.group-resize-handle {
+  fill: var(--surface-solid);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--accent) 28%, transparent));
+}
+
+.group-resize-handle:hover,
+.group-resize-handle:focus-visible {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+}
+
+.hit-annotation.is-selected {
+  fill: color-mix(in srgb, var(--brand-orange) 18%, transparent);
+  stroke: var(--brand-orange-deep);
+}
+
+.canvas-stage {
+  background: var(--canvas-bg);
+}
+
+.diagram-svg svg {
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.hit-group,
+.hit-node,
+.hit-edge {
+  vector-effect: non-scaling-stroke;
+}
+
+.hit-group.is-selected,
+.hit-node.is-selected {
+  stroke: var(--highlight);
+  stroke-width: 2;
+  stroke-dasharray: none;
+}
+
+.resize-handle,
+.bend-handle {
+  stroke-width: 2;
+}
+
+.canvas-stage {
+  background-color: var(--canvas-bg);
+}
+
+.diagram-svg {
+  background-color: var(--artboard);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 28%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 28%, transparent) 1px, transparent 1px);
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+}
+
+.diagram-svg svg {
+  background: transparent;
+}
+
+.diagram-svg svg > rect:first-child {
+  display: none;
+}
+
+/* Canvas surround follows the theme; diagram content keeps canonical colors from the renderer. */
+.canvas-stage {
+  background-image: var(--canvas-atmosphere);
+}
+
+/* Dark artboard: lift label, edge, and badge contrast; group borders and icons stay canonical. */
+.diagram-svg svg .group-border-contrast {
+  display: none;
+}
+
+:root[data-theme="dark"] .diagram-svg svg .group-border-contrast {
+  display: block;
+}
+
+:root[data-theme="dark"] .diagram-svg svg text:not(.edge-badge-text):not(.group-badge-text) {
+  fill: var(--diagram-ink);
+}
+
+:root[data-theme="dark"] .diagram-svg svg path[stroke="#163964"] {
+  stroke: var(--diagram-edge);
+}
+
+:root[data-theme="dark"] .diagram-svg svg path[fill="#163964"] {
+  fill: var(--diagram-edge);
+}
+
+:root[data-theme="dark"] .diagram-svg svg circle[fill="#163964"]:not(.edge-badge-circle):not(.group-badge-circle) {
+  fill: var(--diagram-edge);
+}
+
+:root[data-theme="dark"] .diagram-svg svg circle.edge-badge-circle,
+:root[data-theme="dark"] .diagram-svg svg circle.group-badge-circle {
+  fill: var(--badge-fill);
+}
+
+:root[data-theme="dark"] .diagram-svg svg text.edge-badge-text,
+:root[data-theme="dark"] .diagram-svg svg text.group-badge-text {
+  fill: var(--badge-text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+:root[data-theme="dark"] .diagram-svg svg rect[fill="#eee"] {
+  fill: var(--diagram-fallback);
+}
+
+:root[data-theme="dark"] .diagram-svg svg g[id^="annotation-"] text {
+  fill: var(--annotation-ink);
+}
+
+:root[data-theme="dark"] .diagram-svg svg g[data-annotation-style="callout"] text {
+  fill: var(--brand-navy);
+}
+
+:root[data-theme="dark"] .diagram-svg {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in srgb, var(--canvas-tint) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--canvas-tint) 8%, transparent) 1px, transparent 1px);
+}
+
+@keyframes selection-halo-pulse {
+  0%,
+  100% {
+    opacity: 0.52;
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 18%, transparent));
+  }
+
+  50% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 34%, transparent));
+  }
+}
+
+@keyframes selection-core-pulse {
+  0%,
+  100% {
+    stroke-opacity: 0.82;
+  }
+
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
+@keyframes selection-edge-pulse {
+  0%,
+  100% {
+    stroke-opacity: 0.2;
+  }
+
+  50% {
+    stroke-opacity: 0.34;
+  }
+}
+
+.hit-group.is-selected {
+  fill: transparent;
+  stroke: transparent;
+}
+
+.hit-node.is-selected {
+  fill: transparent;
+  stroke: transparent;
+}
+
+.hit-edge.is-selected {
+  stroke: var(--highlight);
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-opacity: 0.26;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--highlight) 22%, transparent));
+  animation: selection-edge-pulse 1.55s ease-in-out infinite;
+}
+
+.selection-outline-halo {
+  fill: none;
+  stroke: var(--highlight);
+  stroke-width: 8;
+  stroke-opacity: 0.18;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  animation: selection-halo-pulse 1.8s ease-in-out infinite;
+}
+
+.selection-outline {
+  fill: color-mix(in srgb, var(--highlight) 2%, transparent);
+  stroke: var(--highlight);
+  stroke-width: 2;
+  stroke-opacity: 0.92;
+  stroke-dasharray: none;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  animation: selection-core-pulse 1.8s ease-in-out infinite;
+}
+
+.selection-group {
+  stroke-width: 2.25;
+}
+
+.selection-annotation {
+  stroke: color-mix(in srgb, var(--highlight) 78%, var(--brand-orange-deep));
+  fill: color-mix(in srgb, var(--highlight) 3%, transparent);
+}
+
+.selection-text {
+  stroke: var(--highlight);
+  fill: color-mix(in srgb, var(--highlight) 8%, transparent);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+  rx: 5;
+}
+
+.auto-fix-button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.auto-fix-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.auto-fix-button:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-solid));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.auto-fix-button:active {
+  transform: translateY(1px);
+}
+
+.snap-toggle {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-solid);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.snap-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+
+.snap-toggle:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.snap-toggle.is-active {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.bend-handle {
+  cursor: grab;
+}
+
+.bend-handle:hover,
+.bend-handle:focus-visible,
+.bend-handle.is-rewiring {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+}
+
+.endpoint-handle {
+  width: 10px;
+  height: 10px;
+  cursor: crosshair;
+}
+
+.endpoint-handle:active,
+.endpoint-handle.is-rewiring {
+  cursor: grabbing;
+}
+
+.port-handle.is-rewire-target {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+  stroke-width: 2;
+  r: 5.5px;
+  opacity: 1;
+}
+
+.quick-connect-control {
+  pointer-events: all;
+}
+
+.port-control {
+  pointer-events: all;
+}
+
+.port-hit-area {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.port-handle-halo {
+  fill: color-mix(in srgb, var(--accent) 7%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 18%, transparent);
+  stroke-width: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: r 0.14s ease, opacity 0.14s ease;
+}
+
+.port-handle {
+  fill: color-mix(in srgb, var(--accent) 24%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 58%, transparent);
+  stroke-width: 1.25;
+  r: 3.25px;
+  opacity: 0.74;
+  pointer-events: none;
+  transition: r 0.14s ease, fill 0.14s ease, opacity 0.14s ease, stroke 0.14s ease, stroke-width 0.14s ease;
+}
+
+.port-hit-area:hover ~ .port-handle-halo,
+.port-hit-area:focus-visible ~ .port-handle-halo,
+.port-hit-area[aria-pressed="true"] ~ .port-handle-halo {
+  opacity: 0.72;
+  r: 7px;
+}
+
+.port-hit-area:hover ~ .port-handle,
+.port-hit-area:focus-visible ~ .port-handle,
+.port-hit-area[aria-pressed="true"] ~ .port-handle {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+  stroke-width: 2;
+  r: 5.5px;
+  opacity: 1;
+}
+
+.quick-connect-frame {
+  fill: color-mix(in srgb, var(--accent) 2%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 28%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.quick-connect-control.is-compact .port-handle {
+  fill: color-mix(in srgb, var(--accent) 26%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 62%, transparent);
+  stroke-width: 1.25;
+  r: 3.25px;
+}
+
+.quick-connect-control.is-compact .port-hit-area:hover ~ .port-handle,
+.quick-connect-control.is-compact .port-hit-area:focus-visible ~ .port-handle,
+.quick-connect-control.is-compact .port-hit-area[aria-pressed="true"] ~ .port-handle {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+  stroke-width: 2.5;
+}
+
+.interaction-overlay .hit-group {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 18px;
+  pointer-events: all;
+}
+
+.interaction-overlay .hit-annotation {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: transparent;
+  stroke-width: 2;
+  pointer-events: all;
+  vector-effect: non-scaling-stroke;
+}
+
+.interaction-overlay .hit-edge-label {
+  fill: rgba(255, 255, 255, 0.001);
+  stroke: transparent;
+  pointer-events: all;
+}
+
+.interaction-overlay .hit-group:hover,
+.interaction-overlay .hit-group.is-selected {
+  stroke: transparent;
+}
+
+.hover-outline,
+.hover-edge,
+.hover-edge-badge {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.hover-outline {
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 76%, white);
+  stroke-width: 2.5;
+  stroke-dasharray: 7 4;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--highlight) 28%, transparent));
+  animation: hover-target-pulse 1.6s ease-in-out infinite;
+}
+
+.hover-group {
+  fill: color-mix(in srgb, var(--highlight) 3%, transparent);
+  stroke-width: 3;
+  stroke-dasharray: 10 5;
+}
+
+.hover-resource {
+  fill: color-mix(in srgb, var(--highlight) 8%, transparent);
+  stroke-dasharray: none;
+}
+
+.hover-annotation {
+  fill: color-mix(in srgb, var(--brand-orange) 10%, transparent);
+  stroke: var(--brand-orange-deep);
+  stroke-dasharray: 5 4;
+}
+
+.hover-edge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--highlight) 42%, transparent);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--highlight) 25%, transparent));
+  animation: hover-target-pulse 1.6s ease-in-out infinite;
+}
+
+.hover-edge-badge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--highlight) 76%, white);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--highlight) 28%, transparent));
+  animation: hover-target-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes hover-target-pulse {
+  0%,
+  100% {
+    stroke-opacity: 0.7;
+  }
+
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
+.edge-badge-handle {
+  cursor: grab;
+  pointer-events: all;
+}
+
+.edge-badge-hit {
+  pointer-events: all;
+}
+
+.edge-badge-hit circle {
+  fill: rgba(255, 255, 255, 0.001);
+  pointer-events: all;
+}
+
+.edge-badge-handle:active {
+  cursor: grabbing;
+}
+
+.edge-badge-handle-ring {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-solid));
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--accent) 30%, transparent));
+  transition: fill 0.14s ease, stroke-width 0.14s ease;
+}
+
+.edge-badge-handle-core {
+  fill: var(--badge-fill);
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.edge-badge-handle:hover .edge-badge-handle-ring,
+.edge-badge-handle:focus-visible .edge-badge-handle-ring {
+  fill: var(--accent-soft);
+  stroke-width: 2.5;
+}
+
+.edge-badge-handle-text {
+  fill: var(--badge-text);
+  font-size: 12px;
+  font-weight: 750;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.edge-badge-prediction {
+  pointer-events: none;
+  opacity: 0.48;
+}
+
+.edge-badge-preview-ring {
+  fill: color-mix(in srgb, var(--badge-fill) 12%, var(--surface-solid));
+  stroke: color-mix(in srgb, var(--accent) 72%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.edge-badge-preview-core {
+  fill: var(--badge-fill);
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.edge-badge-preview-text {
+  fill: var(--badge-text);
+  font-size: 12px;
+  font-weight: 750;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.rewire-preview {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 7 5;
+  pointer-events: none;
+  opacity: 0.9;
+  animation: rewire-preview-flow 0.7s linear infinite;
+}
+
+.rewire-preview.is-snapped {
+  stroke-width: 3;
+  stroke-dasharray: none;
+  opacity: 0.88;
+  animation: none;
+}
+
+.rewire-preview-endpoint {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.rewire-preview-endpoint.is-snapped {
+  fill: var(--accent);
+  stroke: var(--surface-solid);
+  stroke-width: 2.5;
+}
+
+@keyframes rewire-preview-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.route-editor {
+  pointer-events: none;
+}
+
+.route-editor.is-rewiring .route-edit-rail,
+.route-editor.is-rewiring .turn-handle,
+.route-editor.is-rewiring .segment-handle-group,
+.route-editor.is-rewiring .endpoint-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.route-edit-rail {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.turn-handle,
+.segment-handle-group {
+  pointer-events: all;
+  outline: none;
+}
+
+.turn-handle {
+  cursor: move;
+}
+
+.turn-handle:active,
+.turn-handle.is-dragging {
+  cursor: grabbing;
+}
+
+.bend-handle-halo {
+  fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 50%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  opacity: 0.72;
+  transition: r 0.14s ease, opacity 0.14s ease;
+}
+
+.bend-handle {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+  transition: fill 0.14s ease, stroke 0.14s ease, r 0.14s ease;
+}
+
+.bend-handle-core {
+  fill: var(--accent);
+  pointer-events: none;
+}
+
+.turn-handle:hover .bend-handle-halo,
+.turn-handle:focus-visible .bend-handle-halo,
+.turn-handle:active .bend-handle-halo {
+  opacity: 1;
+  r: 12px;
+}
+
+.turn-handle:hover .bend-handle,
+.turn-handle:focus-visible .bend-handle,
+.turn-handle:active .bend-handle {
+  fill: var(--accent-soft);
+  stroke-width: 2.5;
+  r: 7px;
+}
+
+.segment-handle-group {
+  cursor: move;
+}
+
+.segment-handle-group.is-horizontal {
+  cursor: ns-resize;
+}
+
+.segment-handle-group.is-vertical {
+  cursor: ew-resize;
+}
+
+.segment-handle-group:active {
+  cursor: grabbing;
+}
+
+.segment-handle {
+  fill: var(--surface-solid);
+  stroke: var(--accent);
+  stroke-width: 1.75;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+  transition: fill 0.14s ease, stroke-width 0.14s ease, transform 0.14s ease;
+}
+
+.segment-handle-glyph {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.segment-handle-group:hover .segment-handle,
+.segment-handle-group:focus-visible .segment-handle,
+.segment-handle-group:active .segment-handle {
+  fill: var(--accent-soft);
+  stroke-width: 2.5;
+}
+
+.segment-handle-group:hover .segment-handle-glyph,
+.segment-handle-group:focus-visible .segment-handle-glyph,
+.segment-handle-group:active .segment-handle-glyph {
+  stroke: var(--accent-strong, var(--accent));
+  stroke-width: 2;
+}
+
+.interaction-overlay .hit-annotation-text:hover,
+.interaction-overlay .hit-annotation-text.is-selected {
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 72%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.hover-edge-label {
+  fill: color-mix(in srgb, var(--highlight) 5%, transparent);
+  stroke: color-mix(in srgb, var(--highlight) 72%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.selection-edge-label {
+  fill: color-mix(in srgb, var(--highlight) 8%, transparent);
+  stroke: var(--highlight);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
