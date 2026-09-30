@@ -72,7 +72,7 @@ if (terminal) {
   const pause = terminal.querySelector<HTMLButtonElement>('[data-terminal-pause]')!;
   const replay = terminal.querySelector<HTMLButtonElement>('[data-terminal-replay]')!;
   const controls = terminal.querySelector<HTMLElement>('.terminal-controls')!;
-  const duration = Math.max(...rows.map(row => Number(row.dataset.at))) + 250;
+  const duration = Math.max(...rows.map(row => Number(row.dataset.at))) + 150;
   let frame = 0;
   let elapsed = 0;
   let previousTime: number | null = null;
@@ -99,7 +99,7 @@ if (terminal) {
     if (!running || userPaused || document.hidden) return;
     if (previousTime !== null) elapsed += time - previousTime;
     previousTime = time;
-    const nextCommand = fullCommand.slice(0, Math.floor(Math.min(1, elapsed / 1100) * fullCommand.length));
+    const nextCommand = fullCommand.slice(0, Math.floor(Math.min(1, elapsed / 700) * fullCommand.length));
     if (command.textContent !== nextCommand) command.textContent = nextCommand;
     let revealed = false;
     rows.forEach(row => {

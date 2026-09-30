@@ -96,21 +96,16 @@
   .hero-description p { font-size: 15px; color: var(--muted); line-height: 1.8; letter-spacing: -.025em; }
   .hero-start { margin-top: 28px; max-width: 100%; }
   .hero .install { width: 100%; }
-  .provider-strip { --provider-mark: clamp(27px, 2.5vw, 32px); padding: 18px 0 40px; }
-  .provider-strip-panel { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(32px, 5vw, 64px); width: 100%; padding-top: 18px; }
-  .provider-strip-panel::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--brand-navy) 58%, transparent), color-mix(in srgb, var(--line) 72%, transparent) 72%, transparent); }
-  .provider-strip-heading { display: inline-flex; align-items: center; gap: 10px; margin: 0; color: var(--muted); font: 500 11px/1.4 Arial, system-ui, sans-serif; letter-spacing: .04em; text-transform: lowercase; white-space: nowrap; opacity: .68; }
-  .provider-strip-heading i { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: var(--orange); opacity: .72; }
-  .provider-strip-logos { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); align-items: center; gap: clamp(20px, 3.5vw, 52px); min-width: 0; }
-  .provider-strip-logo { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-width: 0; height: 40px; color: var(--muted); opacity: .54; transition: color .32s ease, opacity .32s ease; }
-  .provider-strip-logo:hover { color: var(--brand-navy); opacity: 1; }
-  .provider-strip-logo img { display: block; width: auto; height: auto; max-width: 100%; filter: grayscale(1); transition: filter .32s ease; }
-  .provider-strip-logo:hover img { filter: grayscale(0); }
-  .provider-strip-logo--aws img { width: calc(var(--provider-mark) * 1.42); transform: translateY(calc(var(--provider-mark) * .35)); }
-  .provider-strip-logo--azure img { width: calc(var(--provider-mark) * 2.45); }
-  .provider-strip-logo--gcp img { width: calc(var(--provider-mark) * .82); flex: 0 0 auto; }
-  .provider-strip-cloud { width: calc(var(--provider-mark) * .9); height: auto; flex: 0 0 auto; overflow: visible; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.55; }
-  .provider-strip-label { font: 500 clamp(11px, 1.15vw, 13px)/1.2 Arial, system-ui, sans-serif; letter-spacing: .02em; text-transform: lowercase; white-space: nowrap; }
+  .provider-strip { padding: 18px 0 40px; }
+  .provider-strip-panel { display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: 27px 0; border-block: 1px solid var(--line); }
+  .provider-strip-heading { flex-shrink: 0; font-size: 20px; font-weight: 550; line-height: 1.35; letter-spacing: -.045em; }
+  .provider-strip-heading span { color: var(--muted); font-weight: 400; }
+  .provider-strip-list { display: flex; align-items: center; gap: clamp(24px, 3.5vw, 52px); margin: 0; padding: 0; list-style: none; }
+  .provider-strip-list li { position: relative; padding-top: 18px; color: var(--ink); font-size: 15px; font-weight: 500; line-height: 1.4; letter-spacing: -.025em; white-space: nowrap; }
+  .provider-strip-list li::before { content: ""; position: absolute; top: 0; left: 0; width: 6px; height: 6px; border: 1px solid var(--muted); background: var(--paper); }
+  .provider-strip-list li::after { content: ""; position: absolute; top: 3px; left: 6px; width: calc(100% + clamp(24px, 3.5vw, 52px) - 6px); height: 1px; background: var(--line); }
+  .provider-strip-list li:last-child::before { border-color: var(--orange-dark); background: var(--orange-dark); }
+  .provider-strip-list li:last-child::after { width: calc(100% - 6px); background: linear-gradient(90deg, var(--line), transparent); }
   .section { padding: 104px 0; }
   .section-heading .eyebrow { color: var(--muted); margin-bottom: 24px; }
   .section-heading h2 { font-size: 53px; line-height: 1.12; }
@@ -190,9 +185,10 @@
     .install { width: 100%; }
     .install-command code { font-size: 14px; }
     .hero .install-command code { font-size: 14px; }
-    .provider-strip { --provider-mark: 30px; padding: 16px 0 28px; }
-    .provider-strip-panel { grid-template-columns: 1fr; gap: 10px; padding-top: 16px; }
-    .provider-strip-logos { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .provider-strip { padding: 16px 0 28px; }
+    .provider-strip-panel { align-items: flex-start; flex-direction: column; gap: 24px; padding: 24px 0; }
+    .provider-strip-list { width: 100%; justify-content: space-between; }
+    .provider-strip-list li { flex: 1; }
     .section { padding: 68px 0; }
     .manifesto { margin: 0 -24px; padding: 50px 24px; gap: 40px; }
     .manifesto h2 { font-size: 37px; }
@@ -230,10 +226,10 @@
     .install-command code, .hero .install-command code { font-size: 10.5px; }
     .install-caption { padding: 0 12px 12px; font-size: 8px; }
     .copy-button { font-size: 16px; min-width: 26px; }
-    .provider-strip { --provider-mark: 27px; padding: 14px 0 24px; }
-    .provider-strip-panel { gap: 8px; padding-top: 14px; }
-    .provider-strip-logos { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px 14px; }
-    .provider-strip-logo { height: 38px; padding-left: 12px; }
+    .provider-strip { padding: 14px 0 24px; }
+    .provider-strip-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+    .provider-strip-list li { font-size: 15px; }
+    .provider-strip-list li:nth-child(2n)::after { width: calc(100% - 6px); background: linear-gradient(90deg, var(--line), transparent); }
     .section-heading h2 { font-size: 37px; }
     .eyebrow { font-size: 8px; }
     .manifesto { margin: 0 -20px; padding: 48px 20px; grid-template-columns: 1fr; gap: 38px; }
