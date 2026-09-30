@@ -29,23 +29,18 @@ export function sourceEditorAccessibilityExtension(hasDiagnostics: boolean) {
   return EditorView.contentAttributes.of(sourceEditorAccessibilityAttributes(hasDiagnostics));
 }
 
-/**
- * Parser errors retain their original text and, where available, include a
- * one-based character offset. Turn that offset into an editor-friendly
- * location without changing the public parser error contract.
- */
-export function sourceDiagnostic(source: string, message: string): SourceDiagnostic {
-  const match = message.match(/\bcharacter\s+(\d+)\b/i);
-  if (!match) return { message };
-  const character = Number(match[1]);
-  if (!Number.isSafeInteger(character)) return { message };
-  const offset = Math.max(0, Math.min(source.length, character - 1));
-  const before = source.slice(0, offset);
-  const line = before.split("\n").length;
-  const column = offset - before.lastIndexOf("\n");
+type SourceIssue = { message: string; location?: { line: number; column: number } };
+
+/** Resolve a parser line and column to an editor offset. */
+export function sourceDiagnostic(source: string, { message, location }: SourceIssue): SourceDiagnostic {
+  if (!location) return { message };
+  const lines = source.split("\n");
+  const line = Math.max(1, Math.min(lines.length, location.line));
+  const lineStart = lines.slice(0, line - 1).reduce((total, text) => total + text.length + 1, 0);
+  const column = Math.max(1, Math.min(lines[line - 1]!.length + 1, location.column));
   return {
     message: `Line ${line}, column ${column}: ${message}`,
-    location: { offset, line, column },
+    location: { offset: lineStart + column - 1, line, column },
   };
 }
 
@@ -105,7 +100,7 @@ export function SourceDrawer({
   onFormat,
 }: {
   source: string;
-  issues: Array<{ message: string }>;
+  issues: SourceIssue[];
   onChange: (source: string) => void;
   onCommit: () => void;
   onCopy: () => void;
@@ -115,7 +110,7 @@ export function SourceDrawer({
 }) {
   const resolvedTheme = useResolvedTheme();
   const editorRef = useRef<ReactCodeMirrorRef>(null);
-  const diagnostics = issues.map((issue) => sourceDiagnostic(source, issue.message));
+  const diagnostics = issues.map((issue) => sourceDiagnostic(source, issue));
 
   const focusDiagnostic = (location: SourceLocation) => {
     const view = editorRef.current?.view;

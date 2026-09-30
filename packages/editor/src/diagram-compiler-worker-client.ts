@@ -108,7 +108,12 @@ function isFailedCompilation(value: Record<string, unknown>): boolean {
     (value.layout === undefined || value.layout === null) &&
     (value.compilationError === undefined || isCompilationError(value.compilationError)) &&
     (value.parseError === undefined || typeof value.parseError === "string") &&
-    (value.parseErrorCode === undefined || typeof value.parseErrorCode === "string")
+    (value.parseErrorCode === undefined || typeof value.parseErrorCode === "string") &&
+    (value.parseErrorLocation === undefined || (
+      isRecord(value.parseErrorLocation) &&
+      Number.isSafeInteger(value.parseErrorLocation.line) &&
+      Number.isSafeInteger(value.parseErrorLocation.column)
+    ))
   );
 }
 

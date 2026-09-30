@@ -4,6 +4,7 @@ export type StudioIssue = {
   severity: "error" | "warning";
   message: string;
   elementIds?: string[];
+  location?: { line: number; column: number };
 };
 
 export function IssueJournal({

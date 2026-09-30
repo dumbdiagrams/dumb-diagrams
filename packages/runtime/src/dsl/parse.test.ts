@@ -4,7 +4,7 @@ import { createAsyncDocsFixture } from "../../test-fixtures.js";
 import { getDefaultView } from "../core/index.js";
 import { DIAGRAM_LIMITS } from "../core/index.js";
 
-import { parseDgm, parseDgmResult, printDgm } from "./index.js";
+import { DGM_FORMAT_VERSION, formatParseError, parseDgm, parseDgmResult, printDgm } from "./index.js";
 
 describe("parseDgm / printDgm round-trip", () => {
   it("returns typed results for valid and invalid source", () => {
@@ -19,7 +19,68 @@ describe("parseDgm / printDgm round-trip", () => {
     expect(invalid.error).toEqual({
       code: "invalid-syntax",
       message: "Unterminated quoted string",
+      line: 1,
+      column: 21,
     });
+  });
+
+  it("accepts the supported format version and rejects others", () => {
+    expect(parseDgm(`dgm ${DGM_FORMAT_VERSION}\ndiagram versioned {}`).id).toBe("versioned");
+    expect(parseDgmResult("dgm 2\ndiagram future {}")._unsafeUnwrapErr()).toEqual({
+      code: "invalid-syntax",
+      message: "This diagram uses format 2; this dumbdiagrams supports format 1. Upgrade dumbdiagrams.",
+      line: 1,
+      column: 5,
+    });
+  });
+
+  it.each([
+    ["flow rl", "diagram d {\n  flow rl\n}", "2:8 Invalid flow \"rl\"; expected lr, tb"],
+    ["resource option typo", "diagram d {\n  aws.aws-lambda fn { rolee secondary }\n}", "2:23 Unknown resource option \"rolee\"; expected service, label-position, role, icon"],
+    ["edge option typo", "diagram d {\n  a -> b { stpe 1 }\n}", "2:12 Unknown edge option \"stpe\"; expected id, label, step, style, kind, color, from, to"],
+    ["edge style", "diagram d {\n  a -> b { style dotted }\n}", "2:18 Invalid edge style \"dotted\"; expected solid, dashed"],
+    ["edge color", "diagram d {\n  a -> b { color pink }\n}", "2:18 Invalid edge color \"pink\"; expected graphite, blue, teal, purple, amber, red, green"],
+    ["edge kind", "diagram d {\n  a -> b { kind flwo }\n}", "2:17 Invalid edge kind \"flwo\"; expected flow, bidirectional, peer, fail"],
+    ["bare port offset", "diagram d {\n  a -> b { from w 0.25 }\n}", "2:19 Unknown edge option number 0.25; expected id, label, step, style, kind, color, from, to"],
+    ["port side", "diagram d {\n  a -> b { to x }\n}", "2:15 Invalid edge to side \"x\"; expected n, s, e, w"],
+    ["group option", "diagram d {\n  aws.region r { colour red }\n}", "2:18 Unknown group option \"colour\"; expected step, label-position, hide-icon, style, color, fill, or a nested typed declaration"],
+    ["group fill", "diagram d {\n  aws.region r { fill solid }\n}", "2:23 Invalid group fill \"solid\"; expected subtle, none"],
+    ["legacy group shorthand", "diagram d {\n  group g \"G\"\n}", "2:3 Unknown diagram option \"group\"; expected grammar, flow, title, annotation, a typed declaration, or an edge"],
+    ["edge inside a group", "diagram d {\n  aws.region r {\n    a -> b\n  }\n}", "3:5 Unknown group option \"a\"; expected step, label-position, hide-icon, style, color, fill, or a nested typed declaration"],
+    ["annotation size", "diagram d {\n  annotation n \"N\" { size 60 }\n}", "2:27 Invalid annotation size 60; expected 10 to 48"],
+    ["annotation font", "diagram d {\n  annotation n \"N\" { font comic }\n}", "2:27 Invalid annotation font \"comic\"; expected sans, serif, mono"],
+    ["asset key", "diagram d {}\nassets {\n  asset a { width 4 }\n}", "3:13 Unknown asset option \"width\"; expected svg, w, h"],
+    ["place key", "diagram d {}\nview default {\n  place a { left 4 }\n}", "3:13 Unknown place option \"left\"; expected x, y, w, h, pin, manual, locked, visible, z"],
+    ["place visible", "diagram d {}\nview default {\n  place a { visible no }\n}", "3:21 Invalid visible \"no\"; expected true, false"],
+    ["route mode", "diagram d {}\nview default {\n  route e { mode magic }\n}", "3:18 Invalid route mode \"magic\"; expected auto, manual"],
+    ["route badge side", "diagram d {}\nview default {\n  route e { badge 0.5 left }\n}", "3:23 Invalid route badge side \"left\"; expected top, bottom"],
+    ["view entry", "diagram d {}\nview default {\n  edge e {}\n}", "3:3 Unknown view option \"edge\"; expected place, route, annotation"],
+    ["truncated block", "diagram d {\n  a -> b {", "2:11 Unterminated block; expected }"],
+    ["missing value", "diagram d {\n  title\n}", "3:1 Expected a quoted string, got \"}\""],
+    ["unexpected character", "diagram d {\n  title \"x\" !\n}", "2:13 Unexpected character \"!\""],
+  ])("rejects %s with its position and allowed values", (_name, source, message) => {
+    expect(() => parseDgm(source)).toThrow(message);
+  });
+
+  it("rejects every option of the audit's six-typo diagram instead of dropping it", () => {
+    const source = `diagram typo {
+  grammar aws
+  flow rl
+  aws.region region "Region" {
+    aws.aws-lambda fn "Handler" { rolee secondary }
+    aws.dynamodb db "Ledger"
+  }
+  fn -> db { stpe 1 style dotted color pink lable "writes" }
+}`;
+    const first = parseDgmResult(source)._unsafeUnwrapErr();
+    expect(formatParseError(first)).toBe('3:8 Invalid flow "rl"; expected lr, tb');
+    const fixedFlow = source.replace("flow rl", "flow lr");
+    expect(() => parseDgm(fixedFlow)).toThrow('5:35 Unknown resource option "rolee"');
+    const fixedRole = fixedFlow.replace("rolee", "role");
+    expect(() => parseDgm(fixedRole)).toThrow('8:14 Unknown edge option "stpe"');
+    expect(() => parseDgm(fixedRole.replace("stpe", "step"))).toThrow('8:27 Invalid edge style "dotted"');
+    expect(() => parseDgm(fixedRole.replace("stpe", "step").replace("dotted", "dashed"))).toThrow('8:40 Invalid edge color "pink"');
+    expect(() => parseDgm(fixedRole.replace("stpe", "step").replace("dotted", "dashed").replace("pink", "red"))).toThrow('8:44 Unknown edge option "lable"');
   });
 
   it("does not classify parser defects as invalid syntax", () => {
@@ -48,7 +109,7 @@ describe("parseDgm / printDgm round-trip", () => {
 
   it("rejects input without a diagram declaration and trailing top-level tokens", () => {
     expect(() => parseDgm("hello world")).toThrow(/Expected diagram declaration/);
-    expect(() => parseDgm("diagram valid {}\n}\nextra words")).toThrow(/Unexpected token/);
+    expect(() => parseDgm("diagram valid {}\n}\nextra words")).toThrow('2:1 Unexpected "}" after diagram; expected assets or view');
   });
 
   it("preserves the source-size error as a distinct typed result", () => {
@@ -78,16 +139,16 @@ describe("parseDgm / printDgm round-trip", () => {
     expect(() => parseDgm(`diagram unsupported {
   grammar digitalocean
 }`)).toThrow(
-      'Invalid grammar "digitalocean"; expected aws, azure, gcp, or cloud-agnostic',
+      '2:11 Invalid grammar "digitalocean"; expected aws, azure, gcp, cloud-agnostic',
     );
   });
 
   it("keeps nested logical groups and their children", () => {
     const doc = parseDgm(`diagram nested {
       grammar aws
-      group account "Account" {
+      cloud-agnostic.boundary account "Account" {
         step 3
-        group storage "Storage" {
+        cloud-agnostic.boundary storage "Storage" {
           aws.s3 bucket
         }
       }
@@ -104,7 +165,6 @@ describe("parseDgm / printDgm round-trip", () => {
     expect(doc.resources[0]?.parent).toBe("storage");
     expect(doc.resources[0]?.label.role).toBeUndefined();
     expect(printDgm(doc)).toContain('cloud-agnostic.boundary account "Account" {');
-    expect(printDgm(doc)).not.toContain("  group account");
     expect(printDgm(doc)).toContain("aws.s3 bucket\n");
     expect(parseDgm(printDgm(doc))).toEqual(doc);
   });
@@ -121,7 +181,6 @@ describe("parseDgm / printDgm round-trip", () => {
       "cloud-agnostic.cluster": "logical",
       "cloud-agnostic.datacenter": "logical",
       "cloud-agnostic.boundary": "logical",
-      "cloud-agnostic.logical": "logical",
       "cloud-agnostic.trust-boundary": "overlay",
     } as const;
     const declarations = Object.keys(expectedKinds)
@@ -191,7 +250,7 @@ ${declarations}
   it("round-trips custom service labels", () => {
     const doc = parseDgm(`diagram labels {
   grammar aws
-  group shell "Shell" {
+  cloud-agnostic.boundary shell "Shell" {
     label-position top-right
     aws.sns notice "Claims notification" { service "Amazon SNS" label-position top }
   }
@@ -210,11 +269,11 @@ ${declarations}
     expect(() => parseDgm(`diagram old_resource_label {
   grammar aws
   aws.sns notice { label-position right }
-}`)).toThrow(/Invalid resource label position right; expected top or bottom/);
+}`)).toThrow('3:35 Invalid resource label-position "right"; expected top, bottom');
     expect(() => parseDgm(`diagram old_group_label {
   grammar aws
-  group shell "Shell" { label-position bottom-left }
-}`)).toThrow(/Invalid group label position bottom-left; expected top-left or top-right/);
+  cloud-agnostic.boundary shell "Shell" { label-position bottom-left }
+}`)).toThrow('3:58 Invalid group label-position "bottom-left"; expected top-left, top-right');
   });
 
   it("round-trips hidden icons on typed groups", () => {

@@ -36,6 +36,7 @@ export type DiagramCompilation = {
   compilationError?: CompilationError;
   parseError?: string;
   parseErrorCode?: DgmParseError["code"];
+  parseErrorLocation?: { line: number; column: number };
   layout?: null;
 };
 
@@ -140,6 +141,9 @@ export function compileDiagramSource(
       ok: false,
       parseError: parsed.error.message,
       parseErrorCode: parsed.error.code,
+      ...(parsed.error.code === "invalid-syntax"
+        ? { parseErrorLocation: { line: parsed.error.line, column: parsed.error.column } }
+        : {}),
       issues: [],
       svg: null,
       layout: null,

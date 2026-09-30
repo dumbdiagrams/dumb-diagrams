@@ -962,7 +962,11 @@ function App() {
       : [];
     if (!compiledFromCache.ok) {
       if ("parseError" in compiledFromCache && compiledFromCache.parseError) {
-        return [...persistenceIssues, { severity: "error", message: compiledFromCache.parseError }];
+        return [...persistenceIssues, {
+          severity: "error",
+          message: compiledFromCache.parseError,
+          location: compiledFromCache.parseErrorLocation,
+        }];
       }
       return [...persistenceIssues, ...compiledFromCache.issues.map((issue) => ({
         severity: issue.level,
@@ -989,7 +993,7 @@ function App() {
       })),
     ];
   }, [compiled, compiledFromCache, parsedDoc, persistenceWarning]);
-  const issues = useMemo(() => journalIssues.map(({ message }) => ({ message })), [journalIssues]);
+  const issues = useMemo(() => journalIssues.map(({ message, location }) => ({ message, location })), [journalIssues]);
 
   const navigableEntities = useMemo<NavigableEntity[]>(() => {
     if (!compiled.ok) return [];

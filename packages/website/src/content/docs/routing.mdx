@@ -33,7 +33,7 @@ In Studio, moving an icon redraws only the connections attached to it, using the
 
 ## Guide a connection
 
-`from e` prefers the east side of a card, but lets the router choose another side if needed. Adding a fractional offset fixes the attachment point: `from e 0.25` attaches a quarter of the way down that side.
+`from e` prefers the east side of a card, but lets the router choose another side if needed. Adding a fractional offset fixes the attachment point: `from e offset 0.25` attaches a quarter of the way down that side.
 
 ```dgm
 diagram port_strength {
@@ -42,7 +42,7 @@ diagram port_strength {
   generic.user client "Client"
   generic.custom api "API"
   client -> api { id preferred from e to w }
-  api -> client { id fixed from w 0.25 to e 0.75 style dashed }
+  api -> client { id fixed from w offset 0.25 to e offset 0.75 style dashed }
 }
 ```
 
