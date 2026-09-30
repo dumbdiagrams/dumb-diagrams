@@ -53,6 +53,7 @@ const PORT_SIDE_FALLBACK_COST = ROUTE_PATH_COSTS.portSideFallback;
 const PORT_OFFSET_FALLBACK_COST = ROUTE_PATH_COSTS.portOffsetFallback;
 const PORT_BACKTRACK_COST = ROUTE_PATH_COSTS.portBacktrack;
 const LABEL_SIDE_FALLBACK_COST = ROUTE_PATH_COSTS.labelSideFallback;
+const LABEL_PORT_COLLISION_COST = 100_000;
 const VISIBLE_PORTS_PER_FACE = 3;
 const TURN_COST = ROUTE_PATH_COSTS.astarTurn;
 // A near-aligned pair of opposing ports should read as one straight
@@ -1415,9 +1416,28 @@ function avoidLabelPorts(
       ...choice,
       preferenceCost: choice.preferenceCost +
         (!sourceLocked && choice.srcSide === sourceLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
-        (!targetLocked && choice.tgtSide === targetLabelSide ? LABEL_SIDE_FALLBACK_COST : 0),
+        (!targetLocked && choice.tgtSide === targetLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
+        (!sourceLocked && portStemHitsLabel(source, choice.srcSide, choice.src)
+          ? LABEL_PORT_COLLISION_COST
+          : 0) +
+        (!targetLocked && portStemHitsLabel(target, choice.tgtSide, choice.tgt)
+          ? LABEL_PORT_COLLISION_COST
+          : 0),
     }))
     .sort((a, b) => a.preferenceCost - b.preferenceCost);
+}
+
+function portStemHitsLabel(node: NodeGeom, side: Side, anchor: Point): boolean {
+  if (node.label.w <= 0 || node.label.h <= 0) return false;
+  if (side !== labelSide(node)) return false;
+  const distance = Math.max(node.icon.w, node.icon.h, node.label.w, node.label.h) + 16;
+  const outward = {
+    n: { x: anchor.x, y: anchor.y - distance },
+    e: { x: anchor.x + distance, y: anchor.y },
+    s: { x: anchor.x, y: anchor.y + distance },
+    w: { x: anchor.x - distance, y: anchor.y },
+  }[side];
+  return segmentHits(anchor, outward, node.label);
 }
 
 function labelSide(node: NodeGeom): Side {

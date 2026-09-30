@@ -60,6 +60,14 @@ describe("editor grid", () => {
     }
   });
 
+  it("preserves saved manual coordinates instead of snapping the whole group again", () => {
+    const doc = createAsyncDocsFixture();
+    getDefaultView(doc).places.use1 = { x: 55, y: 57, pin: true, manual: true };
+    getDefaultView(doc).places.client = { x: 91, y: 83, pin: true, manual: true };
+    const layout = layoutDocument(doc);
+    expect(snapLayoutToGrid(layout, true, doc)).toEqual(layout);
+  });
+
   it("leaves the layout untouched when snapping is disabled", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);

@@ -1468,8 +1468,8 @@ function applyPinnedViewOverrides(
   for (const group of layout.groups) {
     const place = view.places[group.id];
     if (!place?.w && !place?.h) continue;
-    if (place.w) group.bounds.w = Math.max(80, snap(place.w));
-    if (place.h) group.bounds.h = Math.max(48, snap(place.h));
+    if (place.w) group.bounds.w = Math.max(80, place.manual ? place.w : snap(place.w));
+    if (place.h) group.bounds.h = Math.max(48, place.manual ? place.h : snap(place.h));
     const style = GROUP_STYLES[group.kind] ?? GROUP_STYLES.logical;
     const labelPosition = group.labelPosition ?? "top-left";
     group.header = {

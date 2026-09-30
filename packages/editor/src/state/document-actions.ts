@@ -3,7 +3,8 @@ import { validateDocument } from "@dumb-diagrams/runtime/core";
 import { getCatalogMap } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { err, ok, type Result } from "neverthrow";
-import { warmDiagramCompilationCache, type DiagramCompilation } from "../diagram-compiler";
+import { compileDiagramSource, warmDiagramCompilationCache, type DiagramCompilation } from "../diagram-compiler";
+import { preserveLayout } from "../model/layout-preservation";
 
 export type DocumentActionError = {
   code: "invalid-source" | "invalid-document" | "compilation" | "unexpected";
@@ -46,7 +47,16 @@ export function prepareDocumentMutation(
   try {
     const parsed = parseDgmResult(source);
     if (parsed.isErr()) return err({ code: "invalid-source", message: parsed.error.message });
-    return prepareDocument(change(parsed.value), snapToGrid);
+    const baseline = compileDiagramSource(source, snapToGrid);
+    if (!baseline.ok) {
+      return err({
+        code: "compilation",
+        message: baseline.issues.find((candidate) => candidate.level === "error")?.message
+          ?? baseline.compilationError?.message
+          ?? "The existing diagram could not be compiled.",
+      });
+    }
+    return prepareDocument(change(preserveLayout(parsed.value, baseline.layout)), snapToGrid);
   } catch (cause) {
     return err({ code: "unexpected", message: "The edit failed unexpectedly. Your diagram was not changed.", cause });
   }

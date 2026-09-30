@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
-import type { DiagramCompilation } from "../diagram-compiler";
+import { compileDiagramSource, type DiagramCompilation } from "../diagram-compiler";
+import { preserveUnplacedLayout } from "../model/layout-preservation";
 import { planAutoFix } from "../auto-fix";
 import { prepareDocument, prepareDocumentMutation, type DocumentActionError, type PreparedDocument } from "./document-actions";
 
@@ -49,8 +50,10 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
     if (preview) options.replaceSource(prepared.source);
     else options.commitSource(prepared.source);
   };
-  const commitDocument = (doc: DiagramDocument, compilation?: DiagramCompilation) => {
-    const result = prepareDocument(doc, options.snapToGrid, compilation);
+  const commitDocument = (doc: DiagramDocument, compilation?: DiagramCompilation, preservePositions = true) => {
+    const baseline = preservePositions ? compileDiagramSource(sourceRef.current, options.snapToGrid) : null;
+    const nextDoc = baseline?.ok ? preserveUnplacedLayout(doc, baseline.layout) : doc;
+    const result = prepareDocument(nextDoc, options.snapToGrid, nextDoc === doc ? compilation : undefined);
     if (result.isErr()) { reportFailure(result.error); return false; }
     publish(result.value, false);
     return true;
@@ -86,7 +89,7 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
           ? "Diagram already passes Auto-fix checks" : "Auto-fix could not improve the diagram"));
         return;
       }
-      if (commitDocument(plan.doc, plan.compilation)) options.notify(plan.message ?? "Diagram auto-fixed");
+      if (commitDocument(plan.doc, plan.compilation, false)) options.notify(plan.message ?? "Diagram auto-fixed");
     } catch (cause) {
       reportFailure({ code: "unexpected", message: "Auto-fix failed unexpectedly. Your diagram was not changed.", cause });
     }

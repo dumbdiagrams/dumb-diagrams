@@ -582,6 +582,67 @@ describe("routeEdgePreview", () => {
     expect(clearBelow.points.at(-1)!.y).toBe(target.icon.y + target.icon.h);
   });
 
+  it("keeps automatic dashed telemetry stems clear of a source label", () => {
+    const doc = createEmptyDocument("dashed-source-label-clearance");
+    doc.resources = [
+      routingResource("app", "azure.app-services", "App Service"),
+      routingResource("insights", "azure.application-insights", "Application Insights"),
+    ];
+    doc.edges = [{
+      id: "telemetry",
+      source: "app",
+      target: "insights",
+      style: "dashed",
+      kind: "peer",
+    }];
+    const source = routingNode("app", 120, 60, 104);
+    const target = routingNode("insights", 120, 260, 104);
+    const layout: LayoutResult = {
+      nodes: [source, target],
+      groups: [],
+      edges: [],
+      width: 360,
+      height: 440,
+      symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!;
+    expect(segmentIntersects(route.points[0]!, route.points[1]!, source.label)).toBe(false);
+  });
+
+  it("preserves an exact authored dashed attachment on a label side", () => {
+    const doc = createEmptyDocument("dashed-authored-source-label");
+    doc.resources = [
+      routingResource("app", "azure.app-services", "App Service"),
+      routingResource("insights", "azure.application-insights", "Application Insights"),
+    ];
+    doc.edges = [{
+      id: "telemetry",
+      source: "app",
+      target: "insights",
+      sourcePort: "s",
+      sourcePortOffset: 0.25,
+      targetPort: "n",
+      targetPortOffset: 0.75,
+      style: "dashed",
+      kind: "peer",
+    }];
+    const source = routingNode("app", 120, 60, 104);
+    const target = routingNode("insights", 120, 260, 104);
+    const layout: LayoutResult = {
+      nodes: [source, target],
+      groups: [],
+      edges: [],
+      width: 360,
+      height: 440,
+      symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout)[0]!;
+    expect(route.points[0]).toEqual(portPoint(source.icon, "s", 0.25));
+    expect(route.points.at(-1)).toEqual(portPoint(target.icon, "n", 0.75));
+  });
+
   it("removes tiny alignment jogs between opposing horizontal ports", () => {
     const doc = createEmptyDocument("micro-jog");
     doc.resources = [

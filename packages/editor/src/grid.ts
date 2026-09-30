@@ -205,10 +205,12 @@ export function snapLayoutToGrid(
     const place = view.places[id];
     return Boolean(
       place &&
-      (place.manual || place.pin) &&
+      place.pin && !place.manual &&
       (place.x !== undefined || place.y !== undefined),
     );
   })) {
+    // Interactive coordinates already reflect grid/magnetic snapping. Applying
+    // another root snap here would translate unrelated pinned descendants.
     const rootGroup = layout.groups.find((group) => group.id === rootId);
     const rootNode = layout.nodes.find((node) => node.id === rootId);
     // A resource's obstacle includes label/routing padding, which varies with
