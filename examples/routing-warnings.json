@@ -32,31 +32,36 @@
       "file": "aws-data-transfer-hub.dgm",
       "code": "edge-crossing",
       "message": "Edges cloudformation-fargate and templates-cloudformation cross",
-      "decision": "Baselined after visual review. The CloudFormation template fan-in crosses the Fargate deploy edge inside a dense automation cluster; rerouting would backtrack past the preserved reference composition."
+      "decision": "Baselined after visual review. The CloudFormation template fan-in crosses the Fargate deploy edge inside a dense automation cluster; rerouting would backtrack past the preserved reference composition.",
+      "status": "reviewed"
     },
     {
       "file": "aws-data-transfer-hub.dgm",
       "code": "edge-crossing",
       "message": "Edges ui-appsync and ui-oidc cross",
-      "decision": "Baselined after visual review. The hosted UI's AppSync and OIDC edges leave the same card toward adjacent identity and API targets; uncrossing them would break the compact cross-account stack."
+      "decision": "Baselined after visual review. The hosted UI's AppSync and OIDC edges leave the same card toward adjacent identity and API targets; uncrossing them would break the compact cross-account stack.",
+      "status": "reviewed"
     },
     {
       "file": "aws-high-availability-web-app.dgm",
       "code": "edge-crossing",
       "message": "Edges pull_image_a and monitor_data_a cross",
-      "decision": "Baselined after visual review. AZ A image-pull and CloudWatch monitoring edges share a vertical corridor beside mirrored Fargate services; the crossing is the cheaper of the two-AZ symmetric layout."
+      "decision": "Baselined after visual review. AZ A image-pull and CloudWatch monitoring edges share a vertical corridor beside mirrored Fargate services; the crossing is the cheaper of the two-AZ symmetric layout.",
+      "status": "reviewed"
     },
     {
       "file": "aws-high-availability-web-app.dgm",
       "code": "edge-crossing",
       "message": "Edges pull_image_b and monitor_data_a cross",
-      "decision": "Baselined after visual review. AZ B image-pull crosses AZ A monitoring because both AZs report to one CloudWatch card; splitting monitors would violate the reference specification."
+      "decision": "Baselined after visual review. AZ B image-pull crosses AZ A monitoring because both AZs report to one CloudWatch card; splitting monitors would violate the reference specification.",
+      "status": "reviewed"
     },
     {
       "file": "event-driven-order-fulfillment.dgm",
       "code": "edge-label-node-collision",
       "message": "Label of edge authorize_payment overlaps resource payment_service",
-      "decision": "PENDING VISUAL REVIEW. Introduced by the attached-label placement change, which replaced the previous boundary-label overlap with this resource-card overlap."
+      "decision": "PENDING VISUAL REVIEW. Introduced by the attached-label placement change, which replaced the previous boundary-label overlap with this resource-card overlap.",
+      "status": "pending"
     }
   ]
 }
