@@ -904,9 +904,30 @@ function genericChildGap(
   if (!leftResources.length || !rightResources.length) return H_GAP;
 
   // Parallel connectors between the same two resources run too close for their
-  // decorations to stack, so they share the corridor end to end.
-  const corridors = new Map<string, { run: number; iconGap: number }>();
-  for (const edge of doc.edges) {
+  // decorations to stack, so they share the corridor end to end. A fan-out or
+  // fan-in across this exact child boundary also needs its decoration capacity
+  // measured between cards: the sibling routes consume the icon corridor while
+  // they turn onto their separate lanes.
+  const corridors = new Map<string, {
+    run: number;
+    iconGap: number;
+    cardGap: number;
+    contended: boolean;
+  }>();
+  const boundaryEdges = doc.edges.filter((edge) => {
+    const sourceOnLeft = leftResources.some(({ id }) => id === edge.source);
+    const sourceOnRight = rightResources.some(({ id }) => id === edge.source);
+    const targetOnLeft = leftResources.some(({ id }) => id === edge.target);
+    const targetOnRight = rightResources.some(({ id }) => id === edge.target);
+    return (sourceOnLeft && targetOnRight) || (sourceOnRight && targetOnLeft);
+  });
+  const sourceDegree = new Map<ID, number>();
+  const targetDegree = new Map<ID, number>();
+  for (const edge of boundaryEdges) {
+    sourceDegree.set(edge.source, (sourceDegree.get(edge.source) ?? 0) + 1);
+    targetDegree.set(edge.target, (targetDegree.get(edge.target) ?? 0) + 1);
+  }
+  for (const edge of boundaryEdges) {
     if (!edge.label && edge.step === undefined) continue;
     const leftResource = leftResources.find(({ id }) =>
       edge.source === id || edge.target === id,
@@ -922,13 +943,22 @@ function genericChildGap(
     const corridor = corridors.get(key) ?? {
       run: 0,
       iconGap: left.w - (leftResource.icon.x + leftResource.icon.w) + H_GAP + rightResource.icon.x,
+      contended: (sourceDegree.get(edge.source) ?? 0) >= 2 ||
+        (targetDegree.get(edge.target) ?? 0) >= 2,
+      cardGap: left.w - (leftResource.obstacle.x + leftResource.obstacle.w) + H_GAP +
+        rightResource.obstacle.x,
     };
     corridor.run += labelWidth + badgeWidth + 16;
     corridors.set(key, corridor);
   }
   let gap: number = H_GAP;
-  for (const { run, iconGap } of corridors.values()) {
-    const extra = Math.max(0, run - iconGap);
+  for (const { run, iconGap, cardGap, contended } of corridors.values()) {
+    const extra = contended
+      // Keep one ordinary child gap for sibling routes to turn before the
+      // decoration pocket. Without that lane, adding label width merely moves
+      // a target-side elbow with the target and never creates usable space.
+      ? Math.max(0, run + H_GAP - cardGap)
+      : Math.max(0, run - iconGap);
     gap = Math.max(gap, H_GAP + Math.ceil(extra / GRAMMAR.grid) * GRAMMAR.grid);
   }
   return gap;
@@ -937,6 +967,7 @@ function genericChildGap(
 interface ChildResourceGeom {
   id: ID;
   icon: Rect;
+  obstacle: Rect;
 }
 
 function childResources(
@@ -947,7 +978,11 @@ function childResources(
   if (child.resource) {
     const node = state.nodeGeoms.get(child.resource.id);
     return node
-      ? [{ id: child.resource.id, icon: { ...node.icon, x: node.icon.x - node.obstacle.x } }]
+      ? [{
+          id: child.resource.id,
+          icon: { ...node.icon, x: node.icon.x - node.obstacle.x },
+          obstacle: { ...node.obstacle, x: 0, y: 0 },
+        }]
       : [];
   }
   if (!child.group) return [];
@@ -984,6 +1019,11 @@ function descendantResourceGeoms(
             ...node.icon,
             x: node.icon.x + resourceOffsetX,
             y: node.icon.y + resourceOffsetY,
+          },
+          obstacle: {
+            ...node.obstacle,
+            x: node.obstacle.x + resourceOffsetX,
+            y: node.obstacle.y + resourceOffsetY,
           },
         });
       }

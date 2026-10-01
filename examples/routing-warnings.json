@@ -12,11 +12,6 @@
       "message": "Edges ui-appsync and ui-oidc cross"
     },
     {
-      "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-label-node-collision",
-      "message": "Label of edge authorize_payment overlaps resource payment_service"
-    },
-    {
       "file": "aws-high-availability-web-app.dgm",
       "code": "edge-crossing",
       "message": "Edges read_data_b and monitor_app_a cross"
@@ -51,13 +46,6 @@
       "message": "Edges ui-appsync and ui-oidc cross",
       "decision": "Baselined after visual review. The hosted UI's AppSync and OIDC edges leave the same card toward adjacent identity and API targets; uncrossing them would break the compact cross-account stack.",
       "status": "reviewed"
-    },
-    {
-      "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-label-node-collision",
-      "message": "Label of edge authorize_payment overlaps resource payment_service",
-      "decision": "PENDING VISUAL REVIEW. Introduced by the attached-label placement change, which replaced the previous boundary-label overlap with this resource-card overlap.",
-      "status": "pending"
     },
     {
       "file": "aws-high-availability-web-app.dgm",

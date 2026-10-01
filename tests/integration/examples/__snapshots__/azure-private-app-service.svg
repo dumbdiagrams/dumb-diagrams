@@ -138,9 +138,9 @@
   <path d="M 334.9 307 L 478.9 307" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="406.9" cy="323" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="406.9" y="327" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
-  <text class="edge-label" data-edge-label="writes" x="406.9" y="299" text-anchor="middle" font-size="11" fill="#163964">Write requests</text>
+  <circle class="edge-badge-circle" cx="406.9" cy="291" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="406.9" y="295" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="writes" x="406.9" y="327" text-anchor="middle" font-size="11" fill="#163964">Write requests</text>
 </g>
 
 <g id="edge-authoritative_writes" class="edge edge-flow edge-solid">

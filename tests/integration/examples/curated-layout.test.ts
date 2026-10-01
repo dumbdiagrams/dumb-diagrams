@@ -47,6 +47,10 @@ describe("curated provider layout contracts", () => {
 
       const hard = result.invariantFailures.filter((failure) => invariantTier(failure.code) === "hard");
       expect(hard, hard.map((failure) => `${failure.code}: ${failure.message}`).join("; ")).toEqual([]);
+      const obscuredLabels = result.invariantFailures.filter((failure) =>
+        failure.code === "edge-label-node-collision" || failure.code === "edge-label-group-collision",
+      );
+      expect(obscuredLabels, obscuredLabels.map((failure) => failure.message).join("; ")).toEqual([]);
 
       const layout = result.layout;
       const aspect = layout.width / layout.height;

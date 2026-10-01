@@ -74,8 +74,7 @@ const LABEL_CONTENT_CLEARANCE = 4;
 const LABEL_TO_LABEL_CLEARANCE = 6;
 const LABEL_TO_CONNECTOR_CLEARANCE = 4;
 const LABEL_COLLISION_COST = 10_000_000;
-const LABEL_OWNERSHIP_COST = 1_000_000;
-const LABEL_OWNERSHIP_COST_PER_UNIT = 1_000;
+const LABEL_NEAR_CONTENT_COST = 100_000;
 // The widest drag gap: copy beside a vertical run sits this far from it.
 const MAX_ATTACHED_LABEL_GAP = 12;
 // Four-bend candidates combine one vertical and one horizontal corridor. A
@@ -111,11 +110,13 @@ interface ExistingRoute {
   sourceId: string;
   targetId: string;
   style: EdgeStyle;
+  labelRect?: Rect;
 }
 
 interface Obstacle extends Rect {
   id?: string;
   kind: "node" | "header";
+  content?: Rect;
 }
 
 interface GroupBoundary {
@@ -139,6 +140,7 @@ export function routeEdges(
 ): RoutedEdge[] {
   const nodeMap = new Map(layout.nodes.map((n) => [n.id, n]));
   const obstacles = buildObstacles(layout);
+  const decorationObstacles = buildDecorationObstacles(layout);
   const budget = new RoutingBudget(
     options,
     doc.resources.length + doc.groups.length * 2 + doc.edges.length * 2 + obstacles.length,
@@ -149,6 +151,7 @@ export function routeEdges(
   const grid = buildGrid(layout, obstacles);
   const routed: RoutedEdge[] = [];
   const existing: ExistingRoute[] = [];
+  const labelReservations = new Map<string, Rect>();
   const view = getDefaultView(doc);
   const documentOrder = new Map(doc.edges.map((edge, index) => [edge.id, index]));
   const span = (source?: NodeGeom, target?: NodeGeom) => source && target
@@ -161,6 +164,10 @@ export function routeEdges(
   ]));
   const targetSpans = new Map<string, number[]>();
   const sourceSpans = new Map<string, number[]>();
+  const sourceDegree = new Map<string, number>();
+  const targetDegree = new Map<string, number>();
+  const resourceParents = new Map(doc.resources.map((resource) => [resource.id, resource.parent]));
+  const groups = new Map(doc.groups.map((group) => [group.id, group]));
   for (const edge of doc.edges) {
     const spans = targetSpans.get(edge.target) ?? [];
     spans.push(spanByEdge.get(edge.id) ?? 0);
@@ -168,6 +175,8 @@ export function routeEdges(
     const branches = sourceSpans.get(edge.source) ?? [];
     branches.push(spanByEdge.get(edge.id) ?? 0);
     sourceSpans.set(edge.source, branches);
+    sourceDegree.set(edge.source, (sourceDegree.get(edge.source) ?? 0) + 1);
+    targetDegree.set(edge.target, (targetDegree.get(edge.target) ?? 0) + 1);
   }
   const routePriority = (edge: DiagramDocument["edges"][number]) => {
     const edgeSpan = spanByEdge.get(edge.id) ?? 0;
@@ -422,11 +431,66 @@ export function routeEdges(
     } else {
       points = normalizeOrthogonalRoute(points);
     }
+    const hasAuthoredLabelPosition = routeOverride?.labelT !== undefined ||
+      routeOverride?.labelSide !== undefined;
+    const sourceParent = groups.get(resourceParents.get(edge.source) ?? "");
+    const targetParent = groups.get(resourceParents.get(edge.target) ?? "");
+    // The layout reserves an actual turn lane between sibling logical children.
+    // Other ancestry relationships may have no alternate corridor, so treating
+    // an automatic label as a hard route obstacle there can force a perimeter
+    // search without creating a usable target-side pocket.
+    const crossesSiblingBoundaries = sourceParent?.id !== targetParent?.id &&
+      sourceParent?.kind === "logical" &&
+      targetParent?.kind === "logical" &&
+      sourceParent.parent === targetParent.parent;
+    const reservesLabelPocket = Boolean(edge.label) && (
+      (sourceDegree.get(edge.source) ?? 0) >= 2 ||
+      (targetDegree.get(edge.target) ?? 0) >= 2
+    ) && (hasAuthoredLabelPosition || crossesSiblingBoundaries);
+    let labelReservation: ResolvedEdgeLabelPlacement | undefined;
+    if (reservesLabelPocket) {
+      const total = pathLength(points);
+      const textWidth = Math.max(16, edge.label!.length * 11 * 0.55);
+      // Automatic contended labels reserve the target end of their route.
+      // This leaves the source-side gutter available for sibling elbows while
+      // guaranteeing a complete decoration run after those routes turn away.
+      const reservedT = hasAuthoredLabelPosition
+        ? routeOverride?.labelT
+        : clamp01((total - textWidth / 2) / total);
+      labelReservation = hasAuthoredLabelPosition
+        ? getEdgeLabelPlacement(
+            points,
+            edge.label!,
+            decorationObstacles,
+            undefined,
+            reservedT,
+            routeOverride?.labelSide ?? "top",
+            routed,
+          )
+        : getEdgeLabelPlacement(
+            points,
+            edge.label!,
+            decorationObstacles,
+            undefined,
+            undefined,
+            undefined,
+            routed,
+            [],
+            [],
+            reservedT,
+          );
+    }
+    if (labelReservation && (hasAuthoredLabelPosition || labelReservation.contentClear)) {
+      labelReservations.set(edge.id, labelReservation.rect);
+    } else {
+      labelReservation = undefined;
+    }
     existing.push({
       points,
       sourceId: edge.source,
       targetId: edge.target,
       style: edge.style,
+      labelRect: labelReservation?.rect,
     });
 
     routed.push({
@@ -455,6 +519,7 @@ export function routeEdges(
     vGutters,
     hGutters,
     view.routes,
+    labelReservations,
     budget,
   );
   nudgeAutomaticRoutesOffBoundaries(
@@ -463,6 +528,7 @@ export function routeEdges(
     obstacles,
     boundaries,
     view.routes,
+    labelReservations,
     budget,
   );
   for (const edge of documentRoutes) {
@@ -489,6 +555,7 @@ function repairAutomaticRouteCrossings(
   vGutters: number[],
   hGutters: number[],
   routeOverrides: Record<string, RouteOverride>,
+  labelReservations: Map<string, Rect>,
   budget: RoutingBudget,
 ): void {
   // Dense diagrams already use the global A* pass above. Exhaustively ripping
@@ -515,7 +582,11 @@ function repairAutomaticRouteCrossings(
           sourceId: candidate.source,
           targetId: candidate.target,
           style: candidate.style,
+          labelRect: labelReservations.get(candidate.id),
         }));
+      const reservationRoutes = otherRoutes
+        .filter((candidate) => candidate.labelRect)
+        .map((candidate) => ({ ...candidate, points: [] }));
       if (routeConflictCount(edge.points, otherRoutes, budget) < 10) continue;
       const sourceAnchor = nearestPortAnchor(source.icon, edge.points[0]!);
       const targetAnchor = nearestPortAnchor(target.icon, edge.points.at(-1)!);
@@ -532,7 +603,7 @@ function repairAutomaticRouteCrossings(
       };
       let best = edge.points;
       let bestConflicts = routeConflictCount(best, otherRoutes, budget);
-      let bestScore = scorePath(best, obstacles, context, [], Infinity, [], budget);
+      let bestScore = scorePath(best, obstacles, context, reservationRoutes, Infinity, [], budget);
       const considerRepair = (
         candidate: Point[],
         candidateContext: RouteContext,
@@ -540,7 +611,15 @@ function repairAutomaticRouteCrossings(
       ) => {
         if (!budget.consume("repairCandidates")) return;
         const normalized = normalizeOrthogonalRoute(simplify(candidate));
-        const score = scorePath(normalized, obstacles, candidateContext, [], Infinity, [], budget) +
+        const score = scorePath(
+          normalized,
+          obstacles,
+          candidateContext,
+          reservationRoutes,
+          Infinity,
+          [],
+          budget,
+        ) +
           preferenceCost;
         if (!Number.isFinite(score)) return;
         const conflicts = routeConflictCount(normalized, otherRoutes, budget);
@@ -643,7 +722,15 @@ function repairAutomaticRouteCrossings(
             candidate[index + 1]!.x = value;
           }
           const simplified = simplify(candidate);
-          const score = scorePath(simplified, obstacles, context, [], Infinity, [], budget);
+          const score = scorePath(
+            simplified,
+            obstacles,
+            context,
+            reservationRoutes,
+            Infinity,
+            [],
+            budget,
+          );
           if (!Number.isFinite(score)) continue;
           const conflicts = routeConflictCount(simplified, otherRoutes, budget);
           if (
@@ -859,6 +946,7 @@ function nudgeAutomaticRoutesOffBoundaries(
   obstacles: Obstacle[],
   boundaries: GroupBoundary[],
   routeOverrides: Record<string, RouteOverride>,
+  labelReservations: Map<string, Rect>,
   budget: RoutingBudget,
 ): void {
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
@@ -889,6 +977,7 @@ function nudgeAutomaticRoutesOffBoundaries(
           sourceId: candidate.source,
           targetId: candidate.target,
           style: candidate.style,
+          labelRect: labelReservations.get(candidate.id),
         })),
       budget,
     );
@@ -1247,13 +1336,14 @@ function buildObstacles(layout: LayoutResult): Obstacle[] {
 function buildDecorationObstacles(layout: LayoutResult): Obstacle[] {
   const out: Obstacle[] = [];
   for (const node of layout.nodes) {
-    out.push({ ...inflate(node.icon, 4), id: node.id, kind: "node" });
+    out.push({ ...inflate(node.icon, 4), content: { ...node.icon }, id: node.id, kind: "node" });
     if (node.label.w > 0 && node.label.h > 0) {
-      out.push({ ...inflate(node.label, 4), id: node.id, kind: "node" });
+      out.push({ ...inflate(node.label, 4), content: { ...node.label }, id: node.id, kind: "node" });
     }
   }
   for (const group of layout.groups) {
-    out.push({ ...inflate(headerLabelRect(group), 2), id: group.id, kind: "header" });
+    const content = headerLabelRect(group);
+    out.push({ ...inflate(content, 2), content, id: group.id, kind: "header" });
   }
   return out;
 }
@@ -2238,6 +2328,13 @@ function scorePath(
       if (score >= scoreCeiling) return score;
     }
     for (const other of existing) {
+      if (
+        (other.sourceId === context.sourceId || other.targetId === context.targetId) &&
+        other.labelRect &&
+        segmentHits(a, b, inflate(other.labelRect, LABEL_TO_CONNECTOR_CLEARANCE))
+      ) {
+        return Infinity;
+      }
       const overlap = overlapLength(a, b, other.points);
       if (overlap) {
         // Every connector represents a distinct relationship. Even edges that
@@ -2257,6 +2354,7 @@ function scorePath(
     }
   }
   for (const other of existing) {
+    if (!other.points.length) continue;
     const endpointCollision =
       samePoint(points[0]!, other.points.at(-1)!) ||
       samePoint(points.at(-1)!, other.points[0]!) ||
@@ -3017,6 +3115,11 @@ export interface EdgeLabelPlacement {
   tangent: Point;
 }
 
+interface ResolvedEdgeLabelPlacement extends EdgeLabelPlacement {
+  clean?: boolean;
+  contentClear?: boolean;
+}
+
 export interface PolylineProjection {
   point: Point;
   t: number;
@@ -3144,7 +3247,8 @@ function getEdgeLabelPlacement(
   otherEdges: RoutedEdge[] = [],
   allBadges: EdgeBadgePlacement[] = badge ? [badge] : [],
   occupiedLabels: Rect[] = [],
-): (EdgeLabelPlacement & { clean?: boolean }) | undefined {
+  automaticPreferredT?: number,
+): ResolvedEdgeLabelPlacement | undefined {
   const reference = badge ?? getEdgeBadgePlacement(points);
   if (!reference) return undefined;
   const textW = Math.max(16, label.length * 11 * 0.55);
@@ -3157,7 +3261,7 @@ function getEdgeLabelPlacement(
     : horizontal
       ? "top"
       : "bottom";
-  const t = clamp01(requestedT ?? reference.t);
+  const t = clamp01(requestedT ?? automaticPreferredT ?? reference.t);
   const projection = pointAtPath(segments, total, t);
   if (!projection) return undefined;
 
@@ -3182,8 +3286,15 @@ function getEdgeLabelPlacement(
     .sort((a, b) => b.len - a.len || a.index - b.index);
   // Probe long runs densely enough to find a clear pocket while keeping the
   // same perpendicular gap as an explicitly placed or dragged label.
+  const targetLabelT = horizontal
+    ? clamp01((total - textW / 2) / total)
+    : t;
   const candidateTs = [...new Set([
     t,
+    // Probe a deterministic target-end pocket so a fan-out edge can place its
+    // label after neighbouring routes turn away; content and owner checks
+    // below still reject any overlapping or foreign-route candidate.
+    targetLabelT,
     clamp01(t + tStep),
     clamp01(t - tStep),
     clamp01(t + tStep * 2),
@@ -3236,26 +3347,78 @@ function getEdgeLabelPlacement(
     }
   }
 
-  const scored = candidates.map(({ candidate, attached }) => ({
-    candidate,
-    attached,
-    score: labelCollisionScore(
+  const scored = candidates.map(({ candidate, attached }) => {
+    const centre = {
+      x: candidate.rect.x + candidate.rect.w / 2,
+      y: candidate.rect.y + candidate.rect.h / 2,
+    };
+    const ownDistance = distanceToPolyline(centre, points);
+    const ownPointDistance = distanceToPolyline(candidate.point, points);
+    const ownerClear = otherEdges.every((edge) =>
+      distanceToPolyline(centre, edge.points) >= ownDistance &&
+      distanceToPolyline(candidate.point, edge.points) >= ownPointDistance
+    );
+    // Match the renderer's minimum text-to-content clearance. Wider spacing is
+    // still a soft score below, but a candidate that satisfies this contract is
+    // preferred even when dense sibling routes make ownership ambiguous.
+    const contentClear = obstacles.every((obstacle) =>
+      !rectsIntersect(candidate.rect, obstacle.content ?? obstacle, 2)
+    );
+    const decorationClear = contentClear &&
+      allBadges.every((badge) => !circleIntersectsRect(
+        badge.point,
+        GRAMMAR.badgeRadius,
+        candidate.rect,
+        LABEL_CONTENT_CLEARANCE,
+      )) &&
+      occupiedLabels.every((label) =>
+        !rectsIntersect(candidate.rect, label, LABEL_TO_LABEL_CLEARANCE)
+      );
+    return {
       candidate,
-      t,
-      preferredSide,
-      obstacles,
-      otherEdges,
-      allBadges,
-      occupiedLabels,
-      points,
-    ),
-  }));
+      attached,
+      ownerClear,
+      contentClear,
+      decorationClear,
+      score: labelCollisionScore(
+        candidate,
+        t,
+        preferredSide,
+        obstacles,
+        otherEdges,
+        allBadges,
+        occupiedLabels,
+        points,
+      ),
+    };
+  });
   // Prefer the drag gap when it avoids content, then a wider lane whose copy
   // still touches the route (as beside an elbow), and a distant lane only last.
+  const ownedAttached = scored.filter((entry) =>
+    entry.attached && entry.decorationClear && entry.ownerClear
+  );
+  const ownedNearby = scored.filter((entry) =>
+    entry.decorationClear && entry.ownerClear &&
+    distanceFromRectToPolyline(entry.candidate.rect, points) <= MAX_ATTACHED_LABEL_GAP
+  );
+  const clearAttached = scored.filter((entry) => entry.attached && entry.decorationClear);
+  const clearNearby = scored.filter((entry) =>
+    entry.decorationClear &&
+    distanceFromRectToPolyline(entry.candidate.rect, points) <= MAX_ATTACHED_LABEL_GAP
+  );
+  const contentClear = scored.filter((entry) => entry.decorationClear);
   const attached = scored.filter((entry) => entry.attached && entry.score < LABEL_COLLISION_COST);
   const nearby = scored.filter((entry) => entry.score < LABEL_COLLISION_COST &&
     distanceFromRectToPolyline(entry.candidate.rect, points) <= MAX_ATTACHED_LABEL_GAP);
-  const eligible = attached.length ? attached : nearby.length ? nearby : scored;
+  const eligible = [
+    ownedAttached,
+    ownedNearby,
+    clearAttached,
+    clearNearby,
+    contentClear,
+    attached,
+    nearby,
+  ].find((pool) => pool.length > 0) ?? scored;
   let best = eligible[0]?.candidate;
   let bestScore = Infinity;
   for (const { candidate, score } of eligible) {
@@ -3264,7 +3427,12 @@ function getEdgeLabelPlacement(
       bestScore = score;
     }
   }
-  return best && { ...best, clean: attached.length > 0 };
+  const selected = eligible.find((entry) => entry.candidate === best);
+  return best && {
+    ...best,
+    clean: ownedAttached.length > 0 || ownedNearby.length > 0,
+    contentClear: selected?.contentClear,
+  };
 }
 
 function labelCollisionScore(
@@ -3285,17 +3453,14 @@ function labelCollisionScore(
   ) * 40;
 
   for (const obstacle of obstacles) {
-    if (rectsIntersect(candidate.rect, obstacle, LABEL_CONTENT_CLEARANCE)) {
+    if (rectsIntersect(candidate.rect, obstacle.content ?? obstacle, 0)) {
       score += LABEL_COLLISION_COST;
+    } else if (rectsIntersect(candidate.rect, obstacle, LABEL_CONTENT_CLEARANCE)) {
+      score += LABEL_NEAR_CONTENT_COST;
     }
   }
   for (const badge of badges) {
-    if (circleIntersectsRect(
-      badge.point,
-      GRAMMAR.badgeRadius,
-      candidate.rect,
-      LABEL_CONTENT_CLEARANCE,
-    )) {
+    if (circleIntersectsRect(badge.point, GRAMMAR.badgeRadius, candidate.rect, LABEL_CONTENT_CLEARANCE)) {
       score += LABEL_COLLISION_COST;
     }
   }
@@ -3305,34 +3470,25 @@ function labelCollisionScore(
     }
   }
   const inflatedLabel = inflate(candidate.rect, LABEL_TO_CONNECTOR_CLEARANCE);
-  // A label nearer another connector than its own labels the wrong arrow. That
-  // outranks every soft cost but not covering content; an automatic badge in
-  // the way moves aside in the refinement pass instead.
+  // A label nearer another connector than its own labels the wrong arrow.
+  // Those candidates are hard-ineligible; an automatic badge in the way moves
+  // aside in the refinement pass instead.
   const centre = {
     x: candidate.rect.x + candidate.rect.w / 2,
     y: candidate.rect.y + candidate.rect.h / 2,
   };
   const ownDistance = distanceToPolyline(centre, ownRoute);
-  const horizontal = (a: Point, b: Point) => Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
-  const ownHorizontal = horizontal(
-    ownRoute[candidate.segmentIndex] ?? ownRoute[0]!,
-    ownRoute[candidate.segmentIndex + 1] ?? ownRoute[ownRoute.length - 1]!,
-  );
+  const ownPointDistance = distanceToPolyline(candidate.point, ownRoute);
   for (const edge of otherEdges) {
-    // Only a run alongside the copy competes for it; a crossing is priced below.
-    let foreignDistance = Infinity;
-    for (let index = 0; index < edge.points.length - 1; index++) {
-      const a = edge.points[index]!;
-      const b = edge.points[index + 1]!;
-      if (horizontal(a, b) === ownHorizontal) {
-        foreignDistance = Math.min(foreignDistance, distanceToPolyline(centre, [a, b]));
-      }
-    }
-    const nearForeignJunction = distanceToPolyline(candidate.anchor, edge.points) <=
-      LABEL_TO_CONNECTOR_CLEARANCE;
-    if (!nearForeignJunction && foreignDistance + LABEL_TO_CONNECTOR_CLEARANCE < ownDistance) {
-      score += LABEL_OWNERSHIP_COST +
-        (ownDistance - foreignDistance - LABEL_TO_CONNECTOR_CLEARANCE) * LABEL_OWNERSHIP_COST_PER_UNIT;
+    const foreignDistance = distanceToPolyline(centre, edge.points);
+    const foreignPointDistance = distanceToPolyline(candidate.point, edge.points);
+    if (
+      foreignDistance < ownDistance || foreignPointDistance < ownPointDistance
+    ) {
+      // A candidate that is visibly nearer a different run is not an owner
+      // candidate. Keep it out of the clean/attached pool so the resolver
+      // cannot select it merely because every nearby pocket has some cost.
+      score += LABEL_COLLISION_COST;
     }
     for (let index = 0; index < edge.points.length - 1; index++) {
       if (segmentHits(edge.points[index]!, edge.points[index + 1]!, inflatedLabel)) {

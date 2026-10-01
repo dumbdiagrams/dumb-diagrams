@@ -489,13 +489,119 @@ describe("routeEdgePreview", () => {
       new URL("../../../../examples/curated/event-driven-order-fulfillment/diagram.dgm", import.meta.url),
       "utf8",
     ));
-    const routes = routeEdges(doc, layoutDocument(doc));
+    const layout = layoutDocument(doc);
+    const routes = routeEdges(doc, layout);
+    const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
+    const groups = layout.groups.map((group) => group.labelRect).filter((rect): rect is NonNullable<typeof rect> => Boolean(rect));
 
     for (const id of ["authorize_payment", "persist_order"]) {
       const edge = routes.find((candidate) => candidate.id === id)!;
       expect(edge.labelPoint).toBeDefined();
+      expect(edge.labelRect).toBeDefined();
       expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(52);
+      for (const node of layout.nodes) {
+        expect(rectsOverlapForTest(edge.labelRect!, node.icon), `${id} overlaps ${node.id} icon`).toBe(false);
+        expect(rectsOverlapForTest(edge.labelRect!, node.label), `${id} overlaps ${node.id} text`).toBe(false);
+      }
+      for (const header of groups) {
+        expect(rectsOverlapForTest(edge.labelRect!, header), `${id} overlaps a group header`).toBe(false);
+      }
+      if (id === "authorize_payment") {
+        const ownDistance = distanceToPath(edge.labelPoint!, edge.points);
+        for (const other of routes.filter((candidate) => candidate.id !== id)) {
+          expect(distanceToPath(edge.labelPoint!, other.points), `${id} is closer to ${other.id}`)
+            .toBeGreaterThan(ownDistance);
+        }
+      }
     }
+
+    const payment = nodes.get("payment_service")!;
+    const paymentLabel = routes.find((candidate) => candidate.id === "authorize_payment")!.labelRect!;
+    expect(paymentLabel.x + paymentLabel.w).toBeLessThanOrEqual(payment.icon.x);
+    expect(routes.find((candidate) => candidate.id === "reserve_stock")!.points.length).toBeLessThanOrEqual(4);
+  });
+
+  it("keeps report-flow labels clear of resource and boundary copy", () => {
+    const doc = parseDgm(readFileSync(
+      new URL("../../../../examples/curated/asynchronous-report-generation/diagram.dgm", import.meta.url),
+      "utf8",
+    ));
+    const layout = layoutDocument(doc);
+    const routes = routeEdges(doc, layout);
+
+    for (const id of ["enqueue_report", "failed_jobs"]) {
+      const edge = routes.find((candidate) => candidate.id === id)!;
+      expect(edge.labelRect).toBeDefined();
+      for (const node of layout.nodes) {
+        expect(rectsOverlapForTest(edge.labelRect!, node.icon, 2), `${id} overlaps ${node.id} icon`).toBe(false);
+        expect(rectsOverlapForTest(edge.labelRect!, node.label, 2), `${id} overlaps ${node.id} text`).toBe(false);
+      }
+      for (const group of layout.groups) {
+        if (group.labelRect) {
+          expect(rectsOverlapForTest(edge.labelRect!, group.labelRect, 2), `${id} overlaps ${group.id} header`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it.each([
+    ["authorize", true],
+    ["authorize payment", true],
+    ["authorize payment with a longer audit trail", true],
+    ["authorize", false],
+    ["authorize payment", false],
+    ["authorize payment with a longer audit trail", false],
+  ] as const)("keeps a three-way fan-out label owned and deterministic for %s (neighbor labels: %s)", (label, neighborsLabelled) => {
+    const secondaryLabel = neighborsLabelled ? ' label "side path"' : "";
+    const tertiaryLabel = neighborsLabelled ? ' label "other path"' : "";
+    const doc = parseDgm(`diagram synthetic-label-fanout {
+  grammar cloud-agnostic
+  flow lr
+  cloud-agnostic.cloud application "Application" {
+    cloud-agnostic.boundary source_boundary "Source" {
+      cloud-agnostic.server source "Source"
+    }
+    cloud-agnostic.boundary target_boundary "Targets" {
+      cloud-agnostic.server target_a "Target A"
+      cloud-agnostic.server target_b "Target B"
+      cloud-agnostic.server target_c "Target C"
+    }
+  }
+  source -> target_b { id primary label "${label}" }
+  source -> target_a { id secondary${secondaryLabel} }
+  source -> target_c { id tertiary${tertiaryLabel} }
+}`);
+    const layout = layoutDocument(doc);
+    const routes = routeEdges(doc, layout);
+    const primary = routes.find((edge) => edge.id === "primary")!;
+    const otherRoutes = routes.filter((edge) => edge.id !== primary.id);
+
+    expect(primary.labelPoint).toBeDefined();
+    expect(primary.labelRect).toBeDefined();
+    expect(distanceToPath(primary.labelPoint!, primary.points)).toBeLessThanOrEqual(52);
+    expect(distanceToPath(primary.labelPoint!, primary.points)).toBeLessThan(
+      Math.min(...otherRoutes.map((edge) => distanceToPath(primary.labelPoint!, edge.points))),
+    );
+    const center = {
+      x: primary.labelRect!.x + primary.labelRect!.w / 2,
+      y: primary.labelRect!.y + primary.labelRect!.h / 2,
+    };
+    expect(distanceToPath(center, primary.points)).toBeLessThan(
+      Math.min(...otherRoutes.map((edge) => distanceToPath(center, edge.points))),
+    );
+    for (const node of layout.nodes) {
+      expect(rectsOverlapForTest(primary.labelRect!, node.icon), `primary overlaps ${node.id} icon`).toBe(false);
+      expect(rectsOverlapForTest(primary.labelRect!, node.label), `primary overlaps ${node.id} text`).toBe(false);
+    }
+    for (const group of layout.groups) {
+      if (group.labelRect) {
+        expect(rectsOverlapForTest(primary.labelRect!, group.labelRect), "primary overlaps a group header").toBe(false);
+      }
+    }
+
+    const repeated = routeEdges(doc, layout).find((edge) => edge.id === "primary")!;
+    expect({ points: repeated.points, labelPoint: repeated.labelPoint, labelRect: repeated.labelRect })
+      .toEqual({ points: primary.points, labelPoint: primary.labelPoint, labelRect: primary.labelRect });
   });
 
   it("keeps cross-boundary labels visibly attached to their connectors", () => {
@@ -1594,6 +1700,19 @@ function circleIntersectsRectForTest(
   const x = Math.max(rect.x, Math.min(center.x, rect.x + rect.w));
   const y = Math.max(rect.y, Math.min(center.y, rect.y + rect.h));
   return Math.hypot(center.x - x, center.y - y) < radius + margin;
+}
+
+function rectsOverlapForTest(
+  first: { x: number; y: number; w: number; h: number },
+  second: { x: number; y: number; w: number; h: number },
+  margin = 0,
+) {
+  return !(
+    first.x + first.w + margin <= second.x ||
+    second.x + second.w + margin <= first.x ||
+    first.y + first.h + margin <= second.y ||
+    second.y + second.h + margin <= first.y
+  );
 }
 
 function pathsCross(
