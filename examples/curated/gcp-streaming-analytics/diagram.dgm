@@ -1,3 +1,4 @@
+dgm 1
 diagram gcp-streaming-analytics {
   grammar gcp
   flow lr
@@ -15,10 +16,12 @@ diagram gcp-streaming-analytics {
             gcp.compute-engine compute "Compute Engine analytics workers"
             gcp.gke gke "GKE stream operators"
           }
+
           cloud-agnostic.boundary pipeline "Streaming pipeline" {
             gcp.pub-sub events "Pub/Sub events"
             gcp.dataflow dataflow "Dataflow processing"
           }
+
           cloud-agnostic.boundary governance "Governance and operations" {
             gcp.iam iam "IAM"
             gcp.secret-manager secrets "Secret Manager"
@@ -26,16 +29,17 @@ diagram gcp-streaming-analytics {
             gcp.cloud-logging logging "Cloud Logging"
           }
         }
+
         gcp.bigquery warehouse "BigQuery warehouse"
         gcp.cloud-storage archive "Cloud Storage archive"
       }
     }
   }
 
-  client -> load_balancer { id ingest step 1 label "HTTPS events" kind flow }
+  client -> load_balancer { id ingest label "HTTPS events" step 1 kind flow }
   load_balancer -> functions { id dispatch step 2 kind flow }
-  functions -> events { id publish step 3 label "Publish events" kind flow }
-  events -> dataflow { id process step 4 label "Stream processing" kind flow }
-  dataflow -> warehouse { id load step 5 label "Analytics rows" kind flow }
-  dataflow -> archive { id archive step 6 label "Raw event archive" kind flow }
+  functions -> events { id publish label "Publish events" step 3 kind flow }
+  events -> dataflow { id process label "Stream processing" step 4 kind flow }
+  dataflow -> warehouse { id load label "Analytics rows" step 5 kind flow }
+  dataflow -> archive { id archive label "Raw event archive" step 6 kind flow }
 }

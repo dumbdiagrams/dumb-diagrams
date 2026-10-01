@@ -7,7 +7,7 @@
       "architectureBrief": "examples/curated/simple-serverless-web-application/architecture-brief.md",
       "userPrompt": "examples/curated/simple-serverless-web-application/user-prompt.md",
       "referenceSpec": "examples/curated/simple-serverless-web-application/reference-spec.md",
-      "diagramSha256": "3b3d05041697d76d0d08b9776d29dd972a828ab813c30967558472d08ea67b38",
+      "diagramSha256": "c46747776c46087e1f69cc33f20f219441ec5ea623753e0b89f05cdbd09e764c",
       "architectureBriefSha256": "ebc01bd6e23348ccebd4e0e6c94f4e7703c186f41686661e9e37f7b54e15bf49",
       "userPromptSha256": "aaa95008c88f7a272d8581e4a3793721f7c3945e1f817387317241ed82c0d451",
       "referenceSpecSha256": "5353cc300e503d8fa30582fb40f4ad2937a5d6e9e66198c2f2e4d2d39d29115c"
@@ -17,7 +17,7 @@
       "architectureBrief": "examples/curated/aws-high-availability-web-app/architecture-brief.md",
       "userPrompt": "examples/curated/aws-high-availability-web-app/user-prompt.md",
       "referenceSpec": "examples/curated/aws-high-availability-web-app/reference-spec.md",
-      "diagramSha256": "8683af21854c5e3714b8042ebfeccc92a8e996f415a3110044cae18991032406",
+      "diagramSha256": "6ac4bdb8c219048b04a93c2cfb9599af94192854083774809600d6834857f1d3",
       "architectureBriefSha256": "e9fba810b026fe2a59e152f924fe9acce65cdf931345e81a67c0d58b5cdf57f0",
       "userPromptSha256": "3ac80e32e3d1cf409bdb8df81144d9a617ce83cd5fc81d36d241cfabf3b0a02b",
       "referenceSpecSha256": "9fb2badb5359883c056ae5a9bcd5c24c0b88520abdfaa5c110d90c5b7742a18b"
@@ -27,7 +27,7 @@
       "architectureBrief": "examples/curated/aws-data-transfer-hub/architecture-brief.md",
       "userPrompt": "examples/curated/aws-data-transfer-hub/user-prompt.md",
       "referenceSpec": "examples/curated/aws-data-transfer-hub/reference-spec.md",
-      "diagramSha256": "eb56b338fd7adb2f265a77935b56661a1511dd5f74fd4af90fcbcbd1b97d98c1",
+      "diagramSha256": "6b308c5d5a3ef1cbe3264d107a6110538d8ffd49e388ed08371bb8410b03a5e9",
       "architectureBriefSha256": "e41c54a23826f63c14249ff6fa5d41a820a109e6dd32a8ea2261b66681ab353e",
       "userPromptSha256": "f81311f13656b72b84892ca844c63bc067c4559b01824227972523116c5be830",
       "referenceSpecSha256": "a7d984109f6296912f693d4f2003ac305a965b6e1a50f6dc7fd3e9f90f7d8493"
@@ -37,7 +37,7 @@
       "architectureBrief": "examples/curated/bedrock-claims-processing/architecture-brief.md",
       "userPrompt": "examples/curated/bedrock-claims-processing/user-prompt.md",
       "referenceSpec": "examples/curated/bedrock-claims-processing/reference-spec.md",
-      "diagramSha256": "d2f28d1f2b17ab7da3825fc91320ba9e49974fadc7fb5d4654296503687f6a10",
+      "diagramSha256": "e19601774f05dcca4f2d7b28c4ffa98ff81430f2740408e47f51d9d6a491e0e2",
       "architectureBriefSha256": "7d5167e523e80e08510b730c52f3af28cb6f8ca1ff2de2159cff8d5fcdeeb1ba",
       "userPromptSha256": "68684c6dc93e6e1a6e11f4f383463347c710119b80c4c0783220316762d54382",
       "referenceSpecSha256": "97c1d27883cb2a54bf9394b4bf3ebab2d1d5cc28ffceb69cf91b6eb1515e5165"
@@ -47,7 +47,7 @@
       "architectureBrief": "examples/curated/image-thumbnail-pipeline/architecture-brief.md",
       "userPrompt": "examples/curated/image-thumbnail-pipeline/user-prompt.md",
       "referenceSpec": "examples/curated/image-thumbnail-pipeline/reference-spec.md",
-      "diagramSha256": "1bf00e1fdc14cafc81d372973a34b4b408a73c886df3f9f8d6781f651ba7faf4",
+      "diagramSha256": "72e50ab04dee7114fc902c42b6aefb718b991e9b8830523f2908ec2bab479390",
       "architectureBriefSha256": "8d0e58f824a7395979233802511bdf8ec0d09442718d1872c4ccf2a539f38760",
       "userPromptSha256": "3cca139ef748ae4f3ab2709a6754c10c63ba9921c944c0d23d93dbba7afed781",
       "referenceSpecSha256": "338835bb3228020c033d5ab3c179f2dd26fe9284c5b2b1dcf66e7c32fbe5e913"
@@ -57,7 +57,7 @@
       "architectureBrief": "examples/curated/asynchronous-report-generation/architecture-brief.md",
       "userPrompt": "examples/curated/asynchronous-report-generation/user-prompt.md",
       "referenceSpec": "examples/curated/asynchronous-report-generation/reference-spec.md",
-      "diagramSha256": "5a2425271c82d7806758367d2118d8f68b6c6442babd86d81c3d4688470cf28e",
+      "diagramSha256": "8a33fa2a8c6de7f6177b6d26ca0fb420153dcbb8ea40fd699f8d3a146ad5e837",
       "architectureBriefSha256": "2df21d2b4e16dc084f46ae826e0b20d36a39c37fd0706b5a6a79f737d020f5fd",
       "userPromptSha256": "69a8ea1858196043b933aefd7118871c8b4237027923c90084868f1cf46a14d8",
       "referenceSpecSha256": "6fc0ade1fa825724ac967d5750f4f3bee04e112b20827215cffe2b4a249a1068"
@@ -67,7 +67,7 @@
       "architectureBrief": "examples/curated/event-driven-order-fulfillment/architecture-brief.md",
       "userPrompt": "examples/curated/event-driven-order-fulfillment/user-prompt.md",
       "referenceSpec": "examples/curated/event-driven-order-fulfillment/reference-spec.md",
-      "diagramSha256": "2d043df3f72b2976d49062383e73060c68a10a3ed51aba4585afe5610d63845f",
+      "diagramSha256": "496154b0c9f859391cbdde81c5236c02c0ae5c20d90412d8fea3b727a4414aee",
       "architectureBriefSha256": "1087d66cb20f0f171f22844a03397beae2e549da3b53b69fa6bec2dcabd24f9d",
       "userPromptSha256": "64760bc796f155871ec5e6603cf224593912bd978cff742097daae8538d63d5e",
       "referenceSpecSha256": "2af25c967f137a9b32b33788fe7261251b1cc5165b77fccf05970528726e098b"
@@ -77,7 +77,7 @@
       "architectureBrief": "examples/curated/azure-private-app-service/architecture-brief.md",
       "userPrompt": "examples/curated/azure-private-app-service/user-prompt.md",
       "referenceSpec": "examples/curated/azure-private-app-service/reference-spec.md",
-      "diagramSha256": "3ed2bd2e7f6cbdc2dedd2cb95c089267140d5ea01a310eb10440caa6a4fb1895",
+      "diagramSha256": "0d5e128dcdf267e295a4781d92ddceaf6012ba182d4911102e17adc561f53480",
       "architectureBriefSha256": "79eaf61378f6d080ad082b790ea75548606194a7c94cf251b3ed51c353fd1cee",
       "userPromptSha256": "6126274617ba166053c242659d2c14cc68999306fd3f94dbfde6547354970433",
       "referenceSpecSha256": "83c1353dbfe78062412ead4c63efef4b19e924b65dafef74621793aad5693b63"
@@ -87,7 +87,7 @@
       "architectureBrief": "examples/curated/gcp-streaming-analytics/architecture-brief.md",
       "userPrompt": "examples/curated/gcp-streaming-analytics/user-prompt.md",
       "referenceSpec": "examples/curated/gcp-streaming-analytics/reference-spec.md",
-      "diagramSha256": "9006ca4f1262ca56cbbddd583dea1a1aaf128524aa8523feb99f4aaf7fec010c",
+      "diagramSha256": "666c734690438aa36746f2a026dfec1c74684b8828638cb0a2fe7b7906443877",
       "architectureBriefSha256": "5c0c2b6a9bf871ecf5d39d087cbcd3b2855c8a920aa8472d5c0275fc9b423639",
       "userPromptSha256": "cd382f191179e1c83325740379b22d62cba65842b2aeb0a26a9e5982c5265c2b",
       "referenceSpecSha256": "dad33498e3c11abafc8b04cffd20d5179f8b583737adefafd3c129d9dec2ff4f"
@@ -97,7 +97,7 @@
       "architectureBrief": "examples/curated/cloud-agnostic-order-processing/architecture-brief.md",
       "userPrompt": "examples/curated/cloud-agnostic-order-processing/user-prompt.md",
       "referenceSpec": "examples/curated/cloud-agnostic-order-processing/reference-spec.md",
-      "diagramSha256": "ad7c618cb25e537a028579adfd9096ac3220f3d376f01d99defcb17595483441",
+      "diagramSha256": "a8f2524959ef3fc66b99b09ea1369cbad076c1c05e6ec32746f0542e2ebd67ca",
       "architectureBriefSha256": "efd819b9c5b98b5c12c8767387497060e9af63a0816baa584530d4ecaf38048a",
       "userPromptSha256": "954820f13d6c27199d820d085ca74d1b9d304dd54c608c9cb689658cc269cbe1",
       "referenceSpecSha256": "cf88407bf0d3c398f28e1ca5dbba49541f7d2221794c36f2509e3ced38408f11"

@@ -1,3 +1,4 @@
+dgm 1
 diagram cloud-agnostic-order-processing {
   grammar cloud-agnostic
   flow lr
@@ -13,11 +14,13 @@ diagram cloud-agnostic-order-processing {
             cloud-agnostic.gateway gateway "API gateway"
             cloud-agnostic.firewall firewall "Web firewall"
           }
+
           cloud-agnostic.boundary processing "Order processing" {
             cloud-agnostic.server order_service "Order service"
             cloud-agnostic.queue queue "Order queue"
             cloud-agnostic.function worker "Fulfillment worker"
           }
+
           cloud-agnostic.boundary data "Data services" {
             cloud-agnostic.database database "Orders database"
             cloud-agnostic.object-storage storage "Receipt storage"
@@ -27,11 +30,11 @@ diagram cloud-agnostic-order-processing {
     }
   }
 
-  client -> firewall { id requests step 1 label "HTTPS requests" kind flow }
+  client -> firewall { id requests label "HTTPS requests" step 1 kind flow }
   firewall -> gateway { id screened step 2 kind flow }
-  gateway -> order_service { id orders step 3 label "Create order" kind flow }
-  order_service -> queue { id enqueue step 4 label "Enqueue order" kind flow }
-  queue -> worker { id consume step 5 label "Consume order" kind flow }
-  worker -> database { id persist step 6 label "Persist status" kind flow }
-  worker -> storage { id receipt step 7 label "Write receipt" kind flow }
+  gateway -> order_service { id orders label "Create order" step 3 kind flow }
+  order_service -> queue { id enqueue label "Enqueue order" step 4 kind flow }
+  queue -> worker { id consume label "Consume order" step 5 kind flow }
+  worker -> database { id persist label "Persist status" step 6 kind flow }
+  worker -> storage { id receipt label "Write receipt" step 7 kind flow }
 }

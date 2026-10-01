@@ -1,3 +1,4 @@
+dgm 1
 diagram event-driven-order-fulfillment {
   grammar aws
   flow lr
@@ -35,26 +36,10 @@ diagram event-driven-order-fulfillment {
   storefront_delivery -> storefront { id delivery_to_storefront label "static content" }
   storefront_delivery -> gateway { id delivery_to_api step 2 }
   gateway -> order_service { id api_to_order step 3 }
-  order_service -> orders_database { id persist_order step 4 label "persist order" }
-  order_service -> order_events { id publish_order_created step 5 label "OrderCreated" }
-  order_events -> inventory_service {
-    id reserve_stock
-    style dashed
-    label "reserve stock"
-  }
-  order_events -> payment_service {
-    id authorize_payment
-    style dashed
-    label "authorize payment"
-  }
-  order_events -> shipping_service {
-    id create_shipment
-    style dashed
-    label "create shipment"
-  }
-  order_events -> customer_notifications {
-    id send_confirmation
-    style dashed
-    label "send confirmation"
-  }
+  order_service -> orders_database { id persist_order label "persist order" step 4 }
+  order_service -> order_events { id publish_order_created label "OrderCreated" step 5 }
+  order_events -> inventory_service { id reserve_stock label "reserve stock" style dashed }
+  order_events -> payment_service { id authorize_payment label "authorize payment" style dashed }
+  order_events -> shipping_service { id create_shipment label "create shipment" style dashed }
+  order_events -> customer_notifications { id send_confirmation label "send confirmation" style dashed }
 }

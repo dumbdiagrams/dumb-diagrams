@@ -1,3 +1,4 @@
+dgm 1
 diagram asynchronous-report-generation {
   grammar aws
   flow lr
@@ -39,7 +40,7 @@ diagram asynchronous-report-generation {
   cdn -> report_ui { id cdn_to_report_ui label "static content" }
   cdn -> gateway { id cdn_to_api step 2 }
   gateway -> report_handler { id api_to_report_handler step 3 }
-  report_handler -> report_jobs { id enqueue_report step 4 label "enqueue report" }
+  report_handler -> report_jobs { id enqueue_report label "enqueue report" step 4 }
   report_jobs -> report_worker { id jobs_to_worker step 5 }
   report_worker -> generated_reports { id worker_to_reports step 6 }
   report_worker -> job_status { id worker_to_status step 7 }

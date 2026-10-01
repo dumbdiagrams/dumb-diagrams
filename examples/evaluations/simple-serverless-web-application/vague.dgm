@@ -1,7 +1,10 @@
+dgm 1
 diagram website_stack {
   grammar aws
   flow lr
   title "Serverless web application"
+
+  cloud-agnostic.client browser "Browser"
 
   aws.cloud platform "AWS Cloud" {
     cloud-agnostic.boundary web "Web frontend" {
@@ -13,8 +16,6 @@ diagram website_stack {
     aws.aws-lambda function "API handler"
     aws.api-gateway endpoint "HTTP API"
   }
-
-  cloud-agnostic.client browser "Browser"
 
   browser -> delivery
   delivery -> bucket { label "static content" }

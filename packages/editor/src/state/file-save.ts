@@ -100,3 +100,30 @@ export async function saveExistingFileHandle(
     };
   }
 }
+
+export type SaveFilePicker = (options: {
+  suggestedName?: string;
+  types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+}) => Promise<FileSystemHandleLike>;
+
+/** First save: ask for a file, then write it with the same stale-source guards as an existing handle. */
+export async function saveWithPicker(
+  picker: SaveFilePicker,
+  suggestedName: string,
+  source: string,
+  isCurrent: () => boolean,
+): Promise<{ result: FileSaveResult; handle?: FileSystemHandleLike }> {
+  let handle: FileSystemHandleLike;
+  try {
+    handle = await picker({
+      suggestedName,
+      types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
+    });
+  } catch (error) {
+    if (isAbortError(error)) return { result: { status: "cancelled" } };
+    const message = error instanceof Error ? error.message : "The diagram could not be saved.";
+    return { result: { status: "error", filename: suggestedName, code: "write-failed", message } };
+  }
+  const result = await saveExistingFileHandle(handle, source, "", { overwrite: true, isCurrent });
+  return result.status === "saved" ? { result, handle } : { result };
+}

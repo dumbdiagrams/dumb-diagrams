@@ -1052,7 +1052,7 @@ describe("editor commands", () => {
     expect(once.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
     expect(afterOnce.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
     expect(printDgm(once.doc)).toContain('cloud-agnostic.boundary upload_experience "Upload experience"');
-    expect(printDgm(once.doc)).toContain('aws.cloud aws_cloud "AWS Cloud" {');
+    expect(printDgm(once.doc)).toContain('  aws.cloud aws_cloud "AWS Cloud"\n');
 
     const twice = ungroup(afterOnce.doc, "aws_cloud", afterOnce.layout);
     expect(twice.doc.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);

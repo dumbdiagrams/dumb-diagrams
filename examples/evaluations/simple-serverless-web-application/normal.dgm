@@ -1,3 +1,4 @@
+dgm 1
 diagram app_flow {
   grammar aws
   flow lr

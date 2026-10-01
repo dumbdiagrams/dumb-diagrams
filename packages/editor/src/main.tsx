@@ -14,14 +14,9 @@ import {
   createEmptyDocument,
   characterLength,
   DIAGRAM_LIMITS,
-  hasErrors,
   normalizeMultilineText,
   normalizeSingleLineText,
-  validateDocument,
 } from "@dumb-diagrams/runtime/core";
-import {
-  getCatalogMap,
-} from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { renderPortableSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
@@ -29,7 +24,8 @@ import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 import { serializeClipboardResult, duplicateSelectionResult } from "./model/clipboard";
 import type { Selection, SelectionItem } from "./model/types";
 import { readClipboardSelection, writeClipboardText } from "./state/clipboard-actions";
-import { documentHasUnsafeAssets, importDocumentFiles, importSvgFile, validateImportedSource } from "./state/document-import";
+import { importDocumentFiles, importSvgFile, validateImportedSource } from "./state/document-import";
+import { clearDiagramHash, readDiagramUrlImport } from "./state/diagram-url-bootstrap";
 import { useDocumentCommands } from "./state/use-document-commands";
 import { createCatalogActions, insertionPoint } from "./state/catalog-actions";
 import { useEditorSelection } from "./state/use-editor-selection";
@@ -110,7 +106,6 @@ import { RecycleBinModal } from "./panels/RecycleBinModal";
 import { WorkspaceTabs } from "./panels/WorkspaceTabs";
 import { readFileHandles, type OpenFileEntry } from "./state/file-open";
 import {
-  decodeDiagramUrlPayload,
   exportDgmFileResult,
   filenameWithExtension,
   type ExportFormat,
@@ -187,30 +182,7 @@ const SourceDrawer = lazy(() => import("./panels/SourceDrawer").then((module) =>
 const ExamplesModal = lazy(() => import("./panels/ExamplesModal").then((module) => ({
   default: module.ExamplesModal,
 })));
-type InitialUrlImport = {
-  source?: string;
-  error?: string;
-};
-
-const INITIAL_URL_IMPORT: InitialUrlImport = (() => {
-  if (typeof window === "undefined" || !window.location.hash) return {};
-  const hash = window.location.hash.slice(1);
-  const params = new URLSearchParams(hash);
-  if (params.size !== 1 || !params.has("diagram")) {
-    return { error: "Diagram URL contains an unsupported hash." };
-  }
-  const decoded = decodeDiagramUrlPayload(params.get("diagram") ?? "");
-  if (!decoded.ok) return { error: decoded.message };
-  const parsed = parseDgmResult(decoded.source);
-  if (parsed.isErr()) {
-    return { error: "Diagram URL contains invalid diagram source." };
-  }
-  if (hasErrors(validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules: false }))) {
-    return { error: "Diagram URL contains invalid diagram source." };
-  }
-  if (documentHasUnsafeAssets(parsed.value)) return { error: "Diagram URL contains invalid diagram source." };
-  return { source: decoded.source };
-})();
+const INITIAL_URL_IMPORT = typeof window === "undefined" ? {} : readDiagramUrlImport(window.location.hash);
 
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
@@ -240,15 +212,6 @@ function waitForPaint(): Promise<void> {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => window.setTimeout(resolve, 0));
   });
-}
-
-function clearDiagramHash(): void {
-  if (typeof window === "undefined" || !window.location.hash) return;
-  try {
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-  } catch {
-    window.location.hash = "";
-  }
 }
 
 function documentNameForDisplay(doc: DiagramDocument): string {

@@ -75,7 +75,8 @@ export const SOURCE_MANIFEST = Object.freeze({
     { path: "packages/website/src", extensions: [".astro", ".css", ".dgm", ".md", ".mdx", ".mjs", ".png", ".svg", ".ts"] },
     { path: "packages/website/scripts", extensions: [".mjs"] },
     { path: "scripts", extensions: [".json", ".mjs"] },
-    { path: "tests/integration", extensions: [".ts"] },
+    { path: "tests/compat", extensions: [".dgm", ".svg", ".ts"] },
+    { path: "tests/integration", extensions: [".svg", ".ts"] },
   ]),
 });
 

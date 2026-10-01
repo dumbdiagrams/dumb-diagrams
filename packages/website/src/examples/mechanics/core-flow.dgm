@@ -1,3 +1,4 @@
+dgm 1
 diagram core_flow {
   grammar aws
   flow lr

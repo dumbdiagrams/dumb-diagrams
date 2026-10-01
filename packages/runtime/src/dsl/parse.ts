@@ -649,113 +649,107 @@ export function parseDgmResult(source: string): Result<DiagramDocument, DgmParse
   return new Parser(tokens.value.tokens, tokens.value.end).parse();
 }
 
+/** Canonical source: `printDgm(parseDgm(printDgm(doc)))` is stable. */
 export function printDgm(doc: DiagramDocument): string {
-  const lines: string[] = [];
-  lines.push(`diagram ${doc.id} {`);
-  lines.push(`  grammar ${doc.grammar}`);
-  lines.push(`  flow ${doc.flow}`);
-  if (doc.title) lines.push(`  title "${escapeString(doc.title)}"`);
-  lines.push("");
-
-  const roots = findRoots(doc);
-  for (const id of roots) {
-    printNode(doc, id, 1, lines);
+  const header = [`  grammar ${doc.grammar}`, `  flow ${doc.flow}`];
+  if (doc.title) header.push(`  title "${escapeString(doc.title)}"`);
+  const lines = [`dgm ${DGM_FORMAT_VERSION}`, `diagram ${doc.id} {`, ...header];
+  const sections = [
+    printSiblings(doc, findRoots(doc), 1),
+    doc.annotations.map(printAnnotation),
+    doc.edges.map(printEdge),
+  ];
+  for (const section of sections) {
+    if (section.length) lines.push("", ...section);
   }
-
-  for (const annotation of doc.annotations) {
-    let line = `  annotation ${annotation.id} "${escapeString(annotation.text)}"`;
-    const options: string[] = [];
-    if (annotation.anchor) options.push(`anchor ${annotation.anchor}`);
-    if (annotation.style && annotation.style !== "paper") options.push(`style ${annotation.style}`);
-    if (annotation.font) options.push(`font ${annotation.font}`);
-    if (annotation.fontSize) options.push(`size ${annotation.fontSize}`);
-    if (annotation.align) options.push(`align ${annotation.align}`);
-    if (options.length) line += ` { ${options.join(" ")} }`;
-    lines.push(line);
-  }
-
-  if (doc.annotations.length) lines.push("");
-
-  for (const edge of doc.edges) {
-    let line = `  ${edge.source} -> ${edge.target}`;
-    const opts: string[] = [];
-    const defaultId = `${edge.source}-${edge.target}`;
-    if (edge.id !== defaultId) opts.push(`id ${edge.id}`);
-    if (edge.label) opts.push(`label "${escapeString(edge.label)}"`);
-    if (edge.step !== undefined) opts.push(`step ${edge.step}`);
-    if (edge.style !== "solid") opts.push(`style ${edge.style}`);
-    if (edge.kind) opts.push(`kind ${edge.kind}`);
-    if (edge.color) opts.push(`color ${edge.color}`);
-    if (edge.sourcePort) {
-      opts.push(
-        `from ${edge.sourcePort}${edge.sourcePortOffset !== undefined
-          ? ` offset ${normalizePortOffset(edge.sourcePortOffset)}`
-          : ""}`,
-      );
-    }
-    if (edge.targetPort) {
-      opts.push(
-        `to ${edge.targetPort}${edge.targetPortOffset !== undefined
-          ? ` offset ${normalizePortOffset(edge.targetPortOffset)}`
-          : ""}`,
-      );
-    }
-    if (opts.length) line += ` { ${opts.join(" ")} }`;
-    lines.push(line);
-  }
-
   lines.push("}");
-  lines.push("");
+
   if (doc.assets?.length) {
-    lines.push("assets {");
+    lines.push("", "assets {");
     for (const asset of doc.assets) {
-      lines.push(`  asset ${asset.id} {`);
-      lines.push(`    svg "${escapeString(asset.content)}"`);
-      lines.push(`    w ${asset.intrinsicW}`);
-      lines.push(`    h ${asset.intrinsicH}`);
-      lines.push("  }");
+      lines.push(
+        `  asset ${asset.id} {`,
+        `    svg "${escapeString(asset.content)}"`,
+        `    w ${asset.intrinsicW}`,
+        `    h ${asset.intrinsicH}`,
+        "  }",
+      );
     }
     lines.push("}");
-    lines.push("");
   }
-  lines.push(`view ${doc.views[0]?.id ?? "default"} {`);
+
   const view = doc.views[0];
-  if (view) {
-    for (const [id, place] of Object.entries(view.places)) {
-      lines.push(`  ${formatPlace("place", id, place)}`);
-    }
-    for (const [id, route] of Object.entries(view.routes)) {
-      const parts = ["route", id, "{"];
-      const points = route.points?.length
-        ? route.points
-        : route.waypoints ?? [];
-      for (const point of points) {
-        parts.push(`point ${point.x} ${point.y}`);
-      }
-      if (route.mode && route.mode !== "auto") parts.push(`mode ${route.mode}`);
-      if (route.pin) parts.push("pin");
-      if (route.badgeT !== undefined || route.badgeSide !== undefined) {
-        parts.push(`badge ${route.badgeT ?? 0.5} ${route.badgeSide ?? "top"}`);
-      }
-      if (route.labelT !== undefined || route.labelSide !== undefined) {
-        parts.push(`label ${route.labelT ?? 0.5} ${route.labelSide ?? "top"}`);
-      }
-      parts.push("}");
-      lines.push(`  ${parts.join(" ")}`);
-    }
-    for (const [id, place] of Object.entries(view.annotations ?? {})) {
-      lines.push(`  ${formatPlace("annotation", id, place)}`);
-    }
+  const viewLines = view ? printView(view) : [];
+  if (viewLines.length || (view && view.id !== "default")) {
+    lines.push("", `view ${view?.id ?? "default"} {`, ...viewLines, "}");
   }
-  lines.push("}");
-  return lines.join("\n");
+  return `${lines.join("\n")}\n`;
+}
+
+function printAnnotation(annotation: DiagramDocument["annotations"][number]): string {
+  const options: string[] = [];
+  if (annotation.anchor) options.push(`anchor ${annotation.anchor}`);
+  if (annotation.style && annotation.style !== "paper") options.push(`style ${annotation.style}`);
+  if (annotation.font) options.push(`font ${annotation.font}`);
+  if (annotation.fontSize) options.push(`size ${annotation.fontSize}`);
+  if (annotation.align) options.push(`align ${annotation.align}`);
+  return `  annotation ${annotation.id} "${escapeString(annotation.text)}"${inlineOptions(options)}`;
+}
+
+function printEdge(edge: Edge): string {
+  const options: string[] = [];
+  if (edge.id !== `${edge.source}-${edge.target}`) options.push(`id ${edge.id}`);
+  if (edge.label) options.push(`label "${escapeString(edge.label)}"`);
+  if (edge.step !== undefined) options.push(`step ${edge.step}`);
+  if (edge.style !== "solid") options.push(`style ${edge.style}`);
+  if (edge.kind) options.push(`kind ${edge.kind}`);
+  if (edge.color) options.push(`color ${edge.color}`);
+  if (edge.sourcePort) options.push(`from ${edge.sourcePort}${printOffset(edge.sourcePortOffset)}`);
+  if (edge.targetPort) options.push(`to ${edge.targetPort}${printOffset(edge.targetPortOffset)}`);
+  return `  ${edge.source} -> ${edge.target}${inlineOptions(options)}`;
+}
+
+function printOffset(offset: number | undefined): string {
+  return offset === undefined ? "" : ` offset ${normalizePortOffset(offset)}`;
+}
+
+function inlineOptions(options: string[]): string {
+  return options.length ? ` { ${options.join(" ")} }` : "";
+}
+
+function printView(view: View): string[] {
+  const lines: string[] = [];
+  for (const [id, place] of Object.entries(view.places)) {
+    const line = formatPlace("place", id, place);
+    if (line) lines.push(`  ${line}`);
+  }
+  for (const [id, route] of Object.entries(view.routes)) {
+    const parts = ["route", id, "{"];
+    const points = route.points?.length ? route.points : route.waypoints ?? [];
+    for (const point of points) parts.push(`point ${point.x} ${point.y}`);
+    if (route.mode && route.mode !== "auto") parts.push(`mode ${route.mode}`);
+    if (route.pin) parts.push("pin");
+    if (route.badgeT !== undefined || route.badgeSide !== undefined) {
+      parts.push(`badge ${route.badgeT ?? 0.5} ${route.badgeSide ?? "top"}`);
+    }
+    if (route.labelT !== undefined || route.labelSide !== undefined) {
+      parts.push(`label ${route.labelT ?? 0.5} ${route.labelSide ?? "top"}`);
+    }
+    parts.push("}");
+    lines.push(`  ${parts.join(" ")}`);
+  }
+  for (const [id, place] of Object.entries(view.annotations ?? {})) {
+    const line = formatPlace("annotation", id, place);
+    if (line) lines.push(`  ${line}`);
+  }
+  return lines;
 }
 
 function formatPlace(
   keyword: "place" | "annotation",
   id: string,
   place: NonNullable<View["places"][string]>,
-): string {
+): string | undefined {
   const parts = [keyword, id, "{"];
   if (place.x !== undefined) parts.push(`x ${place.x}`);
   if (place.y !== undefined) parts.push(`y ${place.y}`);
@@ -766,6 +760,7 @@ function formatPlace(
   if (place.locked) parts.push("locked");
   if (place.visible === false) parts.push("visible false");
   if (place.zIndex !== undefined) parts.push(`z ${place.zIndex}`);
+  if (parts.length === 3) return undefined;
   parts.push("}");
   return parts.join(" ");
 }
@@ -794,40 +789,38 @@ function findRoots(doc: DiagramDocument): string[] {
   return roots;
 }
 
-function printNode(
-  doc: DiagramDocument,
-  id: string,
-  indent: number,
-  lines: string[],
-): void {
-  const pad = "  ".repeat(indent + 1);
+/** Siblings with a multi-line body are separated from their neighbours by a blank line. */
+function printSiblings(doc: DiagramDocument, ids: readonly string[], depth: number): string[] {
+  const chunks = ids.map((id) => printNode(doc, id, depth)).filter((chunk) => chunk.length);
+  return chunks.flatMap((chunk, index) =>
+    index > 0 && (chunk.length > 1 || chunks[index - 1]!.length > 1) ? ["", ...chunk] : chunk,
+  );
+}
+
+function printNode(doc: DiagramDocument, id: string, depth: number): string[] {
+  const pad = "  ".repeat(depth);
   const group = doc.groups.find((g) => g.id === id);
-  const resource = doc.resources.find((r) => r.id === id);
   if (group) {
-    const type = group.type ?? groupKindToType(group.kind);
-    lines.push(`${pad}${type} ${group.id} "${escapeString(group.label)}" {`);
-    if (group.step !== undefined) lines.push(`${pad}  step ${group.step}`);
-    if (group.labelPosition) lines.push(`${pad}  label-position ${group.labelPosition}`);
-    if (group.hideIcon) lines.push(`${pad}  hide-icon`);
-    if (group.style) lines.push(`${pad}  style ${group.style}`);
-    if (group.color) lines.push(`${pad}  color ${group.color}`);
-    if (group.fill) lines.push(`${pad}  fill ${group.fill}`);
-    for (const child of group.children) {
-      printNode(doc, child, indent + 1, lines);
-    }
-    lines.push(`${pad}}`);
-  } else if (resource) {
-    const label = resource.label.role;
-    let line = `${pad}${resource.type} ${resource.id}`;
-    if (label) line += ` "${escapeString(label)}"`;
-    const opts: string[] = [];
-    if (resource.label.service) opts.push(`service "${escapeString(resource.label.service)}"`);
-    if (resource.label.position) opts.push(`label-position ${resource.label.position}`);
-    if (resource.role !== "primary") opts.push(`role ${resource.role}`);
-    if (resource.props.iconAsset) opts.push(`icon ${resource.props.iconAsset}`);
-    if (opts.length) line += ` { ${opts.join(" ")} }`;
-    lines.push(line);
+    const declaration = `${pad}${group.type ?? groupKindToType(group.kind)} ${group.id} "${escapeString(group.label)}"`;
+    const body: string[] = [];
+    if (group.step !== undefined) body.push(`${pad}  step ${group.step}`);
+    if (group.labelPosition) body.push(`${pad}  label-position ${group.labelPosition}`);
+    if (group.hideIcon) body.push(`${pad}  hide-icon`);
+    if (group.style) body.push(`${pad}  style ${group.style}`);
+    if (group.color) body.push(`${pad}  color ${group.color}`);
+    if (group.fill) body.push(`${pad}  fill ${group.fill}`);
+    body.push(...printSiblings(doc, group.children, depth + 1));
+    return body.length ? [`${declaration} {`, ...body, `${pad}}`] : [declaration];
   }
+  const resource = doc.resources.find((r) => r.id === id);
+  if (!resource) return [];
+  const options: string[] = [];
+  if (resource.label.service) options.push(`service "${escapeString(resource.label.service)}"`);
+  if (resource.label.position) options.push(`label-position ${resource.label.position}`);
+  if (resource.role !== "primary") options.push(`role ${resource.role}`);
+  if (resource.props.iconAsset) options.push(`icon ${resource.props.iconAsset}`);
+  const label = resource.label.role ? ` "${escapeString(resource.label.role)}"` : "";
+  return [`${pad}${resource.type} ${resource.id}${label}${inlineOptions(options)}`];
 }
 
 function groupKindToType(kind: Group["kind"]): string {

@@ -1,3 +1,4 @@
+dgm 1
 diagram explicit_serverless {
   grammar aws
   flow lr

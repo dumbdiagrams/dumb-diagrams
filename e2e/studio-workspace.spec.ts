@@ -1,6 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
-import { ROOT, MOD, waitForStudioReady } from "./support/helpers";
+import { parseDgm, printDgm } from "../packages/runtime/dist/dsl/index.js";
+import { validateDocument } from "../packages/runtime/dist/core/index.js";
+import { getCatalogMap } from "../packages/runtime/dist/catalog/index.js";
+import { ROOT, MOD, SIMPLE_SERVERLESS, entityBox, waitForStudioReady } from "./support/helpers";
 
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");
@@ -451,6 +455,97 @@ test("downloads the canonical source from Save and clears the dirty marker", asy
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/saved-diagram\.dgm$/i);
   await expect(page.locator(".dirty-pill")).toHaveCount(0);
+});
+
+async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 10 });
+  await page.mouse.up();
+}
+
+test("saves a Studio-edited curated example as canonical, valid source that keeps every id", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(SIMPLE_SERVERLESS);
+  await waitForStudioReady(page);
+  const original = parseDgm(await readFile(SIMPLE_SERVERLESS, "utf8"));
+
+  const handler = await entityBox(page, "resource", "handler");
+  const center = { x: handler.x + handler.width / 2, y: handler.y + handler.height / 2 };
+  await drag(page, center, { x: center.x, y: center.y + 64 });
+
+  await page.locator('[data-entity-kind="resource"][data-entity-id="gateway"]').click();
+  const label = page.getByRole("textbox", { name: "Display label", exact: true });
+  await label.fill("Public API");
+  await label.press("Enter");
+
+  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  const layers = page.getByRole("dialog", { name: "Layers", exact: true });
+  await layers.locator(".layer-select").filter({ hasText: "api_to_handler" }).click();
+  const segment = page.locator('[data-segment-handle^="api_to_handler:"]').first();
+  const segmentBox = (await segment.boundingBox())!;
+  const horizontal = (await segment.getAttribute("class"))?.includes("is-horizontal");
+  const segmentCenter = { x: segmentBox.x + segmentBox.width / 2, y: segmentBox.y + segmentBox.height / 2 };
+  await drag(page, segmentCenter, horizontal
+    ? { x: segmentCenter.x, y: segmentCenter.y + 24 }
+    : { x: segmentCenter.x + 24, y: segmentCenter.y });
+
+  await layers.locator(".layer-select").filter({ hasText: "Request handler" }).click();
+  await layers.locator(".layer-select").filter({ hasText: "Application data" }).click({ modifiers: ["Shift"] });
+  await layers.getByRole("button", { name: "Group", exact: true }).click();
+
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: "Save", exact: true }).click();
+  const saved = await readFile((await (await downloadPromise).path())!, "utf8");
+
+  const doc = parseDgm(saved);
+  expect(printDgm(doc)).toBe(saved);
+  expect(validateDocument(doc, getCatalogMap()).filter((issue) => issue.severity === "error")).toEqual([]);
+  expect(doc.edges.map((edge) => edge.id)).toEqual(original.edges.map((edge) => edge.id));
+  expect(doc.resources.map((resource) => resource.id)).toEqual(original.resources.map((resource) => resource.id));
+  expect(doc.groups.map((group) => group.id)).toEqual(expect.arrayContaining(original.groups.map((group) => group.id)));
+  expect(doc.groups).toHaveLength(original.groups.length + 1);
+  expect(saved).toContain('aws.api-gateway gateway "Public API"');
+  expect(saved).toMatch(/place handler \{[^}]*\by \d/);
+  expect(saved).toMatch(/route api_to_handler \{/);
+  expect(saved).toMatch(/\{\n\s+aws\.aws-lambda handler "Request handler"\n\s+aws\.dynamodb app_data "Application data"\n\s+\}/);
+});
+
+test("keeps undo history isolated per tab", async ({ page }) => {
+  await page.goto("/");
+  await waitForStudioReady(page);
+  const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
+  await title.fill("First tab edit");
+  await title.press("Enter");
+
+  await page.getByRole("button", { name: "New diagram", exact: true }).click();
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await waitForStudioReady(page);
+  await title.fill("Second tab edit");
+  await title.press("Enter");
+
+  await page.getByRole("tab").first().click();
+  await expect(title).toHaveValue("First tab edit");
+  await page.locator(".canvas-artboard").click({ position: { x: 4, y: 4 } });
+  await page.keyboard.press(`${MOD}+KeyZ`);
+  await expect(title).toHaveValue("Untitled Diagram");
+
+  await page.getByRole("tab").nth(1).click();
+  await expect(title).toHaveValue("Second tab edit");
+});
+
+test("imports a real-world SVG export that declares SVG namespaces", async ({ page }) => {
+  await page.goto("/");
+  await waitForStudioReady(page);
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+  await page.locator('input[type="file"][accept=".svg,image/svg+xml"]').setInputFiles({
+    name: "inkscape-icon.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from('<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 24 24"><path d="M2 2h20v20H2z" fill="#36c"/></svg>'),
+  });
+  await expect(page.getByText("Imported inkscape-icon.svg")).toBeVisible();
+  await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(1);
 });
 
 test("restores open tabs after a reload", async ({ page }) => {

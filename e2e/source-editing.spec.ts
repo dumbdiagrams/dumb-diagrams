@@ -126,7 +126,7 @@ test("keeps source edit history across drawer close and supports undo and redo",
 
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   const undone = await openSourceDrawer(page);
-  await expect(undone.locator(".cm-content")).toContainText(original.slice(0, 40));
+  await expect(undone.locator(".cm-content")).toContainText("diagram async-docs {");
   await undone.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Source", exact: true })).toBeHidden();
   await page.getByRole("button", { name: "Redo", exact: true }).click();

@@ -4,6 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
+      "@dumb-diagrams/runtime/core": resolve("packages/runtime/src/core/index.ts"),
       "@dumb-diagrams/runtime/dsl": resolve("packages/runtime/src/dsl/index.ts"),
       "@dumb-diagrams/runtime/catalog": resolve("packages/runtime/src/catalog/index.ts"),
       "@dumb-diagrams/runtime/render": resolve("packages/runtime/src/render/index.ts"),
@@ -16,6 +17,7 @@ export default defineConfig({
     include: [
       "packages/**/src/**/*.test.{ts,tsx}",
       "tests/integration/**/*.test.{ts,tsx}",
+      "tests/compat/**/*.test.ts",
     ],
     exclude: ["**/node_modules/**", "**/dist/**"],
     coverage: {
