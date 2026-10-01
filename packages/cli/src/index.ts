@@ -14,7 +14,7 @@ import { compileDiagramResult, renderPortableSvg, type CompiledDiagram } from "@
 import { createCliUi } from "./cli-ui.js";
 import { errorMessage, parseCliError, type CliError } from "./cli-errors.js";
 import { renderInitTemplate } from "./init-templates.js";
-import { resolveInitOptions } from "./init-options.js";
+import { resolveInitOptions, type ResolvedInitOptions } from "./init-options.js";
 import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
@@ -235,11 +235,8 @@ function cmdRender(args: ParsedArgs): ResultAsync<number, CliError> {
   return toAsync(readSourceResult(input))
     .andThen((source) => toAsync(parseSourceResult(source, input)))
     .andThen((doc) => toAsync(compileSourceResult(doc, input)))
-    .andThen(({ doc, result }) => ResultAsync.fromPromise(
-      renderPortableSvg(doc, result.layout, { loadCatalogSvg }),
-      (cause): CliError => cause instanceof CatalogAssetError
-        ? { code: "catalog-asset-failed", message: errorMessage(cause), asset: cause.asset, cause }
-        : { code: "render-failed", message: errorMessage(cause), input, cause },
+    .andThen(({ doc, result }) => renderPortableSvg(doc, result.layout, { loadCatalogSvg }).mapErr(
+      (error): CliError => ({ code: "catalog-asset-failed", message: error.message, asset: error.browserPath, cause: error }),
     ))
     .andThen((svg) => {
       if (outputPath) {
@@ -332,47 +329,30 @@ function writeOutputResult(outputPath: string, contents: string, operation: "for
   }
 }
 
-function loadCatalogSvg(browserPath: string): Promise<string> {
+async function loadCatalogSvg(browserPath: string): Promise<string> {
   const entry = getCatalogEntryByBrowserPath(browserPath);
-  if (!entry) return Promise.reject(new CatalogAssetError(`Catalog icon is not registered: ${browserPath}`, browserPath));
-  const candidates = [
+  if (!entry) throw new Error(`Catalog icon is not registered: ${browserPath}`);
+  const filePath = [
     resolve(__dirname, "..", "..", "..", entry.icon.sourcePath),
     resolve(__dirname, "source", entry.icon.sourcePath),
     resolve(__dirname, "studio", browserPath),
-  ];
-  const filePath = candidates.find((candidate) => existsAsFileOrDirectory(candidate));
-  if (!filePath) {
-    return Promise.reject(new CatalogAssetError(`Catalog icon asset is unavailable for ${browserPath}`, browserPath));
-  }
-  try {
-    return Promise.resolve(readFileSync(filePath, "utf8"));
-  } catch (cause) {
-    return Promise.reject(new CatalogAssetError(errorMessage(cause), browserPath));
-  }
-}
-
-class CatalogAssetError extends Error {
-  constructor(message: string, readonly asset: string) {
-    super(message);
-    this.name = "CatalogAssetError";
-  }
+  ].find((candidate) => existsAsFileOrDirectory(candidate));
+  if (!filePath) throw new Error(`Catalog icon asset is unavailable for ${browserPath}`);
+  return readFileSync(filePath, "utf8");
 }
 
 function cmdInit(args: ParsedArgs): ResultAsync<number, CliError> {
   console.log(`${ui.banner()}\n\n${ui.brand()}\n`);
-  return ResultAsync.fromPromise(
-    resolveInitOptions(args, {
-      interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
-      askProjectName: promptProjectName,
-    }),
-    (cause): CliError => ({ code: "invalid-arguments", message: errorMessage(cause), command: "init", cause }),
-  ).andThen((options) => ResultAsync.fromPromise(
+  return resolveInitOptions(args, {
+    interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+    askProjectName: promptProjectName,
+  }).andThen((options) => ResultAsync.fromPromise(
     createInitProject(options),
     (cause): CliError => ({ code: "init-failed", message: errorMessage(cause), cause }),
   ));
 }
 
-async function createInitProject(options: Awaited<ReturnType<typeof resolveInitOptions>>): Promise<number> {
+async function createInitProject(options: ResolvedInitOptions): Promise<number> {
 
   const projectRoot = resolve(process.cwd(), options.projectDirectory);
   const projectName = options.projectName;
@@ -606,10 +586,6 @@ function reportCliError(error: CliError): number {
       return 1;
     case "format-write-failed":
       console.error(ui.error(`Unable to write formatted diagram: ${relativeForLog(error.output)}`));
-      console.error(`  ${error.message}`);
-      return 1;
-    case "render-failed":
-      console.error(ui.error(`Unable to render diagram: ${displayInputForInput(error.input)}`));
       console.error(`  ${error.message}`);
       return 1;
     case "catalog-asset-failed":

@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { sanitizeSvg, sanitizeSvgResult } from "./index.js";
+import { sanitizeSvgResult } from "./index.js";
 import { embedAssetsInSvg } from "./assets.js";
 import { createEmptyDocument } from "../core/index.js";
 
-describe("sanitizeSvg", () => {
-  it("returns typed results without changing legacy throwing behavior", () => {
+function sanitizeSvg(svg: string) {
+  const result = sanitizeSvgResult(svg);
+  if (result.isErr()) throw new Error(result.error.message);
+  return result.value;
+}
+
+describe("sanitizeSvgResult", () => {
+  it("returns typed results", () => {
     const safe = sanitizeSvgResult('<svg viewBox="0 0 8 8"><rect/></svg>');
     expect(safe.isOk()).toBe(true);
     if (safe.isErr()) return;
@@ -109,7 +115,7 @@ describe("sanitizeSvg", () => {
     )).toThrow(/embedded raster/i);
   });
 
-  it("re-sanitizes embedded document assets before inserting SVG markup", () => {
+  it("re-sanitizes embedded document assets and omits unsafe ones", () => {
     const doc = createEmptyDocument("unsafe-asset");
     doc.assets = [{
       id: "unsafe",
@@ -118,6 +124,8 @@ describe("sanitizeSvg", () => {
       intrinsicW: 64,
       intrinsicH: 64,
     }];
-    expect(() => embedAssetsInSvg("<svg><defs></defs></svg>", doc)).toThrow(/element/i);
+    const output = embedAssetsInSvg("<svg><defs></defs></svg>", doc);
+    expect(output).not.toContain("script");
+    expect(output).not.toContain("asset-unsafe");
   });
 });

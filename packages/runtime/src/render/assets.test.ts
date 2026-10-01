@@ -5,7 +5,6 @@ import { getCatalogEntry } from "../catalog/catalog.js";
 import {
   embedAssetsInSvg,
   inlineCatalogIcons,
-  PortableSvgError,
   resolveResourceIcon,
 } from "./assets.js";
 
@@ -51,7 +50,7 @@ describe("render assets", () => {
     const loader = vi.fn(async () => '<svg viewBox="0 0 16 16"><path d="M0 0"/></svg>');
     const svg = `<svg><image href="${entry.browserPath}"/><image href="${entry.browserPath}"/><image href="data:image/svg+xml,already"/><image href="catalog-icons/unknown.svg"/></svg>`;
 
-    const output = await inlineCatalogIcons(svg, { loadCatalogSvg: loader });
+    const output = (await inlineCatalogIcons(svg, { loadCatalogSvg: loader }))._unsafeUnwrap();
 
     expect(loader).toHaveBeenCalledTimes(1);
     expect(output).toContain("data:image/svg+xml;charset=utf-8");
@@ -63,12 +62,15 @@ describe("render assets", () => {
     const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const href = `<svg><image href="${entry.browserPath}"/></svg>`;
 
-    await expect(inlineCatalogIcons(href, {
+    expect((await inlineCatalogIcons(href, {
       loadCatalogSvg: async () => "<div>not an icon</div>",
-    })).rejects.toThrow(/not an SVG/);
-    await expect(inlineCatalogIcons(href, {
+    }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/not an SVG/), browserPath: entry.browserPath });
+    expect((await inlineCatalogIcons(href, {
       loadCatalogSvg: async () => '<svg><script>alert(1)</script></svg>',
-    })).rejects.toThrow(/unsafe SVG/);
+    }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/unsafe SVG/) });
+    expect((await inlineCatalogIcons(href, {
+      loadCatalogSvg: async () => { throw new Error("disk gone"); },
+    }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-load-failed", message: "disk gone" });
   });
 
   it("uses the default fetch loader for browser catalog paths", async () => {
@@ -80,7 +82,7 @@ describe("render assets", () => {
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("document", { baseURI: "https://example.test/" });
     try {
-      const output = await inlineCatalogIcons(`<svg><image href="/${entry.browserPath}"/></svg>`);
+      const output = (await inlineCatalogIcons(`<svg><image href="/${entry.browserPath}"/></svg>`))._unsafeUnwrap();
       expect(output).toContain("data:image/svg+xml;charset=utf-8");
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
@@ -94,15 +96,14 @@ describe("render assets", () => {
 
     vi.stubGlobal("fetch", undefined);
     try {
-      await expect(inlineCatalogIcons(svg)).rejects.toThrow(/loader required/);
+      expect((await inlineCatalogIcons(svg))._unsafeUnwrapErr().message).toMatch(/loader required/);
     } finally {
       vi.unstubAllGlobals();
     }
 
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => "" })));
     try {
-      await expect(inlineCatalogIcons(svg)).rejects.toBeInstanceOf(PortableSvgError);
-      await expect(inlineCatalogIcons(svg)).rejects.toMatchObject({ code: "catalog-loader-required" });
+      expect((await inlineCatalogIcons(svg))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-loader-required" });
     } finally {
       vi.unstubAllGlobals();
     }
@@ -110,7 +111,10 @@ describe("render assets", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, text: async () => "" })));
     vi.stubGlobal("document", { baseURI: "https://example.test/" });
     try {
-      await expect(inlineCatalogIcons(svg)).rejects.toThrow(/Unable to load catalog icon/);
+      expect((await inlineCatalogIcons(svg))._unsafeUnwrapErr()).toMatchObject({
+        code: "catalog-icon-load-failed",
+        message: expect.stringMatching(/Unable to load catalog icon/),
+      });
     } finally {
       vi.unstubAllGlobals();
     }
@@ -118,8 +122,8 @@ describe("render assets", () => {
 
   it("ignores non-catalog paths, including malformed URLs", async () => {
     const svg = '<svg><image href="unknown.svg"/><image href="catalog-icons/%E0%A4%A"/></svg>';
-    await expect(inlineCatalogIcons(svg, {
+    expect((await inlineCatalogIcons(svg, {
       loadCatalogSvg: async () => "<svg/>",
-    })).resolves.toBe(svg);
+    }))._unsafeUnwrap()).toBe(svg);
   });
 });

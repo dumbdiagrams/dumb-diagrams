@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyDocument, type LayoutResult } from "@dumb-diagrams/runtime/core";
+import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
+import { errAsync, okAsync } from "neverthrow";
 
 import {
   decodeDiagramUrlPayload,
@@ -44,7 +46,7 @@ function exportArgs(format: "dgm" | "url" | "svg" | "png" = "dgm") {
       borderWidth: 0,
       grid: false,
     },
-    getPortableSvg: vi.fn(async () => "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"></svg>"),
+    getPortableSvg: vi.fn(() => okAsync<string, PortableSvgError>("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"></svg>")),
   };
 }
 
@@ -240,7 +242,7 @@ describe("typed diagram exports", () => {
   it("classifies portable SVG preparation failures", async () => {
     stubDownload();
     const args = exportArgs("svg");
-    args.getPortableSvg.mockRejectedValue(new Error("compiler failed"));
+    args.getPortableSvg.mockReturnValue(errAsync({ code: "catalog-icon-load-failed", message: "icon missing", browserPath: "catalog-icons/x.svg" }));
 
     const result = await exportDiagramFile(args);
 

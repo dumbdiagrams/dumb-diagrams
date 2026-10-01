@@ -4,8 +4,8 @@ import { EDGE_COLOR_VALUES, getDefaultView, resolveEdgeColor } from "../core/ind
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 import { darkContrastStrokeMarkup, needsDarkContrastAid } from "./contrast.js";
 import { resolveProviderGroupColors } from "./provider-group-colors.js";
-
-import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon } from "./assets.js";
+import type { ResultAsync } from "neverthrow";
+import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon, type PortableSvgError, type PortableSvgOptions } from "./assets.js";
 
 export interface RenderOptions {
   resolveIconHref?: (browserPath: string) => string;
@@ -82,11 +82,11 @@ export function renderSvg(
   return embedAssetsInSvg(parts.join("\n"), doc);
 }
 
-export async function renderPortableSvg(
+export function renderPortableSvg(
   doc: DiagramDocument,
   layout: LayoutResult,
-  options: { loadCatalogSvg?: (browserPath: string) => Promise<string> } = {},
-): Promise<string> {
+  options: PortableSvgOptions = {},
+): ResultAsync<string, PortableSvgError> {
   const liveSvg = renderSvg(doc, layout, { resolveIconHref: (path) => path });
   return inlineCatalogIcons(liveSvg, options);
 }

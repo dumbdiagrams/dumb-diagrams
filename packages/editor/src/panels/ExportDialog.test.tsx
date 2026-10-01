@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { okAsync } from "neverthrow";
 import { describe, expect, it, vi } from "vitest";
 
 import { createEmptyDocument, type LayoutResult } from "@dumb-diagrams/runtime/core";
@@ -17,7 +18,7 @@ function renderExport(format: "xml" | "svg" | "png") {
       doc={createEmptyDocument("demo")}
       layout={layout}
       selection={[]}
-      getPortableSvg={vi.fn(async () => "<svg />")}
+      getPortableSvg={vi.fn(() => okAsync("<svg />"))}
       onClose={vi.fn()}
       onToast={vi.fn()}
     />,

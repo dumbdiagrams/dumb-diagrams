@@ -1,5 +1,5 @@
 import type { DiagramDocument, Point } from "@dumb-diagrams/runtime/core";
-import { err, ok, ResultAsync, type Result } from "neverthrow";
+import { err, errAsync, ok, ResultAsync, type Result } from "neverthrow";
 import { pasteClipboardResult } from "../model/clipboard";
 import { importSvgAssetResult } from "../model/asset-import";
 import { addCustomResourceResult } from "../model/document-operations";
@@ -9,10 +9,9 @@ export type ClipboardActionError = { code: "unavailable" | "image" | "empty" | "
 export type ClipboardPaste = { doc: DiagramDocument; selection: Selection; kind: "image" | "selection"; usedFallback: boolean };
 
 export function writeClipboardText(payload: string): ResultAsync<void, ClipboardActionError> {
-  return ResultAsync.fromPromise(Promise.resolve().then(async () => {
-    if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-    await navigator.clipboard.writeText(payload);
-  }), (cause) => ({ code: "unavailable", message: "Could not copy source. Allow clipboard access and try again.", cause }));
+  const unavailable = (cause?: unknown): ClipboardActionError => ({ code: "unavailable", message: "Could not copy source. Allow clipboard access and try again.", cause });
+  if (!navigator.clipboard?.writeText) return errAsync(unavailable());
+  return ResultAsync.fromPromise(Promise.resolve().then(() => navigator.clipboard.writeText(payload)), unavailable);
 }
 
 export function readClipboardSelection(

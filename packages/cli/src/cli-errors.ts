@@ -17,7 +17,6 @@ export type CliError =
   | { readonly code: "validation-failed"; readonly message: string; readonly input: string; readonly issues: readonly ValidationIssue[] }
   | { readonly code: "format-failed"; readonly message: string; readonly input: string; readonly cause?: unknown }
   | { readonly code: "format-write-failed"; readonly message: string; readonly output: string; readonly cause?: unknown }
-  | { readonly code: "render-failed"; readonly message: string; readonly input: string; readonly cause?: unknown }
   | { readonly code: "catalog-asset-failed"; readonly message: string; readonly asset: string; readonly cause?: unknown }
   | { readonly code: "output-write-failed"; readonly message: string; readonly output: string; readonly cause?: unknown }
   | { readonly code: "init-failed"; readonly message: string; readonly cause?: unknown }

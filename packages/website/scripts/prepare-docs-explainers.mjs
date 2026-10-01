@@ -16,13 +16,15 @@ for (const filename of (await readdir(input)).filter(name => name.endsWith('.dgm
   const source = await readFile(new URL(filename, input), 'utf8');
   const result = compileDiagram(parseDgm(source));
   if (!result.ok) throw new Error(`${filename}: ${JSON.stringify(result.issues)}`);
-  const svg = await inlineCatalogIcons(result.svg, {
+  const inlined = await inlineCatalogIcons(result.svg, {
     loadCatalogSvg: async path => {
       const entry = getCatalogEntryByBrowserPath(path);
       if (!entry) throw new Error(`Missing catalog entry: ${path}`);
       return readFile(new URL(entry.iconPath, root), 'utf8');
     },
   });
+  if (inlined.isErr()) throw new Error(`${filename}: ${inlined.error.message}`);
+  const svg = inlined.value;
   const findings = qualityFindings(result.issues, result.invariantFailures);
   await writeFile(new URL(`${id}.dgm`, output), source);
   await writeFile(new URL(`${id}.svg`, output), svg);

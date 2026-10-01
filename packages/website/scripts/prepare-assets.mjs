@@ -18,13 +18,15 @@ for (const { id, source, prompt, referenceSpec } of examples) {
   const filename = `${id}.dgm`;
   const result = compileDiagram(parseDgm(source));
   if (!result.ok) throw new Error(`${filename}: ${JSON.stringify(result.issues)}`);
-  const svg = await inlineCatalogIcons(result.svg, {
+  const inlined = await inlineCatalogIcons(result.svg, {
     loadCatalogSvg: async (path) => {
       const entry = getCatalogEntryByBrowserPath(path);
       if (!entry) throw new Error(`Missing catalog entry: ${path}`);
       return readFile(new URL(entry.iconPath, root), 'utf8');
     },
   });
+  if (inlined.isErr()) throw new Error(`${filename}: ${inlined.error.message}`);
+  const svg = inlined.value;
   await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '.svg')}`, site), svg);
   // Fit the website preview to authored content; keep the downloadable engine
   // export intact. No resource or connector geometry is changed.

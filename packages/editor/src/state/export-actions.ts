@@ -1,6 +1,7 @@
 import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
+import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 
 export type ExportFormat =
@@ -598,7 +599,7 @@ export function exportDiagramFile(args: {
   layout: LayoutResult;
   selection: ExportSelectionItem[];
   options: ExportOptions;
-  getPortableSvg: () => Promise<string>;
+  getPortableSvg: () => ResultAsync<string, PortableSvgError>;
 }): ResultAsync<ExportReceipt, ExportError> {
   return ResultAsync.fromPromise(
     Promise.resolve().then(() => exportDiagramFileResult(args)),
@@ -613,7 +614,7 @@ async function exportDiagramFileResult(args: {
   layout: LayoutResult;
   selection: ExportSelectionItem[];
   options: ExportOptions;
-  getPortableSvg: () => Promise<string>;
+  getPortableSvg: () => ResultAsync<string, PortableSvgError>;
 }): Promise<Result<ExportReceipt, ExportError>> {
   const { title, source, doc, layout, selection, options, getPortableSvg } = args;
   const format = exportFormat(options.format);
@@ -638,10 +639,9 @@ async function exportDiagramFileResult(args: {
     return createDiagramUrlResult(source).andThen((diagramUrl) => downloadPartsResult([diagramUrl], "text/plain", "diagram URL", filename)).map(receipt);
   }
 
-  const baseSvg = await ResultAsync.fromPromise(
-    Promise.resolve().then(() => getPortableSvg()),
-    (cause) => exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause),
-  );
+  const portableSvgError = (cause: unknown) => exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
+  const baseSvg = await ResultAsync.fromPromise(Promise.resolve().then(() => getPortableSvg()), portableSvgError)
+    .andThen((result) => result.mapErr(portableSvgError));
   if (baseSvg.isErr()) return err(baseSvg.error);
   const svg = captureExport(
     "portable-svg-preparation",

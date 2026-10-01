@@ -92,13 +92,6 @@ export function sanitizeSvgResult(input: string): Result<SanitizedSvg, SvgSaniti
   });
 }
 
-/** Compatibility adapter for callers that still use the throwing sanitizer. */
-export function sanitizeSvg(input: string): SanitizedSvg {
-  const result = sanitizeSvgResult(input);
-  if (result.isErr()) throw new Error(result.error.message);
-  return result.value;
-}
-
 function walkAndSanitize(node: Element): void {
   const tag = node.tagName.toLowerCase();
   if (!ALLOWED_TAGS.has(tag)) {

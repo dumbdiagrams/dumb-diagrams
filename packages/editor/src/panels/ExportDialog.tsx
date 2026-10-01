@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { DiagramDocument, LayoutResult } from "@dumb-diagrams/runtime/core";
+import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
+import type { ResultAsync } from "neverthrow";
 
 import type { Selection } from "../model/types";
 import {
@@ -39,7 +41,7 @@ export function ExportDialog({
   doc: DiagramDocument;
   layout: LayoutResult;
   selection: Selection;
-  getPortableSvg: () => Promise<string>;
+  getPortableSvg: () => ResultAsync<string, PortableSvgError>;
   onClose: () => void;
   onToast: (message: string) => void;
 }) {
