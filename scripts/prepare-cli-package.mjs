@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
+import { curatedIds, repoRoot } from "./lib/example-manifest.mjs";
 import { copySourceManifest } from "./lib/source-manifest.mjs";
 
 const root = repoRoot();
@@ -26,7 +26,7 @@ const projectTemplatesTarget = join(cliDist, "templates/project");
 const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
 const entry = join(cliDist, "index.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
-const curatedExampleIds = awsCuratedIds();
+const curatedExampleIds = curatedIds();
 const curatedExampleFileNames = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
 const exampleFiles = curatedExampleIds.flatMap((id) => curatedExampleFileNames.map((fileName) => `${id}/${fileName}`));
 

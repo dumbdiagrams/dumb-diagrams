@@ -38,6 +38,15 @@ describe("curated provider semantic contracts", () => {
     expect(curatedIds).toEqual(expect.arrayContaining(Object.keys(contracts.examples)));
   });
 
+  it.each(curatedIds)("%s ships the prompt, brief, reference spec, and diagram", (id) => {
+    expect(readdirSync(resolve(root, "examples/curated", id)).sort()).toEqual([
+      "architecture-brief.md",
+      "diagram.dgm",
+      "reference-spec.md",
+      "user-prompt.md",
+    ]);
+  });
+
   it.each(curatedIds)("%s emits exactly its expected provider warnings", (id) => {
     const result = compileDiagram(parseDgm(readFileSync(resolve(root, "examples/curated", id, "diagram.dgm"), "utf8")));
     const warnings = result.issues.filter((issue) => issue.level === "warning").map((issue) => `${issue.code} ${issue.id}`);

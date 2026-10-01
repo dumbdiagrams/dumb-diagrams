@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,24 +12,17 @@ export function repoRoot() {
   return root;
 }
 
-export function loadCuratedBaseline() {
-  return JSON.parse(readFileSync(resolve(root, "examples/curated-baseline.json"), "utf8"));
-}
-
-export function curatedEntries() {
-  return Object.entries(loadCuratedBaseline().curated ?? {});
-}
-
-export function awsCuratedIds() {
-  return curatedEntries()
-    .filter(([, entry]) => entry.architectureBrief)
-    .map(([id]) => id);
+export function curatedIds() {
+  return readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
 }
 
 export function curatedDiagrams() {
-  return curatedEntries().map(([id, entry]) => ({
+  return curatedIds().map((id) => ({
     id,
-    file: resolve(root, entry.diagram),
+    file: resolve(root, "examples/curated", id, "diagram.dgm"),
     baselineName: `${id}.dgm`,
   }));
 }

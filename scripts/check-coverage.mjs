@@ -6,23 +6,22 @@ export const COVERAGE_TARGETS = Object.freeze({
   // Applied to the instrumented source set in vitest.config.ts. Browser
   // orchestration exclusions are explicit there; Playwright coverage is not
   // included in these percentages.
-  statements: 65,
+  statements: 67,
   branches: 60,
-  functions: 60,
-  lines: 65,
+  functions: 62,
+  lines: 69,
 });
 
-// Package floors intentionally leave room for browser-only boundaries while
-// preventing a well-covered package from masking an untested one globally.
-// They are measured against the same instrumented source set as the global
-// report and should only move with a reviewed coverage change.
+// Floors sit about two points below measured coverage: a drop fails CI, and a
+// reviewed improvement should ratchet them up. Package floors stop a
+// well-covered package from masking an untested one globally.
 export const PACKAGE_COVERAGE_TARGETS = Object.freeze({
-  cli: Object.freeze({ statements: 65, branches: 55, functions: 70, lines: 65 }),
-  runtime: Object.freeze({ statements: 80, branches: 70, functions: 80, lines: 80 }),
+  cli: Object.freeze({ statements: 76, branches: 63, functions: 92, lines: 79 }),
+  runtime: Object.freeze({ statements: 90, branches: 83, functions: 94, lines: 92 }),
   // Most editor React components are exercised by Playwright rather than the
   // Node Vitest runner. Keep a deliberately conservative floor while still
   // counting panels and deterministic state seams.
-  editor: Object.freeze({ statements: 45, branches: 38, functions: 40, lines: 45 }),
+  editor: Object.freeze({ statements: 48, branches: 40, functions: 44, lines: 50 }),
 });
 
 export function coverageFailures(totals = {}, targets = COVERAGE_TARGETS, scope = "global") {

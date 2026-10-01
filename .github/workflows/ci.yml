@@ -59,47 +59,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check synchronized package versions
-        run: pnpm check:versions
-
-      - name: Check formatting and lint rules
-        run: pnpm check:style
-
-      - name: Check dependency declarations
-        run: pnpm check:dependencies
-
-      - name: Check high-severity production advisories
-        run: pnpm check:advisories
-
-      - name: Check catalog inventory
-        run: pnpm icons:check
-
-      - name: Build all packages and editor
-        run: pnpm build
-
-      - name: Check typed Result consumption
-        run: pnpm check:results
-
-      - name: Run unit tests with coverage
-        run: pnpm test:coverage
-
-      - name: Typecheck editor
-        run: pnpm typecheck
-
-      - name: Validate examples
-        run: pnpm check
-
-      - name: Check reviewed routing warnings
-        run: pnpm check:routing
-
-      - name: Enforce compilation performance budget
-        run: pnpm check:performance
-
-      - name: Check editor asset budgets
-        run: pnpm check:assets
-
-      - name: Smoke test publishable CLI package
-        run: pnpm smoke:package
+      - name: Lint, build, test with coverage, and check every baseline
+        run: pnpm ci:verify
 
   e2e:
     runs-on: ubuntu-latest
@@ -122,14 +83,8 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
 
-      - name: Build editor assets
-        run: pnpm build
-
-      - name: Run Playwright tests
-        run: pnpm test:e2e
-
-      - name: Run packed CLI Studio journey
-        run: pnpm test:e2e:packed
+      - name: Build, run Playwright tests, and run the packed CLI Studio journey
+        run: pnpm ci:e2e
 
       - name: Upload Playwright failure artifacts
         if: failure()

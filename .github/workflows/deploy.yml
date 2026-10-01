@@ -108,7 +108,7 @@ jobs:
 
       - name: Smoke test publishable CLI package
         if: github.event_name == 'push' || inputs.ref == ''
-        run: pnpm smoke:package
+        run: pnpm smoke:package && pnpm check:assets
 
       - name: Check website
         if: github.event_name == 'push' || inputs.ref == ''

@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
-import { awsCuratedIds, repoRoot } from "./lib/example-manifest.mjs";
+import { curatedIds, repoRoot } from "./lib/example-manifest.mjs";
 import { collectSourceManifestFiles } from "./lib/source-manifest.mjs";
 
 const root = repoRoot();
@@ -18,7 +18,7 @@ const tarballPath = requestedArtifact
   : join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
-const curatedExampleIds = awsCuratedIds();
+const curatedExampleIds = curatedIds();
 const curatedExampleFiles = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
 
 mkdirSync(artifactsDir, { recursive: true });
@@ -60,7 +60,6 @@ const required = [
   "package/dist/source/assets/catalog/sources/cloud-agnostic/server.svg",
   "package/dist/source/examples/curated/aws-high-availability-web-app/diagram.dgm",
   "package/dist/source/examples/curated/simple-serverless-web-application/diagram.dgm",
-  "package/dist/source/examples/curated-baseline.json",
   "package/dist/source/examples/routing-warnings.json",
   "package/dist/source/registry.npmrc",
   "package/dist/source/scripts/prepare-cli-package.mjs",

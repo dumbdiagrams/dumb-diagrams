@@ -24,7 +24,6 @@ export const SOURCE_MANIFEST = Object.freeze({
     "docs/STYLE_GUIDE.md",
     "docs/TECHNICAL_OVERVIEW.md",
     "docs/VERSIONING.md",
-    "examples/curated-baseline.json",
     "examples/layout-contracts.json",
     "examples/routing-warnings.json",
     "package.json",

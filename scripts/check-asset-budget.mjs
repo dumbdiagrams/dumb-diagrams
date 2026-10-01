@@ -39,8 +39,7 @@ export function assetBudgetFailures(measurements, budgets = ASSET_BUDGETS) {
   }
   if (measurements?.preparedDistributionBytes == null) failures.push("packages/cli/dist: prepared distribution is missing");
   else if (measurements.preparedDistributionBytes > budgets.preparedDistributionBytes) failures.push(`packages/cli/dist: ${measurements.preparedDistributionBytes} bytes exceed the ${budgets.preparedDistributionBytes}-byte budget`);
-  // The tarball is optional because check:assets runs before smoke:package in
-  // the release sequence. When present, however, the exact artifact is gated.
+  // The tarball exists only after smoke:package has packed it; when present it is gated.
   if (measurements?.tarballBytes != null && measurements.tarballBytes > budgets.tarballBytes) failures.push(`npm tarball: ${measurements.tarballBytes} bytes exceed the ${budgets.tarballBytes}-byte budget`);
   return failures;
 }

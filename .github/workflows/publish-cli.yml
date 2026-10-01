@@ -93,7 +93,7 @@ jobs:
       - name: Smoke test metadata-bearing artifact
         env:
           DUMB_DIAGRAMS_ARTIFACT: ${{ steps.artifact.outputs.path }}
-        run: pnpm smoke:package
+        run: pnpm smoke:package && pnpm check:assets
 
       # npm trusted publishing supplies short-lived OIDC credentials and
       # automatically records provenance; no npm token is stored in Actions.
