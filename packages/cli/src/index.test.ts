@@ -228,7 +228,7 @@ describe("runCli", () => {
       expect(instructions).toContain("no provider signal");
       expect(instructions).toContain("stop and ask the user");
       expect(instructions).toContain("single-provider");
-      expect(instructions).toContain("dumbdiagrams validate <path-to-diagram.dgm>");
+      expect(instructions).toContain("dumbdiagrams validate --strict <path-to-diagram.dgm>");
       expect(instructions).toContain("unless\nthe user explicitly requests vertical/top-to-bottom flow");
       expect(instructions).toContain("preserve its orientation unless the user");
       expect(instructions).toContain("adjusting saved positions, ports, or manual routes");

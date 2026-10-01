@@ -17,14 +17,7 @@ release target.
 
 ## Open and edit a file
 
-```bash
-npm install -g create-dumb-diagrams
-dumbdiagrams studio
-```
-
-Studio is independent of the directory where it was launched. Choose **Open** to select any `.dgm` file from anywhere on disk. Keep the terminal process running while Studio is connected.
-
-Use the canvas to pan, zoom, select, and position items. The left dock adds architecture content and opens the layer list or source editor. Start with automatic layout, then move only what needs attention.
+Run `dumbdiagrams studio` and choose **Open** to select any `.dgm` file. Keep the terminal running while you work. Studio listens on `127.0.0.1`, port 4788, or a free port if that one is taken.
 
 Moving an item never rearranges the rest of the diagram. Other items and connector paths stay where they are, and the moved item's connections redraw along the [straightest clear path](../routing/#default-connector-shape). **Auto-fix** repairs overlaps and crossings in one step. The button shows a spinner while it works, and Undo restores the previous layout.
 
@@ -34,9 +27,7 @@ For a keyboard-friendly overview of the diagram, open **Canvas items**. It lists
 
 ## Fine-tune the details
 
-Select a boundary, resource, or connector to open its details on the right. Defaults give you a sensible architecture diagram immediately. AWS boundaries, for example, begin with colours based on the official AWS architecture guidelines. You can still change the line and fill, use a solid or dashed style, and move the label.
-
-Resources keep their provider icon by default, while the inspector lets you change details such as icon size and label position. For connectors, you can add a step number, choose a solid or dashed line, change its colour and meaning, or adjust its route. These are optional refinements, not a checklist you need to work through.
+Select a boundary, resource, or connector to edit it on the right: line and fill, label position, icon size, step numbers, connector meaning, and route. The defaults work without changes, so these are optional refinements. Clicking a warning in the validation panel selects the item it refers to.
 
 <div class="studio-detail-grid">
   <figure>
@@ -55,10 +46,4 @@ Resources keep their provider icon by default, while the inspector lets you chan
 
 ## Save and work with other editors
 
-In browsers with the File System Access API, **Save** writes back to the file you opened and **Save As** asks for a new destination. Reopen the file after a page reload.
-
-Other browsers download the updated `.dgm` when you save. Either way, Studio does not register the file with a project or upload it to a Dumb Diagrams service.
-
-Studio does not watch files live. Before writing through the File System Access API, it checks whether another editor changed or deleted the file and asks you to reload or explicitly overwrite. The download fallback cannot make that check.
-
-Studio runs locally on `127.0.0.1`; it is not a hosted workspace or a public server. A wide desktop window works best.
+In browsers with the File System Access API, **Save** writes back to the opened file and **Save As** picks a new one. Before writing, Studio checks whether another editor changed or deleted the file and asks you to reload or overwrite. Other browsers download the updated `.dgm` instead, without that check. Saved source is canonical, so diffs stay small. Nothing is uploaded.

@@ -29,11 +29,9 @@ describe("source manifest", () => {
     expect(files).toContain("SECURITY.md");
     expect(files).toContain("biome.json");
     expect(files.filter((file) => file.startsWith("docs/")).sort()).toEqual([
-      "docs/MAINTAINING.md",
+      "docs/ARCHITECTURE.md",
       "docs/RELEASE.md",
       "docs/STYLE_GUIDE.md",
-      "docs/TECHNICAL_OVERVIEW.md",
-      "docs/VERSIONING.md",
     ]);
     expect(files.some((file) => file.endsWith(".DS_Store"))).toBe(false);
   });

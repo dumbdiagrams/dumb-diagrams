@@ -1,111 +1,56 @@
 # create-dumb-diagrams
 
-**LLM-first architecture diagrams that are hard to get wrong.**
-
-Local CLI and generic Studio for portable `.dgm` source files — deterministic
-layout, catalog types, and human controls when you need them.
+**Portable plain-text architecture diagrams for coding agents and people.**
 
 [![npm version](https://img.shields.io/npm/v/create-dumb-diagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-dumb-diagrams)
 [![Node.js](https://img.shields.io/node/v/create-dumb-diagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
 
-Requires Node.js 24 or newer.
-
-## How routing works
-
-Connectors use deterministic Manhattan routing: they attach to visible icon
-ports and travel only horizontally or vertically. The router scores candidate
-ports and obstacle-free gutters for card collisions, connector crossings,
-unrelated junctions, crowded lanes, bends, and distance, with grid-based A* as
-a fallback for constrained diagrams. Pinned routes and exact fractional port
-attachments are preserved; face-only hints may move when another face produces
-a substantially cleaner path.
+A local CLI and browser editor for `.dgm` files: an agent describes resources,
+boundaries, and connections; the engine validates, lays out, routes, and
+renders deterministic SVG. Requires Node.js 24 or newer.
 
 ## Quick start
 
-Install the package once, then run `init` from the directory where you want the
-new project folder:
-
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-projects
-dumbdiagrams init
+dumbdiagrams init      # asks for a project name and creates that folder
 cd <project-folder>
-dumbdiagrams studio
+dumbdiagrams studio    # local editor; use Open to pick any .dgm file
 ```
 
-`init` creates a new project folder inside the current directory. It asks for a
-project name and uses that name for the folder. Leave the prompt blank, or run
-without a terminal, to get a timestamped folder named
-`dumb-diagrams-YYYY-MM-DD-HH-MM-SS`, independent of the current directory. The
-command prints the exact folder path when it finishes. It writes the agent
-entrypoints, `.dumbdiagrams/` guidance, and a documented `diagrams/` workspace
-there. New agent-authored diagrams default to
-`diagrams/<name>/diagram.dgm` with a persisted
-`diagrams/<name>/architecture-brief.md`. `studio` starts the generic local
-editor. Use **Open** inside Studio to select any `.dgm` file on disk.
-
-`dgm init` and `dgm studio` are convenience shorthands for the canonical
-`dumbdiagrams` commands.
-
-Studio targets Chromium-based desktop browsers first. WebKit and Firefox are
-best-effort compatibility targets; native Safari is not a release target.
-
-## What `init` creates
-
-- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` — small agent entrypoints
-- `.dumbdiagrams/` — canonical workflow, architecture, format, provider, and catalog knowledge
-- `.dumbdiagrams/providers/` — first-class AWS guidance and experimental Azure, GCP, and cloud-agnostic guidance
-- `.dumbdiagrams/examples/` — reference examples for agent prompts and source
-- `diagrams/README.md` — the diagram/architecture-brief bundle convention
+`init` writes agent entrypoints (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`),
+`.dumbdiagrams/` guidance (format, architecture, providers, catalog,
+examples), and a `diagrams/` workspace. With a blank name, or without a
+terminal, it uses a timestamped folder. `dgm` is a shorthand for
+`dumbdiagrams`.
 
 ## Commands
 
 ```bash
-dumbdiagrams init                                               # create a project folder here
-dumbdiagrams studio                                             # start generic local Studio
-dumbdiagrams validate path/to/diagram.dgm                        # parse and validate (use - for stdin)
-dumbdiagrams format path/to/diagram.dgm                         # print canonical source
-dumbdiagrams format --check path/to/diagram.dgm                 # fail when source is not canonical
-dumbdiagrams format --write path/to/diagram.dgm                 # replace with canonical source
-dumbdiagrams render path/to/diagram.dgm --output diagram.svg    # deterministic portable SVG
+dumbdiagrams validate a.dgm b.dgm           # validate files; warnings print as path: code (id): message
+dumbdiagrams validate --strict diagrams/*/*.dgm   # also exit 1 on any warning
+dumbdiagrams format a.dgm                   # print canonical source
+dumbdiagrams format --check a.dgm           # exit 1 if not canonical
+dumbdiagrams format --write a.dgm           # rewrite in place
+dumbdiagrams render a.dgm -o a.svg          # deterministic, self-contained SVG
 ```
 
-`validate`, `format`, and `render` are headless workflows for automation and
-CI. All three parse and fully validate provider grammar before reporting
-success; invalid input never creates a render or format output. Use `-` as the
-input path to read a diagram from stdin. `format` writes canonical source to
-stdout by default, or uses `--check`/`--write`; `render` writes SVG to stdout
-unless `--output` (or `-o`) is provided. Only SVG rendering is currently
-supported.
+Use `-` as the path to read standard input. Parse errors print as
+`path:line:column: message`. Nothing is written when the input is invalid.
+Studio listens on `127.0.0.1:4788`, or on a free port if 4788 is taken, and
+targets Chromium-based desktop browsers.
 
-Studio's **Open** action remains available for interactive editing of any local
-`.dgm` file.
+## Documentation
 
-## Maintainer tarball test
-
-From a full repository checkout (not from an installed npm package):
-
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-mkdir -p .artifacts/packages
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-
-VERSION="$(node -p 'require("./packages/cli/package.json").version')"
-ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-npx --yes --package="$ARTIFACT" dumbdiagrams init
-npx --yes --package="$ARTIFACT" dumbdiagrams studio
-```
-
-`pnpm smoke:package` from the repository root exercises the same artifact and
-rebuilds the AGPL corresponding-source snapshot inside the tarball.
+The website documents the source format, layout, routing, Studio, and exports.
+The repository's `CONTRIBUTING.md` covers building and testing this package
+from source.
 
 ## License and source
 
-Licensed under the [GNU AGPL v3.0 only](./LICENSE). The npm artifact includes
-the corresponding buildable source snapshot under `dist/source/`, including vendored
-catalog inputs under `assets/catalog/`. A `registry.npmrc` file ships instead of
-`.npmrc` because npm omits dotfiles from tarballs. Before rebuilding that source
-on a clean machine, run `cp registry.npmrc .npmrc`, then
-`pnpm install --frozen-lockfile`.
+Licensed under the [GNU AGPL v3.0 only](./LICENSE). The package includes the
+buildable corresponding source under `dist/source/`, including the vendored
+catalog under `assets/catalog/`. npm omits dotfiles, so `registry.npmrc` ships
+in place of `.npmrc`: run `cp registry.npmrc .npmrc` and then
+`pnpm install --frozen-lockfile` before rebuilding.

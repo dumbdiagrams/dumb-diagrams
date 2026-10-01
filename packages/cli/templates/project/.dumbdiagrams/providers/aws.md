@@ -26,3 +26,7 @@ Represent availability zones, subnets, replicas, and repeated compute instances
 only to the level relevant to the request. Do not invent regions, CIDRs,
 protocols, labels, or counts. Resolve AWS architecture semantics first, then use
 the common layout rules in `../dgm.md`.
+
+Draw regional managed services (DynamoDB, S3, SQS, SNS, CloudFront, Route 53,
+API Gateway, Cognito, EventBridge, CloudWatch) outside the VPC; validation
+warns with `managed-service-in-network` when one is inside it.

@@ -1,187 +1,105 @@
-# Release, deployment, and rollback
+# Versioning and release
 
-## Release
+## Package versions
 
-Use the exact Node.js version from `.nvmrc` and the pinned pnpm version from
-`packageManager` in the root `package.json`. From a clean branch, update the
-workspace package versions and the changelog, then run:
+All workspace packages share one version, bumped together, so the parser,
+renderer, CLI, and editor are always one compatibility line. Only
+`create-dumb-diagrams` is published; the others are bundled into it.
 
-```bash
-pnpm install --frozen-lockfile
-pnpm check:release
-```
+The project follows Semantic Versioning. During `0.x`, a minor release may
+break things, but only as described in the format policy below; patch
+releases never break anything.
 
-`check:release` starts with the repository Biome formatting/lint gate, then runs
-catalog inventory, version sync, dependency checks, build, unit/integration
-tests with a coverage report, editor typecheck, example validation, routing
-checks, Chromium Studio journeys, the packed-package smoke test, the production
-dependency advisory check, and website checks. WebKit compatibility runs
-separately with `pnpm test:e2e:compat`; Firefox and native Safari are not release
-gates.
+## Source format policy
 
-Prepare the publish metadata and build the standalone npm artifact from the
-compiled workspace. CI sets `GITHUB_REPOSITORY` automatically; locally, set it
-to the canonical `OWNER/REPO` value or let the script read `remote.origin`:
+Every `.dgm` file may start with `dgm <N>`. A file without that line is
+format 1. The parser rejects a newer format with "This diagram uses format N;
+this dumbdiagrams supports format 1. Upgrade dumbdiagrams." It never guesses.
 
-```bash
-export GITHUB_REPOSITORY=OWNER/REPO
-pnpm publish:metadata
-pnpm --filter create-dumb-diagrams run prepare:standalone
-mkdir -p .artifacts/packages
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-VERSION="$(node -p 'require("./packages/cli/package.json").version')"
-ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-DUMB_DIAGRAMS_ARTIFACT="$ARTIFACT" pnpm smoke:package
-```
+- **Additive syntax** (a new keyword, value, or type) stays on the same format
+  and ships in a minor release. Add it to `DGM_KEYWORDS` or `DGM_VALUES` in
+  `dsl/parse.ts`, cover it in a new `tests/compat/v1/` file, and document it in
+  the website `source-format.md`. The keyword drift test fails until all three
+  are done.
+- **A breaking change** (removing or changing the meaning of syntax) requires
+  a new format number:
+  1. Bump `DGM_FORMAT_VERSION` and keep a parse path for every older format.
+  2. Add `tests/compat/v<N>/` and leave every older `tests/compat/v*/` file
+     untouched: those files and their SVG snapshots must keep passing.
+  3. Write a migration note in the CHANGELOG under a **Format** heading.
+  4. Have `printDgm` write the new `dgm <N>` header.
+- **Renaming a catalog type:** keep the old name as an alias that emits a
+  `deprecated-type` warning for at least one minor release. Remove the alias
+  only with the next format version.
 
-The resulting tarball contains the CLI, bundled diagram runtime, compiled
-Studio assets, and the AGPL corresponding-source snapshot. Publishing it makes
-the end-user flow work without requiring a repository checkout:
+Validation warnings may be added in any minor release. Error codes and warning
+codes are stable: if a rule is replaced, use a new code, as
+`managed-service-in-network` replaced `regional-in-vpc`.
 
-```bash
-npm install -g create-dumb-diagrams@0.1.0
-dumbdiagrams init
-dumbdiagrams studio
-```
+## Release checklist
 
-### Private testing before publish
+Use the Node.js version from `.nvmrc` and the pnpm version from `package.json`.
 
-Recommended: pack locally and exercise the exact consumer boundary:
+1. Bump every `packages/*/package.json` to the same version.
+2. Move the `Unreleased` entries in `CHANGELOG.md` under the new version and
+   date.
+3. Run the full gate:
 
-```bash
-pnpm build
-export GITHUB_REPOSITORY=OWNER/REPO
-pnpm publish:metadata
-pnpm --filter create-dumb-diagrams run prepare:standalone
-mkdir -p .artifacts/packages
-pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-VERSION="$(node -p 'require("./packages/cli/package.json").version')"
-ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-DUMB_DIAGRAMS_ARTIFACT="$ARTIFACT" pnpm smoke:package
-```
+   ```bash
+   pnpm install --frozen-lockfile
+   pnpm check:release
+   ```
 
-This never uploads anything to npm.
+   This runs `ci:verify`, Playwright on Chromium (`ci:e2e`), and the website
+   checks. Optionally also run `pnpm test:e2e:compat` for WebKit.
+4. Build and smoke-test the exact artifact that will be published:
 
-The unscoped `create-dumb-diagrams` package name is always public on npm. For a
-registry-only private preview you need a paid npm account and a scoped package
-such as `@your-name/create-dumb-diagrams-preview` published with `--access restricted`.
+   ```bash
+   export GITHUB_REPOSITORY=OWNER/REPO   # or let the script read remote.origin
+   pnpm publish:metadata
+   pnpm --filter create-dumb-diagrams run prepare:standalone
+   mkdir -p .artifacts/packages
+   pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+   VERSION="$(node -p 'require("./packages/cli/package.json").version')"
+   ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
+   DUMB_DIAGRAMS_ARTIFACT="$ARTIFACT" pnpm smoke:package
+   ```
 
-Before the first publish, authenticate to the public npm registry and run the
-repository preflight. It rejects an existing package owned by another account:
+   None of this uploads anything.
+5. Before the first publish only, run
+   `npm login --registry=https://registry.npmjs.org` and then
+   `pnpm preflight:publish`. The preflight rejects a package name owned by
+   another account.
+6. Tag and push once branch CI is green:
 
-```bash
-npm login --registry=https://registry.npmjs.org
-pnpm preflight:publish
-```
+   ```bash
+   git tag -a "v$VERSION" -m "Release v$VERSION"
+   git push origin "v$VERSION"
+   ```
 
-Publish the exact tarball that passed the local consumer-boundary checks, not a
-freshly packed directory:
+The tag triggers two workflows:
 
-```bash
-npm publish "$ARTIFACT" --access public --registry=https://registry.npmjs.org/
-```
-
-Confirm the new version is visible before moving the `latest` documentation and
-deployment forward:
-
-```bash
-npm view "create-dumb-diagrams@$VERSION" version --registry=https://registry.npmjs.org/
-```
-
-### Public usage after publish
-
-```bash
-# Install once, then use the canonical command
-npm install -g create-dumb-diagrams
-dumbdiagrams init
-dumbdiagrams studio
-
-# Convenience shorthand
-dgm init
-dgm studio
-```
-
-Create and push the release tag only after `pnpm check:release`, the exact
-metadata-bearing artifact smoke test, `pnpm preflight:publish`, and branch CI
-pass. The tag workflow publishes the same artifact only after rerunning the
-full release gate and verifying the package on npm:
-
-```bash
-git tag -a v0.1.0 -m "Release v0.1.0"
-git push origin v0.1.0
-```
-
-The tag starts the GitHub Pages deployment workflow in
-`.github/workflows/deploy.yml`. A new release tag repeats the full Linux release
-verification against that exact ref and only then publishes
-`packages/editor/dist` as the static site. An explicit rollback ref is already
-a known-good release, so it is rebuilt and deployed without assuming that an
-older tag contains today's test scripts. Normal CI also runs the packed CLI
-smoke on Windows so path handling and Windows package preparation cannot drift.
-
-The same tag also starts `.github/workflows/publish-cli.yml`. Configure npm's
-trusted publisher for the exact workflow filename and the protected
-`npm-production` environment before the first release. The workflow grants only
-read access plus the job-scoped OIDC identity permission, verifies that the
-exact tag exists and matches `packages/cli/package.json`, installs with the
-frozen lockfile, runs the complete `pnpm check:release`, applies the same
-metadata script, packs and smoke-tests one exact tarball, and publishes that
-file with provenance. It then polls npm until the version is visible and its
-registry integrity matches that exact tarball. A manual run must name an existing `vMAJOR.MINOR.PATCH` tag; it does
-not publish the current branch. There is no long-lived npm token in the
-workflow.
+- `.github/workflows/publish-cli.yml` checks that the tag matches
+  `packages/cli/package.json` and reruns `pnpm check:release`. It then packs
+  and smoke-tests one tarball, publishes that exact file with npm trusted
+  publishing and provenance, and polls npm until the registry integrity
+  matches. The job runs in the protected `npm-production` environment, and no
+  npm token is stored.
+- `.github/workflows/deploy.yml` reruns the gate against the tag and publishes
+  `packages/editor/dist` to GitHub Pages.
 
 ## Rollback
 
-The rollback workflow is deliberately tag-based and does not mutate the
-repository. In GitHub Actions, run **Rollback editor deployment**, enter a
-known-good previous tag such as `v0.1.0`, and approve the deployment. The
-reusable deployment job checks out exactly that ref, rebuilds it, and publishes
-it through the same Pages environment.
+Run **Rollback editor deployment** in GitHub Actions with a known-good tag. It
+rebuilds and redeploys that ref through the same Pages environment, without
+changing the repository. A bad npm version is handled separately with
+`npm deprecate`; a site rollback does not touch the registry.
 
-If a package release also needs to be reverted, do that separately with the
-package registry's yanked/deprecation procedure; a static-site rollback does
-not rewrite published package versions.
+## Workflow maintenance
 
-## Deployment policy
-
-- CI is required for pull requests and pushes to the default branch.
-- Production editor deployments come from version tags or an explicitly chosen
-  rollback tag.
-- The Pages environment is serialized so a newer deployment cannot race a
-  rollback.
-- Build artifacts are retained by the workflow for inspection and recovery.
-
-## Bundle check
-
-The generated provider catalog is intentionally emitted as the cacheable
-`catalog-index` chunk. The editor entry chunk should remain below the old
-multi-megabyte warning range; a catalog update should not invalidate the rest
-of the editor bootstrap. If the entry grows materially, investigate a new
-dynamic boundary instead of increasing the warning limit.
-
-## Repository layout
-
-- `assets/catalog/` — vendored provider SVGs, source locks, and collision policy.
-  See [`assets/catalog/README.md`](../assets/catalog/README.md).
-- `examples/curated/` — canonical four-file bundles for curated AWS, Azure,
-  GCP, and cloud-agnostic examples.
-- `examples/diagrams/` — development fixtures, all validated by CI. Studio ships ten canonical examples: seven AWS, one Azure,
-  one GCP, and one cloud-agnostic.
-- `packages/brand`, `packages/runtime`, `packages/editor`, `packages/cli`, and
-  `packages/website` — the five workspace packages.
-- `.artifacts/` — ignored coverage, Playwright output, golden renders, and packed
-  tarballs.
-
-Generated editor catalog assets under `packages/editor/public/catalog-icons/`
-are reproducible build outputs and are not committed.
-
-## Supply-chain policy
-
-The workspace pins Node and pnpm exactly, uses isolated linking, strict peer and
-engine checks, a 24-hour minimum package release age, and a lifecycle allowlist
-that permits only reviewed `esbuild` postinstall execution. Run
-`pnpm check:dependencies` after changing imports or package manifests. The
-maintained CI and release workflows also run the production advisory gate;
-registry alerts remain a useful second signal rather than a substitute for that
-blocking check.
+- Third-party actions are pinned to full commit SHAs with a version comment.
+  To upgrade one, resolve the tag to its commit and review its permissions.
+- Dependabot opens grouped weekly npm and Actions updates.
+- `pnpm check:advisories` blocks high-severity production advisories.
+- The workspace pins Node and pnpm, enforces a 24-hour minimum release age for
+  packages, and allows lifecycle scripts only for `esbuild`.

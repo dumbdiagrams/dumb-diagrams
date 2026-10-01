@@ -1,97 +1,53 @@
 ---
 title: "AWS example: Cross-account data transfer platform"
-description: Follow a real agent-assisted walkthrough from dumbdiagrams init to a rendered cross-account AWS architecture diagram.
+description: A real agent-assisted session from dumbdiagrams init to a reviewed cross-account AWS diagram.
 section: Make diagrams
 order: 12
 ---
-This **AWS example** follows a real working session from an empty project to a
-reviewed diagram. I used Cursor, but the same steps work with Codex, Claude Code,
-or another coding agent that can read local instructions and edit files.
+This example follows a real session from an empty project to a reviewed
+diagram. It used Cursor, but any coding agent that reads local instructions
+and edits files works the same way.
 
-The model works beside the source files. Dumb Diagrams validates and renders
-what it writes, which makes the agent workflow a straightforward way to create
-a first draft.
-
-## Start with a fresh project
-
-From the directory where you want the project to live, install the CLI and run
-`init`:
+## Create the project
 
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-projects
 dumbdiagrams init
 ```
 
-The initializer asks for a project name, creates the project folder, and adds
-the `.dumbdiagrams/` guidance, a `diagrams/` workspace, and the small agent
-entrypoint files. The work stays in ordinary local files, so you can open the
-folder in whichever agent you already use.
+`init` asks for a project name and creates the folder with `.dumbdiagrams/`
+guidance, a `diagrams/` workspace, and the agent entrypoint files.
 
 <figure>
   <img src="./init-project.png" alt="A terminal running dumbdiagrams init and asking for a project name" loading="lazy" />
   <figcaption>The project begins with a normal <code>dumbdiagrams init</code> run.</figcaption>
 </figure>
 
-## Open the project with an agent
+## Ask in plain English
 
-For this walkthrough, I used Cursor. I opened the initialized folder there and
-let its agent read the project guidance before creating the diagram. You can do
-the same with Codex, Claude Code, Cursor, or another tool that gives you a
-local, agentic editing loop. There is no special Cursor integration required.
-
-<figure>
-  <img src="./agent-in-cursor.jpeg" alt="Cursor showing the initialized project, the generated diagram source, and the agent response" loading="lazy" />
-  <figcaption>This is the working session used for the example. The agent panel reports the cross-account run; the editor can have another example open in a neighboring tab while you work.</figcaption>
-</figure>
-
-## Give the agent a plain-English request
-
-Before asking for source, have the agent read `AGENTS.md` and the relevant
-`.dumbdiagrams/` guidance. Then describe the architecture normally. This is the
-user request I used:
+Open the folder in your agent and ask it to read `AGENTS.md`. Then describe
+the architecture. This was the request:
 
 ```text
 Design a cross-account AWS data transfer platform. The customer account should host a public web UI using CloudFront and S3, support authentication through Cognito or an existing OpenID Connect provider, and expose a GraphQL backend through AppSync. Use Lambda and Step Functions to orchestrate deployment of transfer plugins, and run the actual transfer workloads on Fargate. Store transfer task information in DynamoDB. Keep shared deployment templates and container artefacts in a separate AWS-managed account using S3, ECR, and CloudFormation templates.
 ```
 
-That prompt says what the architecture needs to communicate. It does not ask
-the model to guess SVG coordinates or manually place every shape. The project
-instructions and catalog provide the source-language details; the renderer
-handles initial layout and routing.
+The request says what the diagram must communicate, not where shapes go. The
+agent first writes an `architecture-brief.md` that records its interpretation:
+the two accounts as separate boundaries, Cognito and OpenID Connect as
+alternative peers, and the Step Functions workflow shown as a boundary rather
+than an extra icon. Review the brief before the source: it is where a
+misunderstanding is cheapest to fix.
 
-## Turn the request into a brief
+<figure>
+  <img src="./agent-in-cursor.jpeg" alt="Cursor showing the initialized project, the generated diagram source, and the agent response" loading="lazy" />
+  <figcaption>The working session used for this example.</figcaption>
+</figure>
 
-The prompt above is the human input. The agent also writes an architecture
-brief beside the `.dgm` source. The brief is a reviewable interpretation of the
-request; it does not replace the source or add hidden requirements.
-
-For this AWS example, the brief captures four things:
-
-- **Goal:** model a cross-account data-transfer platform with a customer-facing
-  control plane, a plugin deployment workflow, and managed-account artefacts.
-- **Explicit requirements:** CloudFront and S3 for the public UI; Cognito or
-  OpenID Connect for authentication; AppSync, Lambda, Step Functions,
-  CloudFormation, Fargate, and DynamoDB in the customer account; and S3, ECR,
-  and CloudFormation templates in the separate AWS-managed account.
-- **Relationships and containment:** keep the customer account and managed
-  account as distinct boundaries; keep Cognito and OpenID Connect as
-  alternative authentication peers; and show the API, deployment, and workload
-  paths in order.
-- **Inferred decisions and exclusions:** represent Step Functions with the
-  workflow boundary instead of adding a redundant icon, keep the layout compact,
-  and avoid adding unrelated services such as queues, WAF, VPC networking, or
-  monitoring that were not requested.
-
-Keep each prompt paired with its own brief. Choose the brief that matches the
-architecture you are documenting.
-
-## Inspect the `.dgm` source
-
-The agent produces architecture source, not a pile of canvas coordinates. The
-source below is the canonical version of this example in the repository:
+## Review the source
 
 ```dgm
+dgm 1
 diagram aws-data-transfer-hub {
   grammar aws
   flow lr
@@ -142,8 +98,8 @@ diagram aws-data-transfer-hub {
   ui -> cloudfront { step 1 }
   cloudfront -> ui_bucket
   ui -> appsync { step 2 from n to w }
-  ui -> cognito { step 3 from n to s style dashed kind peer }
-  ui -> oidc { from n to s style dashed kind peer }
+  ui -> cognito { step 3 style dashed kind peer from n to s }
+  ui -> oidc { style dashed kind peer from n to s }
   appsync -> api_lambda { step 4 }
   api_lambda -> workflow_lambda { step 5 }
   workflow_lambda -> cloudformation
@@ -154,37 +110,27 @@ diagram aws-data-transfer-hub {
 }
 ```
 
-The numbered edges make the main story easy to follow: a user reaches the
-public UI, the UI calls AppSync, the API starts the deployment workflow, and
-the workflow launches transfer workloads. The managed account supplies the
-templates and container artefacts without being flattened into the customer
-account.
+The numbered edges tell the main story: the user reaches the public UI, the UI
+calls AppSync, the API starts the deployment workflow, and the workflow
+launches transfer tasks. The managed account supplies templates and images
+without being merged into the customer account.
 
-The complete files are available as [the `.dgm` source](../../diagrams/aws-data-transfer-hub.dgm), [the rendered SVG](../../diagrams/aws-data-transfer-hub.svg), and [the detailed reference specification](../../diagrams/aws-data-transfer-hub-reference-spec.md). Read the architecture brief first, then use the reference specification when you need exact composition or layout details.
+Download [the source](../../diagrams/aws-data-transfer-hub.dgm),
+[the SVG](../../diagrams/aws-data-transfer-hub.svg), or
+[the reference specification](../../diagrams/aws-data-transfer-hub-reference-spec.md).
 
-## Open and review the result in Studio
-
-When the agent is done, start Studio and open the generated `.dgm` file:
+## Refine it in Studio
 
 ```bash
+dumbdiagrams validate --strict diagrams/*/*.dgm
 dumbdiagrams studio
 ```
 
-Choose **Open**, select the source, and check the account boundaries, the two
-authentication alternatives, the numbered flow, and the managed-account
-artefacts. If you move a resource or pin a connector, Studio saves that visual
-decision in the same portable document.
-
-<figure>
-  <img src="./rendered-result.png" alt="Studio showing the rendered diagram canvas and export controls" loading="lazy" />
-  <figcaption>This capture shows the Studio result surface from the same local workflow. The open tab is the repository's separate image-thumbnail example; the cross-account source and its matching AWS render are linked below.</figcaption>
-</figure>
+Choose **Open** and check the account boundaries, the authentication
+alternatives, and the numbered flow. Anything you move or pin is saved in the
+same file.
 
 <figure>
   <img src="../../diagrams/aws-data-transfer-hub-preview.svg" alt="Rendered cross-account AWS data transfer platform" loading="lazy" />
-  <figcaption>The canonical cross-account output rendered from the source above.</figcaption>
+  <figcaption>The diagram rendered from the source above.</figcaption>
 </figure>
-
-This is the whole loop: a natural request, a small amount of agent context,
-reviewable `.dgm` source, and a deterministic rendered diagram. For the general
-setup, see [the agent workflow](../agent-workflow/) and [the quick start](../quick-start/).

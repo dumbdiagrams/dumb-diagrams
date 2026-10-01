@@ -13,3 +13,7 @@ Preserve explicitly named Azure services and public/private or runtime
 placement. Do not translate a request into AWS services or add unrequested
 best-practice services. Resolve Azure architecture semantics first, then use
 the common layout, routing, and composition rules in `../dgm.md`.
+
+Draw managed PaaS services (Storage accounts, Cosmos DB, Key Vault, Front Door,
+DNS zones, Service Bus, Event Grid, Monitor) outside the VNet; validation warns
+with `managed-service-in-network` when one is inside it.

@@ -13,3 +13,7 @@ Preserve explicitly named GCP services and public/private or runtime
 placement. Do not translate a request into AWS services or add unrequested
 best-practice services. Resolve GCP architecture semantics first, then use the
 common layout, routing, and composition rules in `../dgm.md`.
+
+Draw managed services (Cloud Storage, BigQuery, Pub/Sub, Cloud Logging, Cloud
+Monitoring, IAM, Secret Manager) outside the VPC network; validation warns with
+`managed-service-in-network` when one is inside it.

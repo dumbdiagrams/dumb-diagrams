@@ -1,28 +1,24 @@
 ---
 title: The .dgm format
-description: Describe services, boundaries, and connections. Save visual decisions in the same file.
+description: The complete syntax reference for .dgm format 1.
 section: Reference
 order: 30
 ---
-A `.dgm` document has an architecture description and, when needed, saved views. The architecture says what exists and how it connects. A view records the visual decisions you want to keep.
-
-<figure class="mechanic-figure compact-doc-visual" aria-labelledby="source-layers-title">
-  <div class="figure-heading"><div><span class="figure-kicker">ONE REVIEWABLE FILE</span><h3 id="source-layers-title">Architecture and view share stable IDs</h3></div></div>
-  <div class="source-layer-flow"><span><b>Architecture</b>resources · groups · edges</span><i>stable IDs</i><span><b>View</b>places · routes · visibility</span></div>
-  <figcaption>An agent can change what exists without discarding the human-authored view decisions attached to unchanged IDs.</figcaption>
-</figure>
+A `.dgm` file describes what exists and how it connects. It can also carry a
+`view`, which records the visual decisions you made in Studio. This page lists
+every keyword in format 1.
 
 ## A complete example
 
-Save this as `diagrams/payments.dgm`:
-
 ```dgm
+dgm 1
 diagram payments {
   grammar aws
   flow lr
   title "Payments platform"
 
   cloud-agnostic.actor customer "Customer"
+
   aws.region region "AWS Region" {
     aws.api-gateway api "Payments API"
     aws.aws-lambda handler "Payment handler"
@@ -35,69 +31,140 @@ diagram payments {
 }
 ```
 
-The customer sits outside the region. The three AWS services sit inside it. The arrows describe a numbered request path from the customer to the ledger.
+## File structure
 
-The `grammar` value selects the document's primary provider catalog. Supported values are `aws`, `azure`, `gcp`, and `cloud-agnostic`. AWS is first-class; the other three are experimental and currently share AWS layout and routing conventions while using their own icons.
+| Part | Required | Meaning |
+| --- | --- | --- |
+| `dgm 1` | No; a file without it is format 1 | Format version. A newer version than your CLI supports is rejected with an upgrade message. |
+| `diagram <id> { … }` | Yes | The architecture: settings, declarations, annotations, and edges |
+| `assets { … }` | No | Embedded SVG icons |
+| `view <id> { … }` | No | Saved positions, routes, and visibility |
 
-## Resources and boundaries
+Strings use double quotes and support the `\"`, `\\`, `\n`, `\r`, and `\t`
+escapes. IDs start with a letter or `_` and contain letters, digits, `_`, and
+`-`.
 
-A resource declaration starts with its catalog type, followed by a stable ID and an optional quoted label:
+## Diagram settings
+
+| Keyword | Values |
+| --- | --- |
+| `grammar` | `aws`, `azure`, `gcp`, `cloud-agnostic`. Selects the provider catalog and its rules. |
+| `flow` | `lr` (left to right) or `tb` (top to bottom) |
+| `title` | A quoted string |
+
+## Declarations
+
+A declaration is `<catalog-type> <id> "Label"`. The label is optional. The type
+decides whether the item is a resource or a boundary. Boundaries contain
+declarations in braces:
 
 ```text
-aws.aws-lambda handler "Payment handler"
-```
-
-The type selects the icon and rules. The ID is how other parts of the document refer to the resource. The label is what people see. Changing the label does not change the service type.
-
-Boundaries use braces to contain resources or nested boundaries. Provider boundaries such as regions, VPCs, and subnets carry architecture meaning. Use `cloud-agnostic.boundary` for a general logical container; it is inherently iconless and remains movable and resizable in Studio.
-
-```text
-cloud-agnostic.boundary workflow "Workflow" {
-  style dashed
-  color purple
-  fill none
-  aws.aws-lambda handler "Handler"
+aws.region region "AWS Region" {
+  aws.aws-lambda handler "Handler" { role secondary }
 }
 ```
 
-The legacy `group` shorthand is accepted when opening older documents, but new
-diagrams should use `cloud-agnostic.boundary`. Boundaries can set `style`,
-`color`, `fill`, `label-position`, and `step` in the source or the Studio
-inspector. Boundary label positions are `top-left` and `top-right`; resource
-label positions are `top` and `bottom`.
+Boundaries take these options before their children:
 
-Not every resource belongs inside every boundary. The catalog includes containment rules, and validation checks them before layout.
+| Option | Values |
+| --- | --- |
+| `step` | A number shown on the boundary |
+| `label-position` | `top-left`, `top-right` |
+| `hide-icon` | No value; hides the boundary icon |
+| `style` | `solid`, `dashed` |
+| `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `red`, `green` |
+| `fill` | `subtle`, `none` |
 
-## Connections and flow
+Resources take options in braces after the label:
 
-An arrow connects two IDs. Edge metadata gives the connection more context:
+| Option | Values |
+| --- | --- |
+| `service` | A quoted service name shown under the label |
+| `label-position` | `top`, `bottom` |
+| `role` | `primary`, `secondary`, or `border` (sits on the parent's edge) |
+| `icon` | The ID of an embedded asset |
+
+Use `cloud-agnostic.boundary` for a logical container without provider
+meaning.
+
+## Edges
 
 ```text
-api -> handler {
-  id invoke
-  step 2
-  from e
-  to w
-  label "process payment"
+api -> handler { id invoke label "process" step 2 from e to w }
+```
+
+| Option | Values |
+| --- | --- |
+| `id` | Stable edge ID. Saved routes refer to it, so always set one. |
+| `label` | A quoted string |
+| `step` | A number in the main flow |
+| `style` | `solid`, `dashed` |
+| `kind` | `flow`, `bidirectional`, `peer`, `fail` |
+| `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `red`, `green` |
+| `from`, `to` | A side: `n`, `s`, `e`, `w`, optionally followed by `offset 0.25` (an exact point between 0 and 1 along that side) |
+
+## Annotations
+
+```text
+annotation note "Retries use exponential backoff" { anchor handler style callout }
+```
+
+| Option | Values |
+| --- | --- |
+| `anchor` | The ID of the item the note points at |
+| `style` | `text`, `paper`, `code`, `callout`, `checklist` |
+| `font` | `sans`, `serif`, `mono` |
+| `size` | 10 to 48 |
+| `align` | `left`, `center`, `right` |
+
+## Assets
+
+```text
+assets {
+  asset logo { svg "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">…</svg>" w 16 h 16 }
 }
 ```
 
-Use stable edge IDs so saved route decisions continue to refer to the same relationship. `step` numbers the main flow. `from` and `to` suggest connector sides: north, east, south, or west. A face preference and an exact fractional port have different strength; [routing and layout](../routing/) explains the distinction.
+Each `asset <id>` has `svg` markup and its intrinsic size, `w` and `h`. A resource uses it with `icon <id>`. Assets are
+sanitized: scripts, event handlers, external references, and non-standard
+namespaces are rejected.
 
-Supporting relationships can use `style dashed` and `kind peer`. Keep the primary path easy to follow instead of giving every edge equal emphasis.
+## Views
 
-At the document level, `flow lr` asks for left-to-right layout; `flow tb` asks for top-to-bottom layout.
+Studio writes the view for you. Each entry refers to an existing ID:
 
-## Saved views
+```text
+view default {
+  place handler { x 320 y 120 w 96 h 96 pin }
+  place cache { visible false }
+  route invoke { point 200 160 point 320 160 mode manual pin badge 0.25 top label 0.75 bottom }
+  annotation note { x 300 y 80 w 160 h 48 }
+}
+```
 
-A first diagram does not need a `view` block. Start with automatic layout.
+| Entry | Options |
+| --- | --- |
+| `place <id>` | `x`, `y`, `w`, `h`; `pin`, `manual`, and `locked` (no value); `visible` `true`/`false`; `z` (a number) |
+| `route <id>` | Repeated `point <x> <y>`; `mode` `auto`/`manual`; `pin`; `badge <0-1> <side>` and `label <0-1> <side>`, where the side is `top` or `bottom` |
+| `annotation <id>` | `x`, `y`, `w`, `h`, `pin` |
 
-When you move or resize an item, or pin a route in Studio, those overrides can be stored in a view. The runtime applies authored positions after the automatic structure is laid out. Manual choices survive the next render.
+## Errors and warnings
 
-If an agent changes the architecture, ask it to preserve existing view information. Visual overrides are part of the document, not disposable editor cache.
+Errors stop the diagram from rendering. They include the line and column:
 
-## Open the source in Studio
+```text
+diagram.dgm:3:8: Invalid flow "sideways"; expected lr, tb
+```
 
-Save the source as a `.dgm` file, run `dumbdiagrams studio`, and choose **Open**
-to select it. Studio keeps the source and visual overrides together in the same
-portable file.
+Warnings render but point at something worth fixing. Provider rules are
+specific to each grammar. For example, `managed-service-in-network` flags
+DynamoDB inside a VPC, Key Vault inside a VNet, or BigQuery inside a VPC
+network, because those managed services sit outside the network.
+`dumbdiagrams validate --strict` turns warnings into failures for CI.
+
+## Formatting
+
+`dumbdiagrams format` prints the canonical form: a `dgm 1` header, two-space
+indentation, one declaration per line, and options in a fixed order. Studio
+saves canonical source too, so diffs stay small. The format has no comments;
+put notes in an `annotation` or in the architecture brief beside the file.

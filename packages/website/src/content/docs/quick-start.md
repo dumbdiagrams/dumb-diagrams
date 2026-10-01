@@ -46,7 +46,7 @@ Open the new diagram in Studio. Change a label in the source editor, move an ite
 | --- | --- |
 | `dumbdiagrams init` | Create a project folder with agent guidance and a diagram workspace. |
 | `dumbdiagrams studio` | Start the local editor, then use **Open** to choose a `.dgm` file. |
-| `dumbdiagrams validate <file.dgm>` | Parse and fully validate a diagram. Use `-` to read from standard input. |
+| `dumbdiagrams validate <files…>` | Validate one or more diagrams and print warnings. Add `--strict` to fail on warnings; use `-` for standard input. |
 | `dumbdiagrams format <file.dgm>` | Print canonical source. Add `--check` to verify formatting or `--write` to update the file. |
 | `dumbdiagrams render <file.dgm> -o diagram.svg` | Render a portable SVG. Omit `-o` to write it to standard output. |
 | `dumbdiagrams --help` | Show command help. Use `--version` to print the installed version. |

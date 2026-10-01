@@ -6,91 +6,52 @@
 
 **Portable plain-text architecture diagrams for coding agents and people.**
 
-Describe your system in text, then refine the diagram in a local editor. The
-same portable `.dgm` source drives deterministic layout and rendering.
-
-<br />
-
 [![npm version](https://img.shields.io/npm/v/create-dumb-diagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-dumb-diagrams)
 [![Node.js](https://img.shields.io/node/v/create-dumb-diagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
-[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
 </div>
 
 ---
 
-Dumb Diagrams turns an architecture description into a diagram that is
-consistent, editable, and easy to review. An agent writes a small `.dgm`
-document describing resources, boundaries, and connections; the engine handles
-validation, layout, routing, and rendering. Studio lets a person refine the
-result, with visual decisions saved back into the same file.
+An agent (or a person) writes a small `.dgm` file describing resources,
+boundaries, and connections. The engine validates it, lays it out, routes
+right-angle connectors, and renders deterministic SVG. Studio, a local browser
+editor, refines the result and saves visual decisions back into the same file.
 
-The project is designed for the agent-to-architect loop: get a useful first
-pass quickly, review it with people, and keep the source beside the code. It is
-an opinionated architecture diagram tool rather than a general whiteboard or
-hosted collaboration workspace.
+- Readable, Git-friendly source with a versioned format (`dgm 1`).
+- The same source and view always produce the same geometry and SVG.
+- AWS, Azure, GCP, and cloud-agnostic catalogs, each with its own validation rules.
+- Exports: SVG, PNG, JPEG, WebP, GIF, PDF, standalone HTML, XML, JSON, URL, and `.dgm`.
 
-You get:
-
-- readable, Git-friendly `.dgm` source;
-- deterministic layout, connector routes, and SVG for the same source and view;
-- provider resources, nested boundaries, numbered flows, labels, ports, and
-  manual overrides;
-- local Studio for source and visual editing, recent files, and export;
-- exports including PNG, JPEG, WebP, GIF, SVG, PDF, standalone HTML, XML, URL
-  payloads, JSON, and canonical `.dgm` source.
-
-AWS is the first-class provider path. Azure, GCP, and cloud-agnostic authoring
-are experimental; they currently reuse AWS composition, layout, and routing
-conventions with their own catalog icons. If no provider is named, agent
-workflows use cloud-agnostic; conflicting provider signals should be clarified
-before authoring.
-
-Studio is designed for Chromium-based desktop browsers. WebKit and Firefox are
-best-effort compatibility targets, and native Safari is not a release target.
+AWS is the first-class provider. Azure, GCP, and cloud-agnostic are
+experimental and share AWS layout conventions. Studio targets Chromium-based
+desktop browsers.
 
 ## Quick start
 
-Requires Node.js 24 or newer. Install the CLI, then run it from the directory
-where you want a new project folder:
+Requires Node.js 24 or newer.
 
 ```bash
 npm install -g create-dumb-diagrams
-cd path/to/your-projects
-dumbdiagrams init
+dumbdiagrams init          # creates a project folder with agent guidance
 cd <project-folder>
-dumbdiagrams studio
+dumbdiagrams studio        # opens the local editor
 ```
 
-`init` asks for a project name, creates the folder, and adds agent guidance in
-`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and `.dumbdiagrams/`, plus a documented
-`diagrams/` workspace. A blank name uses a timestamped folder. Studio is a
-generic local editor: choose **Open** to select any `.dgm` file on disk.
+`dgm` is a shorthand alias for `dumbdiagrams`.
 
-`dgm` is an optional shorthand for the same CLI; use `dumbdiagrams` in
-documentation and scripts.
-
-## Agent workflow
-
-After `init`, give your coding agent a request such as:
-
-```text
-Create a payments API on AWS with an API Gateway endpoint, a Lambda handler,
-and a DynamoDB ledger in an AWS Region. Show the request path from a customer
-through those services, and keep the source coherent when you are done.
-```
-
-The agent writes architecture, not SVG coordinates. A source file looks like
-this:
+## A diagram
 
 ```dgm
+dgm 1
 diagram payments {
   grammar aws
   flow lr
   title "Payments platform"
 
   cloud-agnostic.actor customer "Customer"
+
   aws.region region "AWS Region" {
     aws.api-gateway api "Payments API"
     aws.aws-lambda handler "Payment handler"
@@ -103,41 +64,32 @@ diagram payments {
 }
 ```
 
-The engine checks service types and relationships, lays out the resources, and
-draws deterministic right-angle connectors. If you move an item or adjust a
-route in Studio, that decision is stored as a view override in the same file.
+Check and render it from a terminal or CI:
 
-## Repository development
+```bash
+dumbdiagrams validate --strict diagrams/*/*.dgm    # exit 1 on errors or warnings
+dumbdiagrams format --check diagram.dgm            # canonical formatting
+dumbdiagrams render diagram.dgm -o diagram.svg
+```
 
-This is a pnpm workspace. Use Node.js 24+ and the pinned pnpm 11.23.0:
+The full syntax reference is on the website under **Source format**.
+
+## Developing
 
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
-pnpm dev
+pnpm dev          # Studio with hot reload
 ```
 
-Use `pnpm build`, then `pnpm dev:cli`, for the compiled CLI and local Studio
-server. Run `pnpm smoke:package` to exercise the packed CLI artifact. The
-canonical contributor commands and browser test matrix are in
-[CONTRIBUTING.md](./CONTRIBUTING.md); architecture and release details are in
-[TECHNICAL_OVERVIEW.md](./docs/TECHNICAL_OVERVIEW.md) and
-[RELEASE.md](./docs/RELEASE.md).
-
-For website work, see the [website guide](./packages/website/README.md). Other
-maintainer references are [MAINTAINING.md](./docs/MAINTAINING.md),
-[VERSIONING.md](./docs/VERSIONING.md),
-[ROUTING.md](./packages/runtime/ROUTING.md), the
-[catalog guide](./assets/catalog/README.md), and the
-[CHANGELOG](./CHANGELOG.md). Brand and UI conventions are in the
-[style guide](./docs/STYLE_GUIDE.md).
+[CONTRIBUTING.md](./CONTRIBUTING.md) is the developer handbook: tests,
+baselines, and testing the packed CLI artifact.
+[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) explains the pipeline and
+package boundaries, and [docs/RELEASE.md](./docs/RELEASE.md) covers
+versioning, the format policy, and publishing.
 
 ## License
 
-Copyright © 2026 DumbDiagrams contributors.
-
-Original Dumb Diagrams source, package code, and repository-authored examples
-are licensed under the [GNU Affero General Public License v3.0 only](./LICENSE).
-Modified versions offered over a network must make their corresponding source
-available to their users. Provider catalog icons retain their upstream terms;
-see [ICON-NOTICES.md](./ICON-NOTICES.md).
+Copyright © 2026 DumbDiagrams contributors. Licensed under the
+[GNU Affero General Public License v3.0 only](./LICENSE). Provider catalog
+icons keep their upstream terms; see [ICON-NOTICES.md](./ICON-NOTICES.md).

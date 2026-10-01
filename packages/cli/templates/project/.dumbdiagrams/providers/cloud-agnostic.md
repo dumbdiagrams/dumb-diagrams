@@ -14,3 +14,6 @@ diagram.
 Preserve provider-neutral names and relationships. Do not invent a provider or
 translate a request into a specific cloud. Resolve the architecture first,
 then use the common layout, routing, and composition rules in `../dgm.md`.
+
+Draw DNS, object storage, and identity outside a network boundary; validation
+warns with `managed-service-in-network` when one is inside it.

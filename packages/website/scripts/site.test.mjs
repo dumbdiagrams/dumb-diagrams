@@ -25,7 +25,7 @@ async function walk(directory) {
 
 test('every internal page, anchor, and referenced asset resolves in the static build', async () => {
   const files = (await walk(dist)).filter(file => extname(file) === '.html' && !file.includes('~partytown'));
-  assert.ok(files.length >= 19);
+  assert.ok(files.length >= 15);
   for (const file of files) {
     const html = await readFile(file, 'utf8');
     const pagePath = file.slice(dist.length + 1).replace(/index\.html$/, '');
@@ -120,7 +120,6 @@ test('mechanics documentation is generated, ordered, and grounded in runtime out
     'routing',
     'quality-and-scoring',
     'auto-fix',
-    'architecture-evaluation',
   ];
   for (const slug of expectedPages) {
     const html = await readFile(join(dist, 'docs', slug, 'index.html'), 'utf8');

@@ -175,7 +175,7 @@ Diagrams start at 100% with zoom, fit, scrolling, and full-size SVG controls.
 Start with what someone is trying to do, then show a small working example.
 Use “you” and plain verbs. State limitations beside the feature they affect.
 Organize public docs by the reader's task: start, make diagrams, understand the
-implementation. Keep the technical contracts in `docs/TECHNICAL_OVERVIEW.md` and
+implementation. Keep the technical contracts in `docs/ARCHITECTURE.md` and
 the focused runtime references; keep the public explanation in
 `packages/website/src/content/docs/`.
 

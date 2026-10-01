@@ -83,9 +83,9 @@ ${ui.heading("Usage")}
 ${ui.heading("Commands")}
   ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
-  ${ui.command("validate <file.dgm>...")}   Validate diagrams (--strict fails on warnings)
-  ${ui.command("format <file.dgm>")}        Print canonical .dgm source
-  ${ui.command("render <file.dgm>")}        Render deterministic SVG (use -o for a file)
+  ${ui.command("validate <file.dgm>...")}  Validate diagrams (--strict fails on warnings)
+  ${ui.command("format <file.dgm>")}       Print canonical .dgm source
+  ${ui.command("render <file.dgm>")}       Render deterministic SVG (use -o for a file)
 
 ${ui.heading("Quick start")}
   ${ui.command("dumbdiagrams init")}

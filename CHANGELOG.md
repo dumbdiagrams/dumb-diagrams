@@ -13,8 +13,11 @@ First public release of the `create-dumb-diagrams` npm package.
   `format`, and `render`.
 - Studio, a local editor for portable `.dgm` files, bundled with the CLI
   together with catalog icons and example templates.
-- Portable `.dgm` source format v1 with AWS, Azure, GCP, and cloud-agnostic
-  grammars.
+- Portable `.dgm` source format 1 (`dgm 1` header) with AWS, Azure, GCP, and
+  cloud-agnostic grammars, a strict parser that reports line and column, and a
+  canonical formatter.
+- Per-provider validation warnings, starting with `managed-service-in-network`.
+- `validate` accepts several files and `--strict` fails on warnings.
 
 ### Notes
 
