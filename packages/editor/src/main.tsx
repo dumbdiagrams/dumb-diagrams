@@ -946,6 +946,7 @@ function App() {
       ...active.issues.map((issue) => ({
         severity: issue.level,
         message: issue.message,
+        elementIds: issue.id ? [issue.id] : undefined,
       })),
       ...active.invariantFailures.map((failure) => ({
         severity: "warning" as const,

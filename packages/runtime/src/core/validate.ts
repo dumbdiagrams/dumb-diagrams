@@ -1,5 +1,6 @@
 import { getGroup, getResource } from "./document.js";
 import { validateDocumentConstraints } from "./constraints.js";
+import { PROVIDER_RULES } from "./provider-rules.js";
 import type { DiagramDocument, ValidationIssue, CatalogRule } from "./types.js";
 
 export interface ValidationOptions {
@@ -103,11 +104,12 @@ export function validateDocument(
       });
     }
 
-    if (rule.scope === "regional" && isInsideVpc(doc, r.parent)) {
+    const providerRules = PROVIDER_RULES[rule.provider ?? doc.grammar];
+    if (providerRules.outsideNetwork.has(r.type) && isInsideNetwork(doc, r.parent)) {
       issues.push({
         level: "warning",
-        code: "regional-in-vpc",
-        message: `${r.type} (${r.id}) is nested inside a VPC; regional services should be outside VPC`,
+        code: "managed-service-in-network",
+        message: `${r.type} (${r.id}) is a managed service; draw it outside the ${providerRules.network}`,
         id: r.id,
       });
     }
@@ -223,7 +225,7 @@ function validateProvider(
   return undefined;
 }
 
-function isInsideVpc(doc: DiagramDocument, groupId: string): boolean {
+function isInsideNetwork(doc: DiagramDocument, groupId: string): boolean {
   let current = getGroup(doc, groupId);
   const seen = new Set<string>();
   while (current && !seen.has(current.id)) {

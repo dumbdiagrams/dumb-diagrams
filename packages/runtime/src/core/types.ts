@@ -275,7 +275,6 @@ export interface CatalogRule {
   /** Provider owning this catalog entry. Cloud-agnostic entries are portable. */
   provider?: Grammar;
   allowedParents: string[];
-  scope: "regional" | "zonal" | "global" | "any";
   /** Root placement is explicit; an empty parent is not a generic escape hatch. */
   allowRoot?: boolean;
 }

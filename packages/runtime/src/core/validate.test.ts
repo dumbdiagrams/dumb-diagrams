@@ -42,7 +42,6 @@ describe("document validation modes", () => {
       {
         type: "example.service",
         allowedParents: ["vpc"],
-        scope: "any",
         allowRoot: false,
       },
     ],
@@ -171,9 +170,9 @@ describe("document validation modes", () => {
       { id: "azure-resource", type: "azure.service", parent: "region", label: {}, role: "primary", props: {} },
     ];
     const catalog = new Map<string, CatalogRule>([
-      ["cloud-agnostic.service", { type: "cloud-agnostic.service", provider: "cloud-agnostic", allowedParents: ["region"], scope: "any" }],
-      ["azure.service", { type: "azure.service", provider: "azure", allowedParents: ["region"], scope: "any" }],
-      ["azure.group", { type: "azure.group", provider: "azure", allowedParents: ["region"], scope: "any" }],
+      ["cloud-agnostic.service", { type: "cloud-agnostic.service", provider: "cloud-agnostic", allowedParents: ["region"] }],
+      ["azure.service", { type: "azure.service", provider: "azure", allowedParents: ["region"] }],
+      ["azure.group", { type: "azure.group", provider: "azure", allowedParents: ["region"] }],
     ]);
     doc.groups[2]!.type = "azure.group";
     doc.groups[2]!.parent = "region";
@@ -191,7 +190,7 @@ describe("document validation modes", () => {
     doc.grammar = "cloud-agnostic";
     doc.resources = [{ id: "aws-resource", type: "aws.service", label: {}, role: "primary", props: {} }];
     const catalog = new Map<string, CatalogRule>([
-      ["aws.service", { type: "aws.service", provider: "aws", allowedParents: [], scope: "any", allowRoot: true }],
+      ["aws.service", { type: "aws.service", provider: "aws", allowedParents: [], allowRoot: true }],
     ]);
     expect(validateDocument(doc, catalog, { enforceCatalogRules: false })).toContainEqual(
       expect.objectContaining({ code: "provider-mismatch", id: "aws-resource" }),

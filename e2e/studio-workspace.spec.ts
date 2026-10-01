@@ -590,3 +590,12 @@ test("contains long unbroken diagram names inside the top bar", async ({ page })
   expect(metrics.fileWidth).toBeLessThanOrEqual(320);
   expect(metrics.fileScrollWidth).toBeGreaterThanOrEqual(metrics.fileWidth);
 });
+
+test("selects the warned resource when a provider warning is clicked", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/curated/aws-high-availability-web-app/diagram.dgm`);
+  await waitForStudioReady(page);
+  await page.locator(".issue-journal-trigger").click();
+  await page.locator(".issue-journal-item").filter({ hasText: "(table_one)" }).click();
+  await expect(page.locator('[data-entity-kind="resource"][data-entity-id="table_one"]').first()).toHaveAttribute("aria-selected", "true");
+});

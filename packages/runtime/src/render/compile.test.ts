@@ -81,7 +81,7 @@ describe("async-docs fixture", () => {
     expect(success.value.ok).toBe(true);
     expect(success.value.issues).toContainEqual(expect.objectContaining({
       level: "warning",
-      code: "regional-in-vpc",
+      code: "managed-service-in-network",
       id: "service",
     }));
   });

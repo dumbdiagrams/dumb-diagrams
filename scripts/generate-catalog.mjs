@@ -149,14 +149,14 @@ const GCP_CATEGORY_ASSETS = [
 // entries, not claims that a unique service icon exists; each deliberately
 // points at the reviewed shared category glyph.
 const GCP_CURATED_PRODUCTS = [
-  { type: "gcp.cloud-functions", name: "Cloud Functions", category: "Serverless Computing", scope: "regional", column: "compute" },
-  { type: "gcp.pub-sub", name: "Pub/Sub", category: "Integration Services", scope: "regional", column: "queue" },
-  { type: "gcp.dataflow", name: "Dataflow", category: "Data Analytics", scope: "regional", column: "data" },
-  { type: "gcp.cloud-logging", name: "Cloud Logging", category: "Observability", scope: "regional", column: "observability" },
-  { type: "gcp.cloud-monitoring", name: "Cloud Monitoring", category: "Observability", scope: "regional", column: "observability" },
-  { type: "gcp.iam", name: "IAM", category: "Security Identity", scope: "global", column: "auth" },
-  { type: "gcp.cloud-load-balancing", name: "Cloud Load Balancing", category: "Networking", scope: "global", column: "ingress" },
-  { type: "gcp.secret-manager", name: "Secret Manager", category: "Security Identity", scope: "global", column: "auth" },
+  { type: "gcp.cloud-functions", name: "Cloud Functions", category: "Serverless Computing", column: "compute" },
+  { type: "gcp.pub-sub", name: "Pub/Sub", category: "Integration Services", column: "queue" },
+  { type: "gcp.dataflow", name: "Dataflow", category: "Data Analytics", column: "data" },
+  { type: "gcp.cloud-logging", name: "Cloud Logging", category: "Observability", column: "observability" },
+  { type: "gcp.cloud-monitoring", name: "Cloud Monitoring", category: "Observability", column: "observability" },
+  { type: "gcp.iam", name: "IAM", category: "Security Identity", column: "auth" },
+  { type: "gcp.cloud-load-balancing", name: "Cloud Load Balancing", category: "Networking", column: "ingress" },
+  { type: "gcp.secret-manager", name: "Secret Manager", category: "Security Identity", column: "auth" },
 ];
 
 const PROVIDER_GROUPS = [
@@ -547,7 +547,6 @@ function entry({
   groupKind,
   allowedParents = ALL_PARENT_KINDS,
   allowRoot = false,
-  scope = "regional",
   column,
 }) {
   const icon = iconAsset(provider, assetKind, name, file, specificity);
@@ -567,7 +566,6 @@ function entry({
     groupKind,
     allowedParents,
     allowRoot,
-    scope,
     column: column ?? CATEGORY_COLUMN[category ?? categories?.[0] ?? ""] ?? "edge",
     sizeTier: "primary",
     browsable: true,
@@ -743,7 +741,6 @@ function providerGroupEntries(used, collisionLog) {
             ? ALL_PARENT_KINDS
             : ["cloud", "account", "region", "logical", "vpc", "az"],
       allowRoot: ["cloud", "account", "region"].includes(item.kind),
-      scope: "global",
     });
   });
 }
@@ -767,7 +764,6 @@ function cloudAgnosticEntries(used, collisionLog) {
       // A general-purpose logical boundary may represent external systems or
       // data sources beside a provider cloud, so it is valid at diagram root.
       allowRoot: type === "cloud-agnostic.boundary" || ["cloud", "account", "region"].includes(kind),
-      scope: "global",
     });
   });
   const resources = CLOUD_RESOURCES.map(([type, name, category, iconPath, aliases]) => {
@@ -783,7 +779,6 @@ function cloudAgnosticEntries(used, collisionLog) {
       specificity: "semantic-neutral",
       allowedParents: ALL_PARENT_KINDS,
       allowRoot: true,
-      scope: "any",
     });
   });
   return [...groups, ...resources];

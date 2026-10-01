@@ -432,7 +432,6 @@ function createCatalogReference(): { markdown: string; json: string } {
     categories: entry.categories,
     allowedParents: entry.allowedParents,
     allowRoot: entry.allowRoot,
-    scope: entry.scope,
     column: entry.column,
     sizeTier: entry.sizeTier,
     specificity: entry.specificity,

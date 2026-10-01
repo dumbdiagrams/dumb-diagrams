@@ -213,7 +213,7 @@
         { "sourceType": "aws.dynamodb", "targetType": "aws.cloudwatch", "count": 2 }
       ],
       "relationshipMode": "exact",
-      "allowedValidationWarnings": ["regional-in-vpc"]
+      "allowedValidationWarnings": ["managed-service-in-network"]
     },
     "event-driven-order-fulfillment": {
       "exactCounts": {
