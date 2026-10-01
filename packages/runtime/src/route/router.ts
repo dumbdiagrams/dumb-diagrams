@@ -476,7 +476,7 @@ export function routeEdges(
     view.routes,
     buildDecorationObstacles(layout),
   );
-  if (budget.exhausted) options.onBudgetExhausted?.(budget.diagnostics());
+  options.onDiagnostics?.(budget.diagnostics());
   return documentRoutes;
 }
 
@@ -2651,6 +2651,7 @@ function astar(
   const heap = new MinHeap();
   heap.push(startIdx, heuristic(sc.c, sc.r, gc.c, gc.r));
   const closed = new Uint8Array(size);
+  const segmentIndex = indexRouteSegments(existing);
 
   while (heap.size > 0) {
     if (budget && !budget.consume("astarExpansions")) return null;
@@ -2676,7 +2677,7 @@ function astar(
       const segmentKey = Math.min(current, ni) * size + Math.max(current, ni);
       let conflictCost = conflictCostCache?.get(segmentKey);
       if (conflictCost === undefined) {
-        conflictCost = segmentRouteConflictCost(currentPoint, nextPoint, existing);
+        conflictCost = segmentRouteConflictCost(currentPoint, nextPoint, segmentIndex);
         conflictCostCache?.set(segmentKey, conflictCost);
       }
       const tentative = gScore[current] + CELL + (turned ? TURN_COST : 0) +
@@ -2690,23 +2691,68 @@ function astar(
   return null;
 }
 
-function segmentRouteConflictCost(
-  a: Point,
-  b: Point,
-  existing: ExistingRoute[],
-): number {
-  let cost = 0;
+interface RouteSegmentIndex {
+  segments: Array<readonly [Point, Point]>;
+  rows: Map<number, number[]>;
+  cols: Map<number, number[]>;
+  diagonal: number[];
+}
+
+/** Horizontal segments bucketed by row, vertical (and zero-length) by column, in route order. */
+function indexRouteSegments(existing: ExistingRoute[]): RouteSegmentIndex {
+  const index: RouteSegmentIndex = { segments: [], rows: new Map(), cols: new Map(), diagonal: [] };
+  const add = (buckets: Map<number, number[]>, key: number, id: number) => {
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(id);
+    else buckets.set(key, [id]);
+  };
   for (const route of existing) {
     for (let i = 0; i < route.points.length - 1; i++) {
       const c = route.points[i]!;
       const d = route.points[i + 1]!;
-      const overlap = segmentOverlapLength(a, b, c, d);
-      cost += overlap * OVERLAP_COST;
-      const intersection = segmentIntersectionKind(a, b, c, d);
-      if (intersection === "cross") cost += CROSSING_COST;
-      if (intersection === "touch") cost += JUNCTION_COST;
-      cost += nearParallelLength(a, b, c, d, MIN_CONNECTOR_GAP) * NEAR_PARALLEL_COST;
+      const id = index.segments.push([c, d]) - 1;
+      if (c.x === d.x) add(index.cols, Math.floor(c.x / CELL), id);
+      else if (c.y === d.y) add(index.rows, Math.floor(c.y / CELL), id);
+      else index.diagonal.push(id);
     }
+  }
+  return index;
+}
+
+// Every cost term needs the other segment within MIN_CONNECTOR_GAP (one CELL) of a-b, so
+// only adjacent buckets can contribute. Candidates are summed in route order so totals match
+// a full scan bit-for-bit.
+function segmentRouteConflictCost(
+  a: Point,
+  b: Point,
+  index: RouteSegmentIndex,
+): number {
+  const ids = [...index.diagonal];
+  const collect = (buckets: Map<number, number[]>, from: number, to: number) => {
+    for (let key = from; key <= to; key++) {
+      const bucket = buckets.get(key);
+      if (bucket) ids.push(...bucket);
+    }
+  };
+  if (a.y === b.y) {
+    const row = Math.floor(a.y / CELL);
+    collect(index.rows, row - 1, row + 1);
+    collect(index.cols, Math.floor(Math.min(a.x, b.x) / CELL), Math.floor(Math.max(a.x, b.x) / CELL));
+  } else {
+    const col = Math.floor(a.x / CELL);
+    collect(index.cols, col - 1, col + 1);
+    collect(index.rows, Math.floor(Math.min(a.y, b.y) / CELL), Math.floor(Math.max(a.y, b.y) / CELL));
+  }
+  ids.sort((left, right) => left - right);
+  let cost = 0;
+  for (const id of ids) {
+    const [c, d] = index.segments[id]!;
+    const overlap = segmentOverlapLength(a, b, c, d);
+    cost += overlap * OVERLAP_COST;
+    const intersection = segmentIntersectionKind(a, b, c, d);
+    if (intersection === "cross") cost += CROSSING_COST;
+    if (intersection === "touch") cost += JUNCTION_COST;
+    cost += nearParallelLength(a, b, c, d, MIN_CONNECTOR_GAP) * NEAR_PARALLEL_COST;
   }
   return cost;
 }

@@ -1005,13 +1005,19 @@ describe("routeEdgePreview", () => {
       maxRouteConflictChecks: 10,
       maxAstarExpansions: 10,
       maxRepairCandidates: 10,
-      onBudgetExhausted: (result) => { diagnostics = result; },
+      onDiagnostics: (result) => { diagnostics = result; },
     });
 
     expect(routes).toHaveLength(doc.edges.length);
     expect(diagnostics?.exhausted).toBe(true);
     expect(diagnostics?.scorePathCalls).toBeLessThanOrEqual(11);
     expect(routes.every((route) => route.points.length >= 2)).toBe(true);
+
+    let unbounded: { exhausted: boolean; scorePathCalls: number } | undefined;
+    const pair = { ...doc, resources: doc.resources.slice(0, 2), edges: doc.edges.slice(0, 1) };
+    routeEdges(pair, layoutDocument(pair), { onDiagnostics: (result) => { unbounded = result; } });
+    expect(unbounded?.exhausted).toBe(false);
+    expect(unbounded?.scorePathCalls).toBeGreaterThan(0);
   });
 
   it("takes the short top approach instead of crossing CloudFront like the example regression", () => {

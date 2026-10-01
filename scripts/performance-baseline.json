@@ -1,17 +1,76 @@
 {
-  "schemaVersion": 1,
   "fixtures": {
-    "examples/diagrams/async-docs.dgm": { "medianMs": 10, "maxMedianMs": 500, "maxP95Ms": 1000 },
-    "examples/diagrams/transfer-hub.dgm": { "medianMs": 10, "maxMedianMs": 500, "maxP95Ms": 1000 },
-    "examples/curated/simple-serverless-web-application/diagram.dgm": { "medianMs": 10, "maxMedianMs": 500, "maxP95Ms": 1000 },
-    "examples/curated/aws-high-availability-web-app/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
-    "examples/curated/aws-data-transfer-hub/diagram.dgm": { "medianMs": 750, "maxMedianMs": 5000, "maxP95Ms": 8000 },
-    "examples/curated/bedrock-claims-processing/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
-    "examples/curated/image-thumbnail-pipeline/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
-    "examples/curated/asynchronous-report-generation/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
-    "examples/curated/event-driven-order-fulfillment/diagram.dgm": { "medianMs": 500, "maxMedianMs": 5000, "maxP95Ms": 8000 },
-    "examples/curated/azure-private-app-service/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
-    "examples/curated/gcp-streaming-analytics/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 },
-    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": { "medianMs": 100, "maxMedianMs": 1000, "maxP95Ms": 2000 }
+    "examples/diagrams/async-docs.dgm": {
+      "scorePathCalls": 5021,
+      "routeConflictChecks": 5,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/diagrams/transfer-hub.dgm": {
+      "scorePathCalls": 4707,
+      "routeConflictChecks": 5,
+      "astarExpansions": 663,
+      "repairCandidates": 0
+    },
+    "examples/curated/simple-serverless-web-application/diagram.dgm": {
+      "scorePathCalls": 597,
+      "routeConflictChecks": 2,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/aws-high-availability-web-app/diagram.dgm": {
+      "scorePathCalls": 21332,
+      "routeConflictChecks": 0,
+      "astarExpansions": 57002,
+      "repairCandidates": 0
+    },
+    "examples/curated/aws-data-transfer-hub/diagram.dgm": {
+      "scorePathCalls": 39544,
+      "routeConflictChecks": 586,
+      "astarExpansions": 507004,
+      "repairCandidates": 4315
+    },
+    "examples/curated/bedrock-claims-processing/diagram.dgm": {
+      "scorePathCalls": 4984,
+      "routeConflictChecks": 5,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/image-thumbnail-pipeline/diagram.dgm": {
+      "scorePathCalls": 1459,
+      "routeConflictChecks": 4,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/asynchronous-report-generation/diagram.dgm": {
+      "scorePathCalls": 2579,
+      "routeConflictChecks": 7,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/event-driven-order-fulfillment/diagram.dgm": {
+      "scorePathCalls": 8149,
+      "routeConflictChecks": 275,
+      "astarExpansions": 451138,
+      "repairCandidates": 1099
+    },
+    "examples/curated/azure-private-app-service/diagram.dgm": {
+      "scorePathCalls": 14247,
+      "routeConflictChecks": 105,
+      "astarExpansions": 170599,
+      "repairCandidates": 535
+    },
+    "examples/curated/gcp-streaming-analytics/diagram.dgm": {
+      "scorePathCalls": 3098,
+      "routeConflictChecks": 3,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": {
+      "scorePathCalls": 4216,
+      "routeConflictChecks": 28,
+      "astarExpansions": 103240,
+      "repairCandidates": 130
+    }
   }
 }

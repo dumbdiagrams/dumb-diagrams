@@ -190,9 +190,9 @@ function compileParsedDocument(
     const routingWarnings: ValidationIssue[] = [];
     const routedEdges = routeEdges(doc, placedLayout, {
       ...routingOptions,
-      onBudgetExhausted: (diagnostics) => {
-        routingOptions.onBudgetExhausted?.(diagnostics);
-        routingWarnings.push({
+      onDiagnostics: (diagnostics) => {
+        routingOptions.onDiagnostics?.(diagnostics);
+        if (diagnostics.exhausted) routingWarnings.push({
           level: "warning",
           code: ROUTING_BUDGET_WARNING_CODE,
           message: ROUTING_BUDGET_WARNING_MESSAGE,

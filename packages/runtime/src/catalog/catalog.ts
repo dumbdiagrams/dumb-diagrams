@@ -99,10 +99,11 @@ export function getCatalogEntry(type: string): CatalogEntry | undefined {
   return CATALOG[type];
 }
 
+// Reversed so the first entry wins when several types share one icon.
+const CATALOG_BY_BROWSER_PATH = new Map(Object.values(CATALOG).reverse().map((entry) => [entry.icon.browserPath, entry]));
+
 export function getCatalogEntryByBrowserPath(browserPath: string): CatalogEntry | undefined {
-  return Object.values(CATALOG).find(
-    (entry) => entry.icon.browserPath === browserPath,
-  );
+  return CATALOG_BY_BROWSER_PATH.get(browserPath);
 }
 
 export function listProviders(): UserCloudProvider[] {

@@ -90,7 +90,7 @@ describe("diagram compilation canvas bounds", () => {
       maxRouteConflictChecks: 10,
       maxAstarExpansions: 10,
       maxRepairCandidates: 10,
-      onBudgetExhausted: (diagnostics) => { callerDiagnostics = diagnostics; },
+      onDiagnostics: (diagnostics) => { callerDiagnostics = diagnostics; },
     });
 
     expect(result.ok).toBe(true);
@@ -135,7 +135,7 @@ describe("diagram compilation canvas bounds", () => {
       maxRouteConflictChecks: 0,
       maxAstarExpansions: 0,
       maxRepairCandidates: 0,
-      onBudgetExhausted: () => {
+      onDiagnostics: () => {
         throw new Error("injected routing fault");
       },
     });

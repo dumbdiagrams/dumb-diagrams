@@ -15,7 +15,7 @@ export type RoutingDiagnostics = {
 };
 
 export type RoutingOptions = RoutingBudgetOptions & {
-  onBudgetExhausted?: (diagnostics: RoutingDiagnostics) => void;
+  onDiagnostics?: (diagnostics: RoutingDiagnostics) => void;
 };
 
 export const ROUTING_BUDGET_WARNING_CODE = "routing-budget";
