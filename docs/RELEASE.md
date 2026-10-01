@@ -2,6 +2,8 @@
 
 ## Package versions
 
+The current workspace version is `0.1.0` (release tag `v0.1.0`).
+
 All workspace packages share one version, bumped together, so the parser,
 renderer, CLI, and editor are always one compatibility line. Only
 `create-dumb-diagrams` is published; the others are bundled into it.
@@ -40,7 +42,8 @@ codes are stable: if a rule is replaced, use a new code, as
 
 Use the Node.js version from `.nvmrc` and the pnpm version from `package.json`.
 
-1. Bump every `packages/*/package.json` to the same version.
+1. Bump every `packages/*/package.json` to the same version and update the
+   current version and release tag above.
 2. Move the `Unreleased` entries in `CHANGELOG.md` under the new version and
    date.
 3. Run the full gate:
