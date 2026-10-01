@@ -19,6 +19,8 @@ export interface StudioServerHandle {
  * Start the local Studio bridge. The bridge only serves the static editor
  * bundle; files are opened and saved directly by the browser.
  */
+export const DEFAULT_STUDIO_PORT = 4788;
+
 export async function startStudioServer(
   options: StudioServerOptions = {},
 ): Promise<StudioServerHandle> {
@@ -37,8 +39,11 @@ export async function startStudioServer(
     applySecurityHeaders(response);
     serveEditorAsset(editorRoot, request, response);
   });
-  const address = await listen(server, options.port ?? 4788);
-  const resolvedPort = typeof address === "object" && address ? address.port : options.port ?? 4788;
+  const address = await listen(server, options.port ?? DEFAULT_STUDIO_PORT).catch((error: NodeJS.ErrnoException) => {
+    if (options.port === undefined && error.code === "EADDRINUSE") return listen(server, 0);
+    throw error;
+  });
+  const resolvedPort = typeof address === "object" && address ? address.port : options.port ?? DEFAULT_STUDIO_PORT;
   return {
     server,
     url: `http://${STUDIO_HOST}:${resolvedPort}/`,

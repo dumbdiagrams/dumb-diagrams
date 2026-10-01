@@ -10,6 +10,8 @@ export type CliError =
       readonly parseCode: DgmParseError["code"];
       readonly message: string;
       readonly input: string;
+      readonly line?: number;
+      readonly column?: number;
       readonly cause?: unknown;
     }
   | { readonly code: "validation-failed"; readonly message: string; readonly input: string; readonly issues: readonly ValidationIssue[] }
@@ -31,6 +33,7 @@ export function parseCliError(input: string, error: DgmParseError): CliError {
     parseCode: error.code,
     message: error.message,
     input,
+    ...(error.code === "invalid-syntax" ? { line: error.line, column: error.column } : {}),
     cause: error,
   };
 }

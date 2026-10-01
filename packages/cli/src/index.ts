@@ -76,14 +76,14 @@ ${ui.brand()}
 ${ui.heading("Usage")}
   ${ui.command("dumbdiagrams init")}       Create a project folder for agents
   ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
-  ${ui.command("dumbdiagrams validate")}   Validate a .dgm source file
+  ${ui.command("dumbdiagrams validate")}   Validate .dgm source files
   ${ui.command("dumbdiagrams format")}     Canonicalize a .dgm source file
   ${ui.command("dumbdiagrams render")}     Render a .dgm source file to SVG
 
 ${ui.heading("Commands")}
   ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
-  ${ui.command("validate <file.dgm>")}      Parse and fully validate a diagram
+  ${ui.command("validate <file.dgm>...")}   Validate diagrams (--strict fails on warnings)
   ${ui.command("format <file.dgm>")}        Print canonical .dgm source
   ${ui.command("render <file.dgm>")}        Render deterministic SVG (use -o for a file)
 
@@ -132,18 +132,39 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
 }
 
 function cmdValidate(args: ParsedArgs): ResultAsync<number, CliError> {
-  if (args.positionals.length !== 1 || args.flags.size) {
-    return errAsync(invalidArguments("validate expects exactly one .dgm file path (or - for stdin) and no options.", "validate"));
+  if (!args.positionals.length || [...args.flags.keys()].some((flag) => flag !== "strict")) {
+    return errAsync(invalidArguments("validate expects one or more .dgm file paths (or - for stdin), with optional --strict.", "validate"));
   }
-  const input = args.positionals[0]!;
-  const filePath = input === "-" ? undefined : resolve(process.cwd(), input);
-  return toAsync(readSourceResult(input))
-    .andThen((source) => toAsync(parseSourceResult(source, input)))
-    .andThen((doc) => toAsync(compileSourceResult(doc, input)))
-    .map(() => {
-      console.log(ui.success(`Valid diagram: ${displayInput(filePath)}`));
-      return 0;
-    });
+  const strict = args.flags.has("strict");
+  let failed = false;
+  for (const input of args.positionals) {
+    const checked = readSourceResult(input)
+      .andThen((source) => parseSourceResult(source, input))
+      .andThen((doc) => compileSourceResult(doc, input));
+    if (checked.isErr()) {
+      reportCliError(checked.error);
+      failed = true;
+      continue;
+    }
+    const { issues, invariantFailures } = checked.value.result;
+    const path = displayInputForInput(input);
+    const warnings = [
+      ...issues.map((issue) => issueLine(path, issue.code, issue.id, issue.message)),
+      ...invariantFailures.map((failure) => issueLine(path, failure.code, failure.elementIds.join(", "), failure.message)),
+    ];
+    for (const warning of warnings) console.error(ui.warning(warning));
+    if (strict && warnings.length) {
+      console.error(ui.error(`Warnings fail --strict: ${path}`));
+      failed = true;
+    } else {
+      console.log(ui.success(`Valid diagram: ${path}`));
+    }
+  }
+  return okAsync(failed ? 1 : 0);
+}
+
+function issueLine(path: string, code: string, id: string | undefined, message: string): string {
+  return `${path}: ${code}${id ? ` (${id})` : ""}: ${message}`;
 }
 
 function cmdFormat(args: ParsedArgs): ResultAsync<number, CliError> {
@@ -568,14 +589,16 @@ function reportCliError(error: CliError): number {
       console.error(ui.error(`Unable to read diagram: ${displayInputForInput(error.input)}`));
       console.error(`  ${error.message}`);
       return 1;
-    case "parse-failed":
-      console.error(ui.error(`Invalid diagram: ${displayInputForInput(error.input)}`));
-      console.error(`  ${error.message}`);
+    case "parse-failed": {
+      const path = displayInputForInput(error.input);
+      console.error(ui.error(`Invalid diagram: ${path}`));
+      console.error(error.line ? `${path}:${error.line}:${error.column}: ${error.message}` : `${path}: ${error.message}`);
       return 1;
+    }
     case "validation-failed":
       console.error(ui.error(`Invalid diagram: ${displayInputForInput(error.input)}`));
       for (const issue of error.issues) {
-        console.error(`  ${issue.code}${issue.id ? ` (${issue.id})` : ""}: ${issue.message}`);
+        console.error(issueLine(displayInputForInput(error.input), issue.code, issue.id, issue.message));
       }
       return 1;
     case "format-failed":

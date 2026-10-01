@@ -96,6 +96,43 @@ describe("runCli", () => {
     }
   });
 
+  it("validates several files, prints path-prefixed warnings and positions, and fails warnings under --strict", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-validate-many-"));
+    const clean = join(workRoot, "clean.dgm");
+    const warned = join(workRoot, "warned.dgm");
+    const broken = join(workRoot, "broken.dgm");
+    writeFileSync(clean, `diagram clean {\n  grammar gcp\n  cloud-agnostic.boundary external "External"\n}\n`);
+    writeFileSync(warned, `diagram warned {\n  grammar aws\n  aws.cloud cloud "Cloud" {\n    aws.region region "Region" {\n      aws.vpc vpc "VPC" {\n        aws.dynamodb table "Table"\n      }\n    }\n  }\n}\n`);
+    writeFileSync(broken, `diagram broken {\n  grammar aws\n  flow sideways\n}\n`);
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const previous = process.cwd();
+    process.chdir(workRoot);
+    try {
+      expect(await runCli(["validate", "clean.dgm", "warned.dgm"])).toBe(0);
+      expect(log.mock.calls.flat().join("\n")).toContain("Valid diagram: warned.dgm");
+      expect(error.mock.calls.flat().join("\n")).toContain(
+        "warned.dgm: managed-service-in-network (table): aws.dynamodb (table) is a managed service; draw it outside the VPC",
+      );
+
+      expect(await runCli(["validate", "--strict", "clean.dgm"])).toBe(0);
+      expect(await runCli(["validate", "--strict", "clean.dgm", "warned.dgm"])).toBe(1);
+
+      error.mockClear();
+      log.mockClear();
+      expect(await runCli(["validate", "broken.dgm", "clean.dgm"])).toBe(1);
+      expect(error.mock.calls.flat().join("\n")).toContain('broken.dgm:3:8: Invalid flow "sideways"');
+      expect(log.mock.calls.flat().join("\n")).toContain("Valid diagram: clean.dgm");
+
+      expect(await runCli(["validate", "--json", "clean.dgm"])).toBe(1);
+    } finally {
+      process.chdir(previous);
+      log.mockRestore();
+      error.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
   it("formats canonical source and supports check/write semantics", async () => {
     const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-format-"));
     const sourcePath = join(workRoot, "diagram.dgm");

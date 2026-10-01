@@ -1,10 +1,11 @@
 import { mkdirSync, mkdtempSync, unlinkSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { startStudioServer, type StudioServerHandle } from "./studio-server.js";
+import { DEFAULT_STUDIO_PORT, startStudioServer, type StudioServerHandle } from "./studio-server.js";
 
 const handles: StudioServerHandle[] = [];
 
@@ -13,6 +14,21 @@ afterEach(async () => {
 });
 
 describe("local Studio server", () => {
+  it("falls back to a free port when the default port is taken", async () => {
+    const blocker = createServer();
+    await new Promise<void>((resolve) => {
+      blocker.once("error", () => resolve());
+      blocker.listen(DEFAULT_STUDIO_PORT, "127.0.0.1", () => resolve());
+    });
+    try {
+      const { handle } = await createTestServer(undefined);
+      expect(new URL(handle.url).port).not.toBe(String(DEFAULT_STUDIO_PORT));
+      expect((await fetch(handle.url)).status).toBe(200);
+    } finally {
+      blocker.close();
+    }
+  });
+
   it("serves only the static editor bundle on loopback", async () => {
     const { handle } = await createTestServer();
     const launchUrl = new URL(handle.url);
@@ -74,14 +90,14 @@ describe("local Studio server", () => {
 
 });
 
-async function createTestServer(): Promise<{ handle: StudioServerHandle; editorRoot: string; outsideRoot: string }> {
+async function createTestServer(port: number | undefined = 0): Promise<{ handle: StudioServerHandle; editorRoot: string; outsideRoot: string }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
   const outsideRoot = join(root, "outside");
   mkdirSync(editorRoot);
   mkdirSync(outsideRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
-  const handle = await startStudioServer({ editorRoot, port: 0 });
+  const handle = await startStudioServer({ editorRoot, port });
   handles.push(handle);
   return { handle, editorRoot, outsideRoot };
 }
