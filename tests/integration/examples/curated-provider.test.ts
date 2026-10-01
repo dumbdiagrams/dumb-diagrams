@@ -10,18 +10,6 @@ import { describe, expect, it } from "vitest";
 const root = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const contracts = JSON.parse(readFileSync(resolve(root, "examples/evaluations/curated-providers.json"), "utf8"));
 
-const expectedWarnings: Record<string, string[]> = {
-  "aws-high-availability-web-app": ["managed-service-in-network table_one", "managed-service-in-network table_two"],
-  "cloud-agnostic-order-processing": ["managed-service-in-network storage"],
-  "gcp-streaming-analytics": [
-    "managed-service-in-network events",
-    "managed-service-in-network iam",
-    "managed-service-in-network secrets",
-    "managed-service-in-network monitoring",
-    "managed-service-in-network logging",
-  ],
-};
-
 describe("curated provider semantic contracts", () => {
   const curatedIds = readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -47,10 +35,29 @@ describe("curated provider semantic contracts", () => {
     ]);
   });
 
-  it.each(curatedIds)("%s emits exactly its expected provider warnings", (id) => {
+  it.each(curatedIds)("%s emits no provider warnings", (id) => {
     const result = compileDiagram(parseDgm(readFileSync(resolve(root, "examples/curated", id, "diagram.dgm"), "utf8")));
     const warnings = result.issues.filter((issue) => issue.level === "warning").map((issue) => `${issue.code} ${issue.id}`);
-    expect(warnings).toEqual(expectedWarnings[id] ?? []);
+    expect(warnings).toEqual([]);
+  });
+
+  it("keeps Dataflow workers in the VPC and global services at project scope", () => {
+    const doc = parseDgm(readFileSync(resolve(root, "examples/curated/gcp-streaming-analytics/diagram.dgm"), "utf8"));
+    const ancestorTypes = (id: string) => {
+      const types: string[] = [];
+      let parent = doc.resources.find((resource) => resource.id === id)!.parent;
+      while (parent) {
+        const group = doc.groups.find((candidate) => candidate.id === parent)!;
+        types.push(group.type ?? group.kind);
+        parent = group.parent;
+      }
+      return types;
+    };
+    expect(ancestorTypes("dataflow")).toContain("gcp.vpc");
+    for (const id of ["iam", "events"]) {
+      expect(ancestorTypes(id)).toContain("gcp.project");
+      expect(ancestorTypes(id)).not.toContain("gcp.region");
+    }
   });
 
   for (const [id, contract] of Object.entries(contracts.examples)) {

@@ -12,19 +12,29 @@
       "message": "Edges ui-appsync and ui-oidc cross"
     },
     {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges pull_image_a and monitor_data_a cross"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges pull_image_b and monitor_data_a cross"
-    },
-    {
       "file": "event-driven-order-fulfillment.dgm",
       "code": "edge-label-node-collision",
       "message": "Label of edge authorize_payment overlaps resource payment_service"
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_data_b and monitor_app_a cross"
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_data_b and monitor_app_b cross"
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_data_b and monitor_data_a cross"
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges monitor_app_a and monitor_app_b cross"
     }
   ],
   "reviews": [
@@ -43,25 +53,39 @@
       "status": "reviewed"
     },
     {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges pull_image_a and monitor_data_a cross",
-      "decision": "Baselined after visual review. AZ A image-pull and CloudWatch monitoring edges share a vertical corridor beside mirrored Fargate services; the crossing is the cheaper of the two-AZ symmetric layout.",
-      "status": "reviewed"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges pull_image_b and monitor_data_a cross",
-      "decision": "Baselined after visual review. AZ B image-pull crosses AZ A monitoring because both AZs report to one CloudWatch card; splitting monitors would violate the reference specification.",
-      "status": "reviewed"
-    },
-    {
       "file": "event-driven-order-fulfillment.dgm",
       "code": "edge-label-node-collision",
       "message": "Label of edge authorize_payment overlaps resource payment_service",
       "decision": "PENDING VISUAL REVIEW. Introduced by the attached-label placement change, which replaced the previous boundary-label overlap with this resource-card overlap.",
       "status": "pending"
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_data_b and monitor_app_a cross",
+      "status": "reviewed",
+      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The AZ B data path crosses the dashed AZ A application telemetry path into the shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_data_b and monitor_app_b cross",
+      "status": "reviewed",
+      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The AZ B data and application telemetry branches cross on their separate approaches to the regional table and shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_data_b and monitor_data_a cross",
+      "status": "reviewed",
+      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The AZ B data path crosses the dashed regional table A telemetry path into the shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
+    },
+    {
+      "file": "aws-high-availability-web-app.dgm",
+      "code": "edge-crossing",
+      "message": "Edges monitor_app_a and monitor_app_b cross",
+      "status": "reviewed",
+      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The two AZ application telemetry branches cross before reaching the single shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
     }
   ]
 }

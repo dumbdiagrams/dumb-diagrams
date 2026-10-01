@@ -23,9 +23,10 @@ diagram cloud-agnostic-order-processing {
 
           cloud-agnostic.boundary data "Data services" {
             cloud-agnostic.database database "Orders database"
-            cloud-agnostic.object-storage storage "Receipt storage"
           }
         }
+
+        cloud-agnostic.object-storage storage "Receipt storage"
       }
     }
   }

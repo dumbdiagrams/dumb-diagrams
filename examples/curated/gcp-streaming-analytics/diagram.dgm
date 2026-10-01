@@ -18,20 +18,21 @@ diagram gcp-streaming-analytics {
           }
 
           cloud-agnostic.boundary pipeline "Streaming pipeline" {
-            gcp.pub-sub events "Pub/Sub events"
             gcp.dataflow dataflow "Dataflow processing"
-          }
-
-          cloud-agnostic.boundary governance "Governance and operations" {
-            gcp.iam iam "IAM"
-            gcp.secret-manager secrets "Secret Manager"
-            gcp.cloud-monitoring monitoring "Cloud Monitoring"
-            gcp.cloud-logging logging "Cloud Logging"
           }
         }
 
         gcp.bigquery warehouse "BigQuery warehouse"
         gcp.cloud-storage archive "Cloud Storage archive"
+      }
+
+      gcp.pub-sub events "Pub/Sub events"
+
+      cloud-agnostic.boundary governance "Governance and operations" {
+        gcp.iam iam "IAM"
+        gcp.secret-manager secrets "Secret Manager"
+        gcp.cloud-monitoring monitoring "Cloud Monitoring"
+        gcp.cloud-logging logging "Cloud Logging"
       }
     }
   }

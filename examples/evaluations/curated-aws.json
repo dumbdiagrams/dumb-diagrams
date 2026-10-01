@@ -175,7 +175,7 @@
         "aws.elastic-container-registry": 1,
         "aws.cloudwatch": 1
       },
-      "exactGroupCounts": { "aws.cloud": 1, "cloud-agnostic.boundary": 2, "aws.vpc": 1, "aws.az": 2, "aws.subnet.private": 4 },
+      "exactGroupCounts": { "aws.cloud": 1, "cloud-agnostic.boundary": 4, "aws.vpc": 1, "aws.az": 2, "aws.subnet.private": 2 },
       "forbiddenTypes": ["aws.eventbridge", "aws.simple-queue-service", "aws.simple-notification-service", "aws.aws-secrets-manager"],
       "containment": [
         { "childType": "aws.route-53", "ancestorType": "cloud-agnostic.boundary" },
@@ -186,7 +186,7 @@
         { "childType": "aws.elastic-load-balancing-application-load-balancer", "ancestorType": "aws.vpc" },
         { "childType": "aws.elastic-container-service", "ancestorType": "aws.subnet.private" },
         { "childType": "aws.aws-fargate", "ancestorType": "aws.subnet.private" },
-        { "childType": "aws.dynamodb", "ancestorType": "aws.subnet.private" },
+        { "childType": "aws.dynamodb", "ancestorType": "cloud-agnostic.boundary" },
         { "childType": "aws.elastic-container-registry", "ancestorType": "aws.cloud" },
         { "childType": "aws.cloudwatch", "ancestorType": "aws.cloud" }
       ],
@@ -196,7 +196,10 @@
         { "childGroupType": "aws.az", "ancestorType": "aws.vpc" },
         { "childGroupType": "aws.subnet.private", "ancestorType": "aws.az" }
       ],
-      "outsideContainment": [{ "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" }],
+      "outsideContainment": [
+        { "childType": "cloud-agnostic.client", "ancestorType": "aws.cloud" },
+        { "childType": "aws.dynamodb", "ancestorType": "aws.vpc" }
+      ],
       "relationships": [
         { "sourceType": "cloud-agnostic.client", "targetType": "aws.route-53" },
         { "sourceType": "aws.route-53", "targetType": "aws.cognito" },
@@ -213,7 +216,7 @@
         { "sourceType": "aws.dynamodb", "targetType": "aws.cloudwatch", "count": 2 }
       ],
       "relationshipMode": "exact",
-      "allowedValidationWarnings": ["managed-service-in-network"]
+      "allowedValidationWarnings": []
     },
     "event-driven-order-fulfillment": {
       "exactCounts": {

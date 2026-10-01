@@ -12,8 +12,10 @@ two-availability-zone private backend.
   to the API.
 - API Gateway → Application Load Balancer in a VPC spanning two availability
   zones.
-- Each zone contains private application and database subnets, an ECS service,
-  secondary Fargate tasks, and a DynamoDB table.
+- Each zone contains a private application subnet, an ECS service, and
+  secondary Fargate tasks. Two logically paired DynamoDB tables live in shared
+  regional platform services outside the VPC, with one table associated with
+  each zone's workload.
 - ECR supplies container images; CloudWatch receives application and database
   monitoring data.
 
@@ -23,16 +25,17 @@ two-availability-zone private backend.
   VPC.
 - The ALB is in the VPC and fans out to both ECS services.
 - Each ECS service peers with its zone's Fargate tasks; each Fargate resource
-  reaches its zone's DynamoDB table.
+  reaches its paired DynamoDB table in shared platform services.
 - ECR supplies both Fargate resources and both Fargate/DynamoDB pairs report to
   CloudWatch.
 - Keep the two availability-zone structures equivalent and preserve private
-  subnet containment.
+  application-subnet containment. The DynamoDB tables are regional managed
+  services outside the VPC, paired with the zones for the illustrated flow.
 
 ## Inferred decisions and exclusions
 
-- Two zones, private subnets, and paired workload/data structures directly
-  implement the requested high availability.
+- Two zones, private application subnets, and logically paired workload/data
+  structures directly implement the requested high availability.
 - The frontend and shared-platform boundaries clarify scope; no additional
   AWS service is implied.
 - Do not add NAT gateways, Aurora, queues, caches, WAF, Secrets Manager,

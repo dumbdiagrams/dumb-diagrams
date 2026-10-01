@@ -61,10 +61,10 @@
       "repairCandidates": 535
     },
     "examples/curated/gcp-streaming-analytics/diagram.dgm": {
-      "scorePathCalls": 3098,
-      "routeConflictChecks": 3,
-      "astarExpansions": 0,
-      "repairCandidates": 0
+      "scorePathCalls": 8157,
+      "routeConflictChecks": 63,
+      "astarExpansions": 119254,
+      "repairCandidates": 1211
     },
     "examples/curated/cloud-agnostic-order-processing/diagram.dgm": {
       "scorePathCalls": 4216,

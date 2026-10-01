@@ -593,7 +593,21 @@ test("contains long unbroken diagram names inside the top bar", async ({ page })
 
 test("selects the warned resource when a provider warning is clicked", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/curated/aws-high-availability-web-app/diagram.dgm`);
+  // Keep the warning fixture deliberately invalid while curated examples stay valid.
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "provider-warning.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`dgm 1
+diagram provider-warning {
+  grammar aws
+  aws.cloud cloud "AWS Cloud" {
+    aws.vpc network "VPC" {
+      aws.dynamodb table_one "Orders"
+    }
+  }
+}
+`),
+  });
   await waitForStudioReady(page);
   await page.locator(".issue-journal-trigger").click();
   await page.locator(".issue-journal-item").filter({ hasText: "(table_one)" }).click();

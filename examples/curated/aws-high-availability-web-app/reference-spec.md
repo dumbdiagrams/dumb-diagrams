@@ -5,8 +5,8 @@ Composition and hierarchy:
 - Inside the AWS Cloud, add a "Frontend services" group containing, in traffic order, Route 53, Cognito labelled "User authentication", CloudFront, and an S3 bucket labelled "Static content".
 - Place API Gateway between the frontend group and the VPC.
 - Create one VPC containing an Application Load Balancer followed by two stacked availability zones: "Availability Zone A" and "Availability Zone B".
-- In each availability zone, put a "Private application subnet" beside a "Private database subnet". Each application subnet contains an ECS service and a secondary Fargate-tasks resource. Each database subnet contains a resource labelled "DynamoDB table".
-- Add a "Shared platform services" group inside the AWS Cloud but outside the VPC, containing ECR labelled "Container images" and CloudWatch labelled "Application + database monitoring".
+- In each availability zone, add a "Private application subnet" containing an ECS service and a secondary Fargate-tasks resource.
+- Add a "Shared platform services" group inside the AWS Cloud but outside the VPC, containing ECR labelled "Container images", CloudWatch labelled "Application + database monitoring", and two regional data boundaries containing resources labelled "DynamoDB table". Pair one table with each availability zone's workload in the flow; the tables are outside the VPC rather than deployed in database subnets.
 
 Main request flow and numbered stages:
 1. Web client to Route 53, entering Route 53 from the west; put badge 1 on this connection.
@@ -18,8 +18,8 @@ Main request flow and numbered stages:
 5. API Gateway to the Application Load Balancer; put badge 5 on this connection.
 6. The load balancer fans out to the ECS service in both availability zones; put badge 6 on the Availability Zone A branch.
 - In each application subnet, connect ECS to its Fargate tasks with a dashed peer connection.
-- In each availability zone, connect Fargate tasks to that zone's DynamoDB.
+- Connect each Fargate resource to its corresponding shared-platform DynamoDB table, pairing the Availability Zone A and B workloads with the two tables.
 - Connect ECR to the Fargate tasks in both zones using dashed connections; label the Availability Zone A connection "container image".
 - Connect both Fargate resources and both DynamoDB resources to CloudWatch using dashed peer connections.
 
-Keep the frontend, VPC, both availability zones, and subnet boundaries easy to scan. Use compact orthogonal routing, reserve a distinct lane for every connector, prefer straight connections when source and target align, and never overlap solid and dashed routes.
+Keep the frontend, VPC, both availability zones, and application-subnet boundaries easy to scan. Keep the regional DynamoDB data boundaries outside the VPC and use compact orthogonal routing, reserve a distinct lane for every connector, prefer straight connections when source and target align, and never overlap solid and dashed routes.

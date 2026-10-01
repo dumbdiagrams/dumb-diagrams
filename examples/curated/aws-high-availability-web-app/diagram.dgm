@@ -24,10 +24,6 @@ diagram aws-high-availability-web-app {
           aws.elastic-container-service service_one "ECS service"
           aws.aws-fargate tasks_one "Fargate tasks" { role secondary }
         }
-
-        aws.subnet.private data_subnet_one "Private database subnet" {
-          aws.dynamodb table_one "DynamoDB table"
-        }
       }
 
       aws.az zone_two "Availability Zone B" {
@@ -35,16 +31,20 @@ diagram aws-high-availability-web-app {
           aws.elastic-container-service service_two "ECS service"
           aws.aws-fargate tasks_two "Fargate tasks" { role secondary }
         }
-
-        aws.subnet.private data_subnet_two "Private database subnet" {
-          aws.dynamodb table_two "DynamoDB table"
-        }
       }
     }
 
     cloud-agnostic.boundary platform_services "Shared platform services" {
-      aws.elastic-container-registry registry "Container images"
+      cloud-agnostic.boundary data_subnet_one "DynamoDB data services A" {
+        aws.dynamodb table_one "DynamoDB table"
+      }
+
+      cloud-agnostic.boundary data_subnet_two "DynamoDB data services B" {
+        aws.dynamodb table_two "DynamoDB table"
+      }
+
       aws.cloudwatch monitoring "Application + database monitoring"
+      aws.elastic-container-registry registry "Container images"
     }
   }
 
