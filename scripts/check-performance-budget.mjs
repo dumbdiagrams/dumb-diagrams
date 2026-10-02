@@ -15,7 +15,7 @@ const ALLOWED_GROWTH = 1.25;
 const STRESS_MAX_ELAPSED_MS = 30_000;
 const COMPILATION_LIMITS_TIMEOUT_MS = 10_000;
 
-const [{ createEmptyDocument, validateDocument }, { parseDgm }, { layoutDocument }, { routeEdges }, { getCatalogMap }] = await Promise.all([
+const [{ createEmptyDocument, validateDocument }, { parseDgm }, { layoutDocument }, { routeEdges, routeConnectionPreview }, { getCatalogMap }] = await Promise.all([
   import("../packages/runtime/dist/core/index.js"),
   import("../packages/runtime/dist/dsl/index.js"),
   import("../packages/runtime/dist/layout/index.js"),
@@ -38,7 +38,44 @@ function checkCompilationLimits() {
   assert.equal(new Set(layout.nodes.map((node) => node.id)).size, 44);
   assert.deepEqual(layoutDocument(dense), layout);
 
-  console.log("Compilation limits: dense 44-resource / 946-edge layout verified");
+  // Intercept allocation before it happens: reverting the memory guard must
+  // fail safely rather than allocating the audited 15.6 GB grid on CI.
+  const NativeArray = globalThis.Uint8Array;
+  let allocatedCells = 0;
+  globalThis.Uint8Array = class extends NativeArray {
+    constructor(length, ...rest) {
+      if (typeof length === "number") {
+        assert.ok(length <= 1_000_000, `Unbounded routing allocation: ${length} cells`);
+        allocatedCells += length;
+      }
+      super(length, ...rest);
+    }
+  };
+  try {
+    const far = parseDgm(`diagram far { grammar cloud-agnostic
+      cloud-agnostic.actor a cloud-agnostic.actor b
+    } view default {
+      place a { x 0 y 0 pin } place b { x 1000000 y 1000000 pin }
+    }`);
+    assert.deepEqual(validateDocument(far, getCatalogMap()), []);
+    const farLayout = layoutDocument(far);
+    let diagnostics;
+    assert.deepEqual(routeEdges(far, farLayout, { onDiagnostics: (result) => { diagnostics = result; } }), []);
+    assert.equal(diagnostics.exhausted, false);
+    assert.equal(allocatedCells, 0);
+    far.edges.push({ id: "edge", source: "a", target: "b", style: "solid", kind: "flow" });
+    const options = { onDiagnostics: (result) => { diagnostics = result; } };
+    const routes = routeEdges(far, farLayout, options);
+    assert.equal(routes.length, 1);
+    assert.ok(routes[0].points.length >= 2);
+    assert.equal(diagnostics.exhausted, true);
+    assert.deepEqual(routeEdges(far, farLayout, options), routes);
+    assert.ok(routeConnectionPreview(far, farLayout, "a", "b")?.length >= 2);
+    assert.equal(allocatedCells, 0);
+  } finally {
+    globalThis.Uint8Array = NativeArray;
+  }
+  console.log("Compilation limits: dense 44-resource / 946-edge layout and million-coordinate routing verified");
 }
 
 if (process.argv.includes("--limits-probe")) {

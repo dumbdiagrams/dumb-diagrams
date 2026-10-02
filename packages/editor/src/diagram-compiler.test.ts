@@ -6,7 +6,11 @@ import {
 import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
+import {
+  eraseOrthogonalRouteLoops,
+  ROUTING_BUDGET_WARNING_CODE,
+  ROUTING_BUDGET_WARNING_MESSAGE,
+} from "@dumb-diagrams/runtime/route";
 import type { RoutingDiagnostics } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
@@ -98,8 +102,8 @@ describe("diagram compilation canvas bounds", () => {
     expect(result.layout.edges).toHaveLength(doc.edges.length);
     expect(result.issues).toContainEqual({
       level: "warning",
-      code: "routing-budget",
-      message: "Routing work budget exhausted; retained the best available routes.",
+      code: ROUTING_BUDGET_WARNING_CODE,
+      message: ROUTING_BUDGET_WARNING_MESSAGE,
     });
     expect(callerDiagnostics?.exhausted).toBe(true);
   });

@@ -1126,6 +1126,55 @@ describe("routeEdgePreview", () => {
     expect(unbounded?.scorePathCalls).toBeGreaterThan(0);
   });
 
+  it("degrades oversized grids while retaining an orthogonal route", () => {
+    const doc = createEmptyDocument("oversized-routing-grid");
+    doc.resources = [
+      routingResource("source", "cloud-agnostic.actor", "Source"),
+      routingResource("target", "cloud-agnostic.server", "Target"),
+    ];
+    doc.edges = [{
+      id: "source_target",
+      source: "source",
+      target: "target",
+      style: "solid",
+      kind: "flow",
+    }];
+    const layout: LayoutResult = {
+      nodes: [routingNode("source", 0, 0, 48), routingNode("target", 1_000_000, 1_000_000, 48)],
+      groups: [],
+      edges: [],
+      width: 1_000_000,
+      height: 1_000_000,
+      symmetries: [],
+    };
+
+    let diagnostics;
+    const route = routeEdges(doc, layout, { onDiagnostics: (result) => { diagnostics = result; } })[0]!;
+    expect(diagnostics?.exhausted).toBe(true);
+    expect(route.points.length).toBeGreaterThanOrEqual(2);
+    expect(route.points.every((point, index, points) => {
+      const previous = points[index - 1];
+      return !previous || point.x === previous.x || point.y === previous.y;
+    })).toBe(true);
+
+    const preview = routeConnectionPreview(doc, layout, "source", "target");
+    expect(preview?.length).toBeGreaterThanOrEqual(2);
+    expect(preview?.every((point, index, points) => {
+      const previous = points[index - 1];
+      return !previous || point.x === previous.x || point.y === previous.y;
+    })).toBe(true);
+  });
+
+  it("does not report grid degradation for an oversized canvas without edges", () => {
+    const doc = createEmptyDocument("oversized-empty-routing-grid");
+    const layout: LayoutResult = {
+      nodes: [], groups: [], edges: [], width: 1_000_000, height: 1_000_000, symmetries: [],
+    };
+    let diagnostics;
+    expect(routeEdges(doc, layout, { onDiagnostics: (result) => { diagnostics = result; } })).toEqual([]);
+    expect(diagnostics?.exhausted).toBe(false);
+  });
+
   it("takes the short top approach instead of crossing CloudFront like the example regression", () => {
     const { doc, layout } = gatewayRoutingRegressionLayout(false);
     const routes = routeEdges(doc, layout);

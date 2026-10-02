@@ -37,6 +37,9 @@ export type {
 } from "./routing-budget.js";
 
 const CELL = GRAMMAR.grid;
+// Cap cells before allocation. Each cell uses 14 bytes across the blocked
+// grid and a single A* search's Float64/Int32/byte scratch arrays.
+const MAX_GRID_CELLS = 1_000_000;
 const GROUP_CONTAINMENT_INSET = 8;
 const HEADER_COST = 100_000;
 // Routing quality rules, in descending priority: never hit content; avoid
@@ -148,7 +151,11 @@ export function routeEdges(
   const boundaries = buildGroupBoundaries(layout);
   const vGutters = verticalGutters(layout, obstacles);
   const hGutters = horizontalGutters(layout, obstacles);
-  const grid = buildGrid(layout, obstacles);
+  // A grid is only useful when there is an edge to route. In particular, do
+  // not let an empty document with a pathological canvas allocate anything or
+  // report a routing degradation.
+  const grid = doc.edges.length ? buildGrid(layout, obstacles) : null;
+  if (doc.edges.length > 0 && !grid) budget.markDegraded();
   const routed: RoutedEdge[] = [];
   const existing: ExistingRoute[] = [];
   const labelReservations = new Map<string, Rect>();
@@ -551,7 +558,7 @@ function repairAutomaticRouteCrossings(
   layout: LayoutResult,
   edges: RoutedEdge[],
   obstacles: Obstacle[],
-  grid: Grid,
+  grid: Grid | null,
   vGutters: number[],
   hGutters: number[],
   routeOverrides: Record<string, RouteOverride>,
@@ -2665,7 +2672,7 @@ function followsAttachmentDirection(
 }
 
 function routeAStar(
-  grid: Grid,
+  grid: Grid | null,
   ports: PortChoice,
   source: NodeGeom,
   target: NodeGeom,
@@ -2673,6 +2680,7 @@ function routeAStar(
   conflictCostCache?: Map<number, number>,
   budget?: RoutingBudget,
 ): Point[] | null {
+  if (!grid || budget?.exhausted) return null;
   const start = stepOut(source, ports.src, ports.srcSide);
   const goal = stepOut(target, ports.tgt, ports.tgtSide);
   const mid = astar(grid, start, goal, existing, conflictCostCache, budget);
@@ -2698,12 +2706,20 @@ function stepOut(node: NodeGeom, p: Point, side: Side): Point {
   }
 }
 
-function buildGrid(layout: LayoutResult, obstacles: Obstacle[]): Grid {
+function buildGrid(layout: LayoutResult, obstacles: Obstacle[]): Grid | null {
   const margin = 64;
   const originX = -margin;
   const originY = -margin;
+  if (!Number.isFinite(layout.width) || !Number.isFinite(layout.height)) return null;
   const cols = Math.ceil((layout.width + margin * 2) / CELL) + 2;
   const rows = Math.ceil((layout.height + margin * 2) / CELL) + 2;
+  if (
+    !Number.isSafeInteger(cols) ||
+    !Number.isSafeInteger(rows) ||
+    cols <= 0 ||
+    rows <= 0 ||
+    cols * rows > MAX_GRID_CELLS
+  ) return null;
   const blocked = new Uint8Array(cols * rows);
   const grid: Grid = { originX, originY, cols, rows, blocked };
   for (const obs of obstacles) markRect(grid, obs);
@@ -2728,6 +2744,9 @@ function astar(
   conflictCostCache?: Map<number, number>,
   budget?: RoutingBudget,
 ): Point[] | null {
+  // Avoid allocating any of the per-search typed arrays after another phase
+  // has exhausted the work budget.
+  if (budget?.exhausted) return null;
   const sc = worldToCell(grid, start.x, start.y);
   const gc = worldToCell(grid, goal.x, goal.y);
   if (!inBounds(grid, sc.c, sc.r) || !inBounds(grid, gc.c, gc.r)) return null;

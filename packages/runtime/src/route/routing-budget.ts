@@ -20,7 +20,7 @@ export type RoutingOptions = RoutingBudgetOptions & {
 
 export const ROUTING_BUDGET_WARNING_CODE = "routing-budget";
 export const ROUTING_BUDGET_WARNING_MESSAGE =
-  "Routing work budget exhausted; retained the best available routes.";
+  "Routing work budget or grid memory limit reached; retained the best available routes.";
 
 type RoutingBudgetKind = keyof Pick<RoutingDiagnostics,
   "scorePathCalls" | "routeConflictChecks" | "astarExpansions" | "repairCandidates"
@@ -49,6 +49,7 @@ export class RoutingBudget {
     repairCandidates: 0,
   };
   exhausted = false;
+  private degraded = false;
 
   constructor(options: RoutingBudgetOptions, complexity: number) {
     const scale = Math.max(1, complexity / 100);
@@ -69,7 +70,16 @@ export class RoutingBudget {
     return !this.exhausted;
   }
 
+  /** Record a bounded-resource fallback without stopping cheap routing work. */
+  markDegraded(): void {
+    this.degraded = true;
+  }
+
   diagnostics(): RoutingDiagnostics {
-    return { ...this.counts, exhausted: this.exhausted, limits: { ...this.limits } };
+    return {
+      ...this.counts,
+      exhausted: this.exhausted || this.degraded,
+      limits: { ...this.limits },
+    };
   }
 }

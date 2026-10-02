@@ -25,4 +25,14 @@ describe("RoutingBudget", () => {
       maxRepairCandidates: 1_000,
     });
   });
+
+  it("reports degraded routing without stopping the remaining cheap work", () => {
+    const budget = new RoutingBudget({}, 1);
+
+    budget.markDegraded();
+
+    expect(budget.exhausted).toBe(false);
+    expect(budget.diagnostics().exhausted).toBe(true);
+    expect(budget.consume("scorePathCalls")).toBe(true);
+  });
 });

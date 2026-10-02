@@ -26,8 +26,11 @@ flowchart LR
    dense and cyclic graphs bounded and deterministic.
 4. **Route** (`runtime/src/route/router.ts`) is a Manhattan router: it scores
    candidate ports and gutters, repairs conflicts, and falls back to grid A\*.
-   A deterministic work budget bounds it. When the budget runs out, it keeps
-   the best routes found so far and reports a `routing-budget` warning.
+   A deterministic work budget bounds it. Dense routing grids are capped at
+   one million cells before allocation and are skipped when there are no
+   edges. When a work or grid memory limit is reached, routing keeps the best
+   available routes and reports a `routing-budget` warning. Oversized canvases
+   use template and perimeter routes without the dense A* grid.
 5. **Render** (`runtime/src/render`) emits SVG. Geometry invariants
    (`render/invariants.ts`) report overlaps and crossings as warnings.
 

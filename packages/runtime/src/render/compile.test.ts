@@ -17,6 +17,8 @@ import {
   normalizeOrthogonalRoute,
   routeEdges,
   attachRoutes,
+  ROUTING_BUDGET_WARNING_CODE,
+  ROUTING_BUDGET_WARNING_MESSAGE,
 } from "../route/index.js";
 import { checkInvariants } from "./invariants.js";
 
@@ -124,6 +126,45 @@ describe("async-docs fixture", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);
     expect(result.svg).toContain("<svg");
+  });
+
+  it("warns when a connected canvas is too large for the routing grid", () => {
+    const doc = createEmptyDocument("oversized-routing-grid-compile");
+    doc.resources = [
+      {
+        id: "source",
+        type: "cloud-agnostic.actor",
+        label: { service: "Source" },
+        role: "primary",
+        props: {},
+      },
+      {
+        id: "target",
+        type: "cloud-agnostic.server",
+        label: { service: "Target" },
+        role: "primary",
+        props: {},
+      },
+    ];
+    doc.edges = [{
+      id: "source_target",
+      source: "source",
+      target: "target",
+      style: "solid",
+      kind: "flow",
+    }];
+    const view = getDefaultView(doc);
+    view.places.source = { x: 0, y: 0, pin: true, manual: true };
+    view.places.target = { x: 1_000_000, y: 1_000_000, pin: true, manual: true };
+
+    const result = compileDiagram(doc);
+
+    expect(result.ok).toBe(true);
+    expect(result.issues).toContainEqual({
+      level: "warning",
+      code: ROUTING_BUDGET_WARNING_CODE,
+      message: ROUTING_BUDGET_WARNING_MESSAGE,
+    });
   });
 
   it("renders authored boundary appearance and keeps the canonical boundary iconless", () => {
