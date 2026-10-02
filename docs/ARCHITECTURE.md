@@ -21,7 +21,9 @@ flowchart LR
    provider grammar, and containment. Provider network rules live in
    `core/provider-rules.ts`, one table per grammar.
 3. **Layout** (`runtime/src/layout`) measures cards and labels, places nested
-   groups from the inside out, and applies `view` overrides.
+   groups from the inside out, and applies `view` overrides. Account flow
+   ordering reuses computed graph chains and skips cycle back-edges, keeping
+   dense and cyclic graphs bounded and deterministic.
 4. **Route** (`runtime/src/route/router.ts`) is a Manhattan router: it scores
    candidate ports and gutters, repairs conflicts, and falls back to grid A\*.
    A deterministic work budget bounds it. When the budget runs out, it keeps

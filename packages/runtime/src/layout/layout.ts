@@ -219,19 +219,28 @@ function longestChildFlow(doc: DiagramDocument, group: Group): ID[] {
     if (!targets.includes(target)) targets.push(target);
   }
 
-  const bestFrom = (id: ID, visiting: Set<ID>): ID[] => {
-    if (visiting.has(id)) return [id];
-    const nextVisiting = new Set(visiting).add(id);
+  const colors = new Map<ID, "active" | "done">();
+  const memo = new Map<ID, ID[]>();
+  const bestFrom = (id: ID): ID[] => {
+    if (colors.get(id) === "done") return memo.get(id)!;
+
+    colors.set(id, "active");
     let best: ID[] = [id];
     for (const target of adjacency.get(id) ?? []) {
-      const candidate = [id, ...bestFrom(target, nextVisiting)];
+      // A back-edge to an active node would close a cycle, so ignore it.
+      if (colors.get(target) === "active") continue;
+      const suffix = bestFrom(target);
+      const candidate = [id, ...suffix];
+      // Strict comparison preserves authored adjacency order on ties.
       if (candidate.length > best.length) best = candidate;
     }
+    colors.set(id, "done");
+    memo.set(id, best);
     return best;
   };
 
   return group.children.reduce<ID[]>((best, id) => {
-    const candidate = bestFrom(id, new Set());
+    const candidate = bestFrom(id);
     return candidate.length > best.length ? candidate : best;
   }, []);
 }

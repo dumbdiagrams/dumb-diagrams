@@ -37,6 +37,96 @@ function logicalGroupDocument(): DiagramDocument {
   return doc;
 }
 
+function accountFlowDocument(ids: string[]): DiagramDocument {
+  const doc = createEmptyDocument("account-flow-layout");
+  doc.resources = ids.map((id) => resource(id, "account"));
+  doc.groups = [
+    {
+      id: "cloud",
+      kind: "cloud",
+      type: "aws.cloud",
+      label: "Cloud",
+      children: ["account"],
+    },
+    {
+      id: "account",
+      kind: "account",
+      type: "aws.account",
+      parent: "cloud",
+      label: "Account",
+      children: ids,
+    },
+  ];
+  return doc;
+}
+
+function denseDagEdges(ids: string[]) {
+  return ids.flatMap((source, sourceIndex) =>
+    ids.slice(sourceIndex + 1).map((target) => ({
+      id: `${source}-${target}`,
+      source,
+      target,
+      style: "solid" as const,
+      kind: "flow" as const,
+    })),
+  );
+}
+
+describe("compact account flow ordering", () => {
+  it("handles a dense 28-node DAG without enumerating paths", { timeout: 2000 }, () => {
+    const ids = Array.from({ length: 28 }, (_, index) => `node-${index}`);
+    const doc = accountFlowDocument(ids);
+    doc.edges = denseDagEdges(ids);
+
+    const layout = layoutDocument(doc);
+    expect(layout.nodes).toHaveLength(ids.length);
+    expect(layout.groups.find((group) => group.id === "account")!.bounds.w).toBeGreaterThan(0);
+  });
+
+  it("keeps the first converging branch when path lengths tie", () => {
+    const doc = accountFlowDocument(["a", "b", "c", "d", "e", "f"]);
+    doc.edges = [
+      { id: "a-b", source: "a", target: "b", style: "solid", kind: "flow" },
+      { id: "a-c", source: "a", target: "c", style: "solid", kind: "flow" },
+      { id: "b-d", source: "b", target: "d", style: "solid", kind: "flow" },
+      { id: "c-d", source: "c", target: "d", style: "solid", kind: "flow" },
+      { id: "d-e", source: "d", target: "e", style: "solid", kind: "flow" },
+    ];
+
+    const nodes = new Map(layoutDocument(doc).nodes.map((node) => [node.id, node.obstacle]));
+    // The selected chain is [a, b, d, e], so b is in the lower flow row
+    // while the tied c branch remains in the upper support row.
+    expect(nodes.get("b")!.y).toBeGreaterThan(nodes.get("c")!.y);
+    expect(nodes.get("b")!.x).toBeLessThan(nodes.get("d")!.x);
+  });
+
+  it("skips cycle back-edges and places each child once", () => {
+    const doc = accountFlowDocument(["a", "b", "c", "d", "e", "f"]);
+    doc.edges = [
+      { id: "a-b", source: "a", target: "b", style: "solid", kind: "flow" },
+      // Put the back-edge first to ensure cycle handling does not depend on
+      // a later branch winning by accident.
+      { id: "b-a", source: "b", target: "a", style: "solid", kind: "flow" },
+      { id: "b-c", source: "b", target: "c", style: "solid", kind: "flow" },
+    ];
+
+    const first = layoutDocument(doc);
+    const second = layoutDocument(doc);
+    expect(second).toEqual(first);
+    const nodes = new Map(first.nodes.map((node) => [node.id, node.obstacle]));
+    expect(nodes.get("a")!.y).toBe(nodes.get("b")!.y);
+    expect(nodes.get("c")!.y).toBeGreaterThan(nodes.get("a")!.y);
+  });
+
+  it("keeps a 44-node dense DAG bounded", { timeout: 2000 }, () => {
+    const ids = Array.from({ length: 44 }, (_, index) => `node-${index}`);
+    const doc = accountFlowDocument(ids);
+    doc.edges = denseDagEdges(ids);
+
+    expect(layoutDocument(doc).nodes).toHaveLength(ids.length);
+  });
+});
+
 describe("logical group layout", () => {
   it("keeps authored group bounds after pinned-child collision repair", () => {
     const doc = logicalGroupDocument();
