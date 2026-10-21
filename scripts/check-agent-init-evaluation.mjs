@@ -5,7 +5,7 @@ import { isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { compileDiagram } from "../packages/runtime/dist/render/index.js";
-import { parseDgm } from "../packages/runtime/dist/dsl/index.js";
+import { formatParseError, parseDgmResult } from "../packages/runtime/dist/dsl/index.js";
 import { getCatalogEntry, listAssets } from "../packages/runtime/dist/catalog/index.js";
 
 const DEFAULT_ROOT = resolve(
@@ -32,12 +32,9 @@ const LEVELS = {
  * are the stable architectural identity used by this check.
  */
 export function evaluateSource(source, expected) {
-  let doc;
-  try {
-    doc = parseDgm(source);
-  } catch (error) {
-    return failure(`parse failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  const parsed = parseDgmResult(source);
+  if (parsed.isErr()) return failure(`parse failed: ${formatParseError(parsed.error)}`);
+  const doc = parsed.value;
 
   const compiled = compileDiagram(doc);
   if (!compiled.ok) {

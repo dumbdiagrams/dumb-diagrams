@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { getCatalogEntry, getCatalogMap } from "../catalog/index.js";
-import { parseDgm } from "../dsl/index.js";
+import { parseDgmResult } from "../dsl/index.js";
 import { PROVIDER_RULES } from "./provider-rules.js";
 import { validateDocument } from "./validate.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const cases = [
   { grammar: "aws", network: "aws.vpc", outside: "aws.dynamodb", inside: "aws.aws-lambda", word: "VPC" },

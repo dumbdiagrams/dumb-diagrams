@@ -9,7 +9,7 @@ import { createAsyncDocsFixture, createTransferHubFixture } from "../../test-fix
 import type { LayoutResult } from "../core/index.js";
 import { compileDiagram, compileDiagramResult, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
-import { parseDgm } from "../dsl/index.js";
+import { parseDgmResult } from "../dsl/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 import {
   anchorRouteEndpoints,
@@ -20,7 +20,10 @@ import {
   ROUTING_BUDGET_WARNING_CODE,
   ROUTING_BUDGET_WARNING_MESSAGE,
 } from "../route/index.js";
+
 import { checkInvariants } from "./invariants.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("async-docs fixture", () => {
   it("reports malformed embedded SVGs before rendering", () => {
@@ -86,6 +89,21 @@ describe("async-docs fixture", () => {
       code: "managed-service-in-network",
       id: "service",
     }));
+  });
+
+  it("returns a typed validation error for documents without a view", () => {
+    const invalid = createEmptyDocument("missing-view-result");
+    invalid.views = [];
+
+    expect(() => compileDiagramResult(invalid)).not.toThrow();
+    const result = compileDiagramResult(invalid);
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error.issues).toContainEqual({
+      level: "error",
+      code: "missing-view",
+      message: "Diagram must contain at least one view",
+    });
   });
 
   it("compiles a top-level external boundary beside a provider cloud", () => {

@@ -6,15 +6,29 @@ export interface InvariantFailure {
   elementIds: string[];
 }
 
-export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
+export const INVARIANT_DIAGNOSTICS_TRUNCATED_CODE = "invariant-diagnostics-truncated";
+
+export function checkInvariants(
+  layout: LayoutResult,
+  options?: { maxFailures?: number },
+): InvariantFailure[] {
+  const maxFailures = normalizeMaxFailures(options?.maxFailures);
   const failures: InvariantFailure[] = [];
+  let omittedFailures = 0;
+  const recordFailure = (failure: InvariantFailure): void => {
+    if (maxFailures === undefined || failures.length < maxFailures) {
+      failures.push(failure);
+    } else {
+      omittedFailures += 1;
+    }
+  };
 
   for (let i = 0; i < layout.nodes.length; i++) {
     for (let j = i + 1; j < layout.nodes.length; j++) {
       const a = layout.nodes[i]!;
       const b = layout.nodes[j]!;
       if (!rectsOverlap(a.icon, b.icon, 0)) continue;
-      failures.push({
+      recordFailure({
         code: "resource-icon-overlap",
         message: `Resources ${a.id} and ${b.id} icons overlap`,
         elementIds: [a.id, b.id],
@@ -30,7 +44,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       edge.points[0] &&
       !pointOnRectBorder(edge.points[0], source.icon)
     ) {
-      failures.push({
+      recordFailure({
         code: "edge-port-detached",
         message: `Edge ${edge.id} does not start on icon ${source.id}`,
         elementIds: [edge.id, source.id],
@@ -41,7 +55,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       edge.points.length > 0 &&
       !pointOnRectBorder(edge.points[edge.points.length - 1]!, target.icon)
     ) {
-      failures.push({
+      recordFailure({
         code: "edge-port-detached",
         message: `Edge ${edge.id} does not end on icon ${target.id}`,
         elementIds: [edge.id, target.id],
@@ -61,14 +75,14 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         if (isSource || isTarget) {
           if (!isFirst && !isLast) {
             if (segmentHitsIcon(a, b, node)) {
-              failures.push({
+              recordFailure({
                 code: "edge-icon-collision",
                 message: `Edge ${edge.id} passes through icon of ${node.id}`,
                 elementIds: [edge.id, node.id],
               });
             }
             if (segmentHitsLabel(a, b, node)) {
-              failures.push({
+              recordFailure({
                 code: "edge-label-collision",
                 message: `Edge ${edge.id} intersects label of ${node.id}`,
                 elementIds: [edge.id, node.id],
@@ -79,13 +93,13 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
         }
 
         if (segmentHitsIcon(a, b, node)) {
-          failures.push({
+          recordFailure({
             code: "edge-icon-collision",
             message: `Edge ${edge.id} passes through icon of ${node.id}`,
             elementIds: [edge.id, node.id],
           });
         } else if (segmentHitsObstacle(a, b, node.obstacle)) {
-          failures.push({
+          recordFailure({
             code: "edge-obstacle-collision",
             message: `Edge ${edge.id} intersects obstacle of ${node.id}`,
             elementIds: [edge.id, node.id],
@@ -98,7 +112,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
   for (const edge of layout.edges) {
     if (edge.labelRect) {
       if (edge.badge && circleHitsRect(edge.badge, 10, edge.labelRect)) {
-        failures.push({
+        recordFailure({
           code: "edge-badge-label-collision",
           message: `Edge ${edge.id} has an overlapping number and label`,
           elementIds: [edge.id],
@@ -109,7 +123,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
           !rectsOverlap(edge.labelRect, node.icon, 2) &&
           !rectsOverlap(edge.labelRect, node.label, 2)
         ) continue;
-        failures.push({
+        recordFailure({
           code: "edge-label-node-collision",
           message: `Label of edge ${edge.id} overlaps resource ${node.id}`,
           elementIds: [edge.id, node.id],
@@ -118,7 +132,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       for (const group of layout.groups) {
         const labelRect = group.labelRect ?? group.header;
         if (!rectsOverlap(edge.labelRect, labelRect, 2)) continue;
-        failures.push({
+        recordFailure({
           code: "edge-label-group-collision",
           message: `Label of edge ${edge.id} overlaps boundary label ${group.id}`,
           elementIds: [edge.id, group.id],
@@ -131,7 +145,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
           !circleHitsRect(edge.badge, 10, node.icon) &&
           !circleHitsRect(edge.badge, 10, node.label)
         ) continue;
-        failures.push({
+        recordFailure({
           code: "edge-badge-node-collision",
           message: `Number of edge ${edge.id} overlaps resource ${node.id}`,
           elementIds: [edge.id, node.id],
@@ -140,7 +154,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       for (const group of layout.groups) {
         const labelRect = group.labelRect ?? group.header;
         if (!circleHitsRect(edge.badge, 10, labelRect)) continue;
-        failures.push({
+        recordFailure({
           code: "edge-badge-group-collision",
           message: `Number of edge ${edge.id} overlaps boundary label ${group.id}`,
           elementIds: [edge.id, group.id],
@@ -148,7 +162,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       }
       for (const other of layout.edges) {
         if (other.id === edge.id || !circleHitsPath(edge.badge, 12, other.points)) continue;
-        failures.push({
+        recordFailure({
           code: "edge-badge-connector-collision",
           message: `Number of edge ${edge.id} overlaps connector ${other.id}`,
           elementIds: [edge.id, other.id],
@@ -162,49 +176,49 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
       const a = layout.edges[i]!;
       const b = layout.edges[j]!;
       if (a.labelRect && b.labelRect && rectsOverlap(a.labelRect, b.labelRect, 4)) {
-        failures.push({
+        recordFailure({
           code: "edge-label-overlap",
           message: `Labels of edges ${a.id} and ${b.id} overlap`,
           elementIds: [a.id, b.id],
         });
       }
       if (a.badge && b.badge && Math.hypot(a.badge.x - b.badge.x, a.badge.y - b.badge.y) < 24) {
-        failures.push({
+        recordFailure({
           code: "edge-badge-overlap",
           message: `Numbers of edges ${a.id} and ${b.id} overlap`,
           elementIds: [a.id, b.id],
         });
       }
       if (a.badge && b.labelRect && circleHitsRect(a.badge, 10, b.labelRect)) {
-        failures.push({
+        recordFailure({
           code: "edge-badge-label-collision",
           message: `Number of edge ${a.id} overlaps label of edge ${b.id}`,
           elementIds: [a.id, b.id],
         });
       }
       if (b.badge && a.labelRect && circleHitsRect(b.badge, 10, a.labelRect)) {
-        failures.push({
+        recordFailure({
           code: "edge-badge-label-collision",
           message: `Number of edge ${b.id} overlaps label of edge ${a.id}`,
           elementIds: [b.id, a.id],
         });
       }
       if (pathsReverseOverlap(a.points, b.points)) {
-        failures.push({
+        recordFailure({
           code: "edge-reverse-overlap",
           message: `Edges ${a.id} and ${b.id} share a corridor in opposite directions`,
           elementIds: [a.id, b.id],
         });
       }
       if (pathsShareExclusiveCorridor(a, b)) {
-        failures.push({
+        recordFailure({
           code: "edge-corridor-overlap",
           message: `Edges ${a.id} and ${b.id} share a corridor outside a fan-out stem`,
           elementIds: [a.id, b.id],
         });
       }
       if (pathsCross(a.points, b.points)) {
-        failures.push({
+        recordFailure({
           code: "edge-crossing",
           message: `Edges ${a.id} and ${b.id} cross`,
           elementIds: [a.id, b.id],
@@ -218,7 +232,7 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
     const widths = azGroups.map((g) => g.bounds.w);
     const heights = azGroups.map((g) => g.bounds.h);
     if (new Set(widths).size > 1 || new Set(heights).size > 1) {
-      failures.push({
+      recordFailure({
         code: "az-asymmetry",
         message: "Availability zones do not have equal dimensions",
         elementIds: azGroups.map((group) => group.id),
@@ -226,7 +240,20 @@ export function checkInvariants(layout: LayoutResult): InvariantFailure[] {
     }
   }
 
+  if (omittedFailures > 0) {
+    failures.push({
+      code: INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
+      message: `Invariant diagnostics truncated: ${omittedFailures} additional failure${omittedFailures === 1 ? "" : "s"} omitted`,
+      elementIds: [],
+    });
+  }
+
   return failures;
+}
+
+function normalizeMaxFailures(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value) || value < 0) return undefined;
+  return Math.floor(value);
 }
 
 function rectsOverlap(

@@ -73,4 +73,18 @@ describe("init options", () => {
     expect((await ask(Promise.resolve("x".repeat(121))))._unsafeUnwrapErr().message).toMatch(/120 characters/);
     expect((await ask(Promise.reject(new Error("prompt closed"))))._unsafeUnwrapErr().message).toBe("prompt closed");
   });
+
+  it("returns a typed error when the prompt throws synchronously", async () => {
+    const result = await resolveInitOptions(args(), {
+      interactive: true,
+      askProjectName: () => { throw new Error("prompt unavailable"); },
+    });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error).toMatchObject({
+      code: "invalid-arguments",
+      message: "prompt unavailable",
+    });
+  });
 });

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import manifest from "../catalog/generated/manifest.json" with { type: "json" };
 import { layoutDocument } from "../layout/index.js";
-import { parseDgm } from "../dsl/index.js";
+import { parseDgmResult } from "../dsl/index.js";
 import { resolveProviderGroupColors } from "./provider-group-colors.js";
 import { renderSvg } from "./svg.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 function groupStroke(svg: string): string {
   return svg.match(/class="group-border"[^>]*stroke="([^"]+)"/)?.[1] ?? "";

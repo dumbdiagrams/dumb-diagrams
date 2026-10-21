@@ -1,186 +1,91 @@
 # Dumb Diagrams style guide
 
 This is the shared visual contract for the website, documentation, and Studio.
-The product should feel precise, approachable, and calm: navy gives it structure,
-orange draws attention, and generous space makes the content easy to read.
+The product should feel precise, approachable, and calm: navy gives it structure, orange draws attention, and generous space keeps content readable.
 
-## The official wordmark
+## Brand identity
 
-The logo reads **dumbdiagrams.**: lowercase, no space, with an orange full stop.
-“dumb” is heavy and “diagrams” is lighter. In prose, page titles, and accessible
-names, write **Dumb Diagrams**. The editor is **Dumb Diagrams Studio**, or Studio
-when the context is clear. Package names and CLI commands stay unchanged.
+The official wordmark is **dumbdiagrams.**: lowercase, no space, with an orange full stop. In prose, page titles, and accessible names, write **Dumb Diagrams**. The editor is **Dumb Diagrams Studio**, or Studio when the context is clear. Package names and CLI commands stay unchanged.
 
-Use the supplied illustrated logo beside the wordmark where space allows. The
-transparent high-resolution source is kept at
-`packages/brand/assets/logo-dumb-diagrams-source.png`;
-the smaller PNGs in the Studio and website public directories are derivatives
-of that source. Do not stretch the derivatives, recolor provider icons to match
-them, or substitute an icon from a UI library. Leave at least half the
-wordmark's height clear around the lockup.
+Use the supplied illustrated logo beside the wordmark where space allows. The transparent source is `packages/brand/assets/logo-dumb-diagrams-source.png`; public-directory PNGs are derivatives. Do not stretch derivatives, recolor provider icons, or replace them with UI-library icons. Leave half the wordmark's height clear around the lockup; decorative logo images use an empty `alt`.
 
-The implementation lives in `packages/brand/styles.css`, consumed by both apps
-through `@dumb-diagrams/brand/styles.css`. Do not recreate the weights or tracking
-in app styles. Set `--wordmark-size` on the surrounding element to change scale.
-The website header uses 23px (21px on small screens); Studio uses 20px.
-
-```html
-<span class="dd-wordmark" role="img" aria-label="Dumb Diagrams">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span>
-```
-
-Keep the text nodes adjacent when rendering this markup: literal spaces or
-newlines between them change the wordmark. If its parent already has an
-accessible name, use `aria-hidden="true"` on the visual wordmark instead.
+The reusable wordmark and identity tokens live in `packages/brand/styles.css`, consumed as `@dumb-diagrams/brand/styles.css`. Set `--wordmark-size` to scale it; keep font, weights, tracking, and dot color in the brand package. If a parent already has an accessible name, hide the visual wordmark from assistive technology.
 
 ## Typography
 
 | Use | Typeface | Treatment |
 | --- | --- | --- |
-| Official wordmark | Manrope Variable | 800 for `dumb`; 450 for `diagrams`; tracking −0.065em; line height 1.15 |
-| Website and Studio interface | Manrope Variable | `--font-brand`; usually 400–750, with 500–550 for large website headings |
-| Code, terminal, compact technical labels | IBM Plex Mono | `--font-code`; regular 400; keep technical text selectable |
-| Website editorial emphasis | Georgia, system serif | Italic, limited to the manifesto and closing line; never the wordmark or app controls |
-| Diagram labels and annotations | Existing runtime/diagram font stack | Inter, Noto Sans, system sans-serif; deliberately separate from interface typography |
+| Official wordmark | Manrope Variable | `dumb` 800, `diagrams` 450, tracking `-.065em`, line height 1.15 |
+| Website and Studio interface | Manrope Variable | `--font-brand`; usually 400–750 |
+| Code and compact technical labels | IBM Plex Mono | `--font-code`, regular 400 |
+| Website editorial emphasis | Georgia, system serif | Italic and limited to editorial emphasis |
+| Diagram labels and annotations | Runtime diagram stack | Inter, Noto Sans, system sans-serif as available |
 
-Manrope and IBM Plex Mono are self-hosted by the brand package through Fontsource.
-There are no Google Fonts requests. Font licenses are in
-`packages/brand/FONT-LICENSES.txt` and copied into both built apps. The runtime's
-diagram font stack is not a promise that Inter is bundled: exported SVGs retain
-their existing fallback behavior. Changing diagram typography also affects text
-measurement and geometry, so treat that as a renderer change with its own tests.
+Manrope and IBM Plex Mono are self-hosted through Fontsource; there are no Google Fonts requests. Licenses live in `packages/brand/FONT-LICENSES.txt` and are copied into both built apps.
 
-Website body text is 15px, documentation prose 14px with generous line height,
-and Studio uses compact control-specific sizes. Use readable sentence case.
-Uppercase monospace belongs in short labels, not paragraphs. Don't turn long
-instructions into faint, tiny captions.
+Keep interface typography and diagram typography separate. The runtime stack is not a promise that Inter is bundled: exported SVGs retain existing fallback behavior. Changing diagram typography changes measurement and geometry, so treat it as a renderer change with its own tests. Use readable sentence case; uppercase monospace belongs in short labels, not paragraphs.
 
-## Color
+## Color and themes
 
-The supplied logo is the source of the four core palette values. Shared values
-belong in the brand package; app styles should alias them into semantic roles.
-Soft and deep supporting values are derived from those core colors in CSS.
+Shared identity values belong in the brand package. App styles alias them into
+semantic roles; supporting tints may be derived from these core values.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--brand-navy` | `#163964` | Primary navy for identity, headings, actions, and diagram UI ink |
-| `--brand-navy-deep` | `#112d51` | Navy shadow for prompt panels, dark editorial sections, and action hover |
-| `--brand-navy-soft` | Derived from `#163964` | Quiet selected states and supporting surfaces |
-| `--brand-coral` | `#f0531e` | Dark orange for the wordmark dot, emphasis, and indicators |
-| `--brand-coral-deep` | Derived from `#f0531e` and `#112d51` | Studio danger role; use its semantic token |
-| `--brand-coral-soft` | Derived from `#f0531e` | Supporting warm tint |
-| `--brand-orange` | `#f7982c` | Light orange accent for secondary emphasis and highlights |
-| `--brand-orange-deep` | Derived from `#f7982c` and `#112d51` | Supporting darker light-orange accent |
-| `--brand-orange-soft` | Derived from `#f7982c` | Supporting amber tint |
+| `--brand-navy` | `#163964` | Identity, headings, actions, and diagram UI ink |
+| `--brand-navy-deep` | `#112d51` | Dark panels, shadows, and action hover |
+| `--brand-coral` | `#f0531e` | Wordmark dot, emphasis, and indicators |
+| `--brand-orange` | `#f7982c` | Secondary emphasis and highlights |
 | `--brand-paper` | `#f7f6f2` | Website canvas |
 
-The website uses a separate muted value for secondary text and rules. For small
-orange links on paper, use a sufficiently dark semantic orange for readable
-contrast rather than the bright logo orange. Orange should punctuate a
-predominantly navy-and-paper composition, not fill every heading or large
-section. Provider colors remain part of the diagrams; they are not interface
-colors.
+Use derived `*-soft` and `*-deep` values from `styles.css`. For small orange links on paper, use a dark enough semantic orange for readable contrast. Orange punctuates a navy-and-paper composition; provider colors remain part of diagrams, not interface colors.
 
-Studio retains its existing warm light surfaces and dark navy surfaces. Its
-semantic tokens (`--ink`, `--surface`, `--action-fill`, `--focus`, and others)
-live in `packages/editor/src/styles.css`. The wordmark automatically becomes
-light under `data-theme="dark"`, retaining its orange dot. Test both themes:
-never force a navy wordmark onto a dark panel.
+Studio keeps warm light and dark navy surfaces. Its semantic tokens live in `packages/editor/src/styles.css`. The wordmark becomes light under `data-theme="dark"` while retaining its orange dot. Check both themes and never force a navy wordmark onto a dark panel.
 
-## What components do we actually use?
+## Components and reuse
 
-There is **no shadcn/ui, Radix, Tailwind, or general component library** in either
-surface. Sharing a brand does not mean shipping React to a static documentation
-page.
+There is no shared React component library, shadcn/ui, Radix, or Tailwind layer. The brand package is CSS-only; sharing identity does not ship React to the static documentation site.
 
-| Surface | Implementation | Reuse before adding |
-| --- | --- | --- |
-| Studio | React 19, Vite, authored CSS | `src/ui/Modal.tsx`, `TopMenu.tsx`, `FloatingPanel.tsx`, `ToolDock.tsx`, `ThemeControl.tsx`, `ErrorBoundary.tsx` |
-| Studio icons | Custom SVG React components | `packages/editor/src/ui/icons.tsx` (18px grid, typically 1.6px stroke) |
-| Source editor | CodeMirror 6 through `@uiw/react-codemirror` | Existing editor extensions, theme, and transaction behavior |
-| Website | Static Astro, authored layered CSS | `Header.astro`, `Footer.astro`, `Install.astro`, `Terminal.astro`, `Search.astro`, and `Base.astro` |
-| Documentation | Astro content collections and Markdown | Shared docs layout, navigation, table of contents, code-copy control, Pagefind search |
-| Brand | CSS-only workspace package | Shared font files, colors, wordmark classes and license notices |
+- Studio uses React, Vite, and authored CSS. Reuse panels, menus, docks, theme
+  control, modal, error boundary, and custom SVG icons in `packages/editor/src/ui/`.
+- The website uses static Astro and layered CSS. Reuse its shared header, footer,
+  install, terminal, search, and base layout components.
+- Documentation uses Astro content collections and Markdown with the shared docs
+  layout, navigation, contents, code-copy control, and Pagefind.
 
-Studio's compact floating panels, pills, and rounded controls serve editing.
-The website uses sharper edges, fine rules, large type, and more space for
-reading. Keep those differences intentional. Don't transplant marketing-sized
-buttons into Studio or introduce a second modal implementation for one feature.
+Studio's compact floating panels, pills, and rounded controls serve editing. The
+website uses sharper edges, fine rules, larger type, and more space for reading.
+Keep those differences intentional; reuse existing radius and shadow tokens.
 
-## Layout and interaction
+## Layout, interaction, and motion
 
-Use an underlying 4px spacing rhythm, with optical adjustments for typography.
-The website has a 1440px maximum shell and responsive gutters (64, 36, 24, 20px).
-The desktop hero puts the headline and install command beside the terminal, with
-the agent requirement underneath. Keep the complete composition visible at
-1280 × 720 and 1440 × 900. Its terminal height adapts to the viewport; only the
-transcript scrolls. Below 900px, stack the terminal underneath. On phones, allow
-normal page scrolling instead of shrinking the text to force a single screen.
-Docs use a navigation/article/contents layout that collapses on small screens.
-Studio is a desktop editing surface; do not imply a mobile editor experience.
+Use an underlying 4px spacing rhythm with optical adjustments for typography. Website content has generous responsive gutters. Documentation uses a navigation/article/contents layout that collapses on small screens. Studio is a desktop editing surface; do not imply a mobile editor experience.
 
-Prefer a border or a quiet surface change to a heavy shadow. Use Studio's existing
-radius and shadow tokens rather than introducing new values for each control.
-Keep visible keyboard focus, explicit button names, and native semantics.
-Interactive tabs need keyboard navigation; dialogs need focus management and an
-Escape path. Don't communicate errors or selection through color alone.
+Prefer a border or quiet surface change to a heavy shadow. Keep visible keyboard focus, explicit button names, and native semantics. Interactive tabs need keyboard navigation; dialogs need focus management and an Escape path. Never communicate errors or selection through color alone.
 
-## Motion
-
-The website uses the native Web Animations API for section entrances, with no
-animation-library download. The terminal replays a real CLI project-creation run captured
-at build time in a temporary directory. The capture uses 80 columns and truecolor,
-and converts the CLI's ANSI styling into escaped HTML. Preserve its orange-to-navy
-gradient and full stacked banner; scale the characters on narrow screens rather
-than switching logos. Only the example local path and playback timing change.
-No commands run in a visitor's browser, and creation does not generate an architecture.
-
-The terminal types the command, then reveals the banner, project details, created
-files, and next command in order. It runs once for about six seconds with
-pause/resume and replay. Output scrolls inside the terminal, never the page;
-scrolling or touching the terminal pauses playback so the reader stays in control.
-It also pauses while the page is hidden. Section entrances run once, move at most
-8px, and last 700ms. Keep the hero visible immediately without entrance animation. Use the shared
-`cubic-bezier(.22, 1, .36, 1)` easing. Small hover color changes use 180ms transitions.
-
-The website's `src/styles/motion.css` defines the motion tokens and `trace-border`
-treatment: one 1px orange/amber/navy accent along an existing border over 2200ms.
-Animate only its opacity, not background position, to avoid continuous repaints.
-Use it on the install panel and primary header/closing actions. `data-trace`
-adds one entrance accent; hover or keyboard focus can replay it. The border is
-decorative and cannot intercept clicks. Keep arrows stationary; avoid translating
-buttons, rotating glows, or continuously animated frames. Reduced motion removes
-the sweep completely and preserves the ordinary border and keyboard focus ring.
+Website motion uses the native Web Animations API and shared tokens in
+`packages/website/src/styles/motion.css`; do not add an animation-library
+dependency for a visual effect. The `trace-border` treatment is decorative,
+animates opacity along an existing border, and must not intercept clicks. Avoid
+looping typewriters, parallax, scroll hijacking, rotating glows, and continuous
+animation.
 
 Respect `prefers-reduced-motion`, including changes while the page is open.
-Show the complete terminal when motion is reduced or JavaScript is unavailable.
-Keep content visible before JavaScript; don't make animation a prerequisite for
-reading. Avoid looping typewriters, parallax, scroll hijacking, and decorative
-motion inside the diagram editor.
+Reduced motion removes decorative sweeps and preserves ordinary borders and focus
+rings. Keep content visible before JavaScript and when motion is reduced or
+JavaScript is unavailable; motion must not be required for reading.
 
-## Example windows
+## Writing and ownership
 
-The section labeled “01 / FROM SOURCE TO DIAGRAM” shows Image thumbnail
-pipeline, AWS Data Transfer Hub, and Claims processing with Amazon Bedrock, in
-that order. Import the same prompt/source pairs as
-Studio; do not simplify them or invent a substitute. Keep the original renderer
-output and any routing notes.
+Start with what someone is trying to do, then show a small working example. Use
+“you” and plain verbs; state limitations beside the feature they affect. Organize
+public docs by the reader's task: start, make diagrams, understand implementation.
 
-Prompt panels use deep navy. Generated-source panels and the CLI use a black
-`#0c0c0c` terminal surface, dark title bar, and decorative macOS traffic lights.
-Prompt/source tabs are independent of example tabs and support arrow keys.
-Diagrams start at 100% with zoom, fit, scrolling, and full-size SVG controls.
+Keep developer commands and conventions in `CONTRIBUTING.md`, architectural
+decisions in `docs/ARCHITECTURE.md`, release and infrastructure guidance in
+`docs/RELEASE.md`, and focused runtime references with the owning package. Public
+website explanations belong in `packages/website/src/content/docs/`.
 
-## Writing and maintaining docs
-
-Start with what someone is trying to do, then show a small working example.
-Use “you” and plain verbs. State limitations beside the feature they affect.
-Organize public docs by the reader's task: start, make diagrams, understand the
-implementation. Keep the technical contracts in `docs/ARCHITECTURE.md` and
-the focused runtime references; keep the public explanation in
-`packages/website/src/content/docs/`.
-
-When changing shared styles, run `pnpm check:website`, `pnpm typecheck`, and the
-relevant Studio browser tests. Check the header in both Studio themes, the site
-on desktop and a narrow viewport, keyboard focus, and reduced-motion behavior.
-Font or workspace dependency changes also need `pnpm build` and
-`pnpm smoke:package`, because Studio and corresponding source ship in the CLI.
+When changing shared styles, run relevant website, typecheck, and Studio checks.
+Font or workspace dependency changes also require the full build and package
+smoke check because Studio and its source ship in the CLI.

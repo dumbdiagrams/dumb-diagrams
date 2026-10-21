@@ -15,12 +15,13 @@ const ALLOWED_GROWTH = 1.25;
 const STRESS_MAX_ELAPSED_MS = 30_000;
 const COMPILATION_LIMITS_TIMEOUT_MS = 10_000;
 
-const [{ createEmptyDocument, validateDocument }, { parseDgm }, { layoutDocument }, { routeEdges, routeConnectionPreview }, { getCatalogMap }] = await Promise.all([
+const [{ createEmptyDocument, validateDocument }, { formatParseError, parseDgmResult }, { layoutDocument }, { routeEdges, routeConnectionPreview, attachRoutes }, { getCatalogMap }, { checkInvariants, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE }] = await Promise.all([
   import("../packages/runtime/dist/core/index.js"),
   import("../packages/runtime/dist/dsl/index.js"),
   import("../packages/runtime/dist/layout/index.js"),
   import("../packages/runtime/dist/route/index.js"),
   import("../packages/runtime/dist/catalog/index.js"),
+  import("../packages/runtime/dist/render/index.js"),
 ]);
 
 function checkCompilationLimits() {
@@ -31,12 +32,20 @@ function checkCompilationLimits() {
     } }
     ${ids.flatMap((id, index) => ids.slice(index + 1).map((target) => `${id} -> ${target}`)).join("\n")}
   }`;
-  const dense = parseDgm(source);
+  const denseResult = parseDgmResult(source);
+  assert.equal(denseResult.isOk(), true, denseResult.isErr() ? formatParseError(denseResult.error) : "");
+  if (denseResult.isErr()) return;
+  const dense = denseResult.value;
   assert.deepEqual(validateDocument(dense, getCatalogMap()).filter((issue) => issue.level === "error"), []);
   const layout = layoutDocument(dense);
   assert.equal(layout.nodes.length, 44);
   assert.equal(new Set(layout.nodes.map((node) => node.id)).size, 44);
   assert.deepEqual(layoutDocument(dense), layout);
+  const denseRouted = attachRoutes(layout, routeEdges(dense, layout));
+  const findings = checkInvariants(denseRouted, { maxFailures: 200 });
+  assert.equal(findings.length, 201);
+  assert.equal(findings.at(-1).code, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE);
+  assert.ok(JSON.stringify(findings).length < 100_000, "Dense layout diagnostics must remain bounded");
 
   // Intercept allocation before it happens: reverting the memory guard must
   // fail safely rather than allocating the audited 15.6 GB grid on CI.
@@ -52,11 +61,14 @@ function checkCompilationLimits() {
     }
   };
   try {
-    const far = parseDgm(`diagram far { grammar cloud-agnostic
+    const farResult = parseDgmResult(`diagram far { grammar cloud-agnostic
       cloud-agnostic.actor a cloud-agnostic.actor b
     } view default {
       place a { x 0 y 0 pin } place b { x 1000000 y 1000000 pin }
     }`);
+    assert.equal(farResult.isOk(), true, farResult.isErr() ? formatParseError(farResult.error) : "");
+    if (farResult.isErr()) return;
+    const far = farResult.value;
     assert.deepEqual(validateDocument(far, getCatalogMap()), []);
     const farLayout = layoutDocument(far);
     let diagnostics;
@@ -75,7 +87,7 @@ function checkCompilationLimits() {
   } finally {
     globalThis.Uint8Array = NativeArray;
   }
-  console.log("Compilation limits: dense 44-resource / 946-edge layout and million-coordinate routing verified");
+  console.log("Compilation limits: dense layout, bounded diagnostics, and million-coordinate routing verified");
 }
 
 if (process.argv.includes("--limits-probe")) {
@@ -107,7 +119,12 @@ try {
 
 for (const path of performanceDiagrams()) {
   const key = relative(root, path);
-  const doc = parseDgm(readFileSync(path, "utf8"));
+  const parsed = parseDgmResult(readFileSync(path, "utf8"));
+  if (parsed.isErr()) {
+    failures.push(`${key}: parse failed: ${formatParseError(parsed.error)}`);
+    continue;
+  }
+  const doc = parsed.value;
   const { routes, diagnostics } = routingWork(doc);
   measured[key] = Object.fromEntries(COUNTERS.map((counter) => [counter, diagnostics[counter]]));
   if (routes.length !== doc.edges.length) failures.push(`${key}: route count mismatch`);

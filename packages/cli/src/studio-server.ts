@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
+import { err, errAsync, ok, Result, ResultAsync } from "neverthrow";
 
 const STUDIO_HOST = "127.0.0.1";
 
@@ -15,45 +16,86 @@ export interface StudioServerHandle {
   url: string;
 }
 
+export type StudioServerError =
+  | { code: "missing-assets"; message: string; editorRoot: string }
+  | { code: "start-failed"; message: string; cause: unknown };
+
 /**
  * Start the local Studio bridge. The bridge only serves the static editor
  * bundle; files are opened and saved directly by the browser.
  */
 export const DEFAULT_STUDIO_PORT = 4788;
 
-export async function startStudioServer(
+export function startStudioServer(
   options: StudioServerOptions = {},
-): Promise<StudioServerHandle> {
-  const configuredEditorRoot = resolveStudioEditorRoot(options.editorRoot);
-  if (!existsSync(join(configuredEditorRoot, "index.html"))) {
-    throw new Error(
-      `Studio assets are missing at ${configuredEditorRoot}. Build the editor first with ` +
-      "pnpm --filter @dumb-diagrams/editor build.",
-    );
-  }
-  // Resolve the bundle root once so a symlinked editor directory is supported
-  // while every request is checked against the directory actually served.
-  const editorRoot = realpathSync(configuredEditorRoot);
+): ResultAsync<StudioServerHandle, StudioServerError> {
+  const configuredRoot = Result.fromThrowable(
+    () => {
+      const editorRoot = resolveStudioEditorRoot(options.editorRoot);
+      return { editorRoot, hasAssets: existsSync(join(editorRoot, "index.html")) };
+    },
+    (cause): StudioServerError => startupError(cause),
+  )()
+    .andThen(({ editorRoot, hasAssets }) => hasAssets
+      ? ok(editorRoot)
+      : err<never, StudioServerError>({
+        code: "missing-assets",
+        message: `Studio assets are missing at ${editorRoot}. Build the editor first with pnpm --filter @dumb-diagrams/editor build.`,
+        editorRoot,
+      }))
+    .andThen((configuredEditorRoot) => Result.fromThrowable(
+      () => {
+        // Resolve the bundle root once so a symlinked editor directory is supported
+        // while every request is checked against the directory actually served.
+        const editorRoot = realpathSync(configuredEditorRoot);
+        const server = createServer((request, response) => {
+          applySecurityHeaders(response);
+          serveEditorAsset(editorRoot, request, response);
+        });
+        return { server };
+      },
+      (cause): StudioServerError => startupError(cause),
+    )());
 
-  const server = createServer((request, response) => {
-    applySecurityHeaders(response);
-    serveEditorAsset(editorRoot, request, response);
+  return configuredRoot.asyncAndThen(({ server }) => {
+    const listenResult = (port: number) => ResultAsync.fromPromise(
+      listen(server, port),
+      (cause): StudioServerError => startupError(cause),
+    );
+    const address = options.port === undefined
+      ? listenResult(DEFAULT_STUDIO_PORT).orElse((error) => isAddressInUse(error)
+        ? listenResult(0)
+        : errAsync(error))
+      : listenResult(options.port);
+    return address.map((boundAddress) => {
+      const resolvedPort = typeof boundAddress === "object" && boundAddress
+        ? boundAddress.port
+        : options.port ?? DEFAULT_STUDIO_PORT;
+      return { server, url: `http://${STUDIO_HOST}:${resolvedPort}/` };
+    });
   });
-  const address = await listen(server, options.port ?? DEFAULT_STUDIO_PORT).catch((error: NodeJS.ErrnoException) => {
-    if (options.port === undefined && error.code === "EADDRINUSE") return listen(server, 0);
-    throw error;
-  });
-  const resolvedPort = typeof address === "object" && address ? address.port : options.port ?? DEFAULT_STUDIO_PORT;
+}
+
+function startupError(cause: unknown): StudioServerError {
   return {
-    server,
-    url: `http://${STUDIO_HOST}:${resolvedPort}/`,
+    code: "start-failed",
+    message: cause instanceof Error ? cause.message : String(cause),
+    cause,
   };
 }
 
+function isAddressInUse(error: StudioServerError): boolean {
+  return error.code === "start-failed"
+    && typeof error.cause === "object"
+    && error.cause !== null
+    && "code" in error.cause
+    && error.cause.code === "EADDRINUSE";
+}
+
 export function resolveStudioEditorRoot(explicitRoot?: string): string {
+  if (explicitRoot) return explicitRoot;
   const moduleRoot = resolve(fileURLToPath(new URL(".", import.meta.url)));
   const candidates = [
-    explicitRoot,
     resolve(moduleRoot, "studio"),
     resolve(moduleRoot, "../../editor/dist"),
   ].filter((candidate): candidate is string => Boolean(candidate));

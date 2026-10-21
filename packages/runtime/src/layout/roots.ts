@@ -60,7 +60,12 @@ function compareByFlowAxis(
       : placeA.x - placeB.x;
     if (secondary !== 0) return secondary;
   }
-  return a.localeCompare(b);
+  return compareStableIds(a, b);
+}
+
+/** Compare identifiers lexically so ordering does not depend on the host locale. */
+function compareStableIds(a: ID, b: ID): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 /**

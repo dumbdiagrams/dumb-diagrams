@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, unlinkSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createServer } from "node:net";
+import { createServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -14,18 +14,67 @@ afterEach(async () => {
 });
 
 describe("local Studio server", () => {
+  it("returns a typed error when Studio assets are missing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
+    const editorRoot = join(root, "editor");
+
+    const result = await startStudioServer({ editorRoot, port: 0 });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error).toMatchObject({ code: "missing-assets", editorRoot });
+  });
+
+  it("returns a typed error when an explicit port is occupied", async () => {
+    const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
+    const editorRoot = join(root, "editor");
+    mkdirSync(editorRoot);
+    writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
+
+    const blocker = createServer();
+    await new Promise<void>((resolve, reject) => {
+      blocker.once("error", reject);
+      blocker.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = blocker.address();
+    const port = typeof address === "object" && address ? (address as AddressInfo).port : 0;
+    expect(port).toBeGreaterThan(0);
+
+    try {
+      const result = await startStudioServer({ editorRoot, port });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isOk()) {
+        await closeServer(result.value);
+        return;
+      }
+      expect(result.error).toMatchObject({ code: "start-failed" });
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        blocker.close((error) => error ? reject(error) : resolve());
+      });
+    }
+  });
+
   it("falls back to a free port when the default port is taken", async () => {
     const blocker = createServer();
-    await new Promise<void>((resolve) => {
-      blocker.once("error", () => resolve());
-      blocker.listen(DEFAULT_STUDIO_PORT, "127.0.0.1", () => resolve());
+    let blockerListening = false;
+    await new Promise<void>((resolve, reject) => {
+      blocker.once("error", (error) => {
+        if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") resolve();
+        else reject(error);
+      });
+      blocker.listen(DEFAULT_STUDIO_PORT, "127.0.0.1", () => {
+        blockerListening = true;
+        resolve();
+      });
     });
     try {
-      const { handle } = await createTestServer(undefined);
+      const { handle } = await createTestServer({});
       expect(new URL(handle.url).port).not.toBe(String(DEFAULT_STUDIO_PORT));
       expect((await fetch(handle.url)).status).toBe(200);
     } finally {
-      blocker.close();
+      if (blockerListening) await closeNetServer(blocker);
     }
   });
 
@@ -90,14 +139,18 @@ describe("local Studio server", () => {
 
 });
 
-async function createTestServer(port: number | undefined = 0): Promise<{ handle: StudioServerHandle; editorRoot: string; outsideRoot: string }> {
+async function createTestServer(
+  options: { port?: number } = { port: 0 },
+): Promise<{ handle: StudioServerHandle; editorRoot: string; outsideRoot: string }> {
   const root = mkdtempSync(join(tmpdir(), "dumb-diagrams-studio-"));
   const editorRoot = join(root, "editor");
   const outsideRoot = join(root, "outside");
   mkdirSync(editorRoot);
   mkdirSync(outsideRoot);
   writeFileSync(join(editorRoot, "index.html"), "<!doctype html><title>Studio test</title>", "utf8");
-  const handle = await startStudioServer({ editorRoot, port });
+  const result = await startStudioServer({ editorRoot, ...options });
+  if (result.isErr()) throw new Error(result.error.message);
+  const handle = result.value;
   handles.push(handle);
   return { handle, editorRoot, outsideRoot };
 }
@@ -105,5 +158,11 @@ async function createTestServer(port: number | undefined = 0): Promise<{ handle:
 function closeServer(handle: StudioServerHandle): Promise<void> {
   return new Promise((resolve, reject) => {
     handle.server.close((error) => error ? reject(error) : resolve());
+  });
+}
+
+function closeNetServer(server: ReturnType<typeof createServer>): Promise<void> {
+  return new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
   });
 }

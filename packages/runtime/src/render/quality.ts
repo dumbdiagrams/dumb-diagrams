@@ -191,7 +191,7 @@ export function topQualityFinding(findings: QualityFinding[]): QualityFinding | 
     const weightDelta =
       (INVARIANT_WEIGHTS[b.code] ?? 0) - (INVARIANT_WEIGHTS[a.code] ?? 0);
     if (weightDelta !== 0) return weightDelta;
-    return a.key.localeCompare(b.key);
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
   });
   return ranked[0];
 }

@@ -2,6 +2,7 @@ packages:
   - "packages/*"
 
 nodeLinker: isolated
+enableGlobalVirtualStore: false
 linkWorkspacePackages: true
 preferWorkspacePackages: true
 autoInstallPeers: false

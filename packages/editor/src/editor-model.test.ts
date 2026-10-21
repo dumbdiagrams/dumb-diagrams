@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
@@ -55,6 +55,8 @@ import { addGroupResult, addResourceResult, canPlaceCatalogEntry } from "./model
 import { importSvgAssetResult } from "./model/asset-import.js";
 import { pasteClipboardResult, serializeClipboardResult } from "./model/clipboard.js";
 import { canGroupSelection, groupSelection, reparentPreservingAbsolutePosition, ungroup } from "./model/grouping.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("editor commands", () => {
   it("keeps selection helpers and missing-target edits predictable", () => {

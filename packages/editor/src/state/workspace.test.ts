@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { okAsync, ResultAsync } from "neverthrow";
 
 import {
   closeWorkspaceTabs,
@@ -45,7 +46,7 @@ function createPersistencePlatform(overrides: Partial<WorkspacePersistencePlatfo
   return {
     journal: journal.storage,
     fallback: fallback.storage,
-    indexedDb: { read: async () => undefined, write: async () => undefined },
+    indexedDb: { read: () => okAsync(undefined), write: () => okAsync(undefined) },
     ...overrides,
   };
 }
@@ -67,8 +68,8 @@ describe("workspace state", () => {
         removeItem: journal.storage.removeItem,
       },
       indexedDb: {
-        read: async (key) => { calls.push(`indexeddb.read:${key}`); return undefined; },
-        write: async () => undefined,
+        read: (key) => { calls.push(`indexeddb.read:${key}`); return okAsync(undefined); },
+        write: () => okAsync(undefined),
       },
       fallback: {
         getItem: (key) => { calls.push(`fallback.read:${key}`); return fallback.storage.getItem(key); },
@@ -91,7 +92,7 @@ describe("workspace state", () => {
     const workspace = sampleWorkspace();
     const platform = createPersistencePlatform({
       journal: createStorage({ "dumb-diagrams:workspace-pending": "{broken" }).storage,
-      indexedDb: { read: async () => workspace, write: async () => undefined },
+      indexedDb: { read: () => okAsync(workspace), write: () => okAsync(undefined) },
     });
 
     const result = await loadPersistedWorkspace(platform);
@@ -107,7 +108,7 @@ describe("workspace state", () => {
     const platform = createPersistencePlatform({
       indexedDb: {
         read: () => { throw new Error("transaction aborted"); },
-        write: async () => undefined,
+        write: () => okAsync(undefined),
       },
       fallback: createStorage({ "dumb-diagrams:workspace": serializeWorkspace(workspace) }).storage,
     });
@@ -144,7 +145,7 @@ describe("workspace state", () => {
       recentlyClosed: [],
     };
     const result = await loadPersistedWorkspace(createPersistencePlatform({
-      indexedDb: { read: async () => workspace, write: async () => undefined },
+      indexedDb: { read: () => okAsync(workspace), write: () => okAsync(undefined) },
     }));
 
     expect(result.isOk()).toBe(true);
@@ -173,7 +174,7 @@ describe("workspace state", () => {
   it("returns an error when every storage source is corrupt", async () => {
     const platform = createPersistencePlatform({
       journal: createStorage({ "dumb-diagrams:workspace-pending": "{broken" }).storage,
-      indexedDb: { read: async () => ({ broken: true }), write: async () => undefined },
+      indexedDb: { read: () => okAsync({ broken: true }), write: () => okAsync(undefined) },
       fallback: createStorage({ "dumb-diagrams:workspace": "{broken" }).storage,
     });
 
@@ -203,11 +204,11 @@ describe("workspace state", () => {
     const platform = createPersistencePlatform({
       journal: journal.storage,
       indexedDb: {
-        read: async () => undefined,
-        write: async () => {
+        read: () => okAsync(undefined),
+        write: () => ResultAsync.fromSafePromise(new Promise<void>((resolve) => {
           events.push("indexeddb");
-          await new Promise<void>((resolve) => { release = resolve; });
-        },
+          release = resolve;
+        })),
       },
     });
 
@@ -223,7 +224,7 @@ describe("workspace state", () => {
     const workspace = sampleWorkspace();
     const fallback = createStorage();
     const platform = createPersistencePlatform({
-      indexedDb: { read: async () => undefined, write: async () => { throw new Error("transaction failed"); } },
+      indexedDb: { read: () => okAsync(undefined), write: () => { throw new Error("transaction failed"); } },
       fallback: fallback.storage,
     });
 
@@ -242,8 +243,8 @@ describe("workspace state", () => {
     const platform = createPersistencePlatform({
       journal: journal.storage,
       indexedDb: {
-        read: async () => undefined,
-        write: async () => await new Promise<void>((resolve) => { release = resolve; }),
+        read: () => okAsync(undefined),
+        write: () => ResultAsync.fromSafePromise(new Promise<void>((resolve) => { release = resolve; })),
       },
     });
 

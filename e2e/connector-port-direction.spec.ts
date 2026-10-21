@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getDefaultView, portPoint } from "../packages/runtime/dist/core/index.js";
-import { parseDgm, printDgm } from "../packages/runtime/dist/dsl/index.js";
+import { parseDgmResult, printDgm } from "../packages/runtime/dist/dsl/index.js";
 import { layoutDocument } from "../packages/runtime/dist/layout/index.js";
 
 import { entityBox, waitForStudioReady } from "./support/helpers";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const doc = parseDgm(`diagram connector-direction {
   grammar aws

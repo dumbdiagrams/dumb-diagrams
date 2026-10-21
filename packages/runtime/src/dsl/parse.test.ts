@@ -4,7 +4,10 @@ import { createAsyncDocsFixture } from "../../test-fixtures.js";
 import { getDefaultView } from "../core/index.js";
 import { DIAGRAM_LIMITS } from "../core/index.js";
 
-import { DGM_FORMAT_VERSION, formatParseError, parseDgm, parseDgmResult, printDgm } from "./index.js";
+import { DGM_FORMAT_VERSION, formatParseError, parseDgmResult, printDgm } from "./index.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
+const parseError = (source: string) => formatParseError(parseDgmResult(source)._unsafeUnwrapErr());
 
 describe("parseDgm / printDgm round-trip", () => {
   it("returns typed results for valid and invalid source", () => {
@@ -59,7 +62,7 @@ describe("parseDgm / printDgm round-trip", () => {
     ["missing value", "diagram d {\n  title\n}", "3:1 Expected a quoted string, got \"}\""],
     ["unexpected character", "diagram d {\n  title \"x\" !\n}", "2:13 Unexpected character \"!\""],
   ])("rejects %s with its position and allowed values", (_name, source, message) => {
-    expect(() => parseDgm(source)).toThrow(message);
+    expect(parseError(source)).toBe(message);
   });
 
   it("rejects every option of the audit's six-typo diagram instead of dropping it", () => {
@@ -75,12 +78,12 @@ describe("parseDgm / printDgm round-trip", () => {
     const first = parseDgmResult(source)._unsafeUnwrapErr();
     expect(formatParseError(first)).toBe('3:8 Invalid flow "rl"; expected lr, tb');
     const fixedFlow = source.replace("flow rl", "flow lr");
-    expect(() => parseDgm(fixedFlow)).toThrow('5:35 Unknown resource option "rolee"');
+    expect(parseError(fixedFlow)).toContain('5:35 Unknown resource option "rolee"');
     const fixedRole = fixedFlow.replace("rolee", "role");
-    expect(() => parseDgm(fixedRole)).toThrow('8:14 Unknown edge option "stpe"');
-    expect(() => parseDgm(fixedRole.replace("stpe", "step"))).toThrow('8:27 Invalid edge style "dotted"');
-    expect(() => parseDgm(fixedRole.replace("stpe", "step").replace("dotted", "dashed"))).toThrow('8:40 Invalid edge color "pink"');
-    expect(() => parseDgm(fixedRole.replace("stpe", "step").replace("dotted", "dashed").replace("pink", "red"))).toThrow('8:44 Unknown edge option "lable"');
+    expect(parseError(fixedRole)).toContain('8:14 Unknown edge option "stpe"');
+    expect(parseError(fixedRole.replace("stpe", "step"))).toContain('8:27 Invalid edge style "dotted"');
+    expect(parseError(fixedRole.replace("stpe", "step").replace("dotted", "dashed"))).toContain('8:40 Invalid edge color "pink"');
+    expect(parseError(fixedRole.replace("stpe", "step").replace("dotted", "dashed").replace("pink", "red"))).toContain('8:44 Unknown edge option "lable"');
   });
 
   it("does not classify parser defects as invalid syntax", () => {
@@ -108,8 +111,8 @@ describe("parseDgm / printDgm round-trip", () => {
   });
 
   it("rejects input without a diagram declaration and trailing top-level tokens", () => {
-    expect(() => parseDgm("hello world")).toThrow(/Expected diagram declaration/);
-    expect(() => parseDgm("diagram valid {}\n}\nextra words")).toThrow('2:1 Unexpected "}" after diagram; expected assets or view');
+    expect(parseError("hello world")).toMatch(/Expected diagram declaration/);
+    expect(parseError("diagram valid {}\n}\nextra words")).toBe('2:1 Unexpected "}" after diagram; expected assets or view');
   });
 
   it("preserves the source-size error as a distinct typed result", () => {
@@ -136,9 +139,9 @@ describe("parseDgm / printDgm round-trip", () => {
   );
 
   it("rejects unsupported grammar values", () => {
-    expect(() => parseDgm(`diagram unsupported {
+    expect(parseError(`diagram unsupported {
   grammar digitalocean
-}`)).toThrow(
+}`)).toBe(
       '2:11 Invalid grammar "digitalocean"; expected aws, azure, gcp, cloud-agnostic',
     );
   });
@@ -266,14 +269,14 @@ ${declarations}
   });
 
   it("rejects deprecated resource and group label positions", () => {
-    expect(() => parseDgm(`diagram old_resource_label {
+    expect(parseError(`diagram old_resource_label {
   grammar aws
   aws.simple-notification-service notice { label-position right }
-}`)).toThrow('3:59 Invalid resource label-position "right"; expected top, bottom');
-    expect(() => parseDgm(`diagram old_group_label {
+}`)).toBe('3:59 Invalid resource label-position "right"; expected top, bottom');
+    expect(parseError(`diagram old_group_label {
   grammar aws
   cloud-agnostic.boundary shell "Shell" { label-position bottom-left }
-}`)).toThrow('3:58 Invalid group label-position "bottom-left"; expected top-left, top-right');
+}`)).toBe('3:58 Invalid group label-position "bottom-left"; expected top-left, top-right');
   });
 
   it("round-trips hidden icons on typed groups", () => {
@@ -412,12 +415,12 @@ view default {
   });
 
   it("rejects a second view instead of merging authored placements", () => {
-    expect(() => parseDgm(`diagram multiple_views {
+    expect(parseError(`diagram multiple_views {
   grammar aws
   cloud-agnostic.server service "Service"
 }
 view first { place service { x 100 y 100 pin } }
-view second { place service { x 500 y 500 pin } }`)).toThrow(/Only one view block is supported/);
+view second { place service { x 500 y 500 pin } }`)).toMatch(/Only one view block is supported/);
   });
 
   it("preserves prototype-key placement IDs as own properties", () => {
@@ -474,11 +477,11 @@ view default { place __proto__ { x 120 y 80 pin } }`);
   });
 
   it("rejects oversized source and malformed quoted strings", () => {
-    expect(() => parseDgm("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1))).toThrow(/1 MiB/);
-    expect(() => parseDgm('diagram bad { title "unterminated }')).toThrow(/Unterminated/);
-    expect(() => parseDgm('diagram bad { title "bad\\q" }')).toThrow(/Unsupported escape/);
-    expect(() => parseDgm("diagram bad {")).toThrow(/Unterminated block/);
+    expect(parseError("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1))).toMatch(/1 MiB/);
+    expect(parseError('diagram bad { title "unterminated }')).toMatch(/Unterminated/);
+    expect(parseError('diagram bad { title "bad\\q" }')).toMatch(/Unsupported escape/);
+    expect(parseError("diagram bad {")).toMatch(/Unterminated block/);
     const nested = `diagram nested { ${Array.from({ length: DIAGRAM_LIMITS.hierarchyDepth + 1 }, (_, index) => `aws.region g${index} {`).join(" ")} ${"}".repeat(DIAGRAM_LIMITS.hierarchyDepth + 1)} }`;
-    expect(() => parseDgm(nested)).toThrow(/hierarchy depth/);
+    expect(parseError(nested)).toMatch(/hierarchy depth/);
   });
 });

@@ -21,6 +21,7 @@
     "@dumb-diagrams/brand": "workspace:*",
     "@dumb-diagrams/runtime": "workspace:*",
     "astro": "7.3.2",
+    "neverthrow": "8.2.0",
     "sharp": "0.35.4"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 import source from "../../../examples/curated/image-thumbnail-pipeline/diagram.dgm?raw";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { describe, expect, it } from "vitest";
 
@@ -29,6 +29,8 @@ import {
 } from "./editor-model.js";
 import { groupSelection, ungroup } from "./model/grouping.js";
 import { prepareDocumentMutation } from "./state/document-actions.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const base = parseDgm(source);
 const layout = layoutDocument(base);

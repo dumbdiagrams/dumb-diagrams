@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { errAsync, okAsync, ResultAsync } from "neverthrow";
 
 import { createEmptyDocument } from "../core/document.js";
 import { getCatalogEntry } from "../catalog/catalog.js";
@@ -6,6 +7,7 @@ import {
   embedAssetsInSvg,
   inlineCatalogIcons,
   resolveResourceIcon,
+  type PortableSvgError,
 } from "./assets.js";
 
 describe("render assets", () => {
@@ -47,7 +49,7 @@ describe("render assets", () => {
 
   it("inlines each known catalog icon once and skips data or unknown URLs", async () => {
     const entry = getCatalogEntry("cloud-agnostic.actor")!;
-    const loader = vi.fn(async () => '<svg viewBox="0 0 16 16"><path d="M0 0"/></svg>');
+    const loader = vi.fn(() => okAsync('<svg viewBox="0 0 16 16"><path d="M0 0"/></svg>'));
     const svg = `<svg><image href="${entry.browserPath}"/><image href="${entry.browserPath}"/><image href="data:image/svg+xml,already"/><image href="catalog-icons/unknown.svg"/></svg>`;
 
     const output = (await inlineCatalogIcons(svg, { loadCatalogSvg: loader }))._unsafeUnwrap();
@@ -63,14 +65,41 @@ describe("render assets", () => {
     const href = `<svg><image href="${entry.browserPath}"/></svg>`;
 
     expect((await inlineCatalogIcons(href, {
-      loadCatalogSvg: async () => "<div>not an icon</div>",
+      loadCatalogSvg: () => okAsync("<div>not an icon</div>"),
     }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/not an SVG/), browserPath: entry.browserPath });
     expect((await inlineCatalogIcons(href, {
-      loadCatalogSvg: async () => '<svg><script>alert(1)</script></svg>',
+      loadCatalogSvg: () => okAsync('<svg><script>alert(1)</script></svg>'),
     }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/unsafe SVG/) });
     expect((await inlineCatalogIcons(href, {
-      loadCatalogSvg: async () => { throw new Error("disk gone"); },
+      loadCatalogSvg: () => { throw new Error("disk gone"); },
     }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-load-failed", message: "disk gone" });
+  });
+
+  it("preserves typed loader errors without wrapping them", async () => {
+    const entry = getCatalogEntry("cloud-agnostic.actor")!;
+    const error: PortableSvgError = {
+      code: "catalog-icon-load-failed",
+      message: "Icon file is unavailable",
+      browserPath: entry.browserPath,
+    };
+    const result = await inlineCatalogIcons(`<svg><image href="${entry.browserPath}"/></svg>`, {
+      loadCatalogSvg: () => errAsync(error),
+    });
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error).toBe(error);
+  });
+
+  it("adapts rejected platform work inside a typed loader", async () => {
+    const entry = getCatalogEntry("cloud-agnostic.actor")!;
+    const result = await inlineCatalogIcons(`<svg><image href="${entry.browserPath}"/></svg>`, {
+      loadCatalogSvg: () => ResultAsync.fromPromise(
+        Promise.reject(new Error("disk gone")),
+        (cause): PortableSvgError => ({
+          code: "catalog-icon-load-failed", message: "disk gone", browserPath: entry.browserPath, cause,
+        }),
+      ),
+    });
+    expect(result._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-load-failed", message: "disk gone" });
   });
 
   it("uses the default fetch loader for browser catalog paths", async () => {
@@ -123,7 +152,7 @@ describe("render assets", () => {
   it("ignores non-catalog paths, including malformed URLs", async () => {
     const svg = '<svg><image href="unknown.svg"/><image href="catalog-icons/%E0%A4%A"/></svg>';
     expect((await inlineCatalogIcons(svg, {
-      loadCatalogSvg: async () => "<svg/>",
+      loadCatalogSvg: () => okAsync("<svg/>"),
     }))._unsafeUnwrap()).toBe(svg);
   });
 });

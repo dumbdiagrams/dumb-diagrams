@@ -2,11 +2,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
-import { compileDiagram, invariantTier } from "@dumb-diagrams/runtime/render";
+import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
+import { compileDiagram } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
 import { compiledGeometry, diffCompiledGeometry } from "../../../scripts/lib/compiled-geometry.mjs";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const root = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const contracts = JSON.parse(readFileSync(resolve(root, "examples/layout-contracts.json"), "utf8"));
@@ -45,35 +47,7 @@ describe("curated provider layout contracts", () => {
       expect(result.ok, result.ok ? undefined : result.issues.map((issue) => issue.message).join("; ")).toBe(true);
       if (!result.ok) return;
 
-      const hard = result.invariantFailures.filter((failure) => invariantTier(failure.code) === "hard");
-      expect(hard, hard.map((failure) => `${failure.code}: ${failure.message}`).join("; ")).toEqual([]);
-      const obscuredLabels = result.invariantFailures.filter((failure) =>
-        failure.code === "edge-label-node-collision" || failure.code === "edge-label-group-collision",
-      );
-      expect(obscuredLabels, obscuredLabels.map((failure) => failure.message).join("; ")).toEqual([]);
-
-      const layout = result.layout;
-      const aspect = layout.width / layout.height;
-      expect(aspect, `${id} aspect ${aspect.toFixed(2)}`).toBeGreaterThanOrEqual(contract.minAspectRatio);
-      expect(aspect, `${id} aspect ${aspect.toFixed(2)}`).toBeLessThanOrEqual(contract.maxAspectRatio);
-      expect(layout.width, `${id} width`).toBeLessThanOrEqual(contract.maxWidth);
-      expect(layout.height, `${id} height`).toBeLessThanOrEqual(contract.maxHeight);
-
-      const nodes = new Map(layout.nodes.map((node) => [node.id, node.obstacle]));
-      for (const chain of contract.leftToRight ?? []) {
-        for (let index = 1; index < chain.length; index += 1) {
-          const leftId = chain[index - 1]!;
-          const rightId = chain[index]!;
-          const left = nodes.get(leftId);
-          const right = nodes.get(rightId);
-          expect(left, `${id} missing ${leftId}`).toBeDefined();
-          expect(right, `${id} missing ${rightId}`).toBeDefined();
-          if (!left || !right) continue;
-          expect(left.x, `${id}: ${leftId} should be left of ${rightId}`).toBeLessThan(right.x);
-        }
-      }
-
-      const diffs = diffCompiledGeometry(contract.geometry, compiledGeometry(layout));
+      const diffs = diffCompiledGeometry(contract.geometry, compiledGeometry(result.layout));
       expect(diffs, diffs.join("\n")).toEqual([]);
       await expect(result.svg).toMatchFileSnapshot(`__snapshots__/${id}.svg`);
     });

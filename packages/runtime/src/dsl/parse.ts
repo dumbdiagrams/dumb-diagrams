@@ -624,19 +624,12 @@ const GROUP_KINDS: Readonly<Record<string, Group["kind"]>> = Object.assign(Objec
   "cloud-agnostic.trust-boundary": "overlay",
 });
 
-/** Throwing adapter for scripts and tests; prefer `parseDgmResult`. */
-export function parseDgm(source: string): DiagramDocument {
-  const result = parseDgmResult(source);
-  if (result.isErr()) throw new Error(formatParseError(result.error));
-  return result.value;
-}
-
 /** `line:column message` for syntax errors, or the plain message. */
 export function formatParseError(error: DgmParseError): string {
   return error.code === "invalid-syntax" ? `${error.line}:${error.column} ${error.message}` : error.message;
 }
 
-/** Safe boundary for callers that need typed parse failures instead of throws. */
+/** Parse versioned source, returning typed syntax and source-limit failures. */
 export function parseDgmResult(source: string): Result<DiagramDocument, DgmParseError> {
   if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
     return err({
@@ -649,7 +642,7 @@ export function parseDgmResult(source: string): Result<DiagramDocument, DgmParse
   return new Parser(tokens.value.tokens, tokens.value.end).parse();
 }
 
-/** Canonical source: `printDgm(parseDgm(printDgm(doc)))` is stable. */
+/** Canonical source round-tripping through the parser is stable. */
 export function printDgm(doc: DiagramDocument): string {
   const header = [`  grammar ${doc.grammar}`, `  flow ${doc.flow}`];
   if (doc.title) header.push(`  title "${escapeString(doc.title)}"`);

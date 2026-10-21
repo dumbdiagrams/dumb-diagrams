@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { parseDgm, printDgm } from "./parse.js";
+import { parseDgmResult, printDgm } from "./parse.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("assets round-trip", () => {
   it("preserves embedded svg assets and icon references", () => {

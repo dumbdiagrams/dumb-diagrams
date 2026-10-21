@@ -84,6 +84,12 @@ export interface WorkspaceOptions extends WorkspaceModelOptions {
 
 const WORKSPACE_PERSIST_DEBOUNCE_MS = 350;
 
+type PendingPersistence = {
+  workspace: WorkspaceState;
+  serialized?: string;
+  journal?: ReturnType<typeof persistWorkspaceJournal>;
+};
+
 export function useWorkspace(options: WorkspaceOptions) {
   const [initialState] = useState(() => createWorkspaceState(options));
   const [workspace, setWorkspace] = useState<WorkspaceState>(initialState);
@@ -93,14 +99,15 @@ export function useWorkspace(options: WorkspaceOptions) {
   const historiesRef = useRef(new Map<string, DocumentHistory>());
   const persistenceAtRiskRef = useRef(false);
   const persistTimerRef = useRef<number | null>(null);
-  const pendingPersistRef = useRef<WorkspaceState | null>(null);
-  const persistQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingPersistRef = useRef<PendingPersistence | null>(null);
+  const persistInFlightRef = useRef(false);
+  const persistenceStoppedRef = useRef(false);
   const [historyVersion, setHistoryVersion] = useState(0);
   const [ready, setReady] = useState(false);
   const [persistenceWarning, setPersistenceWarning] = useState<string | null>(null);
 
   const reportPersistenceWarning = useCallback((warning: string | undefined) => {
-    if (!warning) return;
+    if (!warning || persistenceStoppedRef.current) return;
     setPersistenceWarning((current) => current ?? warning);
   }, []);
 
@@ -121,10 +128,10 @@ export function useWorkspace(options: WorkspaceOptions) {
       window.clearTimeout(persistTimerRef.current);
       persistTimerRef.current = null;
     }
-    const next = pendingPersistRef.current;
+    const pending = pendingPersistRef.current;
     pendingPersistRef.current = null;
-    if (!next) return;
-    const serialized = serializeWorkspace(next);
+    if (!pending) return;
+    const serialized = pending.serialized ?? serializeWorkspace(pending.workspace);
     if (utf8ByteLength(serialized) > DIAGRAM_LIMITS.workspaceBytes) {
       persistenceAtRiskRef.current = true;
       reportPersistenceWarning("Workspace is too large to persist; edits remain local and may not survive reload.");
@@ -132,32 +139,59 @@ export function useWorkspace(options: WorkspaceOptions) {
     }
     // Keep a synchronous write-ahead snapshot so an immediate reload cannot
     // outrun the debounced IndexedDB transaction (notably in WebKit).
-    const journal = persistWorkspaceJournal(serialized, persistencePlatformRef.current);
+    const journal = pending.journal ?? persistWorkspaceJournal(serialized, persistencePlatformRef.current);
     if (journal.isErr()) {
       persistenceAtRiskRef.current = true;
       reportPersistenceWarning(storageWarning(journal.error));
     }
-    persistQueueRef.current = persistQueueRef.current
-      .then(() => persistWorkspace(next, serialized, persistencePlatformRef.current, journal))
-      .then((result) => {
-        result.match(
-          (outcome) => {
-            // A journal failure was already surfaced synchronously above;
-            // keep the queued result for diagnostics without duplicating it.
+
+    const next: PendingPersistence = { workspace: pending.workspace, serialized, journal };
+    if (persistInFlightRef.current) {
+      // Keep only the newest completed journal snapshot while IndexedDB is
+      // stalled. The older write will not clear it because persistence compares
+      // the journal contents before removing the key.
+      pendingPersistRef.current = next;
+      return;
+    }
+
+    const run = (item: PendingPersistence) => {
+      if (persistenceStoppedRef.current) return;
+      persistInFlightRef.current = true;
+      void persistWorkspace(item.workspace, item.serialized!, persistencePlatformRef.current, item.journal!)
+      .match(
+        (outcome) => {
+          if (persistenceStoppedRef.current) return;
+          // A journal failure was already surfaced synchronously above;
+          // keep the queued result for diagnostics without duplicating it.
+          const isCurrent = workspaceRef.current === item.workspace && !pendingPersistRef.current;
+          if (isCurrent) {
             persistenceAtRiskRef.current = outcome.status !== "ok";
-            if (journal.isOk()) reportPersistenceWarning(outcome.warning);
-          },
-          (error) => {
-            persistenceAtRiskRef.current = true;
-            reportPersistenceWarning(storageWarning(error));
-          },
-        );
-      })
+          }
+          if (isCurrent && item.journal!.isOk()) reportPersistenceWarning(outcome.warning);
+        },
+        (error) => {
+          if (persistenceStoppedRef.current || workspaceRef.current !== item.workspace) return;
+          persistenceAtRiskRef.current = true;
+          reportPersistenceWarning(storageWarning(error));
+        },
+      )
       .catch((cause: unknown) => {
+        if (persistenceStoppedRef.current || workspaceRef.current !== item.workspace) return;
         console.error("Workspace persistence failed unexpectedly", cause);
         persistenceAtRiskRef.current = true;
         reportPersistenceWarning("Workspace persistence failed unexpectedly; edits may not survive reload. Save your diagrams to disk.");
+      })
+      .finally(() => {
+        persistInFlightRef.current = false;
+        if (persistenceStoppedRef.current) return;
+        const queued = pendingPersistRef.current;
+        if (!queued?.serialized || !queued.journal) return;
+        pendingPersistRef.current = null;
+        run(queued);
       });
+    };
+
+    run(next);
   }, [reportPersistenceWarning]);
 
   const updateWorkspace = useCallback(
@@ -204,7 +238,7 @@ export function useWorkspace(options: WorkspaceOptions) {
 
   useEffect(() => {
     if (!ready) return;
-    pendingPersistRef.current = workspace;
+    pendingPersistRef.current = { workspace };
     if (persistTimerRef.current !== null) {
       window.clearTimeout(persistTimerRef.current);
     }
@@ -222,6 +256,7 @@ export function useWorkspace(options: WorkspaceOptions) {
   }, [flushPendingPersist, ready, workspace]);
 
   useEffect(() => {
+    persistenceStoppedRef.current = false;
     const flushWhenHidden = () => {
       if (document.visibilityState === "hidden") flushPendingPersist();
     };
@@ -230,7 +265,12 @@ export function useWorkspace(options: WorkspaceOptions) {
     return () => {
       window.removeEventListener("pagehide", flushPendingPersist);
       document.removeEventListener("visibilitychange", flushWhenHidden);
-      flushPendingPersist();
+      if (persistTimerRef.current !== null) {
+        window.clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+      pendingPersistRef.current = null;
+      persistenceStoppedRef.current = true;
     };
   }, [flushPendingPersist]);
 

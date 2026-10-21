@@ -58,6 +58,9 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
   checkCount(issues, "annotations", doc.annotations, DIAGRAM_LIMITS.annotations);
   checkCount(issues, "assets", doc.assets ?? [], DIAGRAM_LIMITS.assets);
   checkCount(issues, "views", doc.views, DIAGRAM_LIMITS.views);
+  if (doc.views.length === 0) {
+    issues.push(limitIssue("missing-view", "Diagram must contain at least one view"));
+  }
 
   checkText(issues, "diagram id", doc.id, DIAGRAM_LIMITS.idCharacters, doc.id, "invalid-id");
   if (doc.title !== undefined) {

@@ -5,15 +5,20 @@ import { dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
-import { err, errAsync, ok, okAsync, type Result, ResultAsync } from "neverthrow";
-import { getCatalogEntryByBrowserPath, listAssets } from "@dumb-diagrams/runtime/catalog";
+import { err, errAsync, ok, okAsync, Result, safeTry, ResultAsync } from "neverthrow";
+import { listAssets } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
-import { compileDiagramResult, renderPortableSvg, type CompiledDiagram } from "@dumb-diagrams/runtime/render";
+import {
+  compileDiagramResult,
+  renderPortableSvg,
+  type CompiledDiagram,
+} from "@dumb-diagrams/runtime/render";
 
 import { createCliUi } from "./cli-ui.js";
+import { loadCatalogSvg } from "./catalog-loader.js";
 import { errorMessage, parseCliError, type CliError } from "./cli-errors.js";
-import { renderInitTemplate } from "./init-templates.js";
+import { renderInitTemplate, type InitTemplateError } from "./init-templates.js";
 import { resolveInitOptions, type ResolvedInitOptions } from "./init-options.js";
 import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
@@ -112,12 +117,13 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
   const argumentResult = requireNoArguments(args, "studio");
   if (argumentResult.isErr()) return errAsync(argumentResult.error);
   const testPort = Number(process.env.DUMBDIAGRAMS_STUDIO_PORT);
-  return ResultAsync.fromPromise(
-    startStudioServer({
-      port: Number.isInteger(testPort) && testPort >= 0 && testPort <= 65535 ? testPort : undefined,
-    }),
-    (cause): CliError => ({ code: "studio-start-failed", message: errorMessage(cause), cause }),
-  ).andThen((handle) => {
+  return startStudioServer({
+    port: Number.isInteger(testPort) && testPort >= 0 && testPort <= 65535 ? testPort : undefined,
+  }).mapErr((error): CliError => ({
+    code: "studio-start-failed",
+    message: error.message,
+    cause: error.code === "start-failed" ? error.cause : error,
+  })).andThen((handle) => {
     console.log(`\n${ui.brand()}\n`);
     console.log(ui.heading("Studio is ready"));
     console.log(ui.info("local", ui.command(handle.url)));
@@ -300,45 +306,27 @@ function displayInput(filePath: string | undefined): string {
   return filePath ? relativeForLog(filePath) : "<stdin>";
 }
 
-function writeOutputAtomically(outputPath: string, contents: string): void {
+function writeOutputResult(outputPath: string, contents: string, operation: "format" | "render"): Result<void, CliError> {
   const temporaryPath = `${outputPath}.tmp-${process.pid}`;
+  let temporaryCreated = false;
   try {
     writeFileSync(temporaryPath, contents, { encoding: "utf8", flag: "wx" });
+    temporaryCreated = true;
     renameSync(temporaryPath, outputPath);
+    return ok(undefined);
   } catch (error) {
     try {
-      if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+      if (temporaryCreated && existsSync(temporaryPath)) unlinkSync(temporaryPath);
     } catch {
       // Preserve the original write error; cleanup is best effort.
     }
-    throw error;
-  }
-}
-
-function writeOutputResult(outputPath: string, contents: string, operation: "format" | "render"): Result<void, CliError> {
-  try {
-    writeOutputAtomically(outputPath, contents);
-    return ok(undefined);
-  } catch (cause) {
     return err({
       code: operation === "format" ? "format-write-failed" : "output-write-failed",
-      message: errorMessage(cause),
+      message: errorMessage(error),
       output: outputPath,
-      cause,
+      cause: error,
     });
   }
-}
-
-async function loadCatalogSvg(browserPath: string): Promise<string> {
-  const entry = getCatalogEntryByBrowserPath(browserPath);
-  if (!entry) throw new Error(`Catalog icon is not registered: ${browserPath}`);
-  const filePath = [
-    resolve(__dirname, "..", "..", "..", entry.icon.sourcePath),
-    resolve(__dirname, "source", entry.icon.sourcePath),
-    resolve(__dirname, "studio", browserPath),
-  ].find((candidate) => existsAsFileOrDirectory(candidate));
-  if (!filePath) throw new Error(`Catalog icon asset is unavailable for ${browserPath}`);
-  return readFileSync(filePath, "utf8");
 }
 
 function cmdInit(args: ParsedArgs): ResultAsync<number, CliError> {
@@ -346,14 +334,12 @@ function cmdInit(args: ParsedArgs): ResultAsync<number, CliError> {
   return resolveInitOptions(args, {
     interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
     askProjectName: promptProjectName,
-  }).andThen((options) => ResultAsync.fromPromise(
-    createInitProject(options),
-    (cause): CliError => ({ code: "init-failed", message: errorMessage(cause), cause }),
-  ));
+  }).andThen((options) => toAsync(createInitProject(options)));
 }
 
-async function createInitProject(options: ResolvedInitOptions): Promise<number> {
+type PreparedInitFile = readonly [filePath: string, contents: string];
 
+function createInitProject(options: ResolvedInitOptions): Result<number, CliError> {
   const projectRoot = resolve(process.cwd(), options.projectDirectory);
   const projectName = options.projectName;
   const knowledgeRoot = join(projectRoot, ".dumbdiagrams");
@@ -362,15 +348,7 @@ async function createInitProject(options: ResolvedInitOptions): Promise<number> 
   const geminiPath = join(projectRoot, "GEMINI.md");
   const examplesRoot = join(knowledgeRoot, "examples");
 
-  mkdirSync(projectRoot, { recursive: true });
-  console.log(ui.heading("Creating project"));
-  console.log(ui.info("name", projectName));
-  console.log(ui.info("folder", projectRoot));
-  console.log("");
-
   const templateVars = { projectName };
-  const agentPointer = renderInitTemplate("AGENTS.md", templateVars);
-  const catalogReference = createCatalogReference();
   const catalogMarkdownPath = join(knowledgeRoot, "catalog.md");
   const catalogJsonPath = join(knowledgeRoot, "catalog.json");
   const knowledgeFiles = [
@@ -383,31 +361,82 @@ async function createInitProject(options: ResolvedInitOptions): Promise<number> 
     ".dumbdiagrams/providers/cloud-agnostic.md",
   ];
 
-  const files = [
-    ...knowledgeFiles.map((name) => [join(projectRoot, name), renderInitTemplate(name, templateVars)] as const),
-    [join(projectRoot, "diagrams/README.md"), renderInitTemplate("diagrams/README.md", templateVars)],
-    [agentsPath, agentPointer],
-    [claudePath, renderInitTemplate("CLAUDE.md", templateVars)],
-    [geminiPath, renderInitTemplate("GEMINI.md", templateVars)],
-    [catalogMarkdownPath, catalogReference.markdown],
-    [catalogJsonPath, catalogReference.json],
-  ] as const;
-  let created = 0;
-  for (const [filePath, contents] of files) {
-    if (existsAsFileOrDirectory(filePath)) {
-      console.log(ui.skip(`Skipped ${relativeForLog(filePath)} (already exists)`));
-      continue;
+  const prepared = safeTry<{ files: readonly PreparedInitFile[] }, CliError>(function* () {
+    const renderedKnowledge: PreparedInitFile[] = [];
+    for (const name of knowledgeFiles) {
+      renderedKnowledge.push(yield* renderTemplateFile(name, join(projectRoot, name), templateVars)
+        .mapErr(initTemplateError));
     }
-    mkdirSync(dirname(filePath), { recursive: true });
-    writeFileSync(filePath, contents, "utf8");
-    console.log(ui.success(`Created ${relativeForLog(filePath)}`));
-    created++;
-  }
-  created += copyBundledExamples(examplesRoot);
+    const renderedDiagram = yield* renderTemplateFile(
+      "diagrams/README.md",
+      join(projectRoot, "diagrams/README.md"),
+      templateVars,
+    ).mapErr(initTemplateError);
+    const renderedAgents = yield* renderTemplateFile("AGENTS.md", agentsPath, templateVars).mapErr(initTemplateError);
+    const renderedClaude = yield* renderTemplateFile("CLAUDE.md", claudePath, templateVars).mapErr(initTemplateError);
+    const renderedGemini = yield* renderTemplateFile("GEMINI.md", geminiPath, templateVars).mapErr(initTemplateError);
+    const catalogReference = createCatalogReference();
+    return ok({
+      files: [
+        ...renderedKnowledge,
+        renderedDiagram,
+        renderedAgents,
+        renderedClaude,
+        renderedGemini,
+        [catalogMarkdownPath, catalogReference.markdown],
+        [catalogJsonPath, catalogReference.json],
+      ] as const,
+    });
+  });
 
-  console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
-  console.log(ui.info("next", ui.command(`cd ${relativeForLog(projectRoot)} && dumbdiagrams studio`)));
-  return 0;
+  return prepared.andThen(({ files }) => writeInitProject(projectRoot, projectName, examplesRoot, files));
+}
+
+function initTemplateError(error: InitTemplateError): CliError {
+  return { code: "init-failed", message: error.message, cause: error };
+}
+
+function renderTemplateFile(
+  fileName: string,
+  filePath: string,
+  vars: { readonly projectName: string },
+): Result<PreparedInitFile, InitTemplateError> {
+  return renderInitTemplate(fileName, vars).map((contents) => [filePath, contents] as const);
+}
+
+function writeInitProject(
+  projectRoot: string,
+  projectName: string,
+  examplesRoot: string,
+  files: readonly PreparedInitFile[],
+): Result<number, CliError> {
+  return Result.fromThrowable(
+    () => {
+      mkdirSync(projectRoot, { recursive: true });
+      console.log(ui.heading("Creating project"));
+      console.log(ui.info("name", projectName));
+      console.log(ui.info("folder", projectRoot));
+      console.log("");
+
+      let created = 0;
+      for (const [filePath, contents] of files) {
+        if (existsAsFileOrDirectory(filePath)) {
+          console.log(ui.skip(`Skipped ${relativeForLog(filePath)} (already exists)`));
+          continue;
+        }
+        mkdirSync(dirname(filePath), { recursive: true });
+        writeFileSync(filePath, contents, "utf8");
+        console.log(ui.success(`Created ${relativeForLog(filePath)}`));
+        created++;
+      }
+      created += copyBundledExamples(examplesRoot);
+
+      console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
+      console.log(ui.info("next", ui.command(`cd ${relativeForLog(projectRoot)} && dumbdiagrams studio`)));
+      return 0;
+    },
+    (cause): CliError => ({ code: "init-failed", message: errorMessage(cause), cause }),
+  )();
 }
 
 function createCatalogReference(): { markdown: string; json: string } {

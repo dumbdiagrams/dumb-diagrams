@@ -27,8 +27,12 @@ export function resolveInitOptions(
   }
 
   const defaultName = defaultProjectDirectory(context.now ?? new Date());
-  const answer = context.interactive && context.askProjectName
-    ? ResultAsync.fromPromise(context.askProjectName(defaultName), (cause) => invalidInit(errorMessage(cause), cause))
+  const askProjectName = context.askProjectName;
+  const answer = context.interactive && askProjectName
+    ? ResultAsync.fromPromise(
+      Promise.resolve().then(() => askProjectName(defaultName)),
+      (cause) => invalidInit(errorMessage(cause), cause),
+    )
     : okAsync<string | undefined, CliError>(undefined);
   return answer
     .andThen((value) => cleanDisplayText(value?.trim() || defaultName, "project name", 120))

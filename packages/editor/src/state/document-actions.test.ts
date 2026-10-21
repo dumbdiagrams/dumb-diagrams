@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { createEmptyDocument, getDefaultView } from "@dumb-diagrams/runtime/core";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramSource, getCachedDiagramCompilation } from "../diagram-compiler";
 import { deleteSelection, moveSelection, setGroupBounds, setPlace } from "../editor-model";
 import { resizeRect } from "../interactions/move-resize-gestures";
 import { preserveManualLayout, preserveUnplacedManualLayout } from "../model/layout-preservation";
 import { prepareDocument, prepareDocumentMutation } from "./document-actions";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const azureAppSource = `diagram azure-private-app-service {
   grammar azure

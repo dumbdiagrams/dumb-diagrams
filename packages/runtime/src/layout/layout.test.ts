@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { createEmptyDocument } from "../core/index.js";
 import type { DiagramDocument, Resource } from "../core/index.js";
-import { parseDgm } from "../dsl/index.js";
+import { parseDgmResult } from "../dsl/index.js";
 import { snap } from "../grammar-aws/index.js";
 import { checkInvariants } from "../render/index.js";
 import { attachRoutes, routeEdges } from "../route/index.js";
 import { layoutDocument } from "./layout.js";
 import { findDiagramRoots, isEmptyRootBoundary, orderRootsForFlow } from "./roots.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 function resource(id: string, parent?: string): Resource {
   return {
@@ -692,5 +694,13 @@ describe("diagram root ordering", () => {
       "beta",
       "wrapper",
     ]);
+  });
+
+  it("orders mixed-case root identifiers lexically regardless of locale", () => {
+    const doc = createEmptyDocument("locale-stable-roots");
+    doc.flow = "lr";
+    doc.resources = [resource("i"), resource("I")];
+
+    expect(orderRootsForFlow(doc, findDiagramRoots(doc))).toEqual(["I", "i"]);
   });
 });

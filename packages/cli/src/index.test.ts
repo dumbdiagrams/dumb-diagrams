@@ -151,6 +151,26 @@ describe("runCli", () => {
     }
   });
 
+  it("preserves a pre-existing atomic-write temp file and reports a typed write failure", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-format-temp-"));
+    const sourcePath = join(workRoot, "diagram.dgm");
+    const temporaryPath = `${sourcePath}.tmp-${process.pid}`;
+    const source = `diagram format-me {\n grammar aws\n aws.cloud cloud "Cloud" {}\n}\n`;
+    const temporaryContents = "keep this temporary file";
+    writeFileSync(sourcePath, source);
+    writeFileSync(temporaryPath, temporaryContents);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await runCli(["format", "--write", sourcePath])).toBe(1);
+      expect(readFileSync(sourcePath, "utf8")).toBe(source);
+      expect(readFileSync(temporaryPath, "utf8")).toBe(temporaryContents);
+      expect(error.mock.calls.flat().join("\n")).toContain("Unable to write formatted diagram");
+    } finally {
+      error.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
   it("renders deterministic SVG and does not create output for invalid input", async () => {
     const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-render-"));
     const validPath = join(workRoot, "valid.dgm");

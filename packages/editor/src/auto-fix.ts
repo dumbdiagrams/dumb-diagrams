@@ -1,5 +1,6 @@
 import type { DiagramDocument, ID } from "@dumb-diagrams/runtime/core";
 import {
+  INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
   assessQuality,
   compareQuality,
   isQualityImproved,
@@ -44,6 +45,9 @@ type Candidate = {
   quality: QualityTuple;
 };
 
+const INCOMPLETE_DIAGNOSTICS_MESSAGE =
+  "Auto-fix is unavailable because there are too many layout issues to evaluate safely. Resolve some issues manually and try again.";
+
 const STRATEGY_RANK: Record<AutoFixStrategy, number> = {
   unchanged: 0,
   "clear-routes-targeted": 1,
@@ -72,6 +76,15 @@ export function planAutoFix(
       doc,
       strategy: "unchanged",
       message,
+    };
+  }
+
+  if (hasTruncatedInvariantDiagnostics(currentCompilation)) {
+    return {
+      status: "blocked",
+      doc,
+      strategy: "unchanged",
+      message: INCOMPLETE_DIAGNOSTICS_MESSAGE,
     };
   }
 
@@ -128,11 +141,20 @@ export function planAutoFix(
 
   const viable = candidates.filter((candidate) => {
     if (!candidate.compilation.ok) return false;
+    if (hasTruncatedInvariantDiagnostics(candidate.compilation)) return false;
     if (qualityHardRegressionReason(currentFindings, candidate.findings)) return false;
     return isQualityImproved(currentQuality, candidate.quality);
   });
 
   if (!viable.length) {
+    if (candidates.some((candidate) => hasTruncatedInvariantDiagnostics(candidate.compilation))) {
+      return {
+        status: "unresolved",
+        doc,
+        strategy: "unchanged",
+        message: INCOMPLETE_DIAGNOSTICS_MESSAGE,
+      };
+    }
     const top = topQualityFinding(currentFindings);
     return {
       status: "unresolved",
@@ -156,6 +178,12 @@ export function planAutoFix(
     message: strategyToast(best.strategy),
     compilation: best.compilation,
   };
+}
+
+function hasTruncatedInvariantDiagnostics(compilation: DiagramCompilation): boolean {
+  return compilation.invariantFailures.some(
+    (failure) => failure.code === INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
+  );
 }
 
 function compilationFindings(compilation: DiagramCompilation): QualityFinding[] {

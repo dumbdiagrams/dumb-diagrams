@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 
-// Biome owns general linting. ESLint only checks typed Result consumption.
+// Biome owns general linting. ESLint enforces typed Result boundaries.
 export default [
   { ignores: ["**/*.test.*", "**/dist/**", "**/catalog/generated/**"] },
   ...["runtime", "editor", "cli"].map((name) => ({
@@ -20,7 +20,10 @@ export default [
       "no-restricted-syntax": ["error", {
         selector: "MemberExpression[property.name=/^_unsafeUnwrap(Err)?$/]",
         message: "Handle or propagate the Result instead of unwrapping it unsafely.",
-      }],
+      }, ...(name === "editor" ? [] : [{
+        selector: "ThrowStatement",
+        message: "Return Result/ResultAsync for failures; adapt platform exceptions at their boundary.",
+      }])],
     },
   })),
 ];

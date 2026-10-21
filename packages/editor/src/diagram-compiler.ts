@@ -5,6 +5,7 @@ import { parseDgmResult, type DgmParseError } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import {
   checkInvariants,
+  INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
   qualityFindings,
   qualityHardRegressionReason,
   renderSvg,
@@ -20,6 +21,7 @@ import {
 } from "@dumb-diagrams/runtime/route";
 
 import { snapLayoutToGrid } from "./grid";
+import { ByteBudgetLruCache } from "./compilation-cache";
 
 export type DiagramCompilation = {
   ok: true;
@@ -48,8 +50,61 @@ export type CompilationError = {
 };
 
 const MAX_CACHED_COMPILATIONS = 12;
+/** Approximate retained object budget per compiler isolate (UI thread or worker). */
+export const MAX_CACHED_COMPILATION_BYTES = 8 * 1024 * 1024;
+export const MAX_STUDIO_INVARIANT_FAILURES = 200;
 export const STUDIO_CANVAS_PADDING = 128;
-const compilationCache = new Map<string, DiagramCompilation>();
+
+const ESTIMATOR_MAX_NODES = 100_000;
+const ESTIMATOR_UNKNOWN_BYTES = Number.MAX_SAFE_INTEGER / 4;
+
+/**
+ * Estimate the retained size of a cache entry without serializing the result.
+ * This deliberately counts object and string overhead conservatively; it is
+ * a budget guard rather than an attempt to model the V8 heap precisely.
+ */
+export function estimateCompilationCacheEntryBytes(
+  key: string,
+  compilation: DiagramCompilation,
+): number {
+  const state = { nodes: 0, seen: new Set<object>() };
+  return estimateCacheValue(key, state) + estimateCacheValue(compilation, state);
+}
+
+function estimateCacheValue(
+  value: unknown,
+  state: { nodes: number; seen: Set<object> },
+  depth = 0,
+): number {
+  if (state.nodes++ > ESTIMATOR_MAX_NODES || depth > 64) return ESTIMATOR_UNKNOWN_BYTES;
+  if (typeof value === "string") return 24 + value.length * 2;
+  if (value === null || value === undefined) return 8;
+  if (typeof value === "number" || typeof value === "bigint") return 8;
+  if (typeof value === "boolean") return 4;
+  if (typeof value !== "object") return 8;
+  if (state.seen.has(value)) return 8;
+  state.seen.add(value);
+
+  if (Array.isArray(value)) {
+    return 24 + value.reduce(
+      (total, item) => total + estimateCacheValue(item, state, depth + 1),
+      0,
+    );
+  }
+
+  return 40 + Object.entries(value).reduce(
+    (total, [key, item]) => total
+      + 24 + key.length * 2
+      + estimateCacheValue(item, state, depth + 1),
+    0,
+  );
+}
+
+const compilationCache = new ByteBudgetLruCache<string, DiagramCompilation>(
+  MAX_CACHED_COMPILATIONS,
+  MAX_CACHED_COMPILATION_BYTES,
+  estimateCompilationCacheEntryBytes,
+);
 let committedCompilationEpoch = 0;
 let deferredCompilationKey: string | null = null;
 
@@ -71,13 +126,7 @@ export function isDeferredCompilation(source: string, snapToGrid: boolean): bool
 }
 
 function remember(key: string, compilation: DiagramCompilation): DiagramCompilation {
-  compilationCache.delete(key);
   compilationCache.set(key, compilation);
-  while (compilationCache.size > MAX_CACHED_COMPILATIONS) {
-    const oldestKey = compilationCache.keys().next().value;
-    if (oldestKey === undefined) break;
-    compilationCache.delete(oldestKey);
-  }
   return compilation;
 }
 
@@ -86,7 +135,8 @@ export function cacheDiagramCompilation(
   snapToGrid: boolean,
   compilation: DiagramCompilation,
 ): DiagramCompilation {
-  return remember(cacheKey(source, snapToGrid), compilation);
+  compilationCache.set(cacheKey(source, snapToGrid), compilation);
+  return compilation;
 }
 
 /** Keep the visible diagram in sync immediately after source commits. */
@@ -117,9 +167,6 @@ export function getCachedDiagramCompilation(
   const key = cacheKey(source, snapToGrid);
   const cached = compilationCache.get(key);
   if (!cached) return undefined;
-  // Refresh insertion order so diagrams in active use remain in the small LRU.
-  compilationCache.delete(key);
-  compilationCache.set(key, cached);
   return cached;
 }
 
@@ -201,7 +248,7 @@ function compileParsedDocument(
     });
     phase = "render";
     const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routedEdges));
-    const invariantFailures = checkInvariants(layout);
+    const invariantFailures = checkInvariants(layout, { maxFailures: MAX_STUDIO_INVARIANT_FAILURES });
     const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
     return {
       ok: true,
@@ -276,6 +323,11 @@ export function autoFixRejectionReason(
   current: DiagramCompilation,
   candidate: DiagramCompilation,
 ): string | undefined {
+  if ([current, candidate].some((compilation) => compilation.invariantFailures.some(
+    (failure) => failure.code === INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
+  ))) {
+    return "Auto-fix cannot safely compare diagrams with incomplete layout diagnostics.";
+  }
   return qualityHardRegressionReason(
     compilationQualityFindings(current),
     compilationQualityFindings(candidate),

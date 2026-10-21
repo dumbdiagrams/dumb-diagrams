@@ -60,9 +60,13 @@ export function useDiagramCompilation(
   source: string,
   snapToGrid: boolean,
 ): { compilation: DiagramCompilation; pending: boolean } {
-  const [compilation, setCompilation] = useState<DiagramCompilation>(() =>
-    compileForDisplay(source, snapToGrid)
-  );
+  // Keep the source key with its result even when that result is too large to
+  // cache. A cache miss alone does not mean the active diagram is pending.
+  const [completed, setCompleted] = useState(() => ({
+    source,
+    snapToGrid,
+    compilation: compileForDisplay(source, snapToGrid),
+  }));
   const workerClientRef = useRef<DiagramCompilerWorkerClient | null>(null);
   const requestIdRef = useRef(0);
   const committedEpochRef = useRef(getCommittedCompilationEpoch());
@@ -76,7 +80,13 @@ export function useDiagramCompilation(
   const compileSynchronously = (request: CompilationRequest) => {
     const prepared = compileForDisplay(request.source, request.snapToGrid);
     cacheDiagramCompilation(request.source, request.snapToGrid, prepared);
-    if (request.id === requestIdRef.current) setCompilation(prepared);
+    if (request.id === requestIdRef.current) {
+      setCompleted({
+        source: request.source,
+        snapToGrid: request.snapToGrid,
+        compilation: prepared,
+      });
+    }
   };
 
   useLayoutEffect(() => {
@@ -84,7 +94,7 @@ export function useDiagramCompilation(
     committedEpochRef.current = committedEpoch;
     invalidateInFlightCompilation();
     const cached = getCachedDiagramCompilation(source, snapToGrid);
-    if (cached) setCompilation(cached);
+    if (cached) setCompleted({ source, snapToGrid, compilation: cached });
   }, [committedEpoch, snapToGrid, source]);
 
   useEffect(() => {
@@ -98,7 +108,11 @@ export function useDiagramCompilation(
         if (response.id !== requestIdRef.current) return;
         const prepared = prepareForDisplay(response.compilation);
         cacheDiagramCompilation(response.source, response.snapToGrid, prepared);
-        setCompilation(prepared);
+        setCompleted({
+          source: response.source,
+          snapToGrid: response.snapToGrid,
+          compilation: prepared,
+        });
       },
       onFailure: (request, failure) => {
         console.error("Diagram compiler worker failed", failure.kind, failure.error);
@@ -117,7 +131,11 @@ export function useDiagramCompilation(
     const cached = getCachedDiagramCompilation(source, snapToGrid);
     if (cached) {
       invalidateInFlightCompilation();
-      setCompilation(cached);
+      setCompleted({ source, snapToGrid, compilation: cached });
+      return;
+    }
+    if (completed.source === source && completed.snapToGrid === snapToGrid) {
+      invalidateInFlightCompilation();
       return;
     }
 
@@ -144,7 +162,7 @@ export function useDiagramCompilation(
 
   const cached = getCachedDiagramCompilation(source, snapToGrid);
   return {
-    compilation: cached ?? compilation,
-    pending: !cached,
+    compilation: cached ?? completed.compilation,
+    pending: !cached && !(completed.source === source && completed.snapToGrid === snapToGrid),
   };
 }

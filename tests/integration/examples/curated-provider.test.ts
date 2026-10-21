@@ -3,12 +3,15 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagram } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
+
 const root = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const contracts = JSON.parse(readFileSync(resolve(root, "examples/evaluations/curated-providers.json"), "utf8"));
+const awsContracts = JSON.parse(readFileSync(resolve(root, "examples/evaluations/curated-aws.json"), "utf8"));
 
 describe("curated provider semantic contracts", () => {
   const curatedIds = readdirSync(resolve(root, "examples/curated"), { withFileTypes: true })
@@ -17,12 +20,10 @@ describe("curated provider semantic contracts", () => {
     .sort();
 
   it("covers a curated semantic contract for each provider grammar", () => {
-    expect(Object.keys(contracts.examples).sort()).toEqual([
-      "azure-private-app-service",
-      "cloud-agnostic-order-processing",
-      "gcp-streaming-analytics",
-      "simple-serverless-web-application",
+    expect([...new Set(Object.values(contracts.examples).map((contract) => contract.grammar))].sort()).toEqual([
+      "aws", "azure", "cloud-agnostic", "gcp",
     ]);
+    expect([...new Set([...Object.keys(awsContracts.examples), ...Object.keys(contracts.examples)])].sort()).toEqual(curatedIds);
     expect(curatedIds).toEqual(expect.arrayContaining(Object.keys(contracts.examples)));
   });
 

@@ -2,7 +2,8 @@ import {
   createAsyncDocsFixture,
 } from "@dumb-diagrams/runtime/test-fixtures";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { INVARIANT_DIAGNOSTICS_TRUNCATED_CODE } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
 import { planAutoFix } from "./auto-fix";
@@ -16,6 +17,8 @@ import {
   setRoute,
 } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const FLAT_CLOUD_BRANCH = `diagram autofix-branch {
   grammar aws
@@ -166,6 +169,29 @@ describe("planAutoFix", () => {
     expect(plan.status).toBe("blocked");
     expect(plan.strategy).toBe("unchanged");
     expect(plan.message).toBeTruthy();
+  });
+
+  it("blocks Auto-fix when the baseline invariant diagnostics are truncated", () => {
+    const doc = parseDgm(FLAT_CLOUD_BRANCH);
+    const baseline = compileDocument(doc, false);
+    expect(baseline.ok).toBe(true);
+    if (!baseline.ok) return;
+
+    const plan = planAutoFix(doc, false, {
+      ...baseline,
+      invariantFailures: [
+        ...baseline.invariantFailures,
+        {
+          code: INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
+          message: "Invariant diagnostics truncated: 1 additional failure omitted",
+          elementIds: [],
+        },
+      ],
+    });
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.strategy).toBe("unchanged");
+    expect(plan.message).toContain("too many layout issues");
   });
 
   it("works with snap to grid enabled", () => {

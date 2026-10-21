@@ -1,8 +1,8 @@
 import { readFile, writeFile, mkdir, copyFile, readdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { parseDgm } from '@dumb-diagrams/runtime/dsl';
+import { parseDgmResult, formatParseError } from '@dumb-diagrams/runtime/dsl';
 import { compileDiagram, inlineCatalogIcons } from '@dumb-diagrams/runtime/render';
-import { getCatalogEntryByBrowserPath } from '@dumb-diagrams/runtime/catalog';
+import { loadCatalogSvg } from './catalog-loader.mjs';
 import { loadExamples } from '../src/lib/examples.mjs';
 
 const root = new URL('../../../', import.meta.url);
@@ -16,16 +16,23 @@ for (const filename of await readdir(new URL('src/examples/', site))) {
 }
 for (const { id, source, prompt, referenceSpec } of examples) {
   const filename = `${id}.dgm`;
-  const result = compileDiagram(parseDgm(source));
-  if (!result.ok) throw new Error(`${filename}: ${JSON.stringify(result.issues)}`);
+  const parsed = parseDgmResult(source);
+  if (parsed.isErr()) {
+    console.error(`${filename}: ${formatParseError(parsed.error)}`);
+    process.exit(1);
+  }
+  const result = compileDiagram(parsed.value);
+  if (!result.ok) {
+    console.error(`${filename}: ${JSON.stringify(result.issues)}`);
+    process.exit(1);
+  }
   const inlined = await inlineCatalogIcons(result.svg, {
-    loadCatalogSvg: async (path) => {
-      const entry = getCatalogEntryByBrowserPath(path);
-      if (!entry) throw new Error(`Missing catalog entry: ${path}`);
-      return readFile(new URL(entry.iconPath, root), 'utf8');
-    },
+    loadCatalogSvg,
   });
-  if (inlined.isErr()) throw new Error(`${filename}: ${inlined.error.message}`);
+  if (inlined.isErr()) {
+    console.error(`${filename}: ${inlined.error.message}`);
+    process.exit(1);
+  }
   const svg = inlined.value;
   await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '.svg')}`, site), svg);
   // Fit the website preview to authored content; keep the downloadable engine

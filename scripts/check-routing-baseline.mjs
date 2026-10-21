@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 
-import { parseDgm } from "../packages/runtime/dist/dsl/index.js";
+import { formatParseError, parseDgmResult } from "../packages/runtime/dist/dsl/index.js";
 import { compileDiagram, invariantTier } from "../packages/runtime/dist/render/index.js";
 import { repoRoot, routingDiagrams } from "./lib/example-manifest.mjs";
 import {
@@ -15,9 +15,15 @@ const root = repoRoot();
 const expected = JSON.parse(readFileSync(new URL("../examples/routing-warnings.json", import.meta.url), "utf8"));
 const hardFailures = [];
 const actual = routingDiagrams().flatMap(({ file, baselineName }) => {
-  const compiled = compileDiagram(parseDgm(readFileSync(file, "utf8")));
+  const parsed = parseDgmResult(readFileSync(file, "utf8"));
+  if (parsed.isErr()) {
+    hardFailures.push(`${baselineName}: parse failed: ${formatParseError(parsed.error)}`);
+    return [];
+  }
+  const compiled = compileDiagram(parsed.value);
   if (!compiled.ok) {
-    throw new Error(`${relative(root, file)} cannot be compiled while checking the routing baseline.`);
+    hardFailures.push(`${relative(root, file)} cannot be compiled while checking the routing baseline.`);
+    return [];
   }
   const warnings = [];
   for (const failure of compiled.invariantFailures) {

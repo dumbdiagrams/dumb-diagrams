@@ -1,10 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
-import { parseDgm, printDgm } from "../packages/runtime/dist/dsl/index.js";
+import { parseDgmResult, printDgm } from "../packages/runtime/dist/dsl/index.js";
 import { validateDocument } from "../packages/runtime/dist/core/index.js";
 import { getCatalogMap } from "../packages/runtime/dist/catalog/index.js";
 import { ROOT, MOD, SIMPLE_SERVERLESS, entityBox, waitForStudioReady } from "./support/helpers";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");

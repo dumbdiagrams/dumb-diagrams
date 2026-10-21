@@ -9,6 +9,7 @@ import {
   qualityFindings,
   qualityHardRegressionReason,
   qualityRegressionReason,
+  topQualityFinding,
 } from "./quality.js";
 
 describe("diagram quality assessment", () => {
@@ -104,5 +105,20 @@ describe("diagram quality assessment", () => {
       "Edges a and b share a corridor outside a fan-out stem",
     );
     expect(qualityHardRegressionReason(baseline, candidate)).toBeUndefined();
+  });
+
+  it("ranks equal findings lexically rather than the host locale", () => {
+    const upper: InvariantFailure = {
+      code: "edge-crossing",
+      message: "Upper",
+      elementIds: ["I"],
+    };
+    const lower: InvariantFailure = {
+      code: "edge-crossing",
+      message: "Lower",
+      elementIds: ["i"],
+    };
+
+    expect(topQualityFinding(qualityFindings([], [lower, upper]))?.message).toBe("Upper");
   });
 });

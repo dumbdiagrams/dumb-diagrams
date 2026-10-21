@@ -41,8 +41,8 @@ export function embedAssetsInSvg(svg: string, doc: DiagramDocument): string {
 }
 
 export interface PortableSvgOptions {
-  /** Optional loader used by the CLI or a static export worker. */
-  loadCatalogSvg?: (browserPath: string) => Promise<string>;
+  /** Typed loader used by the CLI or a static export worker. */
+  loadCatalogSvg?: (browserPath: string) => ResultAsync<string, PortableSvgError>;
 }
 
 export type PortableSvgError = {
@@ -58,11 +58,6 @@ export function inlineCatalogIcons(
   options: PortableSvgOptions = {},
 ): ResultAsync<string, PortableSvgError> {
   const baseUrl = typeof document !== "undefined" ? document.baseURI : undefined;
-  const load = options.loadCatalogSvg ?? (async (path: string) => {
-    const response = await fetch(new URL(path.replace(/^\/+/, ""), baseUrl).toString());
-    if (!response.ok) throw new Error(`Unable to load catalog icon ${path}`);
-    return response.text();
-  });
   const hrefs = [...new Set([...svg.matchAll(/<image\b[^>]*\bhref="([^"]+)"[^>]*\/?>(?:<\/image>)?/gi)]
     .map((match) => match[1]!)
     .filter((href) => !href.startsWith("data:")))];
@@ -78,15 +73,7 @@ export function inlineCatalogIcons(
         browserPath,
       });
     }
-    return ResultAsync.fromPromise(
-      Promise.resolve().then(() => load(browserPath)),
-      (cause): PortableSvgError => ({
-        code: "catalog-icon-load-failed",
-        message: cause instanceof Error ? cause.message : `Unable to load catalog icon ${browserPath}`,
-        browserPath,
-        cause,
-      }),
-    ).andThen((content) => {
+    return loadCatalogIcon(browserPath, options, baseUrl).andThen((content) => {
       const unsafe = unsafeIconReason(content);
       return unsafe
         ? errAsync<[string, string], PortableSvgError>({ code: "catalog-icon-unsafe", message: unsafe, browserPath })
@@ -99,6 +86,32 @@ export function inlineCatalogIcons(
     }
     return output;
   });
+}
+
+function loadCatalogIcon(
+  browserPath: string,
+  options: PortableSvgOptions,
+  baseUrl: string | undefined,
+): ResultAsync<string, PortableSvgError> {
+  const loadError = (cause: unknown): PortableSvgError => ({
+    code: "catalog-icon-load-failed",
+    message: cause instanceof Error ? cause.message : `Unable to load catalog icon ${browserPath}`,
+    browserPath,
+    cause,
+  });
+  const customLoader = options.loadCatalogSvg;
+  if (customLoader) {
+    return ResultAsync.fromPromise(
+      Promise.resolve().then(() => customLoader(browserPath)),
+      loadError,
+    ).andThen((result) => result);
+  }
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => fetch(new URL(browserPath.replace(/^\/+/, ""), baseUrl).toString())),
+    loadError,
+  ).andThen((response) => response.ok
+    ? ResultAsync.fromPromise(Promise.resolve().then(() => response.text()), loadError)
+    : errAsync(loadError(new Error(`Unable to load catalog icon ${browserPath}`))));
 }
 
 function browserPathFromHref(href: string): string {

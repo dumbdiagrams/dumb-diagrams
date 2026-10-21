@@ -117,6 +117,17 @@ describe("document validation modes", () => {
     expect(codes).toContain("asset-size-limit");
   });
 
+  it("rejects documents without a view", () => {
+    const doc = createEmptyDocument("missing-view");
+    doc.views = [];
+
+    expect(validateDocument(doc, new Map(), { enforceCatalogRules: false })).toContainEqual({
+      level: "error",
+      code: "missing-view",
+      message: "Diagram must contain at least one view",
+    });
+  });
+
   it("limits every display label to 120 characters", () => {
     expect(DIAGRAM_LIMITS.labelCharacters).toBe(120);
     const doc = stagedDocument();

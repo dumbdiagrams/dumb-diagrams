@@ -1,10 +1,12 @@
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { describe, expect, it } from "vitest";
 
 import { planAutoFix } from "./auto-fix";
 import { compileDocument } from "./diagram-compiler";
 import { setRoute } from "./editor-model";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const INSIDE_CLOUD = `diagram crossed-fanout {
   grammar aws

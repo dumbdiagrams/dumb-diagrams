@@ -1,4 +1,4 @@
-import { err, ok, ResultAsync, type Result } from "neverthrow";
+import { err, errAsync, ok, ResultAsync, type Result } from "neverthrow";
 
 import type { WorkspaceState } from "./workspace-model";
 
@@ -33,8 +33,8 @@ export interface WorkspaceStorage {
 }
 
 export interface WorkspaceIndexedDb {
-  read(key: string): Promise<unknown | undefined>;
-  write(key: string, value: WorkspaceState): Promise<void>;
+  read(key: string): ResultAsync<unknown | undefined, StorageError>;
+  write(key: string, value: WorkspaceState): ResultAsync<void, StorageError>;
 }
 
 export interface WorkspacePersistencePlatform {
@@ -260,14 +260,14 @@ function readIndexedDb(indexedDb: WorkspaceIndexedDb): ResultAsync<unknown | und
   return ResultAsync.fromPromise(
     Promise.resolve().then(() => indexedDb.read(WORKSPACE_KEY)),
     (cause) => storageError("indexeddb", "read", cause),
-  );
+  ).andThen((result) => result);
 }
 
 function writeIndexedDb(indexedDb: WorkspaceIndexedDb, workspace: WorkspaceState): ResultAsync<void, StorageError> {
   return ResultAsync.fromPromise(
     Promise.resolve().then(() => indexedDb.write(WORKSPACE_KEY, workspace)),
     (cause) => storageError("indexeddb", "write", cause),
-  );
+  ).andThen((result) => result);
 }
 
 function storageError(
@@ -328,36 +328,57 @@ export function createDefaultPersistencePlatform(): WorkspacePersistencePlatform
     journal: browserStorage,
     fallback: browserStorage,
     indexedDb: {
-      read: async (key) => {
-        const db = await openDatabase();
-        try {
-          return await readWorkspaceValue(db, key);
-        } finally {
-          db.close();
-        }
-      },
-      write: async (key, workspace) => {
-        const db = await openDatabase();
-        try {
-          await writeWorkspaceValue(db, key, workspace);
-        } finally {
-          db.close();
-        }
-      },
+      read: readDefaultIndexedDb,
+      write: writeDefaultIndexedDb,
     },
   };
 }
 
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof globalThis.indexedDB === "undefined") return Promise.reject(new Error("IndexedDB is unavailable."));
-  return new Promise((resolve, reject) => {
+function openDatabase(operation: "read" | "write"): ResultAsync<IDBDatabase, StorageError> {
+  if (typeof globalThis.indexedDB === "undefined") {
+    const cause = new Error("IndexedDB is unavailable.");
+    return errAsync({
+      code: "unavailable",
+      layer: "indexeddb",
+      operation,
+      message: `${cause.name} ${cause.message}`,
+      cause,
+    });
+  }
+  return ResultAsync.fromPromise(new Promise((resolve, reject) => {
     const request = globalThis.indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       request.result.createObjectStore(STORE_NAME);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("Unable to open workspace storage."));
-  });
+  }), (cause) => storageError("indexeddb", operation, cause));
+}
+
+function readDefaultIndexedDb(key: string): ResultAsync<unknown | undefined, StorageError> {
+  return openDatabase("read").andThen((db) => ResultAsync.fromPromise(
+    (async () => {
+      try {
+        return await readWorkspaceValue(db, key);
+      } finally {
+        db.close();
+      }
+    })(),
+    (cause) => storageError("indexeddb", "read", cause),
+  ));
+}
+
+function writeDefaultIndexedDb(key: string, workspace: WorkspaceState): ResultAsync<void, StorageError> {
+  return openDatabase("write").andThen((db) => ResultAsync.fromPromise(
+    (async () => {
+      try {
+        await writeWorkspaceValue(db, key, workspace);
+      } finally {
+        db.close();
+      }
+    })(),
+    (cause) => storageError("indexeddb", "write", cause),
+  ));
 }
 
 function readWorkspaceValue(db: IDBDatabase, key: string): Promise<unknown> {

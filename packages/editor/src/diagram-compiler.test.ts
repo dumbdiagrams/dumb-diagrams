@@ -5,7 +5,7 @@ import {
 } from "@dumb-diagrams/runtime/core";
 import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import {
   eraseOrthogonalRouteLoops,
   ROUTING_BUDGET_WARNING_CODE,
@@ -22,10 +22,13 @@ import {
   STUDIO_CANVAS_PADDING,
   warmDiagramCompilationCache,
 } from "./diagram-compiler";
+
 import { moveSelection, needsAutoFix, setRoute } from "./editor-model";
 import { addResourceResult } from "./model/catalog-placement";
 import { DIAGRAM_EXAMPLES } from "./examples";
 import { leftStagingInsertionPoint } from "./grid";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("diagram compilation canvas bounds", () => {
   it("reports malformed embedded SVGs as repairable compilation issues", () => {

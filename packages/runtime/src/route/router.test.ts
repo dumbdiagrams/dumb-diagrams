@@ -8,8 +8,9 @@ import {
   portPoint,
 } from "../core/index.js";
 import { createAsyncDocsFixture } from "../../test-fixtures.js";
-import { parseDgm } from "../dsl/index.js";
+import { parseDgmResult } from "../dsl/index.js";
 import type { DiagramDocument, LayoutResult, NodeGeom } from "../core/index.js";
+
 import { layoutDocument } from "../layout/index.js";
 import {
   collapseOrthogonalRouteArtifacts,
@@ -23,6 +24,8 @@ import {
   routeEdgePreview,
   routeEdges,
 } from "./router.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("routeEdgePreview", () => {
   it.each([

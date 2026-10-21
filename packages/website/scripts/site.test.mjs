@@ -4,7 +4,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
-import { parseDgm } from '@dumb-diagrams/runtime/dsl';
+import { formatParseError, parseDgmResult } from '@dumb-diagrams/runtime/dsl';
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
 import { createCliUi } from '../../cli/src/cli-ui.ts';
 import { stripVTControlCharacters } from 'node:util';
@@ -61,7 +61,10 @@ test('complete documentation and homepage examples compile through the actual ru
     const snippets = file.endsWith('.dgm') ? [source] : /\.mdx?$/.test(file)
       ? [...source.matchAll(/```dgm\n([\s\S]*?)```/g)].map(match => match[1]) : [];
     for (const snippet of snippets) {
-      const result = compileDiagram(parseDgm(snippet));
+      const parsed = parseDgmResult(snippet);
+      assert.equal(parsed.isOk(), true, `${file}: ${parsed.isErr() ? formatParseError(parsed.error) : ''}`);
+      if (parsed.isErr()) continue;
+      const result = compileDiagram(parsed.value);
       assert.equal(result.ok, true, `${file}: ${JSON.stringify(result.issues)}`);
       checked++;
     }
@@ -70,7 +73,10 @@ test('complete documentation and homepage examples compile through the actual ru
     assert.ok(example.prompt.trim(), `${example.id}: natural prompt`);
     assert.ok(example.interpretation.trim(), `${example.id}: architecture interpretation`);
     assert.ok(example.referenceSpec.trim(), `${example.id}: reference specification`);
-    const result = compileDiagram(parseDgm(example.source));
+    const parsed = parseDgmResult(example.source);
+    assert.equal(parsed.isOk(), true, `${example.id}: ${parsed.isErr() ? formatParseError(parsed.error) : ''}`);
+    if (parsed.isErr()) continue;
+    const result = compileDiagram(parsed.value);
     assert.equal(result.ok, true, `${example.id}: original Studio source compiles`);
     // These are the app's existing examples, including any existing routing
     // notes. The website must not rewrite their geometry to hide those notes.

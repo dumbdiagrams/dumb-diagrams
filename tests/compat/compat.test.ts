@@ -5,7 +5,7 @@ import { globSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DGM_KEYWORDS, DGM_VALUES, parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { DGM_KEYWORDS, DGM_VALUES, parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagram } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
@@ -14,6 +14,7 @@ const files = globSync("v*/*.dgm", { cwd: here }).sort();
 
 // Defaults the canonical printer omits, so they cannot appear in a canonical file.
 const PRINTER_DEFAULTS = new Set(["primary", "solid", "paper", "true", "auto"]);
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("format compatibility corpus", () => {
   it.each(files)("%s parses, validates, round-trips, and renders unchanged", async (file) => {
