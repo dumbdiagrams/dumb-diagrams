@@ -7,13 +7,14 @@ customer data in issue reports or example diagrams.
 
 ## Reporting a vulnerability
 
-Please do not report an unpatched vulnerability in a public issue. A canonical
-private reporting endpoint is still being arranged for this project. Until it is
-published, use the repository host's private security-advisory channel when it
-is enabled, or ask a maintainer for a private disclosure channel through the
-hosting service. Include the affected version, operating system, reproduction
-steps, and a minimal proof of impact. Redact secrets and personal data from all
-attachments.
+Please do not report an unpatched vulnerability in a public issue. Use the
+repository's **Security** tab and choose **Report a vulnerability** (GitHub
+private vulnerability reporting). The report stays private, is tracked on
+GitHub like an issue, and needs no email. Include the affected version,
+operating system, reproduction steps, and a minimal proof of impact. Redact
+secrets and personal data from all attachments.
+
+For anything that is not a vulnerability, open a regular issue.
 
 Maintainers will acknowledge a report when practical, assess supported versions,
 and coordinate disclosure after a fix or mitigation is available. We do not

@@ -150,3 +150,5 @@ not per-change design documents or audit logs.
 
 Only maintainers publish `create-dumb-diagrams`, through the tag-driven
 workflow in [docs/RELEASE.md](docs/RELEASE.md).
+
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues as described in [SECURITY.md](SECURITY.md); everything else goes through GitHub issues.
