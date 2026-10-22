@@ -37,7 +37,7 @@ Editor tests import the built runtime, so run
 | `pnpm fix:style` | Apply Biome safe fixes on tracked paths (same scope as `check:style`) |
 | `pnpm check:style` | Biome lint in CI mode (no writes) |
 | `pnpm check:results` | ESLint rules for `Result` boundaries and unsafe unwraps |
-| `pnpm check:results` | Result consumption, no unsafe unwraps, no explicit runtime/CLI throws |
+| `pnpm check:dependencies` | Workspace import boundaries and dependency direction |
 | `pnpm check:engine` | Engine-independent semantic/quality contracts and full-output repeatability across processes/locales/time zones |
 | `pnpm test:golden` | Frozen SVG, geometry, format compatibility, and editor operation output |
 
@@ -151,4 +151,14 @@ not per-change design documents or audit logs.
 Only maintainers publish `create-dumb-diagrams`, through the tag-driven
 workflow in [docs/RELEASE.md](docs/RELEASE.md).
 
-By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues as described in [SECURITY.md](SECURITY.md); everything else goes through GitHub issues.
+## Project communication
+
+Use GitHub Issues for bug reports, feature requests, documentation corrections,
+project questions, and other discussion. Choose the matching form when one fits;
+use **Question, documentation, or other** for everything else. Issues are public.
+Remove credentials, customer data, and private infrastructure details from
+diagrams, logs, and screenshots.
+
+Report unpatched security vulnerabilities privately through GitHub as described
+in [SECURITY.md](SECURITY.md). By participating, you agree to the
+[Code of Conduct](CODE_OF_CONDUCT.md).

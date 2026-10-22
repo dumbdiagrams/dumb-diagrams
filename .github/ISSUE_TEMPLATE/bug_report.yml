@@ -1,25 +1,48 @@
 name: Bug report
-description: Something is broken or renders wrongly
+description: Something is broken or behaves differently than expected
 labels: [bug]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. Issues are public. Remove credentials,
+        account IDs, customer data, and private infrastructure details from diagrams,
+        logs, and screenshots.
+
+        Do not post an unpatched security vulnerability here. Use this repository's
+        Security tab and choose "Report a vulnerability" to report it privately on GitHub.
   - type: textarea
     id: what
     attributes:
       label: What happened, and what did you expect?
-    validations: { required: true }
+    validations:
+      required: true
   - type: textarea
     id: repro
     attributes:
-      label: Minimal `.dgm` source or steps to reproduce
+      label: Minimal `.dgm` source or exact steps to reproduce
+      description: Use invented names and values. If this does not apply, explain why.
       render: text
-    validations: { required: true }
+      placeholder: Paste a small `.dgm` example or list the steps to reproduce the problem.
+    validations:
+      required: true
   - type: input
     id: version
     attributes:
-      label: Version (`dumbdiagrams --version`)
-    validations: { required: true }
+      label: Dumb Diagrams version
+      description: For the CLI, run `dumbdiagrams --version`.
+    validations:
+      required: true
   - type: input
     id: env
     attributes:
-      label: OS, Node.js version, browser (for Studio)
-    validations: { required: true }
+      label: Environment
+      description: Include OS, Node.js version for CLI use, and browser/version for Studio.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error message or relevant log (optional)
+      description: Remove secrets and private data before posting.
+      render: text

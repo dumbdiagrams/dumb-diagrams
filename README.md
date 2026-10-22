@@ -88,6 +88,10 @@ baselines, and testing the packed CLI artifact.
 package boundaries, and [docs/RELEASE.md](./docs/RELEASE.md) covers
 versioning, the format policy, and publishing.
 
+GitHub Issues are the primary place for bugs, feature ideas, documentation
+corrections, and project questions. See [SECURITY.md](./SECURITY.md) for private
+vulnerability reports.
+
 ## License
 
 Copyright © 2026 DumbDiagrams contributors. Licensed under the

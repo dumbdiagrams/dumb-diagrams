@@ -1,13 +1,23 @@
 name: Feature request
-description: Suggest an improvement
+description: Suggest a feature or improvement
 labels: [enhancement]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. Issues are public, so do not include
+        credentials, customer data, or private infrastructure details.
+        Do not post an unpatched security vulnerability here. Use this repository's
+        Security tab and choose "Report a vulnerability" to report it privately on GitHub.
   - type: textarea
     id: problem
     attributes:
       label: What problem are you trying to solve?
-    validations: { required: true }
+      description: Describe the task or limitation you ran into.
+    validations:
+      required: true
   - type: textarea
     id: idea
     attributes:
-      label: Proposed solution or alternatives considered
+      label: Desired outcome or possible solution (optional)
+      description: Share an idea if you have one; a specific implementation is not required.

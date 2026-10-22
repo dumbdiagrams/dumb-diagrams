@@ -5,6 +5,9 @@ This project follows the [Contributor Covenant, version 2.1](https://www.contrib
 Be respectful, assume good faith, and keep discussion focused on the work.
 Harassment, personal attacks, and discriminatory language are not tolerated.
 
-To report a conduct problem, open an issue titled "Conduct report" without
-details and ask a maintainer for a private channel, or use the repository's
-private security-advisory form if no other channel is listed.
+To raise a conduct concern, use the **Question, documentation, or other** issue
+form and title it "Code of Conduct concern". Keep it free of personal,
+identifying, or sensitive details. GitHub Issues are public and are the project's
+place for communication. Do not post information that needs confidential
+handling. Security vulnerabilities have a separate private reporting path
+described in [SECURITY.md](SECURITY.md).

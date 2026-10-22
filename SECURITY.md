@@ -14,7 +14,10 @@ GitHub like an issue, and needs no email. Include the affected version,
 operating system, reproduction steps, and a minimal proof of impact. Redact
 secrets and personal data from all attachments.
 
-For anything that is not a vulnerability, open a regular issue.
+For bugs, feature requests, documentation corrections, project questions, and
+other non-security matters, use the matching GitHub issue form. Issues are
+public; do not include credentials, private infrastructure names, or customer
+data.
 
 Maintainers will acknowledge a report when practical, assess supported versions,
 and coordinate disclosure after a fix or mitigation is available. We do not

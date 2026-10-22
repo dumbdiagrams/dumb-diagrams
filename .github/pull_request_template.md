@@ -1,5 +1,9 @@
 ## What and why
 
+## Verification
+
+Commands/checks run and results:
+
 ## Checklist
 
 - [ ] `pnpm check:pr` passes
