@@ -8,14 +8,7 @@
  * machine-path-free and makes the browser manifest reproducible.
  */
 import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -75,8 +68,8 @@ const CATEGORY_COLUMN = {
   "End User Computing": "compute",
   "Front End Web Mobile": "ingress",
   "Media Services": "data",
-  "Blockchain": "data",
-  "Games": "compute",
+  Blockchain: "data",
+  Games: "compute",
   Satellite: "compute",
   "Quantum Technologies": "compute",
   "Customer Enablement": "observability",
@@ -185,8 +178,7 @@ const PROVIDER_GROUPS = [
     type: "aws.vpc",
     provider: "aws",
     name: "VPC",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Virtual-private-cloud-VPC_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Virtual-private-cloud-VPC_32.svg",
     kind: "vpc",
   },
   {
@@ -200,56 +192,49 @@ const PROVIDER_GROUPS = [
     type: "aws.subnet.public",
     provider: "aws",
     name: "Public Subnet",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Public-subnet_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Public-subnet_32.svg",
     kind: "subnet-public",
   },
   {
     type: "aws.subnet.private",
     provider: "aws",
     name: "Private Subnet",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Private-subnet_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Private-subnet_32.svg",
     kind: "subnet-private",
   },
   {
     type: "aws.auto-scaling-group",
     provider: "aws",
     name: "Auto Scaling Group",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Auto-Scaling-group_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Auto-Scaling-group_32.svg",
     kind: "auto-scaling",
   },
   {
     type: "aws.ec2-instance-contents",
     provider: "aws",
     name: "EC2 Instance Contents",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/EC2-instance-contents_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/EC2-instance-contents_32.svg",
     kind: "ec2-instance",
   },
   {
     type: "aws.elastic-beanstalk-container",
     provider: "aws",
     name: "Elastic Beanstalk Container",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Elastic-Beanstalk-container_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Elastic-Beanstalk-container_32.svg",
     kind: "elastic-beanstalk",
   },
   {
     type: "aws.spot-fleet",
     provider: "aws",
     name: "Spot Fleet",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Spot-Fleet_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/Spot-Fleet_32.svg",
     kind: "spot-fleet",
   },
   {
     type: "aws.step-functions-workflow",
     provider: "aws",
     name: "AWS Step Functions Workflow",
-    iconPath:
-      "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/AWS-Step-Functions-workflow_32.svg",
+    iconPath: "assets/catalog/sources/aws/Architecture-Group-Icons_07312026/AWS-Step-Functions-workflow_32.svg",
     kind: "step-functions",
   },
   {
@@ -263,24 +248,21 @@ const PROVIDER_GROUPS = [
     type: "azure.region",
     provider: "azure",
     name: "Region",
-    iconPath:
-      "assets/catalog/sources/azure/Icons/general/10116-icon-service-Region-Management.svg",
+    iconPath: "assets/catalog/sources/azure/Icons/general/10116-icon-service-Region-Management.svg",
     kind: "region",
   },
   {
     type: "azure.vnet",
     provider: "azure",
     name: "Virtual Network",
-    iconPath:
-      "assets/catalog/sources/azure/Icons/networking/10061-icon-service-Virtual-Networks.svg",
+    iconPath: "assets/catalog/sources/azure/Icons/networking/10061-icon-service-Virtual-Networks.svg",
     kind: "vpc",
   },
   {
     type: "azure.az",
     provider: "azure",
     name: "Availability Zone",
-    iconPath:
-      "assets/catalog/sources/azure/Icons/compute/10021-icon-service-Virtual-Machine.svg",
+    iconPath: "assets/catalog/sources/azure/Icons/compute/10021-icon-service-Virtual-Machine.svg",
     kind: "az",
   },
   {
@@ -294,32 +276,28 @@ const PROVIDER_GROUPS = [
     type: "azure.resource-group",
     provider: "azure",
     name: "Resource Group",
-    iconPath:
-      "assets/catalog/sources/azure/Icons/general/10007-icon-service-Resource-Groups.svg",
+    iconPath: "assets/catalog/sources/azure/Icons/general/10007-icon-service-Resource-Groups.svg",
     kind: "logical",
   },
   {
     type: "gcp.organization",
     provider: "gcp",
     name: "Organization",
-    iconPath:
-      "assets/catalog/sources/gcp/Category Icons/Management Tools/SVG/ManagementTools-512-color.svg",
+    iconPath: "assets/catalog/sources/gcp/Category Icons/Management Tools/SVG/ManagementTools-512-color.svg",
     kind: "cloud",
   },
   {
     type: "gcp.project",
     provider: "gcp",
     name: "Project",
-    iconPath:
-      "assets/catalog/sources/gcp/Category Icons/Management Tools/SVG/ManagementTools-512-color.svg",
+    iconPath: "assets/catalog/sources/gcp/Category Icons/Management Tools/SVG/ManagementTools-512-color.svg",
     kind: "account",
   },
   {
     type: "gcp.region",
     provider: "gcp",
     name: "Region",
-    iconPath:
-      "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
+    iconPath: "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
     kind: "region",
   },
   {
@@ -333,16 +311,14 @@ const PROVIDER_GROUPS = [
     type: "gcp.vpc",
     provider: "gcp",
     name: "VPC Network",
-    iconPath:
-      "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
+    iconPath: "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
     kind: "vpc",
   },
   {
     type: "gcp.subnet",
     provider: "gcp",
     name: "Subnet",
-    iconPath:
-      "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
+    iconPath: "assets/catalog/sources/gcp/Category Icons/Networking/SVG/Networking-512-color-rgb.svg",
     kind: "subnet",
   },
 ];
@@ -361,18 +337,8 @@ const CLOUD_GROUPS = [
     "logical",
   ],
   ["cloud-agnostic.cluster", "Cluster", "assets/catalog/sources/cloud-agnostic/cluster.svg", "logical"],
-  [
-    "cloud-agnostic.datacenter",
-    "Data Center",
-    "assets/catalog/sources/cloud-agnostic/datacenter.svg",
-    "logical",
-  ],
-  [
-    "cloud-agnostic.boundary",
-    "Boundary",
-    "assets/catalog/sources/cloud-agnostic/boundary.svg",
-    "logical",
-  ],
+  ["cloud-agnostic.datacenter", "Data Center", "assets/catalog/sources/cloud-agnostic/datacenter.svg", "logical"],
+  ["cloud-agnostic.boundary", "Boundary", "assets/catalog/sources/cloud-agnostic/boundary.svg", "logical"],
   [
     "cloud-agnostic.trust-boundary",
     "Trust Boundary",
@@ -383,30 +349,120 @@ const CLOUD_GROUPS = [
 
 const CLOUD_RESOURCES = [
   ["cloud-agnostic.actor", "Actor", "Actors", "assets/catalog/sources/cloud-agnostic/actor.svg", ["user", "users"]],
-  ["cloud-agnostic.client", "Client", "Clients", "assets/catalog/sources/cloud-agnostic/client.svg", ["browser", "mobile client"]],
+  [
+    "cloud-agnostic.client",
+    "Client",
+    "Clients",
+    "assets/catalog/sources/cloud-agnostic/client.svg",
+    ["browser", "mobile client"],
+  ],
   ["cloud-agnostic.server", "Server", "Compute", "assets/catalog/sources/cloud-agnostic/server.svg", ["host"]],
-  ["cloud-agnostic.function", "Function", "Compute", "assets/catalog/sources/cloud-agnostic/function.svg", ["lambda", "serverless"]],
-  ["cloud-agnostic.container", "Container", "Compute", "assets/catalog/sources/cloud-agnostic/container.svg", ["service"]],
-  ["cloud-agnostic.cluster-node", "Cluster Node", "Compute", "assets/catalog/sources/cloud-agnostic/cluster-node.svg", ["node"]],
-  ["cloud-agnostic.gateway", "Gateway", "Network", "assets/catalog/sources/cloud-agnostic/gateway.svg", ["api gateway"]],
-  ["cloud-agnostic.load-balancer", "Load Balancer", "Network", "assets/catalog/sources/cloud-agnostic/load-balancer.svg", ["proxy"]],
+  [
+    "cloud-agnostic.function",
+    "Function",
+    "Compute",
+    "assets/catalog/sources/cloud-agnostic/function.svg",
+    ["lambda", "serverless"],
+  ],
+  [
+    "cloud-agnostic.container",
+    "Container",
+    "Compute",
+    "assets/catalog/sources/cloud-agnostic/container.svg",
+    ["service"],
+  ],
+  [
+    "cloud-agnostic.cluster-node",
+    "Cluster Node",
+    "Compute",
+    "assets/catalog/sources/cloud-agnostic/cluster-node.svg",
+    ["node"],
+  ],
+  [
+    "cloud-agnostic.gateway",
+    "Gateway",
+    "Network",
+    "assets/catalog/sources/cloud-agnostic/gateway.svg",
+    ["api gateway"],
+  ],
+  [
+    "cloud-agnostic.load-balancer",
+    "Load Balancer",
+    "Network",
+    "assets/catalog/sources/cloud-agnostic/load-balancer.svg",
+    ["proxy"],
+  ],
   ["cloud-agnostic.firewall", "Firewall", "Security", "assets/catalog/sources/cloud-agnostic/firewall.svg", ["waf"]],
   ["cloud-agnostic.vpn", "VPN", "Network", "assets/catalog/sources/cloud-agnostic/vpn.svg", ["tunnel"]],
   ["cloud-agnostic.dns", "DNS", "Network", "assets/catalog/sources/cloud-agnostic/dns.svg", ["domain"]],
-  ["cloud-agnostic.database", "Database", "Data", "assets/catalog/sources/cloud-agnostic/database.svg", ["sql", "store"]],
+  [
+    "cloud-agnostic.database",
+    "Database",
+    "Data",
+    "assets/catalog/sources/cloud-agnostic/database.svg",
+    ["sql", "store"],
+  ],
   ["cloud-agnostic.cache", "Cache", "Data", "assets/catalog/sources/cloud-agnostic/cache.svg", ["redis"]],
-  ["cloud-agnostic.object-storage", "Object Storage", "Data", "assets/catalog/sources/cloud-agnostic/object-storage.svg", ["bucket", "blob"]],
+  [
+    "cloud-agnostic.object-storage",
+    "Object Storage",
+    "Data",
+    "assets/catalog/sources/cloud-agnostic/object-storage.svg",
+    ["bucket", "blob"],
+  ],
   ["cloud-agnostic.queue", "Queue", "Data", "assets/catalog/sources/cloud-agnostic/queue.svg", ["message queue"]],
-  ["cloud-agnostic.event", "Event", "Data", "assets/catalog/sources/cloud-agnostic/event.svg", ["message", "notification"]],
+  [
+    "cloud-agnostic.event",
+    "Event",
+    "Data",
+    "assets/catalog/sources/cloud-agnostic/event.svg",
+    ["message", "notification"],
+  ],
   ["cloud-agnostic.stream", "Stream", "Data", "assets/catalog/sources/cloud-agnostic/stream.svg", ["data stream"]],
-  ["cloud-agnostic.identity", "Identity", "Security", "assets/catalog/sources/cloud-agnostic/identity.svg", ["iam", "principal"]],
+  [
+    "cloud-agnostic.identity",
+    "Identity",
+    "Security",
+    "assets/catalog/sources/cloud-agnostic/identity.svg",
+    ["iam", "principal"],
+  ],
   ["cloud-agnostic.key", "Key", "Security", "assets/catalog/sources/cloud-agnostic/key.svg", ["encryption"]],
-  ["cloud-agnostic.certificate", "Certificate", "Security", "assets/catalog/sources/cloud-agnostic/certificate.svg", ["tls", "ssl"]],
-  ["cloud-agnostic.observability", "Observability", "Observability", "assets/catalog/sources/cloud-agnostic/observability.svg", ["monitoring", "telemetry"]],
-  ["cloud-agnostic.repository", "Repository", "Delivery", "assets/catalog/sources/cloud-agnostic/repository.svg", ["source code", "git"]],
-  ["cloud-agnostic.pipeline", "CI/CD Pipeline", "Delivery", "assets/catalog/sources/cloud-agnostic/pipeline.svg", ["build", "deploy"]],
+  [
+    "cloud-agnostic.certificate",
+    "Certificate",
+    "Security",
+    "assets/catalog/sources/cloud-agnostic/certificate.svg",
+    ["tls", "ssl"],
+  ],
+  [
+    "cloud-agnostic.observability",
+    "Observability",
+    "Observability",
+    "assets/catalog/sources/cloud-agnostic/observability.svg",
+    ["monitoring", "telemetry"],
+  ],
+  [
+    "cloud-agnostic.repository",
+    "Repository",
+    "Delivery",
+    "assets/catalog/sources/cloud-agnostic/repository.svg",
+    ["source code", "git"],
+  ],
+  [
+    "cloud-agnostic.pipeline",
+    "CI/CD Pipeline",
+    "Delivery",
+    "assets/catalog/sources/cloud-agnostic/pipeline.svg",
+    ["build", "deploy"],
+  ],
   ["cloud-agnostic.device", "Device", "Actors", "assets/catalog/sources/cloud-agnostic/device.svg", ["edge"]],
-  ["cloud-agnostic.cloud-resource", "Cloud Resource", "Network", "assets/catalog/sources/cloud-agnostic/cloud-resource.svg", ["cloud", "provider"]],
+  [
+    "cloud-agnostic.cloud-resource",
+    "Cloud Resource",
+    "Network",
+    "assets/catalog/sources/cloud-agnostic/cloud-resource.svg",
+    ["cloud", "provider"],
+  ],
 ];
 
 function slug(value) {
@@ -418,7 +474,7 @@ function slug(value) {
 }
 
 const AWS_SHORT_NAMES = [
-  [/^Amazon Simple Storage Service(?: Glacier)?\b/, (match) => match.includes("Glacier") ? "S3 Glacier" : "S3"],
+  [/^Amazon Simple Storage Service(?: Glacier)?\b/, (match) => (match.includes("Glacier") ? "S3 Glacier" : "S3")],
   [/^Amazon Elastic Compute Cloud\b/, "EC2"],
   [/^Amazon Elastic Container Service\b/, "ECS"],
   [/^Amazon Elastic Container Registry\b/, "ECR"],
@@ -477,12 +533,9 @@ function sha256(file) {
 
 function pathHash(file) {
   const source = sourcePath(file);
-  const [currentRoot, legacyRoot] = [...LEGACY_SOURCE_ROOTS].find(
-    ([root]) => source === root || source.startsWith(`${root}/`),
-  ) ?? [];
-  const stablePath = currentRoot
-    ? source.replace(currentRoot, legacyRoot)
-    : source;
+  const [currentRoot, legacyRoot] =
+    [...LEGACY_SOURCE_ROOTS].find(([root]) => source === root || source.startsWith(`${root}/`)) ?? [];
+  const stablePath = currentRoot ? source.replace(currentRoot, legacyRoot) : source;
   return createHash("sha256").update(stablePath).digest("hex");
 }
 

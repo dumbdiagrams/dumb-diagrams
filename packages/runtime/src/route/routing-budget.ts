@@ -22,7 +22,8 @@ export const ROUTING_BUDGET_WARNING_CODE = "routing-budget";
 export const ROUTING_BUDGET_WARNING_MESSAGE =
   "Routing work budget or grid memory limit reached; retained the best available routes.";
 
-type RoutingBudgetKind = keyof Pick<RoutingDiagnostics,
+type RoutingBudgetKind = keyof Pick<
+  RoutingDiagnostics,
   "scorePathCalls" | "routeConflictChecks" | "astarExpansions" | "repairCandidates"
 >;
 

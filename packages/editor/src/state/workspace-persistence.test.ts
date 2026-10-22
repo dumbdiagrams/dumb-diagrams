@@ -62,7 +62,9 @@ describe("default workspace persistence platform", () => {
       objectStore: () => ({ get: () => request }),
     };
     const database = {
-      close: () => { closed += 1; },
+      close: () => {
+        closed += 1;
+      },
       transaction: () => {
         queueMicrotask(() => transaction.onabort?.());
         return transaction;

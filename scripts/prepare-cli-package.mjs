@@ -1,14 +1,5 @@
 import { build } from "esbuild";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { curatedIds, repoRoot } from "./lib/example-manifest.mjs";
@@ -90,7 +81,7 @@ for (const legalFile of ["LICENSE", "ICON-NOTICES.md"]) {
   if (!existsSync(packaged) || !readFileSync(source).equals(readFileSync(packaged))) {
     throw new Error(
       `packages/cli/${legalFile} must match the repository ${legalFile}. ` +
-      "Update the checked-in package copy before packing.",
+        "Update the checked-in package copy before packing.",
     );
   }
 }
@@ -112,9 +103,7 @@ function cleanupDistArtifacts(distDir) {
 function buildSourceSnapshot() {
   rmSync(sourceSnapshot, { recursive: true, force: true });
   copySourceManifest(root, sourceSnapshot);
-  const npmrcSource = existsSync(join(root, ".npmrc"))
-    ? join(root, ".npmrc")
-    : join(root, "registry.npmrc");
+  const npmrcSource = existsSync(join(root, ".npmrc")) ? join(root, ".npmrc") : join(root, "registry.npmrc");
   if (existsSync(npmrcSource)) {
     cpSync(npmrcSource, join(sourceSnapshot, "registry.npmrc"));
   }

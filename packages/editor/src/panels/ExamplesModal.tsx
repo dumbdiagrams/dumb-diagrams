@@ -21,11 +21,7 @@ type CompilationResponse = {
   compilation: DiagramCompilation;
 };
 
-function prepareForDisplay(
-  source: string,
-  snapToGrid: boolean,
-  compilation: DiagramCompilation,
-): Preview {
+function prepareForDisplay(source: string, snapToGrid: boolean, compilation: DiagramCompilation): Preview {
   if (!compilation.ok) return { status: "error" };
   try {
     // The worker's document base URI is not the page's base URI. Re-rendering
@@ -83,9 +79,7 @@ export function ExamplesModal({
     for (const example of DIAGRAM_EXAMPLES) {
       if (initial.has(example.id)) continue;
       const cached = getCachedDiagramCompilation(example.source, true);
-      if (cached) initial.set(example.id, cached.ok
-        ? { status: "ready", svg: cached.svg }
-        : { status: "error" });
+      if (cached) initial.set(example.id, cached.ok ? { status: "ready", svg: cached.svg } : { status: "error" });
     }
     previewsRef.current = initial;
     setPreviews(initial);
@@ -127,10 +121,7 @@ export function ExamplesModal({
 
     if (pending.length > 0 && typeof Worker !== "undefined") {
       try {
-        worker = new Worker(
-          new URL("../diagram-compiler.worker.ts", import.meta.url),
-          { type: "module" },
-        );
+        worker = new Worker(new URL("../diagram-compiler.worker.ts", import.meta.url), { type: "module" });
         worker.onmessage = (event: MessageEvent<CompilationResponse>) => {
           if (cancelled || event.data.id !== requestId || !activeExample) return;
           const example = activeExample;
@@ -157,10 +148,7 @@ export function ExamplesModal({
     };
   }, [open]);
 
-  const preparedCount = DIAGRAM_EXAMPLES.reduce(
-    (count, example) => count + (previews.has(example.id) ? 1 : 0),
-    0,
-  );
+  const preparedCount = DIAGRAM_EXAMPLES.reduce((count, example) => count + (previews.has(example.id) ? 1 : 0), 0);
 
   return (
     <Modal
@@ -183,70 +171,79 @@ export function ExamplesModal({
           <div className="examples-empty" role="status">
             No bundled examples are available yet.
           </div>
-        ) : DIAGRAM_EXAMPLES.map((example) => {
-          const preview = previews.get(example.id);
-          const preparing = !preview;
-          const opening = openingExampleId === example.id;
-          return (
-            <article key={example.id} className="example-card" aria-busy={preparing || opening}>
-              <div className="example-preview" aria-label={`${example.title} preview`}>
-                {preview?.status === "ready" ? (
-                  <div dangerouslySetInnerHTML={{ __html: preview.svg }} />
-                ) : preview?.status === "error" ? (
-                  <span>Preview unavailable</span>
-                ) : (
-                  <div className="example-preview-skeleton" role="status" aria-label={`Preparing ${example.title} preview`}>
-                    <span className="loading-spinner" aria-hidden="true" />
-                    <span>Preparing preview…</span>
-                  </div>
-                )}
-              </div>
-              <div className="example-card-content">
-                <div className="example-card-heading">
-                  <div>
-                    <h3>{example.title}</h3>
-                    <p>{example.description}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={preparing || openingExampleId !== null}
-                    onClick={() => onOpen(example)}
-                  >
-                    {opening && <span className="loading-spinner is-small" aria-hidden="true" />}
-                    {opening ? "Opening…" : preparing ? "Preparing…" : "Open"}
-                  </button>
+        ) : (
+          DIAGRAM_EXAMPLES.map((example) => {
+            const preview = previews.get(example.id);
+            const preparing = !preview;
+            const opening = openingExampleId === example.id;
+            return (
+              <article key={example.id} className="example-card" aria-busy={preparing || opening}>
+                <div className="example-preview" aria-label={`${example.title} preview`}>
+                  {preview?.status === "ready" ? (
+                    <div dangerouslySetInnerHTML={{ __html: preview.svg }} />
+                  ) : preview?.status === "error" ? (
+                    <span>Preview unavailable</span>
+                  ) : (
+                    <div
+                      className="example-preview-skeleton"
+                      role="status"
+                      aria-label={`Preparing ${example.title} preview`}
+                    >
+                      <span className="loading-spinner" aria-hidden="true" />
+                      <span>Preparing preview…</span>
+                    </div>
+                  )}
                 </div>
-                <div className="example-tags">
-                  {example.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                <div className="example-card-content">
+                  <div className="example-card-heading">
+                    <div>
+                      <h3>{example.title}</h3>
+                      <p>{example.description}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={preparing || openingExampleId !== null}
+                      onClick={() => onOpen(example)}
+                    >
+                      {opening && <span className="loading-spinner is-small" aria-hidden="true" />}
+                      {opening ? "Opening…" : preparing ? "Preparing…" : "Open"}
+                    </button>
+                  </div>
+                  <div className="example-tags">
+                    {example.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                  <details className="example-prompt">
+                    <summary>Prompt · Try this with your agent</summary>
+                    <pre>{example.prompt}</pre>
+                  </details>
+                  {example.architectureBrief && (
+                    <details className="example-prompt">
+                      <summary>How DumbDiagrams interprets it</summary>
+                      <pre>{example.architectureBrief}</pre>
+                    </details>
+                  )}
+                  <details className="example-prompt">
+                    <summary>.dgm code</summary>
+                    <pre className="example-source">{example.source}</pre>
+                  </details>
+                  {example.referenceSpec && (
+                    <details className="example-prompt">
+                      <summary>Advanced · Detailed specification</summary>
+                      <pre>{example.referenceSpec}</pre>
+                      <p className="example-reference-note">
+                        This is the preserved reconstruction specification used to create and regression-test the
+                        diagram.
+                      </p>
+                    </details>
+                  )}
                 </div>
-                <details className="example-prompt">
-                  <summary>Prompt · Try this with your agent</summary>
-                  <pre>{example.prompt}</pre>
-                </details>
-                {example.architectureBrief && (
-                  <details className="example-prompt">
-                    <summary>How DumbDiagrams interprets it</summary>
-                    <pre>{example.architectureBrief}</pre>
-                  </details>
-                )}
-                <details className="example-prompt">
-                  <summary>.dgm code</summary>
-                  <pre className="example-source">{example.source}</pre>
-                </details>
-                {example.referenceSpec && (
-                  <details className="example-prompt">
-                    <summary>Advanced · Detailed specification</summary>
-                    <pre>{example.referenceSpec}</pre>
-                    <p className="example-reference-note">
-                      This is the preserved reconstruction specification used to create and regression-test the diagram.
-                    </p>
-                  </details>
-                )}
-              </div>
-            </article>
-          );
-        })}
+              </article>
+            );
+          })
+        )}
       </div>
     </Modal>
   );

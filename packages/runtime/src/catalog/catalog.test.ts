@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  getCatalogEntry,
-  listAssets,
-  listCategories,
-  listProviders,
-  searchAssets,
-} from "./catalog.js";
+import { getCatalogEntry, listAssets, listCategories, listProviders, searchAssets } from "./catalog.js";
 
 describe("generated catalog", () => {
   it("includes database services", () => {
@@ -23,9 +17,7 @@ describe("generated catalog", () => {
   });
 
   it("lists providers and categories", () => {
-    expect(listProviders()).toEqual(
-      ["aws", "azure", "gcp", "cloud-agnostic"],
-    );
+    expect(listProviders()).toEqual(["aws", "azure", "gcp", "cloud-agnostic"]);
     expect(listCategories("aws")).toContain("Databases");
     expect(listCategories("cloud-agnostic", "resources")).toContain("Actors");
   });

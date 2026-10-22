@@ -3,8 +3,11 @@ import { dirname, relative, resolve, sep } from "node:path";
 
 const builtins = new Set(builtinModules.flatMap((name) => [name, `node:${name}`]));
 const workspacePackages = new Map([
-  ["@dumb-diagrams/runtime", "runtime"], ["@dumb-diagrams/editor", "editor"],
-  ["create-dumb-diagrams", "cli"], ["@dumb-diagrams/website", "website"], ["@dumb-diagrams/brand", "brand"],
+  ["@dumb-diagrams/runtime", "runtime"],
+  ["@dumb-diagrams/editor", "editor"],
+  ["create-dumb-diagrams", "cli"],
+  ["@dumb-diagrams/website", "website"],
+  ["@dumb-diagrams/brand", "brand"],
 ]);
 const dependencies = {
   runtime: new Set(["runtime"]),
@@ -32,11 +35,16 @@ export function importBoundaryError(root, file, specifier) {
     if (specifier === name || specifier.startsWith(`${name}/`)) target = directory;
   }
   if (specifier.startsWith(".")) {
-    const resolved = relative(root, resolve(dirname(file), specifier)).split(sep).join("/");
+    const resolved = relative(root, resolve(dirname(file), specifier))
+      .split(sep)
+      .join("/");
     target = /^packages\/([^/]+)\//.exec(resolved)?.[1];
     if (target && target !== owner) return "cross-package imports must use the package's public exports";
-    if (owner === "editor" && /^packages\/editor\/src\/model\//.test(path) &&
-      /^packages\/editor\/src\/(?:canvas|panels|ui|state|interactions)\//.test(resolved)) {
+    if (
+      owner === "editor" &&
+      /^packages\/editor\/src\/model\//.test(path) &&
+      /^packages\/editor\/src\/(?:canvas|panels|ui|state|interactions)\//.test(resolved)
+    ) {
       return "editor model must not depend on UI or state controllers";
     }
   }

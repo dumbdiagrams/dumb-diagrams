@@ -42,16 +42,22 @@ export function Modal({
         return;
       }
       if (event.key !== "Tab") return;
-      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>(
-        "button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href], [tabindex='0']",
-      ) ?? [])].filter((element) => element.getClientRects().length > 0);
+      const focusable = [
+        ...(dialogRef.current?.querySelectorAll<HTMLElement>(
+          "button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href], [tabindex='0']",
+        ) ?? []),
+      ].filter((element) => element.getClientRects().length > 0);
       if (!focusable.length) return;
       // Explicitly advance focus: macOS browser preferences can otherwise
       // omit buttons from the native Tab sequence.
       event.preventDefault();
       const index = focusable.indexOf(document.activeElement as HTMLElement);
-      const next = index < 0 ? (event.shiftKey ? focusable.length - 1 : 0)
-        : (index + (event.shiftKey ? -1 : 1) + focusable.length) % focusable.length;
+      const next =
+        index < 0
+          ? event.shiftKey
+            ? focusable.length - 1
+            : 0
+          : (index + (event.shiftKey ? -1 : 1) + focusable.length) % focusable.length;
       focusable[next]?.focus();
     };
     window.addEventListener("keydown", onKeyDown, true);
@@ -125,7 +131,9 @@ export function ConfirmModal({
       <div className="confirm-modal">
         <p>{message}</p>
         <div className="modal-actions">
-          <button type="button" className="text-button" onClick={onCancel}>Cancel</button>
+          <button type="button" className="text-button" onClick={onCancel}>
+            Cancel
+          </button>
           <button type="button" className={confirmDanger ? "danger-button" : "primary-button"} onClick={onConfirm}>
             {confirmLabel}
           </button>

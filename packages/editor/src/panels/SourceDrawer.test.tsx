@@ -10,7 +10,12 @@ import {
 
 describe("source editor diagnostics", () => {
   it("converts parser line and column into an editor offset", () => {
-    expect(sourceDiagnostic("first\nsecond\nthird", { message: 'Unexpected character "!"', location: { line: 2, column: 2 } })).toEqual({
+    expect(
+      sourceDiagnostic("first\nsecond\nthird", {
+        message: 'Unexpected character "!"',
+        location: { line: 2, column: 2 },
+      }),
+    ).toEqual({
       message: 'Line 2, column 2: Unexpected character "!"',
       location: { offset: 7, line: 2, column: 2 },
     });
@@ -31,7 +36,7 @@ describe("source editor diagnostics", () => {
 
     const html = renderToStaticMarkup(
       <SourceDrawer
-        source={'diagram demo {\n  grammar aws\n  !\n}'}
+        source={"diagram demo {\n  grammar aws\n  !\n}"}
         issues={[{ message: 'Unexpected character "!"', location: { line: 3, column: 3 } }]}
         onChange={vi.fn()}
         onCommit={vi.fn()}

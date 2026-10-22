@@ -19,4 +19,4 @@ if (current === hooksPath) {
 }
 
 execFileSync("git", ["config", "core.hooksPath", hooksPath], { stdio: "inherit" });
-console.log("Git hooks: .githooks (pre-commit fixes Biome on staged files; pre-push runs pnpm check:pr).");
+console.log("Git hooks: .githooks (pre-commit checks Biome on staged files; pre-push runs pnpm check:pr).");

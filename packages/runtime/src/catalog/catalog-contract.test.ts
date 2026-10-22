@@ -3,12 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import manifest from "./generated/manifest.json" with { type: "json" };
-import {
-  CATALOG,
-  getCatalogEntry,
-  listCategories,
-  listProviders,
-} from "./catalog.js";
+import { CATALOG, getCatalogEntry, listCategories, listProviders } from "./catalog.js";
 
 const ROOT = join(import.meta.dirname, "../../../..");
 
@@ -59,9 +54,7 @@ describe("canonical catalog contract", () => {
     for (const [type, color] of Object.entries(expectedColors)) {
       const entry = getCatalogEntry(type)!;
       expect(entry.assetKind, type).toBe("group");
-      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(
-        `fill="${color}"`,
-      );
+      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(`fill="${color}"`);
     }
   });
 
@@ -77,9 +70,7 @@ describe("canonical catalog contract", () => {
     for (const [type, color] of Object.entries(expectedColors)) {
       const entry = getCatalogEntry(type)!;
       expect(entry.assetKind, type).toBe("group");
-      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(
-        `fill="${color}"`,
-      );
+      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(`fill="${color}"`);
     }
   });
 
@@ -95,7 +86,10 @@ describe("canonical catalog contract", () => {
       const source = join(ROOT, asset.sourcePath);
       expect(existsSync(source), asset.sourcePath).toBe(true);
       expect(readFileSync(source, "utf8")).toMatch(/<svg[\s>]/i);
-      expect(CATALOG[manifest.entries.find((entry) => entry.icon.sourceId === asset.sourceId)?.type ?? ""] || asset.browsable === false).toBeTruthy();
+      expect(
+        CATALOG[manifest.entries.find((entry) => entry.icon.sourceId === asset.sourceId)?.type ?? ""] ||
+          asset.browsable === false,
+      ).toBeTruthy();
     }
   });
 });

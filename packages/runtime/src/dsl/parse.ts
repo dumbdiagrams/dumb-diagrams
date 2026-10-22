@@ -9,7 +9,14 @@ import type {
   TextFontFamily,
   View,
 } from "../core/index.js";
-import { createEmptyDocument, createEmptyView, DIAGRAM_LIMITS, EDGE_COLOR_VALUES, normalizePortOffset, utf8ByteLength } from "../core/index.js";
+import {
+  createEmptyDocument,
+  createEmptyView,
+  DIAGRAM_LIMITS,
+  EDGE_COLOR_VALUES,
+  normalizePortOffset,
+  utf8ByteLength,
+} from "../core/index.js";
 import { err, ok, safeTry, type Result } from "neverthrow";
 
 /** The `.dgm` format this parser reads and `printDgm` writes. */
@@ -55,14 +62,15 @@ export const DGM_VALUES = {
 export const ANNOTATION_SIZE_RANGE = { min: 10, max: 48 } as const;
 
 type Position = { line: number; column: number };
-type Token = Position & (
-  | { type: "id"; value: string }
-  | { type: "string"; value: string }
-  | { type: "number"; value: number }
-  | { type: "arrow" }
-  | { type: "lbrace" }
-  | { type: "rbrace" }
-);
+type Token = Position &
+  (
+    | { type: "id"; value: string }
+    | { type: "string"; value: string }
+    | { type: "number"; value: number }
+    | { type: "arrow" }
+    | { type: "lbrace" }
+    | { type: "rbrace" }
+  );
 type IdToken = Extract<Token, { type: "id" }>;
 
 export type DgmParseError =
@@ -75,12 +83,18 @@ function parseError(at: Position, message: string): DgmParseError {
 
 function describe(token: Token): string {
   switch (token.type) {
-    case "id": return JSON.stringify(token.value);
-    case "string": return `string ${JSON.stringify(token.value)}`;
-    case "number": return `number ${token.value}`;
-    case "arrow": return '"->"';
-    case "lbrace": return '"{"';
-    case "rbrace": return '"}"';
+    case "id":
+      return JSON.stringify(token.value);
+    case "string":
+      return `string ${JSON.stringify(token.value)}`;
+    case "number":
+      return `number ${token.value}`;
+    case "arrow":
+      return '"->"';
+    case "lbrace":
+      return '"{"';
+    case "rbrace":
+      return '"}"';
   }
 }
 
@@ -179,7 +193,10 @@ class Parser {
   private view: View = createEmptyView();
   private viewParsed = false;
 
-  constructor(private tokens: Token[], private end: Position) {
+  constructor(
+    private tokens: Token[],
+    private end: Position,
+  ) {
     this.doc = createEmptyDocument("diagram");
   }
 
@@ -191,7 +208,12 @@ class Parser {
         parser.pos++;
         const version = yield* parser.expect("number");
         if (version.value !== DGM_FORMAT_VERSION) {
-          return err(parseError(version, `This diagram uses format ${version.value}; this dumbdiagrams supports format ${DGM_FORMAT_VERSION}. Upgrade dumbdiagrams.`));
+          return err(
+            parseError(
+              version,
+              `This diagram uses format ${version.value}; this dumbdiagrams supports format ${DGM_FORMAT_VERSION}. Upgrade dumbdiagrams.`,
+            ),
+          );
         }
       }
       if (!parser.is("id", "diagram")) return err(parser.errorAtCurrent("Expected diagram declaration"));
@@ -220,13 +242,14 @@ class Parser {
         "diagram",
         "a typed declaration, or an edge",
         DGM_KEYWORDS.diagram,
-        (key) => safeTry(function* () {
-          if (key === "grammar") parser.doc.grammar = yield* parser.oneOf("grammar", DGM_VALUES.grammar);
-          else if (key === "flow") parser.doc.flow = yield* parser.oneOf("flow", DGM_VALUES.flow);
-          else if (key === "title") parser.doc.title = (yield* parser.expect("string")).value;
-          else yield* parser.parseAnnotation();
-          return ok(undefined);
-        }),
+        (key) =>
+          safeTry(function* () {
+            if (key === "grammar") parser.doc.grammar = yield* parser.oneOf("grammar", DGM_VALUES.grammar);
+            else if (key === "flow") parser.doc.flow = yield* parser.oneOf("flow", DGM_VALUES.flow);
+            else if (key === "title") parser.doc.title = (yield* parser.expect("string")).value;
+            else yield* parser.parseAnnotation();
+            return ok(undefined);
+          }),
         (token) => parser.parseDeclarationOrEdge(token, true),
       );
       return ok(undefined);
@@ -271,22 +294,26 @@ class Parser {
         const brace = parser.peek();
         if (brace?.type === "lbrace") {
           if (parser.currentGroupStack.length >= DIAGRAM_LIMITS.hierarchyDepth) {
-            return err(parseError(brace, `Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`));
+            return err(
+              parseError(brace, `Diagram exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`),
+            );
           }
           parser.currentGroupStack.push(group.id);
           yield* parser.parseBlock(
             "group",
             "or a nested typed declaration",
             DGM_KEYWORDS.group,
-            (key) => safeTry(function* () {
-              if (key === "step") group.step = (yield* parser.expect("number")).value;
-              else if (key === "label-position") group.labelPosition = yield* parser.oneOf("group label-position", DGM_VALUES.groupLabelPosition);
-              else if (key === "hide-icon") group.hideIcon = true;
-              else if (key === "style") group.style = yield* parser.oneOf("group style", DGM_VALUES.groupStyle);
-              else if (key === "color") group.color = yield* parser.oneOf("group color", DGM_VALUES.color);
-              else group.fill = yield* parser.oneOf("group fill", DGM_VALUES.groupFill);
-              return ok(undefined);
-            }),
+            (key) =>
+              safeTry(function* () {
+                if (key === "step") group.step = (yield* parser.expect("number")).value;
+                else if (key === "label-position")
+                  group.labelPosition = yield* parser.oneOf("group label-position", DGM_VALUES.groupLabelPosition);
+                else if (key === "hide-icon") group.hideIcon = true;
+                else if (key === "style") group.style = yield* parser.oneOf("group style", DGM_VALUES.groupStyle);
+                else if (key === "color") group.color = yield* parser.oneOf("group color", DGM_VALUES.color);
+                else group.fill = yield* parser.oneOf("group fill", DGM_VALUES.groupFill);
+                return ok(undefined);
+              }),
             (token) => parser.parseDeclarationOrEdge(token, false),
           );
           parser.currentGroupStack.pop();
@@ -304,13 +331,19 @@ class Parser {
         props: {},
       };
       if (parser.peek()?.type === "lbrace") {
-        yield* parser.parseBlock("resource", undefined, DGM_KEYWORDS.resource, (key) => safeTry(function* () {
-          if (key === "role") resource.role = yield* parser.oneOf("resource role", DGM_VALUES.resourceRole);
-          else if (key === "service") resource.label.service = (yield* parser.expect("string")).value;
-          else if (key === "icon") resource.props.iconAsset = (yield* parser.expect("id")).value;
-          else resource.label.position = yield* parser.oneOf("resource label-position", DGM_VALUES.resourceLabelPosition);
-          return ok(undefined);
-        }));
+        yield* parser.parseBlock("resource", undefined, DGM_KEYWORDS.resource, (key) =>
+          safeTry(function* () {
+            if (key === "role") resource.role = yield* parser.oneOf("resource role", DGM_VALUES.resourceRole);
+            else if (key === "service") resource.label.service = (yield* parser.expect("string")).value;
+            else if (key === "icon") resource.props.iconAsset = (yield* parser.expect("id")).value;
+            else
+              resource.label.position = yield* parser.oneOf(
+                "resource label-position",
+                DGM_VALUES.resourceLabelPosition,
+              );
+            return ok(undefined);
+          }),
+        );
       }
       parser.doc.resources.push(resource);
       parser.attachToParent(resource.parent, resource.id);
@@ -344,20 +377,30 @@ class Parser {
         text,
       };
       if (parser.peek()?.type === "lbrace") {
-        yield* parser.parseBlock("annotation", undefined, DGM_KEYWORDS.annotation, (key) => safeTry(function* () {
-          if (key === "anchor") annotation.anchor = (yield* parser.expect("id")).value;
-          else if (key === "style") annotation.style = yield* parser.oneOf("annotation style", DGM_VALUES.annotationStyle);
-          else if (key === "font") annotation.font = yield* parser.oneOf("annotation font", DGM_VALUES.annotationFont);
-          else if (key === "align") annotation.align = yield* parser.oneOf("annotation align", DGM_VALUES.annotationAlign);
-          else {
-            const size = yield* parser.expect("number");
-            if (size.value < ANNOTATION_SIZE_RANGE.min || size.value > ANNOTATION_SIZE_RANGE.max) {
-              return err(parseError(size, `Invalid annotation size ${size.value}; expected ${ANNOTATION_SIZE_RANGE.min} to ${ANNOTATION_SIZE_RANGE.max}`));
+        yield* parser.parseBlock("annotation", undefined, DGM_KEYWORDS.annotation, (key) =>
+          safeTry(function* () {
+            if (key === "anchor") annotation.anchor = (yield* parser.expect("id")).value;
+            else if (key === "style")
+              annotation.style = yield* parser.oneOf("annotation style", DGM_VALUES.annotationStyle);
+            else if (key === "font")
+              annotation.font = yield* parser.oneOf("annotation font", DGM_VALUES.annotationFont);
+            else if (key === "align")
+              annotation.align = yield* parser.oneOf("annotation align", DGM_VALUES.annotationAlign);
+            else {
+              const size = yield* parser.expect("number");
+              if (size.value < ANNOTATION_SIZE_RANGE.min || size.value > ANNOTATION_SIZE_RANGE.max) {
+                return err(
+                  parseError(
+                    size,
+                    `Invalid annotation size ${size.value}; expected ${ANNOTATION_SIZE_RANGE.min} to ${ANNOTATION_SIZE_RANGE.max}`,
+                  ),
+                );
+              }
+              annotation.fontSize = size.value;
             }
-            annotation.fontSize = size.value;
-          }
-          return ok(undefined);
-        }));
+            return ok(undefined);
+          }),
+        );
       }
       parser.doc.annotations.push(annotation);
       return ok(undefined);
@@ -376,30 +419,32 @@ class Parser {
       for (let suffix = 2; usedIds.has(id); suffix++) id = `${baseId}-${suffix}`;
       const edge: Edge = { id, source, target, style: "solid" };
       if (parser.peek()?.type === "lbrace") {
-        yield* parser.parseBlock("edge", undefined, DGM_KEYWORDS.edge, (key) => safeTry(function* () {
-          if (key === "step") edge.step = (yield* parser.expect("number")).value;
-          else if (key === "id") edge.id = (yield* parser.expect("id")).value;
-          else if (key === "label") edge.label = (yield* parser.expect("string")).value;
-          else if (key === "style") edge.style = yield* parser.oneOf("edge style", DGM_VALUES.edgeStyle);
-          else if (key === "kind") edge.kind = yield* parser.oneOf("edge kind", DGM_VALUES.edgeKind);
-          else if (key === "color") edge.color = yield* parser.oneOf("edge color", DGM_VALUES.color);
-          else {
-            const side = yield* parser.oneOf(`edge ${key} side`, DGM_VALUES.side);
-            let offset: number | undefined;
-            if (parser.is("id", "offset")) {
-              parser.pos++;
-              offset = normalizePortOffset((yield* parser.expect("number")).value);
+        yield* parser.parseBlock("edge", undefined, DGM_KEYWORDS.edge, (key) =>
+          safeTry(function* () {
+            if (key === "step") edge.step = (yield* parser.expect("number")).value;
+            else if (key === "id") edge.id = (yield* parser.expect("id")).value;
+            else if (key === "label") edge.label = (yield* parser.expect("string")).value;
+            else if (key === "style") edge.style = yield* parser.oneOf("edge style", DGM_VALUES.edgeStyle);
+            else if (key === "kind") edge.kind = yield* parser.oneOf("edge kind", DGM_VALUES.edgeKind);
+            else if (key === "color") edge.color = yield* parser.oneOf("edge color", DGM_VALUES.color);
+            else {
+              const side = yield* parser.oneOf(`edge ${key} side`, DGM_VALUES.side);
+              let offset: number | undefined;
+              if (parser.is("id", "offset")) {
+                parser.pos++;
+                offset = normalizePortOffset((yield* parser.expect("number")).value);
+              }
+              if (key === "from") {
+                edge.sourcePort = side;
+                if (offset !== undefined) edge.sourcePortOffset = offset;
+              } else {
+                edge.targetPort = side;
+                if (offset !== undefined) edge.targetPortOffset = offset;
+              }
             }
-            if (key === "from") {
-              edge.sourcePort = side;
-              if (offset !== undefined) edge.sourcePortOffset = offset;
-            } else {
-              edge.targetPort = side;
-              if (offset !== undefined) edge.targetPortOffset = offset;
-            }
-          }
-          return ok(undefined);
-        }));
+            return ok(undefined);
+          }),
+        );
       }
       parser.doc.edges.push(edge);
       return ok(undefined);
@@ -412,20 +457,24 @@ class Parser {
       yield* parser.expect("id", "assets");
       const assets = parser.doc.assets ?? [];
       parser.doc.assets = assets;
-      yield* parser.parseBlock("assets", undefined, DGM_KEYWORDS.assets, () => safeTry(function* () {
-        const id = (yield* parser.expect("id")).value;
-        let content = "";
-        let intrinsicW = 64;
-        let intrinsicH = 64;
-        yield* parser.parseBlock("asset", undefined, DGM_KEYWORDS.asset, (key) => safeTry(function* () {
-          if (key === "svg") content = (yield* parser.expect("string")).value;
-          else if (key === "w") intrinsicW = (yield* parser.expect("number")).value;
-          else intrinsicH = (yield* parser.expect("number")).value;
+      yield* parser.parseBlock("assets", undefined, DGM_KEYWORDS.assets, () =>
+        safeTry(function* () {
+          const id = (yield* parser.expect("id")).value;
+          let content = "";
+          let intrinsicW = 64;
+          let intrinsicH = 64;
+          yield* parser.parseBlock("asset", undefined, DGM_KEYWORDS.asset, (key) =>
+            safeTry(function* () {
+              if (key === "svg") content = (yield* parser.expect("string")).value;
+              else if (key === "w") intrinsicW = (yield* parser.expect("number")).value;
+              else intrinsicH = (yield* parser.expect("number")).value;
+              return ok(undefined);
+            }),
+          );
+          assets.push({ id, kind: "svg", content, intrinsicW, intrinsicH });
           return ok(undefined);
-        }));
-        assets.push({ id, kind: "svg", content, intrinsicW, intrinsicH });
-        return ok(undefined);
-      }));
+        }),
+      );
       return ok(undefined);
     });
   }
@@ -437,19 +486,21 @@ class Parser {
       if (parser.viewParsed) return err(parseError(keyword, "Only one view block is supported"));
       parser.viewParsed = true;
       parser.view.id = (yield* parser.expect("id")).value;
-      yield* parser.parseBlock("view", undefined, DGM_KEYWORDS.view, (key) => safeTry(function* () {
-        const id = (yield* parser.expect("id")).value;
-        if (key === "place") {
-          parser.view.places[id] = yield* parser.parsePlaceBody("place");
-        } else if (key === "annotation") {
-          const place = yield* parser.parsePlaceBody("annotation place");
-          parser.view.annotations ??= Object.create(null) as NonNullable<View["annotations"]>;
-          parser.view.annotations[id] = place;
-        } else {
-          parser.view.routes[id] = yield* parser.parseRouteBody();
-        }
-        return ok(undefined);
-      }));
+      yield* parser.parseBlock("view", undefined, DGM_KEYWORDS.view, (key) =>
+        safeTry(function* () {
+          const id = (yield* parser.expect("id")).value;
+          if (key === "place") {
+            parser.view.places[id] = yield* parser.parsePlaceBody("place");
+          } else if (key === "annotation") {
+            const place = yield* parser.parsePlaceBody("annotation place");
+            parser.view.annotations ??= Object.create(null) as NonNullable<View["annotations"]>;
+            parser.view.annotations[id] = place;
+          } else {
+            parser.view.routes[id] = yield* parser.parseRouteBody();
+          }
+          return ok(undefined);
+        }),
+      );
       return ok(undefined);
     });
   }
@@ -458,15 +509,18 @@ class Parser {
     const parser = this;
     return safeTry(function* () {
       const place: Place = {};
-      yield* parser.parseBlock(context, undefined, DGM_KEYWORDS.place, (key) => safeTry(function* () {
-        if (key === "x" || key === "y" || key === "w" || key === "h") place[key] = (yield* parser.expect("number")).value;
-        else if (key === "z") place.zIndex = (yield* parser.expect("number")).value;
-        else if (key === "visible") place.visible = (yield* parser.oneOf("visible", DGM_VALUES.visible)) === "true";
-        else if (key === "pin") place.pin = true;
-        else if (key === "manual") place.manual = true;
-        else place.locked = true;
-        return ok(undefined);
-      }));
+      yield* parser.parseBlock(context, undefined, DGM_KEYWORDS.place, (key) =>
+        safeTry(function* () {
+          if (key === "x" || key === "y" || key === "w" || key === "h")
+            place[key] = (yield* parser.expect("number")).value;
+          else if (key === "z") place.zIndex = (yield* parser.expect("number")).value;
+          else if (key === "visible") place.visible = (yield* parser.oneOf("visible", DGM_VALUES.visible)) === "true";
+          else if (key === "pin") place.pin = true;
+          else if (key === "manual") place.manual = true;
+          else place.locked = true;
+          return ok(undefined);
+        }),
+      );
       return ok(place);
     });
   }
@@ -475,29 +529,31 @@ class Parser {
     const parser = this;
     return safeTry(function* () {
       const route: NonNullable<View["routes"][string]> = { waypoints: [] };
-      yield* parser.parseBlock("route", undefined, DGM_KEYWORDS.route, (key) => safeTry(function* () {
-        if (key === "point") {
-          route.waypoints!.push({
-            x: (yield* parser.expect("number")).value,
-            y: (yield* parser.expect("number")).value,
-          });
-        } else if (key === "pin") {
-          route.pin = true;
-        } else if (key === "mode") {
-          route.mode = yield* parser.oneOf("route mode", DGM_VALUES.routeMode);
-        } else {
-          const t = Math.max(0, Math.min(1, (yield* parser.expect("number")).value));
-          const side = yield* parser.oneOf(`route ${key} side`, DGM_VALUES.routeLabelSide);
-          if (key === "badge") {
-            route.badgeT = t;
-            route.badgeSide = side;
+      yield* parser.parseBlock("route", undefined, DGM_KEYWORDS.route, (key) =>
+        safeTry(function* () {
+          if (key === "point") {
+            route.waypoints!.push({
+              x: (yield* parser.expect("number")).value,
+              y: (yield* parser.expect("number")).value,
+            });
+          } else if (key === "pin") {
+            route.pin = true;
+          } else if (key === "mode") {
+            route.mode = yield* parser.oneOf("route mode", DGM_VALUES.routeMode);
           } else {
-            route.labelT = t;
-            route.labelSide = side;
+            const t = Math.max(0, Math.min(1, (yield* parser.expect("number")).value));
+            const side = yield* parser.oneOf(`route ${key} side`, DGM_VALUES.routeLabelSide);
+            if (key === "badge") {
+              route.badgeT = t;
+              route.badgeSide = side;
+            } else {
+              route.labelT = t;
+              route.labelSide = side;
+            }
           }
-        }
-        return ok(undefined);
-      }));
+          return ok(undefined);
+        }),
+      );
       if (route.pin && route.waypoints?.length) {
         route.points = [...route.waypoints];
       }
@@ -718,7 +774,7 @@ function printView(view: View): string[] {
   }
   for (const [id, route] of Object.entries(view.routes)) {
     const parts = ["route", id, "{"];
-    const points = route.points?.length ? route.points : route.waypoints ?? [];
+    const points = route.points?.length ? route.points : (route.waypoints ?? []);
     for (const point of points) parts.push(`point ${point.x} ${point.y}`);
     if (route.mode && route.mode !== "auto") parts.push(`mode ${route.mode}`);
     if (route.pin) parts.push("pin");

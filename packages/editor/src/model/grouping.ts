@@ -1,9 +1,4 @@
-import type {
-  DiagramDocument,
-  LayoutResult,
-  Rect,
-  Side,
-} from "@dumb-diagrams/runtime/core";
+import type { DiagramDocument, LayoutResult, Rect, Side } from "@dumb-diagrams/runtime/core";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
@@ -17,22 +12,15 @@ export function reparentPreservingAbsolutePosition(
   newParentId?: string,
 ): DiagramDocument {
   const id = typeof item === "string" ? item : item.id;
-  const kind = typeof item === "string"
-    ? (doc.groups.some((group) => group.id === id) ? "group" : "resource")
-    : item.kind;
+  const kind =
+    typeof item === "string" ? (doc.groups.some((group) => group.id === id) ? "group" : "resource") : item.kind;
   if (kind !== "group" && kind !== "resource") return doc;
 
-  const movedGroup = kind === "group"
-    ? doc.groups.find((group) => group.id === id)
-    : undefined;
-  const movedResource = kind === "resource"
-    ? doc.resources.find((resource) => resource.id === id)
-    : undefined;
+  const movedGroup = kind === "group" ? doc.groups.find((group) => group.id === id) : undefined;
+  const movedResource = kind === "resource" ? doc.resources.find((resource) => resource.id === id) : undefined;
   if (!movedGroup && !movedResource) return doc;
 
-  const newParent = newParentId
-    ? doc.groups.find((group) => group.id === newParentId)
-    : undefined;
+  const newParent = newParentId ? doc.groups.find((group) => group.id === newParentId) : undefined;
   if (newParentId && !newParent) return doc;
   if (newParentId === id) return doc;
   if (movedGroup && newParent && isDescendant(doc, movedGroup.id, newParent.id)) return doc;
@@ -71,12 +59,8 @@ export function groupSelection(
 
   const ids = normalized.map((item) => item.id);
   const records = normalized.map((item) => {
-    const resource = item.kind === "resource"
-      ? doc.resources.find((candidate) => candidate.id === item.id)
-      : undefined;
-    const group = item.kind === "group"
-      ? doc.groups.find((candidate) => candidate.id === item.id)
-      : undefined;
+    const resource = item.kind === "resource" ? doc.resources.find((candidate) => candidate.id === item.id) : undefined;
+    const group = item.kind === "group" ? doc.groups.find((candidate) => candidate.id === item.id) : undefined;
     return { item, resource, group, parent: resource?.parent ?? group?.parent };
   });
 
@@ -103,8 +87,10 @@ export function groupSelection(
       const secondary = horizontal ? aRect.y - bRect.y : aRect.x - bRect.x;
       if (secondary !== 0) return secondary;
     }
-    return (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER) ||
-      selectionIndex.get(a)! - selectionIndex.get(b)!;
+    return (
+      (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER) ||
+      selectionIndex.get(a)! - selectionIndex.get(b)!
+    );
   });
 
   const descendantIds = new Set<string>();
@@ -113,9 +99,7 @@ export function groupSelection(
     if (record.group) collectChildren(doc, record.group.id, descendantIds);
   }
 
-  const geometry = [...descendantIds]
-    .map((id) => layoutById.get(id))
-    .filter((rect): rect is Rect => Boolean(rect));
+  const geometry = [...descendantIds].map((id) => layoutById.get(id)).filter((rect): rect is Rect => Boolean(rect));
   if (geometry.length !== descendantIds.size || geometry.length === 0) return null;
 
   const next = cloneDocument(doc);
@@ -150,8 +134,9 @@ export function groupSelection(
     .filter((record): record is typeof record & { group: NonNullable<typeof record.group> } => Boolean(record.group))
     .filter((record) => {
       const outer = layoutById.get(record.group.id)!;
-      return records.every((candidate) =>
-        candidate.item.id === record.group.id || rectContainsRect(outer, layoutById.get(candidate.item.id)!),
+      return records.every(
+        (candidate) =>
+          candidate.item.id === record.group.id || rectContainsRect(outer, layoutById.get(candidate.item.id)!),
       );
     })
     .sort((a, b) => {
@@ -168,10 +153,7 @@ export function groupSelection(
       candidate.borderChildren = candidate.borderChildren?.filter((child) => !adoptedIds.includes(child.id));
     }
     const destination = next.groups.find((group) => group.id === destinationId)!;
-    destination.children = [
-      ...destination.children.filter((id) => !adoptedIds.includes(id)),
-      ...adoptedIds,
-    ];
+    destination.children = [...destination.children.filter((id) => !adoptedIds.includes(id)), ...adoptedIds];
     for (const record of records) {
       if (record.item.id === destinationId) continue;
       if (record.group) next.groups.find((group) => group.id === record.group!.id)!.parent = destinationId;
@@ -201,11 +183,9 @@ export function groupSelection(
   const destination = parentId ? next.groups.find((group) => group.id === parentId) : undefined;
   if (destination) {
     const ordinaryIndices = parent!.children
-      .map((id, index) => selectedIds.includes(id) ? index : -1)
+      .map((id, index) => (selectedIds.includes(id) ? index : -1))
       .filter((index) => index >= 0);
-    const insertionIndex = ordinaryIndices.length
-      ? Math.min(...ordinaryIndices)
-      : destination.children.length;
+    const insertionIndex = ordinaryIndices.length ? Math.min(...ordinaryIndices) : destination.children.length;
     destination.children.splice(Math.min(insertionIndex, destination.children.length), 0, groupId);
   }
 
@@ -223,9 +203,7 @@ export function groupSelection(
   const groupInsertIndex = parentId
     ? next.groups.length
     : Math.min(
-        ...selectedIds
-          .map((id) => doc.groups.findIndex((group) => group.id === id))
-          .filter((index) => index >= 0),
+        ...selectedIds.map((id) => doc.groups.findIndex((group) => group.id === id)).filter((index) => index >= 0),
         next.groups.length,
       );
   next.groups.splice(groupInsertIndex, 0, newGroup);
@@ -253,28 +231,18 @@ function projectGroupingCandidates(doc: DiagramDocument, selection: Selection): 
     if (!item.id) continue;
     const key = `${item.kind}:${item.id}`;
     if (seen.has(key)) continue;
-    const resource = item.kind === "resource"
-      ? doc.resources.find((candidate) => candidate.id === item.id)
-      : undefined;
-    const group = item.kind === "group"
-      ? doc.groups.find((candidate) => candidate.id === item.id)
-      : undefined;
+    const resource = item.kind === "resource" ? doc.resources.find((candidate) => candidate.id === item.id) : undefined;
+    const group = item.kind === "group" ? doc.groups.find((candidate) => candidate.id === item.id) : undefined;
     if (!resource && !group) continue;
     seen.add(key);
     candidates.push(item);
   }
   if (candidates.length < 2) return [];
-  const selectedGroups = new Set(
-    candidates.filter((item) => item.kind === "group").map((item) => item.id),
-  );
+  const selectedGroups = new Set(candidates.filter((item) => item.kind === "group").map((item) => item.id));
   return candidates.filter((item) => !hasSelectedGroupAncestor(doc, item.id, selectedGroups));
 }
 
-function hasSelectedGroupAncestor(
-  doc: DiagramDocument,
-  id: string,
-  selectedGroups: ReadonlySet<string>,
-): boolean {
+function hasSelectedGroupAncestor(doc: DiagramDocument, id: string, selectedGroups: ReadonlySet<string>): boolean {
   const parentById = new Map<string, string | undefined>();
   for (const resource of doc.resources) parentById.set(resource.id, resource.parent);
   for (const group of doc.groups) parentById.set(group.id, group.parent);
@@ -295,12 +263,8 @@ function normalizeGroupingSelection(doc: DiagramDocument, selection: Selection):
   const ids = normalized.map((item) => item.id);
   if (new Set(ids).size !== ids.length) return null;
   const records = normalized.map((item) => {
-    const resource = item.kind === "resource"
-      ? doc.resources.find((candidate) => candidate.id === item.id)
-      : undefined;
-    const group = item.kind === "group"
-      ? doc.groups.find((candidate) => candidate.id === item.id)
-      : undefined;
+    const resource = item.kind === "resource" ? doc.resources.find((candidate) => candidate.id === item.id) : undefined;
+    const group = item.kind === "group" ? doc.groups.find((candidate) => candidate.id === item.id) : undefined;
     return { item, resource, group, parent: resource?.parent ?? group?.parent };
   });
   if (records.some((record) => !record.resource && !record.group)) return null;
@@ -319,9 +283,8 @@ export function ungroup(
   const group = doc.groups.find((candidate) => candidate.id === groupId);
   if (!group) return { doc, selection: [] };
 
-  const parentId = group.parent && doc.groups.some((candidate) => candidate.id === group.parent)
-    ? group.parent
-    : undefined;
+  const parentId =
+    group.parent && doc.groups.some((candidate) => candidate.id === group.parent) ? group.parent : undefined;
   const originalParent = parentId ? doc.groups.find((candidate) => candidate.id === parentId) : undefined;
   const parentChildIndex = originalParent?.children.indexOf(groupId) ?? -1;
   const parentBorderIndex = originalParent?.borderChildren?.findIndex((child) => child.id === groupId) ?? -1;
@@ -360,9 +323,7 @@ export function ungroup(
   }
 
   for (const candidate of next.groups) {
-    candidate.children = candidate.children.filter(
-      (childId) => childId !== groupId && !promotedIds.includes(childId),
-    );
+    candidate.children = candidate.children.filter((childId) => childId !== groupId && !promotedIds.includes(childId));
     candidate.borderChildren = candidate.borderChildren?.filter(
       (child) => child.id !== groupId && !promotedIds.includes(child.id),
     );
@@ -386,18 +347,20 @@ export function ungroup(
     validPromotedIds.push(childId);
   }
   if (destination) {
-    const promotedOrdinary = validPromotedIds.filter((id) => ordinaryChildren.includes(id) || inferredChildren.includes(id));
-    const childIndex = parentChildIndex >= 0
-      ? Math.min(parentChildIndex, destination.children.length)
-      : destination.children.length;
+    const promotedOrdinary = validPromotedIds.filter(
+      (id) => ordinaryChildren.includes(id) || inferredChildren.includes(id),
+    );
+    const childIndex =
+      parentChildIndex >= 0 ? Math.min(parentChildIndex, destination.children.length) : destination.children.length;
     destination.children.splice(childIndex, 0, ...promotedOrdinary);
     const promotedBorders = validPromotedIds
       .filter((id) => borderChildren.has(id))
       .map((id) => ({ id, side: borderChildren.get(id)! }));
     if (promotedBorders.length > 0) {
-      const borderIndex = parentBorderIndex >= 0
-        ? Math.min(parentBorderIndex, destination.borderChildren?.length ?? 0)
-        : destination.borderChildren?.length ?? 0;
+      const borderIndex =
+        parentBorderIndex >= 0
+          ? Math.min(parentBorderIndex, destination.borderChildren?.length ?? 0)
+          : (destination.borderChildren?.length ?? 0);
       const currentBorders = destination.borderChildren ?? [];
       currentBorders.splice(borderIndex, 0, ...promotedBorders);
       destination.borderChildren = currentBorders;
@@ -435,11 +398,11 @@ export function ungroup(
     if (candidate.parent === groupId) delete candidate.parent;
   }
 
-  const selection: Selection = validPromotedIds.map((id) => (
+  const selection: Selection = validPromotedIds.map((id) =>
     next.groups.some((candidate) => candidate.id === id)
       ? { kind: "group" as const, id }
-      : { kind: "resource" as const, id }
-  ));
+      : { kind: "resource" as const, id },
+  );
   return { doc: next, selection };
 }
 

@@ -1,10 +1,4 @@
-import type {
-  DiagramDocument,
-  LayoutResult,
-  PlaceOverride,
-  Point,
-  RouteOverride,
-} from "@dumb-diagrams/runtime/core";
+import type { DiagramDocument, LayoutResult, PlaceOverride, Point, RouteOverride } from "@dumb-diagrams/runtime/core";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
 
 import { cloneDocument } from "./document-structure";
@@ -42,10 +36,7 @@ export function preserveUnplacedManualLayout(
  * draw a clean connector. A route whose geometry was explicitly edited by the
  * mutation is left alone, allowing that edit to win.
  */
-export function reconcileManualRouteMoves(
-  beforeDoc: DiagramDocument,
-  afterDoc: DiagramDocument,
-): DiagramDocument {
+export function reconcileManualRouteMoves(beforeDoc: DiagramDocument, afterDoc: DiagramDocument): DiagramDocument {
   const beforeView = getDefaultView(beforeDoc);
   const afterView = getDefaultView(afterDoc);
   const beforeEdges = new Map(beforeDoc.edges.map((edge) => [edge.id, edge]));
@@ -80,21 +71,14 @@ export function reconcileManualRouteMoves(
   return next;
 }
 
-function sameDeltaWithinRounding(
-  a: { dx: number; dy: number },
-  b: { dx: number; dy: number },
-): boolean {
+function sameDeltaWithinRounding(a: { dx: number; dy: number }, b: { dx: number; dy: number }): boolean {
   // Places written by an interactive move are rounded independently. A
   // common fractional move can therefore differ by just under one pixel,
   // while a full-pixel difference is treated as genuinely different motion.
   return Math.abs(a.dx - b.dx) < 1 && Math.abs(a.dy - b.dy) < 1;
 }
 
-function snapshotLayout(
-  doc: DiagramDocument,
-  layout: LayoutResult,
-  skipPinned: boolean,
-): DiagramDocument {
+function snapshotLayout(doc: DiagramDocument, layout: LayoutResult, skipPinned: boolean): DiagramDocument {
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
   const groupIds = new Set(doc.groups.map((group) => group.id));
@@ -162,7 +146,7 @@ function snapshotLayoutWithRoutes(
     // untouched and let the runtime route it automatically. A decoration-only
     // entry can also represent a cleared previously pinned route.
     if (skipPinned && baselineView.routes[edge.id]?.pin && !existing?.pin) continue;
-    if (skipPinned && (!existing && baselineView.routes[edge.id])) continue;
+    if (skipPinned && !existing && baselineView.routes[edge.id]) continue;
 
     const route: RouteOverride = {
       ...(existing ?? {}),
@@ -188,13 +172,15 @@ function snapshotLayoutWithRoutes(
   return next;
 }
 
-function sameEdgeRelationship(
-  a: DiagramDocument["edges"][number],
-  b: DiagramDocument["edges"][number],
-): boolean {
-  return a.source === b.source && a.target === b.target &&
-    a.sourcePort === b.sourcePort && a.targetPort === b.targetPort &&
-    a.sourcePortOffset === b.sourcePortOffset && a.targetPortOffset === b.targetPortOffset;
+function sameEdgeRelationship(a: DiagramDocument["edges"][number], b: DiagramDocument["edges"][number]): boolean {
+  return (
+    a.source === b.source &&
+    a.target === b.target &&
+    a.sourcePort === b.sourcePort &&
+    a.targetPort === b.targetPort &&
+    a.sourcePortOffset === b.sourcePortOffset &&
+    a.targetPortOffset === b.targetPortOffset
+  );
 }
 
 function sameRouteGeometry(a: RouteOverride, b: RouteOverride): boolean {
@@ -203,10 +189,13 @@ function sameRouteGeometry(a: RouteOverride, b: RouteOverride): boolean {
 
 function samePoints(a: Point[] | undefined, b: Point[] | undefined): boolean {
   if (a === undefined || b === undefined) return a === b;
-  return a.length === b.length && a.every((point, index) => {
-    const other = b[index]!;
-    return point.x === other.x && point.y === other.y;
-  });
+  return (
+    a.length === b.length &&
+    a.every((point, index) => {
+      const other = b[index]!;
+      return point.x === other.x && point.y === other.y;
+    })
+  );
 }
 
 function placeDelta(
@@ -223,10 +212,6 @@ function copyPoint(point: Point): Point {
   return { x: point.x, y: point.y };
 }
 
-function shiftPoints(
-  points: Point[] | undefined,
-  dx: number,
-  dy: number,
-): Point[] | undefined {
+function shiftPoints(points: Point[] | undefined, dx: number, dy: number): Point[] | undefined {
   return points?.map((point) => ({ x: point.x + dx, y: point.y + dy }));
 }

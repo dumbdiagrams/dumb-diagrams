@@ -4,14 +4,7 @@ import { sanitizeSvgResult } from "@dumb-diagrams/runtime/render";
 
 import type { Viewport } from "../model/types";
 
-export type DocumentOrigin =
-  | "fixture"
-  | "new"
-  | "import"
-  | "example"
-  | "recovery"
-  | "duplicate"
-  | "file";
+export type DocumentOrigin = "fixture" | "new" | "import" | "example" | "recovery" | "duplicate" | "file";
 
 export interface WorkspaceTab {
   id: string;
@@ -111,15 +104,21 @@ export function isDisposableTab(tab: WorkspaceTab, blankSource: string): boolean
     const parsed = parseDgmResult(tab.source);
     if (parsed.isOk()) {
       const document = parsed.value;
-      const empty = document.resources.length === 0 && document.groups.length === 0 &&
-        document.edges.length === 0 && document.annotations.length === 0 &&
+      const empty =
+        document.resources.length === 0 &&
+        document.groups.length === 0 &&
+        document.edges.length === 0 &&
+        document.annotations.length === 0 &&
         (document.assets?.length ?? 0) === 0;
       const title = document.title?.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
       if (empty && (!title || title === "untitled diagram")) return true;
     }
   }
-  return (tab.origin === "fixture" || tab.origin === "example") &&
-    tab.source === tab.initialSource && tab.source === tab.savedSource;
+  return (
+    (tab.origin === "fixture" || tab.origin === "example") &&
+    tab.source === tab.initialSource &&
+    tab.source === tab.savedSource
+  );
 }
 
 export function closeWorkspaceTabs(
@@ -133,7 +132,12 @@ export function closeWorkspaceTabs(
   } = {},
 ): { state: WorkspaceState; closed: WorkspaceTab[] } {
   const closingIds = new Set(tabIds);
-  if (options.protectedBlankSource !== undefined && isProtectedDefaultTab(current.tabs, options.protectedBlankSource) && closingIds.has(current.activeTabId)) return { state: current, closed: [] };
+  if (
+    options.protectedBlankSource !== undefined &&
+    isProtectedDefaultTab(current.tabs, options.protectedBlankSource) &&
+    closingIds.has(current.activeTabId)
+  )
+    return { state: current, closed: [] };
   const removed = current.tabs
     .filter((tab) => closingIds.has(tab.id))
     .map((tab) => {
@@ -143,17 +147,20 @@ export function closeWorkspaceTabs(
       return previewSvg ? { ...tab, previewSvg } : omitWorkspacePreview(tab);
     });
   if (!removed.length) return { state: current, closed: [] };
-  const archived = removed.filter((tab) => options.protectedBlankSource === undefined || !isDisposableTab(tab, options.protectedBlankSource));
+  const archived = removed.filter(
+    (tab) => options.protectedBlankSource === undefined || !isDisposableTab(tab, options.protectedBlankSource),
+  );
 
   const tabs = current.tabs.filter((tab) => !closingIds.has(tab.id));
   if (!tabs.length && options.replacementTab) tabs.push(options.replacementTab);
 
   const closedActiveIndex = current.tabs.findIndex((tab) => tab.id === current.activeTabId);
-  const activeTabId = options.preferredActiveTabId && tabs.some((tab) => tab.id === options.preferredActiveTabId)
-    ? options.preferredActiveTabId
-    : closingIds.has(current.activeTabId) && tabs.length > 0
-      ? tabs[Math.max(0, Math.min(closedActiveIndex - 1, tabs.length - 1))]!.id
-      : current.activeTabId;
+  const activeTabId =
+    options.preferredActiveTabId && tabs.some((tab) => tab.id === options.preferredActiveTabId)
+      ? options.preferredActiveTabId
+      : closingIds.has(current.activeTabId) && tabs.length > 0
+        ? tabs[Math.max(0, Math.min(closedActiveIndex - 1, tabs.length - 1))]!.id
+        : current.activeTabId;
   const closedIds = new Set(archived.map((tab) => tab.id));
   const recentlyClosed = [
     ...archived.slice().reverse(),
@@ -196,14 +203,16 @@ export function normalizeWorkspaceState(input: unknown): WorkspaceState | null {
   const raw = input as Partial<WorkspaceState>;
   if (!Array.isArray(raw.tabs) || raw.tabs.length === 0) return null;
 
-  const tabs = raw.tabs.slice(0, MAX_WORKSPACE_TABS)
+  const tabs = raw.tabs
+    .slice(0, MAX_WORKSPACE_TABS)
     .map((tab) => normalizeTab(tab))
     .filter((tab): tab is WorkspaceTab => Boolean(tab));
   if (tabs.length === 0) return null;
 
   const activeTabId = tabs.some((tab) => tab.id === raw.activeTabId) ? String(raw.activeTabId) : tabs[0]!.id;
   const recentlyClosed = Array.isArray(raw.recentlyClosed)
-    ? raw.recentlyClosed.slice(0, MAX_RECENTLY_CLOSED)
+    ? raw.recentlyClosed
+        .slice(0, MAX_RECENTLY_CLOSED)
         .map((tab) => normalizeTab(tab))
         .filter((tab): tab is WorkspaceTab => Boolean(tab))
     : [];
@@ -243,19 +252,33 @@ function createTabId(): string {
 function normalizeTab(input: unknown): WorkspaceTab | null {
   if (!input || typeof input !== "object") return null;
   const tab = input as Partial<WorkspaceTab>;
-  if (typeof tab.id !== "string" || !tab.id || characterLength(tab.id) > DIAGRAM_LIMITS.idCharacters || typeof tab.source !== "string") return null;
+  if (
+    typeof tab.id !== "string" ||
+    !tab.id ||
+    characterLength(tab.id) > DIAGRAM_LIMITS.idCharacters ||
+    typeof tab.source !== "string"
+  )
+    return null;
   if (utf8ByteLength(tab.source) > DIAGRAM_LIMITS.sourceBytes) return null;
-  if (typeof tab.initialSource === "string" && utf8ByteLength(tab.initialSource) > DIAGRAM_LIMITS.sourceBytes) return null;
+  if (typeof tab.initialSource === "string" && utf8ByteLength(tab.initialSource) > DIAGRAM_LIMITS.sourceBytes)
+    return null;
   if (typeof tab.savedSource === "string" && utf8ByteLength(tab.savedSource) > DIAGRAM_LIMITS.sourceBytes) return null;
   const savedSource = typeof tab.savedSource === "string" ? tab.savedSource : tab.source;
   const origin = isDocumentOrigin(tab.origin) ? tab.origin : "new";
-  const initialSource = typeof tab.initialSource === "string"
-    ? tab.initialSource
-    : origin === "example" ? savedSource : tab.source;
+  const initialSource =
+    typeof tab.initialSource === "string" ? tab.initialSource : origin === "example" ? savedSource : tab.source;
   const previewSvg = normalizeWorkspacePreview(tab.previewSvg);
   const viewport = tab.viewport;
-  if (!viewport || !finiteCoordinate(viewport.panX) || !finiteCoordinate(viewport.panY) ||
-      typeof viewport.zoom !== "number" || !Number.isFinite(viewport.zoom) || viewport.zoom <= 0 || viewport.zoom > 10) return null;
+  if (
+    !viewport ||
+    !finiteCoordinate(viewport.panX) ||
+    !finiteCoordinate(viewport.panY) ||
+    typeof viewport.zoom !== "number" ||
+    !Number.isFinite(viewport.zoom) ||
+    viewport.zoom <= 0 ||
+    viewport.zoom > 10
+  )
+    return null;
   return {
     id: tab.id,
     source: tab.source,
@@ -284,7 +307,15 @@ function normalizeSourceFilename(filename?: string): string | undefined {
 }
 
 function isDocumentOrigin(value: unknown): value is DocumentOrigin {
-  return value === "fixture" || value === "new" || value === "import" || value === "example" || value === "recovery" || value === "duplicate" || value === "file";
+  return (
+    value === "fixture" ||
+    value === "new" ||
+    value === "import" ||
+    value === "example" ||
+    value === "recovery" ||
+    value === "duplicate" ||
+    value === "file"
+  );
 }
 
 function finiteCoordinate(value: unknown): value is number {

@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DiagramCompilation } from "./diagram-compiler";
-import {
-  estimateCompilationCacheEntryBytes,
-  MAX_CACHED_COMPILATION_BYTES,
-} from "./diagram-compiler";
+import { estimateCompilationCacheEntryBytes, MAX_CACHED_COMPILATION_BYTES } from "./diagram-compiler";
 import { ByteBudgetLruCache } from "./compilation-cache";
 
 describe("diagram compilation cache size estimates", () => {
@@ -35,8 +32,7 @@ describe("diagram compilation cache size estimates", () => {
 
     expect(failedResult.retained).toBe(true);
     expect(cache.get("failed")).toBe(failed);
-    expect(estimateCompilationCacheEntryBytes("oversized", oversized))
-      .toBeGreaterThan(MAX_CACHED_COMPILATION_BYTES);
+    expect(estimateCompilationCacheEntryBytes("oversized", oversized)).toBeGreaterThan(MAX_CACHED_COMPILATION_BYTES);
     expect(oversizedResult.retained).toBe(false);
     expect(cache.get("oversized")).toBeUndefined();
   });

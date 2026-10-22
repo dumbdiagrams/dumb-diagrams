@@ -26,8 +26,10 @@ function isTypingField(element: HTMLElement): boolean {
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
-  return (target instanceof HTMLElement && isTypingField(target))
-    || (document.activeElement instanceof HTMLElement && isTypingField(document.activeElement));
+  return (
+    (target instanceof HTMLElement && isTypingField(target)) ||
+    (document.activeElement instanceof HTMLElement && isTypingField(document.activeElement))
+  );
 }
 
 type ShortcutOptions = {
@@ -74,12 +76,14 @@ export function useStudioShortcuts(options: ShortcutOptions): void {
         return;
       }
       if (isEditableTarget(event.target)) return;
-      if (!mod && event.target instanceof Element
-        && event.target.closest(".workspace-tabs, .entity-navigator")) return;
+      if (!mod && event.target instanceof Element && event.target.closest(".workspace-tabs, .entity-navigator")) return;
       if (mod && EDIT_SHORTCUTS[event.code]) {
-        const shifted = event.shiftKey && event.code === "KeyZ" ? "command-redo"
-          : event.shiftKey && event.code === "KeyG" ? "command-ungroup"
-          : EDIT_SHORTCUTS[event.code]!;
+        const shifted =
+          event.shiftKey && event.code === "KeyZ"
+            ? "command-redo"
+            : event.shiftKey && event.code === "KeyG"
+              ? "command-ungroup"
+              : EDIT_SHORTCUTS[event.code]!;
         run(shifted);
         return;
       }
@@ -90,8 +94,10 @@ export function useStudioShortcuts(options: ShortcutOptions): void {
       if (!mod && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         const step = event.shiftKey ? 32 : 8;
         event.preventDefault();
-        onNudge(event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0,
-          event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0);
+        onNudge(
+          event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0,
+          event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0,
+        );
       }
     };
     window.addEventListener("keydown", onKeyDown, true);

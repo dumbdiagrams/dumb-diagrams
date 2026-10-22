@@ -65,45 +65,57 @@ describe("diagram quality assessment", () => {
   });
 
   it("rejects regressions that introduce new findings", () => {
-    const baseline = qualityFindings([], [{
-      code: "edge-crossing",
-      message: "Edges a and b cross",
-      elementIds: ["a", "b"],
-    }]);
-    const candidate = qualityFindings([], [
-      {
-        code: "edge-crossing",
-        message: "Edges a and b cross",
-        elementIds: ["a", "b"],
-      },
-      {
-        code: "edge-icon-collision",
-        message: "Edge a passes through icon of c",
-        elementIds: ["a", "c"],
-      },
-    ]);
-    expect(qualityRegressionReason(baseline, candidate)).toBe(
-      "Edge a passes through icon of c",
+    const baseline = qualityFindings(
+      [],
+      [
+        {
+          code: "edge-crossing",
+          message: "Edges a and b cross",
+          elementIds: ["a", "b"],
+        },
+      ],
     );
-    expect(qualityHardRegressionReason(baseline, candidate)).toBe(
-      "Edge a passes through icon of c",
+    const candidate = qualityFindings(
+      [],
+      [
+        {
+          code: "edge-crossing",
+          message: "Edges a and b cross",
+          elementIds: ["a", "b"],
+        },
+        {
+          code: "edge-icon-collision",
+          message: "Edge a passes through icon of c",
+          elementIds: ["a", "c"],
+        },
+      ],
     );
+    expect(qualityRegressionReason(baseline, candidate)).toBe("Edge a passes through icon of c");
+    expect(qualityHardRegressionReason(baseline, candidate)).toBe("Edge a passes through icon of c");
   });
 
   it("allows trading soft findings when quality improves", () => {
-    const baseline = qualityFindings([], [{
-      code: "edge-crossing",
-      message: "Edges a and b cross",
-      elementIds: ["a", "b"],
-    }]);
-    const candidate = qualityFindings([], [{
-      code: "edge-corridor-overlap",
-      message: "Edges a and b share a corridor outside a fan-out stem",
-      elementIds: ["a", "b"],
-    }]);
-    expect(qualityRegressionReason(baseline, candidate)).toBe(
-      "Edges a and b share a corridor outside a fan-out stem",
+    const baseline = qualityFindings(
+      [],
+      [
+        {
+          code: "edge-crossing",
+          message: "Edges a and b cross",
+          elementIds: ["a", "b"],
+        },
+      ],
     );
+    const candidate = qualityFindings(
+      [],
+      [
+        {
+          code: "edge-corridor-overlap",
+          message: "Edges a and b share a corridor outside a fan-out stem",
+          elementIds: ["a", "b"],
+        },
+      ],
+    );
+    expect(qualityRegressionReason(baseline, candidate)).toBe("Edges a and b share a corridor outside a fan-out stem");
     expect(qualityHardRegressionReason(baseline, candidate)).toBeUndefined();
   });
 

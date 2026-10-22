@@ -81,9 +81,11 @@ function isCompilationError(value: unknown): boolean {
 function isSuccessfulCompilation(value: Record<string, unknown>): boolean {
   return (
     value.ok === true &&
-    Array.isArray(value.issues) && value.issues.every(isValidationIssue) &&
+    Array.isArray(value.issues) &&
+    value.issues.every(isValidationIssue) &&
     typeof value.svg === "string" &&
-    Array.isArray(value.invariantFailures) && value.invariantFailures.every(isInvariantFailure) &&
+    Array.isArray(value.invariantFailures) &&
+    value.invariantFailures.every(isInvariantFailure) &&
     isRecord(value.doc) &&
     Array.isArray(value.doc.resources) &&
     Array.isArray(value.doc.groups) &&
@@ -102,18 +104,19 @@ function isSuccessfulCompilation(value: Record<string, unknown>): boolean {
 function isFailedCompilation(value: Record<string, unknown>): boolean {
   return (
     value.ok === false &&
-    Array.isArray(value.issues) && value.issues.every(isValidationIssue) &&
+    Array.isArray(value.issues) &&
+    value.issues.every(isValidationIssue) &&
     value.svg === null &&
-    Array.isArray(value.invariantFailures) && value.invariantFailures.every(isInvariantFailure) &&
+    Array.isArray(value.invariantFailures) &&
+    value.invariantFailures.every(isInvariantFailure) &&
     (value.layout === undefined || value.layout === null) &&
     (value.compilationError === undefined || isCompilationError(value.compilationError)) &&
     (value.parseError === undefined || typeof value.parseError === "string") &&
     (value.parseErrorCode === undefined || typeof value.parseErrorCode === "string") &&
-    (value.parseErrorLocation === undefined || (
-      isRecord(value.parseErrorLocation) &&
-      Number.isSafeInteger(value.parseErrorLocation.line) &&
-      Number.isSafeInteger(value.parseErrorLocation.column)
-    ))
+    (value.parseErrorLocation === undefined ||
+      (isRecord(value.parseErrorLocation) &&
+        Number.isSafeInteger(value.parseErrorLocation.line) &&
+        Number.isSafeInteger(value.parseErrorLocation.column)))
   );
 }
 
@@ -135,7 +138,10 @@ export function isCompilationResponse(value: unknown): value is CompilationRespo
 export function isAutoFixPlan(value: unknown): value is AutoFixPlan {
   if (!isRecord(value)) return false;
   return (
-    (value.status === "unchanged" || value.status === "repaired" || value.status === "unresolved" || value.status === "blocked") &&
+    (value.status === "unchanged" ||
+      value.status === "repaired" ||
+      value.status === "unresolved" ||
+      value.status === "blocked") &&
     typeof value.strategy === "string" &&
     isRecord(value.doc) &&
     Array.isArray(value.doc.resources) &&
@@ -176,7 +182,7 @@ export function planAutoFixInWorker(
     try {
       const current = createWorker();
       worker = current;
-      current.onmessage = (event) => settle(() => isAutoFixPlan(event.data) ? event.data : fallback());
+      current.onmessage = (event) => settle(() => (isAutoFixPlan(event.data) ? event.data : fallback()));
       current.onerror = () => settle(fallback);
       current.onmessageerror = () => settle(fallback);
       current.postMessage({ autoFix: true, doc, snapToGrid });
@@ -252,12 +258,7 @@ export class DiagramCompilerWorkerClient {
           return;
         }
         if (!isCompilationResponse(data)) {
-          this.fail(
-            "invalid-message",
-            new Error("Invalid compiler worker response"),
-            currentWorker,
-            activeRequest,
-          );
+          this.fail("invalid-message", new Error("Invalid compiler worker response"), currentWorker, activeRequest);
           return;
         }
         if (

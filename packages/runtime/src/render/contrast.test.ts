@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  contrastRatio,
-  DARK_CANVAS,
-  needsDarkContrastAid,
-  parseRgb,
-} from "./contrast.js";
+import { contrastRatio, DARK_CANVAS, needsDarkContrastAid, parseRgb } from "./contrast.js";
 
 describe("contrast", () => {
   it("parses hex and rgb colours", () => {

@@ -26,8 +26,9 @@ export function prepareDocument(
   deferCompile = false,
 ): Result<PreparedDocument, DocumentActionError> {
   try {
-    const issue = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false })
-      .find((candidate) => candidate.level === "error");
+    const issue = validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }).find(
+      (candidate) => candidate.level === "error",
+    );
     if (issue) return err({ code: "invalid-document", message: issue.message });
     const source = printDgm(doc);
     if (deferCompile) return ok({ doc, source });
@@ -35,8 +36,9 @@ export function prepareDocument(
     if (!prepared.ok) {
       return err({
         code: "compilation",
-        message: prepared.issues.find((candidate) => candidate.level === "error")?.message
-          ?? "The change could not be compiled.",
+        message:
+          prepared.issues.find((candidate) => candidate.level === "error")?.message ??
+          "The change could not be compiled.",
       });
     }
     return ok({ doc, source });
@@ -58,9 +60,10 @@ export function prepareDocumentMutation(
     if (!baseline.ok) {
       return err({
         code: "compilation",
-        message: baseline.issues.find((candidate) => candidate.level === "error")?.message
-          ?? baseline.compilationError?.message
-          ?? "The existing diagram could not be compiled.",
+        message:
+          baseline.issues.find((candidate) => candidate.level === "error")?.message ??
+          baseline.compilationError?.message ??
+          "The existing diagram could not be compiled.",
       });
     }
     const preserved = preserveManualLayout(parsed.value, baseline.layout);

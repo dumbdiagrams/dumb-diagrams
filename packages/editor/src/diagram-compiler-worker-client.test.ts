@@ -45,14 +45,13 @@ describe("DiagramCompilerWorkerClient", () => {
     client.request(request(1));
 
     expect(client.isBusy()).toBe(false);
-    expect(onFailure).toHaveBeenCalledWith(
-      request(1),
-      expect.objectContaining({ kind: "constructor" }),
+    expect(onFailure).toHaveBeenCalledWith(request(1), expect.objectContaining({ kind: "constructor" }));
+    expect(onFailure.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({
+        kind: "constructor",
+        error: expect.any(Error),
+      }),
     );
-    expect(onFailure.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
-      kind: "constructor",
-      error: expect.any(Error),
-    }));
   });
 
   it("terminates a worker and settles a request when postMessage fails", () => {
@@ -70,10 +69,7 @@ describe("DiagramCompilerWorkerClient", () => {
 
     expect(worker.terminate).toHaveBeenCalledOnce();
     expect(client.isBusy()).toBe(false);
-    expect(onFailure).toHaveBeenCalledWith(
-      request(1),
-      expect.objectContaining({ kind: "post-message" }),
-    );
+    expect(onFailure).toHaveBeenCalledWith(request(1), expect.objectContaining({ kind: "post-message" }));
   });
 
   it.each([
@@ -95,10 +91,7 @@ describe("DiagramCompilerWorkerClient", () => {
 
     expect(worker.terminate).toHaveBeenCalledOnce();
     expect(client.isBusy()).toBe(false);
-    expect(onFailure).toHaveBeenCalledWith(
-      active,
-      expect.objectContaining({ kind }),
-    );
+    expect(onFailure).toHaveBeenCalledWith(active, expect.objectContaining({ kind }));
   });
 
   it("settles a request after an invalid/deserialization response and retries with a fresh worker", () => {
@@ -117,10 +110,7 @@ describe("DiagramCompilerWorkerClient", () => {
     firstWorker.onmessage?.({ data: null } as MessageEvent<unknown>);
 
     expect(firstWorker.terminate).toHaveBeenCalledOnce();
-    expect(onFailure).toHaveBeenCalledWith(
-      first,
-      expect.objectContaining({ kind: "invalid-message" }),
-    );
+    expect(onFailure).toHaveBeenCalledWith(first, expect.objectContaining({ kind: "invalid-message" }));
 
     const second = request(2);
     client.request(second);
@@ -214,10 +204,7 @@ describe("DiagramCompilerWorkerClient", () => {
     worker.onmessage?.({ data } as MessageEvent<unknown>);
 
     expect(onResponse).not.toHaveBeenCalled();
-    expect(onFailure).toHaveBeenCalledWith(
-      active,
-      expect.objectContaining({ kind: "invalid-message" }),
-    );
+    expect(onFailure).toHaveBeenCalledWith(active, expect.objectContaining({ kind: "invalid-message" }));
     expect(client.isBusy()).toBe(false);
   });
 
@@ -238,10 +225,7 @@ describe("DiagramCompilerWorkerClient", () => {
     } as MessageEvent<unknown>);
 
     expect(onResponse).not.toHaveBeenCalled();
-    expect(onFailure).toHaveBeenCalledWith(
-      active,
-      expect.objectContaining({ kind: "invalid-message" }),
-    );
+    expect(onFailure).toHaveBeenCalledWith(active, expect.objectContaining({ kind: "invalid-message" }));
     expect(worker.terminate).toHaveBeenCalledOnce();
   });
 
@@ -275,7 +259,12 @@ describe("planAutoFixInWorker", () => {
 
   it("uses the worker's plan and discards the worker", async () => {
     const worker = createWorker();
-    const plan = planAutoFixInWorker(() => worker, doc, true, () => localPlan);
+    const plan = planAutoFixInWorker(
+      () => worker,
+      doc,
+      true,
+      () => localPlan,
+    );
 
     expect(worker.postMessage).toHaveBeenCalledWith({ autoFix: true, doc, snapToGrid: true });
     worker.onmessage?.({ data: workerPlan } as MessageEvent<unknown>);
@@ -285,17 +274,34 @@ describe("planAutoFixInWorker", () => {
   });
 
   it("plans on the calling thread when the worker cannot start, fails, or sends an unusable plan", async () => {
-    await expect(planAutoFixInWorker(() => {
-      throw new Error("worker unavailable");
-    }, doc, false, () => localPlan)).resolves.toEqual(localPlan);
+    await expect(
+      planAutoFixInWorker(
+        () => {
+          throw new Error("worker unavailable");
+        },
+        doc,
+        false,
+        () => localPlan,
+      ),
+    ).resolves.toEqual(localPlan);
 
     const failing = createWorker();
-    const failed = planAutoFixInWorker(() => failing, doc, false, () => localPlan);
+    const failed = planAutoFixInWorker(
+      () => failing,
+      doc,
+      false,
+      () => localPlan,
+    );
     failing.onerror?.({} as ErrorEvent);
     await expect(failed).resolves.toEqual(localPlan);
 
     const invalid = createWorker();
-    const unusable = planAutoFixInWorker(() => invalid, doc, false, () => localPlan);
+    const unusable = planAutoFixInWorker(
+      () => invalid,
+      doc,
+      false,
+      () => localPlan,
+    );
     invalid.onmessage?.({ data: { ...workerPlan, doc: null } } as MessageEvent<unknown>);
     await expect(unusable).resolves.toEqual(localPlan);
     expect(invalid.terminate).toHaveBeenCalledOnce();

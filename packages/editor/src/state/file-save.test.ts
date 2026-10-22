@@ -3,7 +3,10 @@ import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 
 import { isAbortError, saveExistingFileHandle, saveWithPicker, type FileSystemHandleLike } from "./file-save";
 
-function fakeHandle(diskSource: string, filename = "diagram.dgm"): FileSystemHandleLike & {
+function fakeHandle(
+  diskSource: string,
+  filename = "diagram.dgm",
+): FileSystemHandleLike & {
   writable: { write: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn>; abort: ReturnType<typeof vi.fn> };
 } {
   const writable = {
@@ -45,10 +48,13 @@ describe("existing file saves", () => {
   it("rejects an oversized external file without reading it", async () => {
     const text = vi.fn(async () => "unreachable");
     const handle = fakeHandle("old source");
-    handle.getFile = vi.fn(async () => ({
-      size: DIAGRAM_LIMITS.sourceBytes + 1,
-      text,
-    }) as unknown as File);
+    handle.getFile = vi.fn(
+      async () =>
+        ({
+          size: DIAGRAM_LIMITS.sourceBytes + 1,
+          text,
+        }) as unknown as File,
+    );
 
     expect(await saveExistingFileHandle(handle, "new source", "old source")).toMatchObject({
       status: "error",
@@ -88,7 +94,9 @@ describe("existing file saves", () => {
 
   it("distinguishes read and write failures and cancellation", async () => {
     const missing = fakeHandle("old source");
-    missing.getFile = vi.fn(async () => { throw new Error("file was deleted"); });
+    missing.getFile = vi.fn(async () => {
+      throw new Error("file was deleted");
+    });
     expect(await saveExistingFileHandle(missing, "new", "old")).toMatchObject({ status: "error", code: "read-failed" });
 
     const broken = fakeHandle("old");
@@ -112,12 +120,16 @@ describe("first save through the file picker", () => {
   });
 
   it("treats a dismissed picker as cancelled", async () => {
-    const picker = vi.fn(async () => { throw new DOMException("dismissed", "AbortError"); });
+    const picker = vi.fn(async () => {
+      throw new DOMException("dismissed", "AbortError");
+    });
     expect(await saveWithPicker(picker, "flow.dgm", "source", () => true)).toEqual({ result: { status: "cancelled" } });
   });
 
   it("reports picker failures without a handle", async () => {
-    const picker = vi.fn(async () => { throw new Error("denied"); });
+    const picker = vi.fn(async () => {
+      throw new Error("denied");
+    });
     expect(await saveWithPicker(picker, "flow.dgm", "source", () => true)).toEqual({
       result: { status: "error", filename: "flow.dgm", code: "write-failed", message: "denied" },
     });
@@ -125,7 +137,12 @@ describe("first save through the file picker", () => {
 
   it("aborts instead of writing when the diagram changed while the picker was open", async () => {
     const handle = fakeHandle("");
-    const { result, handle: saved } = await saveWithPicker(async () => handle, "flow.dgm", "source", () => false);
+    const { result, handle: saved } = await saveWithPicker(
+      async () => handle,
+      "flow.dgm",
+      "source",
+      () => false,
+    );
     expect(result).toMatchObject({ status: "error", code: "stale-source" });
     expect(saved).toBeUndefined();
     expect(handle.writable.write).not.toHaveBeenCalled();

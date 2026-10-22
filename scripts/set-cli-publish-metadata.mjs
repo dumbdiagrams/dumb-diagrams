@@ -7,7 +7,7 @@ const repository = process.env.GITHUB_REPOSITORY || process.argv[2] || remote?.r
 if (!repository) {
   throw new Error(
     "A repository owner/name is required when preparing npm publish metadata. " +
-    "Set GITHUB_REPOSITORY, pass it as the first argument, or configure git remote.origin.",
+      "Set GITHUB_REPOSITORY, pass it as the first argument, or configure git remote.origin.",
   );
 }
 

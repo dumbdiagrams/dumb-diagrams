@@ -11,16 +11,26 @@ describe("document imports", () => {
     const broken = file("broken.dgm");
     vi.spyOn(broken, "text").mockRejectedValue(new Error("read failed"));
     const accept = vi.fn(() => true);
-    const result = await importDocumentFiles([
-      { file: file("valid.dgm") }, { file: file("invalid.dgm", "broken") }, { file: broken },
-    ], 3, accept, async () => {});
-    expect(result).toEqual({ opened: ["valid.dgm"], rejected: ["invalid.dgm", "broken.dgm"], unexpected: [], limitReached: false });
+    const result = await importDocumentFiles(
+      [{ file: file("valid.dgm") }, { file: file("invalid.dgm", "broken") }, { file: broken }],
+      3,
+      accept,
+      async () => {},
+    );
+    expect(result).toEqual({
+      opened: ["valid.dgm"],
+      rejected: ["invalid.dgm", "broken.dgm"],
+      unexpected: [],
+      limitReached: false,
+    });
     expect(accept).toHaveBeenCalledTimes(1);
   });
 
   it("captures synchronous file API failures as read errors", async () => {
     const broken = file("broken.dgm");
-    vi.spyOn(broken, "text").mockImplementation(() => { throw new Error("sync read failure"); });
+    vi.spyOn(broken, "text").mockImplementation(() => {
+      throw new Error("sync read failure");
+    });
     const result = await readDiagramFile(broken);
     expect(result.isErr() && result.error.code).toBe("read");
   });
@@ -39,7 +49,12 @@ describe("document imports", () => {
         throw new TypeError("file name getter failed");
       },
     } as unknown as File;
-    const result = await importDocumentFiles([{ file: unstable }], 1, vi.fn(() => true), async () => {});
+    const result = await importDocumentFiles(
+      [{ file: unstable }],
+      1,
+      vi.fn(() => true),
+      async () => {},
+    );
     expect(result.opened).toEqual([]);
     expect(result.rejected).toEqual([]);
     expect(result.unexpected).toHaveLength(1);
@@ -51,7 +66,9 @@ describe("document imports", () => {
     const result = await importDocumentFiles(
       [{ file: file("valid.dgm") }],
       1,
-      () => { throw cause; },
+      () => {
+        throw cause;
+      },
       async () => {},
     );
     expect(result.rejected).toEqual([]);

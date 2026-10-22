@@ -141,22 +141,25 @@ export function useDiagramCompilation(
 
     const id = requestIdRef.current + 1;
     requestIdRef.current = id;
-    const timer = window.setTimeout(() => {
-      if (id !== requestIdRef.current) return;
-      // A Worker cannot interrupt a route already in progress. Replacing a
-      // busy instance keeps stale edits from forming an unbounded queue.
-      const request = { id, source, snapToGrid };
-      const workerClient = workerClientRef.current;
-      if (workerClient) {
-        if (workerClient.isBusy()) workerClient.restart();
-        workerClient.request(request);
-        return;
-      }
+    const timer = window.setTimeout(
+      () => {
+        if (id !== requestIdRef.current) return;
+        // A Worker cannot interrupt a route already in progress. Replacing a
+        // busy instance keeps stale edits from forming an unbounded queue.
+        const request = { id, source, snapToGrid };
+        const workerClient = workerClientRef.current;
+        if (workerClient) {
+          if (workerClient.isBusy()) workerClient.restart();
+          workerClient.request(request);
+          return;
+        }
 
-      // Older embedded browsers still work; schedule the synchronous fallback
-      // after the current interaction has painted.
-      compileSynchronously(request);
-    }, isDeferredCompilation(source, snapToGrid) ? 0 : COMPILATION_DEBOUNCE_MS);
+        // Older embedded browsers still work; schedule the synchronous fallback
+        // after the current interaction has painted.
+        compileSynchronously(request);
+      },
+      isDeferredCompilation(source, snapToGrid) ? 0 : COMPILATION_DEBOUNCE_MS,
+    );
     return () => window.clearTimeout(timer);
   }, [snapToGrid, source]);
 

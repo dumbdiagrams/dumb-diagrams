@@ -28,15 +28,18 @@ export function resolveInitOptions(
 
   const defaultName = defaultProjectDirectory(context.now ?? new Date());
   const askProjectName = context.askProjectName;
-  const answer = context.interactive && askProjectName
-    ? ResultAsync.fromPromise(
-      Promise.resolve().then(() => askProjectName(defaultName)),
-      (cause) => invalidInit(errorMessage(cause), cause),
-    )
-    : okAsync<string | undefined, CliError>(undefined);
+  const answer =
+    context.interactive && askProjectName
+      ? ResultAsync.fromPromise(
+          Promise.resolve().then(() => askProjectName(defaultName)),
+          (cause) => invalidInit(errorMessage(cause), cause),
+        )
+      : okAsync<string | undefined, CliError>(undefined);
   return answer
     .andThen((value) => cleanDisplayText(value?.trim() || defaultName, "project name", 120))
-    .andThen((projectName) => slugify(projectName, "project name").map((projectDirectory) => ({ projectDirectory, projectName })));
+    .andThen((projectName) =>
+      slugify(projectName, "project name").map((projectDirectory) => ({ projectDirectory, projectName })),
+    );
 }
 
 function invalidInit(message: string, cause?: unknown): CliError {

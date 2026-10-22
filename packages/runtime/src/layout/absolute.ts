@@ -1,11 +1,5 @@
 import { getDefaultView, getGroup, getResource } from "../core/index.js";
-import type {
-  DiagramDocument,
-  GroupGeom,
-  ID,
-  LayoutResult,
-  NodeGeom,
-} from "../core/index.js";
+import type { DiagramDocument, GroupGeom, ID, LayoutResult, NodeGeom } from "../core/index.js";
 import { GROUP_STYLES } from "../grammar-aws/index.js";
 
 import type { LayoutState } from "./internal.js";
@@ -34,7 +28,7 @@ export function finalizeAbsoluteLayout(
       const group = getGroup(doc, rootId);
       if (group) return state.groupGeoms.get(group.id)?.bounds.h ?? 0;
       const resource = getResource(doc, rootId);
-      return resource ? state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0 : 0;
+      return resource ? (state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0) : 0;
     }),
   );
   let cursorX = canvasX;
@@ -43,9 +37,9 @@ export function finalizeAbsoluteLayout(
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
     const height = group
-      ? state.groupGeoms.get(group.id)?.bounds.h ?? 0
+      ? (state.groupGeoms.get(group.id)?.bounds.h ?? 0)
       : resource
-        ? state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0
+        ? (state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0)
         : 0;
     const rootY = canvasY + Math.max(0, (rootHeight - height) / 2);
     if (group) {
@@ -75,24 +69,15 @@ export function finalizeAbsoluteLayout(
     }
   }
 
-  const allRects = [
-    ...nodes.map((n) => n.obstacle),
-    ...groups.map((g) => g.bounds),
-  ];
+  const allRects = [...nodes.map((n) => n.obstacle), ...groups.map((g) => g.bounds)];
   const bounds = union(allRects);
 
   return {
     nodes,
     groups,
     edges: [],
-    width: Math.max(
-      Math.ceil(bounds.x + bounds.w + LAYOUT_METRICS.canvasPadding),
-      LAYOUT_METRICS.minCanvasWidth,
-    ),
-    height: Math.max(
-      Math.ceil(bounds.y + bounds.h + LAYOUT_METRICS.canvasPadding),
-      LAYOUT_METRICS.minCanvasHeight,
-    ),
+    width: Math.max(Math.ceil(bounds.x + bounds.w + LAYOUT_METRICS.canvasPadding), LAYOUT_METRICS.minCanvasWidth),
+    height: Math.max(Math.ceil(bounds.y + bounds.h + LAYOUT_METRICS.canvasPadding), LAYOUT_METRICS.minCanvasHeight),
     symmetries: [],
   };
 }
@@ -141,20 +126,11 @@ function positionGroupTree(
     labelPosition,
   });
 
-  if (
-    group.kind === "region" ||
-    group.kind === "vpc" ||
-    group.kind === "az" ||
-    group.kind === "logical"
-  ) {
+  if (group.kind === "region" || group.kind === "vpc" || group.kind === "az" || group.kind === "logical") {
     positionMixedChildren(doc, state, group, content, nodes, groups);
     return w;
   }
-  if (
-    group.kind === "subnet" ||
-    group.kind === "subnet-public" ||
-    group.kind === "subnet-private"
-  ) {
+  if (group.kind === "subnet" || group.kind === "subnet-public" || group.kind === "subnet-private") {
     positionSubnetChildren(doc, state, group, content, nodes, groups);
     return w;
   }
@@ -175,13 +151,7 @@ function positionGroupTree(
     } else if (childRes) {
       const node = state.nodeGeoms.get(childRes.id);
       if (node) {
-        nodes.push(
-          moveNodeTo(
-            node,
-            content.x + node.obstacle.x,
-            content.y + node.obstacle.y,
-          ),
-        );
+        nodes.push(moveNodeTo(node, content.x + node.obstacle.x, content.y + node.obstacle.y));
       }
     }
   }
@@ -203,13 +173,7 @@ function positionSubnetChildren(
     if (!r) continue;
     const node = state.nodeGeoms.get(r.id);
     if (!node) continue;
-    nodes.push(
-      moveNodeTo(
-        node,
-        content.x + node.obstacle.x,
-        content.y + node.obstacle.y,
-      ),
-    );
+    nodes.push(moveNodeTo(node, content.x + node.obstacle.x, content.y + node.obstacle.y));
     maxW = Math.max(maxW, node.obstacle.x + node.obstacle.w);
   }
   return maxW;

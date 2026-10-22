@@ -4,16 +4,9 @@ export function cloneDocument(doc: DiagramDocument): DiagramDocument {
   return structuredClone(doc);
 }
 
-export function collectChildren(
-  doc: DiagramDocument,
-  groupId: string,
-  ids: Set<string>,
-): void {
+export function collectChildren(doc: DiagramDocument, groupId: string, ids: Set<string>): void {
   const group = doc.groups.find((candidate) => candidate.id === groupId);
-  const childIds = [
-    ...(group?.children ?? []),
-    ...(group?.borderChildren?.map((child) => child.id) ?? []),
-  ];
+  const childIds = [...(group?.children ?? []), ...(group?.borderChildren?.map((child) => child.id) ?? [])];
   for (const childId of childIds) {
     if (ids.has(childId)) continue;
     ids.add(childId);
@@ -23,11 +16,7 @@ export function collectChildren(
   }
 }
 
-export function shiftedPlace(
-  place: PlaceOverride | undefined,
-  dx: number,
-  dy: number,
-): PlaceOverride {
+export function shiftedPlace(place: PlaceOverride | undefined, dx: number, dy: number): PlaceOverride {
   return {
     ...(place ?? {}),
     x: Math.round((place?.x ?? 0) + dx),
@@ -38,7 +27,10 @@ export function shiftedPlace(
 }
 
 export function uniqueId(doc: DiagramDocument, base: string): ID {
-  const clean = base.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const clean = base
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
   const used = new Set([
     ...doc.resources.map((resource) => resource.id),
     ...doc.groups.map((group) => group.id),

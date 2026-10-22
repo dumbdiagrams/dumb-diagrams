@@ -3,10 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-const LEGACY_FIXTURES = [
-  "examples/diagrams/async-docs.dgm",
-  "examples/diagrams/transfer-hub.dgm",
-];
+const LEGACY_FIXTURES = ["examples/diagrams/async-docs.dgm", "examples/diagrams/transfer-hub.dgm"];
 
 export function repoRoot() {
   return root;
@@ -56,7 +53,10 @@ export function engineDiagrams() {
     }));
   return [
     ...performanceDiagrams().map((file) => ({
-      id: file.replace(`${root}/`, "").replaceAll("/", "-").replace(/\.dgm$/, ""),
+      id: file
+        .replace(`${root}/`, "")
+        .replaceAll("/", "-")
+        .replace(/\.dgm$/, ""),
       file,
       baselineName: file.replace(`${root}/`, ""),
     })),

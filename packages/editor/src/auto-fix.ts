@@ -11,16 +11,8 @@ import {
   type QualityTuple,
 } from "@dumb-diagrams/runtime/render";
 
-import {
-  compileDocument,
-  type DiagramCompilation,
-} from "./diagram-compiler";
-import {
-  clearAllRoutes,
-  clearPlaces,
-  clearRoute,
-  clearView,
-} from "./editor-model";
+import { compileDocument, type DiagramCompilation } from "./diagram-compiler";
+import { clearAllRoutes, clearPlaces, clearRoute, clearView } from "./editor-model";
 
 export type AutoFixStrategy =
   | "unchanged"
@@ -56,15 +48,9 @@ const STRATEGY_RANK: Record<AutoFixStrategy, number> = {
   "clear-view": 4,
 };
 
-export function planAutoFix(
-  doc: DiagramDocument,
-  snapToGrid: boolean,
-  precompiled?: DiagramCompilation,
-): AutoFixPlan {
+export function planAutoFix(doc: DiagramDocument, snapToGrid: boolean, precompiled?: DiagramCompilation): AutoFixPlan {
   const currentCompilation =
-    precompiled?.ok && precompiled.doc === doc
-      ? precompiled
-      : compileDocument(doc, snapToGrid);
+    precompiled?.ok && precompiled.doc === doc ? precompiled : compileDocument(doc, snapToGrid);
   if (!currentCompilation.ok) {
     const message =
       ("parseError" in currentCompilation && currentCompilation.parseError) ||
@@ -105,12 +91,7 @@ export function planAutoFix(
     ...doc.groups.map((group) => group.id),
   ]);
   const implicatedEdges = implicatedEdgeIds(currentFindings, edgeIds);
-  const implicatedPlaces = implicatedEntityIds(
-    currentFindings,
-    entityIds,
-    edgeIds,
-    doc,
-  );
+  const implicatedPlaces = implicatedEntityIds(currentFindings, entityIds, edgeIds, doc);
 
   const candidates: Candidate[] = [];
   const addCandidate = (strategy: AutoFixStrategy, candidateDoc: DiagramDocument) => {
@@ -181,27 +162,15 @@ export function planAutoFix(
 }
 
 function hasTruncatedInvariantDiagnostics(compilation: DiagramCompilation): boolean {
-  return compilation.invariantFailures.some(
-    (failure) => failure.code === INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
-  );
+  return compilation.invariantFailures.some((failure) => failure.code === INVARIANT_DIAGNOSTICS_TRUNCATED_CODE);
 }
 
 function compilationFindings(compilation: DiagramCompilation): QualityFinding[] {
-  const parseError =
-    !compilation.ok && "parseError" in compilation
-      ? compilation.parseError
-      : undefined;
-  return qualityFindings(
-    compilation.issues,
-    compilation.invariantFailures,
-    parseError,
-  );
+  const parseError = !compilation.ok && "parseError" in compilation ? compilation.parseError : undefined;
+  return qualityFindings(compilation.issues, compilation.invariantFailures, parseError);
 }
 
-function implicatedEdgeIds(
-  findings: QualityFinding[],
-  edgeIds: ReadonlySet<string>,
-): ID[] {
+function implicatedEdgeIds(findings: QualityFinding[], edgeIds: ReadonlySet<string>): ID[] {
   const ids: ID[] = [];
   for (const finding of findings) {
     for (const id of elementIdsFromFindingKey(finding.key)) {

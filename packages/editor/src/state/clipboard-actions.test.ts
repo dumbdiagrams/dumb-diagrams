@@ -15,10 +15,12 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("browser clipboard workflows", () => {
   it("falls back to Studio copy when system clipboard is denied", async () => {
-    vi.stubGlobal("navigator", { clipboard: {
-      read: vi.fn().mockRejectedValue(new DOMException("Denied", "NotAllowedError")),
-      readText: vi.fn().mockRejectedValue(new DOMException("Denied", "NotAllowedError")),
-    } });
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        read: vi.fn().mockRejectedValue(new DOMException("Denied", "NotAllowedError")),
+        readText: vi.fn().mockRejectedValue(new DOMException("Denied", "NotAllowedError")),
+      },
+    });
     const result = await readClipboardSelection(doc, at, payload());
     expect(result.isOk() && result.value.usedFallback).toBe(true);
     expect(result.isOk() && result.value.kind).toBe("selection");
@@ -34,14 +36,26 @@ describe("browser clipboard workflows", () => {
     expect(result.isErr() && result.error.code).toBe("empty");
   });
   it("captures synchronous browser clipboard failures", async () => {
-    vi.stubGlobal("navigator", { clipboard: { writeText() { throw new Error("disabled"); } } });
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        writeText() {
+          throw new Error("disabled");
+        },
+      },
+    });
     const result = await writeClipboardText("source");
     expect(result.isErr() && result.error.code).toBe("unavailable");
   });
   it("does not turn a broken raster image into a successful paste", async () => {
-    vi.stubGlobal("navigator", { clipboard: { read: vi.fn().mockResolvedValue([
-      { types: ["image/png"], getType: async () => new Blob(["broken"], { type: "image/png" }) },
-    ]) } });
+    vi.stubGlobal("navigator", {
+      clipboard: {
+        read: vi
+          .fn()
+          .mockResolvedValue([
+            { types: ["image/png"], getType: async () => new Blob(["broken"], { type: "image/png" }) },
+          ]),
+      },
+    });
     vi.stubGlobal("createImageBitmap", vi.fn().mockRejectedValue(new Error("decode failed")));
     const result = await readClipboardSelection(doc, at, payload());
     expect(result.isErr() && result.error.code).toBe("image");

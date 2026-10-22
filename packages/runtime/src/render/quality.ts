@@ -134,18 +134,12 @@ export function compareQuality(a: QualityTuple, b: QualityTuple): number {
   return a.score - b.score;
 }
 
-export function isQualityImproved(
-  current: QualityTuple,
-  candidate: QualityTuple,
-): boolean {
+export function isQualityImproved(current: QualityTuple, candidate: QualityTuple): boolean {
   return compareQuality(candidate, current) < 0;
 }
 
 /** Reject candidates that introduce findings absent from the baseline multiset. */
-export function qualityRegressionReason(
-  baseline: QualityFinding[],
-  candidate: QualityFinding[],
-): string | undefined {
+export function qualityRegressionReason(baseline: QualityFinding[], candidate: QualityFinding[]): string | undefined {
   return qualityRegressionReasonForTier(baseline, candidate, () => true);
 }
 
@@ -154,11 +148,7 @@ export function qualityHardRegressionReason(
   baseline: QualityFinding[],
   candidate: QualityFinding[],
 ): string | undefined {
-  return qualityRegressionReasonForTier(
-    baseline,
-    candidate,
-    (finding) => finding.tier === "hard",
-  );
+  return qualityRegressionReasonForTier(baseline, candidate, (finding) => finding.tier === "hard");
 }
 
 function qualityRegressionReasonForTier(
@@ -184,12 +174,10 @@ function qualityRegressionReasonForTier(
 
 export function topQualityFinding(findings: QualityFinding[]): QualityFinding | undefined {
   const ranked = [...findings].sort((a, b) => {
-    const tierRank = (tier: QualityTier) =>
-      tier === "hard" ? 0 : tier === "soft" ? 1 : 2;
+    const tierRank = (tier: QualityTier) => (tier === "hard" ? 0 : tier === "soft" ? 1 : 2);
     const tierDelta = tierRank(a.tier) - tierRank(b.tier);
     if (tierDelta !== 0) return tierDelta;
-    const weightDelta =
-      (INVARIANT_WEIGHTS[b.code] ?? 0) - (INVARIANT_WEIGHTS[a.code] ?? 0);
+    const weightDelta = (INVARIANT_WEIGHTS[b.code] ?? 0) - (INVARIANT_WEIGHTS[a.code] ?? 0);
     if (weightDelta !== 0) return weightDelta;
     return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
   });

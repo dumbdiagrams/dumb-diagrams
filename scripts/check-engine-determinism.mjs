@@ -54,7 +54,9 @@ function compileFixture(fixture) {
   deepFreeze(document);
   const compiled = compileDiagramResult(document);
   if (compiled.isErr()) {
-    throw new Error(`${fixture.baselineName}: ${compiled.error.message}: ${compiled.error.issues.map((issue) => issue.message).join("; ")}`);
+    throw new Error(
+      `${fixture.baselineName}: ${compiled.error.message}: ${compiled.error.issues.map((issue) => issue.message).join("; ")}`,
+    );
   }
   const output = {
     layout: compiled.value.layout,
@@ -99,8 +101,8 @@ function hashes(output) {
 }
 
 function changedFields(left, right) {
-  return ["layout", "svg", "issues", "invariantFailures"].filter((field) =>
-    !isDeepStrictEqual(left[field], right[field]),
+  return ["layout", "svg", "issues", "invariantFailures"].filter(
+    (field) => !isDeepStrictEqual(left[field], right[field]),
   );
 }
 
@@ -112,13 +114,15 @@ function childReport(fixtures) {
 
 function runChild() {
   const fixtures = loadFixtures();
-  process.stdout.write(JSON.stringify({
-    environment: {
-      locale: new Intl.Collator().resolvedOptions().locale,
-      timeZone: new Intl.DateTimeFormat().resolvedOptions().timeZone,
-    },
-    fixtures: childReport(fixtures),
-  }));
+  process.stdout.write(
+    JSON.stringify({
+      environment: {
+        locale: new Intl.Collator().resolvedOptions().locale,
+        timeZone: new Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      fixtures: childReport(fixtures),
+    }),
+  );
 }
 
 function runParent() {
@@ -135,7 +139,9 @@ function runParent() {
         const secondHashes = hashes(second);
         const fields = changedFields(first, second);
         failures.push(`${fixture.id}: same-process output differs in ${fields.join(", ")}`);
-        console.error(`  differing hashes: ${fields.map((field) => `${field}=${secondHashes[field]} (first=${firstHashes[field]})`).join(", ")}`);
+        console.error(
+          `  differing hashes: ${fields.map((field) => `${field}=${secondHashes[field]} (first=${firstHashes[field]})`).join(", ")}`,
+        );
       }
     } catch (error) {
       failures.push(`${fixture.id}: ${error instanceof Error ? error.message : String(error)}`);
@@ -156,7 +162,9 @@ function runParent() {
       childReports.push({ ...child, ...parsed });
       const expectedLocale = child.locale.startsWith("tr_") ? "tr-TR" : "en-US";
       if (parsed.environment?.locale !== expectedLocale || parsed.environment?.timeZone !== child.timeZone) {
-        failures.push(`${child.name}: effective environment was ${JSON.stringify(parsed.environment)}, expected ${expectedLocale}/${child.timeZone}`);
+        failures.push(
+          `${child.name}: effective environment was ${JSON.stringify(parsed.environment)}, expected ${expectedLocale}/${child.timeZone}`,
+        );
       }
     } catch (error) {
       failures.push(`${child.name}: child process failed: ${error instanceof Error ? error.message : String(error)}`);

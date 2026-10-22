@@ -8,10 +8,7 @@ export interface InvariantFailure {
 
 export const INVARIANT_DIAGNOSTICS_TRUNCATED_CODE = "invariant-diagnostics-truncated";
 
-export function checkInvariants(
-  layout: LayoutResult,
-  options?: { maxFailures?: number },
-): InvariantFailure[] {
+export function checkInvariants(layout: LayoutResult, options?: { maxFailures?: number }): InvariantFailure[] {
   const maxFailures = normalizeMaxFailures(options?.maxFailures);
   const failures: InvariantFailure[] = [];
   let omittedFailures = 0;
@@ -39,22 +36,14 @@ export function checkInvariants(
   for (const edge of layout.edges) {
     const source = layout.nodes.find((node) => node.id === edge.source);
     const target = layout.nodes.find((node) => node.id === edge.target);
-    if (
-      source &&
-      edge.points[0] &&
-      !pointOnRectBorder(edge.points[0], source.icon)
-    ) {
+    if (source && edge.points[0] && !pointOnRectBorder(edge.points[0], source.icon)) {
       recordFailure({
         code: "edge-port-detached",
         message: `Edge ${edge.id} does not start on icon ${source.id}`,
         elementIds: [edge.id, source.id],
       });
     }
-    if (
-      target &&
-      edge.points.length > 0 &&
-      !pointOnRectBorder(edge.points[edge.points.length - 1]!, target.icon)
-    ) {
+    if (target && edge.points.length > 0 && !pointOnRectBorder(edge.points[edge.points.length - 1]!, target.icon)) {
       recordFailure({
         code: "edge-port-detached",
         message: `Edge ${edge.id} does not end on icon ${target.id}`,
@@ -119,10 +108,7 @@ export function checkInvariants(
         });
       }
       for (const node of layout.nodes) {
-        if (
-          !rectsOverlap(edge.labelRect, node.icon, 2) &&
-          !rectsOverlap(edge.labelRect, node.label, 2)
-        ) continue;
+        if (!rectsOverlap(edge.labelRect, node.icon, 2) && !rectsOverlap(edge.labelRect, node.label, 2)) continue;
         recordFailure({
           code: "edge-label-node-collision",
           message: `Label of edge ${edge.id} overlaps resource ${node.id}`,
@@ -141,10 +127,7 @@ export function checkInvariants(
     }
     if (edge.badge) {
       for (const node of layout.nodes) {
-        if (
-          !circleHitsRect(edge.badge, 10, node.icon) &&
-          !circleHitsRect(edge.badge, 10, node.label)
-        ) continue;
+        if (!circleHitsRect(edge.badge, 10, node.icon) && !circleHitsRect(edge.badge, 10, node.label)) continue;
         recordFailure({
           code: "edge-badge-node-collision",
           message: `Number of edge ${edge.id} overlaps resource ${node.id}`,
@@ -295,10 +278,7 @@ function circleHitsPath(
   return pathHitsRect(points, rect, 0);
 }
 
-function pathsCross(
-  a: Array<{ x: number; y: number }>,
-  b: Array<{ x: number; y: number }>,
-): boolean {
+function pathsCross(a: Array<{ x: number; y: number }>, b: Array<{ x: number; y: number }>): boolean {
   for (let i = 0; i < a.length - 1; i++) {
     for (let j = 0; j < b.length - 1; j++) {
       if (segmentsCross(a[i]!, a[i + 1]!, b[j]!, b[j + 1]!)) return true;
@@ -320,10 +300,12 @@ function segmentsCross(
   const verticalB = firstVertical ? b : d;
   const horizontalA = firstVertical ? c : a;
   const horizontalB = firstVertical ? d : b;
-  return horizontalA.y > Math.min(verticalA.y, verticalB.y) &&
+  return (
+    horizontalA.y > Math.min(verticalA.y, verticalB.y) &&
     horizontalA.y < Math.max(verticalA.y, verticalB.y) &&
     verticalA.x > Math.min(horizontalA.x, horizontalB.x) &&
-    verticalA.x < Math.max(horizontalA.x, horizontalB.x);
+    verticalA.x < Math.max(horizontalA.x, horizontalB.x)
+  );
 }
 
 function circleHitsRect(
@@ -341,23 +323,14 @@ function pointOnRectBorder(
   rect: { x: number; y: number; w: number; h: number },
 ): boolean {
   const epsilon = 0.01;
-  const withinX =
-    point.x >= rect.x - epsilon && point.x <= rect.x + rect.w + epsilon;
-  const withinY =
-    point.y >= rect.y - epsilon && point.y <= rect.y + rect.h + epsilon;
-  const onX =
-    Math.abs(point.x - rect.x) <= epsilon ||
-    Math.abs(point.x - (rect.x + rect.w)) <= epsilon;
-  const onY =
-    Math.abs(point.y - rect.y) <= epsilon ||
-    Math.abs(point.y - (rect.y + rect.h)) <= epsilon;
+  const withinX = point.x >= rect.x - epsilon && point.x <= rect.x + rect.w + epsilon;
+  const withinY = point.y >= rect.y - epsilon && point.y <= rect.y + rect.h + epsilon;
+  const onX = Math.abs(point.x - rect.x) <= epsilon || Math.abs(point.x - (rect.x + rect.w)) <= epsilon;
+  const onY = Math.abs(point.y - rect.y) <= epsilon || Math.abs(point.y - (rect.y + rect.h)) <= epsilon;
   return (onX && withinY) || (onY && withinX);
 }
 
-function pathsReverseOverlap(
-  a: Array<{ x: number; y: number }>,
-  b: Array<{ x: number; y: number }>,
-): boolean {
+function pathsReverseOverlap(a: Array<{ x: number; y: number }>, b: Array<{ x: number; y: number }>): boolean {
   for (let i = 0; i < a.length - 1; i++) {
     for (let j = 0; j < b.length - 1; j++) {
       if (segmentsReverseOverlap(a[i]!, a[i + 1]!, b[j]!, b[j + 1]!)) {
@@ -368,26 +341,14 @@ function pathsReverseOverlap(
   return false;
 }
 
-function pathsShareExclusiveCorridor(
-  a: LayoutResult["edges"][number],
-  b: LayoutResult["edges"][number],
-): boolean {
+function pathsShareExclusiveCorridor(a: LayoutResult["edges"][number], b: LayoutResult["edges"][number]): boolean {
   for (let i = 0; i < a.points.length - 1; i++) {
     for (let j = 0; j < b.points.length - 1; j++) {
-      const shared = segmentsOverlapLength(
-        a.points[i]!,
-        a.points[i + 1]!,
-        b.points[j]!,
-        b.points[j + 1]!,
-      );
+      const shared = segmentsOverlapLength(a.points[i]!, a.points[i + 1]!, b.points[j]!, b.points[j + 1]!);
       if (shared <= 12) continue;
 
       const fanoutStem =
-        i === 0 &&
-        j === 0 &&
-        a.source === b.source &&
-        a.target !== b.target &&
-        samePoint(a.points[0]!, b.points[0]!);
+        i === 0 && j === 0 && a.source === b.source && a.target !== b.target && samePoint(a.points[0]!, b.points[0]!);
       if (!fanoutStem) return true;
     }
   }
@@ -403,24 +364,19 @@ function segmentsOverlapLength(
   if (a.x === b.x && c.x === d.x && a.x === c.x) {
     return Math.max(
       0,
-      Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) -
-        Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
+      Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
     );
   }
   if (a.y === b.y && c.y === d.y && a.y === c.y) {
     return Math.max(
       0,
-      Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) -
-        Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
+      Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
     );
   }
   return 0;
 }
 
-function samePoint(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-): boolean {
+function samePoint(a: { x: number; y: number }, b: { x: number; y: number }): boolean {
   return a.x === b.x && a.y === b.y;
 }
 
@@ -432,16 +388,12 @@ function segmentsReverseOverlap(
 ): boolean {
   if (a.x === b.x && c.x === d.x && a.x === c.x) {
     const opposite = Math.sign(b.y - a.y) === -Math.sign(d.y - c.y);
-    const overlap =
-      Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) -
-      Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y));
+    const overlap = Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y));
     return opposite && overlap > 12;
   }
   if (a.y === b.y && c.y === d.y && a.y === c.y) {
     const opposite = Math.sign(b.x - a.x) === -Math.sign(d.x - c.x);
-    const overlap =
-      Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) -
-      Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x));
+    const overlap = Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x));
     return opposite && overlap > 12;
   }
   return false;
@@ -485,9 +437,6 @@ function segmentHitsObstacle(
   return false;
 }
 
-function inflate(
-  r: { x: number; y: number; w: number; h: number },
-  pad: number,
-) {
+function inflate(r: { x: number; y: number; w: number; h: number }, pad: number) {
   return { x: r.x - pad, y: r.y - pad, w: r.w + pad * 2, h: r.h + pad * 2 };
 }

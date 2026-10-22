@@ -12,10 +12,12 @@ export type FileHandleReadResult = {
  * not discard the rest of a multi-file selection.
  */
 export async function readFileHandles(handles: FileSystemHandleLike[]): Promise<FileHandleReadResult> {
-  const settled = await Promise.allSettled(handles.map(async (handle) => ({
-    handle,
-    file: await handle.getFile(),
-  })));
+  const settled = await Promise.allSettled(
+    handles.map(async (handle) => ({
+      handle,
+      file: await handle.getFile(),
+    })),
+  );
   const entries: OpenFileEntry[] = [];
   const rejected: string[] = [];
 

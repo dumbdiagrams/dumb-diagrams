@@ -1,24 +1,27 @@
 import type { LayoutResult } from "../core/index.js";
 import { describe, expect, it } from "vitest";
 
-import {
-  checkInvariants,
-  INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
-} from "./invariants.js";
+import { checkInvariants, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE } from "./invariants.js";
 
 function crossingLayout(): LayoutResult {
   const horizontal = [10, 20, 30].map((y, index) => ({
     id: `horizontal-${index}`,
     source: `h-source-${index}`,
     target: `h-target-${index}`,
-    points: [{ x: 0, y }, { x: 40, y }],
+    points: [
+      { x: 0, y },
+      { x: 40, y },
+    ],
     style: "solid" as const,
   }));
   const vertical = [10, 20, 30].map((x, index) => ({
     id: `vertical-${index}`,
     source: `v-source-${index}`,
     target: `v-target-${index}`,
-    points: [{ x, y: 0 }, { x, y: 40 }],
+    points: [
+      { x, y: 0 },
+      { x, y: 40 },
+    ],
     style: "solid" as const,
   }));
   return {

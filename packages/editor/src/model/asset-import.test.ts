@@ -38,7 +38,7 @@ describe("pure SVG asset model API", () => {
 
   it("deduplicates an existing asset even when the document is already over the total byte budget", () => {
     const doc = createAsyncDocsFixture();
-    const svg = `<svg viewBox="0 0 32 32">${"<rect width=\"32\" height=\"32\"/>".repeat(6_000)}</svg>`;
+    const svg = `<svg viewBox="0 0 32 32">${'<rect width="32" height="32"/>'.repeat(6_000)}</svg>`;
     const first = importSvgAssetResult(doc, svg);
     expect(first.isOk()).toBe(true);
     if (first.isErr()) return;

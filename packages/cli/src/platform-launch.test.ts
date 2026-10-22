@@ -48,9 +48,14 @@ describe("launchBrowser", () => {
 
   it("warns when spawning the platform launcher throws", () => {
     const warn = vi.fn();
-    launchBrowser(url, "linux", () => {
-      throw new Error("ENOENT");
-    }, warn);
+    launchBrowser(
+      url,
+      "linux",
+      () => {
+        throw new Error("ENOENT");
+      },
+      warn,
+    );
 
     expect(warn).toHaveBeenCalledWith(`Unable to open a browser automatically; open ${url} manually.`);
   });

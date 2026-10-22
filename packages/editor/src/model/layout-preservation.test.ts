@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyDocument, getDefaultView, type DiagramDocument, type LayoutResult } from "@dumb-diagrams/runtime/core";
+import {
+  createEmptyDocument,
+  getDefaultView,
+  type DiagramDocument,
+  type LayoutResult,
+} from "@dumb-diagrams/runtime/core";
 
 import { compileDocument } from "../diagram-compiler";
-import {
-  preserveManualLayout,
-  preserveUnplacedManualLayout,
-  reconcileManualRouteMoves,
-} from "./layout-preservation";
+import { preserveManualLayout, preserveUnplacedManualLayout, reconcileManualRouteMoves } from "./layout-preservation";
 
 function fixture(): { doc: DiagramDocument; layout: LayoutResult } {
   const doc = createEmptyDocument("preservation");
@@ -32,11 +33,20 @@ function fixture(): { doc: DiagramDocument; layout: LayoutResult } {
   view.routes.other_edge = {
     pin: true,
     mode: "manual",
-    points: [{ x: 240, y: 40 }, { x: 340, y: 40 }],
+    points: [
+      { x: 240, y: 40 },
+      { x: 340, y: 40 },
+    ],
     badgeT: 0.75,
     badgeSide: "top",
   };
-  view.routes.deleted = { pin: true, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
+  view.routes.deleted = {
+    pin: true,
+    points: [
+      { x: 1, y: 2 },
+      { x: 3, y: 4 },
+    ],
+  };
 
   const layout = {
     width: 500,
@@ -49,7 +59,12 @@ function fixture(): { doc: DiagramDocument; layout: LayoutResult } {
         id: "main",
         source: "source",
         target: "target",
-        points: [{ x: 80, y: 64 }, { x: 140, y: 64 }, { x: 140, y: 160 }, { x: 240, y: 160 }],
+        points: [
+          { x: 80, y: 64 },
+          { x: 140, y: 64 },
+          { x: 140, y: 160 },
+          { x: 240, y: 160 },
+        ],
         badgeT: 0.6,
         badgeSide: "top" as const,
         labelT: 0.4,
@@ -60,14 +75,20 @@ function fixture(): { doc: DiagramDocument; layout: LayoutResult } {
         id: "other_edge",
         source: "target",
         target: "other",
-        points: [{ x: 240, y: 40 }, { x: 340, y: 40 }],
+        points: [
+          { x: 240, y: 40 },
+          { x: 340, y: 40 },
+        ],
         style: "solid" as const,
       },
       {
         id: "new_edge",
         source: "source",
         target: "other",
-        points: [{ x: 80, y: 64 }, { x: 340, y: 40 }],
+        points: [
+          { x: 80, y: 64 },
+          { x: 340, y: 40 },
+        ],
         style: "solid" as const,
       },
     ],
@@ -79,8 +100,22 @@ function compilableDocument(grouped = false): DiagramDocument {
   const doc = createEmptyDocument("compiled-preservation");
   doc.flow = "lr";
   doc.resources = [
-    { id: "source", type: "cloud-agnostic.actor", label: { service: "Source" }, role: "primary", props: {}, ...(grouped ? { parent: "services" } : {}) },
-    { id: "target", type: "cloud-agnostic.server", label: { service: "Target" }, role: "primary", props: {}, ...(grouped ? { parent: "services" } : {}) },
+    {
+      id: "source",
+      type: "cloud-agnostic.actor",
+      label: { service: "Source" },
+      role: "primary",
+      props: {},
+      ...(grouped ? { parent: "services" } : {}),
+    },
+    {
+      id: "target",
+      type: "cloud-agnostic.server",
+      label: { service: "Target" },
+      role: "primary",
+      props: {},
+      ...(grouped ? { parent: "services" } : {}),
+    },
     { id: "other", type: "cloud-agnostic.database", label: { service: "Other" }, role: "primary", props: {} },
   ];
   if (grouped) {
@@ -167,7 +202,10 @@ describe("manual layout preservation", () => {
     afterView.routes.main = {
       ...afterView.routes.main,
       pin: true,
-      points: [{ x: 1, y: 1 }, { x: 2, y: 2 }],
+      points: [
+        { x: 1, y: 1 },
+        { x: 2, y: 2 },
+      ],
     };
     const explicitlyEdited = reconcileManualRouteMoves(doc, after);
     expect(getDefaultView(explicitlyEdited).routes.main?.points).toEqual([
@@ -226,10 +264,15 @@ describe("manual layout preservation", () => {
     expect(endpoint.y).toBeLessThanOrEqual(source.y + source.h);
     const sourceIcon = after.layout.nodes.find((node) => node.id === "source")!.icon;
     const neighbor = afterMain.points[1]!;
-    expect(endpoint.x === sourceIcon.x ? neighbor.x < endpoint.x && neighbor.y === endpoint.y
-      : endpoint.x === sourceIcon.x + sourceIcon.w ? neighbor.x > endpoint.x && neighbor.y === endpoint.y
-        : endpoint.y === sourceIcon.y ? neighbor.y < endpoint.y && neighbor.x === endpoint.x
-          : neighbor.y > endpoint.y && neighbor.x === endpoint.x).toBe(true);
+    expect(
+      endpoint.x === sourceIcon.x
+        ? neighbor.x < endpoint.x && neighbor.y === endpoint.y
+        : endpoint.x === sourceIcon.x + sourceIcon.w
+          ? neighbor.x > endpoint.x && neighbor.y === endpoint.y
+          : endpoint.y === sourceIcon.y
+            ? neighbor.y < endpoint.y && neighbor.x === endpoint.x
+            : neighbor.y > endpoint.y && neighbor.x === endpoint.x,
+    ).toBe(true);
     expect(edgeLayout(after, "other_edge").points).toEqual(edgeLayout(baseline, "other_edge").points);
   });
 

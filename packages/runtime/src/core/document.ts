@@ -1,11 +1,4 @@
-import type {
-  DiagramDocument,
-  Edge,
-  Group,
-  ID,
-  Resource,
-  View,
-} from "./types.js";
+import type { DiagramDocument, Edge, Group, ID, Resource, View } from "./types.js";
 
 export function createEmptyView(id: ID = "default"): View {
   return {
@@ -49,21 +42,11 @@ export function allNodeIds(doc: DiagramDocument): ID[] {
   return [...doc.groups.map((g) => g.id), ...doc.resources.map((r) => r.id)];
 }
 
-export function getParentGroup(
-  doc: DiagramDocument,
-  childId: ID,
-): Group | undefined {
-  return doc.groups.find(
-    (g) =>
-      g.children.includes(childId) ||
-      g.borderChildren?.some((b) => b.id === childId),
-  );
+export function getParentGroup(doc: DiagramDocument, childId: ID): Group | undefined {
+  return doc.groups.find((g) => g.children.includes(childId) || g.borderChildren?.some((b) => b.id === childId));
 }
 
-export function getChildren(
-  doc: DiagramDocument,
-  groupId: ID,
-): Array<Resource | Group> {
+export function getChildren(doc: DiagramDocument, groupId: ID): Array<Resource | Group> {
   const group = getGroup(doc, groupId);
   if (!group) return [];
   const items: Array<Resource | Group> = [];

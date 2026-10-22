@@ -25,10 +25,16 @@ describe("readDiagramUrlImport", () => {
     ["extra parameters", `${hashFor(valid)}&x=1`, "Diagram URL contains an unsupported hash."],
     ["a malformed payload", "#diagram=***", "Diagram URL contains a malformed source payload."],
     ["invalid syntax", hashFor("diagram broken { flow rl }"), "Diagram URL contains invalid diagram source."],
-    ["validation errors", hashFor("diagram dup {\n  cloud-agnostic.client a\n  cloud-agnostic.client a\n}"), "Diagram URL contains invalid diagram source."],
+    [
+      "validation errors",
+      hashFor("diagram dup {\n  cloud-agnostic.client a\n  cloud-agnostic.client a\n}"),
+      "Diagram URL contains invalid diagram source.",
+    ],
     [
       "an unsafe embedded asset",
-      hashFor(`${valid}assets {\n  asset bad {\n    svg "<svg><script>alert(1)</script></svg>"\n    w 16\n    h 16\n  }\n}\n`),
+      hashFor(
+        `${valid}assets {\n  asset bad {\n    svg "<svg><script>alert(1)</script></svg>"\n    w 16\n    h 16\n  }\n}\n`,
+      ),
       "Diagram URL contains invalid diagram source.",
     ],
   ])("rejects %s", (_name, hash, error) => {

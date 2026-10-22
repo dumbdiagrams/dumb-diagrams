@@ -42,12 +42,15 @@ function packageNameForPath(path) {
 
 export function summarizePackageCoverage(summary) {
   const totals = Object.fromEntries(
-    Object.keys(PACKAGE_COVERAGE_TARGETS).map((name) => [name, {
-      lines: { total: 0, covered: 0 },
-      statements: { total: 0, covered: 0 },
-      functions: { total: 0, covered: 0 },
-      branches: { total: 0, covered: 0 },
-    }]),
+    Object.keys(PACKAGE_COVERAGE_TARGETS).map((name) => [
+      name,
+      {
+        lines: { total: 0, covered: 0 },
+        statements: { total: 0, covered: 0 },
+        functions: { total: 0, covered: 0 },
+        branches: { total: 0, covered: 0 },
+      },
+    ]),
   );
 
   for (const [path, file] of Object.entries(summary ?? {})) {
@@ -61,17 +64,27 @@ export function summarizePackageCoverage(summary) {
     }
   }
 
-  return Object.fromEntries(Object.entries(totals).map(([name, metrics]) => [name,
-    Object.fromEntries(Object.entries(metrics).map(([metric, count]) => [metric, {
-      ...count,
-      pct: count.total > 0 ? (count.covered / count.total) * 100 : 0,
-    }])),
-  ]));
+  return Object.fromEntries(
+    Object.entries(totals).map(([name, metrics]) => [
+      name,
+      Object.fromEntries(
+        Object.entries(metrics).map(([metric, count]) => [
+          metric,
+          {
+            ...count,
+            pct: count.total > 0 ? (count.covered / count.total) * 100 : 0,
+          },
+        ]),
+      ),
+    ]),
+  );
 }
 
 export function coveragePolicyFailures(summary) {
-  const failures = coverageFailures(summary?.total, COVERAGE_TARGETS)
-    .map((failure) => ({ ...failure, scope: "global" }));
+  const failures = coverageFailures(summary?.total, COVERAGE_TARGETS).map((failure) => ({
+    ...failure,
+    scope: "global",
+  }));
   const packageTotals = summarizePackageCoverage(summary);
   for (const [name, targets] of Object.entries(PACKAGE_COVERAGE_TARGETS)) {
     const packageFailures = coverageFailures(packageTotals[name], targets, `package:${name}`);

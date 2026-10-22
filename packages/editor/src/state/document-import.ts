@@ -8,21 +8,35 @@ import { importSvgAssetResult } from "../model/asset-import";
 import { addCustomResourceResult } from "../model/document-operations";
 import type { OpenFileEntry } from "./file-open";
 
-export type DocumentImportError = { code: "size" | "extension" | "read" | "source" | "asset" | "unexpected"; message: string; cause?: unknown };
+export type DocumentImportError = {
+  code: "size" | "extension" | "read" | "source" | "asset" | "unexpected";
+  message: string;
+  cause?: unknown;
+};
 export type ImportedSource = { source: string; filename: string };
 export type DocumentImportBatchError = { filename: string; error: DocumentImportError };
-export type DocumentImportBatchResult = { opened: string[]; rejected: string[]; unexpected: DocumentImportBatchError[]; limitReached: boolean };
+export type DocumentImportBatchResult = {
+  opened: string[];
+  rejected: string[];
+  unexpected: DocumentImportBatchError[];
+  limitReached: boolean;
+};
 
 export function documentHasUnsafeAssets(doc: DiagramDocument): boolean {
   return (doc.assets ?? []).some((asset) => sanitizeSvgResult(asset.content).isErr());
 }
 
-export function validateImportedSource(source: string, enforceCatalogRules = true): Result<string, DocumentImportError> {
+export function validateImportedSource(
+  source: string,
+  enforceCatalogRules = true,
+): Result<string, DocumentImportError> {
   const parsed = parseDgmResult(source);
   if (parsed.isErr()) return err({ code: "source", message: parsed.error.message });
   const issues = validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules });
-  if (hasErrors(issues)) return err({ code: "source", message: issues.find((issue) => issue.level === "error")!.message });
-  if (documentHasUnsafeAssets(parsed.value)) return err({ code: "asset", message: "Diagram contains unsafe SVG assets." });
+  if (hasErrors(issues))
+    return err({ code: "source", message: issues.find((issue) => issue.level === "error")!.message });
+  if (documentHasUnsafeAssets(parsed.value))
+    return err({ code: "asset", message: "Diagram contains unsafe SVG assets." });
   return ok(source);
 }
 
@@ -34,19 +48,24 @@ export function readDiagramFile(file: File): ResultAsync<ImportedSource, Documen
     return errAsync({ code: "extension", message: file.name });
   }
   // Promise.resolve().then also captures a synchronous platform read failure.
-  return ResultAsync.fromPromise(Promise.resolve().then(() => file.text()),
-    (cause): DocumentImportError => ({ code: "read", message: file.name, cause }))
-    .andThen((source) => ResultAsync.fromPromise(
-      Promise.resolve().then(() => validateImportedSource(source).map((validatedSource) => ({
-        source: validatedSource,
-        filename: normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters),
-      }))),
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => file.text()),
+    (cause): DocumentImportError => ({ code: "read", message: file.name, cause }),
+  ).andThen((source) =>
+    ResultAsync.fromPromise(
+      Promise.resolve().then(() =>
+        validateImportedSource(source).map((validatedSource) => ({
+          source: validatedSource,
+          filename: normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters),
+        })),
+      ),
       (cause): DocumentImportError => ({
         code: "unexpected",
         message: "Diagram import failed unexpectedly. The document was not changed.",
         cause,
       }),
-    ).andThen((result) => result));
+    ).andThen((result) => result),
+  );
 }
 
 export async function importDocumentFiles(
@@ -111,19 +130,36 @@ function safeFileName(file: File): string {
 }
 
 export function importSvgFile(file: File, doc: DiagramDocument, parent: string | undefined, at: Point) {
-  return ResultAsync.fromPromise(Promise.resolve().then(() => prepareSvgFile(file, doc, parent, at)),
-    (cause): DocumentImportError => ({ code: "unexpected", message: "SVG import failed unexpectedly. Your diagram was not changed.", cause }))
-    .andThen((result) => result);
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => prepareSvgFile(file, doc, parent, at)),
+    (cause): DocumentImportError => ({
+      code: "unexpected",
+      message: "SVG import failed unexpectedly. Your diagram was not changed.",
+      cause,
+    }),
+  ).andThen((result) => result);
 }
 
 function prepareSvgFile(file: File, doc: DiagramDocument, parent: string | undefined, at: Point) {
   if (file.size > DIAGRAM_LIMITS.svgBytes) {
     return errAsync<never, DocumentImportError>({ code: "size", message: "SVG exceeds 256 KiB limit" });
   }
-  return ResultAsync.fromPromise(Promise.resolve().then(() => file.text()),
-    (cause): DocumentImportError => ({ code: "read", message: "Unable to read SVG file.", cause }))
-    .andThen((raw) => importSvgAssetResult(doc, raw).mapErr((error): DocumentImportError => ({ code: "asset", message: error.message })))
-    .andThen((imported) => addCustomResourceResult(imported.doc, imported.assetId,
-      normalizeSingleLineText(file.name.replace(/\.svg$/i, "")), parent, at)
-      .mapErr((error): DocumentImportError => ({ code: "asset", message: error.message })));
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => file.text()),
+    (cause): DocumentImportError => ({ code: "read", message: "Unable to read SVG file.", cause }),
+  )
+    .andThen((raw) =>
+      importSvgAssetResult(doc, raw).mapErr(
+        (error): DocumentImportError => ({ code: "asset", message: error.message }),
+      ),
+    )
+    .andThen((imported) =>
+      addCustomResourceResult(
+        imported.doc,
+        imported.assetId,
+        normalizeSingleLineText(file.name.replace(/\.svg$/i, "")),
+        parent,
+        at,
+      ).mapErr((error): DocumentImportError => ({ code: "asset", message: error.message })),
+    );
 }

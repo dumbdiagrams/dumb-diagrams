@@ -41,23 +41,14 @@ function rootOwner(doc: DiagramDocument, id: ID, roots: ReadonlySet<ID>): ID | u
   return undefined;
 }
 
-function compareByFlowAxis(
-  doc: DiagramDocument,
-  view: ReturnType<typeof getDefaultView>,
-  a: ID,
-  b: ID,
-): number {
+function compareByFlowAxis(doc: DiagramDocument, view: ReturnType<typeof getDefaultView>, a: ID, b: ID): number {
   const horizontal = doc.flow === "lr";
   const placeA = view.places[a];
   const placeB = view.places[b];
   if (placeA?.x !== undefined && placeB?.x !== undefined) {
-    const primary = horizontal
-      ? placeA.x - placeB.x
-      : (placeA.y ?? 0) - (placeB.y ?? 0);
+    const primary = horizontal ? placeA.x - placeB.x : (placeA.y ?? 0) - (placeB.y ?? 0);
     if (primary !== 0) return primary;
-    const secondary = horizontal
-      ? (placeA.y ?? 0) - (placeB.y ?? 0)
-      : placeA.x - placeB.x;
+    const secondary = horizontal ? (placeA.y ?? 0) - (placeB.y ?? 0) : placeA.x - placeB.x;
     if (secondary !== 0) return secondary;
   }
   return compareStableIds(a, b);
@@ -120,9 +111,7 @@ export function orderRootsForFlow(doc: DiagramDocument, roots: ID[]): ID[] {
   while (queue.length > 0) {
     const id = queue.shift()!;
     ordered.push(id);
-    for (const target of [...adjacency.get(id) ?? []].sort((a, b) =>
-      compareByFlowAxis(doc, view, a, b),
-    )) {
+    for (const target of [...(adjacency.get(id) ?? [])].sort((a, b) => compareByFlowAxis(doc, view, a, b))) {
       inDegree.set(target, (inDegree.get(target) ?? 0) - 1);
       if (inDegree.get(target) === 0) {
         queue.push(target);

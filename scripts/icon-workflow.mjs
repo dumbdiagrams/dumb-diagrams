@@ -131,9 +131,7 @@ const SOURCE_ICON_LIBRARIES = [
 ];
 
 function safeZipEntries(archive) {
-  const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" })
-    .split(/\r?\n/)
-    .filter(Boolean);
+  const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" }).split(/\r?\n/).filter(Boolean);
   for (const name of names) {
     const normalized = name.replaceAll("\\", "/");
     if (normalized.startsWith("/") || normalized.split("/").includes("..")) {
@@ -185,7 +183,9 @@ async function check() {
   for (const source of lock.sources) {
     const count = counts.get(source.provider) ?? 0;
     const okCount = count >= source.minimumCanonicalCount;
-    console.log(`${source.provider}: ${count} canonical resources (minimum ${source.minimumCanonicalCount}) ${okCount ? "ok" : "FAIL"}`);
+    console.log(
+      `${source.provider}: ${count} canonical resources (minimum ${source.minimumCanonicalCount}) ${okCount ? "ok" : "FAIL"}`,
+    );
     if (!okCount) failed = true;
   }
   for (const library of SOURCE_ICON_LIBRARIES) {
@@ -200,9 +200,7 @@ async function check() {
       manifest.entries
         .filter(
           (entry) =>
-            entry.provider === library.provider &&
-            library.kinds.includes(entry.assetKind) &&
-            entry.browsable !== false,
+            entry.provider === library.provider && library.kinds.includes(entry.assetKind) && entry.browsable !== false,
         )
         .map((entry) => entry.iconPath)
         .filter((file) => file.startsWith(`${library.root}/`)),
@@ -277,7 +275,9 @@ async function check() {
     }
   }
   for (const source of lock.sources) {
-    console.log(`${source.provider}: archive ${source.sha256 === "local-curated-assets" ? "local source tree" : "locked; download only during icons:update"}`);
+    console.log(
+      `${source.provider}: archive ${source.sha256 === "local-curated-assets" ? "local source tree" : "locked; download only during icons:update"}`,
+    );
   }
   if (failed) process.exitCode = 1;
 }
@@ -287,7 +287,8 @@ async function update(name, acceptTerms) {
     throw new Error("Usage: icons:update --provider <aws|azure|gcp|cloud-agnostic> --accept-terms");
   }
   const source = sourceFor(name);
-  if (!source.archiveUrl) throw new Error(`${name} has no archive URL; update its pinned source through the reviewed local workflow`);
+  if (!source.archiveUrl)
+    throw new Error(`${name} has no archive URL; update its pinned source through the reviewed local workflow`);
   const temp = mkdtempSync(join(tmpdir(), "dumb-diagrams-icons-"));
   const archive = join(temp, `${name}.zip`);
   try {
@@ -308,7 +309,11 @@ async function update(name, acceptTerms) {
     const prepared = join(temp, "prepared");
     mkdirSync(prepared);
     if (name === "aws") {
-      for (const folder of ["Architecture-Service-Icons_07312026", "Architecture-Group-Icons_07312026", "Resource-Icons_07312026"]) {
+      for (const folder of [
+        "Architecture-Service-Icons_07312026",
+        "Architecture-Group-Icons_07312026",
+        "Resource-Icons_07312026",
+      ]) {
         const found = findDirectory(validationRoot, folder);
         if (found) cpSync(found, join(prepared, folder), { recursive: true });
       }

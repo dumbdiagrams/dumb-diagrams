@@ -13,9 +13,7 @@ const DEFAULT_ROOT = resolve(
 );
 const CURATED_ROOT = resolve(fileURLToPath(new URL("../examples/curated/", import.meta.url)));
 const CURATED_CONTRACT = resolve(fileURLToPath(new URL("../examples/evaluations/curated-aws.json", import.meta.url)));
-const canonicalTypeByIcon = new Map(
-  listAssets("all").map((entry) => [entry.icon.sourceId, entry.type]),
-);
+const canonicalTypeByIcon = new Map(listAssets("all").map((entry) => [entry.icon.sourceId, entry.type]));
 const LEVELS = {
   vague: { prompt: "vague.md", source: "vague.dgm" },
   normal: { prompt: "normal.md", source: "normal.dgm" },
@@ -79,10 +77,7 @@ export function evaluateSource(source, expected) {
     }
   }
   if (expected.noUnexpectedTypes) {
-    const allowed = new Set([
-      ...Object.keys(expected.exactCounts ?? {}),
-      ...Object.keys(expected.minimumCounts ?? {}),
-    ]);
+    const allowed = new Set([...Object.keys(expected.exactCounts ?? {}), ...Object.keys(expected.minimumCounts ?? {})]);
     for (const type of counts.keys()) {
       if (!allowed.has(type)) failures.push(`unexpected resource type: ${type}`);
     }
@@ -124,7 +119,9 @@ export function evaluateSource(source, expected) {
     }
   }
   for (const requirement of expected.groupContainment ?? []) {
-    const matching = doc.groups.filter((group) => canonicalType(group.type ?? group.kind) === requirement.childGroupType);
+    const matching = doc.groups.filter(
+      (group) => canonicalType(group.type ?? group.kind) === requirement.childGroupType,
+    );
     if (!matching.length) {
       failures.push(`group type missing: ${requirement.childGroupType}`);
       continue;
@@ -154,12 +151,13 @@ export function evaluateSource(source, expected) {
     const key = `${relationship.sourceType} -> ${relationship.targetType}`;
     const expectedCount = relationship.count ?? 1;
     const actualCount = relationships.get(key) ?? 0;
-    if (actualCount !== expectedCount) failures.push(`directed relationship ${key}: got ${actualCount}, expected ${expectedCount}`);
+    if (actualCount !== expectedCount)
+      failures.push(`directed relationship ${key}: got ${actualCount}, expected ${expectedCount}`);
   }
   if (expected.relationshipMode === "exact") {
-    const allowed = new Set((expected.relationships ?? []).map(
-      (relationship) => `${relationship.sourceType} -> ${relationship.targetType}`,
-    ));
+    const allowed = new Set(
+      (expected.relationships ?? []).map((relationship) => `${relationship.sourceType} -> ${relationship.targetType}`),
+    );
     for (const relationship of relationships.keys()) {
       if (!allowed.has(relationship)) failures.push(`unexpected directed relationship: ${relationship}`);
     }
@@ -175,13 +173,13 @@ export function evaluateSource(source, expected) {
   return failures.length
     ? failure(failures.join("; "), { counts: Object.fromEntries(counts) })
     : {
-      ok: true,
-      grammar: doc.grammar,
-      providerValid: true,
-      counts: Object.fromEntries(counts),
-      groupCounts: Object.fromEntries(groupCounts),
-      warningCodes: compiled.invariantFailures.map((warning) => warning.code),
-    };
+        ok: true,
+        grammar: doc.grammar,
+        providerValid: true,
+        counts: Object.fromEntries(counts),
+        groupCounts: Object.fromEntries(groupCounts),
+        warningCodes: compiled.invariantFailures.map((warning) => warning.code),
+      };
 }
 
 function countTypes(resources) {
@@ -250,7 +248,9 @@ function validateCuratedBundle(root, contract) {
     }
   }
 
-  return failures.length ? { ok: false, message: failures.join("; "), examples: results } : { ok: true, examples: results };
+  return failures.length
+    ? { ok: false, message: failures.join("; "), examples: results }
+    : { ok: true, examples: results };
 }
 
 function run(root) {
@@ -277,10 +277,7 @@ function run(root) {
     ...expected,
     exactCounts: { ...expected.exactCounts, "aws.kinesis": 1 },
   };
-  const negative = evaluateSource(
-    readFileSync(resolve(root, "normal.dgm"), "utf8"),
-    negativeExpected,
-  );
+  const negative = evaluateSource(readFileSync(resolve(root, "normal.dgm"), "utf8"), negativeExpected);
   results.negativeSelfTest = { ok: !negative.ok, observed: negative.message };
   if (negative.ok) ok = false;
 

@@ -38,29 +38,101 @@ describe("parseDgm / printDgm round-trip", () => {
   });
 
   it.each([
-    ["flow rl", "diagram d {\n  flow rl\n}", "2:8 Invalid flow \"rl\"; expected lr, tb"],
-    ["resource option typo", "diagram d {\n  aws.aws-lambda fn { rolee secondary }\n}", "2:23 Unknown resource option \"rolee\"; expected service, label-position, role, icon"],
-    ["edge option typo", "diagram d {\n  a -> b { stpe 1 }\n}", "2:12 Unknown edge option \"stpe\"; expected id, label, step, style, kind, color, from, to"],
-    ["edge style", "diagram d {\n  a -> b { style dotted }\n}", "2:18 Invalid edge style \"dotted\"; expected solid, dashed"],
-    ["edge color", "diagram d {\n  a -> b { color pink }\n}", "2:18 Invalid edge color \"pink\"; expected graphite, blue, teal, purple, amber, red, green"],
-    ["edge kind", "diagram d {\n  a -> b { kind flwo }\n}", "2:17 Invalid edge kind \"flwo\"; expected flow, bidirectional, peer, fail"],
-    ["bare port offset", "diagram d {\n  a -> b { from w 0.25 }\n}", "2:19 Unknown edge option number 0.25; expected id, label, step, style, kind, color, from, to"],
-    ["port side", "diagram d {\n  a -> b { to x }\n}", "2:15 Invalid edge to side \"x\"; expected n, s, e, w"],
-    ["group option", "diagram d {\n  aws.region r { colour red }\n}", "2:18 Unknown group option \"colour\"; expected step, label-position, hide-icon, style, color, fill, or a nested typed declaration"],
-    ["group fill", "diagram d {\n  aws.region r { fill solid }\n}", "2:23 Invalid group fill \"solid\"; expected subtle, none"],
-    ["legacy group shorthand", "diagram d {\n  group g \"G\"\n}", "2:3 Unknown diagram option \"group\"; expected grammar, flow, title, annotation, a typed declaration, or an edge"],
-    ["edge inside a group", "diagram d {\n  aws.region r {\n    a -> b\n  }\n}", "3:5 Unknown group option \"a\"; expected step, label-position, hide-icon, style, color, fill, or a nested typed declaration"],
-    ["annotation size", "diagram d {\n  annotation n \"N\" { size 60 }\n}", "2:27 Invalid annotation size 60; expected 10 to 48"],
-    ["annotation font", "diagram d {\n  annotation n \"N\" { font comic }\n}", "2:27 Invalid annotation font \"comic\"; expected sans, serif, mono"],
-    ["asset key", "diagram d {}\nassets {\n  asset a { width 4 }\n}", "3:13 Unknown asset option \"width\"; expected svg, w, h"],
-    ["place key", "diagram d {}\nview default {\n  place a { left 4 }\n}", "3:13 Unknown place option \"left\"; expected x, y, w, h, pin, manual, locked, visible, z"],
-    ["place visible", "diagram d {}\nview default {\n  place a { visible no }\n}", "3:21 Invalid visible \"no\"; expected true, false"],
-    ["route mode", "diagram d {}\nview default {\n  route e { mode magic }\n}", "3:18 Invalid route mode \"magic\"; expected auto, manual"],
-    ["route badge side", "diagram d {}\nview default {\n  route e { badge 0.5 left }\n}", "3:23 Invalid route badge side \"left\"; expected top, bottom"],
-    ["view entry", "diagram d {}\nview default {\n  edge e {}\n}", "3:3 Unknown view option \"edge\"; expected place, route, annotation"],
+    ["flow rl", "diagram d {\n  flow rl\n}", '2:8 Invalid flow "rl"; expected lr, tb'],
+    [
+      "resource option typo",
+      "diagram d {\n  aws.aws-lambda fn { rolee secondary }\n}",
+      '2:23 Unknown resource option "rolee"; expected service, label-position, role, icon',
+    ],
+    [
+      "edge option typo",
+      "diagram d {\n  a -> b { stpe 1 }\n}",
+      '2:12 Unknown edge option "stpe"; expected id, label, step, style, kind, color, from, to',
+    ],
+    [
+      "edge style",
+      "diagram d {\n  a -> b { style dotted }\n}",
+      '2:18 Invalid edge style "dotted"; expected solid, dashed',
+    ],
+    [
+      "edge color",
+      "diagram d {\n  a -> b { color pink }\n}",
+      '2:18 Invalid edge color "pink"; expected graphite, blue, teal, purple, amber, red, green',
+    ],
+    [
+      "edge kind",
+      "diagram d {\n  a -> b { kind flwo }\n}",
+      '2:17 Invalid edge kind "flwo"; expected flow, bidirectional, peer, fail',
+    ],
+    [
+      "bare port offset",
+      "diagram d {\n  a -> b { from w 0.25 }\n}",
+      "2:19 Unknown edge option number 0.25; expected id, label, step, style, kind, color, from, to",
+    ],
+    ["port side", "diagram d {\n  a -> b { to x }\n}", '2:15 Invalid edge to side "x"; expected n, s, e, w'],
+    [
+      "group option",
+      "diagram d {\n  aws.region r { colour red }\n}",
+      '2:18 Unknown group option "colour"; expected step, label-position, hide-icon, style, color, fill, or a nested typed declaration',
+    ],
+    [
+      "group fill",
+      "diagram d {\n  aws.region r { fill solid }\n}",
+      '2:23 Invalid group fill "solid"; expected subtle, none',
+    ],
+    [
+      "legacy group shorthand",
+      'diagram d {\n  group g "G"\n}',
+      '2:3 Unknown diagram option "group"; expected grammar, flow, title, annotation, a typed declaration, or an edge',
+    ],
+    [
+      "edge inside a group",
+      "diagram d {\n  aws.region r {\n    a -> b\n  }\n}",
+      '3:5 Unknown group option "a"; expected step, label-position, hide-icon, style, color, fill, or a nested typed declaration',
+    ],
+    [
+      "annotation size",
+      'diagram d {\n  annotation n "N" { size 60 }\n}',
+      "2:27 Invalid annotation size 60; expected 10 to 48",
+    ],
+    [
+      "annotation font",
+      'diagram d {\n  annotation n "N" { font comic }\n}',
+      '2:27 Invalid annotation font "comic"; expected sans, serif, mono',
+    ],
+    [
+      "asset key",
+      "diagram d {}\nassets {\n  asset a { width 4 }\n}",
+      '3:13 Unknown asset option "width"; expected svg, w, h',
+    ],
+    [
+      "place key",
+      "diagram d {}\nview default {\n  place a { left 4 }\n}",
+      '3:13 Unknown place option "left"; expected x, y, w, h, pin, manual, locked, visible, z',
+    ],
+    [
+      "place visible",
+      "diagram d {}\nview default {\n  place a { visible no }\n}",
+      '3:21 Invalid visible "no"; expected true, false',
+    ],
+    [
+      "route mode",
+      "diagram d {}\nview default {\n  route e { mode magic }\n}",
+      '3:18 Invalid route mode "magic"; expected auto, manual',
+    ],
+    [
+      "route badge side",
+      "diagram d {}\nview default {\n  route e { badge 0.5 left }\n}",
+      '3:23 Invalid route badge side "left"; expected top, bottom',
+    ],
+    [
+      "view entry",
+      "diagram d {}\nview default {\n  edge e {}\n}",
+      '3:3 Unknown view option "edge"; expected place, route, annotation',
+    ],
     ["truncated block", "diagram d {\n  a -> b {", "2:11 Unterminated block; expected }"],
-    ["missing value", "diagram d {\n  title\n}", "3:1 Expected a quoted string, got \"}\""],
-    ["unexpected character", "diagram d {\n  title \"x\" !\n}", "2:13 Unexpected character \"!\""],
+    ["missing value", "diagram d {\n  title\n}", '3:1 Expected a quoted string, got "}"'],
+    ["unexpected character", 'diagram d {\n  title "x" !\n}', '2:13 Unexpected character "!"'],
   ])("rejects %s with its position and allowed values", (_name, source, message) => {
     expect(parseError(source)).toBe(message);
   });
@@ -82,13 +154,19 @@ describe("parseDgm / printDgm round-trip", () => {
     const fixedRole = fixedFlow.replace("rolee", "role");
     expect(parseError(fixedRole)).toContain('8:14 Unknown edge option "stpe"');
     expect(parseError(fixedRole.replace("stpe", "step"))).toContain('8:27 Invalid edge style "dotted"');
-    expect(parseError(fixedRole.replace("stpe", "step").replace("dotted", "dashed"))).toContain('8:40 Invalid edge color "pink"');
-    expect(parseError(fixedRole.replace("stpe", "step").replace("dotted", "dashed").replace("pink", "red"))).toContain('8:44 Unknown edge option "lable"');
+    expect(parseError(fixedRole.replace("stpe", "step").replace("dotted", "dashed"))).toContain(
+      '8:40 Invalid edge color "pink"',
+    );
+    expect(parseError(fixedRole.replace("stpe", "step").replace("dotted", "dashed").replace("pink", "red"))).toContain(
+      '8:44 Unknown edge option "lable"',
+    );
   });
 
   it("does not classify parser defects as invalid syntax", () => {
     const originalPush = Array.prototype.push;
-    Array.prototype.push = () => { throw new TypeError("parser defect"); };
+    Array.prototype.push = () => {
+      throw new TypeError("parser defect");
+    };
     let thrown: unknown;
     try {
       parseDgmResult("diagram safe {}");
@@ -100,19 +178,21 @@ describe("parseDgm / printDgm round-trip", () => {
     expect(thrown).toBeInstanceOf(TypeError);
   });
 
-  it.each([
-    "diagram truncated { cloud-agnostic.client client {",
-    "diagram truncated { cloud-agnostic.client client",
-  ])("returns an error for truncated blocks without fabricating tokens: %s", (source) => {
-    const result = parseDgmResult(source);
-    expect(result.isErr()).toBe(true);
-    if (result.isOk()) return;
-    expect(result.error.code).toBe("invalid-syntax");
-  });
+  it.each(["diagram truncated { cloud-agnostic.client client {", "diagram truncated { cloud-agnostic.client client"])(
+    "returns an error for truncated blocks without fabricating tokens: %s",
+    (source) => {
+      const result = parseDgmResult(source);
+      expect(result.isErr()).toBe(true);
+      if (result.isOk()) return;
+      expect(result.error.code).toBe("invalid-syntax");
+    },
+  );
 
   it("rejects input without a diagram declaration and trailing top-level tokens", () => {
     expect(parseError("hello world")).toMatch(/Expected diagram declaration/);
-    expect(parseError("diagram valid {}\n}\nextra words")).toBe('2:1 Unexpected "}" after diagram; expected assets or view');
+    expect(parseError("diagram valid {}\n}\nextra words")).toBe(
+      '2:1 Unexpected "}" after diagram; expected assets or view',
+    );
   });
 
   it("preserves the source-size error as a distinct typed result", () => {
@@ -122,28 +202,25 @@ describe("parseDgm / printDgm round-trip", () => {
     expect(result.error.code).toBe("source-too-large");
   });
 
-  it.each(["aws", "azure", "gcp", "cloud-agnostic"] as const)(
-    "retains and prints the %s grammar",
-    (grammar) => {
-      const source = `diagram ${grammar.replace(/-/g, "_")} {
+  it.each(["aws", "azure", "gcp", "cloud-agnostic"] as const)("retains and prints the %s grammar", (grammar) => {
+    const source = `diagram ${grammar.replace(/-/g, "_")} {
   grammar ${grammar}
   flow lr
   cloud-agnostic.boundary boundary "Boundary"
 }`;
 
-      const parsed = parseDgm(source);
-      expect(parsed.grammar).toBe(grammar);
-      expect(printDgm(parsed)).toContain(`  grammar ${grammar}`);
-      expect(parseDgm(printDgm(parsed))).toEqual(parsed);
-    },
-  );
+    const parsed = parseDgm(source);
+    expect(parsed.grammar).toBe(grammar);
+    expect(printDgm(parsed)).toContain(`  grammar ${grammar}`);
+    expect(parseDgm(printDgm(parsed))).toEqual(parsed);
+  });
 
   it("rejects unsupported grammar values", () => {
-    expect(parseError(`diagram unsupported {
+    expect(
+      parseError(`diagram unsupported {
   grammar digitalocean
-}`)).toBe(
-      '2:11 Invalid grammar "digitalocean"; expected aws, azure, gcp, cloud-agnostic',
-    );
+}`),
+    ).toBe('2:11 Invalid grammar "digitalocean"; expected aws, azure, gcp, cloud-agnostic');
   });
 
   it("keeps nested logical groups and their children", () => {
@@ -199,9 +276,7 @@ ${declarations}
 
     expect(parsed.resources).toHaveLength(0);
     expect(parsed.groups).toHaveLength(Object.keys(expectedKinds).length);
-    expect(
-      Object.fromEntries(parsed.groups.map((group) => [group.type, group.kind])),
-    ).toEqual(expectedKinds);
+    expect(Object.fromEntries(parsed.groups.map((group) => [group.type, group.kind]))).toEqual(expectedKinds);
     expect(parseDgm(printDgm(parsed))).toEqual(parsed);
   });
 
@@ -209,9 +284,7 @@ ${declarations}
     const doc = createAsyncDocsFixture();
     const printed = printDgm(doc);
     const parsed = parseDgm(printed);
-    expect(parsed.edges.map((edge) => edge.id)).toEqual(
-      doc.edges.map((edge) => edge.id),
-    );
+    expect(parsed.edges.map((edge) => edge.id)).toEqual(doc.edges.map((edge) => edge.id));
   });
 
   it("assigns stable unique IDs to parallel implicit edges", () => {
@@ -269,14 +342,18 @@ ${declarations}
   });
 
   it("rejects deprecated resource and group label positions", () => {
-    expect(parseError(`diagram old_resource_label {
+    expect(
+      parseError(`diagram old_resource_label {
   grammar aws
   aws.simple-notification-service notice { label-position right }
-}`)).toBe('3:59 Invalid resource label-position "right"; expected top, bottom');
-    expect(parseError(`diagram old_group_label {
+}`),
+    ).toBe('3:59 Invalid resource label-position "right"; expected top, bottom');
+    expect(
+      parseError(`diagram old_group_label {
   grammar aws
   cloud-agnostic.boundary shell "Shell" { label-position bottom-left }
-}`)).toBe('3:58 Invalid group label-position "bottom-left"; expected top-left, top-right');
+}`),
+    ).toBe('3:58 Invalid group label-position "bottom-left"; expected top-left, top-right');
   });
 
   it("round-trips hidden icons on typed groups", () => {
@@ -409,18 +486,18 @@ view default {
       pin: true,
       manual: true,
     });
-    expect(getDefaultView(reparsed).places.services).toEqual(
-      getDefaultView(parsed).places.services,
-    );
+    expect(getDefaultView(reparsed).places.services).toEqual(getDefaultView(parsed).places.services);
   });
 
   it("rejects a second view instead of merging authored placements", () => {
-    expect(parseError(`diagram multiple_views {
+    expect(
+      parseError(`diagram multiple_views {
   grammar aws
   cloud-agnostic.server service "Service"
 }
 view first { place service { x 100 y 100 pin } }
-view second { place service { x 500 y 500 pin } }`)).toMatch(/Only one view block is supported/);
+view second { place service { x 500 y 500 pin } }`),
+    ).toMatch(/Only one view block is supported/);
   });
 
   it("preserves prototype-key placement IDs as own properties", () => {
@@ -431,7 +508,11 @@ view second { place service { x 500 y 500 pin } }`)).toMatch(/Only one view bloc
 view default { place __proto__ { x 120 y 80 pin } }`);
 
     expect(Object.hasOwn(getDefaultView(parsed).places, "__proto__")).toBe(true);
-    expect(Object.getOwnPropertyDescriptor(getDefaultView(parsed).places, "__proto__")?.value).toMatchObject({ x: 120, y: 80, pin: true });
+    expect(Object.getOwnPropertyDescriptor(getDefaultView(parsed).places, "__proto__")?.value).toMatchObject({
+      x: 120,
+      y: 80,
+      pin: true,
+    });
     const printed = printDgm(parsed);
     expect(printed).toContain("place __proto__");
     expect(parseDgm(printed)).toEqual(parsed);
@@ -449,12 +530,7 @@ view default { place __proto__ { x 120 y 80 pin } }`);
 }`;
 
     const parsed = parseDgm(source);
-    expect(parsed.annotations.map((annotation) => annotation.style)).toEqual([
-      "code",
-      "text",
-      "callout",
-      "checklist",
-    ]);
+    expect(parsed.annotations.map((annotation) => annotation.style)).toEqual(["code", "text", "callout", "checklist"]);
     expect(parsed.annotations[1]).toMatchObject({
       font: "serif",
       fontSize: 20,
@@ -472,7 +548,9 @@ view default { place __proto__ { x 120 y 80 pin } }`);
     const parsed = parseDgm(printDgm(doc));
     expect(parsed.title).toBe(doc.title);
     expect(parsed.groups.find((group) => group.id === doc.groups[0]!.id)?.label).toBe(doc.groups[0]!.label);
-    expect(parsed.resources.find((resource) => resource.id === doc.resources[0]!.id)?.label.role).toBe(doc.resources[0]!.label.role);
+    expect(parsed.resources.find((resource) => resource.id === doc.resources[0]!.id)?.label.role).toBe(
+      doc.resources[0]!.label.role,
+    );
     expect(parsed.annotations.find((annotation) => annotation.id === "note-special")?.text).toBe("first\nsecond\t✓");
   });
 

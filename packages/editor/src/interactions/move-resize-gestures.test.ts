@@ -179,7 +179,9 @@ describe("move gesture completion", () => {
     const gesture = captureGesture();
     const preview: MovePreviewController = {
       update: vi.fn(),
-      commit: vi.fn(() => { throw new Error("visual commit failed"); }),
+      commit: vi.fn(() => {
+        throw new Error("visual commit failed");
+      }),
       finish: vi.fn(),
     };
     const end = vi.fn();
@@ -213,22 +215,26 @@ describe("move gesture completion", () => {
       finish: vi.fn(),
     };
     const cancel = vi.fn();
-    const startGesture = vi.fn<StartOverlayGesture>(() => { throw failure; });
+    const startGesture = vi.fn<StartOverlayGesture>(() => {
+      throw failure;
+    });
 
-    expect(() => beginMove(
-      event(),
-      1,
-      false,
-      { x: 0, y: 0, w: 20, h: 20 },
-      vi.fn(() => true),
-      preview,
-      [],
-      noopGuides,
-      startGesture,
-      vi.fn(),
-      vi.fn(),
-      cancel,
-    )).toThrow(failure);
+    expect(() =>
+      beginMove(
+        event(),
+        1,
+        false,
+        { x: 0, y: 0, w: 20, h: 20 },
+        vi.fn(() => true),
+        preview,
+        [],
+        noopGuides,
+        startGesture,
+        vi.fn(),
+        vi.fn(),
+        cancel,
+      ),
+    ).toThrow(failure);
     expect(preview.finish).toHaveBeenCalledOnce();
     expect(cancel).toHaveBeenCalledOnce();
   });

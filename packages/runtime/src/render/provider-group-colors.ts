@@ -28,10 +28,7 @@ const PROVIDER_GROUP_COLORS: Partial<Record<Grammar, Record<string, GroupColorDe
   gcp: GCP_GROUP_COLORS,
 };
 
-export function resolveProviderGroupColors(
-  grammar: Grammar,
-  type: string | undefined,
-): GroupColorDefaults | null {
+export function resolveProviderGroupColors(grammar: Grammar, type: string | undefined): GroupColorDefaults | null {
   if (!type) return null;
   return PROVIDER_GROUP_COLORS[grammar]?.[type] ?? null;
 }

@@ -1,8 +1,4 @@
-import {
-  createEmptyDocument,
-  DIAGRAM_LIMITS,
-  getDefaultView,
-} from "@dumb-diagrams/runtime/core";
+import { createEmptyDocument, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
@@ -33,13 +29,15 @@ const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 describe("diagram compilation canvas bounds", () => {
   it("reports malformed embedded SVGs as repairable compilation issues", () => {
     const doc = createEmptyDocument("invalid-asset-editor");
-    doc.assets = [{
-      id: "unsafe",
-      kind: "svg",
-      content: "<svg><script>alert(1)</script></svg>",
-      intrinsicW: 64,
-      intrinsicH: 64,
-    }];
+    doc.assets = [
+      {
+        id: "unsafe",
+        kind: "svg",
+        content: "<svg><script>alert(1)</script></svg>",
+        intrinsicW: 64,
+        intrinsicH: 64,
+      },
+    ];
 
     const result = compileDocument(doc, false);
 
@@ -47,11 +45,13 @@ describe("diagram compilation canvas bounds", () => {
       ok: false,
       svg: null,
       layout: null,
-      issues: [expect.objectContaining({
-        level: "error",
-        code: "invalid-asset",
-        id: "unsafe",
-      })],
+      issues: [
+        expect.objectContaining({
+          level: "error",
+          code: "invalid-asset",
+          id: "unsafe",
+        }),
+      ],
     });
   });
 
@@ -97,7 +97,9 @@ describe("diagram compilation canvas bounds", () => {
       maxRouteConflictChecks: 10,
       maxAstarExpansions: 10,
       maxRepairCandidates: 10,
-      onDiagnostics: (diagnostics) => { callerDiagnostics = diagnostics; },
+      onDiagnostics: (diagnostics) => {
+        callerDiagnostics = diagnostics;
+      },
     });
 
     expect(result.ok).toBe(true);
@@ -129,13 +131,15 @@ describe("diagram compilation canvas bounds", () => {
         props: {},
       },
     ];
-    doc.edges = [{
-      id: "fault-edge",
-      source: "source",
-      target: "target",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "fault-edge",
+        source: "source",
+        target: "target",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
 
     const result = compileDiagramSource(printDgm(doc), false, {
       maxScorePathCalls: 0,
@@ -195,23 +199,20 @@ describe("diagram compilation canvas bounds", () => {
     getDefaultView(doc).routes.e3 = {
       pin: true,
       mode: "manual",
-      points: [
-        start,
-        { x: collisionX, y: start.y },
-        { x: collisionX, y: collisionY },
-        finish,
-      ],
+      points: [start, { x: collisionX, y: start.y }, { x: collisionX, y: collisionY }, finish],
     };
 
     const result = compileDiagramSource(printDgm(doc), false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.invariantFailures).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining(["e3", "workerA"]),
-      }),
-    ]));
+    expect(result.invariantFailures).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["e3", "workerA"]),
+        }),
+      ]),
+    );
   });
 
   it("stops Auto-fix from introducing a new diagram quality failure", () => {
@@ -265,9 +266,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("wraps long Bedrock service names", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "bedrock-claims-processing",
-    );
+    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "bedrock-claims-processing");
     expect(example).toBeDefined();
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
@@ -279,9 +278,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("keeps Bedrock routes distinct and straight", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "bedrock-claims-processing",
-    );
+    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "bedrock-claims-processing");
     expect(example).toBeDefined();
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
@@ -302,21 +299,18 @@ describe("diagram compilation canvas bounds", () => {
     // The long workflow edge must route around the extraction cards. This is
     // an automatic route in the curated source, so a content collision is a
     // router regression rather than an intentional authored warning.
-    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining([
-          "workflow_to_state",
-          expect.stringMatching(/^(extractor|fraud_model)$/),
-        ]),
-      }),
-    ]));
+    expect(result.invariantFailures).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["workflow_to_state", expect.stringMatching(/^(extractor|fraud_model)$/)]),
+        }),
+      ]),
+    );
   });
 
   it("compiles the claims workflow with the editor grid enabled", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "bedrock-claims-processing",
-    );
+    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "bedrock-claims-processing");
     expect(example).toBeDefined();
     const source = example!.source
       .replace("diagram bedrock-claims-processing", "diagram claims-processing-workflow")
@@ -331,15 +325,14 @@ describe("diagram compilation canvas bounds", () => {
 
     const workflow = result.layout.edges.find((edge) => edge.id === "workflow_to_state");
     expect(workflow?.points.length).toBeGreaterThan(1);
-    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining([
-          "workflow_to_state",
-          expect.stringMatching(/^(extractor|fraud_model)$/),
-        ]),
-      }),
-    ]));
+    expect(result.invariantFailures).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["workflow_to_state", expect.stringMatching(/^(extractor|fraud_model)$/)]),
+        }),
+      ]),
+    );
   });
 
   it("keeps Data Transfer Hub compact and free of connector dead ends", () => {
@@ -354,9 +347,7 @@ describe("diagram compilation canvas bounds", () => {
     expect(groups.get("managed")!.bounds.h / groups.get("managed")!.bounds.w).toBeGreaterThan(0.9);
 
     const nodes = new Map(result.layout.nodes.map((node) => [node.id, node]));
-    expect(Math.abs(
-      nodes.get("cognito")!.icon.y - nodes.get("oidc")!.icon.y,
-    )).toBeLessThanOrEqual(16);
+    expect(Math.abs(nodes.get("cognito")!.icon.y - nodes.get("oidc")!.icon.y)).toBeLessThanOrEqual(16);
     for (const edge of result.layout.edges) {
       expect(edge.points, edge.id).toEqual(eraseOrthogonalRouteLoops(edge.points));
     }
@@ -390,10 +381,12 @@ describe("diagram compilation canvas bounds", () => {
     const result = compileDiagramSource(printDgm(doc), false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.layout.canvasBounds).toEqual(expect.objectContaining({
-      x: -368,
-      y: -272,
-    }));
+    expect(result.layout.canvasBounds).toEqual(
+      expect.objectContaining({
+        x: -368,
+        y: -272,
+      }),
+    );
     expect(result.layout.canvasBounds!.w).toBe(result.layout.width + 496);
     expect(result.layout.canvasBounds!.h).toBe(result.layout.height + 400);
     expect(result.svg).toContain(
@@ -420,18 +413,17 @@ describe("diagram compilation canvas bounds", () => {
     for (const edge of after.layout.edges) {
       expect(edge.points, edge.id).toEqual(routesBefore.get(edge.id));
     }
-    expect(after.layout.nodes.find((node) => node.id === added.id)!.obstacle.x)
-      .toBeLessThan(Math.min(
+    expect(after.layout.nodes.find((node) => node.id === added.id)!.obstacle.x).toBeLessThan(
+      Math.min(
         ...before.layout.groups.map((group) => group.bounds.x),
         ...before.layout.nodes.map((node) => node.obstacle.x),
         ...before.layout.edges.flatMap((edge) => edge.points.map((point) => point.x)),
-      ));
+      ),
+    );
   });
 
   it("keeps routes stable when an unrelated staged resource moves", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "simple-serverless-web-application",
-    )!;
+    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "simple-serverless-web-application")!;
     const doc = parseDgm(example.source);
     // Keep the staged item provider-neutral: provider validation now rejects
     // unrelated Azure entries in this AWS document before routing is reached.
@@ -462,19 +454,14 @@ describe("diagram compilation canvas bounds", () => {
     expect(before.ok).toBe(true);
     if (!before.ok) return;
 
-    const moved = moveSelection(
-      adjusted,
-      [{ kind: "resource", id: added.id }],
-      0,
-      -560,
-      before.layout,
-    );
+    const moved = moveSelection(adjusted, [{ kind: "resource", id: added.id }], 0, -560, before.layout);
     const after = compileDiagramSource(printDgm(moved), false);
     expect(after.ok).toBe(true);
     if (!after.ok) return;
 
-    expect(new Map(after.layout.edges.map((edge) => [edge.id, edge.points])))
-      .toEqual(new Map(before.layout.edges.map((edge) => [edge.id, edge.points])));
+    expect(new Map(after.layout.edges.map((edge) => [edge.id, edge.points]))).toEqual(
+      new Map(before.layout.edges.map((edge) => [edge.id, edge.points])),
+    );
   });
 });
 
@@ -492,14 +479,12 @@ function sharedOrthogonalLength(
       if (a.x === b.x && c.x === d.x && a.x === c.x) {
         length += Math.max(
           0,
-          Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) -
-            Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
+          Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
         );
       } else if (a.y === b.y && c.y === d.y && a.y === c.y) {
         length += Math.max(
           0,
-          Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) -
-            Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
+          Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
         );
       }
     }

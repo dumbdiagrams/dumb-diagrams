@@ -2,10 +2,7 @@ import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
 
 import type { Selection, SelectionItem } from "../model/types";
-import {
-  selectionModeForModifiers,
-  type SelectionMode,
-} from "../interactions/selection-targeting";
+import { selectionModeForModifiers, type SelectionMode } from "../interactions/selection-targeting";
 import { IconEye, IconEyeOff } from "../ui/icons";
 
 export function LayersPanel({
@@ -95,13 +92,8 @@ export function LayersPanel({
       </div>
       <div className="layers-list" role="listbox">
         {rows.map((row) => {
-          const place =
-            row.item.kind === "annotation"
-              ? view.annotations?.[row.item.id]
-              : view.places[row.item.id];
-          const selected = selection.some(
-            (item) => item.kind === row.item.kind && item.id === row.item.id,
-          );
+          const place = row.item.kind === "annotation" ? view.annotations?.[row.item.id] : view.places[row.item.id];
+          const selected = selection.some((item) => item.kind === row.item.kind && item.id === row.item.id);
           return (
             <div
               key={`${row.item.kind}-${row.item.id}`}
@@ -128,7 +120,11 @@ export function LayersPanel({
                   title={place?.visible === false ? "Show layer" : "Hide layer"}
                   onClick={() => onToggleVisible(row.item)}
                 >
-                  {place?.visible === false ? <IconEyeOff className="layer-visibility-icon" /> : <IconEye className="layer-visibility-icon" />}
+                  {place?.visible === false ? (
+                    <IconEyeOff className="layer-visibility-icon" />
+                  ) : (
+                    <IconEye className="layer-visibility-icon" />
+                  )}
                 </button>
                 <button
                   type="button"

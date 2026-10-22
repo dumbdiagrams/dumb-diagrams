@@ -45,11 +45,7 @@ export function commitSourceDraft(history: DocumentHistory, source: string): His
 }
 
 /** Record a direct source replacement, resolving any pending source draft. */
-export function commitSource(
-  history: DocumentHistory,
-  currentSource: string,
-  nextSource: string,
-): HistoryTransition {
+export function commitSource(history: DocumentHistory, currentSource: string, nextSource: string): HistoryTransition {
   const draft = commitSourceDraft(history, currentSource);
   if (currentSource === nextSource) return draft;
   return {
@@ -126,8 +122,7 @@ export function redo(history: DocumentHistory, source: string): HistoryTransitio
 }
 
 export function canUndo(history: DocumentHistory, source: string): boolean {
-  return history.past.length > 0 ||
-    (history.sourceDraftStart !== null && history.sourceDraftStart !== source);
+  return history.past.length > 0 || (history.sourceDraftStart !== null && history.sourceDraftStart !== source);
 }
 
 export function canRedo(history: DocumentHistory, _source: string): boolean {
@@ -152,8 +147,7 @@ function boundSnapshots(past: string[], future: string[]): { past: string[]; fut
   let bytes = 0;
   let takePast = true;
 
-  while ((pastIndex >= 0 || futureIndex < boundedFuture.length) &&
-         keptPast.length + keptFuture.length < MAX_HISTORY) {
+  while ((pastIndex >= 0 || futureIndex < boundedFuture.length) && keptPast.length + keptFuture.length < MAX_HISTORY) {
     const canTakePast = pastIndex >= 0;
     const canTakeFuture = futureIndex < boundedFuture.length;
     const usePast = canTakePast && (!canTakeFuture || takePast);

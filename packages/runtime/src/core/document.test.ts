@@ -14,13 +14,15 @@ import {
 describe("document helpers", () => {
   it("finds document members and walks group containment", () => {
     const doc = createEmptyDocument("helpers");
-    doc.resources = [{
-      id: "resource",
-      type: "cloud-agnostic.actor",
-      label: { role: "User" },
-      role: "primary",
-      props: {},
-    }];
+    doc.resources = [
+      {
+        id: "resource",
+        type: "cloud-agnostic.actor",
+        label: { role: "User" },
+        role: "primary",
+        props: {},
+      },
+    ];
     doc.groups = [
       {
         id: "parent",

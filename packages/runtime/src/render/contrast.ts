@@ -11,9 +11,7 @@ export interface Rgb {
 
 function channel(value: number): number {
   const normalized = value / 255;
-  return normalized <= 0.03928
-    ? normalized / 12.92
-    : ((normalized + 0.055) / 1.055) ** 2.4;
+  return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
 }
 
 export function parseRgb(color: string): Rgb | null {
@@ -21,9 +19,13 @@ export function parseRgb(color: string): Rgb | null {
   const hex = trimmed.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (hex) {
     const raw = hex[1]!;
-    const expanded = raw.length === 3
-      ? raw.split("").map((digit) => digit + digit).join("")
-      : raw;
+    const expanded =
+      raw.length === 3
+        ? raw
+            .split("")
+            .map((digit) => digit + digit)
+            .join("")
+        : raw;
     return {
       r: Number.parseInt(expanded.slice(0, 2), 16),
       g: Number.parseInt(expanded.slice(2, 4), 16),
@@ -86,10 +88,7 @@ export function contrastRatio(foreground: string, background: string): number | 
 }
 
 /** True when a canonical stroke would disappear on the dark canvas. */
-export function needsDarkContrastAid(
-  stroke: string,
-  background = DARK_CANVAS,
-): boolean {
+export function needsDarkContrastAid(stroke: string, background = DARK_CANVAS): boolean {
   const fg = parseRgb(stroke);
   const bg = parseRgb(background);
   if (!fg || !bg) return false;
@@ -104,11 +103,7 @@ export function needsDarkContrastAid(
   if (fgHsl.s < 0.25) return true;
 
   // Same hue family as the canvas — dark blues that compete with the artboard.
-  if (
-    fgHsl.l < 0.45
-    && bgHsl.l < 0.15
-    && hueDistance(fgHsl.h, bgHsl.h) < 50
-  ) {
+  if (fgHsl.l < 0.45 && bgHsl.l < 0.15 && hueDistance(fgHsl.h, bgHsl.h) < 50) {
     return true;
   }
 

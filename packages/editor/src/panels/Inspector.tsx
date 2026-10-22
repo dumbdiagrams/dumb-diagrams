@@ -1,9 +1,27 @@
 import { useEffect, useState } from "react";
-import type { DiagramDocument, LayoutResult, AnnotationStyle, BoundaryFill, EdgeStyle, EdgeKind, EdgeColor, ResourceLabelPosition, GroupLabelPosition, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
+import type {
+  DiagramDocument,
+  LayoutResult,
+  AnnotationStyle,
+  BoundaryFill,
+  EdgeStyle,
+  EdgeKind,
+  EdgeColor,
+  ResourceLabelPosition,
+  GroupLabelPosition,
+  TextFontFamily,
+  TextAlign,
+} from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS, characterLength, EDGE_COLOR_VALUES } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
-import { primarySelection, annotationStyle, resourceIconSize, MAX_EDGE_STEP, type ResourceIconSize } from "../editor-model";
+import {
+  primarySelection,
+  annotationStyle,
+  resourceIconSize,
+  MAX_EDGE_STEP,
+  type ResourceIconSize,
+} from "../editor-model";
 import type { Selection, SelectionItem } from "../model/types";
 import { FloatingPanel } from "../ui/FloatingPanel";
 import { rejectOversizedPaste } from "../ui/text-input";
@@ -70,23 +88,16 @@ export function Inspector({
   onClose: () => void;
 }) {
   const item = primarySelection(selection);
-  const edge = item?.kind === "edge"
-    ? doc.edges.find((candidate) => candidate.id === item.id)
-    : undefined;
-  const resource = item?.kind === "resource"
-    ? doc.resources.find((candidate) => candidate.id === item.id)
-    : undefined;
-  const group = item?.kind === "group"
-    ? doc.groups.find((candidate) => candidate.id === item.id)
-    : undefined;
+  const edge = item?.kind === "edge" ? doc.edges.find((candidate) => candidate.id === item.id) : undefined;
+  const resource = item?.kind === "resource" ? doc.resources.find((candidate) => candidate.id === item.id) : undefined;
+  const group = item?.kind === "group" ? doc.groups.find((candidate) => candidate.id === item.id) : undefined;
   const canHideGroupIcon = Boolean(
     group?.type &&
-    group.type !== "cloud-agnostic.boundary" &&
-    getCatalogEntry(group.type)?.provider === "cloud-agnostic",
+      group.type !== "cloud-agnostic.boundary" &&
+      getCatalogEntry(group.type)?.provider === "cloud-agnostic",
   );
-  const annotation = item?.kind === "annotation"
-    ? doc.annotations.find((candidate) => candidate.id === item.id)
-    : undefined;
+  const annotation =
+    item?.kind === "annotation" ? doc.annotations.find((candidate) => candidate.id === item.id) : undefined;
   const routePinned = Boolean(item && doc.views[0]?.routes[item.id]?.pin);
 
   const resourceServiceLabel = resource
@@ -103,24 +114,23 @@ export function Inspector({
     item?.id ??
     `${selection.length} selected`;
 
-  const editableLabel = resource ? resource.label.role ?? "" : title;
+  const editableLabel = resource ? (resource.label.role ?? "") : title;
   const [labelDraft, setLabelDraft] = useState(editableLabel);
   useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
-  const authoredResourceLabelPosition: ResourceLabelPosition =
-    resource?.label.position === "top" ? "top" : "bottom";
+  const authoredResourceLabelPosition: ResourceLabelPosition = resource?.label.position === "top" ? "top" : "bottom";
   const [resourceLabelPositionDraft, setResourceLabelPositionDraft] =
     useState<ResourceLabelPosition>(authoredResourceLabelPosition);
   useEffect(() => {
     setResourceLabelPositionDraft(authoredResourceLabelPosition);
   }, [resource?.id, authoredResourceLabelPosition]);
   const authoredResourceIconSize = resource ? resourceIconSize(resource) : "normal";
-  const [resourceIconSizeDraft, setResourceIconSizeDraft] =
-    useState<ResourceIconSize>(authoredResourceIconSize);
+  const [resourceIconSizeDraft, setResourceIconSizeDraft] = useState<ResourceIconSize>(authoredResourceIconSize);
   useEffect(() => {
     setResourceIconSizeDraft(authoredResourceIconSize);
   }, [resource?.id, authoredResourceIconSize]);
-  const authoredGroupLabelPosition: GroupLabelPosition =
-    group?.labelPosition?.endsWith("right") ? "top-right" : "top-left";
+  const authoredGroupLabelPosition: GroupLabelPosition = group?.labelPosition?.endsWith("right")
+    ? "top-right"
+    : "top-left";
   const [groupLabelPositionDraft, setGroupLabelPositionDraft] =
     useState<GroupLabelPosition>(authoredGroupLabelPosition);
   useEffect(() => {
@@ -147,16 +157,32 @@ export function Inspector({
         <div className="property-section">
           <label>Alignment</label>
           <div className="button-grid">
-            <button type="button" onClick={() => onAlign("left")}>Left</button>
-            <button type="button" onClick={() => onAlign("center")}>Center</button>
-            <button type="button" onClick={() => onAlign("right")}>Right</button>
-            <button type="button" onClick={() => onAlign("top")}>Top</button>
-            <button type="button" onClick={() => onAlign("middle")}>Middle</button>
-            <button type="button" onClick={() => onAlign("bottom")}>Bottom</button>
+            <button type="button" onClick={() => onAlign("left")}>
+              Left
+            </button>
+            <button type="button" onClick={() => onAlign("center")}>
+              Center
+            </button>
+            <button type="button" onClick={() => onAlign("right")}>
+              Right
+            </button>
+            <button type="button" onClick={() => onAlign("top")}>
+              Top
+            </button>
+            <button type="button" onClick={() => onAlign("middle")}>
+              Middle
+            </button>
+            <button type="button" onClick={() => onAlign("bottom")}>
+              Bottom
+            </button>
           </div>
           <div className="button-pair">
-            <button type="button" onClick={() => onDistribute("horizontal")}>Distribute H</button>
-            <button type="button" onClick={() => onDistribute("vertical")}>Distribute V</button>
+            <button type="button" onClick={() => onDistribute("horizontal")}>
+              Distribute H
+            </button>
+            <button type="button" onClick={() => onDistribute("vertical")}>
+              Distribute V
+            </button>
           </div>
         </div>
       )}
@@ -170,7 +196,11 @@ export function Inspector({
               maxLength={DIAGRAM_LIMITS.annotationCharacters}
               rows={5}
               onChange={(event) => setLabelDraft(event.target.value)}
-              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.annotationCharacters, () => onLimitError(`Notes are limited to ${DIAGRAM_LIMITS.annotationCharacters} characters`))}
+              onPaste={(event) =>
+                rejectOversizedPaste(event, DIAGRAM_LIMITS.annotationCharacters, () =>
+                  onLimitError(`Notes are limited to ${DIAGRAM_LIMITS.annotationCharacters} characters`),
+                )
+              }
               onBlur={() => onRename(labelDraft)}
               aria-describedby="inspector-label-limit"
             />
@@ -181,7 +211,11 @@ export function Inspector({
               placeholder={resource ? "Optional label" : undefined}
               maxLength={DIAGRAM_LIMITS.labelCharacters}
               onChange={(event) => setLabelDraft(event.target.value)}
-              onPaste={(event) => rejectOversizedPaste(event, DIAGRAM_LIMITS.labelCharacters, () => onLimitError(`Labels are limited to ${DIAGRAM_LIMITS.labelCharacters} characters`))}
+              onPaste={(event) =>
+                rejectOversizedPaste(event, DIAGRAM_LIMITS.labelCharacters, () =>
+                  onLimitError(`Labels are limited to ${DIAGRAM_LIMITS.labelCharacters} characters`),
+                )
+              }
               onBlur={() => onRename(labelDraft)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") event.currentTarget.blur();
@@ -190,17 +224,15 @@ export function Inspector({
             />
           )}
           <span id="inspector-label-limit" className="input-limit" aria-live="polite">
-            {characterLength(labelDraft)} / {annotation ? DIAGRAM_LIMITS.annotationCharacters : DIAGRAM_LIMITS.labelCharacters}
+            {characterLength(labelDraft)} /{" "}
+            {annotation ? DIAGRAM_LIMITS.annotationCharacters : DIAGRAM_LIMITS.labelCharacters}
           </span>
         </div>
       )}
       {annotation && (
         <div className="property-section">
           <label>Note style</label>
-          <NoteStyleOptions
-            selectedStyle={annotationStyle(annotation)}
-            onStyleChange={onSetAnnotationStyle}
-          />
+          <NoteStyleOptions selectedStyle={annotationStyle(annotation)} onStyleChange={onSetAnnotationStyle} />
         </div>
       )}
       {annotation && annotationStyle(annotation) === "text" && (
@@ -254,7 +286,9 @@ export function Inspector({
             <option value="top">Above icon</option>
             <option value="bottom">Below icon</option>
           </select>
-          <p className="property-hint">Automatic connectors avoid the side occupied by the label unless a straight line to an aligned icon fits.</p>
+          <p className="property-hint">
+            Automatic connectors avoid the side occupied by the label unless a straight line to an aligned icon fits.
+          </p>
         </div>
       )}
       {group && (
@@ -279,9 +313,7 @@ export function Inspector({
           <label>Boundary line</label>
           <div className="button-pair" role="radiogroup" aria-label="Boundary line style">
             {(["solid", "dashed"] as EdgeStyle[]).map((style) => {
-              const inheritedStyle = ["region", "az", "logical", "overlay"].includes(group.kind)
-                ? "dashed"
-                : "solid";
+              const inheritedStyle = ["region", "az", "logical", "overlay"].includes(group.kind) ? "dashed" : "solid";
               const selected = (group.style ?? inheritedStyle) === style;
               return (
                 <button
@@ -320,7 +352,11 @@ export function Inspector({
                 onClick={() => onSetBoundaryAppearance({ color: option.id })}
                 title={option.label}
               >
-                <span className="edge-color-swatch" style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }} aria-hidden="true" />
+                <span
+                  className="edge-color-swatch"
+                  style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }}
+                  aria-hidden="true"
+                />
                 <span>{option.label}</span>
               </button>
             ))}
@@ -427,7 +463,7 @@ export function Inspector({
               <span className="inspector-detail-label">Parent group</span>
               <div className="readonly-value">
                 {resource.parent
-                  ? doc.groups.find((candidate) => candidate.id === resource.parent)?.label ?? resource.parent
+                  ? (doc.groups.find((candidate) => candidate.id === resource.parent)?.label ?? resource.parent)
                   : "Canvas"}
               </div>
             </div>
@@ -454,9 +490,7 @@ export function Inspector({
             <select
               id="edge-kind"
               value={edge.kind ?? "flow"}
-              onChange={(event) =>
-                onUpdateEdge(edge.style, event.target.value as EdgeKind)
-              }
+              onChange={(event) => onUpdateEdge(edge.style, event.target.value as EdgeKind)}
             >
               <option value="flow">Flow</option>
               <option value="bidirectional">Bidirectional</option>
@@ -473,7 +507,9 @@ export function Inspector({
         </>
       )}
       <div className="inspector-footer">
-        <button className="danger-button" type="button" onClick={onDelete}>Delete</button>
+        <button className="danger-button" type="button" onClick={onDelete}>
+          Delete
+        </button>
       </div>
     </FloatingPanel>
   );

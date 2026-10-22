@@ -1,6 +1,16 @@
 #!/usr/bin/env node
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
@@ -9,11 +19,7 @@ import { err, errAsync, ok, okAsync, Result, safeTry, ResultAsync } from "nevert
 import { listAssets } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
-import {
-  compileDiagramResult,
-  renderPortableSvg,
-  type CompiledDiagram,
-} from "@dumb-diagrams/runtime/render";
+import { compileDiagramResult, renderPortableSvg, type CompiledDiagram } from "@dumb-diagrams/runtime/render";
 
 import { createCliUi } from "./cli-ui.js";
 import { loadCatalogSvg } from "./catalog-loader.js";
@@ -63,13 +69,20 @@ function dispatchCommand(command: string | undefined, parsed: ParsedArgs): Resul
     case undefined:
     case "help":
     case "--help":
-    case "-h": return okAsync(0).andTee(() => printHelp());
-    case "studio": return cmdStudio(parsed);
-    case "init": return cmdInit(parsed);
-    case "validate": return cmdValidate(parsed);
-    case "format": return cmdFormat(parsed);
-    case "render": return cmdRender(parsed);
-    default: return errAsync({ code: "unknown-command", command, message: `Unknown command: ${command}` });
+    case "-h":
+      return okAsync(0).andTee(() => printHelp());
+    case "studio":
+      return cmdStudio(parsed);
+    case "init":
+      return cmdInit(parsed);
+    case "validate":
+      return cmdValidate(parsed);
+    case "format":
+      return cmdFormat(parsed);
+    case "render":
+      return cmdRender(parsed);
+    default:
+      return errAsync({ code: "unknown-command", command, message: `Unknown command: ${command}` });
   }
 }
 
@@ -119,27 +132,36 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
   const testPort = Number(process.env.DUMBDIAGRAMS_STUDIO_PORT);
   return startStudioServer({
     port: Number.isInteger(testPort) && testPort >= 0 && testPort <= 65535 ? testPort : undefined,
-  }).mapErr((error): CliError => ({
-    code: "studio-start-failed",
-    message: error.message,
-    cause: error.code === "start-failed" ? error.cause : error,
-  })).andThen((handle) => {
-    console.log(`\n${ui.brand()}\n`);
-    console.log(ui.heading("Studio is ready"));
-    console.log(ui.info("local", ui.command(handle.url)));
-    console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
-    console.log(ui.info("stop", "Ctrl+C"));
-    if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") launchBrowser(handle.url);
-    return ResultAsync.fromPromise(
-      waitForShutdown(handle.server),
-      (cause): CliError => ({ code: "studio-start-failed", message: errorMessage(cause), cause }),
-    ).map(() => 0);
-  });
+  })
+    .mapErr(
+      (error): CliError => ({
+        code: "studio-start-failed",
+        message: error.message,
+        cause: error.code === "start-failed" ? error.cause : error,
+      }),
+    )
+    .andThen((handle) => {
+      console.log(`\n${ui.brand()}\n`);
+      console.log(ui.heading("Studio is ready"));
+      console.log(ui.info("local", ui.command(handle.url)));
+      console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
+      console.log(ui.info("stop", "Ctrl+C"));
+      if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") launchBrowser(handle.url);
+      return ResultAsync.fromPromise(
+        waitForShutdown(handle.server),
+        (cause): CliError => ({ code: "studio-start-failed", message: errorMessage(cause), cause }),
+      ).map(() => 0);
+    });
 }
 
 function cmdValidate(args: ParsedArgs): ResultAsync<number, CliError> {
   if (!args.positionals.length || [...args.flags.keys()].some((flag) => flag !== "strict")) {
-    return errAsync(invalidArguments("validate expects one or more .dgm file paths (or - for stdin), with optional --strict.", "validate"));
+    return errAsync(
+      invalidArguments(
+        "validate expects one or more .dgm file paths (or - for stdin), with optional --strict.",
+        "validate",
+      ),
+    );
   }
   const strict = args.flags.has("strict");
   let failed = false;
@@ -156,7 +178,9 @@ function cmdValidate(args: ParsedArgs): ResultAsync<number, CliError> {
     const path = displayInputForInput(input);
     const warnings = [
       ...issues.map((issue) => issueLine(path, issue.code, issue.id, issue.message)),
-      ...invariantFailures.map((failure) => issueLine(path, failure.code, failure.elementIds.join(", "), failure.message)),
+      ...invariantFailures.map((failure) =>
+        issueLine(path, failure.code, failure.elementIds.join(", "), failure.message),
+      ),
     ];
     for (const warning of warnings) console.error(ui.warning(warning));
     if (strict && warnings.length) {
@@ -176,7 +200,12 @@ function issueLine(path: string, code: string, id: string | undefined, message: 
 function cmdFormat(args: ParsedArgs): ResultAsync<number, CliError> {
   const allowed = new Set(["check", "write", "stdout"]);
   if (args.positionals.length !== 1 || [...args.flags.keys()].some((flag) => !allowed.has(flag))) {
-    return errAsync(invalidArguments("format expects one .dgm file path (or - for stdin), with optional --check, --write, or --stdout.", "format"));
+    return errAsync(
+      invalidArguments(
+        "format expects one .dgm file path (or - for stdin), with optional --check, --write, or --stdout.",
+        "format",
+      ),
+    );
   }
   const input = args.positionals[0]!;
   if (input === "-" && args.flags.has("write")) {
@@ -197,7 +226,11 @@ function cmdFormat(args: ParsedArgs): ResultAsync<number, CliError> {
         if (formatted.isErr()) return errAsync(formatted.error);
         if (args.flags.has("check")) {
           if (source !== formatted.value) {
-            return errAsync<number, CliError>({ code: "format-failed", message: `Needs formatting: ${displayInput(filePath)}`, input });
+            return errAsync<number, CliError>({
+              code: "format-failed",
+              message: `Needs formatting: ${displayInput(filePath)}`,
+              input,
+            });
           }
           console.error(ui.success(`Already formatted: ${displayInput(filePath)}`));
           return okAsync(0);
@@ -211,7 +244,12 @@ function cmdFormat(args: ParsedArgs): ResultAsync<number, CliError> {
         try {
           process.stdout.write(formatted.value);
         } catch (cause) {
-          return errAsync<number, CliError>({ code: "output-write-failed", message: errorMessage(cause), output: "stdout", cause });
+          return errAsync<number, CliError>({
+            code: "output-write-failed",
+            message: errorMessage(cause),
+            output: "stdout",
+            cause,
+          });
         }
         return okAsync(0);
       }),
@@ -222,14 +260,20 @@ function cmdFormat(args: ParsedArgs): ResultAsync<number, CliError> {
 function cmdRender(args: ParsedArgs): ResultAsync<number, CliError> {
   const allowed = new Set(["output", "o", "stdout", "format"]);
   if (args.positionals.length !== 1 || [...args.flags.keys()].some((flag) => !allowed.has(flag))) {
-    return errAsync(invalidArguments("render expects one .dgm file path (or - for stdin), with optional --output/-o and --format svg.", "render"));
+    return errAsync(
+      invalidArguments(
+        "render expects one .dgm file path (or - for stdin), with optional --output/-o and --format svg.",
+        "render",
+      ),
+    );
   }
   const input = args.positionals[0]!;
   const outputValue = args.flags.get("output") ?? args.flags.get("o");
   if (outputValue !== undefined && typeof outputValue !== "string") {
     return errAsync(invalidArguments("render --output/-o requires a destination path.", "render"));
   }
-  const outputPath = typeof outputValue === "string" && outputValue !== "-" ? resolve(process.cwd(), outputValue) : undefined;
+  const outputPath =
+    typeof outputValue === "string" && outputValue !== "-" ? resolve(process.cwd(), outputValue) : undefined;
   if (args.flags.has("stdout") && outputPath) {
     return errAsync(invalidArguments("render --stdout and --output cannot be used together.", "render"));
   }
@@ -241,9 +285,16 @@ function cmdRender(args: ParsedArgs): ResultAsync<number, CliError> {
   return toAsync(readSourceResult(input))
     .andThen((source) => toAsync(parseSourceResult(source, input)))
     .andThen((doc) => toAsync(compileSourceResult(doc, input)))
-    .andThen(({ doc, result }) => renderPortableSvg(doc, result.layout, { loadCatalogSvg }).mapErr(
-      (error): CliError => ({ code: "catalog-asset-failed", message: error.message, asset: error.browserPath, cause: error }),
-    ))
+    .andThen(({ doc, result }) =>
+      renderPortableSvg(doc, result.layout, { loadCatalogSvg }).mapErr(
+        (error): CliError => ({
+          code: "catalog-asset-failed",
+          message: error.message,
+          asset: error.browserPath,
+          cause: error,
+        }),
+      ),
+    )
     .andThen((svg) => {
       if (outputPath) {
         const written = writeOutputResult(outputPath, svg, "render");
@@ -253,7 +304,12 @@ function cmdRender(args: ParsedArgs): ResultAsync<number, CliError> {
         try {
           process.stdout.write(svg);
         } catch (cause) {
-          return errAsync<number, CliError>({ code: "output-write-failed", message: errorMessage(cause), output: "stdout", cause });
+          return errAsync<number, CliError>({
+            code: "output-write-failed",
+            message: errorMessage(cause),
+            output: "stdout",
+            cause,
+          });
         }
       }
       return okAsync(0);
@@ -278,9 +334,7 @@ function readSourceResult(input: string): Result<string, CliError> {
 
 function parseSourceResult(source: string, input: string): Result<DiagramDocument, CliError> {
   const result = parseDgmResult(source);
-  return result.isOk()
-    ? ok(result.value)
-    : err(parseCliError(input, result.error));
+  return result.isOk() ? ok(result.value) : err(parseCliError(input, result.error));
 }
 
 function compileSourceResult(
@@ -306,7 +360,11 @@ function displayInput(filePath: string | undefined): string {
   return filePath ? relativeForLog(filePath) : "<stdin>";
 }
 
-function writeOutputResult(outputPath: string, contents: string, operation: "format" | "render"): Result<void, CliError> {
+function writeOutputResult(
+  outputPath: string,
+  contents: string,
+  operation: "format" | "render",
+): Result<void, CliError> {
   const temporaryPath = `${outputPath}.tmp-${process.pid}`;
   let temporaryCreated = false;
   try {
@@ -364,8 +422,9 @@ function createInitProject(options: ResolvedInitOptions): Result<number, CliErro
   const prepared = safeTry<{ files: readonly PreparedInitFile[] }, CliError>(function* () {
     const renderedKnowledge: PreparedInitFile[] = [];
     for (const name of knowledgeFiles) {
-      renderedKnowledge.push(yield* renderTemplateFile(name, join(projectRoot, name), templateVars)
-        .mapErr(initTemplateError));
+      renderedKnowledge.push(
+        yield* renderTemplateFile(name, join(projectRoot, name), templateVars).mapErr(initTemplateError),
+      );
     }
     const renderedDiagram = yield* renderTemplateFile(
       "diagrams/README.md",
@@ -440,16 +499,15 @@ function writeInitProject(
 }
 
 function createCatalogReference(): { markdown: string; json: string } {
-  const entries = listAssets("all")
-    .sort((left, right) => {
-      const provider = left.provider.localeCompare(right.provider);
-      if (provider) return provider;
-      const kind = left.assetKind.localeCompare(right.assetKind);
-      if (kind) return kind;
-      const category = left.category.localeCompare(right.category);
-      if (category) return category;
-      return left.name.localeCompare(right.name) || left.type.localeCompare(right.type);
-    });
+  const entries = listAssets("all").sort((left, right) => {
+    const provider = left.provider.localeCompare(right.provider);
+    if (provider) return provider;
+    const kind = left.assetKind.localeCompare(right.assetKind);
+    if (kind) return kind;
+    const category = left.category.localeCompare(right.category);
+    if (category) return category;
+    return left.name.localeCompare(right.name) || left.type.localeCompare(right.type);
+  });
 
   const jsonEntries = entries.map((entry) => ({
     type: entry.type,
@@ -475,7 +533,8 @@ function createCatalogReference(): { markdown: string; json: string } {
   }, {});
   const catalogJson = {
     schemaVersion: 1,
-    description: "Canonical browsable Dumb Diagrams catalog entries. Use type for .dgm icons; labels are separate display text.",
+    description:
+      "Canonical browsable Dumb Diagrams catalog entries. Use type for .dgm icons; labels are separate display text.",
     entryCount: jsonEntries.length,
     providerCounts,
     entries: jsonEntries,
@@ -498,7 +557,7 @@ function createCatalogReference(): { markdown: string; json: string } {
     "## Icon rules for agents",
     "",
     "- Use the exact `type` value as the first token of a resource or boundary line.",
-    "  Example: `aws.api-gateway gateway \"Public API\"`.",
+    '  Example: `aws.api-gateway gateway "Public API"`.',
     "- The quoted label changes display text only; it does not select the icon.",
     "- Use `assetKind: group` entries for cloud/account/region/network/subnet",
     "  boundaries. Use `assetKind: resource` entries for service/resource nodes.",
@@ -511,8 +570,8 @@ function createCatalogReference(): { markdown: string; json: string } {
     "Search examples:",
     "",
     "```bash",
-    "rg -n \"DynamoDB|aws\\.dynamodb\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
-    "rg -n \"API Gateway|aws\\.api-gateway\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
+    'rg -n "DynamoDB|aws\\.dynamodb" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json',
+    'rg -n "API Gateway|aws\\.api-gateway" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json',
     "```",
     "",
     "## Full catalog",
@@ -601,7 +660,9 @@ function reportCliError(error: CliError): number {
     case "parse-failed": {
       const path = displayInputForInput(error.input);
       console.error(ui.error(`Invalid diagram: ${path}`));
-      console.error(error.line ? `${path}:${error.line}:${error.column}: ${error.message}` : `${path}: ${error.message}`);
+      console.error(
+        error.line ? `${path}:${error.line}:${error.column}: ${error.message}` : `${path}: ${error.message}`,
+      );
       return 1;
     }
     case "validation-failed":
@@ -683,10 +744,12 @@ function waitForShutdown(server: { close(callback?: (error?: Error) => void): vo
 
 const entrypoint = process.argv[1] ? realpathSync(process.argv[1]) : "";
 if (entrypoint === realpathSync(fileURLToPath(import.meta.url))) {
-  runCli(process.argv.slice(2)).then((code) => {
-    if (code) process.exitCode = code;
-  }).catch((error: unknown) => {
-    console.error(ui.error(error instanceof Error ? error.message : String(error)));
-    process.exitCode = 1;
-  });
+  runCli(process.argv.slice(2))
+    .then((code) => {
+      if (code) process.exitCode = code;
+    })
+    .catch((error: unknown) => {
+      console.error(ui.error(error instanceof Error ? error.message : String(error)));
+      process.exitCode = 1;
+    });
 }

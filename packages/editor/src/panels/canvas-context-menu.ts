@@ -69,10 +69,7 @@ export function buildContextMenuItems(
   if (selection.length === 1) {
     const item = selection[0]!;
     const view = doc.views[0];
-    const place =
-      item.kind === "annotation"
-        ? view?.annotations?.[item.id]
-        : view?.places[item.id];
+    const place = item.kind === "annotation" ? view?.annotations?.[item.id] : view?.places[item.id];
     const locked = Boolean(place?.locked);
 
     items.push({ id: "object-divider", label: "", separator: true });
@@ -91,12 +88,7 @@ export function buildContextMenuItems(
       label: locked ? "Unlock position" : "Lock position",
       onSelect: () =>
         actions.onMutate((next) =>
-          setLocked(
-            next,
-            item.kind as "resource" | "group" | "edge" | "annotation",
-            item.id,
-            !locked,
-          ),
+          setLocked(next, item.kind as "resource" | "group" | "edge" | "annotation", item.id, !locked),
         ),
     });
 

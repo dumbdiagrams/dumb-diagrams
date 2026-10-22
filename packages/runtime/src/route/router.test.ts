@@ -2,11 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  createEmptyDocument,
-  nearestPortAnchor,
-  portPoint,
-} from "../core/index.js";
+import { createEmptyDocument, nearestPortAnchor, portPoint } from "../core/index.js";
 import { createAsyncDocsFixture } from "../../test-fixtures.js";
 import { parseDgmResult } from "../dsl/index.js";
 import type { DiagramDocument, LayoutResult, NodeGeom } from "../core/index.js";
@@ -40,22 +36,50 @@ describe("routeEdgePreview", () => {
     ];
     doc.edges = [
       { id: "actor_api", source: "actor", target: "api", label, style: "solid", kind: "flow" },
-      { id: "actor_s3", source: "actor", target: "s3", label: "a very long storage label", style: "solid", kind: "flow" },
+      {
+        id: "actor_s3",
+        source: "actor",
+        target: "s3",
+        label: "a very long storage label",
+        style: "solid",
+        kind: "flow",
+      },
     ];
-    doc.views[0]!.routes.actor_api = { pin: true, mode: "manual", points: [{ x: 120, y: 397 }, { x: 220, y: 397 }] };
-    doc.views[0]!.routes.actor_s3 = { pin: true, mode: "manual", points: [{ x: 120, y: 359 }, { x: 220, y: 359 }], labelT: 0.5, labelSide: "bottom" };
+    doc.views[0]!.routes.actor_api = {
+      pin: true,
+      mode: "manual",
+      points: [
+        { x: 120, y: 397 },
+        { x: 220, y: 397 },
+      ],
+    };
+    doc.views[0]!.routes.actor_s3 = {
+      pin: true,
+      mode: "manual",
+      points: [
+        { x: 120, y: 359 },
+        { x: 220, y: 359 },
+      ],
+      labelT: 0.5,
+      labelSide: "bottom",
+    };
     const layout: LayoutResult = {
       nodes: [routingNode("actor", 72, 373, 48), routingNode("api", 220, 373, 48), routingNode("s3", 220, 335, 48)],
-      groups: [{
-        id: "storage",
-        kind: "region",
-        bounds: { x: 100, y: 400, w: headerWidth, h: 80 },
-        header: { x: 100, y: 400, w: headerWidth, h: 24 },
-        content: { x: 100, y: 424, w: headerWidth, h: 56 },
-        label: "Storage",
-        labelRect: { x: 100, y: 407, w: headerWidth, h: 14 },
-      }],
-      edges: [], width: 420, height: 500, symmetries: [],
+      groups: [
+        {
+          id: "storage",
+          kind: "region",
+          bounds: { x: 100, y: 400, w: headerWidth, h: 80 },
+          header: { x: 100, y: 400, w: headerWidth, h: 24 },
+          content: { x: 100, y: 424, w: headerWidth, h: 56 },
+          label: "Storage",
+          labelRect: { x: 100, y: 407, w: headerWidth, h: 14 },
+        },
+      ],
+      edges: [],
+      width: 420,
+      height: 500,
+      symmetries: [],
     };
     const routes = routeEdges(doc, layout);
     const own = routes.find((edge) => edge.id === "actor_api")!;
@@ -63,16 +87,12 @@ describe("routeEdgePreview", () => {
 
     expect(own.labelPoint).toBeDefined();
     expect(distanceToPath(own.labelPoint!, own.points)).toBeLessThanOrEqual(maxGap);
-    expect(distanceToPath(own.labelPoint!, own.points))
-      .toBeLessThan(distanceToPath(own.labelPoint!, foreign.points));
+    expect(distanceToPath(own.labelPoint!, own.points)).toBeLessThan(distanceToPath(own.labelPoint!, foreign.points));
     if (maxGap === 20) {
       // A clear pocket uses the drag preview's gap, avoiding an initial snap.
-      expect(own.labelPoint).toEqual(getEdgeLabelPlacementOnPath(
-        own.points,
-        own.label!,
-        own.labelT!,
-        own.labelSide!,
-      )?.point);
+      expect(own.labelPoint).toEqual(
+        getEdgeLabelPlacementOnPath(own.points, own.label!, own.labelT!, own.labelSide!)?.point,
+      );
     }
   });
   it("routes blocked edges with an emergency elbow instead of throwing", () => {
@@ -81,18 +101,17 @@ describe("routeEdgePreview", () => {
       routingResource("cloudfront", "aws.cloudfront", "CloudFront"),
       routingResource("simple-storage-service", "aws.simple-storage-service", "S3"),
     ];
-    doc.edges = [{
-      id: "cloudfront-simple-storage-service",
-      source: "cloudfront",
-      target: "simple-storage-service",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "cloudfront-simple-storage-service",
+        source: "cloudfront",
+        target: "simple-storage-service",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
     const layout: LayoutResult = {
-      nodes: [
-        routingNode("cloudfront", 100, 100, 104),
-        routingNode("simple-storage-service", 100, 100, 104),
-      ],
+      nodes: [routingNode("cloudfront", 100, 100, 104), routingNode("simple-storage-service", 100, 100, 104)],
       groups: [],
       edges: [],
       width: 800,
@@ -101,8 +120,9 @@ describe("routeEdgePreview", () => {
     };
 
     expect(() => routeEdges(doc, layout)).not.toThrow();
-    expect(routeEdges(doc, layout).find((edge) => edge.id === "cloudfront-simple-storage-service")?.points.length)
-      .toBeGreaterThan(2);
+    expect(
+      routeEdges(doc, layout).find((edge) => edge.id === "cloudfront-simple-storage-service")?.points.length,
+    ).toBeGreaterThan(2);
   });
 
   it("routes an edge between coincident cards without throwing", () => {
@@ -111,18 +131,17 @@ describe("routeEdgePreview", () => {
       routingResource("abs-member", "azure.abs-member", "ABS member"),
       routingResource("abs-member-2", "azure.abs-member", "ABS member"),
     ];
-    doc.edges = [{
-      id: "abs-member-2-abs-member",
-      source: "abs-member-2",
-      target: "abs-member",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "abs-member-2-abs-member",
+        source: "abs-member-2",
+        target: "abs-member",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
     const layout: LayoutResult = {
-      nodes: [
-        routingNode("abs-member", 100, 100, 104),
-        routingNode("abs-member-2", 100, 100, 104),
-      ],
+      nodes: [routingNode("abs-member", 100, 100, 104), routingNode("abs-member-2", 100, 100, 104)],
       groups: [],
       edges: [],
       width: 800,
@@ -169,9 +188,7 @@ describe("routeEdgePreview", () => {
   it("renders a badge for zero as well as positive step numbers", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.step = 0;
-    const edge = routeEdges(doc, layoutDocument(doc)).find(
-      (candidate) => candidate.id === doc.edges[0]!.id,
-    );
+    const edge = routeEdges(doc, layoutDocument(doc)).find((candidate) => candidate.id === doc.edges[0]!.id);
     expect(edge?.badge).toBeDefined();
     expect(edge?.step).toBe(0);
   });
@@ -179,19 +196,11 @@ describe("routeEdgePreview", () => {
   it("keeps a connector label clear of its numbered badge", () => {
     const doc = createAsyncDocsFixture();
     doc.edges[0]!.label = "Direct Connect";
-    const edge = routeEdges(doc, layoutDocument(doc)).find(
-      (candidate) => candidate.id === doc.edges[0]!.id,
-    )!;
+    const edge = routeEdges(doc, layoutDocument(doc)).find((candidate) => candidate.id === doc.edges[0]!.id)!;
     expect(edge.badge).toBeDefined();
     expect(edge.labelRect).toBeDefined();
-    const closestX = Math.max(
-      edge.labelRect!.x,
-      Math.min(edge.badge!.x, edge.labelRect!.x + edge.labelRect!.w),
-    );
-    const closestY = Math.max(
-      edge.labelRect!.y,
-      Math.min(edge.badge!.y, edge.labelRect!.y + edge.labelRect!.h),
-    );
+    const closestX = Math.max(edge.labelRect!.x, Math.min(edge.badge!.x, edge.labelRect!.x + edge.labelRect!.w));
+    const closestY = Math.max(edge.labelRect!.y, Math.min(edge.badge!.y, edge.labelRect!.y + edge.labelRect!.h));
     expect(Math.hypot(edge.badge!.x - closestX, edge.badge!.y - closestY)).toBeGreaterThan(12);
   });
 
@@ -201,27 +210,29 @@ describe("routeEdgePreview", () => {
       routingResource("source", "cloud-agnostic.client", "Source"),
       routingResource("target", "cloud-agnostic.server", "Target"),
     ];
-    doc.edges = [{
-      id: "request",
-      source: "source",
-      target: "target",
-      step: 1,
-      label: "reserved label",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "request",
+        source: "source",
+        target: "target",
+        step: 1,
+        label: "reserved label",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
     doc.views[0]!.routes.request = {
       pin: true,
       mode: "manual",
-      points: [{ x: 48, y: 124 }, { x: 320, y: 124 }],
+      points: [
+        { x: 48, y: 124 },
+        { x: 320, y: 124 },
+      ],
       labelT: 0.5,
       labelSide: "top",
     };
     const layout: LayoutResult = {
-      nodes: [
-        routingNode("source", 0, 100, 48),
-        routingNode("target", 320, 100, 48),
-      ],
+      nodes: [routingNode("source", 0, 100, 48), routingNode("target", 320, 100, 48)],
       groups: [],
       edges: [],
       width: 400,
@@ -267,9 +278,7 @@ describe("routeEdgePreview", () => {
       labelSide: "top",
     };
 
-    const edge = routeEdges(doc, layoutDocument(doc)).find(
-      (candidate) => candidate.id === edgeModel.id,
-    )!;
+    const edge = routeEdges(doc, layoutDocument(doc)).find((candidate) => candidate.id === edgeModel.id)!;
 
     expect(edge.badgeT).toBe(0.25);
     expect(edge.badgeSide).toBe("bottom");
@@ -338,10 +347,12 @@ describe("routeEdgePreview", () => {
   });
 
   it("keeps Azure step badges clear of resource cards and subnet headers", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/azure-private-app-service/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(
+        new URL("../../../../examples/curated/azure-private-app-service/diagram.dgm", import.meta.url),
+        "utf8",
+      ),
+    );
     const layout = layoutDocument(doc);
     const routes = routeEdges(doc, layout);
     const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
@@ -349,36 +360,24 @@ describe("routeEdgePreview", () => {
     const requestBadge = routes.find((edge) => edge.id === "https_requests")!.badge!;
     const readBadge = routes.find((edge) => edge.id === "cache_reads")!.badge!;
 
-    expect(circleIntersectsRectForTest(
-      requestBadge,
-      10,
-      nodes.get("client")!.obstacle,
-      4,
-    )).toBe(false);
-    expect(circleIntersectsRectForTest(
-      readBadge,
-      10,
-      groups.get("vnet")!.labelRect!,
-      4,
-    )).toBe(false);
+    expect(circleIntersectsRectForTest(requestBadge, 10, nodes.get("client")!.obstacle, 4)).toBe(false);
+    expect(circleIntersectsRectForTest(readBadge, 10, groups.get("vnet")!.labelRect!, 4)).toBe(false);
   });
 
   it("keeps automatic badges at the same parent-edge distance used by dragging", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(
+        new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
+        "utf8",
+      ),
+    );
     const routes = routeEdges(doc, layoutDocument(doc));
 
     for (const edge of routes.filter((candidate) => candidate.step !== undefined)) {
       expect(edge.badge, edge.id).toBeDefined();
       expect(edge.badgeT, edge.id).toBeDefined();
       expect(edge.badgeSide, edge.id).toBeDefined();
-      expect(edge.badge, edge.id).toEqual(getEdgeBadgePlacement(
-        edge.points,
-        edge.badgeT,
-        edge.badgeSide,
-      )?.point);
+      expect(edge.badge, edge.id).toEqual(getEdgeBadgePlacement(edge.points, edge.badgeT, edge.badgeSide)?.point);
     }
   });
 
@@ -419,19 +418,12 @@ describe("routeEdgePreview", () => {
   processor -> insights { id processor_telemetry style dashed label "telemetry" }
 }`);
     const routes = routeEdges(doc, layoutDocument(doc));
-    const edge = routes.find(
-      (candidate) => candidate.id === "queue_trigger",
-    )!;
+    const edge = routes.find((candidate) => candidate.id === "queue_trigger")!;
     const readBlob = routes.find((candidate) => candidate.id === "read_blob")!;
 
     expect(edge.badge).toBeDefined();
     expect(edge.labelRect).toBeDefined();
-    expect(circleIntersectsRectForTest(
-      edge.badge!,
-      10,
-      edge.labelRect!,
-      4,
-    )).toBe(false);
+    expect(circleIntersectsRectForTest(edge.badge!, 10, edge.labelRect!, 4)).toBe(false);
     expect(distanceToPath(edge.labelPoint!, edge.points)).toBeLessThanOrEqual(52);
     expect(readBlob.labelPoint).toBeDefined();
     expect(distanceToPath(readBlob.labelPoint!, readBlob.points)).toBeLessThanOrEqual(20);
@@ -488,14 +480,18 @@ describe("routeEdgePreview", () => {
   });
 
   it("keeps order-flow labels visibly attached to their connectors", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/event-driven-order-fulfillment/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(
+        new URL("../../../../examples/curated/event-driven-order-fulfillment/diagram.dgm", import.meta.url),
+        "utf8",
+      ),
+    );
     const layout = layoutDocument(doc);
     const routes = routeEdges(doc, layout);
     const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
-    const groups = layout.groups.map((group) => group.labelRect).filter((rect): rect is NonNullable<typeof rect> => Boolean(rect));
+    const groups = layout.groups
+      .map((group) => group.labelRect)
+      .filter((rect): rect is NonNullable<typeof rect> => Boolean(rect));
 
     for (const id of ["authorize_payment", "persist_order"]) {
       const edge = routes.find((candidate) => candidate.id === id)!;
@@ -512,8 +508,9 @@ describe("routeEdgePreview", () => {
       if (id === "authorize_payment") {
         const ownDistance = distanceToPath(edge.labelPoint!, edge.points);
         for (const other of routes.filter((candidate) => candidate.id !== id)) {
-          expect(distanceToPath(edge.labelPoint!, other.points), `${id} is closer to ${other.id}`)
-            .toBeGreaterThan(ownDistance);
+          expect(distanceToPath(edge.labelPoint!, other.points), `${id} is closer to ${other.id}`).toBeGreaterThan(
+            ownDistance,
+          );
         }
       }
     }
@@ -525,10 +522,12 @@ describe("routeEdgePreview", () => {
   });
 
   it("keeps report-flow labels clear of resource and boundary copy", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/asynchronous-report-generation/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(
+        new URL("../../../../examples/curated/asynchronous-report-generation/diagram.dgm", import.meta.url),
+        "utf8",
+      ),
+    );
     const layout = layoutDocument(doc);
     const routes = routeEdges(doc, layout);
 
@@ -541,7 +540,9 @@ describe("routeEdgePreview", () => {
       }
       for (const group of layout.groups) {
         if (group.labelRect) {
-          expect(rectsOverlapForTest(edge.labelRect!, group.labelRect, 2), `${id} overlaps ${group.id} header`).toBe(false);
+          expect(rectsOverlapForTest(edge.labelRect!, group.labelRect, 2), `${id} overlaps ${group.id} header`).toBe(
+            false,
+          );
         }
       }
     }
@@ -554,10 +555,12 @@ describe("routeEdgePreview", () => {
     ["authorize", false],
     ["authorize payment", false],
     ["authorize payment with a longer audit trail", false],
-  ] as const)("keeps a three-way fan-out label owned and deterministic for %s (neighbor labels: %s)", (label, neighborsLabelled) => {
-    const secondaryLabel = neighborsLabelled ? ' label "side path"' : "";
-    const tertiaryLabel = neighborsLabelled ? ' label "other path"' : "";
-    const doc = parseDgm(`diagram synthetic-label-fanout {
+  ] as const)(
+    "keeps a three-way fan-out label owned and deterministic for %s (neighbor labels: %s)",
+    (label, neighborsLabelled) => {
+      const secondaryLabel = neighborsLabelled ? ' label "side path"' : "";
+      const tertiaryLabel = neighborsLabelled ? ' label "other path"' : "";
+      const doc = parseDgm(`diagram synthetic-label-fanout {
   grammar cloud-agnostic
   flow lr
   cloud-agnostic.cloud application "Application" {
@@ -574,44 +577,52 @@ describe("routeEdgePreview", () => {
   source -> target_a { id secondary${secondaryLabel} }
   source -> target_c { id tertiary${tertiaryLabel} }
 }`);
-    const layout = layoutDocument(doc);
-    const routes = routeEdges(doc, layout);
-    const primary = routes.find((edge) => edge.id === "primary")!;
-    const otherRoutes = routes.filter((edge) => edge.id !== primary.id);
+      const layout = layoutDocument(doc);
+      const routes = routeEdges(doc, layout);
+      const primary = routes.find((edge) => edge.id === "primary")!;
+      const otherRoutes = routes.filter((edge) => edge.id !== primary.id);
 
-    expect(primary.labelPoint).toBeDefined();
-    expect(primary.labelRect).toBeDefined();
-    expect(distanceToPath(primary.labelPoint!, primary.points)).toBeLessThanOrEqual(52);
-    expect(distanceToPath(primary.labelPoint!, primary.points)).toBeLessThan(
-      Math.min(...otherRoutes.map((edge) => distanceToPath(primary.labelPoint!, edge.points))),
-    );
-    const center = {
-      x: primary.labelRect!.x + primary.labelRect!.w / 2,
-      y: primary.labelRect!.y + primary.labelRect!.h / 2,
-    };
-    expect(distanceToPath(center, primary.points)).toBeLessThan(
-      Math.min(...otherRoutes.map((edge) => distanceToPath(center, edge.points))),
-    );
-    for (const node of layout.nodes) {
-      expect(rectsOverlapForTest(primary.labelRect!, node.icon), `primary overlaps ${node.id} icon`).toBe(false);
-      expect(rectsOverlapForTest(primary.labelRect!, node.label), `primary overlaps ${node.id} text`).toBe(false);
-    }
-    for (const group of layout.groups) {
-      if (group.labelRect) {
-        expect(rectsOverlapForTest(primary.labelRect!, group.labelRect), "primary overlaps a group header").toBe(false);
+      expect(primary.labelPoint).toBeDefined();
+      expect(primary.labelRect).toBeDefined();
+      expect(distanceToPath(primary.labelPoint!, primary.points)).toBeLessThanOrEqual(52);
+      expect(distanceToPath(primary.labelPoint!, primary.points)).toBeLessThan(
+        Math.min(...otherRoutes.map((edge) => distanceToPath(primary.labelPoint!, edge.points))),
+      );
+      const center = {
+        x: primary.labelRect!.x + primary.labelRect!.w / 2,
+        y: primary.labelRect!.y + primary.labelRect!.h / 2,
+      };
+      expect(distanceToPath(center, primary.points)).toBeLessThan(
+        Math.min(...otherRoutes.map((edge) => distanceToPath(center, edge.points))),
+      );
+      for (const node of layout.nodes) {
+        expect(rectsOverlapForTest(primary.labelRect!, node.icon), `primary overlaps ${node.id} icon`).toBe(false);
+        expect(rectsOverlapForTest(primary.labelRect!, node.label), `primary overlaps ${node.id} text`).toBe(false);
       }
-    }
+      for (const group of layout.groups) {
+        if (group.labelRect) {
+          expect(rectsOverlapForTest(primary.labelRect!, group.labelRect), "primary overlaps a group header").toBe(
+            false,
+          );
+        }
+      }
 
-    const repeated = routeEdges(doc, layout).find((edge) => edge.id === "primary")!;
-    expect({ points: repeated.points, labelPoint: repeated.labelPoint, labelRect: repeated.labelRect })
-      .toEqual({ points: primary.points, labelPoint: primary.labelPoint, labelRect: primary.labelRect });
-  });
+      const repeated = routeEdges(doc, layout).find((edge) => edge.id === "primary")!;
+      expect({ points: repeated.points, labelPoint: repeated.labelPoint, labelRect: repeated.labelRect }).toEqual({
+        points: primary.points,
+        labelPoint: primary.labelPoint,
+        labelRect: primary.labelRect,
+      });
+    },
+  );
 
   it("keeps cross-boundary labels visibly attached to their connectors", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/aws-high-availability-web-app/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(
+        new URL("../../../../examples/curated/aws-high-availability-web-app/diagram.dgm", import.meta.url),
+        "utf8",
+      ),
+    );
     const routes = routeEdges(doc, layoutDocument(doc));
     const edge = routes.find((candidate) => candidate.id === "pull_image_a")!;
 
@@ -620,15 +631,15 @@ describe("routeEdgePreview", () => {
   });
 
   it("routes the curated Bedrock workflow around extraction cards", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(
+        new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
+        "utf8",
+      ),
+    );
     const layout = layoutDocument(doc);
     const route = routeEdges(doc, layout).find((edge) => edge.id === "workflow_to_state")!;
-    const protectedNodes = layout.nodes.filter((node) =>
-      ["extractor", "fraud_model"].includes(node.id),
-    );
+    const protectedNodes = layout.nodes.filter((node) => ["extractor", "fraud_model"].includes(node.id));
 
     for (let index = 0; index < route.points.length - 1; index++) {
       for (const node of protectedNodes) {
@@ -680,15 +691,17 @@ describe("routeEdgePreview", () => {
       routingResource("source", "cloud-agnostic.client", "Source"),
       routingResource("target", "azure.sql-database", "Target"),
     ];
-    doc.edges = [{
-      id: "source-target",
-      source: "source",
-      target: "target",
-      sourcePort: "e",
-      targetPort: "w",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "source-target",
+        source: "source",
+        target: "target",
+        sourcePort: "e",
+        targetPort: "w",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
     const source = routingNode("source", 500, 100, 96);
     const target = routingNode("target", 100, 100, 96);
     const layout: LayoutResult = {
@@ -712,14 +725,16 @@ describe("routeEdgePreview", () => {
       routingResource("source", "cloud-agnostic.client", "Source"),
       routingResource("target", "aws.cognito", "Target"),
     ];
-    doc.edges = [{
-      id: "source-target",
-      source: "source",
-      target: "target",
-      sourcePort: "n",
-      targetPort: "s",
-      style: "solid",
-    }];
+    doc.edges = [
+      {
+        id: "source-target",
+        source: "source",
+        target: "target",
+        sourcePort: "n",
+        targetPort: "s",
+        style: "solid",
+      },
+    ];
     const source = routingNode("source", 60, 240, 100);
     const stacked = routingNode("target", 60, 80, 112);
     const layout: LayoutResult = {
@@ -753,13 +768,15 @@ describe("routeEdgePreview", () => {
       routingResource("app", "azure.app-services", "App Service"),
       routingResource("insights", "azure.application-insights", "Application Insights"),
     ];
-    doc.edges = [{
-      id: "telemetry",
-      source: "app",
-      target: "insights",
-      style: "dashed",
-      kind: "peer",
-    }];
+    doc.edges = [
+      {
+        id: "telemetry",
+        source: "app",
+        target: "insights",
+        style: "dashed",
+        kind: "peer",
+      },
+    ];
     const source = routingNode("app", 120, 60, 104);
     const stacked = routingNode("insights", 120, 260, 104);
     const layout: LayoutResult = {
@@ -793,7 +810,12 @@ describe("routeEdgePreview", () => {
       const jobs = routingNode("jobs", 100, 60, 104);
       const dlq = routingNode("dlq", 130, 260, 104);
       const layout: LayoutResult = {
-        nodes: [jobs, dlq], groups: [], edges: [], width: 400, height: 440, symmetries: [],
+        nodes: [jobs, dlq],
+        groups: [],
+        edges: [],
+        width: 400,
+        height: 440,
+        symmetries: [],
       };
 
       const [start, end, ...rest] = routeEdges(doc, layout)[0]!.points;
@@ -816,7 +838,12 @@ describe("routeEdgePreview", () => {
     const jobs = routingNode("jobs", 100, 60, 104);
     const dlq = routingNode("dlq", 240, 260, 104);
     const layout: LayoutResult = {
-      nodes: [jobs, dlq], groups: [], edges: [], width: 440, height: 440, symmetries: [],
+      nodes: [jobs, dlq],
+      groups: [],
+      edges: [],
+      width: 440,
+      height: 440,
+      symmetries: [],
     };
 
     const route = routeEdges(doc, layout)[0]!.points;
@@ -838,7 +865,11 @@ describe("routeEdgePreview", () => {
     const blocker = routingNode("worker", 100, 200, 104);
     const layout: LayoutResult = {
       nodes: [routingNode("jobs", 100, 60, 104), blocker, routingNode("dlq", 100, 360, 104)],
-      groups: [], edges: [], width: 440, height: 560, symmetries: [],
+      groups: [],
+      edges: [],
+      width: 440,
+      height: 560,
+      symmetries: [],
     };
 
     const route = routeEdges(doc, layout)[0]!.points;
@@ -854,17 +885,19 @@ describe("routeEdgePreview", () => {
       routingResource("app", "azure.app-services", "App Service"),
       routingResource("insights", "azure.application-insights", "Application Insights"),
     ];
-    doc.edges = [{
-      id: "telemetry",
-      source: "app",
-      target: "insights",
-      sourcePort: "s",
-      sourcePortOffset: 0.25,
-      targetPort: "n",
-      targetPortOffset: 0.75,
-      style: "dashed",
-      kind: "peer",
-    }];
+    doc.edges = [
+      {
+        id: "telemetry",
+        source: "app",
+        target: "insights",
+        sourcePort: "s",
+        sourcePortOffset: 0.25,
+        targetPort: "n",
+        targetPortOffset: 0.75,
+        style: "dashed",
+        kind: "peer",
+      },
+    ];
     const source = routingNode("app", 120, 60, 104);
     const target = routingNode("insights", 120, 260, 104);
     const layout: LayoutResult = {
@@ -911,15 +944,17 @@ describe("routeEdgePreview", () => {
         children: ["ecs", "fargate"],
       },
     ];
-    doc.edges = [{
-      id: "ecs_to_fargate",
-      source: "ecs",
-      target: "fargate",
-      sourcePort: "e",
-      targetPort: "w",
-      style: "dashed",
-      kind: "peer",
-    }];
+    doc.edges = [
+      {
+        id: "ecs_to_fargate",
+        source: "ecs",
+        target: "fargate",
+        sourcePort: "e",
+        targetPort: "w",
+        style: "dashed",
+        kind: "peer",
+      },
+    ];
 
     const route = routeEdges(doc, layoutDocument(doc))[0]!;
     expect(route.points).toHaveLength(2);
@@ -932,20 +967,19 @@ describe("routeEdgePreview", () => {
       routingResource("source", "aws.simple-storage-service", "Source"),
       routingResource("target", "aws.bedrock", "Target"),
     ];
-    doc.edges = [{
-      id: "source_to_target",
-      source: "source",
-      target: "target",
-      sourcePort: "e",
-      targetPort: "w",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "source_to_target",
+        source: "source",
+        target: "target",
+        sourcePort: "e",
+        targetPort: "w",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
     const layout: LayoutResult = {
-      nodes: [
-        routingNode("source", 100, 100, 96),
-        routingNode("target", 300, 105, 96),
-      ],
+      nodes: [routingNode("source", 100, 100, 96), routingNode("target", 300, 105, 96)],
       groups: [],
       edges: [],
       width: 480,
@@ -971,9 +1005,7 @@ describe("routeEdgePreview", () => {
     expect(preview).toBeTruthy();
     expect(preview!.length).toBeGreaterThan(1);
     expect(doc.edges.some((edge) => edge.source === "client" && edge.target === "api_alb")).toBe(true);
-    expect(preview![0]).toEqual(
-      portPoint(layout.nodes.find((node) => node.id === "client")!.icon, "e", 0.5),
-    );
+    expect(preview![0]).toEqual(portPoint(layout.nodes.find((node) => node.id === "client")!.icon, "e", 0.5));
   });
 
   it("keeps generated connectors outside resource cards before turning", () => {
@@ -999,10 +1031,7 @@ describe("routeEdgePreview", () => {
           continuesAwayFromIcon(target.icon, route.points.at(-1)!, route.points.at(-2)!),
           `${route.id} approaches through a deliberate target face`,
         ).toBe(true);
-        expect(
-          contains(sourceCard, route.points[1]!),
-          `${route.id} turns before clearing its source card`,
-        ).toBe(false);
+        expect(contains(sourceCard, route.points[1]!), `${route.id} turns before clearing its source card`).toBe(false);
         expect(
           contains(targetCard, route.points.at(-2)!),
           `${route.id} approaches its target from inside the card`,
@@ -1017,10 +1046,7 @@ describe("routeEdgePreview", () => {
           const isSourceAttachment = node.id === source.id && index === 0;
           const isTargetAttachment = node.id === target.id && index === route.points.length - 2;
           if (isSourceAttachment || isTargetAttachment) continue;
-          expect(
-            segmentIntersects(a, b, card),
-            `${route.id} segment ${index} intersects ${node.id}`,
-          ).toBe(false);
+          expect(segmentIntersects(a, b, card), `${route.id} segment ${index} intersects ${node.id}`).toBe(false);
         }
       }
     }
@@ -1038,12 +1064,7 @@ describe("routeEdgePreview", () => {
 
     for (let index = 0; index < route.points.length - 1; index++) {
       expect(
-        segmentBoundaryOverlap(
-          route.points[index]!,
-          route.points[index + 1]!,
-          group.bounds,
-          4,
-        ),
+        segmentBoundaryOverlap(route.points[index]!, route.points[index + 1]!, group.bounds, 4),
         `e3 segment ${index} follows appA boundary`,
       ).toBe(0);
     }
@@ -1114,7 +1135,9 @@ describe("routeEdgePreview", () => {
       maxRouteConflictChecks: 10,
       maxAstarExpansions: 10,
       maxRepairCandidates: 10,
-      onDiagnostics: (result) => { diagnostics = result; },
+      onDiagnostics: (result) => {
+        diagnostics = result;
+      },
     });
 
     expect(routes).toHaveLength(doc.edges.length);
@@ -1124,7 +1147,11 @@ describe("routeEdgePreview", () => {
 
     let unbounded: { exhausted: boolean; scorePathCalls: number } | undefined;
     const pair = { ...doc, resources: doc.resources.slice(0, 2), edges: doc.edges.slice(0, 1) };
-    routeEdges(pair, layoutDocument(pair), { onDiagnostics: (result) => { unbounded = result; } });
+    routeEdges(pair, layoutDocument(pair), {
+      onDiagnostics: (result) => {
+        unbounded = result;
+      },
+    });
     expect(unbounded?.exhausted).toBe(false);
     expect(unbounded?.scorePathCalls).toBeGreaterThan(0);
   });
@@ -1135,13 +1162,15 @@ describe("routeEdgePreview", () => {
       routingResource("source", "cloud-agnostic.actor", "Source"),
       routingResource("target", "cloud-agnostic.server", "Target"),
     ];
-    doc.edges = [{
-      id: "source_target",
-      source: "source",
-      target: "target",
-      style: "solid",
-      kind: "flow",
-    }];
+    doc.edges = [
+      {
+        id: "source_target",
+        source: "source",
+        target: "target",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
     const layout: LayoutResult = {
       nodes: [routingNode("source", 0, 0, 48), routingNode("target", 1_000_000, 1_000_000, 48)],
       groups: [],
@@ -1152,29 +1181,48 @@ describe("routeEdgePreview", () => {
     };
 
     let diagnostics;
-    const route = routeEdges(doc, layout, { onDiagnostics: (result) => { diagnostics = result; } })[0]!;
+    const route = routeEdges(doc, layout, {
+      onDiagnostics: (result) => {
+        diagnostics = result;
+      },
+    })[0]!;
     expect(diagnostics?.exhausted).toBe(true);
     expect(route.points.length).toBeGreaterThanOrEqual(2);
-    expect(route.points.every((point, index, points) => {
-      const previous = points[index - 1];
-      return !previous || point.x === previous.x || point.y === previous.y;
-    })).toBe(true);
+    expect(
+      route.points.every((point, index, points) => {
+        const previous = points[index - 1];
+        return !previous || point.x === previous.x || point.y === previous.y;
+      }),
+    ).toBe(true);
 
     const preview = routeConnectionPreview(doc, layout, "source", "target");
     expect(preview?.length).toBeGreaterThanOrEqual(2);
-    expect(preview?.every((point, index, points) => {
-      const previous = points[index - 1];
-      return !previous || point.x === previous.x || point.y === previous.y;
-    })).toBe(true);
+    expect(
+      preview?.every((point, index, points) => {
+        const previous = points[index - 1];
+        return !previous || point.x === previous.x || point.y === previous.y;
+      }),
+    ).toBe(true);
   });
 
   it("does not report grid degradation for an oversized canvas without edges", () => {
     const doc = createEmptyDocument("oversized-empty-routing-grid");
     const layout: LayoutResult = {
-      nodes: [], groups: [], edges: [], width: 1_000_000, height: 1_000_000, symmetries: [],
+      nodes: [],
+      groups: [],
+      edges: [],
+      width: 1_000_000,
+      height: 1_000_000,
+      symmetries: [],
     };
     let diagnostics;
-    expect(routeEdges(doc, layout, { onDiagnostics: (result) => { diagnostics = result; } })).toEqual([]);
+    expect(
+      routeEdges(doc, layout, {
+        onDiagnostics: (result) => {
+          diagnostics = result;
+        },
+      }),
+    ).toEqual([]);
     expect(diagnostics?.exhausted).toBe(false);
   });
 
@@ -1265,21 +1313,25 @@ describe("routeEdgePreview", () => {
       { x: 260, y: 320 },
       { x: 420, y: 320 },
     ]);
-    expect(manual.slice(0, -1).every((point, index) => {
-      const next = manual[index + 1]!;
-      return point.x === next.x || point.y === next.y;
-    })).toBe(true);
+    expect(
+      manual.slice(0, -1).every((point, index) => {
+        const next = manual[index + 1]!;
+        return point.x === next.x || point.y === next.y;
+      }),
+    ).toBe(true);
   });
 
   it("canonicalizes collapsed edit points without changing the route endpoints", () => {
-    expect(eraseOrthogonalRouteLoops([
-      { x: 0, y: 0 },
-      { x: 48, y: 0 },
-      { x: 96, y: 0 },
-      { x: 96, y: 64 },
-      { x: 96, y: 64 },
-      { x: 144, y: 64 },
-    ])).toEqual([
+    expect(
+      eraseOrthogonalRouteLoops([
+        { x: 0, y: 0 },
+        { x: 48, y: 0 },
+        { x: 96, y: 0 },
+        { x: 96, y: 64 },
+        { x: 96, y: 64 },
+        { x: 144, y: 64 },
+      ]),
+    ).toEqual([
       { x: 0, y: 0 },
       { x: 96, y: 0 },
       { x: 96, y: 64 },
@@ -1288,15 +1340,17 @@ describe("routeEdgePreview", () => {
   });
 
   it("erases connector loops and backtracking spurs instead of rendering dead ends", () => {
-    expect(eraseOrthogonalRouteLoops([
-      { x: 0, y: 0 },
-      { x: 120, y: 0 },
-      { x: 120, y: 80 },
-      { x: 40, y: 80 },
-      { x: 40, y: 144 },
-      { x: 40, y: 80 },
-      { x: 200, y: 80 },
-    ])).toEqual([
+    expect(
+      eraseOrthogonalRouteLoops([
+        { x: 0, y: 0 },
+        { x: 120, y: 0 },
+        { x: 120, y: 80 },
+        { x: 40, y: 80 },
+        { x: 40, y: 144 },
+        { x: 40, y: 80 },
+        { x: 200, y: 80 },
+      ]),
+    ).toEqual([
       { x: 0, y: 0 },
       { x: 120, y: 0 },
       { x: 120, y: 80 },
@@ -1320,21 +1374,25 @@ describe("routeEdgePreview", () => {
   });
 
   it("merges fractional port artifacts but keeps deliberate straight breaks", () => {
-    expect(collapseOrthogonalRouteArtifacts([
-      { x: 168, y: 312 },
-      { x: 381, y: 312 },
-      { x: 381.25, y: 312 },
-      { x: 381.25, y: 226 },
-    ])).toEqual([
+    expect(
+      collapseOrthogonalRouteArtifacts([
+        { x: 168, y: 312 },
+        { x: 381, y: 312 },
+        { x: 381.25, y: 312 },
+        { x: 381.25, y: 226 },
+      ]),
+    ).toEqual([
       { x: 168, y: 312 },
       { x: 381.25, y: 312 },
       { x: 381.25, y: 226 },
     ]);
-    expect(collapseOrthogonalRouteArtifacts([
-      { x: 0, y: 0 },
-      { x: 48, y: 0 },
-      { x: 96, y: 0 },
-    ])).toHaveLength(3);
+    expect(
+      collapseOrthogonalRouteArtifacts([
+        { x: 0, y: 0 },
+        { x: 48, y: 0 },
+        { x: 96, y: 0 },
+      ]),
+    ).toHaveLength(3);
   });
 
   it("normalizes pinned routes before rendering them", () => {
@@ -1356,10 +1414,12 @@ describe("routeEdgePreview", () => {
     ];
     expect(route?.points[0]).toEqual(snapped[0]);
     expect(route?.points.at(-1)).toEqual(snapped.at(-1));
-    expect(route?.points.slice(0, -1).every((point, index) => {
-      const next = route.points[index + 1]!;
-      return point.x === next.x || point.y === next.y;
-    })).toBe(true);
+    expect(
+      route?.points.slice(0, -1).every((point, index) => {
+        const next = route.points[index + 1]!;
+        return point.x === next.x || point.y === next.y;
+      }),
+    ).toBe(true);
     expectTerminalLegOutward(
       route!.points,
       route!.points[0]!,
@@ -1376,13 +1436,23 @@ describe("routeEdgePreview", () => {
 
   it("preserves a manual endpoint already on the icon perimeter and reanchors it only after movement", () => {
     const doc = createEmptyDocument("manual-endpoint-stability");
-    doc.resources = [routingResource("source", "cloud-agnostic.server", "Source"), routingResource("target", "cloud-agnostic.server", "Target")];
+    doc.resources = [
+      routingResource("source", "cloud-agnostic.server", "Source"),
+      routingResource("target", "cloud-agnostic.server", "Target"),
+    ];
     doc.edges = [{ id: "connection", source: "source", target: "target", style: "solid" }];
-    const points = [{ x: 68, y: 46 }, { x: 220, y: 46 }];
+    const points = [
+      { x: 68, y: 46 },
+      { x: 220, y: 46 },
+    ];
     doc.views[0]!.routes.connection = { pin: true, mode: "manual", points };
     const layout: LayoutResult = {
       nodes: [routingNode("source", 20, 20, 80), routingNode("target", 220, 22, 80)],
-      groups: [], edges: [], width: 340, height: 160, symmetries: [],
+      groups: [],
+      edges: [],
+      width: 340,
+      height: 160,
+      symmetries: [],
     };
     expect(routeEdges(doc, layout)[0]!.points).toEqual(points);
     const moved = { ...layout, nodes: [routingNode("source", 36, 28, 80), layout.nodes[1]!] };
@@ -1391,50 +1461,48 @@ describe("routeEdgePreview", () => {
     expect(movedPoints.at(-1)).toEqual(points.at(-1));
   });
 
-  it.each(["n", "e", "s", "w"] as const)(
-    "leaves and approaches every terminal face outward (%s)",
-    (side) => {
-      const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
-      const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
-      const source = portPoint(sourceIcon, side, 0.5);
-      const target = portPoint(targetIcon, side, 0.5);
-      const inward = (point: { x: number; y: number }) => {
-        switch (side) {
-          case "n": return { x: point.x, y: point.y + 32 };
-          case "e": return { x: point.x - 32, y: point.y };
-          case "s": return { x: point.x, y: point.y - 32 };
-          case "w": return { x: point.x + 32, y: point.y };
-        }
-      };
-      const route = anchorRouteEndpoints(
-        [source, inward(source), inward(target), target],
-        sourceIcon,
-        targetIcon,
-      );
-      expect(route[0]).toEqual(source);
-      expect(route.at(-1)).toEqual(target);
-      expectTerminalLegOutward(route, source, side, true);
-      expectTerminalLegOutward(route, target, side, false);
-      expectNoImmediateReversals(route);
-      expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
-      expect(route.slice(0, -1).every((point, index) => {
+  it.each(["n", "e", "s", "w"] as const)("leaves and approaches every terminal face outward (%s)", (side) => {
+    const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
+    const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
+    const source = portPoint(sourceIcon, side, 0.5);
+    const target = portPoint(targetIcon, side, 0.5);
+    const inward = (point: { x: number; y: number }) => {
+      switch (side) {
+        case "n":
+          return { x: point.x, y: point.y + 32 };
+        case "e":
+          return { x: point.x - 32, y: point.y };
+        case "s":
+          return { x: point.x, y: point.y - 32 };
+        case "w":
+          return { x: point.x + 32, y: point.y };
+      }
+    };
+    const route = anchorRouteEndpoints([source, inward(source), inward(target), target], sourceIcon, targetIcon);
+    expect(route[0]).toEqual(source);
+    expect(route.at(-1)).toEqual(target);
+    expectTerminalLegOutward(route, source, side, true);
+    expectTerminalLegOutward(route, target, side, false);
+    expectNoImmediateReversals(route);
+    expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
+    expect(
+      route.slice(0, -1).every((point, index) => {
         const next = route[index + 1]!;
         return point.x === next.x || point.y === next.y;
-      })).toBe(true);
-    },
-  );
+      }),
+    ).toBe(true);
+  });
 
   it("repairs a west terminal that approaches from the inside with a visible stem", () => {
     const sourceIcon = { x: 100, y: 100, w: 40, h: 40 };
     const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
     const source = portPoint(sourceIcon, "w", 0.5);
     const target = portPoint(targetIcon, "e", 0.5);
-    const route = anchorRouteEndpoints([
-      source,
-      { x: source.x + 48, y: source.y },
-      { x: target.x + 32, y: target.y },
-      target,
-    ], sourceIcon, targetIcon);
+    const route = anchorRouteEndpoints(
+      [source, { x: source.x + 48, y: source.y }, { x: target.x + 32, y: target.y }, target],
+      sourceIcon,
+      targetIcon,
+    );
 
     expectTerminalLegOutward(route, source, "w", true);
     expect(route[1]!.x).toBe(source.x - 16);
@@ -1442,10 +1510,12 @@ describe("routeEdgePreview", () => {
     expectTerminalLegOutward(route, target, "e", false);
     expectNoImmediateReversals(route);
     expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
-    expect(route.slice(0, -1).every((point, index) => {
-      const next = route[index + 1]!;
-      return point.x === next.x || point.y === next.y;
-    })).toBe(true);
+    expect(
+      route.slice(0, -1).every((point, index) => {
+        const next = route[index + 1]!;
+        return point.x === next.x || point.y === next.y;
+      }),
+    ).toBe(true);
   });
 
   it("reattaches detached endpoints while keeping a valid perimeter attachment exact", () => {
@@ -1453,12 +1523,11 @@ describe("routeEdgePreview", () => {
     const targetIcon = { x: 240, y: 100, w: 40, h: 40 };
     const source = portPoint(sourceIcon, "e", 0.25);
     const target = portPoint(targetIcon, "w", 0.75);
-    const route = anchorRouteEndpoints([
-      { x: source.x + 8, y: source.y },
-      { x: 180, y: source.y },
-      { x: 220, y: target.y },
-      target,
-    ], sourceIcon, targetIcon);
+    const route = anchorRouteEndpoints(
+      [{ x: source.x + 8, y: source.y }, { x: 180, y: source.y }, { x: 220, y: target.y }, target],
+      sourceIcon,
+      targetIcon,
+    );
     expect(route[0]).toEqual(source);
     expect(route.at(-1)).toEqual(target);
     expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
@@ -1474,17 +1543,13 @@ describe("routeEdgePreview", () => {
         const target = portPoint(targetIcon, targetSide, 0.5);
         for (let x = 60; x <= 300; x += 40) {
           for (let y = 60; y <= 280; y += 40) {
-            const route = anchorRouteEndpoints(
-              [source, { x, y }, target],
-              sourceIcon,
-              targetIcon,
-            );
+            const route = anchorRouteEndpoints([source, { x, y }, target], sourceIcon, targetIcon);
             expect(anchorRouteEndpoints(route, sourceIcon, targetIcon)).toEqual(route);
             expectTerminalLegOutward(route, source, sourceSide, true);
             expectTerminalLegOutward(route, target, targetSide, false);
-            expect(reversalCount(route)).toBeLessThanOrEqual(reversalCount(
-              normalizeOrthogonalRoute([source, { x, y }, target]),
-            ));
+            expect(reversalCount(route)).toBeLessThanOrEqual(
+              reversalCount(normalizeOrthogonalRoute([source, { x, y }, target])),
+            );
           }
         }
       }
@@ -1527,14 +1592,8 @@ function reversalCount(route: Array<{ x: number; y: number }>): number {
     const before = route[index - 1]!;
     const current = route[index]!;
     const after = route[index + 1]!;
-    if (
-      before.y === current.y && current.y === after.y &&
-      (current.x - before.x) * (after.x - current.x) < 0
-    ) count++;
-    if (
-      before.x === current.x && current.x === after.x &&
-      (current.y - before.y) * (after.y - current.y) < 0
-    ) count++;
+    if (before.y === current.y && current.y === after.y && (current.x - before.x) * (after.x - current.x) < 0) count++;
+    if (before.x === current.x && current.x === after.x && (current.y - before.y) * (after.y - current.y) < 0) count++;
   }
   return count;
 }
@@ -1581,16 +1640,8 @@ function gatewayRoutingRegressionLayout(movedGateway: boolean): {
   ];
 
   const nodes = movedGateway
-    ? [
-        routingNode("identity", 60, 100, 126),
-        routingNode("cdn", 60, 300, 92),
-        routingNode("gateway", 340, 40, 92),
-      ]
-    : [
-        routingNode("identity", 60, 80, 126),
-        routingNode("cdn", 60, 260, 92),
-        routingNode("gateway", 280, 170, 92),
-      ];
+    ? [routingNode("identity", 60, 100, 126), routingNode("cdn", 60, 300, 92), routingNode("gateway", 340, 40, 92)]
+    : [routingNode("identity", 60, 80, 126), routingNode("cdn", 60, 260, 92), routingNode("gateway", 280, 170, 92)];
   return {
     doc,
     layout: { nodes, groups: [], edges: [], width: 560, height: 520, symmetries: [] },
@@ -1651,22 +1702,19 @@ function segmentIntersects(
   rect: { x: number; y: number; w: number; h: number },
 ) {
   if (a.x === b.x) {
-    return a.x >= rect.x && a.x <= rect.x + rect.w
-      && Math.max(a.y, b.y) >= rect.y
-      && Math.min(a.y, b.y) <= rect.y + rect.h;
+    return (
+      a.x >= rect.x && a.x <= rect.x + rect.w && Math.max(a.y, b.y) >= rect.y && Math.min(a.y, b.y) <= rect.y + rect.h
+    );
   }
   if (a.y === b.y) {
-    return a.y >= rect.y && a.y <= rect.y + rect.h
-      && Math.max(a.x, b.x) >= rect.x
-      && Math.min(a.x, b.x) <= rect.x + rect.w;
+    return (
+      a.y >= rect.y && a.y <= rect.y + rect.h && Math.max(a.x, b.x) >= rect.x && Math.min(a.x, b.x) <= rect.x + rect.w
+    );
   }
   return true;
 }
 
-function sharedLength(
-  first: Array<{ x: number; y: number }>,
-  second: Array<{ x: number; y: number }>,
-) {
+function sharedLength(first: Array<{ x: number; y: number }>, second: Array<{ x: number; y: number }>) {
   let total = 0;
   for (let i = 0; i < first.length - 1; i++) {
     const a = first[i]!;
@@ -1675,11 +1723,15 @@ function sharedLength(
       const c = second[j]!;
       const d = second[j + 1]!;
       if (a.x === b.x && c.x === d.x && a.x === c.x) {
-        total += Math.max(0, Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y))
-          - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)));
+        total += Math.max(
+          0,
+          Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
+        );
       } else if (a.y === b.y && c.y === d.y && a.y === c.y) {
-        total += Math.max(0, Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x))
-          - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)));
+        total += Math.max(
+          0,
+          Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
+        );
       }
     }
   }
@@ -1693,38 +1745,21 @@ function segmentBoundaryOverlap(
   clearance: number,
 ) {
   if (a.x === b.x) {
-    const gap = Math.min(
-      Math.abs(a.x - bounds.x),
-      Math.abs(a.x - (bounds.x + bounds.w)),
-    );
+    const gap = Math.min(Math.abs(a.x - bounds.x), Math.abs(a.x - (bounds.x + bounds.w)));
     return gap < clearance
-      ? Math.max(
-          0,
-          Math.min(Math.max(a.y, b.y), bounds.y + bounds.h) -
-            Math.max(Math.min(a.y, b.y), bounds.y),
-        )
+      ? Math.max(0, Math.min(Math.max(a.y, b.y), bounds.y + bounds.h) - Math.max(Math.min(a.y, b.y), bounds.y))
       : 0;
   }
   if (a.y === b.y) {
-    const gap = Math.min(
-      Math.abs(a.y - bounds.y),
-      Math.abs(a.y - (bounds.y + bounds.h)),
-    );
+    const gap = Math.min(Math.abs(a.y - bounds.y), Math.abs(a.y - (bounds.y + bounds.h)));
     return gap < clearance
-      ? Math.max(
-          0,
-          Math.min(Math.max(a.x, b.x), bounds.x + bounds.w) -
-            Math.max(Math.min(a.x, b.x), bounds.x),
-        )
+      ? Math.max(0, Math.min(Math.max(a.x, b.x), bounds.x + bounds.w) - Math.max(Math.min(a.x, b.x), bounds.x))
       : 0;
   }
   return 0;
 }
 
-function distanceToPath(
-  point: { x: number; y: number },
-  path: Array<{ x: number; y: number }>,
-) {
+function distanceToPath(point: { x: number; y: number }, path: Array<{ x: number; y: number }>) {
   let distance = Infinity;
   for (let index = 0; index < path.length - 1; index++) {
     const a = path[index]!;
@@ -1732,13 +1767,9 @@ function distanceToPath(
     const dx = b.x - a.x;
     const dy = b.y - a.y;
     const lengthSquared = dx * dx + dy * dy;
-    const t = lengthSquared === 0
-      ? 0
-      : Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
-    distance = Math.min(
-      distance,
-      Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t)),
-    );
+    const t =
+      lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
+    distance = Math.min(distance, Math.hypot(point.x - (a.x + dx * t), point.y - (a.y + dy * t)));
   }
   return distance;
 }
@@ -1767,10 +1798,7 @@ function rectsOverlapForTest(
   );
 }
 
-function pathsCross(
-  first: Array<{ x: number; y: number }>,
-  second: Array<{ x: number; y: number }>,
-) {
+function pathsCross(first: Array<{ x: number; y: number }>, second: Array<{ x: number; y: number }>) {
   for (let i = 0; i < first.length - 1; i++) {
     for (let j = 0; j < second.length - 1; j++) {
       if (segmentsCross(first[i]!, first[i + 1]!, second[j]!, second[j + 1]!)) {
@@ -1794,10 +1822,12 @@ function segmentsCross(
   const verticalB = firstVertical ? b : d;
   const horizontalA = firstVertical ? c : a;
   const horizontalB = firstVertical ? d : b;
-  return horizontalA.y > Math.min(verticalA.y, verticalB.y) &&
+  return (
+    horizontalA.y > Math.min(verticalA.y, verticalB.y) &&
     horizontalA.y < Math.max(verticalA.y, verticalB.y) &&
     verticalA.x > Math.min(horizontalA.x, horizontalB.x) &&
-    verticalA.x < Math.max(horizontalA.x, horizontalB.x);
+    verticalA.x < Math.max(horizontalA.x, horizontalB.x)
+  );
 }
 
 function pathManhattanLength(points: Array<{ x: number; y: number }>) {

@@ -35,7 +35,9 @@ export class ByteBudgetLruCache<Key, Value> {
     const rawEstimate = this.estimateBytes(key, value);
     const estimatedBytes = Number.isFinite(rawEstimate)
       ? Math.max(0, Math.ceil(rawEstimate))
-      : rawEstimate > 0 ? Number.POSITIVE_INFINITY : this.maxBytes + 1;
+      : rawEstimate > 0
+        ? Number.POSITIVE_INFINITY
+        : this.maxBytes + 1;
     this.delete(key);
 
     // Do not evict useful entries to make room for a value that can never fit.

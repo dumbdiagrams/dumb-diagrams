@@ -25,12 +25,7 @@ export function NoteComposer({
 
       <div className="property-section note-composer-section">
         <label>Choose a note type</label>
-        <NoteStyleOptions
-          selectedStyle={style}
-          onStyleChange={onStyleChange}
-          showPreviews
-          includeText={false}
-        />
+        <NoteStyleOptions selectedStyle={style} onStyleChange={onStyleChange} showPreviews includeText={false} />
       </div>
 
       <div className="note-composer-footer">
@@ -144,7 +139,9 @@ export function TextFormattingControls({
           onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
         >
           {[12, 14, 16, 20, 24, 32].map((size) => (
-            <option key={size} value={size}>{size}px</option>
+            <option key={size} value={size}>
+              {size}px
+            </option>
           ))}
         </select>
       </div>
@@ -179,9 +176,7 @@ export function NoteStyleOptions({
   showPreviews?: boolean;
   includeText?: boolean;
 }) {
-  const styles = includeText
-    ? ANNOTATION_STYLES
-    : ANNOTATION_STYLES.filter((candidate) => candidate.id !== "text");
+  const styles = includeText ? ANNOTATION_STYLES : ANNOTATION_STYLES.filter((candidate) => candidate.id !== "text");
 
   return (
     <div className={`note-style-grid${showPreviews ? " note-style-grid-with-previews" : ""}`}>
@@ -203,13 +198,7 @@ export function NoteStyleOptions({
   );
 }
 
-function NoteStylePreview({
-  style,
-  className = "",
-}: {
-  style: AnnotationStyle;
-  className?: string;
-}) {
+function NoteStylePreview({ style, className = "" }: { style: AnnotationStyle; className?: string }) {
   return (
     <span
       className={`note-style-preview note-style-preview-${style}${className ? ` ${className}` : ""}`}
@@ -246,9 +235,18 @@ function NoteStylePreview({
       )}
       {style === "checklist" && (
         <>
-          <span className="note-preview-check-row"><i>✓</i><b /></span>
-          <span className="note-preview-check-row"><i /><b /></span>
-          <span className="note-preview-check-row"><i /><b /></span>
+          <span className="note-preview-check-row">
+            <i>✓</i>
+            <b />
+          </span>
+          <span className="note-preview-check-row">
+            <i />
+            <b />
+          </span>
+          <span className="note-preview-check-row">
+            <i />
+            <b />
+          </span>
         </>
       )}
     </span>

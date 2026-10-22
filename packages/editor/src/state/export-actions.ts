@@ -4,18 +4,7 @@ import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
 import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 
-export type ExportFormat =
-  | "png"
-  | "jpeg"
-  | "webp"
-  | "gif"
-  | "svg"
-  | "pdf"
-  | "html"
-  | "xml"
-  | "url"
-  | "json"
-  | "dgm";
+export type ExportFormat = "png" | "jpeg" | "webp" | "gif" | "svg" | "pdf" | "html" | "xml" | "url" | "json" | "dgm";
 
 export type ExportScope = "all" | "selection";
 export type ExportSize = "diagram" | "selection" | "custom";
@@ -98,7 +87,7 @@ export function decodeDiagramUrlPayload(payload: string): DiagramUrlDecodeResult
     return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
   }
   try {
-    const padded = payload.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - payload.length % 4) % 4);
+    const padded = payload.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - (payload.length % 4)) % 4);
     const binary = atob(padded);
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     if (bytes.byteLength > DIAGRAM_LIMITS.sourceBytes) {
@@ -220,9 +209,10 @@ export function isExportFormatSupported(value: ExportFormat): boolean {
 }
 
 export function sanitizeFilename(value: string): string {
-  const clean = normalizeSingleLineText(value)
-    .replace(/[^\p{L}\p{N}_.-]+/gu, "-")
-    .replace(/^[._-]+|[._-]+$/g, "") || "diagram";
+  const clean =
+    normalizeSingleLineText(value)
+      .replace(/[^\p{L}\p{N}_.-]+/gu, "-")
+      .replace(/^[._-]+|[._-]+$/g, "") || "diagram";
   return Array.from(clean).slice(0, DIAGRAM_LIMITS.filenameCharacters).join("");
 }
 
@@ -238,7 +228,12 @@ function bytesBlobResult(bytes: Uint8Array, type: string, formatLabel: string): 
   }).andThen((buffer) => blobResult([buffer], type, formatLabel));
 }
 
-function downloadPartsResult(parts: BlobPart[], type: string, formatLabel: string, name: string): Result<void, ExportError> {
+function downloadPartsResult(
+  parts: BlobPart[],
+  type: string,
+  formatLabel: string,
+  name: string,
+): Result<void, ExportError> {
   return blobResult(parts, type, formatLabel).andThen((blob) => downloadBlobResult(blob, name));
 }
 
@@ -362,11 +357,16 @@ export function getExportBounds(
 
 function exportAnnotationDimensions(style: string | undefined): { w: number; h: number } {
   switch (style) {
-    case "text": return { w: 240, h: 48 };
-    case "code": return { w: 300, h: 160 };
-    case "callout": return { w: 280, h: 104 };
-    case "checklist": return { w: 260, h: 152 };
-    default: return { w: 220, h: 96 };
+    case "text":
+      return { w: 240, h: 48 };
+    case "code":
+      return { w: 300, h: 160 };
+    case "callout":
+      return { w: 280, h: 104 };
+    case "checklist":
+      return { w: 260, h: 152 };
+    default:
+      return { w: 220, h: 96 };
   }
 }
 
@@ -403,15 +403,14 @@ export function prepareExportSvg(
   }
 
   const bounds = getExportBounds(doc, layout, selection, options.scope);
-  const zoom = options.size === "custom"
-    ? 1
-    : Math.max(25, Math.min(400, Number.isFinite(options.zoom) ? options.zoom : 100)) / 100;
-  const outputWidth = options.size === "custom"
-    ? Math.max(1, Math.round(options.width))
-    : Math.max(1, Math.round(bounds.w * zoom));
-  const outputHeight = options.size === "custom"
-    ? Math.max(1, Math.round(options.height))
-    : Math.max(1, Math.round(bounds.h * zoom));
+  const zoom =
+    options.size === "custom"
+      ? 1
+      : Math.max(25, Math.min(400, Number.isFinite(options.zoom) ? options.zoom : 100)) / 100;
+  const outputWidth =
+    options.size === "custom" ? Math.max(1, Math.round(options.width)) : Math.max(1, Math.round(bounds.w * zoom));
+  const outputHeight =
+    options.size === "custom" ? Math.max(1, Math.round(options.height)) : Math.max(1, Math.round(bounds.h * zoom));
   root.setAttribute("width", String(outputWidth));
   root.setAttribute("height", String(outputHeight));
   root.setAttribute("viewBox", `${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`);
@@ -433,7 +432,9 @@ export function prepareExportSvg(
     for (const path of [...root.querySelectorAll('path[fill="#163964"]')]) {
       path.setAttribute("fill", DARK_EXPORT_EDGE);
     }
-    for (const circle of [...root.querySelectorAll('circle[fill="#163964"]:not(.edge-badge-circle):not(.group-badge-circle)')]) {
+    for (const circle of [
+      ...root.querySelectorAll('circle[fill="#163964"]:not(.edge-badge-circle):not(.group-badge-circle)'),
+    ]) {
       circle.setAttribute("fill", DARK_EXPORT_EDGE);
     }
     for (const text of [...root.querySelectorAll("text")]) {
@@ -534,10 +535,7 @@ interface SelectionEntities {
   annotations: Set<string>;
 }
 
-function collectSelectionEntities(
-  doc: DiagramDocument,
-  selection: ExportSelectionItem[],
-): SelectionEntities {
+function collectSelectionEntities(doc: DiagramDocument, selection: ExportSelectionItem[]): SelectionEntities {
   const groups = new Set<string>();
   const resources = new Set<string>();
   const edges = new Set<string>();
@@ -636,28 +634,33 @@ async function exportDiagramFileResult(args: {
       : downloadPartsResult([xml.value], "application/xml", "XML", filename).map(receipt);
   }
   if (options.format === "url") {
-    return createDiagramUrlResult(source).andThen((diagramUrl) => downloadPartsResult([diagramUrl], "text/plain", "diagram URL", filename)).map(receipt);
+    return createDiagramUrlResult(source)
+      .andThen((diagramUrl) => downloadPartsResult([diagramUrl], "text/plain", "diagram URL", filename))
+      .map(receipt);
   }
 
-  const portableSvgError = (cause: unknown) => exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
-  const baseSvg = await ResultAsync.fromPromise(Promise.resolve().then(() => getPortableSvg()), portableSvgError)
-    .andThen((result) => result.mapErr(portableSvgError));
+  const portableSvgError = (cause: unknown) =>
+    exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
+  const baseSvg = await ResultAsync.fromPromise(
+    Promise.resolve().then(() => getPortableSvg()),
+    portableSvgError,
+  ).andThen((result) => result.mapErr(portableSvgError));
   if (baseSvg.isErr()) return err(baseSvg.error);
-  const svg = captureExport(
-    "portable-svg-preparation",
-    "The portable SVG could not be prepared.",
-    () => prepareExportSvg(baseSvg.value, doc, layout, selection, options, source),
+  const svg = captureExport("portable-svg-preparation", "The portable SVG could not be prepared.", () =>
+    prepareExportSvg(baseSvg.value, doc, layout, selection, options, source),
   );
   if (svg.isErr()) return err(svg.error);
   if (options.format === "svg") {
     return downloadPartsResult([svg.value], "image/svg+xml", "SVG", filename).map(receipt);
   }
   if (options.format === "html") {
-    const html = captureExport("encoding", "Could not encode the HTML export.", () => toStandaloneHtml(
+    const html = captureExport("encoding", "Could not encode the HTML export.", () =>
+      toStandaloneHtml(
         title,
         svg.value,
         supportsExportSourceOption(options.format) && options.includeSource ? source : undefined,
-      ));
+      ),
+    );
     return html.isErr()
       ? err(html.error)
       : downloadPartsResult([html.value], "text/html", "HTML", filename).map(receipt);
@@ -666,27 +669,28 @@ async function exportDiagramFileResult(args: {
   const canvas = await rasterizeSvg(svg.value, options);
   if (canvas.isErr()) return err(canvas.error);
   if (options.format === "pdf") {
-    const pdf = captureExport("encoding", "Could not encode the PDF export.", () => makeImagePdf(canvas.value, options.dpi));
+    const pdf = captureExport("encoding", "Could not encode the PDF export.", () =>
+      makeImagePdf(canvas.value, options.dpi),
+    );
     if (pdf.isErr()) return err(pdf.error);
     const blob = bytesBlobResult(pdf.value, "application/pdf", "PDF");
-    return blob.isErr()
-      ? err(blob.error)
-      : downloadBlobResult(blob.value, filename).map(receipt);
+    return blob.isErr() ? err(blob.error) : downloadBlobResult(blob.value, filename).map(receipt);
   }
   if (options.format === "gif") {
     const gif = encodeGif(canvas.value);
     if (gif.isErr()) return err(gif.error);
     const blob = bytesBlobResult(gif.value, "image/gif", "GIF");
-    return blob.isErr()
-      ? err(blob.error)
-      : downloadBlobResult(blob.value, filename).map(receipt);
+    return blob.isErr() ? err(blob.error) : downloadBlobResult(blob.value, filename).map(receipt);
   }
   const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
   const blob = await canvasToBlob(canvas.value, mime, options.format === "jpeg" ? 0.92 : 0.95);
-  return blob.andThen((encoded) => {
-    if (encoded.type !== mime) return err(exportError("encoding", `The browser could not encode the ${format.label} export.`));
-    return downloadBlobResult(encoded, filename);
-  }).map(receipt);
+  return blob
+    .andThen((encoded) => {
+      if (encoded.type !== mime)
+        return err(exportError("encoding", `The browser could not encode the ${format.label} export.`));
+      return downloadBlobResult(encoded, filename);
+    })
+    .map(receipt);
 }
 
 async function rasterizeSvg(svg: string, options: ExportOptions): Promise<Result<HTMLCanvasElement, ExportError>> {
@@ -700,17 +704,25 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<Result
   const image = captureExport("rasterization", "The exported SVG image could not be loaded.", () => new Image());
   if (image.isErr()) return err(image.error);
   const sourceBlob = blobResult([svg], "image/svg+xml", "SVG rasterization");
-  if (sourceBlob.isErr()) return err(exportError("rasterization", "The exported SVG could not be encoded for rasterization.", sourceBlob.error));
-  const objectUrl = captureExport("rasterization", "The exported SVG image URL could not be created.", () => URL.createObjectURL(sourceBlob.value));
+  if (sourceBlob.isErr())
+    return err(
+      exportError("rasterization", "The exported SVG could not be encoded for rasterization.", sourceBlob.error),
+    );
+  const objectUrl = captureExport("rasterization", "The exported SVG image URL could not be created.", () =>
+    URL.createObjectURL(sourceBlob.value),
+  );
   if (objectUrl.isErr()) return err(objectUrl.error);
   const url = objectUrl.value;
   try {
     const loaded = await ResultAsync.fromPromise(
-      Promise.resolve().then(() => new Promise<void>((resolve, reject) => {
-        image.value.onload = () => resolve();
-        image.value.onerror = () => reject(new Error("Unable to rasterize SVG"));
-        image.value.src = url;
-      })),
+      Promise.resolve().then(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            image.value.onload = () => resolve();
+            image.value.onerror = () => reject(new Error("Unable to rasterize SVG"));
+            image.value.src = url;
+          }),
+      ),
       (cause) => exportError("rasterization", "The exported SVG image could not be loaded.", cause),
     );
     if (loaded.isErr()) return err(loaded.error);
@@ -720,7 +732,9 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<Result
     const pixelHeight = Math.round(logicalHeight * scale);
     const dimensions = validateRasterDimensions(pixelWidth, pixelHeight);
     if (!dimensions.ok) return err(exportError("raster-dimensions", dimensions.message));
-    const canvasResult = captureExport("rasterization", "The exported canvas could not be created.", () => document.createElement("canvas"));
+    const canvasResult = captureExport("rasterization", "The exported canvas could not be created.", () =>
+      document.createElement("canvas"),
+    );
     if (canvasResult.isErr()) return err(canvasResult.error);
     const canvas = canvasResult.value;
     const sized = captureExport("rasterization", "The exported canvas could not be sized.", () => {
@@ -729,7 +743,9 @@ async function rasterizeSvg(svg: string, options: ExportOptions): Promise<Result
       return canvas;
     });
     if (sized.isErr()) return err(sized.error);
-    const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () => canvas.getContext("2d"));
+    const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () =>
+      canvas.getContext("2d"),
+    );
     if (contextResult.isErr()) return err(contextResult.error);
     const context = contextResult.value;
     if (!context) return err(exportError("canvas-context", "Your browser could not create a 2D canvas context."));
@@ -774,16 +790,23 @@ export function validateRasterDimensions(
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): ResultAsync<Blob, ExportError> {
-  return ResultAsync.fromPromise(new Promise<Blob>((resolve, reject) => {
-    try {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error(`The browser could not encode the ${mime} export.`));
-      }, mime, quality);
-    } catch (cause) {
-      reject(cause);
-    }
-  }), (cause) => exportError("encoding", `The browser could not encode the ${mime} export.`, cause));
+  return ResultAsync.fromPromise(
+    new Promise<Blob>((resolve, reject) => {
+      try {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error(`The browser could not encode the ${mime} export.`));
+          },
+          mime,
+          quality,
+        );
+      } catch (cause) {
+        reject(cause);
+      }
+    }),
+    (cause) => exportError("encoding", `The browser could not encode the ${mime} export.`, cause),
+  );
 }
 
 function toDiagramXml(doc: DiagramDocument, source: string): string {
@@ -817,11 +840,17 @@ function writeU16(target: number[], value: number): void {
 }
 
 function encodeGif(canvas: HTMLCanvasElement): Result<Uint8Array, ExportError> {
-  const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () => canvas.getContext("2d"));
+  const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () =>
+    canvas.getContext("2d"),
+  );
   if (contextResult.isErr()) return err(contextResult.error);
   const context = contextResult.value;
   if (!context) return err(exportError("canvas-context", "Your browser could not create a 2D canvas context."));
-  const pixels = captureExport("encoding", "Could not encode the GIF export.", () => context.getImageData(0, 0, canvas.width, canvas.height).data);
+  const pixels = captureExport(
+    "encoding",
+    "Could not encode the GIF export.",
+    () => context.getImageData(0, 0, canvas.width, canvas.height).data,
+  );
   if (pixels.isErr()) return err(pixels.error);
   const bytes: number[] = [];
   for (const char of "GIF89a") bytes.push(char.charCodeAt(0));
@@ -895,7 +924,7 @@ function lzwEncode(values: Uint8Array, minimumCodeSize: number): number[] {
     emit(prefix);
     if (nextCode < 4096) {
       dictionary.set(key, nextCode++);
-      if (nextCode === (1 << codeSize) && codeSize < 12) codeSize++;
+      if (nextCode === 1 << codeSize && codeSize < 12) codeSize++;
     } else {
       emit(clear);
       reset();
@@ -915,13 +944,17 @@ function makeImagePdf(canvas: HTMLCanvasElement, dpi: number): Uint8Array {
   const imageBytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   const pageWidth = (canvas.width * 72) / Math.max(1, dpi);
   const pageHeight = (canvas.height * 72) / Math.max(1, dpi);
-  const imageObject = ascii(`<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`);
+  const imageObject = ascii(
+    `<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`,
+  );
   const imageStream = concatBytes(imageObject, imageBytes, ascii("\nendstream"));
   const content = ascii(`q\n${pageWidth} 0 0 ${pageHeight} 0 0 cm\n/Im0 Do\nQ\n`);
   const objects = [
     ascii("<< /Type /Catalog /Pages 2 0 R >>"),
     ascii("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
-    ascii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`),
+    ascii(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`,
+    ),
     imageStream,
     concatBytes(ascii(`<< /Length ${content.length} >>\nstream\n`), content, ascii("endstream")),
   ];

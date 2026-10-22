@@ -79,20 +79,15 @@ export function ExportDialog({
     setGrid(false);
   }, [canvasHeight, canvasWidth, initialFormat, open, selection.length]);
 
-  const bounds = useMemo(
-    () => getExportBounds(doc, layout, selection, scope),
-    [doc, layout, scope, selection],
-  );
-  const automaticWidth = Math.max(1, Math.round(bounds.w * zoom / 100));
-  const automaticHeight = Math.max(1, Math.round(bounds.h * zoom / 100));
+  const bounds = useMemo(() => getExportBounds(doc, layout, selection, scope), [doc, layout, scope, selection]);
+  const automaticWidth = Math.max(1, Math.round((bounds.w * zoom) / 100));
+  const automaticHeight = Math.max(1, Math.round((bounds.h * zoom) / 100));
   const width = size === "custom" ? customWidth : automaticWidth;
   const height = size === "custom" ? customHeight : automaticHeight;
   const formatDetails = exportFormat(format);
   const formatCapabilities = exportFormatCapabilities(format);
   const rasterFormat = isRasterExportFormat(format);
-  const rasterLogicalAxisLimit = Math.max(1, Math.floor(
-    RASTER_EXPORT_LIMITS.maxAxisPixels / Math.max(0.25, dpi / 96),
-  ));
+  const rasterLogicalAxisLimit = Math.max(1, Math.floor(RASTER_EXPORT_LIMITS.maxAxisPixels / Math.max(0.25, dpi / 96)));
 
   const setNumeric = (setter: (value: number) => void, value: string, minimum: number) => {
     const parsed = Number(value);
@@ -175,143 +170,220 @@ export function ExportDialog({
           </label>
         </section>
 
-        {formatCapabilities.visual && <section className="export-dialog-section">
-          <div className="export-section-heading">
-            <div>
-              <h3>What to include</h3>
-              <p>Moving items updates the live artboard; these bounds are filled from that current layout.</p>
+        {formatCapabilities.visual && (
+          <section className="export-dialog-section">
+            <div className="export-section-heading">
+              <div>
+                <h3>What to include</h3>
+                <p>Moving items updates the live artboard; these bounds are filled from that current layout.</p>
+              </div>
             </div>
-          </div>
-          <div className="export-scope-grid">
-            <button
-              type="button"
-              className={`export-choice-card ${scope === "all" ? "selected" : ""}`}
-              onClick={() => {
-                setScope("all");
-                if (size !== "custom") setSize("diagram");
-              }}
-            >
-              <span className="export-choice-kicker">Canvas</span>
-              <strong>Entire diagram</strong>
-              <span>{Math.ceil(canvasWidth)} × {Math.ceil(canvasHeight)} px</span>
-            </button>
-            <button
-              type="button"
-              className={`export-choice-card ${scope === "selection" ? "selected" : ""}`}
-              disabled={!hasSelection}
-              onClick={() => {
-                setScope("selection");
-                if (size !== "custom") setSize("selection");
-              }}
-            >
-              <span className="export-choice-kicker">Focused view</span>
-              <strong>Selection only</strong>
-              <span>{hasSelection ? `${selection.length} item${selection.length === 1 ? "" : "s"} selected` : "Select items on the canvas first"}</span>
-            </button>
-          </div>
-        </section>}
+            <div className="export-scope-grid">
+              <button
+                type="button"
+                className={`export-choice-card ${scope === "all" ? "selected" : ""}`}
+                onClick={() => {
+                  setScope("all");
+                  if (size !== "custom") setSize("diagram");
+                }}
+              >
+                <span className="export-choice-kicker">Canvas</span>
+                <strong>Entire diagram</strong>
+                <span>
+                  {Math.ceil(canvasWidth)} × {Math.ceil(canvasHeight)} px
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`export-choice-card ${scope === "selection" ? "selected" : ""}`}
+                disabled={!hasSelection}
+                onClick={() => {
+                  setScope("selection");
+                  if (size !== "custom") setSize("selection");
+                }}
+              >
+                <span className="export-choice-kicker">Focused view</span>
+                <strong>Selection only</strong>
+                <span>
+                  {hasSelection
+                    ? `${selection.length} item${selection.length === 1 ? "" : "s"} selected`
+                    : "Select items on the canvas first"}
+                </span>
+              </button>
+            </div>
+          </section>
+        )}
 
-        {formatCapabilities.visual && <section className="export-dialog-section export-appearance-section">
-          <div className="export-section-heading">
-            <div>
-              <h3>Appearance</h3>
-              <p>{formatCapabilities.visual ? "Make the exported canvas match the way you present it." : "Appearance is applied when this format supports a visual canvas."}</p>
+        {formatCapabilities.visual && (
+          <section className="export-dialog-section export-appearance-section">
+            <div className="export-section-heading">
+              <div>
+                <h3>Appearance</h3>
+                <p>
+                  {formatCapabilities.visual
+                    ? "Make the exported canvas match the way you present it."
+                    : "Appearance is applied when this format supports a visual canvas."}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="export-appearance-row">
-            <div className="export-segmented" role="group" aria-label="Appearance">
-              {(["light", "dark"] as const).map((candidate) => (
-                <button
-                  key={candidate}
-                  type="button"
-                  className={appearance === candidate ? "selected" : ""}
-                  onClick={() => setAppearance(candidate)}
-                >
-                  {candidate === "light" ? "Light" : "Dark"}
-                </button>
-              ))}
-            </div>
-            <label className="export-check-row">
-              <input
-                type="checkbox"
-                checked={transparentBackground}
-                onChange={(event) => setTransparentBackground(event.target.checked)}
-              />
-              <span>Transparent background</span>
-            </label>
-            {formatCapabilities.sourceOption && (
+            <div className="export-appearance-row">
+              <div className="export-segmented" role="group" aria-label="Appearance">
+                {(["light", "dark"] as const).map((candidate) => (
+                  <button
+                    key={candidate}
+                    type="button"
+                    className={appearance === candidate ? "selected" : ""}
+                    onClick={() => setAppearance(candidate)}
+                  >
+                    {candidate === "light" ? "Light" : "Dark"}
+                  </button>
+                ))}
+              </div>
               <label className="export-check-row">
                 <input
                   type="checkbox"
-                  checked={includeSource}
-                  onChange={(event) => setIncludeSource(event.target.checked)}
+                  checked={transparentBackground}
+                  onChange={(event) => setTransparentBackground(event.target.checked)}
                 />
-                <span>Include a copy of my diagram</span>
+                <span>Transparent background</span>
               </label>
-            )}
-          </div>
-        </section>}
+              {formatCapabilities.sourceOption && (
+                <label className="export-check-row">
+                  <input
+                    type="checkbox"
+                    checked={includeSource}
+                    onChange={(event) => setIncludeSource(event.target.checked)}
+                  />
+                  <span>Include a copy of my diagram</span>
+                </label>
+              )}
+            </div>
+          </section>
+        )}
 
-        {formatCapabilities.visual && <details className="export-advanced">
-          <summary>
-            <span>Advanced</span>
-            <span className="export-advanced-summary">{width} × {height}px · {dpi} dpi</span>
-          </summary>
-          <div className="export-advanced-grid">
-            <label className="export-input-label">
-              <span>Zoom</span>
-              <div className="export-input-with-suffix"><input type="number" min={25} max={400} value={zoom} onChange={(event) => setNumeric(setZoom, event.target.value, 25)} /><b>%</b></div>
-            </label>
-            <label className="export-input-label">
-              <span>Size</span>
-              <select
-                value={size}
-                onChange={(event) => {
-                  const next = event.target.value as ExportSize;
-                  setSize(next);
-                  if (next === "diagram") setScope("all");
-                  if (next === "selection" && hasSelection) setScope("selection");
-                }}
-              >
-                <option value="diagram">Entire diagram</option>
-                <option value="selection" disabled={!hasSelection}>Selection</option>
-                <option value="custom">Custom dimensions</option>
-              </select>
-            </label>
-            <label className="export-input-label">
-              <span>Width</span>
-              <div className="export-input-with-suffix"><input type="number" min={1} max={rasterFormat ? rasterLogicalAxisLimit : undefined} value={width} readOnly={size !== "custom"} onChange={(event) => { setSize("custom"); setNumeric(setCustomWidth, event.target.value, 1); }} /><b>px</b></div>
-            </label>
-            <label className="export-input-label">
-              <span>Height</span>
-              <div className="export-input-with-suffix"><input type="number" min={1} max={rasterFormat ? rasterLogicalAxisLimit : undefined} value={height} readOnly={size !== "custom"} onChange={(event) => { setSize("custom"); setNumeric(setCustomHeight, event.target.value, 1); }} /><b>px</b></div>
-            </label>
-            <label className="export-input-label">
-              <span>DPI</span>
-              <select value={dpi} onChange={(event) => setNumeric(setDpi, event.target.value, 36)}>
-                <option value={72}>72 dpi</option>
-                <option value={100}>100 dpi</option>
-                <option value={150}>150 dpi</option>
-                <option value={300}>300 dpi</option>
-              </select>
-            </label>
-            <label className="export-input-label">
-              <span>Border width</span>
-              <div className="export-input-with-suffix"><input type="number" min={0} value={borderWidth} onChange={(event) => setNumeric(setBorderWidth, event.target.value, 0)} /><b>px</b></div>
-            </label>
-          </div>
-          <div className="export-advanced-checks">
-            <label className="export-check-row"><input type="checkbox" checked={grid} onChange={(event) => setGrid(event.target.checked)} /><span>Grid</span></label>
-          </div>
-        </details>}
+        {formatCapabilities.visual && (
+          <details className="export-advanced">
+            <summary>
+              <span>Advanced</span>
+              <span className="export-advanced-summary">
+                {width} × {height}px · {dpi} dpi
+              </span>
+            </summary>
+            <div className="export-advanced-grid">
+              <label className="export-input-label">
+                <span>Zoom</span>
+                <div className="export-input-with-suffix">
+                  <input
+                    type="number"
+                    min={25}
+                    max={400}
+                    value={zoom}
+                    onChange={(event) => setNumeric(setZoom, event.target.value, 25)}
+                  />
+                  <b>%</b>
+                </div>
+              </label>
+              <label className="export-input-label">
+                <span>Size</span>
+                <select
+                  value={size}
+                  onChange={(event) => {
+                    const next = event.target.value as ExportSize;
+                    setSize(next);
+                    if (next === "diagram") setScope("all");
+                    if (next === "selection" && hasSelection) setScope("selection");
+                  }}
+                >
+                  <option value="diagram">Entire diagram</option>
+                  <option value="selection" disabled={!hasSelection}>
+                    Selection
+                  </option>
+                  <option value="custom">Custom dimensions</option>
+                </select>
+              </label>
+              <label className="export-input-label">
+                <span>Width</span>
+                <div className="export-input-with-suffix">
+                  <input
+                    type="number"
+                    min={1}
+                    max={rasterFormat ? rasterLogicalAxisLimit : undefined}
+                    value={width}
+                    readOnly={size !== "custom"}
+                    onChange={(event) => {
+                      setSize("custom");
+                      setNumeric(setCustomWidth, event.target.value, 1);
+                    }}
+                  />
+                  <b>px</b>
+                </div>
+              </label>
+              <label className="export-input-label">
+                <span>Height</span>
+                <div className="export-input-with-suffix">
+                  <input
+                    type="number"
+                    min={1}
+                    max={rasterFormat ? rasterLogicalAxisLimit : undefined}
+                    value={height}
+                    readOnly={size !== "custom"}
+                    onChange={(event) => {
+                      setSize("custom");
+                      setNumeric(setCustomHeight, event.target.value, 1);
+                    }}
+                  />
+                  <b>px</b>
+                </div>
+              </label>
+              <label className="export-input-label">
+                <span>DPI</span>
+                <select value={dpi} onChange={(event) => setNumeric(setDpi, event.target.value, 36)}>
+                  <option value={72}>72 dpi</option>
+                  <option value={100}>100 dpi</option>
+                  <option value={150}>150 dpi</option>
+                  <option value={300}>300 dpi</option>
+                </select>
+              </label>
+              <label className="export-input-label">
+                <span>Border width</span>
+                <div className="export-input-with-suffix">
+                  <input
+                    type="number"
+                    min={0}
+                    value={borderWidth}
+                    onChange={(event) => setNumeric(setBorderWidth, event.target.value, 0)}
+                  />
+                  <b>px</b>
+                </div>
+              </label>
+            </div>
+            <div className="export-advanced-checks">
+              <label className="export-check-row">
+                <input type="checkbox" checked={grid} onChange={(event) => setGrid(event.target.checked)} />
+                <span>Grid</span>
+              </label>
+            </div>
+          </details>
+        )}
 
         <div className="export-dialog-footer">
           <div className="export-dimension-note">
             <span className="export-status-dot" />
-            Auto-filled from {scope === "selection" ? "your selection" : "the full canvas"}: <strong>{width} × {height}px</strong>{rasterFormat && <> · raster limit {rasterLogicalAxisLimit}px/axis at {dpi} dpi</>}
+            Auto-filled from {scope === "selection" ? "your selection" : "the full canvas"}:{" "}
+            <strong>
+              {width} × {height}px
+            </strong>
+            {rasterFormat && (
+              <>
+                {" "}
+                · raster limit {rasterLogicalAxisLimit}px/axis at {dpi} dpi
+              </>
+            )}
           </div>
           <div className="modal-actions">
-            <button type="button" className="text-button" onClick={onClose} disabled={exporting}>Cancel</button>
+            <button type="button" className="text-button" onClick={onClose} disabled={exporting}>
+              Cancel
+            </button>
             <button type="submit" className="primary-button" disabled={exporting}>
               {exporting ? "Preparing…" : `Export ${formatDetails.label}`}
             </button>

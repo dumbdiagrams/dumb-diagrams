@@ -25,10 +25,7 @@ export function snapCoordinate(value: number, enabled: boolean): number {
   return enabled ? Math.round(value / GRID_SIZE) * GRID_SIZE : value;
 }
 
-export function snapPoint(
-  point: { x: number; y: number },
-  enabled: boolean,
-): { x: number; y: number } {
+export function snapPoint(point: { x: number; y: number }, enabled: boolean): { x: number; y: number } {
   return {
     x: snapCoordinate(point.x, enabled),
     y: snapCoordinate(point.y, enabled),
@@ -57,9 +54,7 @@ export function snapDragDelta(
   return {
     dx: xMatch?.delta ?? dx,
     dy: yMatch?.delta ?? dy,
-    guides: [xMatch?.guide, yMatch?.guide].filter(
-      (guide): guide is AlignmentGuide => Boolean(guide),
-    ),
+    guides: [xMatch?.guide, yMatch?.guide].filter((guide): guide is AlignmentGuide => Boolean(guide)),
   };
 }
 
@@ -104,21 +99,22 @@ function closestAlignment(
         delta,
         distance,
         priority: anchor.priority,
-        guide: axis === "x"
-          ? {
-              axis,
-              position: targetAnchor,
-              from: Math.min(translated.y, target.y),
-              to: Math.max(translated.y + translated.h, target.y + target.h),
-              anchor: anchor.name,
-            }
-          : {
-              axis,
-              position: targetAnchor,
-              from: Math.min(translated.x, target.x),
-              to: Math.max(translated.x + translated.w, target.x + target.w),
-              anchor: anchor.name,
-            },
+        guide:
+          axis === "x"
+            ? {
+                axis,
+                position: targetAnchor,
+                from: Math.min(translated.y, target.y),
+                to: Math.max(translated.y + translated.h, target.y + target.h),
+                anchor: anchor.name,
+              }
+            : {
+                axis,
+                position: targetAnchor,
+                from: Math.min(translated.x, target.x),
+                to: Math.max(translated.x + translated.w, target.x + target.w),
+                anchor: anchor.name,
+              },
       };
     }
   }
@@ -139,23 +135,22 @@ export function leftStagingInsertionPoint(
 ): { x: number; y: number } {
   const exclude = stagedRootIds(doc);
   const rects = [
-    ...layout.groups
-      .filter((group) => !exclude.has(group.id))
-      .map((group) => group.bounds),
-    ...layout.nodes
-      .filter((node) => !exclude.has(node.id))
-      .map((node) => node.obstacle),
+    ...layout.groups.filter((group) => !exclude.has(group.id)).map((group) => group.bounds),
+    ...layout.nodes.filter((node) => !exclude.has(node.id)).map((node) => node.obstacle),
     ...layout.edges.flatMap((edge) => {
       const xs = edge.points.map((point) => point.x);
       const ys = edge.points.map((point) => point.y);
-      const route = xs.length && ys.length
-        ? [{
-            x: Math.min(...xs),
-            y: Math.min(...ys),
-            w: Math.max(...xs) - Math.min(...xs),
-            h: Math.max(...ys) - Math.min(...ys),
-          }]
-        : [];
+      const route =
+        xs.length && ys.length
+          ? [
+              {
+                x: Math.min(...xs),
+                y: Math.min(...ys),
+                w: Math.max(...xs) - Math.min(...xs),
+                h: Math.max(...ys) - Math.min(...ys),
+              },
+            ]
+          : [];
       return edge.labelRect ? [...route, edge.labelRect] : route;
     }),
   ];
@@ -192,22 +187,14 @@ function stagedRootIds(doc: DiagramDocument): Set<ID> {
  * Auto-fix remains the structural layout operation. Snap to grid is only a
  * safe positioning aid for manually authored top-level objects.
  */
-export function snapLayoutToGrid(
-  layout: LayoutResult,
-  enabled: boolean,
-  doc: DiagramDocument,
-): LayoutResult {
+export function snapLayoutToGrid(layout: LayoutResult, enabled: boolean, doc: DiagramDocument): LayoutResult {
   if (!enabled) return layout;
 
   const view = getDefaultView(doc);
   const offsets = new Map<ID, { dx: number; dy: number }>();
   for (const rootId of findPositionRoots(doc).filter((id) => {
     const place = view.places[id];
-    return Boolean(
-      place &&
-      place.pin && !place.manual &&
-      (place.x !== undefined || place.y !== undefined),
-    );
+    return Boolean(place && place.pin && !place.manual && (place.x !== undefined || place.y !== undefined));
   })) {
     // Interactive coordinates already reflect grid/magnetic snapping. Applying
     // another root snap here would translate unrelated pinned descendants.

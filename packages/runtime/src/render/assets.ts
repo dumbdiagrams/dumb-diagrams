@@ -1,7 +1,4 @@
-import {
-  getCatalogEntry,
-  getCatalogEntryByBrowserPath,
-} from "../catalog/index.js";
+import { getCatalogEntry, getCatalogEntryByBrowserPath } from "../catalog/index.js";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 
 import type { DiagramDocument } from "../core/index.js";
@@ -32,10 +29,14 @@ export function embedAssetsInSvg(svg: string, doc: DiagramDocument): string {
   if (!doc.assets?.length) return svg;
   // compileDiagram rejects unsafe assets first; direct renderSvg callers get them omitted, never embedded.
   const defs = doc.assets
-    .flatMap((asset) => sanitizeSvgResult(asset.content).match(
-      (sanitized) => [`<symbol id="asset-${escapeAttr(asset.id)}" viewBox="0 0 ${sanitized.intrinsicW} ${sanitized.intrinsicH}">${stripOuterSvg(sanitized.content)}</symbol>`],
-      () => [],
-    ))
+    .flatMap((asset) =>
+      sanitizeSvgResult(asset.content).match(
+        (sanitized) => [
+          `<symbol id="asset-${escapeAttr(asset.id)}" viewBox="0 0 ${sanitized.intrinsicW} ${sanitized.intrinsicH}">${stripOuterSvg(sanitized.content)}</symbol>`,
+        ],
+        () => [],
+      ),
+    )
     .join("\n");
   return svg.replace("<defs>", `<defs>\n${defs}\n`);
 }
@@ -58,28 +59,37 @@ export function inlineCatalogIcons(
   options: PortableSvgOptions = {},
 ): ResultAsync<string, PortableSvgError> {
   const baseUrl = typeof document !== "undefined" ? document.baseURI : undefined;
-  const hrefs = [...new Set([...svg.matchAll(/<image\b[^>]*\bhref="([^"]+)"[^>]*\/?>(?:<\/image>)?/gi)]
-    .map((match) => match[1]!)
-    .filter((href) => !href.startsWith("data:")))];
+  const hrefs = [
+    ...new Set(
+      [...svg.matchAll(/<image\b[^>]*\bhref="([^"]+)"[^>]*\/?>(?:<\/image>)?/gi)]
+        .map((match) => match[1]!)
+        .filter((href) => !href.startsWith("data:")),
+    ),
+  ];
   const icons = hrefs.flatMap((href) => {
     const entry = getCatalogEntryByBrowserPath(browserPathFromHref(href));
     return entry ? [{ href, browserPath: entry.browserPath }] : [];
   });
-  return ResultAsync.combine(icons.map(({ href, browserPath }) => {
-    if (!options.loadCatalogSvg && (!baseUrl || typeof fetch === "undefined")) {
-      return errAsync<[string, string], PortableSvgError>({
-        code: "catalog-loader-required",
-        message: `Catalog icon loader required for ${browserPath}; pass loadCatalogSvg when exporting outside a browser`,
-        browserPath,
+  return ResultAsync.combine(
+    icons.map(({ href, browserPath }) => {
+      if (!options.loadCatalogSvg && (!baseUrl || typeof fetch === "undefined")) {
+        return errAsync<[string, string], PortableSvgError>({
+          code: "catalog-loader-required",
+          message: `Catalog icon loader required for ${browserPath}; pass loadCatalogSvg when exporting outside a browser`,
+          browserPath,
+        });
+      }
+      return loadCatalogIcon(browserPath, options, baseUrl).andThen((content) => {
+        const unsafe = unsafeIconReason(content);
+        return unsafe
+          ? errAsync<[string, string], PortableSvgError>({ code: "catalog-icon-unsafe", message: unsafe, browserPath })
+          : okAsync<[string, string], PortableSvgError>([
+              href,
+              `data:image/svg+xml;charset=utf-8,${encodeURIComponent(content)}`,
+            ]);
       });
-    }
-    return loadCatalogIcon(browserPath, options, baseUrl).andThen((content) => {
-      const unsafe = unsafeIconReason(content);
-      return unsafe
-        ? errAsync<[string, string], PortableSvgError>({ code: "catalog-icon-unsafe", message: unsafe, browserPath })
-        : okAsync<[string, string], PortableSvgError>([href, `data:image/svg+xml;charset=utf-8,${encodeURIComponent(content)}`]);
-    });
-  })).map((replacements) => {
+    }),
+  ).map((replacements) => {
     let output = svg;
     for (const [href, replacement] of replacements) {
       output = output.split(`href="${href}"`).join(`href="${replacement}"`);
@@ -109,9 +119,14 @@ function loadCatalogIcon(
   return ResultAsync.fromPromise(
     Promise.resolve().then(() => fetch(new URL(browserPath.replace(/^\/+/, ""), baseUrl).toString())),
     loadError,
-  ).andThen((response) => response.ok
-    ? ResultAsync.fromPromise(Promise.resolve().then(() => response.text()), loadError)
-    : errAsync(loadError(new Error(`Unable to load catalog icon ${browserPath}`))));
+  ).andThen((response) =>
+    response.ok
+      ? ResultAsync.fromPromise(
+          Promise.resolve().then(() => response.text()),
+          loadError,
+        )
+      : errAsync(loadError(new Error(`Unable to load catalog icon ${browserPath}`))),
+  );
 }
 
 function browserPathFromHref(href: string): string {
@@ -127,14 +142,13 @@ function browserPathFromHref(href: string): string {
 
 function unsafeIconReason(content: string): string | undefined {
   if (!/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(content)) return "Catalog icon is not an SVG document";
-  if (/<(?:script|foreignObject)\b|\bon[a-z]+\s*=|javascript:/i.test(content)) return "Catalog icon contains unsafe SVG content";
+  if (/<(?:script|foreignObject)\b|\bon[a-z]+\s*=|javascript:/i.test(content))
+    return "Catalog icon contains unsafe SVG content";
   return undefined;
 }
 
 function stripOuterSvg(content: string): string {
-  return content
-    .replace(/^\s*(?:<\?xml[^>]*>\s*)?<svg[^>]*>/i, "")
-    .replace(/<\/svg>\s*$/i, "");
+  return content.replace(/^\s*(?:<\?xml[^>]*>\s*)?<svg[^>]*>/i, "").replace(/<\/svg>\s*$/i, "");
 }
 
 function escapeAttr(value: string): string {

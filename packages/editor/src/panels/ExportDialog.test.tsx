@@ -51,7 +51,7 @@ describe("export capability controls", () => {
   it("exposes the DPI-adjusted raster axis limit", () => {
     const html = renderExport("png");
 
-    expect(html).toContain("noValidate=\"\"");
+    expect(html).toContain('noValidate=""');
     expect(html).toContain('max="15728"');
     expect(html).toContain("raster limit 15728px/axis at 100 dpi");
   });

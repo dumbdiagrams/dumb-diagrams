@@ -42,10 +42,7 @@ for (const scope of scopes) {
     ...Object.keys(manifest.optionalDependencies ?? {}),
     ...Object.keys(manifest.peerDependencies ?? {}),
   ]);
-  const declared = new Set([
-    ...productionDependencies,
-    ...Object.keys(manifest.devDependencies ?? {}),
-  ]);
+  const declared = new Set([...productionDependencies, ...Object.keys(manifest.devDependencies ?? {})]);
 
   for (const file of scope.files) {
     for (const specifier of importsIn(file)) {
@@ -72,22 +69,27 @@ for (const scope of scopes) {
 
 function isBundledWorkspaceImport(manifest, packageName) {
   const declaration = manifest.devDependencies?.[packageName];
-  return typeof manifest.scripts?.["prepare:standalone"] === "string" &&
+  return (
+    typeof manifest.scripts?.["prepare:standalone"] === "string" &&
     typeof declaration === "string" &&
-    declaration.startsWith("workspace:");
+    declaration.startsWith("workspace:")
+  );
 }
 
 function isProductionPackageSource(packageRoot, file) {
   if (packageRoot === root) return false;
   const sourceRoot = join(packageRoot, "src");
   const relativeSource = relative(sourceRoot, file);
-  return !relativeSource.startsWith("..") &&
-    !relativeSource.includes(".test.") &&
-    !relativeSource.includes(".spec.");
+  return !relativeSource.startsWith("..") && !relativeSource.includes(".test.") && !relativeSource.includes(".spec.");
 }
 
 if (errors.length > 0) {
-  console.error(errors.sort().map((error) => `- ${error}`).join("\n"));
+  console.error(
+    errors
+      .sort()
+      .map((error) => `- ${error}`)
+      .join("\n"),
+  );
   process.exitCode = 1;
 } else {
   console.log("Dependency declarations and workspace import boundaries pass");
@@ -98,9 +100,7 @@ function sourceFiles(directory) {
     if (["dist", "node_modules", "public"].includes(entry.name)) return [];
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(path);
-    return sourceExtensions.has(extname(entry.name)) && !entry.name.endsWith(".d.ts")
-      ? [path]
-      : [];
+    return sourceExtensions.has(extname(entry.name)) && !entry.name.endsWith(".d.ts") ? [path] : [];
   });
 }
 

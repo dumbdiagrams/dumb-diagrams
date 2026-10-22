@@ -53,12 +53,7 @@ export function EntityNavigator({
         Canvas items
       </button>
       {open && (
-        <div
-          id="entity-navigator-dialog"
-          className="entity-navigator-popover"
-          role="dialog"
-          aria-label="Canvas items"
-        >
+        <div id="entity-navigator-dialog" className="entity-navigator-popover" role="dialog" aria-label="Canvas items">
           <button
             type="button"
             className="entity-navigator-focus"
@@ -78,7 +73,9 @@ export function EntityNavigator({
                 return (
                   <button
                     key={selectedKey(item)}
-                    ref={(element) => { itemRefs.current[index] = element; }}
+                    ref={(element) => {
+                      itemRefs.current[index] = element;
+                    }}
                     type="button"
                     role="option"
                     aria-selected={selected}
@@ -93,11 +90,12 @@ export function EntityNavigator({
                       }
                       if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
                       event.preventDefault();
-                      const nextIndex = event.key === "Home"
-                        ? 0
-                        : event.key === "End"
-                          ? entities.length - 1
-                          : (index + (event.key === "ArrowDown" ? 1 : -1) + entities.length) % entities.length;
+                      const nextIndex =
+                        event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? entities.length - 1
+                            : (index + (event.key === "ArrowDown" ? 1 : -1) + entities.length) % entities.length;
                       focusItem(nextIndex);
                     }}
                   >

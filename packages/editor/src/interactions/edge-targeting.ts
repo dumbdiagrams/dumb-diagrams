@@ -57,13 +57,9 @@ export function endpointForSelectedEdgePort(
   const onSource = edge.source === nodeId;
   const onTarget = edge.target === nodeId;
   const matchesSource =
-    onSource &&
-    edge.sourcePort === side &&
-    normalizePortOffset(edge.sourcePortOffset) === normalized;
+    onSource && edge.sourcePort === side && normalizePortOffset(edge.sourcePortOffset) === normalized;
   const matchesTarget =
-    onTarget &&
-    edge.targetPort === side &&
-    normalizePortOffset(edge.targetPortOffset) === normalized;
+    onTarget && edge.targetPort === side && normalizePortOffset(edge.targetPortOffset) === normalized;
   if (matchesSource && !matchesTarget) return "source";
   if (matchesTarget && !matchesSource) return "target";
   if (onSource && !onTarget) return "source";
@@ -87,12 +83,7 @@ export function resolvePortPointerAction(input: {
   offset: number;
 }): PortPointerAction {
   if (input.tool === "select" && input.selectedEdge) {
-    const endpoint = endpointForSelectedEdgePort(
-      input.selectedEdge,
-      input.nodeId,
-      input.side,
-      input.offset,
-    );
+    const endpoint = endpointForSelectedEdgePort(input.selectedEdge, input.nodeId, input.side, input.offset);
     if (endpoint) return { type: "rewire", endpoint };
   }
   if (input.pendingPort) {
@@ -117,19 +108,14 @@ export function nearestNodePortAt(
   preferred?: NodePortTarget | null,
   switchMargin = 3,
 ): NodePortTarget | null {
-  let best:
-    | { target: NodePortTarget; rectDistance: number; anchorDistance: number }
-    | undefined;
+  let best: { target: NodePortTarget; rectDistance: number; anchorDistance: number } | undefined;
 
   for (const node of nodes) {
     const rectDistance = distanceToRect(point, node.icon);
     if (rectDistance > hitPadding) continue;
 
     const anchor = nearestPortAnchor(node.icon, point);
-    const anchorDistance = Math.hypot(
-      point.x - anchor.point.x,
-      point.y - anchor.point.y,
-    );
+    const anchorDistance = Math.hypot(point.x - anchor.point.x, point.y - anchor.point.y);
     if (
       !best ||
       rectDistance < best.rectDistance ||
@@ -146,36 +132,22 @@ export function nearestNodePortAt(
   if (!best || !preferred || preferred.nodeId !== best.target.nodeId) {
     return best?.target ?? null;
   }
-  if (
-    preferred.side === best.target.side &&
-    preferred.offset === best.target.offset
-  ) {
+  if (preferred.side === best.target.side && preferred.offset === best.target.offset) {
     return preferred;
   }
 
   const node = nodes.find((candidate) => candidate.id === preferred.nodeId);
   if (!node) return best.target;
   const preferredAnchor = nearestAnchorForTarget(node.icon, preferred);
-  const preferredDistance = Math.hypot(
-    point.x - preferredAnchor.x,
-    point.y - preferredAnchor.y,
-  );
-  return preferredDistance <= best.anchorDistance + switchMargin
-    ? preferred
-    : best.target;
+  const preferredDistance = Math.hypot(point.x - preferredAnchor.x, point.y - preferredAnchor.y);
+  return preferredDistance <= best.anchorDistance + switchMargin ? preferred : best.target;
 }
 
-function nearestAnchorForTarget(
-  rect: NodeGeom["icon"],
-  target: NodePortTarget,
-): Point {
+function nearestAnchorForTarget(rect: NodeGeom["icon"], target: NodePortTarget): Point {
   return portPoint(rect, target.side, target.offset);
 }
 
-function distanceToRect(
-  point: Point,
-  rect: { x: number; y: number; w: number; h: number },
-): number {
+function distanceToRect(point: Point, rect: { x: number; y: number; w: number; h: number }): number {
   const dx = Math.max(rect.x - point.x, 0, point.x - (rect.x + rect.w));
   const dy = Math.max(rect.y - point.y, 0, point.y - (rect.y + rect.h));
   return Math.hypot(dx, dy);

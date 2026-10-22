@@ -102,7 +102,10 @@ describe("runCli", () => {
     const warned = join(workRoot, "warned.dgm");
     const broken = join(workRoot, "broken.dgm");
     writeFileSync(clean, `diagram clean {\n  grammar gcp\n  cloud-agnostic.boundary external "External"\n}\n`);
-    writeFileSync(warned, `diagram warned {\n  grammar aws\n  aws.cloud cloud "Cloud" {\n    aws.region region "Region" {\n      aws.vpc vpc "VPC" {\n        aws.dynamodb table "Table"\n      }\n    }\n  }\n}\n`);
+    writeFileSync(
+      warned,
+      `diagram warned {\n  grammar aws\n  aws.cloud cloud "Cloud" {\n    aws.region region "Region" {\n      aws.vpc vpc "VPC" {\n        aws.dynamodb table "Table"\n      }\n    }\n  }\n}\n`,
+    );
     writeFileSync(broken, `diagram broken {\n  grammar aws\n  flow sideways\n}\n`);
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -273,24 +276,21 @@ describe("runCli", () => {
         ["cloud-agnostic", "Experimental"],
       ] as const) {
         const guide = readFileSync(join(projectRoot, `.dumbdiagrams/providers/${provider}.md`), "utf8");
-        const heading = provider === "aws" ? "AWS" : provider === "azure" ? "Azure" : provider === "gcp" ? "GCP" : "Cloud-agnostic";
+        const heading =
+          provider === "aws" ? "AWS" : provider === "azure" ? "Azure" : provider === "gcp" ? "GCP" : "Cloud-agnostic";
         expect(guide).toContain(`# ${heading} conventions`);
         expect(guide).toContain(marker);
         if (provider !== "aws") expect(guide).toMatch(/current AWS\s+layout/);
       }
       const catalog = readFileSync(join(projectRoot, ".dumbdiagrams/catalog.json"), "utf8");
-      expect(catalog).toContain("\"entries\"");
-      expect(catalog).toContain("\"type\": \"cloud-agnostic.boundary\"");
+      expect(catalog).toContain('"entries"');
+      expect(catalog).toContain('"type": "cloud-agnostic.boundary"');
       const generatedPilot = join(projectRoot, ".dumbdiagrams/examples/simple-serverless-web-application");
       const sourcePilot = join(ROOT, "examples/curated/simple-serverless-web-application");
       for (const file of ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"]) {
         expect(readFileSync(join(generatedPilot, file), "utf8")).toBe(readFileSync(join(sourcePilot, file), "utf8"));
       }
-      for (const id of [
-        "azure-private-app-service",
-        "gcp-streaming-analytics",
-        "cloud-agnostic-order-processing",
-      ]) {
+      for (const id of ["azure-private-app-service", "gcp-streaming-analytics", "cloud-agnostic-order-processing"]) {
         expect(readFileSync(join(projectRoot, `.dumbdiagrams/examples/${id}/diagram.dgm`), "utf8")).toBe(
           readFileSync(join(ROOT, `examples/curated/${id}/diagram.dgm`), "utf8"),
         );

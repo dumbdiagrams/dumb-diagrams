@@ -23,24 +23,26 @@ import {
 import { snapLayoutToGrid } from "./grid";
 import { ByteBudgetLruCache } from "./compilation-cache";
 
-export type DiagramCompilation = {
-  ok: true;
-  issues: ValidationIssue[];
-  svg: string;
-  invariantFailures: InvariantFailure[];
-  doc: DiagramDocument;
-  layout: LayoutResult;
-} | {
-  ok: false;
-  issues: ValidationIssue[];
-  svg: null;
-  invariantFailures: InvariantFailure[];
-  compilationError?: CompilationError;
-  parseError?: string;
-  parseErrorCode?: DgmParseError["code"];
-  parseErrorLocation?: { line: number; column: number };
-  layout?: null;
-};
+export type DiagramCompilation =
+  | {
+      ok: true;
+      issues: ValidationIssue[];
+      svg: string;
+      invariantFailures: InvariantFailure[];
+      doc: DiagramDocument;
+      layout: LayoutResult;
+    }
+  | {
+      ok: false;
+      issues: ValidationIssue[];
+      svg: null;
+      invariantFailures: InvariantFailure[];
+      compilationError?: CompilationError;
+      parseError?: string;
+      parseErrorCode?: DgmParseError["code"];
+      parseErrorLocation?: { line: number; column: number };
+      layout?: null;
+    };
 
 /** A plain diagnostic safe to include in a worker response. */
 export type CompilationError = {
@@ -63,19 +65,12 @@ const ESTIMATOR_UNKNOWN_BYTES = Number.MAX_SAFE_INTEGER / 4;
  * This deliberately counts object and string overhead conservatively; it is
  * a budget guard rather than an attempt to model the V8 heap precisely.
  */
-export function estimateCompilationCacheEntryBytes(
-  key: string,
-  compilation: DiagramCompilation,
-): number {
+export function estimateCompilationCacheEntryBytes(key: string, compilation: DiagramCompilation): number {
   const state = { nodes: 0, seen: new Set<object>() };
   return estimateCacheValue(key, state) + estimateCacheValue(compilation, state);
 }
 
-function estimateCacheValue(
-  value: unknown,
-  state: { nodes: number; seen: Set<object> },
-  depth = 0,
-): number {
+function estimateCacheValue(value: unknown, state: { nodes: number; seen: Set<object> }, depth = 0): number {
   if (state.nodes++ > ESTIMATOR_MAX_NODES || depth > 64) return ESTIMATOR_UNKNOWN_BYTES;
   if (typeof value === "string") return 24 + value.length * 2;
   if (value === null || value === undefined) return 8;
@@ -86,17 +81,15 @@ function estimateCacheValue(
   state.seen.add(value);
 
   if (Array.isArray(value)) {
-    return 24 + value.reduce(
-      (total, item) => total + estimateCacheValue(item, state, depth + 1),
-      0,
-    );
+    return 24 + value.reduce((total, item) => total + estimateCacheValue(item, state, depth + 1), 0);
   }
 
-  return 40 + Object.entries(value).reduce(
-    (total, [key, item]) => total
-      + 24 + key.length * 2
-      + estimateCacheValue(item, state, depth + 1),
-    0,
+  return (
+    40 +
+    Object.entries(value).reduce(
+      (total, [key, item]) => total + 24 + key.length * 2 + estimateCacheValue(item, state, depth + 1),
+      0,
+    )
   );
 }
 
@@ -160,10 +153,7 @@ export function warmDiagramCompilationCache(
   }
 }
 
-export function getCachedDiagramCompilation(
-  source: string,
-  snapToGrid: boolean,
-): DiagramCompilation | undefined {
+export function getCachedDiagramCompilation(source: string, snapToGrid: boolean): DiagramCompilation | undefined {
   const key = cacheKey(source, snapToGrid);
   const cached = compilationCache.get(key);
   if (!cached) return undefined;
@@ -176,9 +166,7 @@ export function compileDiagramSource(
   routingOptions: RoutingOptions = {},
 ): DiagramCompilation {
   const usesCustomRoutingOptions = Object.keys(routingOptions).length > 0;
-  const cached = usesCustomRoutingOptions
-    ? undefined
-    : getCachedDiagramCompilation(source, snapToGrid);
+  const cached = usesCustomRoutingOptions ? undefined : getCachedDiagramCompilation(source, snapToGrid);
   if (cached) return cached;
 
   const key = cacheKey(source, snapToGrid);
@@ -230,20 +218,19 @@ function compileParsedDocument(
   }
   let phase: CompilationError["phase"] = "layout";
   try {
-    const placedLayout = snapToGrid
-      ? snapLayoutToGrid(layoutDocument(doc), true, doc)
-      : layoutDocument(doc);
+    const placedLayout = snapToGrid ? snapLayoutToGrid(layoutDocument(doc), true, doc) : layoutDocument(doc);
     phase = "routing";
     const routingWarnings: ValidationIssue[] = [];
     const routedEdges = routeEdges(doc, placedLayout, {
       ...routingOptions,
       onDiagnostics: (diagnostics) => {
         routingOptions.onDiagnostics?.(diagnostics);
-        if (diagnostics.exhausted) routingWarnings.push({
-          level: "warning",
-          code: ROUTING_BUDGET_WARNING_CODE,
-          message: ROUTING_BUDGET_WARNING_MESSAGE,
-        });
+        if (diagnostics.exhausted)
+          routingWarnings.push({
+            level: "warning",
+            code: ROUTING_BUDGET_WARNING_CODE,
+            message: ROUTING_BUDGET_WARNING_MESSAGE,
+          });
       },
     });
     phase = "render";
@@ -272,11 +259,14 @@ export function compilationFailure(
   const compilationError = toCompilationError(error, phase);
   return {
     ok: false,
-    issues: [...issues, {
-      level: "error",
-      code: compilationError.code,
-      message: compilationError.message,
-    }],
+    issues: [
+      ...issues,
+      {
+        level: "error",
+        code: compilationError.code,
+        message: compilationError.message,
+      },
+    ],
     svg: null,
     invariantFailures: [],
     compilationError,
@@ -308,10 +298,7 @@ function compilerErrorMessage(error: unknown): string {
 }
 
 function isRecordWithMessage(value: unknown): value is { message: string } {
-  return typeof value === "object"
-    && value !== null
-    && "message" in value
-    && typeof value.message === "string";
+  return typeof value === "object" && value !== null && "message" in value && typeof value.message === "string";
 }
 
 /**
@@ -319,33 +306,20 @@ function isRecordWithMessage(value: unknown): value is { message: string } {
  * introduces a new hard finding. Soft findings and warnings may trade only
  * when the complete quality tuple strictly improves.
  */
-export function autoFixRejectionReason(
-  current: DiagramCompilation,
-  candidate: DiagramCompilation,
-): string | undefined {
-  if ([current, candidate].some((compilation) => compilation.invariantFailures.some(
-    (failure) => failure.code === INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
-  ))) {
+export function autoFixRejectionReason(current: DiagramCompilation, candidate: DiagramCompilation): string | undefined {
+  if (
+    [current, candidate].some((compilation) =>
+      compilation.invariantFailures.some((failure) => failure.code === INVARIANT_DIAGNOSTICS_TRUNCATED_CODE),
+    )
+  ) {
     return "Auto-fix cannot safely compare diagrams with incomplete layout diagnostics.";
   }
-  return qualityHardRegressionReason(
-    compilationQualityFindings(current),
-    compilationQualityFindings(candidate),
-  );
+  return qualityHardRegressionReason(compilationQualityFindings(current), compilationQualityFindings(candidate));
 }
 
-function compilationQualityFindings(
-  compilation: DiagramCompilation,
-): ReturnType<typeof qualityFindings> {
-  const parseError =
-    !compilation.ok && "parseError" in compilation
-      ? compilation.parseError
-      : undefined;
-  return qualityFindings(
-    compilation.issues,
-    compilation.invariantFailures,
-    parseError,
-  );
+function compilationQualityFindings(compilation: DiagramCompilation): ReturnType<typeof qualityFindings> {
+  const parseError = !compilation.ok && "parseError" in compilation ? compilation.parseError : undefined;
+  return qualityFindings(compilation.issues, compilation.invariantFailures, parseError);
 }
 
 /** Keep a generous editable margin around every diagram and any authored overflow. */
@@ -364,18 +338,8 @@ function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): Layo
     bottom = Math.max(bottom, y + h);
   };
 
-  for (const group of layout.groups) include(
-    group.bounds.x,
-    group.bounds.y,
-    group.bounds.w,
-    group.bounds.h,
-  );
-  for (const node of layout.nodes) include(
-    node.obstacle.x,
-    node.obstacle.y,
-    node.obstacle.w,
-    node.obstacle.h,
-  );
+  for (const group of layout.groups) include(group.bounds.x, group.bounds.y, group.bounds.w, group.bounds.h);
+  for (const node of layout.nodes) include(node.obstacle.x, node.obstacle.y, node.obstacle.w, node.obstacle.h);
 
   for (const edge of layout.edges) {
     for (const point of edge.points) include(point.x, point.y);
@@ -406,10 +370,15 @@ function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): Layo
 
 function annotationDimensions(style: string | undefined): { w: number; h: number } {
   switch (style) {
-    case "text": return { w: 240, h: 48 };
-    case "code": return { w: 300, h: 160 };
-    case "callout": return { w: 280, h: 104 };
-    case "checklist": return { w: 260, h: 152 };
-    default: return { w: 220, h: 96 };
+    case "text":
+      return { w: 240, h: 48 };
+    case "code":
+      return { w: 300, h: 160 };
+    case "callout":
+      return { w: 280, h: 104 };
+    case "checklist":
+      return { w: 260, h: 152 };
+    default:
+      return { w: 220, h: 96 };
   }
 }

@@ -1,14 +1,6 @@
 import type { ComponentType } from "react";
 
-import {
-  IconCode,
-  IconGroups,
-  IconLayers,
-  IconNote,
-  IconResources,
-  IconSelect,
-  IconText,
-} from "./icons";
+import { IconCode, IconGroups, IconLayers, IconNote, IconResources, IconSelect, IconText } from "./icons";
 
 export type ToolId =
   | "select"
@@ -36,13 +28,7 @@ const TOOLS: Array<{
   { id: "code", label: "Source", Icon: IconCode },
 ];
 
-export function ToolDock({
-  active,
-  onChange,
-}: {
-  active: ToolId;
-  onChange: (tool: ToolId) => void;
-}) {
+export function ToolDock({ active, onChange }: { active: ToolId; onChange: (tool: ToolId) => void }) {
   return (
     <nav className="tool-dock" aria-label="Diagram tools">
       {TOOLS.map((tool) => (

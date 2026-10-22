@@ -36,41 +36,43 @@ export function startStudioServer(
     },
     (cause): StudioServerError => startupError(cause),
   )()
-    .andThen(({ editorRoot, hasAssets }) => hasAssets
-      ? ok(editorRoot)
-      : err<never, StudioServerError>({
-        code: "missing-assets",
-        message: `Studio assets are missing at ${editorRoot}. Build the editor first with pnpm --filter @dumb-diagrams/editor build.`,
-        editorRoot,
-      }))
-    .andThen((configuredEditorRoot) => Result.fromThrowable(
-      () => {
-        // Resolve the bundle root once so a symlinked editor directory is supported
-        // while every request is checked against the directory actually served.
-        const editorRoot = realpathSync(configuredEditorRoot);
-        const server = createServer((request, response) => {
-          applySecurityHeaders(response);
-          serveEditorAsset(editorRoot, request, response);
-        });
-        return { server };
-      },
-      (cause): StudioServerError => startupError(cause),
-    )());
+    .andThen(({ editorRoot, hasAssets }) =>
+      hasAssets
+        ? ok(editorRoot)
+        : err<never, StudioServerError>({
+            code: "missing-assets",
+            message: `Studio assets are missing at ${editorRoot}. Build the editor first with pnpm --filter @dumb-diagrams/editor build.`,
+            editorRoot,
+          }),
+    )
+    .andThen((configuredEditorRoot) =>
+      Result.fromThrowable(
+        () => {
+          // Resolve the bundle root once so a symlinked editor directory is supported
+          // while every request is checked against the directory actually served.
+          const editorRoot = realpathSync(configuredEditorRoot);
+          const server = createServer((request, response) => {
+            applySecurityHeaders(response);
+            serveEditorAsset(editorRoot, request, response);
+          });
+          return { server };
+        },
+        (cause): StudioServerError => startupError(cause),
+      )(),
+    );
 
   return configuredRoot.asyncAndThen(({ server }) => {
-    const listenResult = (port: number) => ResultAsync.fromPromise(
-      listen(server, port),
-      (cause): StudioServerError => startupError(cause),
-    );
-    const address = options.port === undefined
-      ? listenResult(DEFAULT_STUDIO_PORT).orElse((error) => isAddressInUse(error)
-        ? listenResult(0)
-        : errAsync(error))
-      : listenResult(options.port);
+    const listenResult = (port: number) =>
+      ResultAsync.fromPromise(listen(server, port), (cause): StudioServerError => startupError(cause));
+    const address =
+      options.port === undefined
+        ? listenResult(DEFAULT_STUDIO_PORT).orElse((error) =>
+            isAddressInUse(error) ? listenResult(0) : errAsync(error),
+          )
+        : listenResult(options.port);
     return address.map((boundAddress) => {
-      const resolvedPort = typeof boundAddress === "object" && boundAddress
-        ? boundAddress.port
-        : options.port ?? DEFAULT_STUDIO_PORT;
+      const resolvedPort =
+        typeof boundAddress === "object" && boundAddress ? boundAddress.port : (options.port ?? DEFAULT_STUDIO_PORT);
       return { server, url: `http://${STUDIO_HOST}:${resolvedPort}/` };
     });
   });
@@ -85,20 +87,21 @@ function startupError(cause: unknown): StudioServerError {
 }
 
 function isAddressInUse(error: StudioServerError): boolean {
-  return error.code === "start-failed"
-    && typeof error.cause === "object"
-    && error.cause !== null
-    && "code" in error.cause
-    && error.cause.code === "EADDRINUSE";
+  return (
+    error.code === "start-failed" &&
+    typeof error.cause === "object" &&
+    error.cause !== null &&
+    "code" in error.cause &&
+    error.cause.code === "EADDRINUSE"
+  );
 }
 
 export function resolveStudioEditorRoot(explicitRoot?: string): string {
   if (explicitRoot) return explicitRoot;
   const moduleRoot = resolve(fileURLToPath(new URL(".", import.meta.url)));
-  const candidates = [
-    resolve(moduleRoot, "studio"),
-    resolve(moduleRoot, "../../editor/dist"),
-  ].filter((candidate): candidate is string => Boolean(candidate));
+  const candidates = [resolve(moduleRoot, "studio"), resolve(moduleRoot, "../../editor/dist")].filter(
+    (candidate): candidate is string => Boolean(candidate),
+  );
   return candidates.find((candidate) => existsSync(join(candidate, "index.html"))) ?? candidates[0]!;
 }
 
@@ -168,15 +171,24 @@ function isPathInsideRoot(root: string, candidate: string): boolean {
 
 function contentTypeFor(filePath: string): string {
   switch (extname(filePath).toLowerCase()) {
-    case ".html": return "text/html; charset=utf-8";
-    case ".js": return "text/javascript; charset=utf-8";
-    case ".css": return "text/css; charset=utf-8";
-    case ".svg": return "image/svg+xml";
-    case ".png": return "image/png";
-    case ".json": return "application/json; charset=utf-8";
-    case ".woff": return "font/woff";
-    case ".woff2": return "font/woff2";
-    default: return "application/octet-stream";
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+      return "text/javascript; charset=utf-8";
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".svg":
+      return "image/svg+xml";
+    case ".png":
+      return "image/png";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".woff":
+      return "font/woff";
+    case ".woff2":
+      return "font/woff2";
+    default:
+      return "application/octet-stream";
   }
 }
 

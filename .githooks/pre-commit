@@ -5,8 +5,10 @@ if [ "${DUMB_DIAGRAMS_SKIP_HOOKS:-}" = "1" ]; then
   exit 0
 fi
 
-root="$(git rev-parse --show-toplevel)"
-cd "$root"
+cd "$(git rev-parse --show-toplevel)"
 
-pnpm exec biome check --write --staged
-pnpm exec biome check --staged
+# Check only: auto-fixing here would not re-stage files, so the commit would still contain unfixed content.
+pnpm exec biome check --staged --no-errors-on-unmatched || {
+  echo "Biome failed. Run 'pnpm fix:style', re-stage, and commit again." >&2
+  exit 1
+}

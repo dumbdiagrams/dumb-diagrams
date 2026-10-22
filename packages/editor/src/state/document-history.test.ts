@@ -97,8 +97,10 @@ describe("document history", () => {
     };
 
     const transition = undo(history, source("current"));
-    const retainedBytes = [...transition.history.past, ...transition.history.future]
-      .reduce((total, snapshot) => total + snapshot.length * 2, 0);
+    const retainedBytes = [...transition.history.past, ...transition.history.future].reduce(
+      (total, snapshot) => total + snapshot.length * 2,
+      0,
+    );
 
     expect(retainedBytes).toBeLessThanOrEqual(MAX_HISTORY_BYTES);
     expect(transition.source).toBe("past-near".padEnd(1024 * 1024, "x"));

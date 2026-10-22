@@ -20,9 +20,7 @@ export function FloatingPanel({
   closing?: boolean;
 }) {
   const isLeftDrawer =
-    className.includes("drawer-sheet") &&
-    !className.includes("edge-sheet") &&
-    !className.includes("inspector-sheet");
+    className.includes("drawer-sheet") && !className.includes("edge-sheet") && !className.includes("inspector-sheet");
 
   return (
     <aside
@@ -47,12 +45,7 @@ export function FloatingPanel({
           {subtitle && <p>{subtitle}</p>}
         </div>
         {onClose && (
-          <button
-            type="button"
-            className="icon-button subtle"
-            onClick={onClose}
-            aria-label="Close"
-          >
+          <button type="button" className="icon-button subtle" onClick={onClose} aria-label="Close">
             <IconClose />
           </button>
         )}

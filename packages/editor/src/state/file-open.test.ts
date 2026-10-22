@@ -7,9 +7,12 @@ function fakeHandle(filename: string, source?: string): FileSystemHandleLike {
   return {
     kind: "file",
     name: filename,
-    getFile: source === undefined
-      ? vi.fn(async () => { throw new Error("permission revoked"); })
-      : vi.fn(async () => new File([source], filename, { type: "text/plain" })),
+    getFile:
+      source === undefined
+        ? vi.fn(async () => {
+            throw new Error("permission revoked");
+          })
+        : vi.fn(async () => new File([source], filename, { type: "text/plain" })),
     createWritable: vi.fn(async () => ({
       write: async () => undefined,
       close: async () => undefined,

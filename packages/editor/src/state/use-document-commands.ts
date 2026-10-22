@@ -12,9 +12,18 @@ import {
   type DiagramCompilation,
 } from "../diagram-compiler";
 import { planAutoFixInWorker } from "../diagram-compiler-worker-client";
-import { preserveManualLayout, preserveUnplacedManualLayout, reconcileManualRouteMoves } from "../model/layout-preservation";
+import {
+  preserveManualLayout,
+  preserveUnplacedManualLayout,
+  reconcileManualRouteMoves,
+} from "../model/layout-preservation";
 import { planAutoFix } from "../auto-fix";
-import { prepareDocument, prepareDocumentMutation, type DocumentActionError, type PreparedDocument } from "./document-actions";
+import {
+  prepareDocument,
+  prepareDocumentMutation,
+  type DocumentActionError,
+  type PreparedDocument,
+} from "./document-actions";
 
 type DocumentCommandOptions = {
   source: string;
@@ -86,11 +95,16 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
   const commitDocument = (doc: DiagramDocument, compilation?: DiagramCompilation, preservePositions = true) => {
     const baseline = preservePositions ? compileDiagramSource(sourceRef.current, options.snapToGrid) : null;
     const nextDoc = baseline?.ok
-      ? reconcileManualRouteMoves(preserveManualLayout(baseline.doc, baseline.layout),
-        preserveUnplacedManualLayout(doc, baseline.layout, baseline.doc))
+      ? reconcileManualRouteMoves(
+          preserveManualLayout(baseline.doc, baseline.layout),
+          preserveUnplacedManualLayout(doc, baseline.layout, baseline.doc),
+        )
       : doc;
     const result = prepareDocument(nextDoc, options.snapToGrid, nextDoc === doc ? compilation : undefined);
-    if (result.isErr()) { reportFailure(result.error); return false; }
+    if (result.isErr()) {
+      reportFailure(result.error);
+      return false;
+    }
     publish(result.value, false);
     return true;
   };
@@ -98,7 +112,10 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
   // so routing them here would only freeze the pointer release.
   const mutate = (change: (doc: DiagramDocument) => DiagramDocument, preview = false): PreparedDocument | null => {
     const result = prepareDocumentMutation(sourceRef.current, change, options.snapToGrid, preview);
-    if (result.isErr()) { reportFailure(result.error); return null; }
+    if (result.isErr()) {
+      reportFailure(result.error);
+      return null;
+    }
     publish(result.value, preview);
     return result.value;
   };
@@ -136,22 +153,37 @@ export function useDocumentCommands(options: DocumentCommandOptions) {
         return;
       }
       if (plan.status !== "repaired") {
-        options.notify(plan.message ?? (plan.status === "unchanged"
-          ? "Diagram already passes Auto-fix checks" : "Auto-fix could not improve the diagram"));
+        options.notify(
+          plan.message ??
+            (plan.status === "unchanged"
+              ? "Diagram already passes Auto-fix checks"
+              : "Auto-fix could not improve the diagram"),
+        );
         return;
       }
       if (commitDocument(plan.doc, plan.compilation, false)) options.notify(plan.message ?? "Diagram auto-fixed");
     } catch (cause) {
-      reportFailure({ code: "unexpected", message: "Auto-fix failed unexpectedly. Your diagram was not changed.", cause });
+      reportFailure({
+        code: "unexpected",
+        message: "Auto-fix failed unexpectedly. Your diagram was not changed.",
+        cause,
+      });
     } finally {
       autoFixingRef.current = false;
       setAutoFixing(false);
     }
   };
   return {
-    sourceRef, committedCompilationKey, commitDocument, mutate, autoFix, autoFixing,
+    sourceRef,
+    committedCompilationKey,
+    commitDocument,
+    mutate,
+    autoFix,
+    autoFixing,
     mutateCurrent: (change: (doc: DiagramDocument) => DiagramDocument) => mutate(change) !== null,
     previewMutate: (change: (doc: DiagramDocument) => DiagramDocument) => mutate(change, true) !== null,
-    onSourceChange, onSourceCommit, clearDraftTimer,
+    onSourceChange,
+    onSourceCommit,
+    clearDraftTimer,
   };
 }

@@ -59,7 +59,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "bedrock-claims-processing",
     title: "Claims processing with Amazon Bedrock",
-    description: "A claims workflow that combines S3 document intake, Bedrock Data Automation, SageMaker fraud detection, DynamoDB state, Nova insights, and email notification.",
+    description:
+      "A claims workflow that combines S3 document intake, Bedrock Data Automation, SageMaker fraud detection, DynamoDB state, Nova insights, and email notification.",
     tags: ["AWS", "Bedrock", "claims", "AI"],
     source: bedrockClaimsProcessingSource,
     prompt: BEDROCK_CLAIMS_PROMPT,
@@ -69,7 +70,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "aws-data-transfer-hub",
     title: "AWS Data Transfer Hub",
-    description: "A compact cross-account deployment flow for UI hosting, authentication, workflow automation, replication templates, and Fargate workloads.",
+    description:
+      "A compact cross-account deployment flow for UI hosting, authentication, workflow automation, replication templates, and Fargate workloads.",
     tags: ["AWS", "cross-account", "Fargate", "replication"],
     source: awsDataTransferHubSource,
     prompt: DATA_TRANSFER_HUB_PROMPT,
@@ -79,7 +81,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "aws-high-availability-web-app",
     title: "Highly available AWS web application",
-    description: "A multi-AZ web application with CloudFront, API Gateway, ECS on Fargate, DynamoDB, ECR, and CloudWatch.",
+    description:
+      "A multi-AZ web application with CloudFront, API Gateway, ECS on Fargate, DynamoDB, ECR, and CloudWatch.",
     tags: ["AWS", "high availability", "multi-AZ"],
     source: awsHighAvailabilityWebAppSource,
     prompt: HIGH_AVAILABILITY_PROMPT,
@@ -89,7 +92,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "simple-serverless-web-application",
     title: "Simple serverless web application",
-    description: "A minimal serverless web path from a client through CloudFront and API Gateway to Lambda and DynamoDB.",
+    description:
+      "A minimal serverless web path from a client through CloudFront and API Gateway to Lambda and DynamoDB.",
     tags: ["AWS", "serverless", "beginner"],
     source: simpleServerlessWebApplicationSource,
     prompt: SIMPLE_SERVERLESS_WEB_APPLICATION_PROMPT,
@@ -99,7 +103,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "image-thumbnail-pipeline",
     title: "Image thumbnail pipeline",
-    description: "A direct-upload image flow that uses an S3 event to invoke Lambda and persist thumbnails and metadata.",
+    description:
+      "A direct-upload image flow that uses an S3 event to invoke Lambda and persist thumbnails and metadata.",
     tags: ["AWS", "S3", "events"],
     source: imageThumbnailPipelineSource,
     prompt: IMAGE_THUMBNAIL_PIPELINE_PROMPT,
@@ -109,7 +114,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "asynchronous-report-generation",
     title: "Asynchronous report generation",
-    description: "An API-driven report workflow with SQS, a Fargate worker, storage, job status, and email notification.",
+    description:
+      "An API-driven report workflow with SQS, a Fargate worker, storage, job status, and email notification.",
     tags: ["AWS", "async", "SQS"],
     source: asynchronousReportGenerationSource,
     prompt: ASYNCHRONOUS_REPORT_GENERATION_PROMPT,
@@ -119,7 +125,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "event-driven-order-fulfillment",
     title: "Event-driven order fulfillment",
-    description: "An order service that persists state and fans OrderCreated events out to inventory, payment, shipping, and notifications.",
+    description:
+      "An order service that persists state and fans OrderCreated events out to inventory, payment, shipping, and notifications.",
     tags: ["AWS", "events", "fulfillment"],
     source: eventDrivenOrderFulfillmentSource,
     prompt: EVENT_DRIVEN_ORDER_FULFILLMENT_PROMPT,
@@ -129,7 +136,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "azure-private-app-service",
     title: "Private Azure App Service",
-    description: "A private write-through application using App Service, Functions, Managed Redis, SQL Database, private endpoints, and Azure Monitor.",
+    description:
+      "A private write-through application using App Service, Functions, Managed Redis, SQL Database, private endpoints, and Azure Monitor.",
     tags: ["Azure", "App Service", "private networking"],
     source: azurePrivateAppServiceSource,
     prompt: AZURE_PRIVATE_APP_SERVICE_PROMPT,
@@ -139,7 +147,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "gcp-streaming-analytics",
     title: "Google Cloud streaming analytics",
-    description: "A streaming platform with Cloud Load Balancing, Functions, Pub/Sub, Dataflow, BigQuery, GKE, and operational controls.",
+    description:
+      "A streaming platform with Cloud Load Balancing, Functions, Pub/Sub, Dataflow, BigQuery, GKE, and operational controls.",
     tags: ["GCP", "streaming", "analytics"],
     source: gcpStreamingAnalyticsSource,
     prompt: GCP_STREAMING_ANALYTICS_PROMPT,
@@ -149,7 +158,8 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = [
   {
     id: "cloud-agnostic-order-processing",
     title: "Cloud-agnostic order processing",
-    description: "A provider-neutral order flow through a gateway, queue, workers, database, object storage, and security boundaries.",
+    description:
+      "A provider-neutral order flow through a gateway, queue, workers, database, object storage, and security boundaries.",
     tags: ["Cloud-agnostic", "orders", "queue"],
     source: cloudAgnosticOrderProcessingSource,
     prompt: CLOUD_AGNOSTIC_ORDER_PROCESSING_PROMPT,

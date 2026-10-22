@@ -5,13 +5,20 @@ import { resizeRect, type ResizeHandle } from "./move-resize-gestures.js";
 
 describe("resizeHandles", () => {
   it("exposes all eight handles for groups", () => {
-    expect(resizeHandles({ x: 10, y: 20, w: 100, h: 60 }, true).map((handle) => handle.name))
-      .toEqual(["n", "s", "e", "w", "ne", "nw", "se", "sw"]);
+    expect(resizeHandles({ x: 10, y: 20, w: 100, h: 60 }, true).map((handle) => handle.name)).toEqual([
+      "n",
+      "s",
+      "e",
+      "w",
+      "ne",
+      "nw",
+      "se",
+      "sw",
+    ]);
   });
 
   it("keeps the legacy three handles for non-group items", () => {
-    expect(resizeHandles({ x: 10, y: 20, w: 100, h: 60 }).map((handle) => handle.name))
-      .toEqual(["se", "e", "s"]);
+    expect(resizeHandles({ x: 10, y: 20, w: 100, h: 60 }).map((handle) => handle.name)).toEqual(["se", "e", "s"]);
   });
 });
 

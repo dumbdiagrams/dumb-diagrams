@@ -17,14 +17,14 @@ describe("sanitizeSvgResult", () => {
     if (safe.isErr()) return;
     expect(safe.value.intrinsicW).toBe(16);
 
-    const unsafe = sanitizeSvgResult('<svg><script>alert(1)</script></svg>');
+    const unsafe = sanitizeSvgResult("<svg><script>alert(1)</script></svg>");
     expect(unsafe.isErr()).toBe(true);
     if (unsafe.isOk()) return;
     expect(unsafe.error).toEqual({
       code: "invalid-svg",
       message: "SVG element <script> is not allowed",
     });
-    expect(() => sanitizeSvg('<svg><script>alert(1)</script></svg>')).toThrow();
+    expect(() => sanitizeSvg("<svg><script>alert(1)</script></svg>")).toThrow();
   });
 
   it("does not classify sanitizer defects as invalid SVG input", () => {
@@ -42,13 +42,9 @@ describe("sanitizeSvgResult", () => {
   });
 
   it("accepts valid svg and rejects scripts", () => {
-    const safe = sanitizeSvg(
-      '<svg viewBox="0 0 32 32"><rect width="32" height="32"/></svg>',
-    );
+    const safe = sanitizeSvg('<svg viewBox="0 0 32 32"><rect width="32" height="32"/></svg>');
     expect(safe.intrinsicW).toBe(32);
-    expect(() =>
-      sanitizeSvg('<svg><script>alert(1)</script><rect/></svg>'),
-    ).toThrow();
+    expect(() => sanitizeSvg("<svg><script>alert(1)</script><rect/></svg>")).toThrow();
   });
 
   it("rejects event handlers, external references, styles, and huge dimensions", () => {
@@ -70,20 +66,24 @@ describe("sanitizeSvgResult", () => {
     expect(() => sanitizeSvg('<svg width="-1" height="10"/>')).toThrow(/width/i);
     expect(() => sanitizeSvg('<svg><rect fill="url(#paint0)"/></svg>')).not.toThrow();
     expect(() => sanitizeSvg('<svg><rect fill="url(relative.svg#paint)"/></svg>')).toThrow(/local fragment/i);
-    expect(() => sanitizeSvg(
-      '<svg><rect fill="url(&#104;ttp:&#47;&#47;127.0.0.1/paint.svg#paint)"/></svg>',
-    )).toThrow(/local fragment/i);
-    expect(() => sanitizeSvg('<svg><rect stroke="u\\72l(https://example.com/paint.svg)"/></svg>')).toThrow(/local fragment/i);
-    expect(() => sanitizeSvg(
-      '<svg><rect fill="url(\\68 ttp:\\2f\\2f 127.0.0.1/paint.svg#paint)"/></svg>',
-    )).toThrow(/local fragment/i);
-    expect(() => sanitizeSvg('<svg><rect></svg>')).toThrow(/unbalanced/i);
-    expect(() => sanitizeSvg('<svg></svg><svg></svg>')).toThrow(/multiple root/i);
-    expect(() => sanitizeSvg('<svg></svg>trailing text')).toThrow(/outside root/i);
+    expect(() => sanitizeSvg('<svg><rect fill="url(&#104;ttp:&#47;&#47;127.0.0.1/paint.svg#paint)"/></svg>')).toThrow(
+      /local fragment/i,
+    );
+    expect(() => sanitizeSvg('<svg><rect stroke="u\\72l(https://example.com/paint.svg)"/></svg>')).toThrow(
+      /local fragment/i,
+    );
+    expect(() => sanitizeSvg('<svg><rect fill="url(\\68 ttp:\\2f\\2f 127.0.0.1/paint.svg#paint)"/></svg>')).toThrow(
+      /local fragment/i,
+    );
+    expect(() => sanitizeSvg("<svg><rect></svg>")).toThrow(/unbalanced/i);
+    expect(() => sanitizeSvg("<svg></svg><svg></svg>")).toThrow(/multiple root/i);
+    expect(() => sanitizeSvg("<svg></svg>trailing text")).toThrow(/outside root/i);
   });
 
   it("uses explicit dimensions and safe local references when the DOM parser is unavailable", () => {
-    const explicit = sanitizeSvg('<svg width="20" height="24"><defs><clipPath id="clip"/></defs><rect clip-path="url(#clip)"/></svg>');
+    const explicit = sanitizeSvg(
+      '<svg width="20" height="24"><defs><clipPath id="clip"/></defs><rect clip-path="url(#clip)"/></svg>',
+    );
     expect(explicit.intrinsicW).toBe(20);
     expect(explicit.intrinsicH).toBe(24);
 
@@ -93,9 +93,18 @@ describe("sanitizeSvgResult", () => {
   });
 
   it.each([
-    ["Figma", '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h20v20H2z" fill="#232F3E"/></svg>'],
-    ["Illustrator", '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 48 48"><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient></defs><rect width="48" height="48" fill="url(#g)"/></svg>'],
-    ["Inkscape plain SVG", '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="32" height="32" viewBox="0 0 32 32" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg"><defs id="defs1"/><g id="layer1"><circle cx="16" cy="16" r="12"/></g></svg>'],
+    [
+      "Figma",
+      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h20v20H2z" fill="#232F3E"/></svg>',
+    ],
+    [
+      "Illustrator",
+      '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 48 48"><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient></defs><rect width="48" height="48" fill="url(#g)"/></svg>',
+    ],
+    [
+      "Inkscape plain SVG",
+      '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="32" height="32" viewBox="0 0 32 32" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg"><defs id="defs1"/><g id="layer1"><circle cx="16" cy="16" r="12"/></g></svg>',
+    ],
   ])("accepts real-world %s exports with standard namespaces", (_tool, svg) => {
     expect(sanitizeSvgResult(svg).isOk()).toBe(true);
   });
@@ -110,20 +119,22 @@ describe("sanitizeSvgResult", () => {
       '<svg width="2" height="2"><image href="data:image/png;base64,iVBORw0KGgo=" x="0" y="0" width="2" height="2"/></svg>',
     );
     expect(safe.content).toContain("data:image/png;base64,iVBORw0KGgo=");
-    expect(() => sanitizeSvg(
-      '<svg><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>',
-    )).toThrow(/embedded raster/i);
+    expect(() => sanitizeSvg('<svg><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>')).toThrow(
+      /embedded raster/i,
+    );
   });
 
   it("re-sanitizes embedded document assets and omits unsafe ones", () => {
     const doc = createEmptyDocument("unsafe-asset");
-    doc.assets = [{
-      id: "unsafe",
-      kind: "svg",
-      content: '<svg><script>alert(1)</script></svg>',
-      intrinsicW: 64,
-      intrinsicH: 64,
-    }];
+    doc.assets = [
+      {
+        id: "unsafe",
+        kind: "svg",
+        content: "<svg><script>alert(1)</script></svg>",
+        intrinsicW: 64,
+        intrinsicH: 64,
+      },
+    ];
     const output = embedAssetsInSvg("<svg><defs></defs></svg>", doc);
     expect(output).not.toContain("script");
     expect(output).not.toContain("asset-unsafe");

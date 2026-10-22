@@ -158,54 +158,53 @@ export function useWorkspace(options: WorkspaceOptions) {
       if (persistenceStoppedRef.current) return;
       persistInFlightRef.current = true;
       void persistWorkspace(item.workspace, item.serialized!, persistencePlatformRef.current, item.journal!)
-      .match(
-        (outcome) => {
-          if (persistenceStoppedRef.current) return;
-          // A journal failure was already surfaced synchronously above;
-          // keep the queued result for diagnostics without duplicating it.
-          const isCurrent = workspaceRef.current === item.workspace && !pendingPersistRef.current;
-          if (isCurrent) {
-            persistenceAtRiskRef.current = outcome.status !== "ok";
-          }
-          if (isCurrent && item.journal!.isOk()) reportPersistenceWarning(outcome.warning);
-        },
-        (error) => {
+        .match(
+          (outcome) => {
+            if (persistenceStoppedRef.current) return;
+            // A journal failure was already surfaced synchronously above;
+            // keep the queued result for diagnostics without duplicating it.
+            const isCurrent = workspaceRef.current === item.workspace && !pendingPersistRef.current;
+            if (isCurrent) {
+              persistenceAtRiskRef.current = outcome.status !== "ok";
+            }
+            if (isCurrent && item.journal!.isOk()) reportPersistenceWarning(outcome.warning);
+          },
+          (error) => {
+            if (persistenceStoppedRef.current || workspaceRef.current !== item.workspace) return;
+            persistenceAtRiskRef.current = true;
+            reportPersistenceWarning(storageWarning(error));
+          },
+        )
+        .catch((cause: unknown) => {
           if (persistenceStoppedRef.current || workspaceRef.current !== item.workspace) return;
+          console.error("Workspace persistence failed unexpectedly", cause);
           persistenceAtRiskRef.current = true;
-          reportPersistenceWarning(storageWarning(error));
-        },
-      )
-      .catch((cause: unknown) => {
-        if (persistenceStoppedRef.current || workspaceRef.current !== item.workspace) return;
-        console.error("Workspace persistence failed unexpectedly", cause);
-        persistenceAtRiskRef.current = true;
-        reportPersistenceWarning("Workspace persistence failed unexpectedly; edits may not survive reload. Save your diagrams to disk.");
-      })
-      .finally(() => {
-        persistInFlightRef.current = false;
-        if (persistenceStoppedRef.current) return;
-        const queued = pendingPersistRef.current;
-        if (!queued?.serialized || !queued.journal) return;
-        pendingPersistRef.current = null;
-        run(queued);
-      });
+          reportPersistenceWarning(
+            "Workspace persistence failed unexpectedly; edits may not survive reload. Save your diagrams to disk.",
+          );
+        })
+        .finally(() => {
+          persistInFlightRef.current = false;
+          if (persistenceStoppedRef.current) return;
+          const queued = pendingPersistRef.current;
+          if (!queued?.serialized || !queued.journal) return;
+          pendingPersistRef.current = null;
+          run(queued);
+        });
     };
 
     run(next);
   }, [reportPersistenceWarning]);
 
-  const updateWorkspace = useCallback(
-    (change: (current: WorkspaceState) => WorkspaceState) => {
-      // Keep the ref in lockstep with queued updates. Pointer gestures can
-      // commit a preview and finish their transaction in the same event; a
-      // functional React update may not run until after that event, leaving
-      // endTransaction() looking at the pre-gesture source.
-      const next = change(workspaceRef.current);
-      workspaceRef.current = next;
-      setWorkspace(next);
-    },
-    [],
-  );
+  const updateWorkspace = useCallback((change: (current: WorkspaceState) => WorkspaceState) => {
+    // Keep the ref in lockstep with queued updates. Pointer gestures can
+    // commit a preview and finish their transaction in the same event; a
+    // functional React update may not run until after that event, leaving
+    // endTransaction() looking at the pre-gesture source.
+    const next = change(workspaceRef.current);
+    workspaceRef.current = next;
+    setWorkspace(next);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -242,10 +241,7 @@ export function useWorkspace(options: WorkspaceOptions) {
     if (persistTimerRef.current !== null) {
       window.clearTimeout(persistTimerRef.current);
     }
-    persistTimerRef.current = window.setTimeout(
-      flushPendingPersist,
-      WORKSPACE_PERSIST_DEBOUNCE_MS,
-    );
+    persistTimerRef.current = window.setTimeout(flushPendingPersist, WORKSPACE_PERSIST_DEBOUNCE_MS);
 
     return () => {
       if (persistTimerRef.current !== null) {
@@ -296,7 +292,7 @@ export function useWorkspace(options: WorkspaceOptions) {
       const activeId = workspaceRef.current.activeTabId;
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === activeId ? { ...tab, source } : tab),
+        tabs: current.tabs.map((tab) => (tab.id === activeId ? { ...tab, source } : tab)),
       }));
     },
     [updateWorkspace],
@@ -312,7 +308,7 @@ export function useWorkspace(options: WorkspaceOptions) {
       historiesRef.current.set(active.id, beginSourceDraft(history, active.source));
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === active.id ? { ...tab, source } : tab),
+        tabs: current.tabs.map((tab) => (tab.id === active.id ? { ...tab, source } : tab)),
       }));
       touchHistory();
     },
@@ -341,7 +337,7 @@ export function useWorkspace(options: WorkspaceOptions) {
       historiesRef.current.set(active.id, transition.history);
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === active.id ? { ...tab, source } : tab),
+        tabs: current.tabs.map((tab) => (tab.id === active.id ? { ...tab, source } : tab)),
       }));
       touchHistory();
     },
@@ -349,19 +345,27 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const resetTab = useCallback(
-    (tabId: string, source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin" | "initialSource">> = {}) => {
+    (
+      tabId: string,
+      source: string,
+      savedSource = source,
+      metadata: Partial<Pick<WorkspaceTab, "filename" | "origin" | "initialSource">> = {},
+    ) => {
       const initialSource = metadata.initialSource ?? source;
-      if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
-          utf8ByteLength(savedSource) > DIAGRAM_LIMITS.sourceBytes ||
-          utf8ByteLength(initialSource) > DIAGRAM_LIMITS.sourceBytes) return;
+      if (
+        utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
+        utf8ByteLength(savedSource) > DIAGRAM_LIMITS.sourceBytes ||
+        utf8ByteLength(initialSource) > DIAGRAM_LIMITS.sourceBytes
+      )
+        return;
       if (!workspaceRef.current.tabs.some((tab) => tab.id === tabId)) return;
       if (workspaceRef.current.activeTabId === tabId) commitSourceDraft();
       historiesRef.current.set(tabId, createHistory());
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === tabId
-          ? { ...tab, source, initialSource, savedSource, ...metadata }
-          : tab),
+        tabs: current.tabs.map((tab) =>
+          tab.id === tabId ? { ...tab, source, initialSource, savedSource, ...metadata } : tab,
+        ),
       }));
       touchHistory();
     },
@@ -369,37 +373,50 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const resetActive = useCallback(
-    (source: string, savedSource = source, metadata: Partial<Pick<WorkspaceTab, "filename" | "origin" | "initialSource">> = {}) => {
+    (
+      source: string,
+      savedSource = source,
+      metadata: Partial<Pick<WorkspaceTab, "filename" | "origin" | "initialSource">> = {},
+    ) => {
       resetTab(workspaceRef.current.activeTabId, source, savedSource, metadata);
     },
     [resetTab],
   );
 
-  const beginTransaction = useCallback((tabId?: string) => {
-    const state = workspaceRef.current;
-    const tab = state.tabs.find((candidate) => candidate.id === (tabId ?? state.activeTabId));
-    if (!tab) return;
-    const history = ensureHistory(tab.id);
-    historiesRef.current.set(tab.id, beginHistoryTransaction(history, tab.source));
-  }, [ensureHistory]);
+  const beginTransaction = useCallback(
+    (tabId?: string) => {
+      const state = workspaceRef.current;
+      const tab = state.tabs.find((candidate) => candidate.id === (tabId ?? state.activeTabId));
+      if (!tab) return;
+      const history = ensureHistory(tab.id);
+      historiesRef.current.set(tab.id, beginHistoryTransaction(history, tab.source));
+    },
+    [ensureHistory],
+  );
 
-  const endTransaction = useCallback((tabId?: string) => {
-    const state = workspaceRef.current;
-    const tab = state.tabs.find((candidate) => candidate.id === (tabId ?? state.activeTabId));
-    if (!tab) return;
-    const history = ensureHistory(tab.id);
-    const transition = endHistoryTransaction(history, tab.source);
-    historiesRef.current.set(tab.id, transition.history);
-    if (transition.changed) touchHistory();
-  }, [ensureHistory, touchHistory]);
+  const endTransaction = useCallback(
+    (tabId?: string) => {
+      const state = workspaceRef.current;
+      const tab = state.tabs.find((candidate) => candidate.id === (tabId ?? state.activeTabId));
+      if (!tab) return;
+      const history = ensureHistory(tab.id);
+      const transition = endHistoryTransaction(history, tab.source);
+      historiesRef.current.set(tab.id, transition.history);
+      if (transition.changed) touchHistory();
+    },
+    [ensureHistory, touchHistory],
+  );
 
-  const cancelTransaction = useCallback((tabId?: string) => {
-    const state = workspaceRef.current;
-    const tab = state.tabs.find((candidate) => candidate.id === (tabId ?? state.activeTabId));
-    if (!tab) return;
-    const history = ensureHistory(tab.id);
-    historiesRef.current.set(tab.id, cancelHistoryTransaction(history));
-  }, [ensureHistory]);
+  const cancelTransaction = useCallback(
+    (tabId?: string) => {
+      const state = workspaceRef.current;
+      const tab = state.tabs.find((candidate) => candidate.id === (tabId ?? state.activeTabId));
+      if (!tab) return;
+      const history = ensureHistory(tab.id);
+      historiesRef.current.set(tab.id, cancelHistoryTransaction(history));
+    },
+    [ensureHistory],
+  );
 
   const undo = useCallback(() => {
     commitSourceDraft();
@@ -412,7 +429,9 @@ export function useWorkspace(options: WorkspaceOptions) {
     if (!transition.changed || transition.source === undefined) return;
     updateWorkspace((current) => ({
       ...current,
-      tabs: current.tabs.map((candidate) => candidate.id === tab.id ? { ...candidate, source: transition.source! } : candidate),
+      tabs: current.tabs.map((candidate) =>
+        candidate.id === tab.id ? { ...candidate, source: transition.source! } : candidate,
+      ),
     }));
     touchHistory();
   }, [commitSourceDraft, ensureHistory, touchHistory, updateWorkspace]);
@@ -428,7 +447,9 @@ export function useWorkspace(options: WorkspaceOptions) {
     if (!transition.changed || transition.source === undefined) return;
     updateWorkspace((current) => ({
       ...current,
-      tabs: current.tabs.map((candidate) => candidate.id === tab.id ? { ...candidate, source: transition.source! } : candidate),
+      tabs: current.tabs.map((candidate) =>
+        candidate.id === tab.id ? { ...candidate, source: transition.source! } : candidate,
+      ),
     }));
     touchHistory();
   }, [commitSourceDraft, ensureHistory, touchHistory, updateWorkspace]);
@@ -451,7 +472,11 @@ export function useWorkspace(options: WorkspaceOptions) {
         if (fromIndex < 0 || targetIndex < 0) return current;
         const tabs = [...current.tabs];
         const [moved] = tabs.splice(fromIndex, 1);
-        tabs.splice(tabs.findIndex((tab) => tab.id === targetTabId), 0, moved!);
+        tabs.splice(
+          tabs.findIndex((tab) => tab.id === targetTabId),
+          0,
+          moved!,
+        );
         return { ...current, tabs };
       });
     },
@@ -459,11 +484,20 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const openTab = useCallback(
-    (source: string, tabOptions: Partial<Pick<WorkspaceTab, "initialSource" | "savedSource" | "filename" | "origin" | "viewport">> = {}) => {
+    (
+      source: string,
+      tabOptions: Partial<
+        Pick<WorkspaceTab, "initialSource" | "savedSource" | "filename" | "origin" | "viewport">
+      > = {},
+    ) => {
       commitSourceDraft();
-      if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
-          (tabOptions.initialSource !== undefined && utf8ByteLength(tabOptions.initialSource) > DIAGRAM_LIMITS.sourceBytes) ||
-          (tabOptions.savedSource !== undefined && utf8ByteLength(tabOptions.savedSource) > DIAGRAM_LIMITS.sourceBytes)) return null;
+      if (
+        utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes ||
+        (tabOptions.initialSource !== undefined &&
+          utf8ByteLength(tabOptions.initialSource) > DIAGRAM_LIMITS.sourceBytes) ||
+        (tabOptions.savedSource !== undefined && utf8ByteLength(tabOptions.savedSource) > DIAGRAM_LIMITS.sourceBytes)
+      )
+        return null;
       if (workspaceRef.current.tabs.length >= MAX_WORKSPACE_TABS) return null;
       const tab = createWorkspaceTab(source, {
         initialSource: tabOptions.initialSource ?? source,
@@ -505,12 +539,18 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const closeTab = useCallback(
-    (tabId = workspaceRef.current.activeTabId, previewByTabId?: WorkspacePreviewMap) => closeTabs([tabId], undefined, previewByTabId),
+    (tabId = workspaceRef.current.activeTabId, previewByTabId?: WorkspacePreviewMap) =>
+      closeTabs([tabId], undefined, previewByTabId),
     [closeTabs],
   );
 
   const closeAllTabs = useCallback(
-    (previewByTabId?: WorkspacePreviewMap) => closeTabs(workspaceRef.current.tabs.map((tab) => tab.id), undefined, previewByTabId),
+    (previewByTabId?: WorkspacePreviewMap) =>
+      closeTabs(
+        workspaceRef.current.tabs.map((tab) => tab.id),
+        undefined,
+        previewByTabId,
+      ),
     [closeTabs],
   );
 
@@ -519,31 +559,44 @@ export function useWorkspace(options: WorkspaceOptions) {
       const current = workspaceRef.current;
       const index = current.tabs.findIndex((tab) => tab.id === tabId);
       if (index < 0) return 0;
-      return closeTabs(current.tabs.slice(index + 1).map((tab) => tab.id), tabId, previewByTabId);
+      return closeTabs(
+        current.tabs.slice(index + 1).map((tab) => tab.id),
+        tabId,
+        previewByTabId,
+      );
     },
     [closeTabs],
   );
 
-  const restoreClosed = useCallback((tabId = workspaceRef.current.recentlyClosed[0]?.id) => {
-    commitSourceDraft();
-    const current = workspaceRef.current;
-    if (!tabId) return false;
-    const next = restoreWorkspaceTab(current, tabId);
-    if (!next) return false;
-    const restored = next.tabs[next.tabs.length - 1]!;
-    historiesRef.current.set(restored.id, createHistory());
-    updateWorkspace(() => next);
-    return true;
-  }, [commitSourceDraft, updateWorkspace]);
+  const restoreClosed = useCallback(
+    (tabId = workspaceRef.current.recentlyClosed[0]?.id) => {
+      commitSourceDraft();
+      const current = workspaceRef.current;
+      if (!tabId) return false;
+      const next = restoreWorkspaceTab(current, tabId);
+      if (!next) return false;
+      const restored = next.tabs[next.tabs.length - 1]!;
+      historiesRef.current.set(restored.id, createHistory());
+      updateWorkspace(() => next);
+      return true;
+    },
+    [commitSourceDraft, updateWorkspace],
+  );
 
   const reopenClosed = useCallback(() => restoreClosed(), [restoreClosed]);
 
-  const removeClosed = useCallback((tabId: string) => {
-    const current = workspaceRef.current;
-    if (!current.recentlyClosed.some((tab) => tab.id === tabId)) return false;
-    updateWorkspace((state) => ({ ...state, recentlyClosed: state.recentlyClosed.filter((tab) => tab.id !== tabId) }));
-    return true;
-  }, [updateWorkspace]);
+  const removeClosed = useCallback(
+    (tabId: string) => {
+      const current = workspaceRef.current;
+      if (!current.recentlyClosed.some((tab) => tab.id === tabId)) return false;
+      updateWorkspace((state) => ({
+        ...state,
+        recentlyClosed: state.recentlyClosed.filter((tab) => tab.id !== tabId),
+      }));
+      return true;
+    },
+    [updateWorkspace],
+  );
 
   const clearRecentlyClosed = useCallback(() => {
     if (!workspaceRef.current.recentlyClosed.length) return false;
@@ -577,23 +630,28 @@ export function useWorkspace(options: WorkspaceOptions) {
       const userInitiated = viewportOptions.userInitiated ?? true;
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === activeId
-          ? { ...tab, viewport: { ...viewport }, viewportCustomized: userInitiated ? true : tab.viewportCustomized }
-          : tab),
+        tabs: current.tabs.map((tab) =>
+          tab.id === activeId
+            ? { ...tab, viewport: { ...viewport }, viewportCustomized: userInitiated ? true : tab.viewportCustomized }
+            : tab,
+        ),
       }));
     },
     [updateWorkspace],
   );
 
   const markSaved = useCallback(
-    (source = workspaceRef.current.tabs.find((tab) => tab.id === workspaceRef.current.activeTabId)?.source ?? "", filename?: string) => {
+    (
+      source = workspaceRef.current.tabs.find((tab) => tab.id === workspaceRef.current.activeTabId)?.source ?? "",
+      filename?: string,
+    ) => {
       commitSourceDraft();
       const activeId = workspaceRef.current.activeTabId;
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === activeId
-          ? { ...tab, savedSource: source, ...(filename === undefined ? {} : { filename }) }
-          : tab),
+        tabs: current.tabs.map((tab) =>
+          tab.id === activeId ? { ...tab, savedSource: source, ...(filename === undefined ? {} : { filename }) } : tab,
+        ),
       }));
     },
     [commitSourceDraft, updateWorkspace],
@@ -604,9 +662,9 @@ export function useWorkspace(options: WorkspaceOptions) {
       if (workspaceRef.current.activeTabId === tabId) commitSourceDraft();
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === tabId
-          ? { ...tab, savedSource: source, ...(filename === undefined ? {} : { filename }) }
-          : tab),
+        tabs: current.tabs.map((tab) =>
+          tab.id === tabId ? { ...tab, savedSource: source, ...(filename === undefined ? {} : { filename }) } : tab,
+        ),
       }));
     },
     [commitSourceDraft, updateWorkspace],
@@ -616,7 +674,7 @@ export function useWorkspace(options: WorkspaceOptions) {
     (tabId: string, filename?: string) => {
       updateWorkspace((current) => ({
         ...current,
-        tabs: current.tabs.map((tab) => tab.id === tabId ? { ...tab, filename } : tab),
+        tabs: current.tabs.map((tab) => (tab.id === tabId ? { ...tab, filename } : tab)),
       }));
     },
     [updateWorkspace],

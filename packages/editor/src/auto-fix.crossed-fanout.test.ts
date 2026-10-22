@@ -70,18 +70,14 @@ describe("planAutoFix crossed fan-out", () => {
 
     const s3Edge = base.layout.edges.find((edge) => edge.target === "simple-storage-service")!;
     const apiEdge = base.layout.edges.find((edge) => edge.target === "api-gateway")!;
-    const routed = setRoute(
-      setRoute(doc, s3Edge.id, s3Edge.points),
-      apiEdge.id,
-      [
-        apiEdge.points[0]!,
-        { x: 300, y: 144 },
-        { x: 300, y: 190 },
-        { x: 460, y: 190 },
-        { x: 460, y: 84 },
-        apiEdge.points.at(-1)!,
-      ],
-    );
+    const routed = setRoute(setRoute(doc, s3Edge.id, s3Edge.points), apiEdge.id, [
+      apiEdge.points[0]!,
+      { x: 300, y: 144 },
+      { x: 300, y: 190 },
+      { x: 460, y: 190 },
+      { x: 460, y: 84 },
+      apiEdge.points.at(-1)!,
+    ]);
 
     const plan = planAutoFix(routed, true);
     expect(plan.status).toBe("repaired");

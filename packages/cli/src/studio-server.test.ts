@@ -51,7 +51,7 @@ describe("local Studio server", () => {
       expect(result.error).toMatchObject({ code: "start-failed" });
     } finally {
       await new Promise<void>((resolve, reject) => {
-        blocker.close((error) => error ? reject(error) : resolve());
+        blocker.close((error) => (error ? reject(error) : resolve()));
       });
     }
   });
@@ -136,7 +136,6 @@ describe("local Studio server", () => {
     expect(response.status).toBe(403);
     expect(await response.text()).toBe("Forbidden");
   });
-
 });
 
 async function createTestServer(
@@ -157,12 +156,12 @@ async function createTestServer(
 
 function closeServer(handle: StudioServerHandle): Promise<void> {
   return new Promise((resolve, reject) => {
-    handle.server.close((error) => error ? reject(error) : resolve());
+    handle.server.close((error) => (error ? reject(error) : resolve()));
   });
 }
 
 function closeNetServer(server: ReturnType<typeof createServer>): Promise<void> {
   return new Promise((resolve, reject) => {
-    server.close((error) => error ? reject(error) : resolve());
+    server.close((error) => (error ? reject(error) : resolve()));
   });
 }

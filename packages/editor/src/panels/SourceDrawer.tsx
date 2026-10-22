@@ -125,25 +125,35 @@ export function SourceDrawer({
   return (
     <div className="source-drawer">
       <div className="code-actions">
-        <button type="button" onClick={onFormat} disabled={!canFormat}>Format</button>
+        <button type="button" onClick={onFormat} disabled={!canFormat}>
+          Format
+        </button>
         <button type="button" onClick={onCopy}>
           Copy
         </button>
-        {onReset && <button type="button" onClick={onReset}>Reset example</button>}
+        {onReset && (
+          <button type="button" onClick={onReset}>
+            Reset example
+          </button>
+        )}
       </div>
       {diagnostics.length > 0 && (
         <div className="issues" role="status" aria-live="polite" id="source-editor-diagnostics">
-          {diagnostics.map((diagnostic, index) => diagnostic.location ? (
-            <button
-              type="button"
-              className="source-diagnostic"
-              key={index}
-              title={`Jump to line ${diagnostic.location.line}, column ${diagnostic.location.column}`}
-              onClick={() => focusDiagnostic(diagnostic.location!)}
-            >
-              {diagnostic.message}
-            </button>
-          ) : <div key={index}>{diagnostic.message}</div>)}
+          {diagnostics.map((diagnostic, index) =>
+            diagnostic.location ? (
+              <button
+                type="button"
+                className="source-diagnostic"
+                key={index}
+                title={`Jump to line ${diagnostic.location.line}, column ${diagnostic.location.column}`}
+                onClick={() => focusDiagnostic(diagnostic.location!)}
+              >
+                {diagnostic.message}
+              </button>
+            ) : (
+              <div key={index}>{diagnostic.message}</div>
+            ),
+          )}
         </div>
       )}
       <div className="source-editor-shell">

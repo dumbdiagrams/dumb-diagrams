@@ -10,7 +10,10 @@ describe("pure document operations", () => {
     const imported = importSvgAssetResult(doc, '<svg viewBox="0 0 16 16"><rect width="16" height="16"/></svg>');
     expect(imported.isOk()).toBe(true);
     if (imported.isErr()) return;
-    const result = addCustomResourceResult(imported.value.doc, imported.value.assetId, "Badge", undefined, { x: 40, y: 80 });
+    const result = addCustomResourceResult(imported.value.doc, imported.value.assetId, "Badge", undefined, {
+      x: 40,
+      y: 80,
+    });
 
     expect(result.isOk()).toBe(true);
     expect(doc.resources).toHaveLength(createAsyncDocsFixture().resources.length);
@@ -29,7 +32,10 @@ describe("pure document operations", () => {
     const imported = importSvgAssetResult(doc, '<svg viewBox="0 0 16 16"><rect width="16" height="16"/></svg>');
     expect(imported.isOk()).toBe(true);
     if (imported.isErr()) return;
-    const result = addCustomResourceResult(imported.value.doc, imported.value.assetId, "Badge", "missing", { x: 0, y: 0 });
+    const result = addCustomResourceResult(imported.value.doc, imported.value.assetId, "Badge", "missing", {
+      x: 0,
+      y: 0,
+    });
     expect(result.isErr() && result.error.code).toBe("parent-not-found");
   });
 });

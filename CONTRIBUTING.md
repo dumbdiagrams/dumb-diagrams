@@ -42,7 +42,7 @@ Editor tests import the built runtime, so run
 | `pnpm test:golden` | Frozen SVG, geometry, format compatibility, and editor operation output |
 
 After `pnpm install`, this repo points Git at `.githooks`: **pre-commit** runs
-`biome check --write --staged` then verifies staged files; **pre-push** runs
+`biome check --staged` (run `pnpm fix:style` to fix); **pre-push** runs
 `pnpm check:pr`. Set `DUMB_DIAGRAMS_SKIP_HOOKS=1` once to bypass hooks.
 Re-run `pnpm prepare` if hooks stop firing after cloning an existing worktree.
 

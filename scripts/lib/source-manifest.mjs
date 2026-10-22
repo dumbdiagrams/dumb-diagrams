@@ -62,14 +62,33 @@ export const SOURCE_MANIFEST = Object.freeze({
     { path: "assets/catalog/sources", extensions: [".ai", ".pdf", ".png", ".svg"] },
     { path: "e2e", extensions: [".ts"] },
     { path: "e2e-packed", extensions: [".ts"] },
-    { path: "examples/curated", fileNames: ["architecture-brief.md", "diagram.dgm", "reference-spec.md", "user-prompt.md"] },
-    { path: "examples/evaluations", fileNames: ["curated-aws.json", "curated-providers.json", "detailed.dgm", "detailed.md", "expected.json", "normal.dgm", "normal.md", "vague.dgm", "vague.md"] },
+    {
+      path: "examples/curated",
+      fileNames: ["architecture-brief.md", "diagram.dgm", "reference-spec.md", "user-prompt.md"],
+    },
+    {
+      path: "examples/evaluations",
+      fileNames: [
+        "curated-aws.json",
+        "curated-providers.json",
+        "detailed.dgm",
+        "detailed.md",
+        "expected.json",
+        "normal.dgm",
+        "normal.md",
+        "vague.dgm",
+        "vague.md",
+      ],
+    },
     { path: "examples/diagrams", fileNames: ["async-docs.dgm", "transfer-hub.dgm"] },
     { path: "packages/cli/src", extensions: [".ts"] },
     { path: "packages/cli/templates", extensions: [".md"] },
     { path: "packages/editor/src", extensions: [".css", ".ts", ".tsx"] },
     { path: "packages/runtime/src", extensions: [".ts"] },
-    { path: "packages/website/src", extensions: [".astro", ".css", ".dgm", ".md", ".mdx", ".mjs", ".png", ".svg", ".ts"] },
+    {
+      path: "packages/website/src",
+      extensions: [".astro", ".css", ".dgm", ".md", ".mdx", ".mjs", ".png", ".svg", ".ts"],
+    },
     { path: "packages/website/scripts", extensions: [".mjs"] },
     { path: "scripts", extensions: [".json", ".mjs"] },
     { path: "tests/compat", extensions: [".dgm", ".svg", ".ts"] },
@@ -115,7 +134,9 @@ function walkDirectory(sourceRoot, rule, files) {
   if (!existsSync(absoluteDirectory) || !lstatSync(absoluteDirectory).isDirectory()) {
     throw new Error(`Source manifest directory is missing: ${normalizedDirectory}`);
   }
-  for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const entry of readdirSync(absoluteDirectory, { withFileTypes: true }).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )) {
     const relativePath = join(normalizedDirectory, entry.name);
     if (entry.isDirectory()) {
       walkDirectory(sourceRoot, { ...rule, path: relativePath }, files);
@@ -131,7 +152,13 @@ function ruleMatches(entry, extensions, fileNames = undefined) {
 
 function normalizeManifestPath(file) {
   const normalized = normalize(file).split(sep).join("/");
-  if (!normalized || normalized === "." || normalized.startsWith("../") || normalized.includes("/../") || normalized.startsWith("/")) {
+  if (
+    !normalized ||
+    normalized === "." ||
+    normalized.startsWith("../") ||
+    normalized.includes("/../") ||
+    normalized.startsWith("/")
+  ) {
     throw new Error(`Source manifest path must be relative: ${file}`);
   }
   return normalized;

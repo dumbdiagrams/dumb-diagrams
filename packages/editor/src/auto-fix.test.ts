@@ -1,21 +1,12 @@
-import {
-  createAsyncDocsFixture,
-} from "@dumb-diagrams/runtime/test-fixtures";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { INVARIANT_DIAGNOSTICS_TRUNCATED_CODE } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
 import { planAutoFix } from "./auto-fix";
-import {
-  compileDiagramSource,
-  compileDocument,
-  warmDiagramCompilationCache,
-} from "./diagram-compiler";
-import {
-  clearView,
-  setRoute,
-} from "./editor-model";
+import { compileDiagramSource, compileDocument, warmDiagramCompilationCache } from "./diagram-compiler";
+import { clearView, setRoute } from "./editor-model";
 import { DIAGRAM_EXAMPLES } from "./examples";
 
 const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
@@ -42,9 +33,7 @@ const FLAT_CLOUD_BRANCH = `diagram autofix-branch {
 
 describe("planAutoFix", () => {
   it("leaves a clean manually positioned diagram unchanged", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "simple-serverless-web-application",
-    )!;
+    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "simple-serverless-web-application")!;
     const doc = parseDgm(example.source);
     const view = getDefaultView(doc);
     view.places.cdn = { x: 180, y: 96, pin: true, manual: true };
@@ -121,9 +110,7 @@ describe("planAutoFix", () => {
     view.places.lambda = { x: 640, y: 80, pin: true, manual: true };
     view.places.dynamodb = { x: 760, y: 80, pin: true, manual: true };
 
-    const edgeId = doc.edges.find(
-      (edge) => edge.source === "cloudfront" && edge.target === "s3",
-    )!.id;
+    const edgeId = doc.edges.find((edge) => edge.source === "cloudfront" && edge.target === "s3")!.id;
     const routed = setRoute(doc, edgeId, [
       { x: 208, y: 104 },
       { x: 360, y: 104 },

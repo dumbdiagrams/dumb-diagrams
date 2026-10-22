@@ -3,23 +3,20 @@ import { errAsync, okAsync, ResultAsync } from "neverthrow";
 
 import { createEmptyDocument } from "../core/document.js";
 import { getCatalogEntry } from "../catalog/catalog.js";
-import {
-  embedAssetsInSvg,
-  inlineCatalogIcons,
-  resolveResourceIcon,
-  type PortableSvgError,
-} from "./assets.js";
+import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon, type PortableSvgError } from "./assets.js";
 
 describe("render assets", () => {
   it("resolves embedded, catalog, and missing resource icons", () => {
     const doc = createEmptyDocument("assets");
-    doc.assets = [{
-      id: "custom&icon",
-      kind: "svg",
-      content: '<svg viewBox="0 0 16 12"><rect width="16" height="12"/></svg>',
-      intrinsicW: 16,
-      intrinsicH: 12,
-    }];
+    doc.assets = [
+      {
+        id: "custom&icon",
+        kind: "svg",
+        content: '<svg viewBox="0 0 16 12"><rect width="16" height="12"/></svg>',
+        intrinsicW: 16,
+        intrinsicH: 12,
+      },
+    ];
 
     expect(resolveResourceIcon(doc, "cloud-agnostic.actor", { iconAsset: "custom&icon" })).toMatchObject({
       kind: "asset",
@@ -35,13 +32,15 @@ describe("render assets", () => {
     expect(embedAssetsInSvg(original, empty)).toBe(original);
 
     const doc = createEmptyDocument("assets");
-    doc.assets = [{
-      id: "custom&icon",
-      kind: "svg",
-      content: '<svg viewBox="0 0 16 12"><rect width="16" height="12"/></svg>',
-      intrinsicW: 16,
-      intrinsicH: 12,
-    }];
+    doc.assets = [
+      {
+        id: "custom&icon",
+        kind: "svg",
+        content: '<svg viewBox="0 0 16 12"><rect width="16" height="12"/></svg>',
+        intrinsicW: 16,
+        intrinsicH: 12,
+      },
+    ];
     const output = embedAssetsInSvg(original, doc);
     expect(output).toContain('id="asset-custom&amp;icon"');
     expect(output).toContain('<symbol id="asset-custom&amp;icon" viewBox="0 0 16 16"><rect');
@@ -64,15 +63,33 @@ describe("render assets", () => {
     const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const href = `<svg><image href="${entry.browserPath}"/></svg>`;
 
-    expect((await inlineCatalogIcons(href, {
-      loadCatalogSvg: () => okAsync("<div>not an icon</div>"),
-    }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/not an SVG/), browserPath: entry.browserPath });
-    expect((await inlineCatalogIcons(href, {
-      loadCatalogSvg: () => okAsync('<svg><script>alert(1)</script></svg>'),
-    }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/unsafe SVG/) });
-    expect((await inlineCatalogIcons(href, {
-      loadCatalogSvg: () => { throw new Error("disk gone"); },
-    }))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-load-failed", message: "disk gone" });
+    expect(
+      (
+        await inlineCatalogIcons(href, {
+          loadCatalogSvg: () => okAsync("<div>not an icon</div>"),
+        })
+      )._unsafeUnwrapErr(),
+    ).toMatchObject({
+      code: "catalog-icon-unsafe",
+      message: expect.stringMatching(/not an SVG/),
+      browserPath: entry.browserPath,
+    });
+    expect(
+      (
+        await inlineCatalogIcons(href, {
+          loadCatalogSvg: () => okAsync("<svg><script>alert(1)</script></svg>"),
+        })
+      )._unsafeUnwrapErr(),
+    ).toMatchObject({ code: "catalog-icon-unsafe", message: expect.stringMatching(/unsafe SVG/) });
+    expect(
+      (
+        await inlineCatalogIcons(href, {
+          loadCatalogSvg: () => {
+            throw new Error("disk gone");
+          },
+        })
+      )._unsafeUnwrapErr(),
+    ).toMatchObject({ code: "catalog-icon-load-failed", message: "disk gone" });
   });
 
   it("preserves typed loader errors without wrapping them", async () => {
@@ -92,12 +109,16 @@ describe("render assets", () => {
   it("adapts rejected platform work inside a typed loader", async () => {
     const entry = getCatalogEntry("cloud-agnostic.actor")!;
     const result = await inlineCatalogIcons(`<svg><image href="${entry.browserPath}"/></svg>`, {
-      loadCatalogSvg: () => ResultAsync.fromPromise(
-        Promise.reject(new Error("disk gone")),
-        (cause): PortableSvgError => ({
-          code: "catalog-icon-load-failed", message: "disk gone", browserPath: entry.browserPath, cause,
-        }),
-      ),
+      loadCatalogSvg: () =>
+        ResultAsync.fromPromise(
+          Promise.reject(new Error("disk gone")),
+          (cause): PortableSvgError => ({
+            code: "catalog-icon-load-failed",
+            message: "disk gone",
+            browserPath: entry.browserPath,
+            cause,
+          }),
+        ),
     });
     expect(result._unsafeUnwrapErr()).toMatchObject({ code: "catalog-icon-load-failed", message: "disk gone" });
   });
@@ -130,14 +151,20 @@ describe("render assets", () => {
       vi.unstubAllGlobals();
     }
 
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => "" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, text: async () => "" })),
+    );
     try {
       expect((await inlineCatalogIcons(svg))._unsafeUnwrapErr()).toMatchObject({ code: "catalog-loader-required" });
     } finally {
       vi.unstubAllGlobals();
     }
 
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, text: async () => "" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, text: async () => "" })),
+    );
     vi.stubGlobal("document", { baseURI: "https://example.test/" });
     try {
       expect((await inlineCatalogIcons(svg))._unsafeUnwrapErr()).toMatchObject({
@@ -151,8 +178,12 @@ describe("render assets", () => {
 
   it("ignores non-catalog paths, including malformed URLs", async () => {
     const svg = '<svg><image href="unknown.svg"/><image href="catalog-icons/%E0%A4%A"/></svg>';
-    expect((await inlineCatalogIcons(svg, {
-      loadCatalogSvg: () => okAsync("<svg/>"),
-    }))._unsafeUnwrap()).toBe(svg);
+    expect(
+      (
+        await inlineCatalogIcons(svg, {
+          loadCatalogSvg: () => okAsync("<svg/>"),
+        })
+      )._unsafeUnwrap(),
+    ).toBe(svg);
   });
 });

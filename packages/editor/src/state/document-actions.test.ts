@@ -55,8 +55,11 @@ describe("document action preparation", () => {
       cloud-agnostic.server db "Database"
       api -> db
     }`;
-    const result = prepareDocumentMutation(source, (doc) =>
-      setPlace(setPlace(doc, "api", 200, 80), "db", 200, 80), false);
+    const result = prepareDocumentMutation(
+      source,
+      (doc) => setPlace(setPlace(doc, "api", 200, 80), "db", 200, 80),
+      false,
+    );
     expect(result.isOk()).toBe(true);
     if (result.isErr()) return;
     const compiled = compileDiagramSource(result.value.source, false);
@@ -77,15 +80,23 @@ describe("document action preparation", () => {
   it("preserves an unexpected mutation cause instead of reporting invalid syntax", () => {
     const source = printDgm(createEmptyDocument("original"));
     const cause = new TypeError("mutation defect");
-    const result = prepareDocumentMutation(source, () => { throw cause; }, true);
+    const result = prepareDocumentMutation(
+      source,
+      () => {
+        throw cause;
+      },
+      true,
+    );
     expect(result.isErr() && result.error.code).toBe("unexpected");
     expect(result.isErr() && result.error.cause).toBe(cause);
   });
 
   it("rejects a failed precompilation before a source can be published", () => {
     const result = prepareDocument(createEmptyDocument("original"), true, {
-      ok: false, issues: [{ level: "error", code: "routing", message: "Routing failed" }],
-      svg: null, invariantFailures: [],
+      ok: false,
+      issues: [{ level: "error", code: "routing", message: "Routing failed" }],
+      svg: null,
+      invariantFailures: [],
     });
     expect(result.isErr() && result.error).toMatchObject({ code: "compilation", message: "Routing failed" });
   });
@@ -110,8 +121,12 @@ describe("document action preparation", () => {
     }`;
     const moved = prepareDocumentMutation(source, (doc) => setPlace(doc, "api", 240, 96), true, true);
     expect(moved.isOk() && getCachedDiagramCompilation(moved.value.source, true)).toBeUndefined();
-    const duplicated = prepareDocumentMutation(source, (doc) =>
-      ({ ...doc, resources: [...doc.resources, doc.resources[0]!] }), true, true);
+    const duplicated = prepareDocumentMutation(
+      source,
+      (doc) => ({ ...doc, resources: [...doc.resources, doc.resources[0]!] }),
+      true,
+      true,
+    );
     expect(duplicated.isErr() && duplicated.error.code).toBe("invalid-document");
   });
 
@@ -141,8 +156,18 @@ view default {
     const next = preserveManualLayout(doc, compiled.layout);
     expect(doc).toEqual(before);
     expect(getDefaultView(next).routes.https_requests).toEqual(getDefaultView(doc).routes.https_requests);
-    expect(getDefaultView(next).places.app_service).toMatchObject({ visible: false, zIndex: 3, pin: true, manual: true });
-    expect(getDefaultView(next).places.architecture).toMatchObject({ locked: true, zIndex: 2, pin: true, manual: true });
+    expect(getDefaultView(next).places.app_service).toMatchObject({
+      visible: false,
+      zIndex: 3,
+      pin: true,
+      manual: true,
+    });
+    expect(getDefaultView(next).places.architecture).toMatchObject({
+      locked: true,
+      zIndex: 2,
+      pin: true,
+      manual: true,
+    });
     expect(getDefaultView(next).places.__unknown).toBeUndefined();
     expect(next.resources).toEqual(doc.resources);
     expect(next.groups).toEqual(doc.groups);
@@ -249,39 +274,53 @@ view default {
     }
   });
 
-  it.each(["e", "se", "w", "nw"] as const)("enlarges a group from %s without rearranging its contents or surrounding items", (handle) => {
-    const baseline = compileDiagramSource(azureAppSource, true);
-    expect(baseline.ok).toBe(true);
-    if (!baseline.ok) return;
-    const group = baseline.layout.groups.find((candidate) => candidate.id === "subscription")!;
-    const bounds = resizeRect(group.bounds, handle,
-      handle.includes("w") ? -160 : 160, handle.includes("n") ? -96 : 96, 32, true);
-    const result = prepareDocumentMutation(azureAppSource,
-      (doc) => setGroupBounds(doc, group.id, bounds), true);
-    expect(result.isOk()).toBe(true);
-    if (result.isErr()) return;
-    // Compile the serialized source, as happens when saving and reopening.
-    const after = compileDiagramSource(result.value.source, true);
-    expect(after.ok).toBe(true);
-    if (!after.ok) return;
-    expect(after.layout.groups.find((candidate) => candidate.id === group.id)?.bounds)
-      .toEqual(Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, Math.round(value)])));
-    for (const original of baseline.layout.groups.filter((candidate) => candidate.id !== group.id)) {
-      expect(after.layout.groups.find((candidate) => candidate.id === original.id)?.bounds, original.id)
-        .toEqual(original.bounds);
-    }
-    for (const original of baseline.layout.nodes) {
-      expect(after.layout.nodes.find((candidate) => candidate.id === original.id)?.obstacle, original.id)
-        .toEqual(original.obstacle);
-    }
-  });
+  it.each(["e", "se", "w", "nw"] as const)(
+    "enlarges a group from %s without rearranging its contents or surrounding items",
+    (handle) => {
+      const baseline = compileDiagramSource(azureAppSource, true);
+      expect(baseline.ok).toBe(true);
+      if (!baseline.ok) return;
+      const group = baseline.layout.groups.find((candidate) => candidate.id === "subscription")!;
+      const bounds = resizeRect(
+        group.bounds,
+        handle,
+        handle.includes("w") ? -160 : 160,
+        handle.includes("n") ? -96 : 96,
+        32,
+        true,
+      );
+      const result = prepareDocumentMutation(azureAppSource, (doc) => setGroupBounds(doc, group.id, bounds), true);
+      expect(result.isOk()).toBe(true);
+      if (result.isErr()) return;
+      // Compile the serialized source, as happens when saving and reopening.
+      const after = compileDiagramSource(result.value.source, true);
+      expect(after.ok).toBe(true);
+      if (!after.ok) return;
+      expect(after.layout.groups.find((candidate) => candidate.id === group.id)?.bounds).toEqual(
+        Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, Math.round(value)])),
+      );
+      for (const original of baseline.layout.groups.filter((candidate) => candidate.id !== group.id)) {
+        expect(after.layout.groups.find((candidate) => candidate.id === original.id)?.bounds, original.id).toEqual(
+          original.bounds,
+        );
+      }
+      for (const original of baseline.layout.nodes) {
+        expect(after.layout.nodes.find((candidate) => candidate.id === original.id)?.obstacle, original.id).toEqual(
+          original.obstacle,
+        );
+      }
+    },
+  );
 
   it("moves a group's internal connector with its endpoints in Manual mode", () => {
     const before = compileDiagramSource(azureAppSource, true);
     expect(before.ok).toBe(true);
     if (!before.ok) return;
-    const result = prepareDocumentMutation(azureAppSource, (doc) =>
-      moveSelection(doc, [{ kind: "group", id: "application_tier" }], 64, 32), true);
+    const result = prepareDocumentMutation(
+      azureAppSource,
+      (doc) => moveSelection(doc, [{ kind: "group", id: "application_tier" }], 64, 32),
+      true,
+    );
     expect(result.isOk()).toBe(true);
     if (result.isErr()) return;
     const after = compileDiagramSource(result.value.source, true);
@@ -323,8 +362,11 @@ view default {
     };
     const before = compileDiagramSource(source, true);
     // Drop the dead-letter queue directly below the processing queue.
-    const moved = prepareDocumentMutation(source, (doc) =>
-      moveSelection(doc, [{ kind: "resource", id: "dlq" }], -160, 120), true);
+    const moved = prepareDocumentMutation(
+      source,
+      (doc) => moveSelection(doc, [{ kind: "resource", id: "dlq" }], -160, 120),
+      true,
+    );
     expect(moved.isOk()).toBe(true);
     if (moved.isErr()) return;
     const after = compileDiagramSource(moved.value.source, true);
@@ -337,8 +379,11 @@ view default {
     expect(edge(after, "process")).toEqual(edge(before, "process"));
 
     // The re-routed connector is frozen again by the next unrelated edit.
-    const next = prepareDocumentMutation(moved.value.source, (doc) =>
-      moveSelection(doc, [{ kind: "resource", id: "worker" }], 40, 0), true);
+    const next = prepareDocumentMutation(
+      moved.value.source,
+      (doc) => moveSelection(doc, [{ kind: "resource", id: "worker" }], 40, 0),
+      true,
+    );
     expect(next.isOk()).toBe(true);
     if (next.isErr()) return;
     expect(edge(compileDiagramSource(next.value.source, true), "failed")).toEqual([start, end]);

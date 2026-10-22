@@ -6,13 +6,7 @@ import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 
 import { addResourceResult } from "./model/catalog-placement.js";
-import {
-  GRID_SIZE,
-  leftStagingInsertionPoint,
-  snapDragDelta,
-  snapLayoutToGrid,
-  STAGING_GUTTER_PX,
-} from "./grid.js";
+import { GRID_SIZE, leftStagingInsertionPoint, snapDragDelta, snapLayoutToGrid, STAGING_GUTTER_PX } from "./grid.js";
 
 describe("editor grid", () => {
   it("snaps top-level anchors without changing nested geometry or centering", () => {
@@ -31,12 +25,8 @@ describe("editor grid", () => {
 
     for (const beforeGroup of layout.groups.filter((group) => group.id !== "client")) {
       const afterGroup = snapped.groups.find((group) => group.id === beforeGroup.id)!;
-      expect(afterGroup.bounds.x - afterRoot.bounds.x).toBeCloseTo(
-        beforeGroup.bounds.x - beforeRoot.bounds.x,
-      );
-      expect(afterGroup.bounds.y - afterRoot.bounds.y).toBeCloseTo(
-        beforeGroup.bounds.y - beforeRoot.bounds.y,
-      );
+      expect(afterGroup.bounds.x - afterRoot.bounds.x).toBeCloseTo(beforeGroup.bounds.x - beforeRoot.bounds.x);
+      expect(afterGroup.bounds.y - afterRoot.bounds.y).toBeCloseTo(beforeGroup.bounds.y - beforeRoot.bounds.y);
       expect(afterGroup.bounds.w).toBe(beforeGroup.bounds.w);
       expect(afterGroup.bounds.h).toBe(beforeGroup.bounds.h);
     }
@@ -48,12 +38,8 @@ describe("editor grid", () => {
         [beforeNode.icon, afterNode.icon],
         [beforeNode.label, afterNode.label],
       ] as const) {
-        expect(afterRect.x - afterRoot.bounds.x).toBeCloseTo(
-          beforeRect.x - beforeRoot.bounds.x,
-        );
-        expect(afterRect.y - afterRoot.bounds.y).toBeCloseTo(
-          beforeRect.y - beforeRoot.bounds.y,
-        );
+        expect(afterRect.x - afterRoot.bounds.x).toBeCloseTo(beforeRect.x - beforeRoot.bounds.x);
+        expect(afterRect.y - afterRoot.bounds.y).toBeCloseTo(beforeRect.y - beforeRoot.bounds.y);
         expect(afterRect.w).toBe(beforeRect.w);
         expect(afterRect.h).toBe(beforeRect.h);
       }
@@ -88,14 +74,7 @@ describe("editor grid", () => {
   });
 
   it("magnetically aligns matching centres ahead of the grid", () => {
-    const snapped = snapDragDelta(
-      { x: 20, y: 20, w: 48, h: 48 },
-      [{ x: 100, y: 120, w: 48, h: 48 }],
-      77,
-      101,
-      true,
-      1,
-    );
+    const snapped = snapDragDelta({ x: 20, y: 20, w: 48, h: 48 }, [{ x: 100, y: 120, w: 48, h: 48 }], 77, 101, true, 1);
 
     expect(snapped.dx).toBe(80);
     expect(snapped.dy).toBe(100);
@@ -106,14 +85,7 @@ describe("editor grid", () => {
   });
 
   it("keeps grid snapping when no peer alignment is nearby", () => {
-    const snapped = snapDragDelta(
-      { x: 10, y: 10, w: 48, h: 48 },
-      [{ x: 300, y: 300, w: 48, h: 48 }],
-      51,
-      37,
-      true,
-      1,
-    );
+    const snapped = snapDragDelta({ x: 10, y: 10, w: 48, h: 48 }, [{ x: 300, y: 300, w: 48, h: 48 }], 51, 37, true, 1);
 
     expect(snapped).toEqual({ dx: 62, dy: 38, guides: [] });
   });

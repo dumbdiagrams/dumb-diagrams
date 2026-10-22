@@ -1,5 +1,11 @@
 import { useEffect, useRef } from "react";
-import { saveExistingFileHandle, saveWithPicker, type FileSaveResult, type FileSystemHandleLike, type SaveFilePicker } from "./file-save";
+import {
+  saveExistingFileHandle,
+  saveWithPicker,
+  type FileSaveResult,
+  type FileSystemHandleLike,
+  type SaveFilePicker,
+} from "./file-save";
 import { downloadTextResult, filenameWithExtension } from "./export-actions";
 import type { WorkspaceTab } from "./workspace";
 
@@ -35,12 +41,13 @@ export function useFileActions({ tabs, tabLabel, sourceIsValid, onMessage, onSav
     options: { overwriteExisting?: boolean } = {},
   ): Promise<FileSaveResult> => {
     const tab = tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return {
-      status: "error",
-      filename: requestedFilename ?? "diagram.dgm",
-      code: "missing-tab",
-      message: "The diagram tab is no longer open.",
-    };
+    if (!tab)
+      return {
+        status: "error",
+        filename: requestedFilename ?? "diagram.dgm",
+        code: "missing-tab",
+        message: "The diagram tab is no longer open.",
+      };
     if (!sourceIsValid(tab.source)) {
       onMessage("Cannot save an invalid diagram. Fix the source errors first.");
       return {

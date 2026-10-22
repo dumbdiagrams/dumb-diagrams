@@ -46,7 +46,9 @@ function exportArgs(format: "dgm" | "url" | "svg" | "png" = "dgm") {
       borderWidth: 0,
       grid: false,
     },
-    getPortableSvg: vi.fn(() => okAsync<string, PortableSvgError>("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"></svg>")),
+    getPortableSvg: vi.fn(() =>
+      okAsync<string, PortableSvgError>('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>'),
+    ),
   };
 }
 
@@ -55,16 +57,22 @@ function stubDownload({ click = vi.fn() }: { click?: ReturnType<typeof vi.fn> } 
   const revokeObjectURL = vi.fn();
   vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
   vi.stubGlobal("document", { createElement: () => ({ click }) });
-  vi.stubGlobal("window", { setTimeout: (callback: () => void) => { callback(); return 0; } });
+  vi.stubGlobal("window", {
+    setTimeout: (callback: () => void) => {
+      callback();
+      return 0;
+    },
+  });
   return { click, createObjectURL, revokeObjectURL };
 }
 
 describe("export filenames", () => {
   it("advertises source embedding only for formats that preserve it", () => {
-    expect(Object.entries(EXPORT_FORMAT_CAPABILITIES)
-      .filter(([, capabilities]) => capabilities.sourceOption)
-      .map(([format]) => format))
-      .toEqual(["svg", "html"]);
+    expect(
+      Object.entries(EXPORT_FORMAT_CAPABILITIES)
+        .filter(([, capabilities]) => capabilities.sourceOption)
+        .map(([format]) => format),
+    ).toEqual(["svg", "html"]);
     expect(supportsExportSourceOption("png")).toBe(false);
     expect(supportsExportSourceOption("pdf")).toBe(false);
     expect(supportsExportSourceOption("gif")).toBe(false);
@@ -104,11 +112,40 @@ describe("export filenames", () => {
     doc.edges.push({ id: "flow", source: "source", target: "target", style: "solid" });
     const layout = {
       nodes: [
-        { id: "source", type: "resource" as const, icon: { x: 100, y: 120, w: 48, h: 48 }, label: { x: 96, y: 172, w: 56, h: 32 }, obstacle: { x: 96, y: 120, w: 56, h: 84 }, role: "primary" as const, resourceType: "s3", serviceLabel: "S3" },
-        { id: "target", type: "resource" as const, icon: { x: 520, y: 120, w: 48, h: 48 }, label: { x: 516, y: 172, w: 56, h: 32 }, obstacle: { x: 512, y: 120, w: 64, h: 84 }, role: "primary" as const, resourceType: "lambda", serviceLabel: "Lambda" },
+        {
+          id: "source",
+          type: "resource" as const,
+          icon: { x: 100, y: 120, w: 48, h: 48 },
+          label: { x: 96, y: 172, w: 56, h: 32 },
+          obstacle: { x: 96, y: 120, w: 56, h: 84 },
+          role: "primary" as const,
+          resourceType: "s3",
+          serviceLabel: "S3",
+        },
+        {
+          id: "target",
+          type: "resource" as const,
+          icon: { x: 520, y: 120, w: 48, h: 48 },
+          label: { x: 516, y: 172, w: 56, h: 32 },
+          obstacle: { x: 512, y: 120, w: 64, h: 84 },
+          role: "primary" as const,
+          resourceType: "lambda",
+          serviceLabel: "Lambda",
+        },
       ],
       groups: [],
-      edges: [{ id: "flow", source: "source", target: "target", points: [{ x: 152, y: 162 }, { x: 512, y: 162 }], style: "solid" as const }],
+      edges: [
+        {
+          id: "flow",
+          source: "source",
+          target: "target",
+          points: [
+            { x: 152, y: 162 },
+            { x: 512, y: 162 },
+          ],
+          style: "solid" as const,
+        },
+      ],
       width: 800,
       height: 600,
       symmetries: [],
@@ -141,8 +178,10 @@ describe("diagram URL payloads", () => {
 
   it("rejects malformed and oversized URL payloads", () => {
     expect(decodeDiagramUrlPayload("not valid!")).toMatchObject({ ok: false, code: "malformed" });
-    expect(decodeDiagramUrlPayload("A".repeat(Math.ceil((1024 * 1024) / 3) * 4 + 1)))
-      .toMatchObject({ ok: false, code: "oversize" });
+    expect(decodeDiagramUrlPayload("A".repeat(Math.ceil((1024 * 1024) / 3) * 4 + 1))).toMatchObject({
+      ok: false,
+      code: "oversize",
+    });
     const oversized = encodeDiagramUrlPayload("x".repeat(1024 * 1024 + 1));
     expect(oversized).toMatchObject({ ok: false, code: "oversize" });
   });
@@ -171,12 +210,21 @@ describe("typed diagram exports", () => {
       height = 0;
       onload: (() => void) | null = null;
       onerror: (() => void) | null = null;
-      constructor() { imageConstructed(); }
-      set src(_value: string) { queueMicrotask(() => this.onload?.()); }
+      constructor() {
+        imageConstructed();
+      }
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
     }
     const createElement = vi.fn(() => ({ getContext: vi.fn() }));
     vi.stubGlobal("Image", LoadedImage);
-    vi.stubGlobal("Blob", class TestBlob { type = "image/svg+xml"; });
+    vi.stubGlobal(
+      "Blob",
+      class TestBlob {
+        type = "image/svg+xml";
+      },
+    );
     vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:svg"), revokeObjectURL: vi.fn() });
     vi.stubGlobal("document", { createElement });
     const args = exportArgs("png");
@@ -205,7 +253,11 @@ describe("typed diagram exports", () => {
   });
 
   it("returns a typed source-download failure for the save fallback", () => {
-    stubDownload({ click: vi.fn(() => { throw new Error("blocked"); }) });
+    stubDownload({
+      click: vi.fn(() => {
+        throw new Error("blocked");
+      }),
+    });
 
     const result = downloadTextResult("source", "diagram.dgm");
 
@@ -242,7 +294,9 @@ describe("typed diagram exports", () => {
   it("classifies portable SVG preparation failures", async () => {
     stubDownload();
     const args = exportArgs("svg");
-    args.getPortableSvg.mockReturnValue(errAsync({ code: "catalog-icon-load-failed", message: "icon missing", browserPath: "catalog-icons/x.svg" }));
+    args.getPortableSvg.mockReturnValue(
+      errAsync({ code: "catalog-icon-load-failed", message: "icon missing", browserPath: "catalog-icons/x.svg" }),
+    );
 
     const result = await exportDiagramFile(args);
 
@@ -252,7 +306,9 @@ describe("typed diagram exports", () => {
 
   it("classifies a synchronous portable SVG preparation failure", async () => {
     const args = exportArgs("svg");
-    args.getPortableSvg.mockImplementation(() => { throw new Error("compiler failed before returning a promise"); });
+    args.getPortableSvg.mockImplementation(() => {
+      throw new Error("compiler failed before returning a promise");
+    });
 
     const result = await exportDiagramFile(args);
 
@@ -264,7 +320,9 @@ describe("typed diagram exports", () => {
     class BrokenImage {
       onload: (() => void) | null = null;
       onerror: (() => void) | null = null;
-      set src(_value: string) { queueMicrotask(() => this.onerror?.()); }
+      set src(_value: string) {
+        queueMicrotask(() => this.onerror?.());
+      }
     }
     stubDownload();
     vi.stubGlobal("Image", BrokenImage);
@@ -281,7 +339,9 @@ describe("typed diagram exports", () => {
       height = 10;
       onload: (() => void) | null = null;
       onerror: (() => void) | null = null;
-      set src(_value: string) { queueMicrotask(() => this.onload?.()); }
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
     }
     stubDownload();
     vi.stubGlobal("Image", LoadedImage);
@@ -293,13 +353,15 @@ describe("typed diagram exports", () => {
     if (result.isErr()) expect(result.error.code).toBe("canvas-context");
   });
 
-  it.each(["null callback", "throwing callback"]) ("classifies canvas.toBlob %s as encoding failures", async (mode) => {
+  it.each(["null callback", "throwing callback"])("classifies canvas.toBlob %s as encoding failures", async (mode) => {
     class LoadedImage {
       width = 10;
       height = 10;
       onload: (() => void) | null = null;
       onerror: (() => void) | null = null;
-      set src(_value: string) { queueMicrotask(() => this.onload?.()); }
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
     }
     const context = { fillRect: vi.fn(), drawImage: vi.fn() };
     stubDownload();
@@ -322,7 +384,14 @@ describe("typed diagram exports", () => {
 
   it("classifies blob encoding failures", async () => {
     stubDownload();
-    vi.stubGlobal("Blob", class BrokenBlob { constructor() { throw new Error("quota"); } });
+    vi.stubGlobal(
+      "Blob",
+      class BrokenBlob {
+        constructor() {
+          throw new Error("quota");
+        }
+      },
+    );
 
     const result = await exportDiagramFile(exportArgs("dgm"));
 
@@ -331,7 +400,11 @@ describe("typed diagram exports", () => {
   });
 
   it("classifies browser download rejection and still revokes its URL", async () => {
-    const download = stubDownload({ click: vi.fn(() => { throw new Error("blocked"); }) });
+    const download = stubDownload({
+      click: vi.fn(() => {
+        throw new Error("blocked");
+      }),
+    });
 
     const result = await exportDiagramFile(exportArgs("dgm"));
 

@@ -61,9 +61,7 @@ describe("provider group rendering", () => {
 
   it("covers every azure and gcp catalog group type", () => {
     for (const provider of ["azure", "gcp"] as const) {
-      const groups = manifest.entries.filter(
-        (entry) => entry.provider === provider && entry.assetKind === "group",
-      );
+      const groups = manifest.entries.filter((entry) => entry.provider === provider && entry.assetKind === "group");
       expect(groups.length).toBeGreaterThan(0);
       for (const group of groups) {
         expect(resolveProviderGroupColors(provider, group.type)).not.toBeNull();

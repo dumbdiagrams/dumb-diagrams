@@ -5,12 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import manifest from "./generated/manifest.json" with { type: "json" };
-import {
-  listAssets,
-  listBrowsableAssets,
-  listCategories,
-  listProviders,
-} from "./catalog.js";
+import { listAssets, listBrowsableAssets, listCategories, listProviders } from "./catalog.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -112,15 +107,9 @@ describe("catalog icon previews", () => {
 
   it("does not expose Azure export prefixes in service labels", () => {
     const azureResources = listBrowsableAssets("azure", "resources");
-    const malformed = azureResources.filter(
-      (entry) => /^\d+\s|icon service/i.test(entry.name),
-    );
+    const malformed = azureResources.filter((entry) => /^\d+\s|icon service/i.test(entry.name));
     expect(malformed.map((entry) => entry.name)).toEqual([]);
-    expect(
-      azureResources
-        .filter((entry) => entry.name === "Service Group Relationships")
-        .length,
-    ).toBeGreaterThan(0);
+    expect(azureResources.filter((entry) => entry.name === "Service Group Relationships").length).toBeGreaterThan(0);
   });
 
   it.each(SOURCE_ICON_LIBRARIES)(
@@ -135,10 +124,7 @@ describe("catalog icon previews", () => {
         .sort();
       const catalogPaths = manifest.entries
         .filter(
-          (entry) =>
-            entry.provider === provider &&
-            catalogKinds.has(entry.assetKind) &&
-            entry.browsable !== false,
+          (entry) => entry.provider === provider && catalogKinds.has(entry.assetKind) && entry.browsable !== false,
         )
         .map((entry) => entry.iconPath)
         .filter((file) => file.startsWith(`${root}/`))
@@ -171,9 +157,7 @@ describe("catalog icon previews", () => {
   it("does not expose empty resource categories", () => {
     for (const provider of listProviders()) {
       for (const category of listCategories(provider, "resources")) {
-        const count = listBrowsableAssets(provider, "resources").filter(
-          (entry) => entry.category === category,
-        ).length;
+        const count = listBrowsableAssets(provider, "resources").filter((entry) => entry.category === category).length;
         expect(count, `${provider}/${category}`).toBeGreaterThan(0);
       }
     }
@@ -182,9 +166,7 @@ describe("catalog icon previews", () => {
   it("includes fixed azure group icons", () => {
     const groups = listAssets("azure", { assetKind: "group" });
     const region = groups.find((entry) => entry.type === "azure.region");
-    const resourceGroup = groups.find(
-      (entry) => entry.type === "azure.resource-group",
-    );
+    const resourceGroup = groups.find((entry) => entry.type === "azure.resource-group");
     expect(region?.iconPath).toBe(
       "assets/catalog/sources/azure/Icons/general/10116-icon-service-Region-Management.svg",
     );

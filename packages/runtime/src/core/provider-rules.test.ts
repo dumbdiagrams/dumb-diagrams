@@ -9,9 +9,21 @@ const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 const cases = [
   { grammar: "aws", network: "aws.vpc", outside: "aws.dynamodb", inside: "aws.aws-lambda", word: "VPC" },
-  { grammar: "azure", network: "azure.vnet", outside: "azure.key-vaults", inside: "azure.virtual-machine", word: "VNet" },
+  {
+    grammar: "azure",
+    network: "azure.vnet",
+    outside: "azure.key-vaults",
+    inside: "azure.virtual-machine",
+    word: "VNet",
+  },
   { grammar: "gcp", network: "gcp.vpc", outside: "gcp.bigquery", inside: "gcp.compute-engine", word: "VPC network" },
-  { grammar: "cloud-agnostic", network: "cloud-agnostic.network", outside: "cloud-agnostic.object-storage", inside: "cloud-agnostic.server", word: "network" },
+  {
+    grammar: "cloud-agnostic",
+    network: "cloud-agnostic.network",
+    outside: "cloud-agnostic.object-storage",
+    inside: "cloud-agnostic.server",
+    word: "network",
+  },
 ] as const;
 
 function warnings(grammar: string, network: string, type: string) {
@@ -21,7 +33,9 @@ function warnings(grammar: string, network: string, type: string) {
     ${type} item
   }
 }`);
-  return validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }).filter((issue) => issue.level === "warning");
+  return validateDocument(doc, getCatalogMap(), { enforceCatalogRules: false }).filter(
+    (issue) => issue.level === "warning",
+  );
 }
 
 describe("provider network rules", () => {
@@ -33,12 +47,14 @@ describe("provider network rules", () => {
 
   for (const { grammar, network, outside, inside, word } of cases) {
     it(`${grammar}: warns for a managed service inside the ${word}, not for a workload`, () => {
-      expect(warnings(grammar, network, outside)).toEqual([{
-        level: "warning",
-        code: "managed-service-in-network",
-        message: `${outside} (item) is a managed service; draw it outside the ${word}`,
-        id: "item",
-      }]);
+      expect(warnings(grammar, network, outside)).toEqual([
+        {
+          level: "warning",
+          code: "managed-service-in-network",
+          message: `${outside} (item) is a managed service; draw it outside the ${word}`,
+          id: "item",
+        },
+      ]);
       expect(warnings(grammar, network, inside)).toEqual([]);
     });
   }

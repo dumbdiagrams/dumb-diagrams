@@ -57,4 +57,3 @@ function existsAsFileOrDirectory(path: string): boolean {
     return false;
   }
 }
-

@@ -21,7 +21,7 @@ import type {
 import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/runtime/core";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
-import { isEmptyRootBoundary, } from "@dumb-diagrams/runtime/layout";
+import { isEmptyRootBoundary } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import { snapCoordinate } from "./grid.js";
@@ -45,9 +45,7 @@ export const ANNOTATION_STYLES: Array<{
   { id: "checklist", label: "Checklist", description: "Actionable items", w: 260, h: 152 },
 ];
 
-export function annotationStyle(
-  annotation: { style?: AnnotationStyle },
-): AnnotationStyle {
+export function annotationStyle(annotation: { style?: AnnotationStyle }): AnnotationStyle {
   return annotation.style ?? "paper";
 }
 
@@ -55,11 +53,7 @@ export function annotationSize(style: AnnotationStyle): { w: number; h: number }
   return ANNOTATION_STYLES.find((candidate) => candidate.id === style) ?? ANNOTATION_STYLES[0]!;
 }
 
-export function isSelected(
-  selection: Selection,
-  kind: SelectionKind,
-  id: string,
-): boolean {
+export function isSelected(selection: Selection, kind: SelectionKind, id: string): boolean {
   return selection.some((item) => item.kind === kind && item.id === id);
 }
 
@@ -67,17 +61,11 @@ export function primarySelection(selection: Selection): SelectionItem | null {
   return selection[0] ?? null;
 }
 
-export function toggleSelectionItem(
-  selection: Selection,
-  item: SelectionItem,
-  additive: boolean,
-): Selection {
+export function toggleSelectionItem(selection: Selection, item: SelectionItem, additive: boolean): Selection {
   const exists = isSelected(selection, item.kind, item.id);
   if (!additive) return exists ? selection : [item];
   if (exists) {
-    const next = selection.filter(
-      (candidate) => !(candidate.kind === item.kind && candidate.id === item.id),
-    );
+    const next = selection.filter((candidate) => !(candidate.kind === item.kind && candidate.id === item.id));
     return next;
   }
   return [...selection, item];
@@ -89,12 +77,7 @@ export function setTitle(doc: DiagramDocument, title: string): DiagramDocument {
   return next;
 }
 
-export function setPlace(
-  doc: DiagramDocument,
-  id: string,
-  x: number,
-  y: number,
-): DiagramDocument {
+export function setPlace(doc: DiagramDocument, id: string, x: number, y: number): DiagramDocument {
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
   const place = view.places[id] ?? {};
@@ -115,11 +98,7 @@ export function resourceIconSize(resource: { role: ResourceRole }): ResourceIcon
   return resource.role === "secondary" ? "small" : "normal";
 }
 
-export function setResourceIconSize(
-  doc: DiagramDocument,
-  id: string,
-  size: ResourceIconSize,
-): DiagramDocument {
+export function setResourceIconSize(doc: DiagramDocument, id: string, size: ResourceIconSize): DiagramDocument {
   const next = cloneDocument(doc);
   const resource = next.resources.find((candidate) => candidate.id === id);
   if (!resource) return doc;
@@ -145,11 +124,7 @@ export function setResourceLabelPosition(
   return next;
 }
 
-export function setGroupLabelPosition(
-  doc: DiagramDocument,
-  id: string,
-  position: GroupLabelPosition,
-): DiagramDocument {
+export function setGroupLabelPosition(doc: DiagramDocument, id: string, position: GroupLabelPosition): DiagramDocument {
   const next = cloneDocument(doc);
   const group = next.groups.find((candidate) => candidate.id === id);
   if (!group) return doc;
@@ -157,11 +132,7 @@ export function setGroupLabelPosition(
   return next;
 }
 
-export function setGroupIconHidden(
-  doc: DiagramDocument,
-  id: string,
-  hidden: boolean,
-): DiagramDocument {
+export function setGroupIconHidden(doc: DiagramDocument, id: string, hidden: boolean): DiagramDocument {
   const next = cloneDocument(doc);
   const group = next.groups.find((candidate) => candidate.id === id);
   if (!group) return doc;
@@ -265,11 +236,7 @@ export function setGroupPlace(
 }
 
 /** Persist an authored rectangle for a group without changing its contents. */
-export function setGroupBounds(
-  doc: DiagramDocument,
-  groupId: string,
-  bounds: Rect,
-): DiagramDocument {
+export function setGroupBounds(doc: DiagramDocument, groupId: string, bounds: Rect): DiagramDocument {
   const group = doc.groups.find((candidate) => candidate.id === groupId);
   if (!group || ![bounds.x, bounds.y, bounds.w, bounds.h].every(Number.isFinite)) {
     return doc;
@@ -290,20 +257,17 @@ export function setGroupBounds(
 }
 
 /** Fit a group around its currently rendered descendants, without relayout. */
-export function fitGroupToContents(
-  doc: DiagramDocument,
-  groupId: string,
-  layout: LayoutResult,
-): DiagramDocument {
+export function fitGroupToContents(doc: DiagramDocument, groupId: string, layout: LayoutResult): DiagramDocument {
   const group = doc.groups.find((candidate) => candidate.id === groupId);
   if (!group) return doc;
 
   const descendants = new Set<string>();
   collectChildren(doc, groupId, descendants);
   const geometry = [...descendants]
-    .map((id) =>
-      layout.groups.find((candidate) => candidate.id === id)?.bounds ??
-      layout.nodes.find((candidate) => candidate.id === id)?.obstacle,
+    .map(
+      (id) =>
+        layout.groups.find((candidate) => candidate.id === id)?.bounds ??
+        layout.nodes.find((candidate) => candidate.id === id)?.obstacle,
     )
     .filter((rect): rect is Rect => Boolean(rect));
   if (geometry.length === 0) return doc;
@@ -331,9 +295,7 @@ export function moveSelection(
 ): DiagramDocument {
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
-  const selectedGroups = new Set(
-    selection.filter((item) => item.kind === "group").map((item) => item.id),
-  );
+  const selectedGroups = new Set(selection.filter((item) => item.kind === "group").map((item) => item.id));
   const moving = new Set<string>();
 
   for (const item of selection) {
@@ -467,9 +429,7 @@ export function nudgeSelection(
       const actualDx = x - previousX;
       const actualDy = y - previousY;
       next =
-        item.kind === "group"
-          ? setGroupPlace(next, item.id, x, y, actualDx, actualDy)
-          : setPlace(next, item.id, x, y);
+        item.kind === "group" ? setGroupPlace(next, item.id, x, y, actualDx, actualDy) : setPlace(next, item.id, x, y);
     }
     if (item.kind === "annotation") {
       const view = getDefaultView(next);
@@ -549,10 +509,7 @@ export function setEdgeLabelPosition(
   return next;
 }
 
-export function clearRoute(
-  doc: DiagramDocument,
-  edgeId: string,
-): DiagramDocument {
+export function clearRoute(doc: DiagramDocument, edgeId: string): DiagramDocument {
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
   const existing = view.routes[edgeId];
@@ -584,10 +541,7 @@ export function clearAllRoutes(doc: DiagramDocument): DiagramDocument {
 }
 
 /** Remove manual placement for the listed entities and clear their incident routes. */
-export function clearPlaces(
-  doc: DiagramDocument,
-  ids: ID[],
-): DiagramDocument {
+export function clearPlaces(doc: DiagramDocument, ids: ID[]): DiagramDocument {
   const unique = [...new Set(ids)];
   let next = cloneDocument(doc);
   const view = getDefaultView(next);
@@ -626,15 +580,7 @@ export function reconnectEdge(
   doc: DiagramDocument,
   edgeId: string,
   patch: Partial<
-    Pick<
-      Edge,
-      | "source"
-      | "target"
-      | "sourcePort"
-      | "targetPort"
-      | "sourcePortOffset"
-      | "targetPortOffset"
-    >
+    Pick<Edge, "source" | "target" | "sourcePort" | "targetPort" | "sourcePortOffset" | "targetPortOffset">
   >,
 ): DiagramDocument {
   const next = cloneDocument(doc);
@@ -651,10 +597,7 @@ export function reconnectEdge(
   return next;
 }
 
-export function swapEdgeDirection(
-  doc: DiagramDocument,
-  edgeId: string,
-): DiagramDocument {
+export function swapEdgeDirection(doc: DiagramDocument, edgeId: string): DiagramDocument {
   const next = cloneDocument(doc);
   const edge = next.edges.find((candidate) => candidate.id === edgeId);
   if (!edge) return doc;
@@ -680,17 +623,20 @@ export function clearView(doc: DiagramDocument): DiagramDocument {
     view.places = Object.fromEntries(
       Object.entries(view.places).map(([id, place]) => {
         if (isEmptyRootBoundary(next, id)) {
-          return [id, {
-            x: place.x,
-            y: place.y,
-            w: place.w,
-            h: place.h,
-            pin: place.pin,
-            manual: place.manual,
-            locked: place.locked,
-            visible: place.visible,
-            zIndex: place.zIndex,
-          }];
+          return [
+            id,
+            {
+              x: place.x,
+              y: place.y,
+              w: place.w,
+              h: place.h,
+              pin: place.pin,
+              manual: place.manual,
+              locked: place.locked,
+              visible: place.visible,
+              zIndex: place.zIndex,
+            },
+          ];
         }
         return [
           id,
@@ -706,9 +652,7 @@ export function clearView(doc: DiagramDocument): DiagramDocument {
     // Notes keep their authored position, visibility, and lock state when
     // automatic layout is recalculated.
     view.annotations = view.annotations
-      ? Object.fromEntries(
-          Object.entries(view.annotations).map(([id, place]) => [id, { ...place }]),
-        )
+      ? Object.fromEntries(Object.entries(view.annotations).map(([id, place]) => [id, { ...place }]))
       : undefined;
   }
   return next;
@@ -716,23 +660,21 @@ export function clearView(doc: DiagramDocument): DiagramDocument {
 
 /** Whether Auto-fix would remove authored node geometry or connector overrides. */
 export function needsAutoFix(doc: DiagramDocument): boolean {
-  return doc.views.some((view) =>
-    Object.values(view.places).some((place) =>
-      place.x !== undefined ||
-      place.y !== undefined ||
-      place.w !== undefined ||
-      place.h !== undefined ||
-      place.pin !== undefined ||
-      place.manual !== undefined
-    ) || Object.keys(view.routes).length > 0,
+  return doc.views.some(
+    (view) =>
+      Object.values(view.places).some(
+        (place) =>
+          place.x !== undefined ||
+          place.y !== undefined ||
+          place.w !== undefined ||
+          place.h !== undefined ||
+          place.pin !== undefined ||
+          place.manual !== undefined,
+      ) || Object.keys(view.routes).length > 0,
   );
 }
 
-export function renameResource(
-  doc: DiagramDocument,
-  id: string,
-  label: string,
-): DiagramDocument {
+export function renameResource(doc: DiagramDocument, id: string, label: string): DiagramDocument {
   const next = cloneDocument(doc);
   const resource = next.resources.find((candidate) => candidate.id === id);
   if (!resource) return doc;
@@ -740,11 +682,7 @@ export function renameResource(
   return next;
 }
 
-export function renameGroup(
-  doc: DiagramDocument,
-  id: string,
-  label: string,
-): DiagramDocument {
+export function renameGroup(doc: DiagramDocument, id: string, label: string): DiagramDocument {
   const next = cloneDocument(doc);
   const group = next.groups.find((candidate) => candidate.id === id);
   if (!group) return doc;
@@ -752,11 +690,7 @@ export function renameGroup(
   return next;
 }
 
-export function updateGroupStep(
-  doc: DiagramDocument,
-  id: string,
-  step?: number,
-): DiagramDocument {
+export function updateGroupStep(doc: DiagramDocument, id: string, step?: number): DiagramDocument {
   if (step !== undefined && (!Number.isInteger(step) || step < 0 || step > MAX_EDGE_STEP)) {
     return doc;
   }
@@ -767,11 +701,7 @@ export function updateGroupStep(
   return next;
 }
 
-export function renameEdge(
-  doc: DiagramDocument,
-  id: string,
-  label: string,
-): DiagramDocument {
+export function renameEdge(doc: DiagramDocument, id: string, label: string): DiagramDocument {
   const next = cloneDocument(doc);
   const edge = next.edges.find((candidate) => candidate.id === id);
   if (!edge) return doc;
@@ -859,12 +789,7 @@ export function addText(
   return { doc: updateTextFormat(result.doc, result.id, format), id: result.id };
 }
 
-export function setAnnotationPlace(
-  doc: DiagramDocument,
-  id: string,
-  x: number,
-  y: number,
-): DiagramDocument {
+export function setAnnotationPlace(doc: DiagramDocument, id: string, x: number, y: number): DiagramDocument {
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
   if (!view.annotations) view.annotations = {};
@@ -879,11 +804,7 @@ export function setAnnotationPlace(
   return next;
 }
 
-export function updateAnnotationText(
-  doc: DiagramDocument,
-  id: string,
-  text: string,
-): DiagramDocument {
+export function updateAnnotationText(doc: DiagramDocument, id: string, text: string): DiagramDocument {
   const next = cloneDocument(doc);
   const annotation = next.annotations.find((candidate) => candidate.id === id);
   if (!annotation) return doc;
@@ -908,11 +829,7 @@ export function updateTextFormat(
   return next;
 }
 
-export function setAnnotationStyle(
-  doc: DiagramDocument,
-  id: string,
-  style: AnnotationStyle,
-): DiagramDocument {
+export function setAnnotationStyle(doc: DiagramDocument, id: string, style: AnnotationStyle): DiagramDocument {
   const next = cloneDocument(doc);
   const annotation = next.annotations.find((candidate) => candidate.id === id);
   if (!annotation) return doc;
@@ -937,7 +854,6 @@ export function setAnnotationStyle(
   return next;
 }
 
-
 export function addEdge(
   doc: DiagramDocument,
   source: string,
@@ -955,12 +871,8 @@ export function addEdge(
     target,
     sourcePort,
     targetPort,
-    sourcePortOffset: sourcePortOffset === undefined
-      ? undefined
-      : normalizePortOffset(sourcePortOffset),
-    targetPortOffset: targetPortOffset === undefined
-      ? undefined
-      : normalizePortOffset(targetPortOffset),
+    sourcePortOffset: sourcePortOffset === undefined ? undefined : normalizePortOffset(sourcePortOffset),
+    targetPortOffset: targetPortOffset === undefined ? undefined : normalizePortOffset(targetPortOffset),
     style: "solid",
     kind: "flow",
   });
@@ -985,10 +897,7 @@ export function updateEdge(
     >
   >,
 ): DiagramDocument {
-  if (
-    patch.step !== undefined &&
-    (!Number.isInteger(patch.step) || patch.step < 0 || patch.step > MAX_EDGE_STEP)
-  ) {
+  if (patch.step !== undefined && (!Number.isInteger(patch.step) || patch.step < 0 || patch.step > MAX_EDGE_STEP)) {
     return doc;
   }
   const next = cloneDocument(doc);
@@ -1051,12 +960,14 @@ export function removeSelectionPreservingGroupContents(
   selection: Selection,
   layout?: LayoutResult,
 ): DiagramDocument {
-  const selectedGroupIds = [...new Set(
-    selection
-      .filter((item) => item.kind === "group")
-      .map((item) => item.id)
-      .filter((id) => doc.groups.some((group) => group.id === id)),
-  )];
+  const selectedGroupIds = [
+    ...new Set(
+      selection
+        .filter((item) => item.kind === "group")
+        .map((item) => item.id)
+        .filter((id) => doc.groups.some((group) => group.id === id)),
+    ),
+  ];
   const depth = (id: string): number => {
     let current = doc.groups.find((group) => group.id === id);
     let result = 0;
@@ -1083,10 +994,7 @@ export function removeSelectionPreservingGroupContents(
   return next;
 }
 
-export function deleteSelection(
-  doc: DiagramDocument,
-  selection: Selection,
-): DiagramDocument {
+export function deleteSelection(doc: DiagramDocument, selection: Selection): DiagramDocument {
   let next = doc;
   for (const item of selection) {
     next = deleteOne(next, item);
@@ -1094,10 +1002,7 @@ export function deleteSelection(
   return next;
 }
 
-function deleteOne(
-  doc: DiagramDocument,
-  selection: SelectionItem,
-): DiagramDocument {
+function deleteOne(doc: DiagramDocument, selection: SelectionItem): DiagramDocument {
   const next = cloneDocument(doc);
   if (selection.kind === "edge") {
     next.edges = next.edges.filter((edge) => edge.id !== selection.id);
@@ -1105,9 +1010,7 @@ function deleteOne(
     return next;
   }
   if (selection.kind === "annotation") {
-    next.annotations = next.annotations.filter(
-      (annotation) => annotation.id !== selection.id,
-    );
+    next.annotations = next.annotations.filter((annotation) => annotation.id !== selection.id);
     for (const view of next.views) delete view.annotations?.[selection.id];
     return next;
   }
@@ -1123,9 +1026,7 @@ function deleteOne(
       borderChildren: group.borderChildren?.filter((child) => !ids.has(child.id)),
       overlayTargets: group.overlayTargets?.filter((id) => !ids.has(id)),
     }));
-  next.edges = next.edges.filter(
-    (edge) => !ids.has(edge.source) && !ids.has(edge.target),
-  );
+  next.edges = next.edges.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target));
   for (const view of next.views) {
     for (const id of ids) delete view.places[id];
     for (const id of ids) delete view.annotations?.[id];
@@ -1139,9 +1040,7 @@ export function alignSelection(
   layout: LayoutResult,
   axis: "left" | "center" | "right" | "top" | "middle" | "bottom",
 ): DiagramDocument {
-  const rects = selection
-    .map((item) => boundsFor(item, layout, doc))
-    .filter((rect): rect is Rect => Boolean(rect));
+  const rects = selection.map((item) => boundsFor(item, layout, doc)).filter((rect): rect is Rect => Boolean(rect));
   if (rects.length < 2) return doc;
   let next = doc;
   const minX = Math.min(...rects.map((rect) => rect.x));
@@ -1181,23 +1080,13 @@ export function distributeSelection(
 ): DiagramDocument {
   const items = selection
     .map((item) => ({ item, rect: boundsFor(item, layout, doc) }))
-    .filter((entry): entry is { item: SelectionItem; rect: Rect } =>
-      Boolean(entry.rect),
-    );
+    .filter((entry): entry is { item: SelectionItem; rect: Rect } => Boolean(entry.rect));
   if (items.length < 3) return doc;
-  items.sort((a, b) =>
-    axis === "horizontal" ? a.rect.x - b.rect.x : a.rect.y - b.rect.y,
-  );
+  items.sort((a, b) => (axis === "horizontal" ? a.rect.x - b.rect.x : a.rect.y - b.rect.y));
   const first = items[0]!.rect;
   const last = items.at(-1)!.rect;
-  const span =
-    axis === "horizontal"
-      ? last.x + last.w - first.x
-      : last.y + last.h - first.y;
-  const totalSize = items.reduce(
-    (sum, entry) => sum + (axis === "horizontal" ? entry.rect.w : entry.rect.h),
-    0,
-  );
+  const span = axis === "horizontal" ? last.x + last.w - first.x : last.y + last.h - first.y;
+  const totalSize = items.reduce((sum, entry) => sum + (axis === "horizontal" ? entry.rect.w : entry.rect.h), 0);
   const gap = (span - totalSize) / (items.length - 1);
   let cursor = axis === "horizontal" ? first.x : first.y;
   let next = doc;
@@ -1217,11 +1106,7 @@ export function distributeSelection(
   return next;
 }
 
-function boundsFor(
-  item: SelectionItem,
-  layout: LayoutResult,
-  doc: DiagramDocument,
-): Rect | null {
+function boundsFor(item: SelectionItem, layout: LayoutResult, doc: DiagramDocument): Rect | null {
   if (item.kind === "resource") {
     const node = layout.nodes.find((candidate) => candidate.id === item.id);
     return node?.obstacle ?? null;

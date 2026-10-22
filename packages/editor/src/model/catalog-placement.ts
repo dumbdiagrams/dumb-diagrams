@@ -10,10 +10,7 @@ export interface PlacementCheck {
   reason?: string;
 }
 
-export type CatalogInsertionErrorCode =
-  | "parent-not-found"
-  | "not-a-group"
-  | "group-kind-mismatch";
+export type CatalogInsertionErrorCode = "parent-not-found" | "not-a-group" | "group-kind-mismatch";
 
 export type CatalogInsertionError = {
   readonly code: CatalogInsertionErrorCode;

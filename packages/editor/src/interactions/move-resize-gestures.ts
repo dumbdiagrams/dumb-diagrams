@@ -3,16 +3,8 @@ import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import type { Selection, SelectionItem } from "../model/types";
-import {
-  snapCoordinate,
-  snapDragDelta,
-  type AlignmentGuide,
-} from "../grid.js";
-import {
-  createFramePreview,
-  startOverlayPointerGesture,
-  type OverlayPointerGesture,
-} from "./overlay-gestures.js";
+import { snapCoordinate, snapDragDelta, type AlignmentGuide } from "../grid.js";
+import { createFramePreview, startOverlayPointerGesture, type OverlayPointerGesture } from "./overlay-gestures.js";
 
 export type ResizeHandle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
@@ -32,9 +24,7 @@ export interface AlignmentGuidePreviewController {
   finish: () => void;
 }
 
-export function createAlignmentGuidePreview(
-  overlay: SVGSVGElement | null,
-): AlignmentGuidePreviewController {
+export function createAlignmentGuidePreview(overlay: SVGSVGElement | null): AlignmentGuidePreviewController {
   const layer = overlay?.querySelector<SVGGElement>("[data-alignment-guides]") ?? null;
   const clear = () => layer?.replaceChildren();
   return {
@@ -68,9 +58,7 @@ export function createMovePreview(
   const moving = new Map<string, SelectionItem>();
   const add = (item: SelectionItem) => {
     if (item.kind === "edge") return;
-    const locked = item.kind === "annotation"
-      ? view.annotations?.[item.id]?.locked
-      : view.places[item.id]?.locked;
+    const locked = item.kind === "annotation" ? view.annotations?.[item.id]?.locked : view.places[item.id]?.locked;
     if (!locked) moving.set(`${item.kind}:${item.id}`, item);
   };
   const addGroupChildren = (groupId: string) => {
@@ -104,18 +92,15 @@ export function createMovePreview(
   let settleFrame: number | null = null;
   const resolveTargets = (): Target[] => {
     const elements = new Set<SVGElement>();
-    const resourceIds = new Set(
-      [...moving.values()]
-        .filter((item) => item.kind === "resource")
-        .map((item) => item.id),
-    );
+    const resourceIds = new Set([...moving.values()].filter((item) => item.kind === "resource").map((item) => item.id));
 
     for (const item of moving.values()) {
-      const renderedId = item.kind === "resource"
-        ? `res-${item.id}`
-        : item.kind === "group"
-          ? `group-${item.id}`
-          : `annotation-${item.id}`;
+      const renderedId =
+        item.kind === "resource"
+          ? `res-${item.id}`
+          : item.kind === "group"
+            ? `group-${item.id}`
+            : `annotation-${item.id}`;
       const rendered = document.getElementById(renderedId);
       if (rendered instanceof SVGElement) elements.add(rendered);
     }
@@ -128,13 +113,15 @@ export function createMovePreview(
     for (const element of overlay.querySelectorAll<SVGElement>(
       "[data-entity-kind][data-entity-id], [data-hover-kind][data-hover-id], [data-drag-overlay-kind][data-drag-overlay-id], [data-quick-connect]",
     )) {
-      const kind = element.getAttribute("data-entity-kind")
-        ?? element.getAttribute("data-hover-kind")
-        ?? element.getAttribute("data-drag-overlay-kind");
-      const id = element.getAttribute("data-entity-id")
-        ?? element.getAttribute("data-hover-id")
-        ?? element.getAttribute("data-drag-overlay-id")
-        ?? element.getAttribute("data-quick-connect");
+      const kind =
+        element.getAttribute("data-entity-kind") ??
+        element.getAttribute("data-hover-kind") ??
+        element.getAttribute("data-drag-overlay-kind");
+      const id =
+        element.getAttribute("data-entity-id") ??
+        element.getAttribute("data-hover-id") ??
+        element.getAttribute("data-drag-overlay-id") ??
+        element.getAttribute("data-quick-connect");
       if (id && [...moving.values()].some((item) => item.id === id && (!kind || item.kind === kind))) {
         elements.add(element);
       }
@@ -197,10 +184,7 @@ type GestureCompletion = {
   onGestureCancel?: () => void;
 };
 
-function safelyCancel(
-  complete: GestureCompletion,
-  rollback: () => void,
-): void {
+function safelyCancel(complete: GestureCompletion, rollback: () => void): void {
   let failure: unknown;
   let didFail = false;
   try {

@@ -57,9 +57,8 @@ export function loadPersistedWorkspace(
   platform: WorkspacePersistencePlatform,
   codec: WorkspaceRestoreCodec,
 ): ResultAsync<WorkspaceLoadOutcome, StorageError> {
-  return ResultAsync.fromPromise(
-    readPersistedWorkspace(platform, codec),
-    (cause) => storageError("indexeddb", "read", cause),
+  return ResultAsync.fromPromise(readPersistedWorkspace(platform, codec), (cause) =>
+    storageError("indexeddb", "read", cause),
   ).andThen((result) => result);
 }
 
@@ -170,9 +169,8 @@ export function persistWorkspace(
   journalResult?: Result<void, StorageError>,
 ): ResultAsync<WorkspacePersistenceOutcome, StorageError> {
   const journal = journalResult ?? persistWorkspaceJournal(serialized, platform);
-  return ResultAsync.fromPromise(
-    persistWorkspaceValue(workspace, serialized, platform, journal),
-    (cause) => storageError("indexeddb", "write", cause),
+  return ResultAsync.fromPromise(persistWorkspaceValue(workspace, serialized, platform, journal), (cause) =>
+    storageError("indexeddb", "write", cause),
   ).andThen((result) => result);
 }
 
@@ -194,9 +192,11 @@ async function persistWorkspaceValue(
         errors: journalError ? [journalError, clear.error] : [clear.error],
       });
     }
-    return ok(journalError
-      ? { status: "degraded", warning: storageWarning(journalError), errors: [journalError] }
-      : { status: "ok" });
+    return ok(
+      journalError
+        ? { status: "degraded", warning: storageWarning(journalError), errors: [journalError] }
+        : { status: "ok" },
+    );
   }
 
   const fallback = writeStorage(platform.fallback, FALLBACK_KEY, serialized, "fallback");
@@ -241,10 +241,7 @@ function writeStorage(
   }
 }
 
-function clearJournalIfCurrent(
-  storage: WorkspaceStorage,
-  serialized: string,
-): Result<void, StorageError> {
+function clearJournalIfCurrent(storage: WorkspaceStorage, serialized: string): Result<void, StorageError> {
   const current = readStorage(storage, PENDING_WORKSPACE_KEY, "journal");
   if (current.isErr()) return err(current.error);
   if (current.value !== serialized) return ok(undefined);
@@ -300,7 +297,8 @@ function combineStorageErrors(errors: readonly StorageError[]): StorageError {
 export function storageWarning(error: StorageError): string {
   if (error.code === "corrupt") {
     if (error.layer === "journal") return "The latest workspace recovery snapshot was unreadable.";
-    if (error.layer === "indexeddb") return "The stored workspace could not be restored; starting with a local workspace.";
+    if (error.layer === "indexeddb")
+      return "The stored workspace could not be restored; starting with a local workspace.";
     return "The fallback workspace could not be restored; starting with a local workspace.";
   }
   if (error.layer === "journal") return "Workspace recovery storage is unavailable; trying other local storage.";
@@ -345,40 +343,47 @@ function openDatabase(operation: "read" | "write"): ResultAsync<IDBDatabase, Sto
       cause,
     });
   }
-  return ResultAsync.fromPromise(new Promise((resolve, reject) => {
-    const request = globalThis.indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE_NAME);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Unable to open workspace storage."));
-  }), (cause) => storageError("indexeddb", operation, cause));
+  return ResultAsync.fromPromise(
+    new Promise((resolve, reject) => {
+      const request = globalThis.indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore(STORE_NAME);
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error("Unable to open workspace storage."));
+    }),
+    (cause) => storageError("indexeddb", operation, cause),
+  );
 }
 
 function readDefaultIndexedDb(key: string): ResultAsync<unknown | undefined, StorageError> {
-  return openDatabase("read").andThen((db) => ResultAsync.fromPromise(
-    (async () => {
-      try {
-        return await readWorkspaceValue(db, key);
-      } finally {
-        db.close();
-      }
-    })(),
-    (cause) => storageError("indexeddb", "read", cause),
-  ));
+  return openDatabase("read").andThen((db) =>
+    ResultAsync.fromPromise(
+      (async () => {
+        try {
+          return await readWorkspaceValue(db, key);
+        } finally {
+          db.close();
+        }
+      })(),
+      (cause) => storageError("indexeddb", "read", cause),
+    ),
+  );
 }
 
 function writeDefaultIndexedDb(key: string, workspace: WorkspaceState): ResultAsync<void, StorageError> {
-  return openDatabase("write").andThen((db) => ResultAsync.fromPromise(
-    (async () => {
-      try {
-        await writeWorkspaceValue(db, key, workspace);
-      } finally {
-        db.close();
-      }
-    })(),
-    (cause) => storageError("indexeddb", "write", cause),
-  ));
+  return openDatabase("write").andThen((db) =>
+    ResultAsync.fromPromise(
+      (async () => {
+        try {
+          await writeWorkspaceValue(db, key, workspace);
+        } finally {
+          db.close();
+        }
+      })(),
+      (cause) => storageError("indexeddb", "write", cause),
+    ),
+  );
 }
 
 function readWorkspaceValue(db: IDBDatabase, key: string): Promise<unknown> {

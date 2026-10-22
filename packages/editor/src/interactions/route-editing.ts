@@ -25,21 +25,14 @@ export function snapBendMergeTarget(
   for (const neighborIndex of [index - 1, index + 1]) {
     if (neighborIndex <= 0 || neighborIndex >= points.length - 1) continue;
     const neighbor = points[neighborIndex]!;
-    if (
-      Math.abs(target.x - neighbor.x) <= threshold &&
-      Math.abs(target.y - neighbor.y) <= threshold
-    ) {
+    if (Math.abs(target.x - neighbor.x) <= threshold && Math.abs(target.y - neighbor.y) <= threshold) {
       return { ...neighbor };
     }
   }
   return target;
 }
 
-export function moveOrthogonalBend(
-  points: Point[],
-  index: number,
-  target: Point,
-): Point[] {
+export function moveOrthogonalBend(points: Point[], index: number, target: Point): Point[] {
   const origin = points.map((point) => ({ ...point }));
   if (index <= 0 || index >= origin.length - 1) return origin;
 
@@ -72,11 +65,7 @@ export function moveOrthogonalBend(
  * edit moved an endpoint with its segment, bridge it back to the icon, then
  * enforce perpendicular departure and arrival at the attached faces.
  */
-export function anchorOrthogonalRouteEndpoints(
-  points: Point[],
-  sourceIcon: Rect,
-  targetIcon: Rect,
-): Point[] {
+export function anchorOrthogonalRouteEndpoints(points: Point[], sourceIcon: Rect, targetIcon: Rect): Point[] {
   if (points.length < 2) return points.map((point) => ({ ...point }));
 
   const sourceAnchor = nearestPortAnchor(sourceIcon, points[0]!).point;
@@ -85,23 +74,11 @@ export function anchorOrthogonalRouteEndpoints(
   const targetNeighbor = points.at(-2)!;
   const out: Point[] = [{ ...sourceAnchor }];
 
-  const departure = endpointBridge(
-    sourceAnchor,
-    sourceNeighbor,
-    points[0]!,
-    sourceNeighbor,
-    "departure",
-  );
+  const departure = endpointBridge(sourceAnchor, sourceNeighbor, points[0]!, sourceNeighbor, "departure");
   if (departure) out.push(departure);
   out.push(...points.slice(1, -1).map((point) => ({ ...point })));
 
-  const approach = endpointBridge(
-    targetNeighbor,
-    targetAnchor,
-    targetNeighbor,
-    points.at(-1)!,
-    "approach",
-  );
+  const approach = endpointBridge(targetNeighbor, targetAnchor, targetNeighbor, points.at(-1)!, "approach");
   if (approach) out.push(approach);
   out.push({ ...targetAnchor });
 
@@ -120,8 +97,7 @@ export function collapseOrthogonalRoute(points: Point[]): Point[] {
       const before = out.at(-2)!;
       const current = out.at(-1)!;
       const collinear =
-        (before.x === current.x && current.x === point.x) ||
-        (before.y === current.y && current.y === point.y);
+        (before.x === current.x && current.x === point.x) || (before.y === current.y && current.y === point.y);
       if (!collinear) break;
       out.pop();
     }
@@ -139,14 +115,10 @@ function endpointBridge(
 ): Point | null {
   if (start.x === end.x || start.y === end.y) return null;
   if (originalStart.y === originalEnd.y) {
-    return kind === "departure"
-      ? { x: start.x, y: end.y }
-      : { x: end.x, y: start.y };
+    return kind === "departure" ? { x: start.x, y: end.y } : { x: end.x, y: start.y };
   }
   if (originalStart.x === originalEnd.x) {
-    return kind === "departure"
-      ? { x: end.x, y: start.y }
-      : { x: start.x, y: end.y };
+    return kind === "departure" ? { x: end.x, y: start.y } : { x: start.x, y: end.y };
   }
   return null;
 }
@@ -156,8 +128,7 @@ function runContaining(
   index: number,
   orientation: "horizontal" | "vertical",
 ): { start: number; end: number } | null {
-  const aligned = (a: Point, b: Point) =>
-    orientation === "horizontal" ? a.y === b.y : a.x === b.x;
+  const aligned = (a: Point, b: Point) => (orientation === "horizontal" ? a.y === b.y : a.x === b.x);
   const touchesPrevious = aligned(points[index - 1]!, points[index]!);
   const touchesNext = aligned(points[index]!, points[index + 1]!);
   if (!touchesPrevious && !touchesNext) return null;

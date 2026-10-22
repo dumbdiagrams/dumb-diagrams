@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { IconMoon, IconSun } from "./icons";
-import {
-  applyTheme,
-  getStoredTheme,
-  setStoredTheme,
-  type ThemePreference,
-} from "./theme";
+import { applyTheme, getStoredTheme, setStoredTheme, type ThemePreference } from "./theme";
 
 export function ThemeControl() {
   const [theme, setTheme] = useState<ThemePreference>(() => getStoredTheme());

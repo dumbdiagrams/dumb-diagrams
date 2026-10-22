@@ -62,11 +62,12 @@ export function WorkspaceTabs({
 
   const moveTabFocus = (index: number, key: string) => {
     if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") return;
-    const nextIndex = key === "Home"
-      ? 0
-      : key === "End"
-        ? tabs.length - 1
-        : (index + (key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const nextIndex =
+      key === "Home"
+        ? 0
+        : key === "End"
+          ? tabs.length - 1
+          : (index + (key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
     const next = tabs[nextIndex];
     if (!next) return;
     onSelect(next.id);
@@ -90,29 +91,32 @@ export function WorkspaceTabs({
       const element = tabRefs.current.get(tab.id);
       if (!element || reducedMotion) continue;
       const targetWidth = element.getBoundingClientRect().width;
-      element.animate([
+      element.animate(
+        [
+          {
+            width: `${targetWidth}px`,
+            minWidth: "0px",
+            maxWidth: `${targetWidth}px`,
+            flexGrow: 0,
+            flexShrink: 0,
+            flexBasis: "0px",
+            opacity: 0.45,
+          },
+          {
+            width: `${targetWidth}px`,
+            minWidth: "0px",
+            maxWidth: `${targetWidth}px`,
+            flexGrow: 0,
+            flexShrink: 0,
+            flexBasis: `${targetWidth}px`,
+            opacity: 1,
+          },
+        ],
         {
-          width: `${targetWidth}px`,
-          minWidth: "0px",
-          maxWidth: `${targetWidth}px`,
-          flexGrow: 0,
-          flexShrink: 0,
-          flexBasis: "0px",
-          opacity: 0.45,
+          duration: 220,
+          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
         },
-        {
-          width: `${targetWidth}px`,
-          minWidth: "0px",
-          maxWidth: `${targetWidth}px`,
-          flexGrow: 0,
-          flexShrink: 0,
-          flexBasis: `${targetWidth}px`,
-          opacity: 1,
-        },
-      ], {
-        duration: 220,
-        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-      });
+      );
     }
 
     knownTabIdsRef.current = new Set(tabs.map((tab) => tab.id));
@@ -132,7 +136,10 @@ export function WorkspaceTabs({
                 if (element) {
                   tabRefs.current.set(tab.id, element);
                   if (closing && !element.style.getPropertyValue("--workspace-tab-current-width")) {
-                    element.style.setProperty("--workspace-tab-current-width", `${element.getBoundingClientRect().width}px`);
+                    element.style.setProperty(
+                      "--workspace-tab-current-width",
+                      `${element.getBoundingClientRect().width}px`,
+                    );
                   }
                 } else tabRefs.current.delete(tab.id);
               }}
@@ -194,7 +201,10 @@ export function WorkspaceTabs({
                 }}
                 onKeyDown={(event) => {
                   if (closing) return;
-                  moveTabFocus(tabs.findIndex((candidate) => candidate.id === tab.id), event.key);
+                  moveTabFocus(
+                    tabs.findIndex((candidate) => candidate.id === tab.id),
+                    event.key,
+                  );
                   if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) event.preventDefault();
                 }}
                 ref={(element) => {
@@ -203,22 +213,26 @@ export function WorkspaceTabs({
                 }}
                 title={tab.filename ?? label}
               >
-                {tab.source !== tab.savedSource && <span className="workspace-tab-dirty" aria-label="Unsaved changes" />}
+                {tab.source !== tab.savedSource && (
+                  <span className="workspace-tab-dirty" aria-label="Unsaved changes" />
+                )}
                 <span className="workspace-tab-label">{label}</span>
                 {tab.filename && <span className="workspace-tab-filename">{tab.filename}</span>}
               </button>
-              {canCloseTab(tab) && <button
-                type="button"
-                className="workspace-tab-close"
-                aria-label={`Close ${label}`}
-                title={`Close ${label}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onClose(tab.id);
-                }}
-              >
-                <IconClose />
-              </button>}
+              {canCloseTab(tab) && (
+                <button
+                  type="button"
+                  className="workspace-tab-close"
+                  aria-label={`Close ${label}`}
+                  title={`Close ${label}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClose(tab.id);
+                  }}
+                >
+                  <IconClose />
+                </button>
+              )}
             </div>
           );
         })}

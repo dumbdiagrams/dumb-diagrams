@@ -5,15 +5,7 @@ export type UserCloudProvider = "aws" | "azure" | "gcp" | "cloud-agnostic";
 export type CatalogProviderFilter = UserCloudProvider | "all";
 export type AssetKind = "resource" | "group" | "service" | "category";
 export type IconSpecificity = "unique" | "shared-category" | "semantic-neutral";
-export type ColumnRole =
-  | "edge"
-  | "ingress"
-  | "compute"
-  | "queue"
-  | "worker"
-  | "data"
-  | "observability"
-  | "auth";
+export type ColumnRole = "edge" | "ingress" | "compute" | "queue" | "worker" | "data" | "observability" | "auth";
 
 export interface CatalogIcon {
   sourceId: string;
@@ -87,9 +79,7 @@ export const CATALOG: Record<string, CatalogEntry> = buildCatalog();
 // Catalog rules are immutable after startup. Reusing the index avoids
 // rebuilding a 1.5k-entry Map on every validation/compile pass (which is
 // especially costly while editing source or committing gesture previews).
-const CATALOG_MAP = new Map<string, CatalogRule>(
-  Object.values(CATALOG).map((entry) => [entry.type, entry]),
-);
+const CATALOG_MAP = new Map<string, CatalogRule>(Object.values(CATALOG).map((entry) => [entry.type, entry]));
 
 export function getCatalogMap(): Map<string, CatalogRule> {
   return CATALOG_MAP;
@@ -100,7 +90,11 @@ export function getCatalogEntry(type: string): CatalogEntry | undefined {
 }
 
 // Reversed so the first entry wins when several types share one icon.
-const CATALOG_BY_BROWSER_PATH = new Map(Object.values(CATALOG).reverse().map((entry) => [entry.icon.browserPath, entry]));
+const CATALOG_BY_BROWSER_PATH = new Map(
+  Object.values(CATALOG)
+    .reverse()
+    .map((entry) => [entry.icon.browserPath, entry]),
+);
 
 export function getCatalogEntryByBrowserPath(browserPath: string): CatalogEntry | undefined {
   return CATALOG_BY_BROWSER_PATH.get(browserPath);
@@ -110,18 +104,12 @@ export function listProviders(): UserCloudProvider[] {
   return ["aws", "azure", "gcp", "cloud-agnostic"];
 }
 
-export function listCategories(
-  provider: CatalogProviderFilter,
-  mode: "resources" | "groups" = "resources",
-): string[] {
+export function listCategories(provider: CatalogProviderFilter, mode: "resources" | "groups" = "resources"): string[] {
   const assetKind = mode === "groups" ? "group" : "resource";
   const cats = new Set<string>();
   for (const entry of Object.values(CATALOG)) {
     if (!entry.browsable) continue;
-    if (
-      (provider !== "all" && entry.provider !== provider) ||
-      entry.assetKind !== assetKind
-    ) continue;
+    if ((provider !== "all" && entry.provider !== provider) || entry.assetKind !== assetKind) continue;
     for (const category of entry.categories) cats.add(category);
   }
   return [...cats].sort((a, b) => a.localeCompare(b));
@@ -132,7 +120,8 @@ export function listAssets(
   options: { category?: string; assetKind?: AssetKind } = {},
 ): CatalogEntry[] {
   const normalized = provider === "all" ? undefined : provider;
-  const kind = options.assetKind === "service" ? "resource" : options.assetKind === "category" ? "resource" : options.assetKind;
+  const kind =
+    options.assetKind === "service" ? "resource" : options.assetKind === "category" ? "resource" : options.assetKind;
   return Object.values(CATALOG).filter((entry) => {
     if (!entry.browsable) return false;
     if (normalized && entry.provider !== normalized) return false;
@@ -149,22 +138,14 @@ export function searchAssets(query: string, provider?: CatalogProviderFilter): C
     if (!entry.browsable) return false;
     if (normalized && entry.provider !== normalized) return false;
     if (!needle) return entry.assetKind === "resource";
-    const hay = [
-      entry.name,
-      entry.serviceName,
-      entry.type,
-      entry.category,
-      ...entry.categories,
-      ...entry.aliases,
-    ].join(" ").toLowerCase();
+    const hay = [entry.name, entry.serviceName, entry.type, entry.category, ...entry.categories, ...entry.aliases]
+      .join(" ")
+      .toLowerCase();
     return hay.includes(needle);
   });
 }
 
-export function listBrowsableAssets(
-  provider: CatalogProviderFilter,
-  mode: "resources" | "groups",
-): CatalogEntry[] {
+export function listBrowsableAssets(provider: CatalogProviderFilter, mode: "resources" | "groups"): CatalogEntry[] {
   return listAssets(provider, { assetKind: mode === "groups" ? "group" : "resource" }).sort((a, b) =>
     a.name.localeCompare(b.name),
   );

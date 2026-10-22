@@ -23,9 +23,7 @@ export interface OverlayPointerGestureOptions {
  * this boundary guarantees that every exit path removes listeners, releases
  * capture, and gives the caller a place to cancel pending animation work.
  */
-export function startOverlayPointerGesture(
-  options: OverlayPointerGestureOptions,
-): OverlayPointerGesture {
+export function startOverlayPointerGesture(options: OverlayPointerGestureOptions): OverlayPointerGesture {
   const { event, onMove, onUp, onCancel, onCleanup, onDispose } = options;
   const handle = event.currentTarget;
   const pointerId = event.pointerId;

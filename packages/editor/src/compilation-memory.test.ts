@@ -15,13 +15,15 @@ describe("Studio compilation memory bounds", () => {
       role: "primary" as const,
       props: {},
     }));
-    doc.edges = doc.resources.flatMap((resource, index) => doc.resources.slice(index + 1).map((target) => ({
-      id: `${resource.id}-${target.id}`,
-      source: resource.id,
-      target: target.id,
-      kind: "flow" as const,
-      style: "solid" as const,
-    })));
+    doc.edges = doc.resources.flatMap((resource, index) =>
+      doc.resources.slice(index + 1).map((target) => ({
+        id: `${resource.id}-${target.id}`,
+        source: resource.id,
+        target: target.id,
+        kind: "flow" as const,
+        style: "solid" as const,
+      })),
+    );
 
     const result = compileDocument(doc, false);
     expect(result.ok).toBe(true);
@@ -38,11 +40,13 @@ describe("Studio compilation memory bounds", () => {
     const clean = compileDocument(createEmptyDocument("clean"), false);
     const truncated = {
       ...clean,
-      invariantFailures: [{
-        code: INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
-        message: "Additional issues omitted",
-        elementIds: [],
-      }],
+      invariantFailures: [
+        {
+          code: INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
+          message: "Additional issues omitted",
+          elementIds: [],
+        },
+      ],
     };
     expect(autoFixRejectionReason(clean, clean)).toBeUndefined();
     expect(autoFixRejectionReason(clean, truncated)).toContain("incomplete");

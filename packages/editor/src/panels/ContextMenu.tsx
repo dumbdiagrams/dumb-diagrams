@@ -54,7 +54,7 @@ export function ContextMenu({
       aria-label={ariaLabel}
       onContextMenu={(event) => event.preventDefault()}
     >
-      {items.map((item) => (
+      {items.map((item) =>
         item.separator ? (
           <div key={item.id} className="context-menu-separator" role="separator" />
         ) : (
@@ -75,8 +75,8 @@ export function ContextMenu({
             <span>{item.label}</span>
             {item.shortcut && <kbd>{item.shortcut}</kbd>}
           </button>
-        )
-      ))}
+        ),
+      )}
     </div>
   );
 }

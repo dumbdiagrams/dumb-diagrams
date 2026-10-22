@@ -38,12 +38,51 @@ const ALLOWED_TAGS = new Set([
 
 const FORBIDDEN_ATTR = /^(on|xlink:href|href|style)$/i;
 const ALLOWED_ATTRS = new Set([
-  "id", "xmlns", "viewbox", "width", "height", "x", "y", "x1", "y1", "x2", "y2",
-  "cx", "cy", "r", "rx", "ry", "d", "points", "transform", "fill", "fill-opacity",
-  "fill-rule", "stroke", "stroke-width", "stroke-opacity", "stroke-linecap", "stroke-linejoin",
-  "stroke-dasharray", "stroke-dashoffset", "opacity", "clip-path", "clip-rule", "mask",
-  "offset", "stop-color", "stop-opacity", "gradientunits", "gradienttransform", "spreadmethod",
-  "preserveaspectratio", "marker-start", "marker-mid", "marker-end", "href", "version",
+  "id",
+  "xmlns",
+  "viewbox",
+  "width",
+  "height",
+  "x",
+  "y",
+  "x1",
+  "y1",
+  "x2",
+  "y2",
+  "cx",
+  "cy",
+  "r",
+  "rx",
+  "ry",
+  "d",
+  "points",
+  "transform",
+  "fill",
+  "fill-opacity",
+  "fill-rule",
+  "stroke",
+  "stroke-width",
+  "stroke-opacity",
+  "stroke-linecap",
+  "stroke-linejoin",
+  "stroke-dasharray",
+  "stroke-dashoffset",
+  "opacity",
+  "clip-path",
+  "clip-rule",
+  "mask",
+  "offset",
+  "stop-color",
+  "stop-opacity",
+  "gradientunits",
+  "gradienttransform",
+  "spreadmethod",
+  "preserveaspectratio",
+  "marker-start",
+  "marker-mid",
+  "marker-end",
+  "href",
+  "version",
 ]);
 // Namespace declarations are inert only with their standard values.
 const NAMESPACE_ATTRS: Record<string, string> = {
@@ -100,14 +139,18 @@ function walkAndSanitize(node: Element): void {
   }
   for (const attr of [...node.attributes]) {
     const name = attr.name.toLowerCase();
-    if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") node.removeAttribute(attr.name);
+    if (!ALLOWED_ATTRS.has(name) || (FORBIDDEN_ATTR.test(name) && name !== "href")) node.removeAttribute(attr.name);
   }
   for (const child of [...node.children]) walkAndSanitize(child);
 }
 
 function sanitizeSvgNode(input: string): Result<SanitizedSvg, SvgSanitizeError> {
   if (!/<svg[\s>]/i.test(input)) return err(invalidSvg("Invalid SVG"));
-  const viewBox = input.match(/viewBox=["']([^"']+)["']/i)?.[1]?.split(/\s+/).map(Number) ?? [];
+  const viewBox =
+    input
+      .match(/viewBox=["']([^"']+)["']/i)?.[1]
+      ?.split(/\s+/)
+      .map(Number) ?? [];
   const width = boundedDimension(Number(input.match(/\bwidth=["']([^"']+)["']/i)?.[1]) || viewBox[2] || 64, "width");
   if (width.isErr()) return err(width.error);
   const height = boundedDimension(Number(input.match(/\bheight=["']([^"']+)["']/i)?.[1]) || viewBox[3] || 64, "height");
@@ -122,7 +165,8 @@ function sanitizeSvgNode(input: string): Result<SanitizedSvg, SvgSanitizeError> 
 }
 
 function validateMarkupSafety(input: string): Result<void, SvgSanitizeError> {
-  if (/<!doctype|<!entity|<\?xml-stylesheet/i.test(input)) return err(invalidSvg("SVG contains forbidden declarations"));
+  if (/<!doctype|<!entity|<\?xml-stylesheet/i.test(input))
+    return err(invalidSvg("SVG contains forbidden declarations"));
   const stack: string[] = [];
   let foundRoot = false;
   let closedRoot = false;
@@ -131,7 +175,8 @@ function validateMarkupSafety(input: string): Result<void, SvgSanitizeError> {
   while (position < input.length) {
     const open = input.indexOf("<", position);
     if (open < 0) {
-      if (input.slice(position).trim() && stack.length === 0) return err(invalidSvg("Invalid SVG: content outside root element"));
+      if (input.slice(position).trim() && stack.length === 0)
+        return err(invalidSvg("Invalid SVG: content outside root element"));
       break;
     }
     if (input.slice(position, open).trim() && stack.length === 0) {
@@ -165,7 +210,8 @@ function validateMarkupSafety(input: string): Result<void, SvgSanitizeError> {
     const closing = token.match(/^<\s*\/\s*([a-zA-Z][\w-]*)\s*>$/);
     if (closing) {
       const tag = closing[1]!.toLowerCase();
-      if (!stack.length || stack[stack.length - 1] !== tag) return err(invalidSvg("Invalid SVG markup: unbalanced tags"));
+      if (!stack.length || stack[stack.length - 1] !== tag)
+        return err(invalidSvg("Invalid SVG markup: unbalanced tags"));
       stack.pop();
       if (tag === "svg") closedRoot = true;
       position = end + 1;
@@ -202,7 +248,7 @@ function findTagEnd(input: string, start: number): number {
     const char = input[index]!;
     if (quote) {
       if (char === quote) quote = undefined;
-    } else if (char === "\"" || char === "'") {
+    } else if (char === '"' || char === "'") {
       quote = char;
     } else if (char === ">") {
       return index;
@@ -216,7 +262,8 @@ function validateAttributes(rawAttributes: string): Result<void, SvgSanitizeErro
   let attribute: RegExpExecArray | null;
   let consumed = 0;
   while ((attribute = attributePattern.exec(rawAttributes))) {
-    if (rawAttributes.slice(consumed, attribute.index).trim()) return err(invalidSvg("SVG contains malformed attributes"));
+    if (rawAttributes.slice(consumed, attribute.index).trim())
+      return err(invalidSvg("SVG contains malformed attributes"));
     const name = attribute[1]!.toLowerCase();
     const value = decodeReferenceEscapes(attribute[3]!);
     if (Object.hasOwn(NAMESPACE_ATTRS, name)) {
@@ -224,7 +271,7 @@ function validateAttributes(rawAttributes: string): Result<void, SvgSanitizeErro
       consumed = attributePattern.lastIndex;
       continue;
     }
-    if (!ALLOWED_ATTRS.has(name) || FORBIDDEN_ATTR.test(name) && name !== "href") {
+    if (!ALLOWED_ATTRS.has(name) || (FORBIDDEN_ATTR.test(name) && name !== "href")) {
       return err(invalidSvg(`SVG attribute ${name} is not allowed`));
     }
     const embeddedRaster = name === "href" && EMBEDDED_RASTER_DATA.test(value);
@@ -260,9 +307,11 @@ function decodeReferenceEscapes(value: string): string {
       return "'";
     },
   );
-  return xmlDecoded.replace(/\\([\da-f]{1,6})(?:\s)?|\\(.)/gi, (_escape, hex: string | undefined, char: string | undefined) => (
-    hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : (char ?? "")
-  ));
+  return xmlDecoded.replace(
+    /\\([\da-f]{1,6})(?:\s)?|\\(.)/gi,
+    (_escape, hex: string | undefined, char: string | undefined) =>
+      hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : (char ?? ""),
+  );
 }
 
 function boundedDimension(value: number, name: string): Result<number, SvgSanitizeError> {

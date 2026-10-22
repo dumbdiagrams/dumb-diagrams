@@ -15,7 +15,14 @@ const ALLOWED_GROWTH = 1.25;
 const STRESS_MAX_ELAPSED_MS = 30_000;
 const COMPILATION_LIMITS_TIMEOUT_MS = 10_000;
 
-const [{ createEmptyDocument, validateDocument }, { formatParseError, parseDgmResult }, { layoutDocument }, { routeEdges, routeConnectionPreview, attachRoutes }, { getCatalogMap }, { checkInvariants, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE }] = await Promise.all([
+const [
+  { createEmptyDocument, validateDocument },
+  { formatParseError, parseDgmResult },
+  { layoutDocument },
+  { routeEdges, routeConnectionPreview, attachRoutes },
+  { getCatalogMap },
+  { checkInvariants, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE },
+] = await Promise.all([
   import("../packages/runtime/dist/core/index.js"),
   import("../packages/runtime/dist/dsl/index.js"),
   import("../packages/runtime/dist/layout/index.js"),
@@ -36,7 +43,10 @@ function checkCompilationLimits() {
   assert.equal(denseResult.isOk(), true, denseResult.isErr() ? formatParseError(denseResult.error) : "");
   if (denseResult.isErr()) return;
   const dense = denseResult.value;
-  assert.deepEqual(validateDocument(dense, getCatalogMap()).filter((issue) => issue.level === "error"), []);
+  assert.deepEqual(
+    validateDocument(dense, getCatalogMap()).filter((issue) => issue.level === "error"),
+    [],
+  );
   const layout = layoutDocument(dense);
   assert.equal(layout.nodes.length, 44);
   assert.equal(new Set(layout.nodes.map((node) => node.id)).size, 44);
@@ -72,11 +82,22 @@ function checkCompilationLimits() {
     assert.deepEqual(validateDocument(far, getCatalogMap()), []);
     const farLayout = layoutDocument(far);
     let diagnostics;
-    assert.deepEqual(routeEdges(far, farLayout, { onDiagnostics: (result) => { diagnostics = result; } }), []);
+    assert.deepEqual(
+      routeEdges(far, farLayout, {
+        onDiagnostics: (result) => {
+          diagnostics = result;
+        },
+      }),
+      [],
+    );
     assert.equal(diagnostics.exhausted, false);
     assert.equal(allocatedCells, 0);
     far.edges.push({ id: "edge", source: "a", target: "b", style: "solid", kind: "flow" });
-    const options = { onDiagnostics: (result) => { diagnostics = result; } };
+    const options = {
+      onDiagnostics: (result) => {
+        diagnostics = result;
+      },
+    };
     const routes = routeEdges(far, farLayout, options);
     assert.equal(routes.length, 1);
     assert.ok(routes[0].points.length >= 2);
@@ -97,7 +118,11 @@ if (process.argv.includes("--limits-probe")) {
 
 function routingWork(doc) {
   let diagnostics;
-  const routes = routeEdges(doc, layoutDocument(doc), { onDiagnostics: (result) => { diagnostics = result; } });
+  const routes = routeEdges(doc, layoutDocument(doc), {
+    onDiagnostics: (result) => {
+      diagnostics = result;
+    },
+  });
   return { routes, diagnostics };
 }
 
@@ -108,10 +133,12 @@ let compilationLimitsFailed = false;
 const baseline = JSON.parse(readFileSync(BASELINE_URL, "utf8")).fixtures ?? {};
 
 try {
-  process.stdout.write(execFileSync(process.execPath, [fileURLToPath(import.meta.url), "--limits-probe"], {
-    encoding: "utf8",
-    timeout: COMPILATION_LIMITS_TIMEOUT_MS,
-  }));
+  process.stdout.write(
+    execFileSync(process.execPath, [fileURLToPath(import.meta.url), "--limits-probe"], {
+      encoding: "utf8",
+      timeout: COMPILATION_LIMITS_TIMEOUT_MS,
+    }),
+  );
 } catch (error) {
   compilationLimitsFailed = true;
   failures.push(`compilation limits: ${error.message}`);
@@ -136,15 +163,28 @@ for (const path of performanceDiagrams()) {
   }
   for (const counter of COUNTERS) {
     const limit = Math.ceil(expected[counter] * ALLOWED_GROWTH);
-    if (diagnostics[counter] > limit) failures.push(`${key}: ${counter} ${diagnostics[counter]} exceeds ${limit} (baseline ${expected[counter]})`);
+    if (diagnostics[counter] > limit)
+      failures.push(`${key}: ${counter} ${diagnostics[counter]} exceeds ${limit} (baseline ${expected[counter]})`);
   }
   console.log(`${key.padEnd(70)} ${COUNTERS.map((counter) => `${counter}=${diagnostics[counter]}`).join(" ")}`);
 }
 
 const doc = createEmptyDocument("routing-budget-stress");
 doc.flow = "lr";
-doc.resources = Array.from({ length: 500 }, (_, index) => ({ id: `resource${index}`, type: "cloud-agnostic.actor", label: { service: `Resource ${index}` }, role: "primary", props: {} }));
-doc.edges = Array.from({ length: 499 }, (_, index) => ({ id: `edge${index}`, source: "resource0", target: `resource${index + 1}`, style: "solid", kind: "flow" }));
+doc.resources = Array.from({ length: 500 }, (_, index) => ({
+  id: `resource${index}`,
+  type: "cloud-agnostic.actor",
+  label: { service: `Resource ${index}` },
+  role: "primary",
+  props: {},
+}));
+doc.edges = Array.from({ length: 499 }, (_, index) => ({
+  id: `edge${index}`,
+  source: "resource0",
+  target: `resource${index + 1}`,
+  style: "solid",
+  kind: "flow",
+}));
 const start = performance.now();
 const first = routingWork(doc);
 const elapsedMs = performance.now() - start;
@@ -154,7 +194,8 @@ if (first.routes.length !== doc.edges.length || !first.diagnostics.exhausted) {
 } else if (JSON.stringify(first.diagnostics) !== JSON.stringify(second.diagnostics)) {
   failures.push("synthetic fan-out: routing diagnostics are nondeterministic");
 }
-if (elapsedMs > STRESS_MAX_ELAPSED_MS) failures.push(`synthetic fan-out: ${elapsedMs.toFixed(0)} ms exceeds ${STRESS_MAX_ELAPSED_MS} ms`);
+if (elapsedMs > STRESS_MAX_ELAPSED_MS)
+  failures.push(`synthetic fan-out: ${elapsedMs.toFixed(0)} ms exceeds ${STRESS_MAX_ELAPSED_MS} ms`);
 console.log(`synthetic fan-out 500 resources / 499 edges: ${elapsedMs.toFixed(0)} ms, bounded fallback verified`);
 
 if (process.argv.includes("--update") && !compilationLimitsFailed) {

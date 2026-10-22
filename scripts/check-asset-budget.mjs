@@ -25,7 +25,8 @@ export function assetBudgetFailures(measurements, budgets = ASSET_BUDGETS) {
       continue;
     }
     if (!asset.readablePng) failures.push(`${path}: file is not a readable PNG`);
-    if (asset.size > budget.maxBytes) failures.push(`${path}: ${asset.size} bytes exceeds the ${budget.maxBytes}-byte budget`);
+    if (asset.size > budget.maxBytes)
+      failures.push(`${path}: ${asset.size} bytes exceeds the ${budget.maxBytes}-byte budget`);
     if (asset.width !== budget.width || asset.height !== budget.height) {
       failures.push(`${path}: expected ${budget.width}x${budget.height}, found ${asset.width}x${asset.height}`);
     }
@@ -33,14 +34,28 @@ export function assetBudgetFailures(measurements, budgets = ASSET_BUDGETS) {
   const editor = measurements?.editor;
   if (!editor) failures.push("packages/editor/dist: built editor distribution is missing");
   else {
-    if (editor.jsBytes > budgets.editor.jsBytes) failures.push(`packages/editor/dist: ${editor.jsBytes} JavaScript bytes exceed the ${budgets.editor.jsBytes}-byte budget`);
-    if (editor.cssBytes > budgets.editor.cssBytes) failures.push(`packages/editor/dist: ${editor.cssBytes} CSS bytes exceed the ${budgets.editor.cssBytes}-byte budget`);
-    if (editor.largestJsBytes > budgets.editor.largestJsBytes) failures.push(`packages/editor/dist: largest JavaScript chunk (${editor.largestJsBytes} bytes) exceeds the ${budgets.editor.largestJsBytes}-byte budget`);
+    if (editor.jsBytes > budgets.editor.jsBytes)
+      failures.push(
+        `packages/editor/dist: ${editor.jsBytes} JavaScript bytes exceed the ${budgets.editor.jsBytes}-byte budget`,
+      );
+    if (editor.cssBytes > budgets.editor.cssBytes)
+      failures.push(
+        `packages/editor/dist: ${editor.cssBytes} CSS bytes exceed the ${budgets.editor.cssBytes}-byte budget`,
+      );
+    if (editor.largestJsBytes > budgets.editor.largestJsBytes)
+      failures.push(
+        `packages/editor/dist: largest JavaScript chunk (${editor.largestJsBytes} bytes) exceeds the ${budgets.editor.largestJsBytes}-byte budget`,
+      );
   }
-  if (measurements?.preparedDistributionBytes == null) failures.push("packages/cli/dist: prepared distribution is missing");
-  else if (measurements.preparedDistributionBytes > budgets.preparedDistributionBytes) failures.push(`packages/cli/dist: ${measurements.preparedDistributionBytes} bytes exceed the ${budgets.preparedDistributionBytes}-byte budget`);
+  if (measurements?.preparedDistributionBytes == null)
+    failures.push("packages/cli/dist: prepared distribution is missing");
+  else if (measurements.preparedDistributionBytes > budgets.preparedDistributionBytes)
+    failures.push(
+      `packages/cli/dist: ${measurements.preparedDistributionBytes} bytes exceed the ${budgets.preparedDistributionBytes}-byte budget`,
+    );
   // The tarball exists only after smoke:package has packed it; when present it is gated.
-  if (measurements?.tarballBytes != null && measurements.tarballBytes > budgets.tarballBytes) failures.push(`npm tarball: ${measurements.tarballBytes} bytes exceed the ${budgets.tarballBytes}-byte budget`);
+  if (measurements?.tarballBytes != null && measurements.tarballBytes > budgets.tarballBytes)
+    failures.push(`npm tarball: ${measurements.tarballBytes} bytes exceed the ${budgets.tarballBytes}-byte budget`);
   return failures;
 }
 
@@ -50,8 +65,14 @@ export function measureAssetBudgets(root = ROOT) {
     const absolute = join(root, path);
     try {
       const bytes = readFileSync(absolute);
-      const readablePng = bytes.length >= 24 && bytes.readUInt32BE(0) === 0x89504e47 && bytes.readUInt32BE(4) === 0x0d0a1a0a;
-      branding[path] = { size: statSync(absolute).size, readablePng, width: readablePng ? bytes.readUInt32BE(16) : undefined, height: readablePng ? bytes.readUInt32BE(20) : undefined };
+      const readablePng =
+        bytes.length >= 24 && bytes.readUInt32BE(0) === 0x89504e47 && bytes.readUInt32BE(4) === 0x0d0a1a0a;
+      branding[path] = {
+        size: statSync(absolute).size,
+        readablePng,
+        width: readablePng ? bytes.readUInt32BE(16) : undefined,
+        height: readablePng ? bytes.readUInt32BE(20) : undefined,
+      };
     } catch {
       // The policy formatter reports a stable missing-file failure.
     }
@@ -59,11 +80,13 @@ export function measureAssetBudgets(root = ROOT) {
   const editorFiles = filesUnder(join(root, "packages/editor/dist"));
   const jsFiles = editorFiles.filter((path) => path.endsWith(".js"));
   const cssFiles = editorFiles.filter((path) => path.endsWith(".css"));
-  const editor = editorFiles.length ? {
-    jsBytes: sum(jsFiles),
-    cssBytes: sum(cssFiles),
-    largestJsBytes: Math.max(0, ...jsFiles.map((path) => statSync(path).size)),
-  } : null;
+  const editor = editorFiles.length
+    ? {
+        jsBytes: sum(jsFiles),
+        cssBytes: sum(cssFiles),
+        largestJsBytes: Math.max(0, ...jsFiles.map((path) => statSync(path).size)),
+      }
+    : null;
   const preparedPath = join(root, "packages/cli/dist");
   const preparedDistributionBytes = directoryBytes(preparedPath);
   let tarballBytes;
@@ -102,7 +125,9 @@ function main() {
     process.exitCode = 1;
   } else {
     const measured = measureAssetBudgets();
-    console.log(`Asset budgets pass (editor JS ${measured.editor.jsBytes} bytes, prepared distribution ${measured.preparedDistributionBytes} bytes${measured.tarballBytes == null ? "" : `, tarball ${measured.tarballBytes} bytes`})`);
+    console.log(
+      `Asset budgets pass (editor JS ${measured.editor.jsBytes} bytes, prepared distribution ${measured.preparedDistributionBytes} bytes${measured.tarballBytes == null ? "" : `, tarball ${measured.tarballBytes} bytes`})`,
+    );
   }
 }
 

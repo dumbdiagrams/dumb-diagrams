@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  createFramePreview,
-  startOverlayPointerGesture,
-} from "./overlay-gestures";
+import { createFramePreview, startOverlayPointerGesture } from "./overlay-gestures";
 
 class FakeWindow {
   private listeners = new Map<string, Set<(event: Event) => void>>();
@@ -114,7 +111,9 @@ describe("overlay gesture lifecycle", () => {
     startOverlayPointerGesture({
       event: { currentTarget: handle, pointerId: 3 },
       onMove: vi.fn(),
-      onUp: () => { throw failure; },
+      onUp: () => {
+        throw failure;
+      },
       onCancel: vi.fn(),
     });
 
@@ -136,7 +135,9 @@ describe("overlay gesture lifecycle", () => {
       onMove: vi.fn(),
       onUp: vi.fn(),
       onCancel: vi.fn(),
-      onCleanup: () => { throw cleanupFailure; },
+      onCleanup: () => {
+        throw cleanupFailure;
+      },
     });
 
     expect(() => fakeWindow.dispatch("pointercancel", pointerEvent(4))).toThrow(cleanupFailure);

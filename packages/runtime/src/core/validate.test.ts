@@ -105,13 +105,15 @@ describe("document validation modes", () => {
       role: "primary" as const,
       props: {},
     }));
-    doc.assets = [{
-      id: "large-asset",
-      kind: "svg",
-      content: "x".repeat(DIAGRAM_LIMITS.svgBytes + 1),
-      intrinsicW: 64,
-      intrinsicH: 64,
-    }];
+    doc.assets = [
+      {
+        id: "large-asset",
+        kind: "svg",
+        content: "x".repeat(DIAGRAM_LIMITS.svgBytes + 1),
+        intrinsicW: 64,
+        intrinsicH: 64,
+      },
+    ];
     const codes = validateDocument(doc, new Map(), { enforceCatalogRules: false }).map((issue) => issue.code);
     expect(codes).toContain("object-count-limit");
     expect(codes).toContain("asset-size-limit");
@@ -181,7 +183,10 @@ describe("document validation modes", () => {
       { id: "azure-resource", type: "azure.service", parent: "region", label: {}, role: "primary", props: {} },
     ];
     const catalog = new Map<string, CatalogRule>([
-      ["cloud-agnostic.service", { type: "cloud-agnostic.service", provider: "cloud-agnostic", allowedParents: ["region"] }],
+      [
+        "cloud-agnostic.service",
+        { type: "cloud-agnostic.service", provider: "cloud-agnostic", allowedParents: ["region"] },
+      ],
       ["azure.service", { type: "azure.service", provider: "azure", allowedParents: ["region"] }],
       ["azure.group", { type: "azure.group", provider: "azure", allowedParents: ["region"] }],
     ]);

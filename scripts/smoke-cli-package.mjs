@@ -14,7 +14,9 @@ const version = cliManifest.version;
 const tarballName = `create-dumb-diagrams-${version}.tgz`;
 const requestedArtifact = process.env.DUMB_DIAGRAMS_ARTIFACT;
 const tarballPath = requestedArtifact
-  ? (isAbsolute(requestedArtifact) ? requestedArtifact : resolve(root, requestedArtifact))
+  ? isAbsolute(requestedArtifact)
+    ? requestedArtifact
+    : resolve(root, requestedArtifact)
   : join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
@@ -51,7 +53,9 @@ const required = [
   "package/dist/templates/project/.dumbdiagrams/providers/cloud-agnostic.md",
   "package/dist/templates/project/diagrams/README.md",
   "package/dist/templates/examples/README.md",
-  ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `package/dist/templates/examples/${id}/${file}`)),
+  ...curatedExampleIds.flatMap((id) =>
+    curatedExampleFiles.map((file) => `package/dist/templates/examples/${id}/${file}`),
+  ),
   "package/dist/source/CORRESPONDING_SOURCE.md",
   "package/dist/source/packages/cli/src/index.ts",
   "package/dist/source/packages/editor/src/main.tsx",
@@ -77,12 +81,15 @@ const expectedSourceEntries = new Set([
   "package/dist/source/CORRESPONDING_SOURCE.md",
   "package/dist/source/registry.npmrc",
 ]);
-const sourceEntries = new Set(entries.filter((entry) => entry.startsWith("package/dist/source/") && !entry.endsWith("/")));
+const sourceEntries = new Set(
+  entries.filter((entry) => entry.startsWith("package/dist/source/") && !entry.endsWith("/")),
+);
 for (const path of expectedSourceEntries) {
   if (!sourceEntries.has(path)) throw new Error(`Tarball missing corresponding-source path: ${path}`);
 }
 for (const path of sourceEntries) {
-  if (!expectedSourceEntries.has(path)) throw new Error(`Tarball includes undeclared corresponding-source path: ${path}`);
+  if (!expectedSourceEntries.has(path))
+    throw new Error(`Tarball includes undeclared corresponding-source path: ${path}`);
 }
 
 const forbiddenPatterns = [".test.js", ".test.d.ts", ".map", "studio-server"];
@@ -122,8 +129,9 @@ try {
   if (runNpx(tarballPath, ["init"], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams init failed");
   }
-  const generatedProjects = readdirSync(projectDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^dumb-diagrams-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(entry.name));
+  const generatedProjects = readdirSync(projectDir, { withFileTypes: true }).filter(
+    (entry) => entry.isDirectory() && /^dumb-diagrams-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(entry.name),
+  );
   if (generatedProjects.length !== 1) {
     throw new Error(`init should create one timestamped project folder, found ${generatedProjects.length}`);
   }
@@ -149,14 +157,18 @@ try {
   }
   const formatCopy = join(workRoot, "packed-format.dgm");
   copyFileSync(smokeDiagram, formatCopy);
-  if (runNpx(tarballPath, ["format", "--write", formatCopy], "dumbdiagrams", projectDir) !== 0 ||
-      runNpx(tarballPath, ["format", "--check", formatCopy], "dumbdiagrams", projectDir) !== 0) {
+  if (
+    runNpx(tarballPath, ["format", "--write", formatCopy], "dumbdiagrams", projectDir) !== 0 ||
+    runNpx(tarballPath, ["format", "--check", formatCopy], "dumbdiagrams", projectDir) !== 0
+  ) {
     throw new Error("packed dumbdiagrams format failed");
   }
   const firstSvg = join(workRoot, "packed-first.svg");
   const secondSvg = join(workRoot, "packed-second.svg");
-  if (runNpx(tarballPath, ["render", smokeDiagram, "--output", firstSvg], "dumbdiagrams", projectDir) !== 0 ||
-      runNpx(tarballPath, ["render", smokeDiagram, "--output", secondSvg], "dumbdiagrams", projectDir) !== 0) {
+  if (
+    runNpx(tarballPath, ["render", smokeDiagram, "--output", firstSvg], "dumbdiagrams", projectDir) !== 0 ||
+    runNpx(tarballPath, ["render", smokeDiagram, "--output", secondSvg], "dumbdiagrams", projectDir) !== 0
+  ) {
     throw new Error("packed dumbdiagrams render failed");
   }
   if (readFileSync(firstSvg, "utf8") !== readFileSync(secondSvg, "utf8")) {
@@ -192,7 +204,13 @@ function verifyCorrespondingSource(tarballPath) {
       ["install", "--frozen-lockfile"],
       ["build"],
       ["check:results"],
-      ["exec", "vitest", "run", "packages/editor/src/editor-model.test.ts", "tests/integration/source-manifest.test.ts"],
+      [
+        "exec",
+        "vitest",
+        "run",
+        "packages/editor/src/editor-model.test.ts",
+        "tests/integration/source-manifest.test.ts",
+      ],
       ["check:performance"],
       ["exec", "playwright", "test", "--project=chromium", "--list"],
     ];
@@ -206,15 +224,11 @@ function verifyCorrespondingSource(tarballPath) {
 
 function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
   try {
-    execFileSync(
-      npxCommand,
-      ["--yes", `--package=${tarballPath}`, bin, ...args],
-      {
-        cwd,
-        stdio: ["ignore", "inherit", "inherit"],
-        env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
-      },
-    );
+    execFileSync(npxCommand, ["--yes", `--package=${tarballPath}`, bin, ...args], {
+      cwd,
+      stdio: ["ignore", "inherit", "inherit"],
+      env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
+    });
     return 0;
   } catch (error) {
     const code = error.status;
@@ -223,14 +237,10 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
 }
 
 function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
-  return execFileSync(
-    npxCommand,
-    ["--yes", `--package=${tarballPath}`, bin, ...args],
-    {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
-    },
-  );
+  return execFileSync(npxCommand, ["--yes", `--package=${tarballPath}`, bin, ...args], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
+  });
 }

@@ -25,7 +25,12 @@ export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
   const routingWarnings: ValidationIssue[] = [];
   const edges = routeEdges(doc, layout, {
     onDiagnostics: ({ exhausted }) => {
-      if (exhausted) routingWarnings.push({ level: "warning", code: ROUTING_BUDGET_WARNING_CODE, message: ROUTING_BUDGET_WARNING_MESSAGE });
+      if (exhausted)
+        routingWarnings.push({
+          level: "warning",
+          code: ROUTING_BUDGET_WARNING_CODE,
+          message: ROUTING_BUDGET_WARNING_MESSAGE,
+        });
     },
   });
   const fullLayout = attachRoutes(layout, edges);
