@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+if [ "${DUMB_DIAGRAMS_SKIP_HOOKS:-}" = "1" ]; then
+  exit 0
+fi
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+pnpm check:pr

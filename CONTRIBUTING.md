@@ -33,10 +33,18 @@ Editor tests import the built runtime, so run
 | `pnpm exec playwright test e2e/<name>.spec.ts` | One Playwright spec |
 | `pnpm test:e2e:compat` | Best-effort WebKit pass; not a release gate |
 | `pnpm typecheck` | Editor TypeScript (runtime and CLI are typechecked by their builds) |
-| `pnpm check:style` | Biome formatting and lint |
+| `pnpm check:pr` | Fast PR gate: versions, Biome lint, import boundaries, Result ESLint, editor typecheck (~1 min) |
+| `pnpm fix:style` | Apply Biome safe fixes on tracked paths (same scope as `check:style`) |
+| `pnpm check:style` | Biome lint in CI mode (no writes) |
+| `pnpm check:results` | ESLint rules for `Result` boundaries and unsafe unwraps |
 | `pnpm check:results` | Result consumption, no unsafe unwraps, no explicit runtime/CLI throws |
 | `pnpm check:engine` | Engine-independent semantic/quality contracts and full-output repeatability across processes/locales/time zones |
 | `pnpm test:golden` | Frozen SVG, geometry, format compatibility, and editor operation output |
+
+After `pnpm install`, this repo points Git at `.githooks`: **pre-commit** runs
+`biome check --write --staged` then verifies staged files; **pre-push** runs
+`pnpm check:pr`. Set `DUMB_DIAGRAMS_SKIP_HOOKS=1` once to bypass hooks.
+Re-run `pnpm prepare` if hooks stop firing after cloning an existing worktree.
 
 CI runs two chains that you can run locally too: `pnpm ci:verify` (style,
 dependencies, advisories, build, coverage, typecheck, examples, routing,
