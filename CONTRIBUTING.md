@@ -51,24 +51,12 @@ dependencies, advisories, build, coverage, typecheck, examples, routing,
 performance, package smoke, asset budgets) and `pnpm ci:e2e`.
 `pnpm check:release` runs both plus the website checks.
 
-## Testing the packed artifact locally
+## Focused testing workflows
 
-The npm package is the product, so test the tarball, not the workspace:
-
-```bash
-pnpm build
-pnpm smoke:package
-```
-
-`smoke:package` packs `packages/cli` into `.artifacts/packages/`, installs it
-in a temporary project, and runs `init`, `validate`, `format`, `render`, the
-`dgm` alias, and a rebuild of the bundled corresponding source. To inspect it
-manually, install that `.tgz` in a scratch npm project and run
-`npx dumbdiagrams init`, then `npx dumbdiagrams studio` in the generated folder.
-
-`pnpm test:e2e:packed` drives the packed CLI's Studio server through
-Playwright. Set `DUMB_DIAGRAMS_ARTIFACT=/abs/path.tgz` to smoke-test a specific
-tarball, such as a release candidate (see [docs/RELEASE.md](docs/RELEASE.md)).
+See [docs/TESTING.md](docs/TESTING.md) for the golden set, local engine checks,
+and manual packed-CLI install. `pnpm test:e2e:packed` runs the packed CLI's
+Studio journey; set `DUMB_DIAGRAMS_ARTIFACT=/abs/path.tgz` to test a specific
+tarball. See [docs/RELEASE.md](docs/RELEASE.md) for the release gate.
 
 ## Baselines
 

@@ -82,8 +82,8 @@ pnpm install --frozen-lockfile
 pnpm dev          # Studio with hot reload
 ```
 
-[CONTRIBUTING.md](./CONTRIBUTING.md) is the developer handbook: tests,
-baselines, and testing the packed CLI artifact.
+[CONTRIBUTING.md](./CONTRIBUTING.md) covers development and baseline policy.
+See [Testing](./docs/TESTING.md) for golden cases and the packed CLI workflow.
 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) explains the pipeline and
 package boundaries, and [docs/RELEASE.md](./docs/RELEASE.md) covers
 versioning, the format policy, and publishing.
