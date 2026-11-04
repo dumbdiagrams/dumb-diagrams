@@ -7,12 +7,14 @@ test("quality presets reveal the runtime-generated winner", async ({ page }, tes
     ["Counts before weights", "Candidate A wins with fewer soft findings"],
     ["Penalty breaks the tie", "Candidate B wins on the lower penalty"],
   ] as const;
+  const initialHeight = await page.locator(".quality-explainer").evaluate(figure => figure.getBoundingClientRect().height);
 
   for (const [label, verdict] of presets) {
     await page.getByRole("tab", { name: new RegExp(label) }).click();
     await expect(page.getByRole("tabpanel")).toContainText(verdict);
-    expect(await page.getByRole("tabpanel").evaluate(panel => panel.getAnimations({ subtree: true }).length)).toBeGreaterThan(0);
-    await page.waitForTimeout(450);
+    await expect(page.getByRole("tabpanel")).toHaveCount(1);
+    await expect.poll(() => page.getByRole("tabpanel").evaluate(panel => panel.getAnimations({ subtree: true }).length)).toBe(0);
+    expect(await page.locator(".quality-explainer").evaluate(figure => figure.getBoundingClientRect().height)).toBe(initialHeight);
     await page.locator(".quality-explainer").screenshot({ path: testInfo.outputPath(`${label.toLowerCase().replaceAll(" ", "-")}.png`) });
   }
 
@@ -26,7 +28,8 @@ test("routing candidates remain keyboard-operable", async ({ page }) => {
   await page.getByRole("tab", { name: /Rejected/ }).focus();
   await page.getByRole("tab", { name: /Rejected/ }).press("ArrowRight");
   await expect(page.getByRole("tabpanel")).toContainText("Costly");
-  expect(await page.getByRole("tabpanel").evaluate(panel => panel.getAnimations({ subtree: true }).length)).toBeGreaterThan(0);
+  await expect(page.getByRole("tabpanel")).toHaveCount(1);
+  await expect(page.getByRole("tabpanel").locator(".candidate-path")).toHaveAttribute("d", "M80 90L80 90L400 90L400 90");
   await expect(page.getByRole("tabpanel")).toContainText("300,160");
   await expect(page.locator(".cost-ledger")).toContainText("1,120");
 });

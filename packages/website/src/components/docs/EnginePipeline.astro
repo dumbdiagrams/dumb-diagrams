@@ -7,6 +7,7 @@ const stages = [
   ['inspect', '05', 'Inspect', 'Finished drawing', 'Drawing quality report', 'Collisions and crossings'],
   ['render', '06', 'Render', 'Finished drawing', 'Portable SVG', 'Rejected unsafe assets'],
 ] as const;
+const symbols = { parse: '{ }', validate: '✓', layout: '▦', route: '↳', inspect: '◎', render: '</>' };
 ---
 <figure class="mechanic-figure pipeline-explainer" data-explainer="pipeline" data-active="parse" aria-labelledby="pipeline-title">
   <div class="figure-heading"><div><h3 id="pipeline-title">From text to a drawing</h3></div><span class="figure-chip">deterministic</span></div>
@@ -15,9 +16,9 @@ const stages = [
   </div>
   <div class="pipeline-panels">
     {stages.map(([id, number, label, input, output, failure]) => <section role="tabpanel" id={`pipeline-panel-${id}`} aria-labelledby={`pipeline-tab-${id}`} data-explainer-panel={id} class="pipeline-panel">
-      <h4 class="panel-context">{number} / {label}</h4>
-      <div class="pipeline-sketch" aria-hidden="true"><span class="source-sheet">{input}</span><span class="pipeline-arrow">→</span><span class={`stage-machine stage-${id}`}>{number}<b>{label}</b></span><span class="pipeline-arrow">→</span><span class="output-sheet">{output}</span></div>
-      <dl class="figure-facts"><div><dt>Starts with</dt><dd>{input}</dd></div><div><dt>Produces</dt><dd>{output}</dd></div><div><dt>Looks at</dt><dd>{failure}</dd></div></dl>
+      <h4 class="panel-context" data-motion-content>{number} / {label}</h4>
+      <div class="pipeline-sketch" aria-hidden="true"><span class="source-sheet"><span data-motion-content>{input}</span></span><span class="pipeline-arrow">→</span><span class="stage-machine"><span data-motion-content>{number}</span><b data-motion-content>{label}</b><span class="stage-symbol" data-motion-content>{symbols[id]}</span></span><span class="pipeline-arrow">→</span><span class="output-sheet"><span data-motion-content>{output}</span></span></div>
+      <dl class="figure-facts"><div><dt>Starts with</dt><dd data-motion-content>{input}</dd></div><div><dt>Produces</dt><dd data-motion-content>{output}</dd></div><div><dt>Looks at</dt><dd data-motion-content>{failure}</dd></div></dl>
     </section>)}
   </div>
   <figcaption>Select a step to follow what happens to your diagram.</figcaption>
