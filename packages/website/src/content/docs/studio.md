@@ -10,11 +10,6 @@ Chromium-based desktop browsers are the first-class Studio target. WebKit and
 Firefox are best-effort compatibility targets, and native Safari is not a
 release target.
 
-<figure class="studio-overview">
-  <img src="../../docs-assets/studio-overview.png" alt="Dumb Diagrams Studio showing an AWS serverless architecture, the canvas, and the boundaries panel" width="2000" height="1051" />
-  <figcaption>The left dock opens boundaries, resources, text, notes, layers, and source. Select an item on the canvas to edit its details on the right.</figcaption>
-</figure>
-
 ## Open and edit a file
 
 Run `dumbdiagrams studio` and choose **Open** to select any `.dgm` file. Keep the terminal running while you work. Studio listens on `127.0.0.1`, port 4788, or a free port if that one is taken.
@@ -28,21 +23,6 @@ For a keyboard-friendly overview of the diagram, open **Canvas items**. It lists
 ## Fine-tune the details
 
 Select a boundary, resource, or connector to edit it on the right: line and fill, label position, icon size, step numbers, connector meaning, and route. The defaults work without changes, so these are optional refinements. Clicking a warning in the validation panel selects the item it refers to.
-
-<div class="studio-detail-grid">
-  <figure>
-    <img src="../../docs-assets/studio-boundary-details.png" alt="Boundary details with label position, line style, colour, and fill controls" width="570" height="850" loading="lazy" />
-    <figcaption>Boundary appearance</figcaption>
-  </figure>
-  <figure>
-    <img src="../../docs-assets/studio-service-details.png" alt="Resource details with icon size and label position controls" width="556" height="700" loading="lazy" />
-    <figcaption>Icon and label</figcaption>
-  </figure>
-  <figure>
-    <img src="../../docs-assets/studio-connector-details.png" alt="Connector details with line style, colour, and meaning controls" width="722" height="900" loading="lazy" />
-    <figcaption>Connector appearance</figcaption>
-  </figure>
-</div>
 
 ## Save and work with other editors
 
