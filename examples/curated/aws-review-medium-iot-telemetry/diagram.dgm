@@ -1,0 +1,24 @@
+dgm 1
+diagram aws-review-medium-iot-telemetry {
+  grammar aws
+  flow lr
+  title "AWS factory IoT telemetry"
+
+  cloud-agnostic.actor sensors "Factory sensor fleet"
+  cloud-agnostic.client dashboard "Operations dashboard"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.aws-iot-core iot_core "AWS IoT Core"
+    aws.kinesis-data-streams telemetry_stream "Kinesis Data Streams"
+    aws.aws-lambda consumer "Lambda telemetry consumer"
+    aws.timestream time_series "Amazon Timestream"
+    aws.simple-notification-service alerts "Amazon SNS"
+  }
+
+  sensors -> iot_core { id send_readings label "Sensor readings" }
+  iot_core -> telemetry_stream { id route_readings label "Route readings" }
+  telemetry_stream -> consumer { id consume_readings label "Consume stream" }
+  consumer -> time_series { id write_time_series label "Normalized readings" }
+  consumer -> alerts { id publish_alerts label "Threshold alerts" }
+  time_series -> dashboard { id read_time_series label "Telemetry data" }
+}

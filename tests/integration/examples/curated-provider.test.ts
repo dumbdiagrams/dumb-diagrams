@@ -87,14 +87,91 @@ describe("curated provider semantic contracts", () => {
       for (const [type, minimum] of Object.entries(contract.minimumCounts ?? {})) {
         expect(resourceCounts.get(type) ?? 0, `${id} ${type}`).toBeGreaterThanOrEqual(minimum);
       }
+      for (const [type, exact] of Object.entries(contract.exactCounts ?? {})) {
+        expect(resourceCounts.get(type) ?? 0, `${id} ${type}`).toBe(exact);
+      }
+      if (contract.noUnexpectedTypes) {
+        expect([...resourceCounts.keys()].sort(), `${id} resource types`).toEqual(
+          Object.keys(contract.exactCounts ?? {}).sort(),
+        );
+      }
       const groupCounts = countTypes(doc.groups);
       for (const [type, minimum] of Object.entries(contract.minimumGroupCounts ?? {})) {
         expect(groupCounts.get(type) ?? 0, `${id} ${type}`).toBeGreaterThanOrEqual(minimum);
+      }
+      for (const [type, exact] of Object.entries(contract.exactGroupCounts ?? {})) {
+        expect(groupCounts.get(type) ?? 0, `${id} ${type}`).toBe(exact);
+      }
+      if (contract.noUnexpectedGroupTypes) {
+        expect([...groupCounts.keys()].sort(), `${id} group types`).toEqual(
+          Object.keys(contract.exactGroupCounts ?? {}).sort(),
+        );
       }
 
       for (const edge of doc.edges) {
         expect(doc.resources.some((resource) => resource.id === edge.source), `${id} edge source ${edge.source}`).toBe(true);
         expect(doc.resources.some((resource) => resource.id === edge.target), `${id} edge target ${edge.target}`).toBe(true);
+      }
+
+      const itemsById = new Map([
+        ...doc.resources.map((resource) => [resource.id, resource] as const),
+        ...doc.groups.map((group) => [group.id, group] as const),
+      ]);
+      const groupsById = new Map(doc.groups.map((group) => [group.id, group] as const));
+      const ancestorTypes = (id: string) => {
+        const ancestors: string[] = [];
+        let parent = itemsById.get(id)?.parent;
+        const seen = new Set<string>();
+        while (parent && !seen.has(parent)) {
+          seen.add(parent);
+          const group = groupsById.get(parent);
+          if (!group) break;
+          ancestors.push(group.type ?? group.kind);
+          parent = group.parent;
+        }
+        return ancestors;
+      };
+      for (const requirement of contract.containment ?? []) {
+        const matching = doc.resources.filter((resource) => resource.type === requirement.childType);
+        expect(matching.length, `${id} ${requirement.childType} exists`).toBeGreaterThan(0);
+        for (const resource of matching) {
+          expect(ancestorTypes(resource.id), `${id} ${resource.id} containment`).toContain(requirement.ancestorType);
+        }
+      }
+      for (const requirement of contract.groupContainment ?? []) {
+        const matching = doc.groups.filter((group) => (group.type ?? group.kind) === requirement.childGroupType);
+        expect(matching.length, `${id} ${requirement.childGroupType} exists`).toBeGreaterThan(0);
+        for (const group of matching) {
+          expect(ancestorTypes(group.id), `${id} ${group.id} containment`).toContain(requirement.ancestorType);
+        }
+      }
+      for (const requirement of contract.outsideContainment ?? []) {
+        const matching = doc.resources.filter((resource) => resource.type === requirement.childType);
+        expect(matching.length, `${id} ${requirement.childType} exists`).toBeGreaterThan(0);
+        for (const resource of matching) {
+          expect(ancestorTypes(resource.id), `${id} ${resource.id} outside containment`).not.toContain(
+            requirement.ancestorType,
+          );
+        }
+      }
+      if (contract.relationships) {
+        const typesById = new Map(doc.resources.map((resource) => [resource.id, resource.type] as const));
+        const actualRelationships = new Map<string, number>();
+        for (const edge of doc.edges) {
+          const key = `${typesById.get(edge.source)}\0${typesById.get(edge.target)}`;
+          actualRelationships.set(key, (actualRelationships.get(key) ?? 0) + 1);
+        }
+        const expectedRelationships = new Map<string, number>();
+        for (const relationship of contract.relationships) {
+          const key = `${relationship.sourceType}\0${relationship.targetType}`;
+          expectedRelationships.set(key, relationship.count ?? 1);
+          expect(actualRelationships.get(key) ?? 0, `${id} ${key.replaceAll("\0", " -> ")}`).toBe(relationship.count ?? 1);
+        }
+        if (contract.relationshipMode === "exact") {
+          expect([...actualRelationships].sort(([a], [b]) => a.localeCompare(b)), `${id} relationships`).toEqual(
+            [...expectedRelationships].sort(([a], [b]) => a.localeCompare(b)),
+          );
+        }
       }
     });
   }

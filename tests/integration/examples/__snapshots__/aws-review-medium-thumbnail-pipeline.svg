@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1266" height="600" viewBox="0 0 1266 600">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-aws_cloud">
+  <rect class="group-border-contrast" x="164.7" y="32" width="1068.7" height="256"
+    fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"  rx="0"/>
+  <rect class="group-border" x="164.7" y="32" width="1068.7" height="256"
+    fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/aws/aws-group-aws-cloud-8caea10d-6f947a0e.svg" x="164.7" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="196.7" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Cloud</text>
+  
+</g>
+
+<g id="group-image_pipeline">
+  <rect class="group-border" x="180.7" y="64" width="1036.7" height="200"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="188.7" y="79.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Image processing pipeline</text>
+  
+</g>
+
+<g id="edge-submit_upload" class="edge edge-flow edge-solid">
+  <path d="M 106 131 L 176 131 L 176 164 L 212.7 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="submit_upload" x="157" y="123" text-anchor="middle" font-size="11" fill="#163964">upload request</text>
+</g>
+
+<g id="edge-accept_upload" class="edge edge-flow edge-solid">
+  <path d="M 260.7 164 L 370.7 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="accept_upload" x="315.7" y="156" text-anchor="middle" font-size="11" fill="#163964">validate upload</text>
+</g>
+
+<g id="edge-store_original" class="edge edge-flow edge-solid">
+  <path d="M 418.7 164 L 517.7 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="store_original" x="468.20000000000005" y="156" text-anchor="middle" font-size="11" fill="#163964">save original</text>
+</g>
+
+<g id="edge-enqueue_thumbnail" class="edge edge-flow edge-solid">
+  <path d="M 418.7 176 L 464 176 L 464 256 L 784 256 L 784 164 L 714.7 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="enqueue_thumbnail" x="624" y="276" text-anchor="middle" font-size="11" fill="#163964">queue thumbnail job</text>
+</g>
+
+<g id="edge-process_job" class="edge edge-flow edge-solid">
+  <path d="M 714.7 152 L 833.7 152" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="process_job" x="774.2" y="144" text-anchor="middle" font-size="11" fill="#163964">process image</text>
+</g>
+
+<g id="edge-save_thumbnail" class="edge edge-flow edge-solid">
+  <path d="M 881.7 164 L 989.7 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="save_thumbnail" x="935.7" y="156" text-anchor="middle" font-size="11" fill="#163964">write thumbnail</text>
+</g>
+
+<g id="edge-serve_original" class="edge edge-flow edge-solid">
+  <path d="M 565.7 164 L 608 164 L 608 120 L 1154.7 120 L 1154.7 140" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="serve_original" x="881.35" y="112" text-anchor="middle" font-size="11" fill="#163964">original image</text>
+</g>
+
+<g id="edge-serve_thumbnail" class="edge edge-flow edge-solid">
+  <path d="M 1037.7 164 L 1130.7 164" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="serve_thumbnail" x="1084.2" y="156" text-anchor="middle" font-size="11" fill="#163964">thumbnail</text>
+</g>
+
+<g id="res-uploader">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="58" y="107" width="48" height="48"/>
+  <text x="82.35" y="171" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="82.35" y="189" text-anchor="middle" font-size="11" font-style="italic">Image uploader</text>
+</g>
+
+<g id="res-upload_api">
+  <image href="catalog-icons/aws/aws-resource-api-gateway-a91afd65-2aabe4b4.svg" x="212.7" y="140" width="48" height="48"/>
+  <text x="237" y="204" text-anchor="middle" font-size="12" font-weight="500">API Gateway</text>
+  <text x="237" y="222" text-anchor="middle" font-size="11" font-style="italic">Upload API</text>
+</g>
+
+<g id="res-intake">
+  <image href="catalog-icons/aws/aws-resource-lambda-5818c80c-4738d75e.svg" x="370.7" y="140" width="48" height="48"/>
+  <text x="395.05" y="204" text-anchor="middle" font-size="12" font-weight="500">Lambda</text>
+  <text x="395.05" y="222" text-anchor="middle" font-size="11" font-style="italic">Upload handler</text>
+</g>
+
+<g id="res-originals">
+  <image href="catalog-icons/aws/aws-resource-s3-b92c5101-c4cde455.svg" x="517.7" y="140" width="48" height="48"/>
+  <text x="542.075" y="204" text-anchor="middle" font-size="12" font-weight="500">S3</text>
+  <text x="542.075" y="222" text-anchor="middle" font-size="11" font-style="italic">Original images</text>
+</g>
+
+<g id="res-jobs">
+  <image href="catalog-icons/aws/aws-resource-simple-queue-service-bbab2545-51201074.svg" x="666.7" y="140" width="48" height="48"/>
+  <text x="690.7" y="204" text-anchor="middle" font-size="12" font-weight="500">Simple Queue Service</text>
+  <text x="690.7" y="222" text-anchor="middle" font-size="11" font-style="italic">Thumbnail jobs</text>
+</g>
+
+<g id="res-processor">
+  <image href="catalog-icons/aws/aws-resource-lambda-5818c80c-4738d75e.svg" x="833.7" y="140" width="48" height="48"/>
+  <text x="858.1750000000001" y="204" text-anchor="middle" font-size="12" font-weight="500">Lambda</text>
+  <text x="858.1750000000001" y="222" text-anchor="middle" font-size="11" font-style="italic">Thumbnail processor</text>
+</g>
+
+<g id="res-thumbnails">
+  <image href="catalog-icons/aws/aws-resource-s3-b92c5101-c4cde455.svg" x="989.7" y="140" width="48" height="48"/>
+  <text x="1013.2" y="204" text-anchor="middle" font-size="12" font-weight="500">S3</text>
+  <text x="1013.2" y="222" text-anchor="middle" font-size="11" font-style="italic">Generated thumbnails</text>
+</g>
+
+<g id="res-delivery">
+  <image href="catalog-icons/aws/aws-resource-cloudfront-66491998-3e3ea365.svg" x="1130.7" y="140" width="48" height="48"/>
+  <text x="1155.05" y="204" text-anchor="middle" font-size="12" font-weight="500">CloudFront</text>
+  <text x="1155.05" y="222" text-anchor="middle" font-size="11" font-style="italic">Image delivery</text>
+</g>
+</svg>

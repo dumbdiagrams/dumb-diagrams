@@ -1,0 +1,31 @@
+dgm 1
+diagram azure-review-medium-async-orders {
+  grammar azure
+  flow lr
+  title "Azure asynchronous order processing"
+
+  cloud-agnostic.client storefront "Storefront"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      azure.resource-group orders_group "Order processing" {
+        azure.api-management-services api "Order API"
+        azure.function-apps intake "Order intake function"
+        azure.azure-service-bus queue "Order queue"
+        azure.storage-accounts order_archive "Order archive"
+        azure.function-apps processor "Order processor"
+        azure.sql-database database "Order database"
+        azure.monitor monitor "Azure Monitor"
+      }
+    }
+  }
+
+  storefront -> api { id submit_order label "submit order" }
+  api -> intake { id receive_order label "validate order" }
+  intake -> queue { id enqueue_order label "queue for processing" }
+  intake -> order_archive { id archive_request label "archive request" }
+  queue -> processor { id process_queued_order label "queued order" }
+  order_archive -> processor { id process_archived_order label "archive event" }
+  processor -> database { id persist_order label "save order" }
+  processor -> monitor { id emit_metrics label "processing metrics" style dashed kind peer }
+}

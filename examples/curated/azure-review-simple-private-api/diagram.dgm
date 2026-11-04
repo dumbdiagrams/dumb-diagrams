@@ -1,0 +1,27 @@
+dgm 1
+diagram azure-review-simple-private-api {
+  grammar azure
+  flow lr
+  title "Azure private application API"
+
+  cloud-agnostic.client client "Application client"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      azure.resource-group app_group "Private API resources" {
+        azure.vnet vnet "Application network" {
+          azure.api-management-services api "API Management"
+          azure.function-apps handler "API function"
+          azure.private-endpoints sql_endpoint "SQL private endpoint"
+        }
+
+        azure.sql-database database "Application database"
+      }
+    }
+  }
+
+  client -> api { id submit_request label "private API request" }
+  api -> handler { id route_request label "authorized request" }
+  handler -> sql_endpoint { id connect_sql label "private database access" }
+  sql_endpoint -> database { id endpoint_to_sql label "private link" }
+}

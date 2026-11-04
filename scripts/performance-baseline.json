@@ -12,16 +12,10 @@
       "astarExpansions": 663,
       "repairCandidates": 0
     },
-    "examples/curated/simple-serverless-web-application/diagram.dgm": {
-      "scorePathCalls": 597,
-      "routeConflictChecks": 2,
+    "examples/curated/asynchronous-report-generation/diagram.dgm": {
+      "scorePathCalls": 2633,
+      "routeConflictChecks": 7,
       "astarExpansions": 0,
-      "repairCandidates": 0
-    },
-    "examples/curated/aws-high-availability-web-app/diagram.dgm": {
-      "scorePathCalls": 21332,
-      "routeConflictChecks": 0,
-      "astarExpansions": 57002,
       "repairCandidates": 0
     },
     "examples/curated/aws-data-transfer-hub/diagram.dgm": {
@@ -30,29 +24,29 @@
       "astarExpansions": 507004,
       "repairCandidates": 4315
     },
-    "examples/curated/bedrock-claims-processing/diagram.dgm": {
-      "scorePathCalls": 4984,
-      "routeConflictChecks": 5,
+    "examples/curated/aws-high-availability-web-app/diagram.dgm": {
+      "scorePathCalls": 21045,
+      "routeConflictChecks": 0,
+      "astarExpansions": 41966,
+      "repairCandidates": 0
+    },
+    "examples/curated/aws-review-medium-iot-telemetry/diagram.dgm": {
+      "scorePathCalls": 831,
+      "routeConflictChecks": 3,
       "astarExpansions": 0,
       "repairCandidates": 0
     },
-    "examples/curated/image-thumbnail-pipeline/diagram.dgm": {
-      "scorePathCalls": 1459,
-      "routeConflictChecks": 4,
+    "examples/curated/aws-review-medium-thumbnail-pipeline/diagram.dgm": {
+      "scorePathCalls": 2222,
+      "routeConflictChecks": 3,
       "astarExpansions": 0,
       "repairCandidates": 0
     },
-    "examples/curated/asynchronous-report-generation/diagram.dgm": {
-      "scorePathCalls": 2579,
-      "routeConflictChecks": 7,
+    "examples/curated/aws-review-simple-static-site/diagram.dgm": {
+      "scorePathCalls": 201,
+      "routeConflictChecks": 1,
       "astarExpansions": 0,
       "repairCandidates": 0
-    },
-    "examples/curated/event-driven-order-fulfillment/diagram.dgm": {
-      "scorePathCalls": 8149,
-      "routeConflictChecks": 275,
-      "astarExpansions": 451138,
-      "repairCandidates": 1099
     },
     "examples/curated/azure-private-app-service/diagram.dgm": {
       "scorePathCalls": 14247,
@@ -60,17 +54,95 @@
       "astarExpansions": 170599,
       "repairCandidates": 535
     },
+    "examples/curated/azure-review-medium-async-orders/diagram.dgm": {
+      "scorePathCalls": 5242,
+      "routeConflictChecks": 33,
+      "astarExpansions": 1104,
+      "repairCandidates": 694
+    },
+    "examples/curated/azure-review-medium-iot-telemetry/diagram.dgm": {
+      "scorePathCalls": 2084,
+      "routeConflictChecks": 3,
+      "astarExpansions": 20901,
+      "repairCandidates": 0
+    },
+    "examples/curated/azure-review-simple-private-api/diagram.dgm": {
+      "scorePathCalls": 755,
+      "routeConflictChecks": 2,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/bedrock-claims-processing/diagram.dgm": {
+      "scorePathCalls": 4984,
+      "routeConflictChecks": 5,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": {
+      "scorePathCalls": 3313,
+      "routeConflictChecks": 25,
+      "astarExpansions": 100866,
+      "repairCandidates": 126
+    },
+    "examples/curated/cloud-agnostic-review-medium-portal-stack/diagram.dgm": {
+      "scorePathCalls": 1342,
+      "routeConflictChecks": 3,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/cloud-agnostic-review-medium-webhook-flow/diagram.dgm": {
+      "scorePathCalls": 4105,
+      "routeConflictChecks": 4,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/cloud-agnostic-review-simple-api/diagram.dgm": {
+      "scorePathCalls": 31,
+      "routeConflictChecks": 0,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/event-driven-order-fulfillment/diagram.dgm": {
+      "scorePathCalls": 8417,
+      "routeConflictChecks": 74,
+      "astarExpansions": 353121,
+      "repairCandidates": 1185
+    },
+    "examples/curated/gcp-review-medium-document-processing/diagram.dgm": {
+      "scorePathCalls": 1209,
+      "routeConflictChecks": 2,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/gcp-review-medium-event-pipeline/diagram.dgm": {
+      "scorePathCalls": 652,
+      "routeConflictChecks": 1,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/gcp-review-simple-api/diagram.dgm": {
+      "scorePathCalls": 31,
+      "routeConflictChecks": 0,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
     "examples/curated/gcp-streaming-analytics/diagram.dgm": {
       "scorePathCalls": 8157,
       "routeConflictChecks": 63,
       "astarExpansions": 119254,
       "repairCandidates": 1211
     },
-    "examples/curated/cloud-agnostic-order-processing/diagram.dgm": {
-      "scorePathCalls": 4216,
-      "routeConflictChecks": 28,
-      "astarExpansions": 103240,
-      "repairCandidates": 130
+    "examples/curated/image-thumbnail-pipeline/diagram.dgm": {
+      "scorePathCalls": 1450,
+      "routeConflictChecks": 4,
+      "astarExpansions": 0,
+      "repairCandidates": 0
+    },
+    "examples/curated/simple-serverless-web-application/diagram.dgm": {
+      "scorePathCalls": 597,
+      "routeConflictChecks": 2,
+      "astarExpansions": 0,
+      "repairCandidates": 0
     }
   }
 }

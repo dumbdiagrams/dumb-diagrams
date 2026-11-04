@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Semantic contracts for the seven curated AWS examples. These contracts intentionally ignore IDs, labels, source ordering, and layout coordinates.",
+  "description": "Semantic contracts for curated AWS examples. These contracts intentionally ignore IDs, labels, source ordering, and layout coordinates.",
   "examples": {
     "simple-serverless-web-application": {
       "exactCounts": {
@@ -298,6 +298,262 @@
         { "sourceType": "aws.simple-queue-service", "targetType": "aws.simple-queue-service" }
       ],
       "relationshipMode": "exact"
+    },
+    "aws-review-simple-static-site": {
+      "grammar": "aws",
+      "exactCounts": {
+        "aws.cloudfront": 1,
+        "aws.route-53": 1,
+        "aws.simple-storage-service": 1,
+        "cloud-agnostic.client": 1
+      },
+      "exactGroupCounts": {
+        "aws.cloud": 1,
+        "cloud-agnostic.boundary": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "aws.cloudfront",
+          "targetType": "aws.simple-storage-service"
+        },
+        {
+          "sourceType": "aws.route-53",
+          "targetType": "aws.cloudfront"
+        },
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "aws.route-53"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "aws.cloudfront",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.cloudfront",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "aws.route-53",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.route-53",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "aws.simple-storage-service",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.simple-storage-service",
+          "ancestorType": "cloud-agnostic.boundary"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "cloud-agnostic.boundary",
+          "ancestorType": "aws.cloud"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "aws.cloud"
+        }
+      ]
+    },
+    "aws-review-medium-thumbnail-pipeline": {
+      "grammar": "aws",
+      "exactCounts": {
+        "aws.api-gateway": 1,
+        "aws.aws-lambda": 2,
+        "aws.cloudfront": 1,
+        "aws.simple-queue-service": 1,
+        "aws.simple-storage-service": 2,
+        "cloud-agnostic.client": 1
+      },
+      "exactGroupCounts": {
+        "aws.cloud": 1,
+        "cloud-agnostic.boundary": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "aws.api-gateway",
+          "targetType": "aws.aws-lambda"
+        },
+        {
+          "sourceType": "aws.aws-lambda",
+          "targetType": "aws.simple-queue-service"
+        },
+        {
+          "sourceType": "aws.aws-lambda",
+          "targetType": "aws.simple-storage-service",
+          "count": 2
+        },
+        {
+          "sourceType": "aws.simple-queue-service",
+          "targetType": "aws.aws-lambda"
+        },
+        {
+          "sourceType": "aws.simple-storage-service",
+          "targetType": "aws.cloudfront",
+          "count": 2
+        },
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "aws.api-gateway"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "aws.api-gateway",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.api-gateway",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "aws.aws-lambda",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.aws-lambda",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "aws.cloudfront",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.cloudfront",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "aws.simple-queue-service",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.simple-queue-service",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "aws.simple-storage-service",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.simple-storage-service",
+          "ancestorType": "cloud-agnostic.boundary"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "cloud-agnostic.boundary",
+          "ancestorType": "aws.cloud"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "aws.cloud"
+        }
+      ]
+    },
+    "aws-review-medium-iot-telemetry": {
+      "grammar": "aws",
+      "exactCounts": {
+        "cloud-agnostic.actor": 1,
+        "cloud-agnostic.client": 1,
+        "aws.aws-iot-core": 1,
+        "aws.kinesis-data-streams": 1,
+        "aws.aws-lambda": 1,
+        "aws.timestream": 1,
+        "aws.simple-notification-service": 1
+      },
+      "exactGroupCounts": {
+        "aws.cloud": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.actor",
+          "targetType": "aws.aws-iot-core"
+        },
+        {
+          "sourceType": "aws.aws-iot-core",
+          "targetType": "aws.kinesis-data-streams"
+        },
+        {
+          "sourceType": "aws.kinesis-data-streams",
+          "targetType": "aws.aws-lambda"
+        },
+        {
+          "sourceType": "aws.aws-lambda",
+          "targetType": "aws.timestream"
+        },
+        {
+          "sourceType": "aws.aws-lambda",
+          "targetType": "aws.simple-notification-service"
+        },
+        {
+          "sourceType": "aws.timestream",
+          "targetType": "cloud-agnostic.client"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "aws.aws-iot-core",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.kinesis-data-streams",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.aws-lambda",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.timestream",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "aws.simple-notification-service",
+          "ancestorType": "aws.cloud"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.actor",
+          "ancestorType": "aws.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "aws.cloud"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.actor": 1,
+        "cloud-agnostic.client": 1,
+        "aws.aws-iot-core": 1,
+        "aws.kinesis-data-streams": 1,
+        "aws.aws-lambda": 1,
+        "aws.timestream": 1,
+        "aws.simple-notification-service": 1
+      },
+      "minimumGroupCounts": {
+        "aws.cloud": 1
+      }
     }
   }
 }

@@ -73,6 +73,1162 @@
         "cloud-agnostic.network": 1,
         "cloud-agnostic.boundary": 3
       }
+    },
+    "azure-review-simple-private-api": {
+      "grammar": "azure",
+      "exactCounts": {
+        "azure.api-management-services": 1,
+        "azure.function-apps": 1,
+        "azure.private-endpoints": 1,
+        "azure.sql-database": 1,
+        "cloud-agnostic.client": 1
+      },
+      "exactGroupCounts": {
+        "azure.region": 1,
+        "azure.resource-group": 1,
+        "azure.subscription": 1,
+        "azure.vnet": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "azure.api-management-services",
+          "targetType": "azure.function-apps"
+        },
+        {
+          "sourceType": "azure.function-apps",
+          "targetType": "azure.private-endpoints"
+        },
+        {
+          "sourceType": "azure.private-endpoints",
+          "targetType": "azure.sql-database"
+        },
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "azure.api-management-services"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.vnet"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.vnet"
+        },
+        {
+          "childType": "azure.private-endpoints",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.private-endpoints",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.private-endpoints",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.private-endpoints",
+          "ancestorType": "azure.vnet"
+        },
+        {
+          "childType": "azure.sql-database",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.sql-database",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.sql-database",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "azure.region",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childGroupType": "azure.resource-group",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childGroupType": "azure.resource-group",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childGroupType": "azure.vnet",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childGroupType": "azure.vnet",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childGroupType": "azure.vnet",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "minimumCounts": {
+        "azure.api-management-services": 1,
+        "azure.function-apps": 1,
+        "azure.private-endpoints": 1,
+        "azure.sql-database": 1,
+        "cloud-agnostic.client": 1
+      },
+      "minimumGroupCounts": {
+        "azure.region": 1,
+        "azure.resource-group": 1,
+        "azure.subscription": 1,
+        "azure.vnet": 1
+      }
+    },
+    "azure-review-medium-async-orders": {
+      "grammar": "azure",
+      "exactCounts": {
+        "azure.api-management-services": 1,
+        "azure.azure-service-bus": 1,
+        "azure.function-apps": 2,
+        "azure.monitor": 1,
+        "azure.sql-database": 1,
+        "azure.storage-accounts": 1,
+        "cloud-agnostic.client": 1
+      },
+      "exactGroupCounts": {
+        "azure.region": 1,
+        "azure.resource-group": 1,
+        "azure.subscription": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "azure.api-management-services",
+          "targetType": "azure.function-apps"
+        },
+        {
+          "sourceType": "azure.azure-service-bus",
+          "targetType": "azure.function-apps"
+        },
+        {
+          "sourceType": "azure.function-apps",
+          "targetType": "azure.azure-service-bus"
+        },
+        {
+          "sourceType": "azure.function-apps",
+          "targetType": "azure.monitor"
+        },
+        {
+          "sourceType": "azure.function-apps",
+          "targetType": "azure.sql-database"
+        },
+        {
+          "sourceType": "azure.function-apps",
+          "targetType": "azure.storage-accounts"
+        },
+        {
+          "sourceType": "azure.storage-accounts",
+          "targetType": "azure.function-apps"
+        },
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "azure.api-management-services"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.api-management-services",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.azure-service-bus",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.azure-service-bus",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.azure-service-bus",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.monitor",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.monitor",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.monitor",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.sql-database",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.sql-database",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.sql-database",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "azure.storage-accounts",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childType": "azure.storage-accounts",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.storage-accounts",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "azure.region",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childGroupType": "azure.resource-group",
+          "ancestorType": "azure.region"
+        },
+        {
+          "childGroupType": "azure.resource-group",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "minimumCounts": {
+        "azure.api-management-services": 1,
+        "azure.azure-service-bus": 1,
+        "azure.function-apps": 2,
+        "azure.monitor": 1,
+        "azure.sql-database": 1,
+        "azure.storage-accounts": 1,
+        "cloud-agnostic.client": 1
+      },
+      "minimumGroupCounts": {
+        "azure.region": 1,
+        "azure.resource-group": 1,
+        "azure.subscription": 1
+      }
+    },
+    "gcp-review-simple-api": {
+      "grammar": "gcp",
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "gcp.cloud-load-balancing": 1,
+        "gcp.cloud-run": 1,
+        "gcp.cloud-sql": 1
+      },
+      "exactGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "gcp.cloud-load-balancing"
+        },
+        {
+          "sourceType": "gcp.cloud-load-balancing",
+          "targetType": "gcp.cloud-run"
+        },
+        {
+          "sourceType": "gcp.cloud-run",
+          "targetType": "gcp.cloud-sql"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "gcp.cloud-load-balancing",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.cloud-load-balancing",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.cloud-load-balancing",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-run",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.cloud-run",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.cloud-run",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-sql",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.cloud-sql",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.cloud-sql",
+          "ancestorType": "gcp.region"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "gcp.project",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childGroupType": "gcp.region",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childGroupType": "gcp.region",
+          "ancestorType": "gcp.project"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "gcp.organization"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "gcp.cloud-load-balancing": 1,
+        "gcp.cloud-run": 1,
+        "gcp.cloud-sql": 1
+      },
+      "minimumGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1
+      }
+    },
+    "gcp-review-medium-event-pipeline": {
+      "grammar": "gcp",
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "gcp.bigquery": 1,
+        "gcp.cloud-functions": 1,
+        "gcp.cloud-load-balancing": 1,
+        "gcp.cloud-storage": 1,
+        "gcp.dataflow": 1,
+        "gcp.pub-sub": 1
+      },
+      "exactGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "gcp.cloud-load-balancing"
+        },
+        {
+          "sourceType": "gcp.cloud-functions",
+          "targetType": "gcp.pub-sub"
+        },
+        {
+          "sourceType": "gcp.cloud-load-balancing",
+          "targetType": "gcp.cloud-functions"
+        },
+        {
+          "sourceType": "gcp.dataflow",
+          "targetType": "gcp.bigquery"
+        },
+        {
+          "sourceType": "gcp.dataflow",
+          "targetType": "gcp.cloud-storage"
+        },
+        {
+          "sourceType": "gcp.pub-sub",
+          "targetType": "gcp.dataflow"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "gcp.bigquery",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.bigquery",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.bigquery",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-functions",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.cloud-functions",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.cloud-functions",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-load-balancing",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.cloud-load-balancing",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.cloud-load-balancing",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-storage",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.cloud-storage",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.cloud-storage",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.dataflow",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.dataflow",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.dataflow",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.pub-sub",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childType": "gcp.pub-sub",
+          "ancestorType": "gcp.project"
+        },
+        {
+          "childType": "gcp.pub-sub",
+          "ancestorType": "gcp.region"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "gcp.project",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childGroupType": "gcp.region",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childGroupType": "gcp.region",
+          "ancestorType": "gcp.project"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "gcp.organization"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "gcp.bigquery": 1,
+        "gcp.cloud-functions": 1,
+        "gcp.cloud-load-balancing": 1,
+        "gcp.cloud-storage": 1,
+        "gcp.dataflow": 1,
+        "gcp.pub-sub": 1
+      },
+      "minimumGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1
+      }
+    },
+    "cloud-agnostic-review-simple-api": {
+      "grammar": "cloud-agnostic",
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.gateway": 1,
+        "cloud-agnostic.server": 1
+      },
+      "exactGroupCounts": {
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.region": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "cloud-agnostic.gateway"
+        },
+        {
+          "sourceType": "cloud-agnostic.gateway",
+          "targetType": "cloud-agnostic.server"
+        },
+        {
+          "sourceType": "cloud-agnostic.server",
+          "targetType": "cloud-agnostic.database"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childType": "cloud-agnostic.server",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.server",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.server",
+          "ancestorType": "cloud-agnostic.region"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "cloud-agnostic.account",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childGroupType": "cloud-agnostic.region",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childGroupType": "cloud-agnostic.region",
+          "ancestorType": "cloud-agnostic.cloud"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "cloud-agnostic.cloud"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.gateway": 1,
+        "cloud-agnostic.server": 1
+      },
+      "minimumGroupCounts": {
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.region": 1
+      }
+    },
+    "cloud-agnostic-review-medium-webhook-flow": {
+      "grammar": "cloud-agnostic",
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.function": 2,
+        "cloud-agnostic.gateway": 1,
+        "cloud-agnostic.object-storage": 1,
+        "cloud-agnostic.queue": 1
+      },
+      "exactGroupCounts": {
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.boundary": 1,
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.network": 1,
+        "cloud-agnostic.region": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "cloud-agnostic.gateway"
+        },
+        {
+          "sourceType": "cloud-agnostic.function",
+          "targetType": "cloud-agnostic.database",
+          "count": 2
+        },
+        {
+          "sourceType": "cloud-agnostic.function",
+          "targetType": "cloud-agnostic.object-storage"
+        },
+        {
+          "sourceType": "cloud-agnostic.function",
+          "targetType": "cloud-agnostic.queue"
+        },
+        {
+          "sourceType": "cloud-agnostic.gateway",
+          "targetType": "cloud-agnostic.function"
+        },
+        {
+          "sourceType": "cloud-agnostic.queue",
+          "targetType": "cloud-agnostic.function"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childType": "cloud-agnostic.function",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.function",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "cloud-agnostic.function",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.function",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.function",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.gateway",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childType": "cloud-agnostic.object-storage",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.object-storage",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.object-storage",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childType": "cloud-agnostic.queue",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childType": "cloud-agnostic.queue",
+          "ancestorType": "cloud-agnostic.boundary"
+        },
+        {
+          "childType": "cloud-agnostic.queue",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.queue",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.queue",
+          "ancestorType": "cloud-agnostic.region"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "cloud-agnostic.account",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childGroupType": "cloud-agnostic.boundary",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childGroupType": "cloud-agnostic.boundary",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childGroupType": "cloud-agnostic.boundary",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childGroupType": "cloud-agnostic.boundary",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childGroupType": "cloud-agnostic.network",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childGroupType": "cloud-agnostic.network",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childGroupType": "cloud-agnostic.network",
+          "ancestorType": "cloud-agnostic.region"
+        },
+        {
+          "childGroupType": "cloud-agnostic.region",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childGroupType": "cloud-agnostic.region",
+          "ancestorType": "cloud-agnostic.cloud"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "cloud-agnostic.cloud"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.function": 2,
+        "cloud-agnostic.gateway": 1,
+        "cloud-agnostic.object-storage": 1,
+        "cloud-agnostic.queue": 1
+      },
+      "minimumGroupCounts": {
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.boundary": 1,
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.network": 1,
+        "cloud-agnostic.region": 1
+      }
+    },
+    "azure-review-medium-iot-telemetry": {
+      "grammar": "azure",
+      "exactCounts": {
+        "cloud-agnostic.actor": 1,
+        "cloud-agnostic.client": 1,
+        "azure.iot-hub": 1,
+        "azure.event-hubs": 1,
+        "azure.function-apps": 1,
+        "azure.azure-cosmos-db": 1,
+        "azure.storage-accounts": 1
+      },
+      "exactGroupCounts": {
+        "azure.subscription": 1,
+        "azure.region": 1,
+        "azure.resource-group": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.actor",
+          "targetType": "azure.iot-hub"
+        },
+        {
+          "sourceType": "azure.iot-hub",
+          "targetType": "azure.event-hubs"
+        },
+        {
+          "sourceType": "azure.iot-hub",
+          "targetType": "azure.storage-accounts"
+        },
+        {
+          "sourceType": "azure.event-hubs",
+          "targetType": "azure.function-apps"
+        },
+        {
+          "sourceType": "azure.function-apps",
+          "targetType": "azure.azure-cosmos-db"
+        },
+        {
+          "sourceType": "azure.azure-cosmos-db",
+          "targetType": "cloud-agnostic.client"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "azure.iot-hub",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.event-hubs",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.function-apps",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.azure-cosmos-db",
+          "ancestorType": "azure.resource-group"
+        },
+        {
+          "childType": "azure.storage-accounts",
+          "ancestorType": "azure.resource-group"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "azure.region",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childGroupType": "azure.resource-group",
+          "ancestorType": "azure.region"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.actor",
+          "ancestorType": "azure.subscription"
+        },
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "azure.subscription"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.actor": 1,
+        "cloud-agnostic.client": 1,
+        "azure.iot-hub": 1,
+        "azure.event-hubs": 1,
+        "azure.function-apps": 1,
+        "azure.azure-cosmos-db": 1,
+        "azure.storage-accounts": 1
+      },
+      "minimumGroupCounts": {
+        "azure.subscription": 1,
+        "azure.region": 1,
+        "azure.resource-group": 1
+      }
+    },
+    "gcp-review-medium-document-processing": {
+      "grammar": "gcp",
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "gcp.cloud-run": 2,
+        "gcp.cloud-storage": 2,
+        "gcp.pub-sub": 1,
+        "gcp.cloud-sql": 1
+      },
+      "exactGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "gcp.cloud-run"
+        },
+        {
+          "sourceType": "gcp.cloud-run",
+          "targetType": "gcp.cloud-storage",
+          "count": 2
+        },
+        {
+          "sourceType": "gcp.cloud-storage",
+          "targetType": "gcp.pub-sub"
+        },
+        {
+          "sourceType": "gcp.pub-sub",
+          "targetType": "gcp.cloud-run"
+        },
+        {
+          "sourceType": "gcp.cloud-storage",
+          "targetType": "gcp.cloud-run"
+        },
+        {
+          "sourceType": "gcp.cloud-run",
+          "targetType": "gcp.cloud-sql"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "gcp.cloud-run",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-storage",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.pub-sub",
+          "ancestorType": "gcp.region"
+        },
+        {
+          "childType": "gcp.cloud-sql",
+          "ancestorType": "gcp.region"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "gcp.project",
+          "ancestorType": "gcp.organization"
+        },
+        {
+          "childGroupType": "gcp.region",
+          "ancestorType": "gcp.project"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "gcp.organization"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "gcp.cloud-run": 2,
+        "gcp.cloud-storage": 2,
+        "gcp.pub-sub": 1,
+        "gcp.cloud-sql": 1
+      },
+      "minimumGroupCounts": {
+        "gcp.organization": 1,
+        "gcp.project": 1,
+        "gcp.region": 1
+      }
+    },
+    "cloud-agnostic-review-medium-portal-stack": {
+      "grammar": "cloud-agnostic",
+      "exactCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.load-balancer": 1,
+        "cloud-agnostic.object-storage": 1,
+        "cloud-agnostic.server": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.cache": 1
+      },
+      "exactGroupCounts": {
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.region": 1,
+        "cloud-agnostic.network": 1
+      },
+      "noUnexpectedTypes": true,
+      "noUnexpectedGroupTypes": true,
+      "relationships": [
+        {
+          "sourceType": "cloud-agnostic.client",
+          "targetType": "cloud-agnostic.load-balancer"
+        },
+        {
+          "sourceType": "cloud-agnostic.load-balancer",
+          "targetType": "cloud-agnostic.server"
+        },
+        {
+          "sourceType": "cloud-agnostic.database",
+          "targetType": "cloud-agnostic.server"
+        },
+        {
+          "sourceType": "cloud-agnostic.cache",
+          "targetType": "cloud-agnostic.server"
+        },
+        {
+          "sourceType": "cloud-agnostic.object-storage",
+          "targetType": "cloud-agnostic.server"
+        }
+      ],
+      "relationshipMode": "exact",
+      "containment": [
+        {
+          "childType": "cloud-agnostic.server",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.database",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.cache",
+          "ancestorType": "cloud-agnostic.network"
+        }
+      ],
+      "groupContainment": [
+        {
+          "childGroupType": "cloud-agnostic.account",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childGroupType": "cloud-agnostic.region",
+          "ancestorType": "cloud-agnostic.account"
+        },
+        {
+          "childGroupType": "cloud-agnostic.network",
+          "ancestorType": "cloud-agnostic.region"
+        }
+      ],
+      "outsideContainment": [
+        {
+          "childType": "cloud-agnostic.client",
+          "ancestorType": "cloud-agnostic.cloud"
+        },
+        {
+          "childType": "cloud-agnostic.load-balancer",
+          "ancestorType": "cloud-agnostic.network"
+        },
+        {
+          "childType": "cloud-agnostic.object-storage",
+          "ancestorType": "cloud-agnostic.network"
+        }
+      ],
+      "minimumCounts": {
+        "cloud-agnostic.client": 1,
+        "cloud-agnostic.load-balancer": 1,
+        "cloud-agnostic.object-storage": 1,
+        "cloud-agnostic.server": 1,
+        "cloud-agnostic.database": 1,
+        "cloud-agnostic.cache": 1
+      },
+      "minimumGroupCounts": {
+        "cloud-agnostic.cloud": 1,
+        "cloud-agnostic.account": 1,
+        "cloud-agnostic.region": 1,
+        "cloud-agnostic.network": 1
+      }
     }
   }
 }
