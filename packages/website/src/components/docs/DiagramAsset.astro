@@ -1,10 +1,39 @@
 ---
+import { Code } from 'astro:components';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { loadExamples } from '../../lib/examples.mjs';
+import { dgmLanguage } from '../../lib/dgm-language.mjs';
 import { url } from '../../lib/site';
 interface Props { id: string; title: string; description: string; }
 const { id, title, description } = Astro.props;
+const example = loadExamples().find(candidate => candidate.id === id);
+if (!example) throw new Error(`Missing landing page example: ${id}`);
+const preview = readFileSync(resolve('public/diagrams', `${id}-preview.svg`), 'utf8');
+const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
+if (!dimensions) throw new Error(`Missing preview dimensions: ${id}`);
+const previewWidth = Number(dimensions[1]);
+const previewHeight = Number(dimensions[2]);
 ---
 <figure class="mechanic-figure diagram-asset" aria-labelledby={`${id}-title`}>
-  <div class="figure-heading"><div><span class="figure-kicker">RUNTIME-COMPILED EXAMPLE</span><h3 id={`${id}-title`}>{title}</h3></div><a class="figure-chip" href={url(`docs-explainers/${id}.dgm`)}>source .dgm</a></div>
-  <img src={url(`docs-explainers/${id}.svg`)} alt={description} loading="lazy" />
-  <figcaption>Generated from the downloadable source during the website build.</figcaption>
+  <div class="figure-heading"><div><span class="figure-kicker">REAL EXAMPLE · {example.title}</span><h3 id={`${id}-title`}>{title}</h3></div><a class="figure-chip" href={url(`diagrams/${id}.dgm`)} download>Download .dgm ↓</a></div>
+  <div class="diagram-workspace">
+    <section class="diagram-source-panel" aria-label="Diagram source">
+      <div class="diagram-panel-heading"><span>01 / SOURCE</span><strong>{id}.dgm</strong></div>
+      <div class="diagram-source-editor"><Code code={example.source.trimEnd()} lang={dgmLanguage} theme="github-dark" /></div>
+      <div class="diagram-panel-note">Describe resources, groups, and connections.</div>
+    </section>
+    <div class="diagram-transform" aria-hidden="true"><span>ENGINE</span><b>→</b></div>
+    <section class="diagram-output-panel" aria-label="Rendered diagram">
+      <div class="diagram-panel-heading"><span>02 / RESULT</span><strong>Portable SVG</strong><a href={url(`diagrams/${id}-preview.svg`)} target="_blank" rel="noopener">Full size ↗</a></div>
+      <div class="diagram-preview-canvas"><img src={url(`diagrams/${id}-preview.svg`)} alt={description} width={previewWidth} height={previewHeight} loading="lazy" decoding="async" /></div>
+      <div class="diagram-panel-note">Same source, automatically placed and routed.</div>
+    </section>
+  </div>
+  <div class="diagram-process" aria-label="How a source file becomes a diagram">
+    <div><span>01 / DESCRIBE</span><p>Name the services and how they connect.</p></div>
+    <div><span>02 / ARRANGE</span><p>The engine checks the source and lays out the flow.</p></div>
+    <div><span>03 / REVIEW</span><p>Inspect the drawing, then refine the source as needed.</p></div>
+  </div>
+  <figcaption>This is the same Image thumbnail pipeline example shown on the landing page, using its canonical source and rendered preview.</figcaption>
 </figure>

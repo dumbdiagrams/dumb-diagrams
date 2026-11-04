@@ -24,16 +24,18 @@ const findingLabels = {
 <figure class="mechanic-figure quality-explainer" data-explainer="quality" data-active="hard" aria-labelledby="quality-title">
   <div class="figure-heading"><div><h3 id="quality-title">The first different column decides</h3></div><span class="figure-chip">example findings</span></div>
   <div class="quality-controls" role="tablist" aria-label="Quality comparison presets">{presets.map((preset, index) => <button type="button" role="tab" id={`quality-tab-${preset.id}`} aria-controls={`quality-panel-${preset.id}`} aria-selected={index === 0 ? 'true' : 'false'} data-explainer-control={preset.id}><span>0{index + 1}</span>{preset.label}</button>)}</div>
-  {presets.map(preset => {
-    const firstDifference = preset.a.findIndex((value, column) => value !== preset.b[column]);
-    const [aFinding, bFinding] = findingLabels[preset.id as keyof typeof findingLabels];
-    return <section class="quality-panel" role="tabpanel" id={`quality-panel-${preset.id}`} aria-labelledby={`quality-tab-${preset.id}`} data-explainer-panel={preset.id}>
-      <h4 class="panel-context">{preset.label}</h4>
-      <div class="candidate-thumbnails"><div class={preset.winner === 'A' ? 'candidate-card winner' : 'candidate-card'}><span>Candidate A</span><p class="candidate-finding">{aFinding}</p>{preset.winner === 'A' && <strong>Winner</strong>}</div><div class={preset.winner === 'B' ? 'candidate-card winner' : 'candidate-card'}><span>Candidate B</span><p class="candidate-finding">{bFinding}</p>{preset.winner === 'B' && <strong>Winner</strong>}</div></div>
-      <div class="tuple-table" role="table" aria-label={`${preset.label} comparison`}><div role="row" class="tuple-head"><span role="columnheader">Candidate</span><span role="columnheader">Hard</span><span role="columnheader">Soft</span><span role="columnheader">Warnings</span><span role="columnheader">Penalty</span></div>{[['A', ...preset.a], ['B', ...preset.b]].map(row => <div role="row"><strong role="rowheader">{row[0]}</strong>{row.slice(1).map((value, column) => <span role="cell" class={column === firstDifference ? 'deciding-cell' : undefined}>{typeof value === 'number' ? format(value) : value}</span>)}</div>)}</div>
-      <p class="quality-verdict"><span>{preset.winner}</span>{preset.reason}</p>
-    </section>;
-  })}
+  <div class="quality-panels">
+    {presets.map(preset => {
+      const firstDifference = preset.a.findIndex((value, column) => value !== preset.b[column]);
+      const [aFinding, bFinding] = findingLabels[preset.id as keyof typeof findingLabels];
+      return <section class="quality-panel" role="tabpanel" id={`quality-panel-${preset.id}`} aria-labelledby={`quality-tab-${preset.id}`} data-explainer-panel={preset.id}>
+        <h4 class="panel-context">{preset.label}</h4>
+        <div class="candidate-thumbnails"><div class={preset.winner === 'A' ? 'candidate-card winner' : 'candidate-card'}><span>Candidate A</span><p class="candidate-finding">{aFinding}</p>{preset.winner === 'A' && <strong>Winner</strong>}</div><div class={preset.winner === 'B' ? 'candidate-card winner' : 'candidate-card'}><span>Candidate B</span><p class="candidate-finding">{bFinding}</p>{preset.winner === 'B' && <strong>Winner</strong>}</div></div>
+        <div class="tuple-table" role="table" aria-label={`${preset.label} comparison`}><div role="row" class="tuple-head"><span role="columnheader">Candidate</span><span role="columnheader">Hard</span><span role="columnheader">Soft</span><span role="columnheader">Warnings</span><span role="columnheader">Penalty</span></div>{[['A', ...preset.a], ['B', ...preset.b]].map(row => <div role="row"><strong role="rowheader">{row[0]}</strong>{row.slice(1).map((value, column) => <span role="cell" class={column === firstDifference ? 'deciding-cell' : undefined}>{typeof value === 'number' ? format(value) : value}</span>)}</div>)}</div>
+        <p class="quality-verdict"><span>{preset.winner}</span>{preset.reason}</p>
+      </section>;
+    })}
+  </div>
   <figcaption>Compare from left to right: hard, soft, warnings, then penalty. The first difference wins.</figcaption>
 </figure>
 <script src="../../scripts/docs-explainers.ts"></script>

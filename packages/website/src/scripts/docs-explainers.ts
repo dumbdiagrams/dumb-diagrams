@@ -4,10 +4,14 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function reveal(panel: HTMLElement) {
   if (reducedMotion.matches) return;
+  for (const animation of panel.getAnimations({ subtree: true })) animation.cancel();
+  const isContentSwitch = panel.matches(".pipeline-panel, .quality-panel");
+  const enterTransform = isContentSwitch ? "translateX(6px)" : "translateY(8px)";
+  const settleTransform = isContentSwitch ? "translateX(0)" : "translateY(0)";
   panel.animate(
     [
-      { opacity: 0, transform: "translateY(8px)" },
-      { opacity: 1, transform: "translateY(0)" },
+      { opacity: 0, transform: enterTransform },
+      { opacity: 1, transform: settleTransform },
     ],
     { duration: 240, easing: "cubic-bezier(.2,.75,.25,1)", fill: "both" },
   );
@@ -48,8 +52,12 @@ function activate(root: Explainer, id: string, focus = false, animate = false) {
   }
   for (const panel of root.querySelectorAll<HTMLElement>("[data-explainer-panel]")) {
     const selected = panel.dataset.explainerPanel === id;
+    if (!selected && !panel.hidden) {
+      for (const animation of panel.getAnimations({ subtree: true })) animation.cancel();
+    }
     panel.hidden = !selected;
     panel.inert = !selected;
+    panel.setAttribute("aria-hidden", String(!selected));
     if (selected && animate) reveal(panel);
   }
 }
