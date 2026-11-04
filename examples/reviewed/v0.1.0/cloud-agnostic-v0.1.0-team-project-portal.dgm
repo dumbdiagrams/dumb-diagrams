@@ -1,0 +1,26 @@
+dgm 1
+diagram cloud-agnostic-team-project-portal {
+  grammar cloud-agnostic
+  flow lr
+  title "Team project portal"
+
+  cloud-agnostic.client users "Users"
+
+  cloud-agnostic.cloud cloud "Application cloud" {
+    cloud-agnostic.load-balancer load_balancer "Load balancer"
+
+    cloud-agnostic.network network "Private network" {
+      cloud-agnostic.server portal_server "Portal server"
+      cloud-agnostic.cache lookup_cache "Cache"
+      cloud-agnostic.database project_db "Project database"
+    }
+
+    cloud-agnostic.object-storage attachments "Object storage"
+  }
+
+  users -> load_balancer { id users_to_lb step 1 kind flow }
+  load_balancer -> portal_server { id lb_to_server step 2 label "forward requests" kind flow }
+  portal_server -> lookup_cache { id server_to_cache label "frequent lookups" style dashed kind peer }
+  portal_server -> project_db { id server_to_db label "project data" kind flow }
+  portal_server -> attachments { id server_to_storage step 3 label "attachments" kind flow }
+}

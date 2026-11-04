@@ -4,6 +4,7 @@ import { parseDgmResult, formatParseError } from '@dumb-diagrams/runtime/dsl';
 import { compileDiagram, inlineCatalogIcons } from '@dumb-diagrams/runtime/render';
 import { loadCatalogSvg } from './catalog-loader.mjs';
 import { loadExamples } from '../src/lib/examples.mjs';
+import './prepare-reviewed-examples.mjs';
 
 const root = new URL('../../../', import.meta.url);
 const site = new URL('../', import.meta.url);

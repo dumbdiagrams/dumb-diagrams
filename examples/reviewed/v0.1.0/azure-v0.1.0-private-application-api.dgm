@@ -1,0 +1,35 @@
+dgm 1
+diagram azure-private-application-api {
+  grammar azure
+  flow lr
+  title "Azure private application API"
+
+  cloud-agnostic.client client "Client"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      cloud-agnostic.boundary application "Private application API" {
+        style dashed
+        color blue
+        fill none
+
+        azure.api-management-services apim { service "API Management" }
+
+        azure.vnet app_network "Application network" {
+          cloud-agnostic.boundary compute "Application tier" {
+            azure.function-apps api_function { service "Azure Function" }
+          }
+
+          azure.private-endpoints sql_pe { service "SQL private endpoint" }
+        }
+
+        azure.sql-database sql { service "Azure SQL Database" }
+      }
+    }
+  }
+
+  client -> apim { id client_to_apim step 1 label "API call" kind flow }
+  apim -> api_function { id apim_to_function step 2 label "route request" kind flow }
+  api_function -> sql_pe { id function_to_pe step 3 kind flow }
+  sql_pe -> sql { id pe_to_sql step 4 label "private link" kind flow }
+}

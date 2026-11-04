@@ -1,0 +1,43 @@
+dgm 1
+diagram aws-image-thumbnail-pipeline {
+  grammar aws
+  flow lr
+  title "AWS image thumbnail pipeline"
+
+  cloud-agnostic.client uploader "Image uploader"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary upload_api "Upload API" {
+      aws.api-gateway api "Upload API"
+      aws.aws-lambda upload_handler "Upload handler"
+    }
+
+    cloud-agnostic.boundary thumbnail_jobs "Thumbnail jobs" {
+      aws.simple-queue-service thumbnail_queue "Thumbnail jobs"
+    }
+
+    cloud-agnostic.boundary processing "Processing" {
+      aws.aws-lambda thumbnail_processor "Thumbnail processor"
+    }
+
+    cloud-agnostic.boundary image_storage "Image storage" {
+      aws.simple-storage-service original_images "Original images"
+      aws.simple-storage-service thumbnail_images "Thumbnail images"
+    }
+
+    cloud-agnostic.boundary delivery "Content delivery" {
+      aws.cloudfront cdn "Content delivery"
+    }
+  }
+
+  uploader -> api { id uploader_to_api step 1 label "upload image" }
+  api -> upload_handler { id api_to_handler step 2 }
+  upload_handler -> original_images { id handler_to_originals step 3 label "store original" }
+  upload_handler -> thumbnail_queue { id handler_to_queue step 4 label "enqueue job" }
+  thumbnail_queue -> thumbnail_processor { id queue_to_processor step 5 }
+  thumbnail_processor -> thumbnail_images { id processor_to_thumbnails step 6 label "store thumbnail" }
+
+  uploader -> cdn { id uploader_to_cdn label "view images" style dashed kind peer }
+  cdn -> original_images { id cdn_to_originals label "originals" }
+  cdn -> thumbnail_images { id cdn_to_thumbnails label "thumbnails" }
+}

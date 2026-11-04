@@ -18,6 +18,7 @@ fixtures/golden/
 /packages/website/.env
 /packages/website/.env.local
 /packages/website/public/diagrams/
+/packages/website/public/reviewed-examples/
 /packages/website/public/logo.png
 /packages/website/public/favicon.png
 /packages/website/public/LICENSE.txt

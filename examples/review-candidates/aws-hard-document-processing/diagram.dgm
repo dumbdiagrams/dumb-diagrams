@@ -1,0 +1,61 @@
+dgm 1
+diagram aws-hard-document-processing {
+  grammar aws
+  flow lr
+  title "AWS document processing with redrive"
+
+  cloud-agnostic.client client "Document client"
+  cloud-agnostic.client ops "Operations user"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.region region "AWS Region" {
+      aws.vpc vpc "Document processing VPC" {
+        aws.az az_a "Availability Zone A" {
+          aws.subnet.private subnet_a "Private subnet A" {
+            aws.aws-fargate worker_a { service "Fargate worker A" }
+          }
+        }
+        aws.az az_b "Availability Zone B" {
+          aws.subnet.private subnet_b "Private subnet B" {
+            aws.aws-fargate worker_b { service "Fargate worker B" }
+          }
+        }
+      }
+      cloud-agnostic.boundary managed "Regional managed services" {
+        aws.api-gateway api "API Gateway"
+        aws.aws-lambda intake "Lambda intake"
+        aws.simple-storage-service input "Input S3 bucket"
+        aws.simple-queue-service jobs "Jobs queue"
+        aws.simple-queue-service dlq "Dead-letter queue"
+        aws.simple-storage-service output "Output S3 bucket"
+        aws.dynamodb status "DynamoDB status table"
+        aws.simple-notification-service sns "SNS completion topic"
+      }
+    }
+    cloud-agnostic.boundary global_delivery "Global delivery" {
+      aws.cloudfront cf "CloudFront distribution"
+    }
+  }
+
+  client -> api { id submit label "submit document" }
+  api -> intake { id invoke_intake label "intake request" }
+  intake -> input { id store_input label "store original" }
+  intake -> jobs { id enqueue_job label "enqueue job" }
+  jobs -> worker_a { id deliver_a label "consume job A" }
+  jobs -> worker_b { id deliver_b label "consume job B" }
+  worker_a -> input { id read_input_a label "read original" }
+  worker_b -> input { id read_input_b label "read original" }
+  worker_a -> output { id write_output_a label "write processed file" }
+  worker_b -> output { id write_output_b label "write processed file" }
+  worker_a -> status { id status_a label "update status" }
+  worker_b -> status { id status_b label "update status" }
+  worker_a -> sns { id complete_a label "publish completion" }
+  worker_b -> sns { id complete_b label "publish completion" }
+  cf -> output { id origin_fetch label "origin fetch" }
+  client -> cf { id download label "request output download" }
+  jobs -> dlq { id max_attempts label "after maximum attempts" kind fail }
+  ops -> dlq { id inspect_dlq label "inspect messages" }
+  ops -> status { id inspect_status label "inspect status" }
+  sns -> ops { id notifications label "completion notifications" }
+  dlq -> jobs { id redrive label "redrive messages" }
+}

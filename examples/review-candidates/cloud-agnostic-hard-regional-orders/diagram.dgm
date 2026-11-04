@@ -1,0 +1,56 @@
+dgm 1
+diagram cloud_agnostic_hard_regional_orders {
+  grammar cloud-agnostic
+  flow lr
+  title "Regional order processing and recovery"
+
+  cloud-agnostic.client buyer "Public buyer"
+  cloud-agnostic.server payment_service "External payment service"
+  cloud-agnostic.server warehouse "External warehouse system"
+
+  cloud-agnostic.cloud cloud "Cloud environment" {
+    cloud-agnostic.account account "Orders account" {
+      cloud-agnostic.region primary_region "Primary region" {
+        cloud-agnostic.load-balancer primary_lb "Primary load balancer"
+        cloud-agnostic.network primary_network "Primary private application network" {
+          cloud-agnostic.cluster app_cluster "Application cluster" {
+            cloud-agnostic.server api "Order API server"
+            cloud-agnostic.server worker "Fulfillment worker server"
+          }
+          cloud-agnostic.database primary_db "Primary order database"
+          cloud-agnostic.cache primary_cache "Primary order cache"
+        }
+        cloud-agnostic.queue fulfillment_queue "Regional fulfillment queue"
+        cloud-agnostic.object-storage receipts "Order receipts storage"
+      }
+
+      cloud-agnostic.region recovery_region "Recovery region" {
+        cloud-agnostic.load-balancer recovery_lb "Recovery load balancer"
+        cloud-agnostic.network recovery_network "Recovery network" {
+          cloud-agnostic.database recovery_db "Recovery database replica"
+          cloud-agnostic.server recovery_app "Recovery application server"
+        }
+      }
+    }
+  }
+
+  buyer -> primary_lb { id primary_buyer_request label "Order request" step 1 kind flow }
+  primary_lb -> api { id primary_route_request step 2 kind flow }
+  api -> primary_db { id read_write_orders label "Order data" kind flow }
+  primary_db -> api { id return_order_data label "Return order data" kind flow }
+  api -> primary_cache { id use_order_cache label "Read and update cache" kind flow }
+  primary_cache -> api { id return_cached_order label "Return cached order" kind flow }
+  api -> payment_service { id authorize_payment label "Authorize payment" kind flow }
+  payment_service -> api { id payment_result label "Authorization result" kind flow }
+  api -> fulfillment_queue { id enqueue_fulfillment label "Enqueue fulfillment" step 3 kind flow }
+  fulfillment_queue -> worker { id deliver_fulfillment label "Consume fulfillment job" step 4 kind flow }
+  worker -> fulfillment_queue { id retry_fulfillment label "Retry job" kind flow }
+  worker -> warehouse { id send_fulfillment label "Fulfillment request" kind flow }
+  warehouse -> worker { id warehouse_acknowledgment label "Fulfillment acknowledgment" kind flow }
+  worker -> primary_db { id persist_order_status label "Write order status" kind flow }
+  worker -> receipts { id store_receipt label "Store receipt" kind flow }
+  primary_db -> recovery_db { id replicate_orders label "Replicate order data" kind flow }
+  recovery_app -> recovery_db { id read_replica label "Read replica data" kind flow }
+  buyer -> recovery_lb { id recovery_buyer_request label "Recovery order request" kind flow }
+  recovery_lb -> recovery_app { id recovery_route_request label "Serve recovery request" kind flow }
+}

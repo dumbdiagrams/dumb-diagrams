@@ -1,0 +1,52 @@
+dgm 1
+diagram azure-asynchronous-order-processing {
+  grammar azure
+  flow lr
+  title "Azure asynchronous order processing"
+
+  cloud-agnostic.client storefront "Storefront"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      cloud-agnostic.boundary order_platform "Order processing platform" {
+        style dashed
+        color blue
+        fill none
+
+        cloud-agnostic.boundary order_intake "Order intake" {
+          azure.api-management-services apim { service "API Management" }
+          azure.function-apps intake { service "Intake function" }
+        }
+
+        cloud-agnostic.boundary async_queue "Processing queue" {
+          azure.azure-service-bus order_queue { service "Order queue" }
+        }
+
+        cloud-agnostic.boundary request_archive "Request archive" {
+          azure.storage-accounts archive_storage { service "Request archive" }
+          azure.event-grid-topics archive_events { service "Archive events" }
+        }
+
+        cloud-agnostic.boundary order_processing "Order processing" {
+          azure.function-apps processor { service "Order processor" }
+        }
+
+        cloud-agnostic.boundary order_data "Order data" {
+          azure.sql-database orders_sql { service "Azure SQL Database" }
+        }
+
+        azure.monitor monitor { service "Azure Monitor" }
+      }
+    }
+  }
+
+  storefront -> apim { id storefront_to_apim step 1 label "submit order" kind flow }
+  apim -> intake { id apim_to_intake step 2 label "validate order" kind flow }
+  intake -> order_queue { id intake_to_queue step 3 label "enqueue order" kind flow }
+  intake -> archive_storage { id intake_to_archive step 4 label "archive request" kind flow }
+  archive_storage -> archive_events { id archive_to_events label "storage event" style dashed kind peer }
+  order_queue -> processor { id queue_to_processor step 5 label "consume order" kind flow }
+  archive_events -> processor { id events_to_processor step 6 label "archive events" kind flow }
+  processor -> orders_sql { id processor_to_sql step 7 kind flow }
+  processor -> monitor { id processor_to_monitor label "processing metrics" style dashed kind peer }
+}

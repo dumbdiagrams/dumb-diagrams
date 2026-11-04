@@ -46,7 +46,7 @@
     "precheck:engine": "pnpm --filter @dumb-diagrams/runtime build",
     "check:engine": "vitest run tests/integration/examples/engine-contracts.test.ts tests/integration/examples/curated-provider.test.ts && node scripts/check-agent-init-evaluation.mjs && node scripts/check-engine-determinism.mjs",
     "pretest:golden": "pnpm --filter @dumb-diagrams/runtime build",
-    "test:golden": "vitest run tests/compat/compat.test.ts tests/integration/examples/curated-layout.test.ts packages/editor/src/editor-model.golden.test.ts",
+    "test:golden": "vitest run tests/compat/compat.test.ts tests/integration/examples/curated-layout.test.ts tests/integration/examples/reviewed-layout.test.ts packages/editor/src/editor-model.golden.test.ts",
     "check:performance": "node scripts/check-performance-budget.mjs",
     "check:assets": "node scripts/check-asset-budget.mjs",
     "check": "pnpm check:agent-init-evaluation",

@@ -1,0 +1,55 @@
+dgm 1
+diagram gcp_hard_media_processing {
+  grammar gcp
+  flow lr
+  title "GCP media processing with deliberate redrive"
+
+  cloud-agnostic.client producer "Media producer"
+  cloud-agnostic.client ops_client "Operations client"
+
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Media processing project" {
+      gcp.cloud-load-balancing load_balancer "Cloud Load Balancing"
+      gcp.cloud-storage input_bucket "Input media bucket"
+      gcp.cloud-storage processed_bucket "Processed media bucket"
+      gcp.pub-sub jobs_topic "Media jobs topic"
+      gcp.pub-sub dead_letter_topic "Dead-letter topic"
+      gcp.pub-sub completion_topic "Completion topic"
+
+      gcp.region primary_region "Primary region" {
+        gcp.cloud-run ingest "Media ingest service"
+        gcp.cloud-run notifier "Completion notification service"
+        gcp.cloud-sql job_status "Job status database"
+      }
+
+      gcp.vpc processing_vpc "Processing VPC" {
+        gcp.subnet subnet_a "us-central1 subnet A" {
+          gcp.compute-engine worker_a "Media worker A"
+        }
+        gcp.subnet subnet_b "us-central1 subnet B" {
+          gcp.compute-engine worker_b "Media worker B"
+        }
+      }
+    }
+  }
+
+  producer -> load_balancer { id upload_request label "Upload media" step 1 kind flow }
+  load_balancer -> ingest { id route_upload step 2 kind flow }
+  ingest -> input_bucket { id store_input label "Store source object" step 3 kind flow }
+  ingest -> jobs_topic { id enqueue_job label "Publish processing job" step 4 kind flow }
+  jobs_topic -> worker_a { id deliver_job_a label "Deliver job" step 5 kind flow }
+  jobs_topic -> worker_b { id deliver_job_b label "Deliver job" step 5 kind flow }
+  worker_a -> input_bucket { id read_input_a label "Read source object" kind flow }
+  worker_b -> input_bucket { id read_input_b label "Read source object" kind flow }
+  worker_a -> processed_bucket { id write_output_a label "Write processed object" kind flow }
+  worker_b -> processed_bucket { id write_output_b label "Write processed object" kind flow }
+  worker_a -> job_status { id update_status_a label "Update job status" kind flow }
+  worker_b -> job_status { id update_status_b label "Update job status" kind flow }
+  worker_a -> completion_topic { id publish_completion_a label "Publish completion" kind flow }
+  worker_b -> completion_topic { id publish_completion_b label "Publish completion" kind flow }
+  completion_topic -> notifier { id deliver_completion label "Deliver completion" step 6 kind flow }
+  notifier -> ops_client { id notify_operations label "Processing result" step 7 kind flow }
+  jobs_topic -> dead_letter_topic { id dead_letter_job label "Undeliverable jobs" kind fail }
+  ops_client -> dead_letter_topic { id inspect_dead_letters label "Inspect dead letters" kind flow }
+  ops_client -> jobs_topic { id deliberate_redrive label "Deliberate redrive" kind flow }
+}

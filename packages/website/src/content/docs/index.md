@@ -17,6 +17,7 @@ newer. There is no account and no hosted workspace.
 | Install the CLI and open Studio | [Quick start](./quick-start/) |
 | Ask a coding agent for a first draft | [Work with an agent](./agent-workflow/) |
 | Follow a complete example | [AWS cross-account walkthrough](./aws-cross-account-data-transfer/) |
+| Browse reviewed prompt exports | [Reviewed examples](./examples/) |
 | Look up syntax | [The .dgm format](./source-format/) |
 | Edit visually and save | [Using Studio](./studio/) |
 | Put a diagram in a document | [Export and share](./exports/) |

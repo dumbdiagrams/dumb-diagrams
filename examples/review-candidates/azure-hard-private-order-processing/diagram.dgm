@@ -1,0 +1,55 @@
+dgm 1
+diagram azure-hard-private-order-processing {
+  grammar azure
+  flow lr
+  title "Azure private order processing and redrive"
+
+  cloud-agnostic.client client "Public order client"
+  cloud-agnostic.client ops "Operations client"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      azure.resource-group rg "Order processing resource group" {
+        azure.vnet vnet "Order processing VNet" {
+          azure.subnet app_subnet "Application subnet" {
+            azure.app-services api "App Service API"
+            azure.function-apps worker "Function worker"
+          }
+          azure.subnet data_subnet "Data subnet" {
+            azure.private-endpoints sql_pe "SQL private endpoint"
+            azure.private-endpoints storage_pe "Storage private endpoint"
+          }
+        }
+        cloud-agnostic.boundary managed "Managed services outside VNet" {
+          azure.front-door-and-cdn-profiles front_door { service "Front Door" }
+          azure.api-management-services apim { service "API Management" }
+          azure.sql-database sql "Azure SQL database"
+          azure.storage-accounts storage "Storage account"
+          azure.azure-service-bus work "Service Bus work queue"
+          azure.azure-service-bus dlq "Service Bus dead-letter queue"
+          azure.key-vaults key_vault "Key Vault"
+          azure.monitor monitor "Azure Monitor"
+        }
+      }
+    }
+  }
+
+  client -> front_door { id public_entry label "HTTPS requests" }
+  front_door -> apim { id route_api label "route request" }
+  apim -> api { id api_request label "API request" }
+  api -> sql_pe { id api_sql_request label "SQL read and write" }
+  sql_pe -> sql { id api_sql_private_link label "private endpoint to SQL" }
+  api -> work { id enqueue label "enqueue order work" }
+  work -> worker { id consume label "consume work" }
+  worker -> storage_pe { id function_storage_request label "write files" }
+  storage_pe -> storage { id storage_private_link label "private endpoint to Storage" }
+  worker -> sql_pe { id worker_sql_request label "write order status" }
+  api -> key_vault { id api_secret_read label "read secrets" style dashed kind peer }
+  worker -> key_vault { id worker_secret_read label "read secrets" style dashed kind peer }
+  api -> monitor { id api_telemetry label "telemetry" style dashed kind peer }
+  worker -> monitor { id worker_telemetry label "telemetry" style dashed kind peer }
+  work -> dlq { id retry_exhausted label "retry limit reached" kind fail }
+  ops -> dlq { id inspect_dlq label "inspect dead-letter messages" }
+  ops -> work { id trigger_redrive label "trigger redrive" }
+  dlq -> work { id redrive label "redrive messages" }
+}

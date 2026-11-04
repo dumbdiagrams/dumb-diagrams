@@ -4,6 +4,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
 import { formatParseError, parseDgmResult } from '@dumb-diagrams/runtime/dsl';
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
 import { createCliUi } from '../../cli/src/cli-ui.ts';
@@ -116,6 +117,39 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
     assert.ok(image, `${example.id}: homepage preview image`);
     assert.ok(image.includes(`width="${dimensions[1]}"`), `${example.id}: reserved preview width matches the SVG`);
     assert.ok(image.includes(`height="${dimensions[2]}"`), `${example.id}: reserved preview height matches the SVG`);
+  }
+});
+
+test('reviewed examples preserve archived files and expose provenance in the docs gallery', async () => {
+  const repoRoot = resolve(site, '../..');
+  const archiveRoot = join(repoRoot, 'examples/reviewed');
+  const archive = JSON.parse(await readFile(join(archiveRoot, 'manifest.json'), 'utf8'));
+  const publicManifest = JSON.parse(await readFile(join(dist, 'reviewed-examples/manifest.json'), 'utf8'));
+  const html = await readFile(join(dist, 'docs/examples/index.html'), 'utf8');
+  assert.deepEqual(new Set(archive.examples.map(example => example.provider)), new Set(['aws', 'azure', 'gcp', 'cloud-agnostic']));
+  assert.equal(publicManifest.examples.length, archive.examples.length);
+  for (const provider of ['AWS', 'Azure', 'Google Cloud', 'Cloud-agnostic']) assert.match(html, new RegExp(`<h2[^>]*>${provider}</h2>`));
+  const providerLabels = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', 'cloud-agnostic': 'Cloud-agnostic' };
+  for (const example of archive.examples) {
+    assert.ok(html.includes(`${providerLabels[example.provider]} · v${example.appVersion}`), `${example.id}: provider and historical version shown`);
+    assert.ok(html.includes(example.difficulty), `${example.id}: difficulty shown`);
+    const outputRecord = publicManifest.examples.find(record => record.id === example.id);
+    assert.ok(outputRecord, `${example.id}: public provenance record`);
+    for (const key of ['svg', 'source', 'prompt']) {
+      const original = await readFile(resolve(repoRoot, example[key]));
+      const copied = await readFile(join(dist, 'reviewed-examples', outputRecord.files[key]));
+      assert.deepEqual(copied, original, `${example.id}: ${key} copied byte-for-byte`);
+      assert.ok(html.includes(`/reviewed-examples/${outputRecord.files[key]}`), `${example.id}: ${key} is linked from the gallery`);
+      if (key === 'svg') assert.equal(createHash('sha256').update(copied).digest('hex'), example.sha256, `${example.id}: archived SVG hash`);
+    }
+    const svgText = await readFile(join(dist, 'reviewed-examples', outputRecord.files.svg), 'utf8');
+    const embeddedSource = svgText.match(/<metadata id="dumb-diagrams-source">DumbDiagrams\n([\s\S]*?)<\/metadata>/)?.[1];
+    assert.ok(embeddedSource, `${example.id}: SVG embeds its original source`);
+    const decodedSource = embeddedSource.replace(/&(?:amp|lt|gt|quot|apos);/g, entity => ({
+      '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'",
+    })[entity]);
+    assert.equal(decodedSource, await readFile(resolve(repoRoot, example.source), 'utf8'), `${example.id}: extracted source matches embedded SVG source`);
+    if (example.reviewNote) assert.ok(html.includes(example.reviewNote), `${example.id}: review note is visible in the expanded card`);
   }
 });
 

@@ -1,0 +1,64 @@
+---
+import { loadReviewedExamples } from '../../lib/reviewed-examples.mjs';
+import { url } from '../../lib/site';
+
+interface Props { provider: 'aws' | 'azure' | 'gcp' | 'cloud-agnostic' }
+const { provider } = Astro.props;
+const labels = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', 'cloud-agnostic': 'Cloud-agnostic' } as const;
+const examples = loadReviewedExamples().filter(example => example.provider === provider);
+---
+
+<div class="reviewed-examples">
+  {examples.map((example, index) => {
+    const svgUrl = url(`reviewed-examples/${example.svgName}`);
+    const sourceUrl = url(`reviewed-examples/${example.sourceName}`);
+    const promptUrl = url(`reviewed-examples/${example.promptName}`);
+    return <details class="reviewed-card" open={index === 0}>
+      <summary>
+        <span class="reviewed-title">{example.title}</span>
+        <span class="reviewed-meta"><span>{labels[provider]} · v{example.appVersion}</span><span>{example.difficulty}</span></span>
+      </summary>
+      <a class="reviewed-preview" href={svgUrl} aria-label={`Open original ${example.title} SVG`}>
+        <img src={svgUrl} alt={`${example.title} architecture diagram`} width={example.width} height={example.height} loading="lazy" />
+      </a>
+      <div class="reviewed-detail">
+        {example.reviewNote && <p class="reviewed-note"><strong>Review note:</strong> {example.reviewNote}</p>}
+        <span class="mono">ORIGINAL REQUEST</span>
+        <p>{example.promptText.trim()}</p>
+        <nav aria-label={`${example.title} files`}>
+          <a href={svgUrl}>Original SVG</a>
+          <a href={sourceUrl}>Source (.dgm)</a>
+          <a href={promptUrl}>Original prompt</a>
+        </nav>
+      </div>
+    </details>;
+  })}
+</div>
+
+<style>
+  .reviewed-examples { display: grid; gap: 12px; margin: 0 0 34px; }
+  .reviewed-card { min-width: 0; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); overflow: hidden; }
+  .reviewed-card > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 16px; cursor: pointer; list-style: none; }
+  .reviewed-card > summary::-webkit-details-marker { display: none; }
+  .reviewed-card > summary:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: -3px; }
+  .reviewed-card > summary::after { content: '+'; color: var(--orange-dark); font: 18px/1 var(--mono); }
+  .reviewed-card[open] > summary::after { content: '−'; }
+  .reviewed-title { font-size: 14px; font-weight: 650; }
+  .reviewed-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; color: var(--muted); font: 10px/1.5 var(--mono); text-align: right; }
+  .reviewed-meta span + span { color: var(--ink); border-left: 1px solid var(--line); padding-left: 7px; }
+  .reviewed-preview { display: block; padding: 10px; border-top: 1px solid var(--line); background: #f7f8f6; }
+  .reviewed-preview img { width: 100%; max-height: 430px; object-fit: contain; background: var(--white); }
+  .reviewed-detail { padding: 14px 16px 16px; border-top: 1px solid var(--line); }
+  .reviewed-detail > .mono { color: var(--muted); font-size: 8px; letter-spacing: .08em; }
+  .reviewed-detail p { margin: 8px 0 14px; color: var(--ink); font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+  .reviewed-detail p.reviewed-note { padding: 9px 11px; border-left: 2px solid var(--orange); background: #f8f4ea; }
+  .reviewed-note strong { color: var(--ink); }
+  .reviewed-detail nav { display: flex; flex-wrap: wrap; gap: 14px; }
+  .reviewed-detail nav a { padding: 4px 0; color: var(--orange-dark); font-size: 12px; text-decoration: underline; text-decoration-color: #f0531e66; }
+  @media (max-width: 520px) {
+    .reviewed-card > summary { align-items: flex-start; padding: 12px; }
+    .reviewed-meta { display: grid; justify-items: end; }
+    .reviewed-meta span + span { border-left: 0; padding-left: 0; }
+    .reviewed-detail nav { gap: 10px; }
+  }
+</style>

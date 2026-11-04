@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="890" height="496" viewBox="8 8 890.1999999999999 496">
+<rect width="890.1999999999999" height="496" fill="#FFFFFF" x="8" y="8"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<g id="export-content"><g id="group-cloud">
+  
+  <rect class="group-border" x="128" y="32" width="746.1999999999999" height="448" fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5" rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23163964%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%228%22%20width%3D%2226%22%20height%3D%2218%22%20rx%3D%223%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%2014h16M8%2019h12%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="128" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="160" y="48.9" font-size="14" font-weight="600" dominant-baseline="alphabetic">Application cloud</text>
+  
+</g><g id="group-network">
+  <rect class="group-border" x="336" y="64" width="392" height="392" fill="rgba(140,79,255,0.05)" stroke="#8C4FFF" stroke-width="1.5" rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%238C4FFF%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2210%22%20width%3D%2226%22%20height%3D%2214%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2217%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2217%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M12%2017h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="336" y="64" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="368" y="80.55" font-size="13" font-weight="600" dominant-baseline="alphabetic">Private network</text>
+  
+</g><g id="edge-users_to_lb" class="edge edge-flow edge-solid">
+  <path d="M 88 227 L 171 227" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="129.5" cy="211" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="129.5" y="215" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  
+</g><g id="edge-lb_to_server" class="edge edge-flow edge-solid">
+  <path d="M 219 240 L 331.5 240 L 331.5 120 L 375 120" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="275.25" cy="224" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="275.25" y="228" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="lb_to_server" x="295" y="260" text-anchor="middle" font-size="11" fill="#163964">forward requests</text>
+</g><g id="edge-server_to_cache" class="edge edge-peer edge-dashed">
+  <path d="M 399 144 L 399 224" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4"/>
+  
+  
+  <text class="edge-label" data-edge-label="server_to_cache" x="459.4" y="216" text-anchor="middle" font-size="11" fill="#163964">frequent lookups</text>
+</g><g id="edge-server_to_db" class="edge edge-flow edge-solid">
+  <path d="M 423 120 L 480 120 L 480 352 L 432 352" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"/>
+  
+  
+  <text class="edge-label" data-edge-label="server_to_db" x="528.3" y="168" text-anchor="middle" font-size="11" fill="#163964">project data</text>
+</g><g id="edge-server_to_storage" class="edge edge-flow edge-solid">
+  <path d="M 423 108 L 736 108 L 736 240 L 782 240" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="579.5" cy="92" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="579.5" y="96" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="server_to_storage" x="627" y="100" text-anchor="middle" font-size="11" fill="#163964">attachments</text>
+</g><g id="res-users">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%225%22%20y%3D%224%22%20width%3D%2222%22%20height%3D%2216%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M12%2027h8M16%2020v7M9%2027h14%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="40" y="203" width="48" height="48"/>
+  <text x="64" y="267" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="64" y="285" text-anchor="middle" font-size="11" font-style="italic">Users</text>
+</g><g id="res-load_balancer">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%2211%22%20y%3D%2211%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M5%207h6v4M27%207h-6v4M5%2025h6v-4M27%2025h-6v-4M11%2016H5M21%2016h6%22%20fill%3D%22none%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="171" y="216" width="48" height="48"/>
+  <text x="194.9" y="280" text-anchor="middle" font-size="12" font-weight="500">Load Balancer</text>
+  
+</g><g id="res-portal_server">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%224%22%20y%3D%225%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2219%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%209h.1M8%2023h.1M12%209h11M12%2023h11%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="375" y="96" width="48" height="48"/>
+  <text x="399.325" y="160" text-anchor="middle" font-size="12" font-weight="500">Server</text>
+  <text x="399.325" y="178" text-anchor="middle" font-size="11" font-style="italic">Portal server</text>
+</g><g id="res-lookup_cache">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M8%208h16v16H8z%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M12%2012h8M12%2016h8M12%2020h5%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="360" y="224" width="48" height="48"/>
+  <text x="384" y="288" text-anchor="middle" font-size="12" font-weight="500">Cache</text>
+  
+</g><g id="res-project_db">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%228%22%20rx%3D%2210%22%20ry%3D%224%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M6%208v8c0%202%204.5%204%2010%204s10-2%2010-4V8M6%2016v8c0%202%204.5%204%2010%204s10-2%2010-4v-8%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="384" y="328" width="48" height="48"/>
+  <text x="408.4" y="392" text-anchor="middle" font-size="12" font-weight="500">Database</text>
+  <text x="408.4" y="410" text-anchor="middle" font-size="11" font-style="italic">Project database</text>
+</g><g id="res-attachments">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M6%209h20v16H6z%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M6%209l3-4h14l3%204M11%2014h10M11%2019h6%22%20fill%3D%22none%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="782" y="216" width="48" height="48"/>
+  <text x="806.2" y="280" text-anchor="middle" font-size="12" font-weight="500">Object Storage</text>
+  
+</g></g><metadata id="dumb-diagrams-source">DumbDiagrams
+dgm 1
+diagram cloud-agnostic-team-project-portal {
+  grammar cloud-agnostic
+  flow lr
+  title "Team project portal"
+
+  cloud-agnostic.client users "Users"
+
+  cloud-agnostic.cloud cloud "Application cloud" {
+    cloud-agnostic.load-balancer load_balancer "Load balancer"
+
+    cloud-agnostic.network network "Private network" {
+      cloud-agnostic.server portal_server "Portal server"
+      cloud-agnostic.cache lookup_cache "Cache"
+      cloud-agnostic.database project_db "Project database"
+    }
+
+    cloud-agnostic.object-storage attachments "Object storage"
+  }
+
+  users -&gt; load_balancer { id users_to_lb step 1 kind flow }
+  load_balancer -&gt; portal_server { id lb_to_server step 2 label "forward requests" kind flow }
+  portal_server -&gt; lookup_cache { id server_to_cache label "frequent lookups" style dashed kind peer }
+  portal_server -&gt; project_db { id server_to_db label "project data" kind flow }
+  portal_server -&gt; attachments { id server_to_storage step 3 label "attachments" kind flow }
+}
+</metadata></svg>

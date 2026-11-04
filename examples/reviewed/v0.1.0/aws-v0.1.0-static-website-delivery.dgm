@@ -1,0 +1,18 @@
+dgm 1
+diagram aws-static-website-delivery {
+  grammar aws
+  flow lr
+  title "AWS static website delivery"
+
+  cloud-agnostic.client visitor "Website visitor"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.route-53 dns "DNS"
+    aws.cloudfront cdn "Content delivery"
+    aws.simple-storage-service-bucket site_bucket "Website files"
+  }
+
+  visitor -> dns { id visitor_to_dns step 1 label "DNS lookup" }
+  dns -> cdn { id dns_to_cdn step 2 }
+  cdn -> site_bucket { id cdn_to_bucket step 3 label "origin fetch" }
+}
