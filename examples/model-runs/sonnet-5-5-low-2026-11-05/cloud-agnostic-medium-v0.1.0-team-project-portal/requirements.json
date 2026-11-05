@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "network group requires a cloud parent"
+      }
+    },
+    {
+      "id": "users",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer"
+      }
+    },
+    {
+      "id": "lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "a load balancer"
+      }
+    },
+    {
+      "id": "private_net",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "private network"
+      }
+    },
+    {
+      "id": "portal",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "a portal server"
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "reads project data from a database"
+      }
+    },
+    {
+      "id": "cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "uses a cache"
+      }
+    },
+    {
+      "id": "files",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "object storage"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "users_to_lb",
+      "source": "users",
+      "target": "lb",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer"
+      }
+    },
+    {
+      "id": "lb_to_portal",
+      "source": "lb",
+      "target": "portal",
+      "basis": {
+        "kind": "explicit",
+        "text": "forwards requests to a portal server"
+      }
+    },
+    {
+      "id": "portal_to_db",
+      "source": "portal",
+      "target": "db",
+      "basis": {
+        "kind": "explicit",
+        "text": "reads project data from a database"
+      }
+    },
+    {
+      "id": "portal_to_cache",
+      "source": "portal",
+      "target": "cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "uses a cache for frequent lookups"
+      }
+    },
+    {
+      "id": "portal_to_files",
+      "source": "portal",
+      "target": "files",
+      "basis": {
+        "kind": "explicit",
+        "text": "retrieves attachments from object storage"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "portal_in_net",
+      "component": "portal",
+      "relation": "inside",
+      "group": "private_net",
+      "basis": {
+        "kind": "explicit",
+        "text": "keep the server ... in a private network"
+      }
+    },
+    {
+      "id": "db_in_net",
+      "component": "db",
+      "relation": "inside",
+      "group": "private_net",
+      "basis": {
+        "kind": "explicit",
+        "text": "database ... in a private network"
+      }
+    },
+    {
+      "id": "cache_in_net",
+      "component": "cache",
+      "relation": "inside",
+      "group": "private_net",
+      "basis": {
+        "kind": "explicit",
+        "text": "cache in a private network"
+      }
+    },
+    {
+      "id": "lb_out",
+      "component": "lb",
+      "relation": "outside",
+      "group": "private_net",
+      "basis": {
+        "kind": "explicit",
+        "text": "load balancer outside it"
+      }
+    },
+    {
+      "id": "files_out",
+      "component": "files",
+      "relation": "outside",
+      "group": "private_net",
+      "basis": {
+        "kind": "explicit",
+        "text": "object storage outside it"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

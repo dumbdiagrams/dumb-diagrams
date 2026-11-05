@@ -1,0 +1,60 @@
+dgm 1
+diagram aws-document-processing {
+  grammar aws
+  flow lr
+  title "AWS Document Processing"
+
+  cloud-agnostic.client client "Client"
+  cloud-agnostic.actor ops "Operations"
+
+  aws.cloud cloud "AWS Cloud" {
+    aws.region region "Region" {
+      aws.api-gateway api "API"
+      aws.aws-lambda intake "Intake"
+      aws.simple-storage-service-bucket input "Input"
+      aws.simple-queue-service-queue jobs "Jobs"
+      aws.simple-queue-service-queue dlq "DLQ"
+
+      aws.vpc vpc "VPC" {
+        aws.az az_a "AZ A" {
+          aws.subnet.private subnet_a "Private A" {
+            aws.aws-fargate worker_a "Worker A"
+          }
+        }
+
+        aws.az az_b "AZ B" {
+          aws.subnet.private subnet_b "Private B" {
+            aws.aws-fargate worker_b "Worker B"
+          }
+        }
+      }
+
+      aws.simple-storage-service-bucket output "Output"
+      aws.dynamodb ddb "Status"
+      aws.simple-notification-service sns "Completion"
+      aws.cloudfront cdn "CDN"
+    }
+  }
+
+  client -> api { id submit label "submit" }
+  api -> intake { id invoke }
+  intake -> input { id store label "store" }
+  intake -> jobs { id enqueue label "enqueue" }
+  jobs -> worker_a { id consume_a }
+  jobs -> worker_b { id consume_b }
+  input -> worker_a { id read_a label "read" }
+  input -> worker_b { id read_b label "read" }
+  worker_a -> output { id write_a label "write" }
+  worker_b -> output { id write_b label "write" }
+  worker_a -> ddb { id status_a label "status" }
+  worker_b -> ddb { id status_b label "status" }
+  worker_a -> sns { id publish_a label "publish" }
+  worker_b -> sns { id publish_b label "publish" }
+  client -> cdn { id download label "download" }
+  cdn -> output { id origin label "origin" }
+  jobs -> dlq { id fail label "max attempts" kind fail }
+  ops -> dlq { id inspect_dlq label "inspect" style dashed }
+  ops -> ddb { id inspect_ddb label "inspect" style dashed }
+  dlq -> jobs { id redrive label "redrive" style dashed }
+  sns -> ops { id notify label "notify" }
+}

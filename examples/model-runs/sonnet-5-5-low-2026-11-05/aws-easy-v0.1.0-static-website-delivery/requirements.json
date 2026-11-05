@@ -1,0 +1,25 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    { "id": "cloud", "kind": "group", "type": "aws.cloud", "basis": { "kind": "inferred", "text": "AWS scope for the AWS services" } },
+    { "id": "visitor", "kind": "resource", "type": "cloud-agnostic.actor", "basis": { "kind": "explicit", "text": "a website visitor" } },
+    { "id": "dns", "kind": "resource", "type": "aws.route-53", "basis": { "kind": "explicit", "text": "DNS" } },
+    { "id": "cdn", "kind": "resource", "type": "aws.cloudfront", "basis": { "kind": "explicit", "text": "a content delivery service" } },
+    { "id": "bucket", "kind": "resource", "type": "aws.simple-storage-service-bucket", "basis": { "kind": "explicit", "text": "the bucket that stores the website files" } }
+  ],
+  "relationships": [
+    { "id": "visitor_dns", "source": "visitor", "target": "dns", "basis": { "kind": "inferred", "text": "visitor resolves the site name via DNS" } },
+    { "id": "dns_cdn", "source": "dns", "target": "cdn", "basis": { "kind": "inferred", "text": "DNS points to the delivery service" } },
+    { "id": "cdn_bucket", "source": "cdn", "target": "bucket", "basis": { "kind": "inferred", "text": "CDN fetches files from the bucket" } }
+  ],
+  "counts": [],
+  "placement": [
+    { "id": "visitor_external", "component": "visitor", "relation": "root", "basis": { "kind": "inferred", "text": "visitor is external to AWS" } },
+    { "id": "dns_in_cloud", "component": "dns", "relation": "inside", "group": "cloud", "basis": { "kind": "inferred", "text": "AWS service" } },
+    { "id": "cdn_in_cloud", "component": "cdn", "relation": "inside", "group": "cloud", "basis": { "kind": "inferred", "text": "AWS service" } },
+    { "id": "bucket_in_cloud", "component": "bucket", "relation": "inside", "group": "cloud", "basis": { "kind": "inferred", "text": "AWS service" } }
+  ],
+  "allowAdditionalResources": false
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {"id":"client","kind":"resource","type":"cloud-agnostic.client","basis":{"kind":"explicit","text":"external web client"}},
+    {"id":"cloud","kind":"group","type":"cloud-agnostic.cloud","basis":{"kind":"explicit","text":"application cloud"}},
+    {"id":"account","kind":"group","type":"cloud-agnostic.account","basis":{"kind":"explicit","text":"production account"}},
+    {"id":"region","kind":"group","type":"cloud-agnostic.region","basis":{"kind":"explicit","text":"primary region"}},
+    {"id":"gateway","kind":"resource","type":"cloud-agnostic.gateway","basis":{"kind":"explicit","text":"API gateway"}},
+    {"id":"api","kind":"resource","type":"cloud-agnostic.server","basis":{"kind":"explicit","text":"customer API service"}},
+    {"id":"database","kind":"resource","type":"cloud-agnostic.database","basis":{"kind":"explicit","text":"customer database"}}
+  ],
+  "relationships": [
+    {"id":"client_gateway","source":"client","target":"gateway","kind":"flow","basis":{"kind":"explicit","text":"web client sending HTTPS requests through an API gateway"}},
+    {"id":"gateway_api","source":"gateway","target":"api","kind":"flow","basis":{"kind":"explicit","text":"gateway to a customer API service"}},
+    {"id":"api_database","source":"api","target":"database","kind":"bidirectional","basis":{"kind":"explicit","text":"reads and writes a customer database"}}
+  ],
+  "counts": [],
+  "placement": [
+    {"id":"client_outside","component":"client","relation":"outside","group":"cloud","basis":{"kind":"explicit","text":"Keep the client outside the cloud"}},
+    {"id":"account_in_cloud","component":"account","relation":"parent","group":"cloud","basis":{"kind":"explicit","text":"Nest a production account"}},
+    {"id":"region_in_account","component":"region","relation":"parent","group":"account","basis":{"kind":"explicit","text":"primary region"}},
+    {"id":"gateway_in_region","component":"gateway","relation":"parent","group":"region","basis":{"kind":"explicit","text":"place the three services in the region"}},
+    {"id":"api_in_region","component":"api","relation":"parent","group":"region","basis":{"kind":"explicit","text":"place the three services in the region"}},
+    {"id":"database_in_region","component":"database","relation":"parent","group":"region","basis":{"kind":"explicit","text":"place the three services in the region"}}
+  ],
+  "allowAdditionalResources": false
+}

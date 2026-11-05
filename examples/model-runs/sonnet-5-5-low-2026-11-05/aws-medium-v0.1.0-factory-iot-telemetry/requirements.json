@@ -1,0 +1,35 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {"id":"aws_cloud","kind":"group","type":"aws.cloud","basis":{"kind":"explicit","text":"all AWS services inside AWS Cloud"}},
+    {"id":"sensors","kind":"resource","type":"cloud-agnostic.device","basis":{"kind":"explicit","text":"factory sensor fleet"}},
+    {"id":"iot_core","kind":"resource","type":"aws.aws-iot-core","basis":{"kind":"explicit","text":"AWS IoT Core"}},
+    {"id":"stream","kind":"resource","type":"aws.kinesis-data-streams","basis":{"kind":"explicit","text":"Kinesis Data Streams"}},
+    {"id":"consumer","kind":"resource","type":"aws.aws-lambda","basis":{"kind":"explicit","text":"A Lambda consumer"}},
+    {"id":"timestream","kind":"resource","type":"aws.timestream","basis":{"kind":"explicit","text":"Amazon Timestream"}},
+    {"id":"alerts","kind":"resource","type":"aws.simple-notification-service","basis":{"kind":"explicit","text":"Amazon SNS"}},
+    {"id":"dashboard","kind":"resource","type":"cloud-agnostic.client","basis":{"kind":"explicit","text":"external operations dashboard"}}
+  ],
+  "relationships": [
+    {"id":"send_readings","source":"sensors","target":"iot_core","basis":{"kind":"explicit","text":"sensor fleet sends readings to AWS IoT Core"}},
+    {"id":"route_readings","source":"iot_core","target":"stream","basis":{"kind":"explicit","text":"routes them to Kinesis Data Streams"}},
+    {"id":"consume_readings","source":"stream","target":"consumer","basis":{"kind":"explicit","text":"Lambda consumer normalizes each reading"}},
+    {"id":"write_series","source":"consumer","target":"timestream","basis":{"kind":"explicit","text":"writes time-series data to Amazon Timestream"}},
+    {"id":"send_alerts","source":"consumer","target":"alerts","basis":{"kind":"explicit","text":"sends threshold alerts to Amazon SNS"}},
+    {"id":"dashboard_read","source":"dashboard","target":"timestream","basis":{"kind":"explicit","text":"dashboard reads from Timestream"}},
+    {"id":"return_telemetry","source":"timestream","target":"dashboard","basis":{"kind":"explicit","text":"returned telemetry path from Timestream to the dashboard"}}
+  ],
+  "counts": [],
+  "placement": [
+    {"id":"sensors_out","component":"sensors","relation":"outside","group":"aws_cloud","basis":{"kind":"explicit","text":"sensor fleet outside AWS Cloud"}},
+    {"id":"dashboard_out","component":"dashboard","relation":"outside","group":"aws_cloud","basis":{"kind":"explicit","text":"dashboard outside AWS Cloud"}},
+    {"id":"iot_in","component":"iot_core","relation":"inside","group":"aws_cloud","basis":{"kind":"explicit","text":"AWS services inside AWS Cloud"}},
+    {"id":"stream_in","component":"stream","relation":"inside","group":"aws_cloud","basis":{"kind":"explicit","text":"AWS services inside AWS Cloud"}},
+    {"id":"consumer_in","component":"consumer","relation":"inside","group":"aws_cloud","basis":{"kind":"explicit","text":"AWS services inside AWS Cloud"}},
+    {"id":"ts_in","component":"timestream","relation":"inside","group":"aws_cloud","basis":{"kind":"explicit","text":"AWS services inside AWS Cloud"}},
+    {"id":"alerts_in","component":"alerts","relation":"inside","group":"aws_cloud","basis":{"kind":"explicit","text":"AWS services inside AWS Cloud"}}
+  ],
+  "allowAdditionalResources": false
+}

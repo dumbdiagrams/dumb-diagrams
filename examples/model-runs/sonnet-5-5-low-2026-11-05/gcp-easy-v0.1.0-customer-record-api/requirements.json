@@ -1,0 +1,29 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {"id":"org","kind":"group","type":"gcp.organization","basis":{"kind":"explicit","text":"inside a Google Cloud organization"}},
+    {"id":"project","kind":"group","type":"gcp.project","basis":{"kind":"explicit","text":"Nest a project"}},
+    {"id":"region","kind":"group","type":"gcp.region","basis":{"kind":"explicit","text":"primary region"}},
+    {"id":"client","kind":"resource","type":"cloud-agnostic.client","basis":{"kind":"explicit","text":"external web client"}},
+    {"id":"lb","kind":"resource","type":"gcp.cloud-load-balancing","basis":{"kind":"explicit","text":"Cloud Load Balancing"}},
+    {"id":"api","kind":"resource","type":"gcp.cloud-run","basis":{"kind":"explicit","text":"Cloud Run API"}},
+    {"id":"db","kind":"resource","type":"gcp.cloud-sql","basis":{"kind":"explicit","text":"Cloud SQL"}}
+  ],
+  "relationships": [
+    {"id":"client_to_lb","source":"client","target":"lb","basis":{"kind":"explicit","text":"HTTPS requests through Cloud Load Balancing"}},
+    {"id":"lb_to_api","source":"lb","target":"api","basis":{"kind":"explicit","text":"to a Cloud Run API"}},
+    {"id":"api_to_db","source":"api","target":"db","basis":{"kind":"explicit","text":"reads and writes customer records in Cloud SQL"}}
+  ],
+  "counts": [],
+  "placement": [
+    {"id":"client_outside","component":"client","relation":"outside","group":"org","basis":{"kind":"explicit","text":"Keep the client outside the organization"}},
+    {"id":"project_in_org","component":"project","relation":"parent","group":"org","basis":{"kind":"explicit","text":"Nest a project inside organization"}},
+    {"id":"region_in_project","component":"region","relation":"parent","group":"project","basis":{"kind":"explicit","text":"project and primary region nested"}},
+    {"id":"lb_in_region","component":"lb","relation":"parent","group":"region","basis":{"kind":"explicit","text":"place the three services in the region"}},
+    {"id":"api_in_region","component":"api","relation":"parent","group":"region","basis":{"kind":"explicit","text":"place the three services in the region"}},
+    {"id":"db_in_region","component":"db","relation":"parent","group":"region","basis":{"kind":"explicit","text":"place the three services in the region"}}
+  ],
+  "allowAdditionalResources": false
+}
