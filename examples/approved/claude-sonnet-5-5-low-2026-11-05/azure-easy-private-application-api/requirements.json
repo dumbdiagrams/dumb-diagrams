@@ -1,0 +1,203 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application n..."
+      }
+    },
+    {
+      "id": "sub",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "apim",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application n..."
+      }
+    },
+    {
+      "id": "func",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application n..."
+      }
+    },
+    {
+      "id": "vnet",
+      "kind": "group",
+      "type": "azure.vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application n..."
+      }
+    },
+    {
+      "id": "sql_pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application n..."
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application n..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "call",
+      "source": "client",
+      "target": "apim",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "HTTPS (client to apim) per the request."
+      }
+    },
+    {
+      "id": "route",
+      "source": "apim",
+      "target": "func",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route (apim to func) per the request."
+      }
+    },
+    {
+      "id": "access",
+      "source": "func",
+      "target": "sql_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private access (func to sql_pe) per the request."
+      }
+    },
+    {
+      "id": "link",
+      "source": "sql_pe",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private link (sql_pe to sql) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "client_root",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "sub_root",
+      "component": "sub",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "region_in_sub",
+      "component": "region",
+      "relation": "parent",
+      "group": "sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "apim_in_region",
+      "component": "apim",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "func_in_region",
+      "component": "func",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "vnet_in_region",
+      "component": "vnet",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sql_pe_in_vnet",
+      "component": "sql_pe",
+      "relation": "parent",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sql_in_region",
+      "component": "sql",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

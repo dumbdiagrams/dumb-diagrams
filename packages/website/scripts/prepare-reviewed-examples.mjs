@@ -9,14 +9,14 @@ import { loadReviewedExamples } from '../src/lib/reviewed-examples.mjs';
 const output = resolve(fileURLToPath(new URL('../public/reviewed-examples', import.meta.url)));
 const examples = loadReviewedExamples();
 await rm(output, { recursive: true, force: true });
-await mkdir(output, { recursive: true });
+await Promise.all([...new Set(examples.map(example => example.run))].map(run => mkdir(resolve(output, run), { recursive: true })));
 await Promise.all(examples.map(async example => {
   const parsed = parseDgmResult(await readFile(example.paths.source, 'utf8'));
-  if (parsed.isErr()) throw new Error(`${example.id}: ${formatParseError(parsed.error)}`);
+  if (parsed.isErr()) throw new Error(`${example.run}/${example.id}: ${formatParseError(parsed.error)}`);
   const requirements = parseRequirements(await readFile(example.paths.requirements, 'utf8'));
-  if (requirements.isErr()) throw new Error(`${example.id}: ${requirements.error.message}`);
+  if (requirements.isErr()) throw new Error(`${example.run}/${example.id}: ${requirements.error.message}`);
   const issues = checkRequirements(parsed.value, requirements.value);
-  if (issues.length) throw new Error(`${example.id}: requirements are incomplete: ${JSON.stringify(issues)}`);
+  if (issues.length) throw new Error(`${example.run}/${example.id}: requirements are incomplete: ${JSON.stringify(issues)}`);
   await Promise.all(Object.keys(example.files).map(key => copyFile(example.paths[key], resolve(output, example.files[key]))));
 }));
 const publicManifest = examples.map(({ paths: _paths, promptText: _promptText, ...record }) => record);

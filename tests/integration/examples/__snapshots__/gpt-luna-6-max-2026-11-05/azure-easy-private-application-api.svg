@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="998" height="600" viewBox="0 0 998 600">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-azure-cloud">
+  <rect class="group-border-contrast" x="224" y="32" width="741.8000000000001" height="218"
+    fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"  rx="0"/>
+  <rect class="group-border" x="224" y="32" width="741.8000000000001" height="218"
+    fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-b03d89b9-60f0138a.svg" x="224" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="256" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Azure Cloud</text>
+  
+</g>
+
+<g id="group-application-network">
+  <rect class="group-border" x="456" y="64" width="318.8" height="162"
+    fill="rgba(80,230,255,0.05)" stroke="#50E6FF" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-virtual-network-64a5e75e-fe793ef1.svg" x="456" y="64" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="488" y="80.55"
+    font-size="13" font-weight="600" dominant-baseline="alphabetic">Application Network</text>
+  
+</g>
+
+<g id="edge-client-request" class="edge edge-flow edge-solid">
+  <path d="M 96 120 L 288 120" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="192" cy="104" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="192" y="108" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="client-request" x="144" y="112" text-anchor="middle" font-size="11" fill="#163964">API request</text>
+</g>
+
+<g id="edge-route-to-function" class="edge edge-flow edge-solid">
+  <path d="M 336 120 L 504 120" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="420" cy="104" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="420" y="108" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="route-to-function" x="404" y="140" text-anchor="middle" font-size="11" fill="#163964">Route request</text>
+</g>
+
+<g id="edge-function-to-endpoint" class="edge edge-flow edge-solid">
+  <path d="M 552 120 L 672 120" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="612" cy="136" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="612" y="140" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="function-to-endpoint" x="612" y="112" text-anchor="middle" font-size="11" fill="#163964">SQL access</text>
+</g>
+
+<g id="edge-endpoint-to-sql" class="edge edge-flow edge-solid">
+  <path d="M 720 120 L 888 120" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="804" cy="104" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="804" y="108" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="endpoint-to-sql" x="804" y="140" text-anchor="middle" font-size="11" fill="#163964">Private connection</text>
+</g>
+
+<g id="res-client">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="48" y="96" width="48" height="48"/>
+  <text x="72" y="160" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  
+</g>
+
+<g id="res-function-app">
+  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="504" y="96" width="48" height="48"/>
+  <text x="527.9" y="160" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
+  <text x="527.9" y="178" text-anchor="middle" font-size="11" font-style="italic">Azure Function</text>
+</g>
+
+<g id="res-sql-private-endpoint">
+  <image href="catalog-icons/azure/azure-resource-private-endpoints-96de0bb7-ac008ab2.svg" x="672" y="96" width="48" height="48"/>
+  <text x="695.5" y="160" text-anchor="middle" font-size="12" font-weight="500">Private Endpoints</text>
+  <text x="695.5" y="178" text-anchor="middle" font-size="11" font-style="italic">SQL Private Endpoint</text>
+</g>
+
+<g id="res-api-management">
+  <image href="catalog-icons/azure/azure-resource-api-management-services-cf794288-596432f0.svg" x="288" y="96" width="48" height="48"/>
+  <text x="311.9" y="160" text-anchor="middle" font-size="12" font-weight="500">API Management Services</text>
+  <text x="311.9" y="178" text-anchor="middle" font-size="11" font-style="italic">API Management</text>
+</g>
+
+<g id="res-sql-database">
+  <image href="catalog-icons/azure/azure-resource-sql-database-a26124a2-d605a666.svg" x="888" y="96" width="48" height="48"/>
+  <text x="911.6" y="160" text-anchor="middle" font-size="12" font-weight="500">SQL Database</text>
+  <text x="911.6" y="178" text-anchor="middle" font-size="11" font-style="italic">Azure SQL</text>
+</g>
+</svg>

@@ -1,0 +1,20 @@
+dgm 1
+diagram aws-medium-image-thumbnail-pipeline { grammar aws flow lr title "AWS image thumbnail pipeline"
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.api-gateway api "Upload API" {}
+    aws.aws-lambda upload_handler "Upload handler" {}
+    aws.simple-storage-service-bucket assets_bucket "Image assets" {}
+    aws.simple-queue-service jobs_queue "Thumbnail jobs" {}
+    aws.aws-lambda processor "Thumbnail processor" {}
+    aws.cloudfront cdn "Content delivery" {}
+  }
+  cloud-agnostic.client uploader "Uploader / viewer" {}
+  uploader -> api { id uploader_api label "image upload" step 1 }
+  api -> upload_handler { id api_upload_handler label "upload request" step 2 }
+  upload_handler -> assets_bucket { id handler_original label "store original" step 3 }
+  upload_handler -> jobs_queue { id handler_queue label "queue job" step 3 from e to w }
+  jobs_queue -> processor { id queue_processor label "thumbnail job" step 4 }
+  processor -> assets_bucket { id processor_thumbnail label "store thumbnail" step 5 from e to w }
+  cdn -> uploader { id uploader_cdn label "deliver images" step 7 }
+  assets_bucket -> cdn { id cdn_origin label "serve assets" step 6 from e to w }
+}

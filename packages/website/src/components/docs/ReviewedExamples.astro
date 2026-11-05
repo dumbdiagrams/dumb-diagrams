@@ -6,32 +6,42 @@ interface Props { provider: 'aws' | 'azure' | 'gcp' | 'cloud-agnostic' }
 const { provider } = Astro.props;
 const labels = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', 'cloud-agnostic': 'Cloud-agnostic' } as const;
 const examples = loadReviewedExamples().filter(example => example.provider === provider);
+const cards = [...new Set(examples.map(example => example.id))].map(id => examples.filter(example => example.id === id));
 ---
 
 <div class="reviewed-examples">
-  {examples.map((example, index) => {
-    const svgUrl = url(`reviewed-examples/${example.files.svg}`);
-    const sourceUrl = url(`reviewed-examples/${example.files.source}`);
-    const promptUrl = url(`reviewed-examples/${example.files.prompt}`);
-    const requirementsUrl = url(`reviewed-examples/${example.files.requirements}`);
+  {cards.map((variants, index) => {
+    const [first] = variants;
     return <details class="reviewed-card" open={index === 0}>
       <summary>
-        <span class="reviewed-title">{example.title}</span>
-        <span class="reviewed-meta"><span>{labels[provider]} · {example.model} · {example.generatedOn}</span><span>{example.difficulty[0].toUpperCase() + example.difficulty.slice(1)}</span></span>
+        <span class="reviewed-title">{first.title}</span>
+        <span class="reviewed-meta"><span>{labels[provider]} · {first.generatedOn}</span><span>{first.difficulty[0].toUpperCase() + first.difficulty.slice(1)}</span></span>
       </summary>
-      <a class="reviewed-preview" href={svgUrl} aria-label={`Open ${example.title} SVG`}>
-        <img src={svgUrl} alt={`${example.title} architecture diagram`} width={example.width} height={example.height} loading="lazy" />
-      </a>
-      <div class="reviewed-detail">
-        {example.reviewNote && <p class="reviewed-note"><strong>Review note:</strong> {example.reviewNote}</p>}
-        <span class="mono">PROMPT</span>
-        <p>{example.promptText.trim()}</p>
-        <nav aria-label={`${example.title} files`}>
-          <a href={svgUrl}>SVG</a>
-          <a href={sourceUrl}>Source (.dgm)</a>
-          <a href={requirementsUrl}>Requirements (.json)</a>
-          <a href={promptUrl}>Prompt</a>
-        </nav>
+      <div class="reviewed-variants" style={`grid-template-columns: repeat(${variants.length}, max-content) 1fr`}>
+        {variants.map((example, variant) => {
+          const svgUrl = url(`reviewed-examples/${example.files.svg}`);
+          const inputId = `${example.id}-${example.run}`;
+          return <div class="reviewed-variant">
+            <input type="radio" name={example.id} id={inputId} checked={variant === 0} />
+            <label for={inputId}>{example.label}</label>
+            <div class="reviewed-panel">
+              <a class="reviewed-preview" href={svgUrl} aria-label={`Open ${example.title} SVG by ${example.label}`}>
+                <img src={svgUrl} alt={`${example.title} architecture diagram by ${example.label}`} width={example.width} height={example.height} loading="lazy" />
+              </a>
+              <div class="reviewed-detail">
+                {example.reviewNote && <p class="reviewed-note"><strong>Review note:</strong> {example.reviewNote}</p>}
+                <span class="mono">PROMPT</span>
+                <p>{example.promptText.trim()}</p>
+                <nav aria-label={`${example.title} files by ${example.label}`}>
+                  <a href={svgUrl}>SVG</a>
+                  <a href={url(`reviewed-examples/${example.files.source}`)}>Source (.dgm)</a>
+                  <a href={url(`reviewed-examples/${example.files.requirements}`)}>Requirements (.json)</a>
+                  <a href={url(`reviewed-examples/${example.files.prompt}`)}>Prompt</a>
+                </nav>
+              </div>
+            </div>
+          </div>;
+        })}
       </div>
     </details>;
   })}
@@ -48,6 +58,14 @@ const examples = loadReviewedExamples().filter(example => example.provider === p
   .reviewed-title { font-size: 14px; font-weight: 650; }
   .reviewed-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; color: var(--muted); font: 10px/1.5 var(--mono); text-align: right; }
   .reviewed-meta span + span { color: var(--ink); border-left: 1px solid var(--line); padding-left: 7px; }
+  .reviewed-variants { display: grid; border-top: 1px solid var(--line); }
+  .reviewed-variant { display: contents; }
+  .reviewed-variant > input { position: absolute; opacity: 0; pointer-events: none; }
+  .reviewed-variant > label { grid-row: 1; padding: 8px 12px; color: var(--muted); font: 11px/1.4 var(--mono); cursor: pointer; border-bottom: 2px solid transparent; }
+  .reviewed-variant > input:checked + label { color: var(--ink); border-bottom-color: var(--orange); }
+  .reviewed-variant > input:focus-visible + label { outline: 2px solid var(--orange-dark); outline-offset: -3px; }
+  .reviewed-panel { display: none; grid-row: 2; grid-column: 1 / -1; min-width: 0; }
+  .reviewed-variant > input:checked ~ .reviewed-panel { display: block; }
   .reviewed-preview { display: block; padding: 10px; border-top: 1px solid var(--line); background: #f7f8f6; }
   .reviewed-preview img { width: 100%; max-height: 430px; object-fit: contain; background: var(--white); }
   .reviewed-detail { padding: 14px 16px 16px; border-top: 1px solid var(--line); }

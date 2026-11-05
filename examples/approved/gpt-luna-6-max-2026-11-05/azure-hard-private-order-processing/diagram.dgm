@@ -1,0 +1,49 @@
+dgm 1
+diagram azure-hard-private-order-processing { grammar azure flow lr title "Azure Hard Private Order Processing"
+  cloud-agnostic.cloud azure-cloud "Azure Cloud" {
+    azure.subscription subscription "Subscription" {
+      azure.region region "Primary Region" {
+        azure.resource-group resource-group "Resource Group" {
+          azure.vnet application-vnet "Application VNet" {
+            azure.subnet application-subnet "Application Subnet" {
+              azure.app-services app-api "App Service API" {}
+              azure.function-apps function-worker "Function Worker" {}
+            }
+            azure.subnet data-subnet "Data Subnet" {
+              azure.private-endpoints sql-private-endpoint "SQL Private Endpoint" {}
+              azure.private-endpoints storage-private-endpoint "Storage Private Endpoint" {}
+            }
+          }
+          azure.front-door-and-cdn-profiles front-door "Front Door" {}
+          azure.api-management-services api-management "API Management" {}
+          azure.sql-database sql-database "Azure SQL" {}
+          azure.storage-accounts storage-account "Storage Account" {}
+          azure.azure-service-bus work-queue "Order Work Queue" {}
+          azure.azure-service-bus dead-letter-queue "Service Bus DLQ" {}
+          azure.key-vaults key-vault "Key Vault" {}
+          azure.monitor monitor "Azure Monitor" {}
+        }
+      }
+    }
+  }
+  cloud-agnostic.client public-client "Public Client" {}
+  cloud-agnostic.actor operations-client "Operations Client" {}
+  public-client -> front-door { id client-to-front-door label "HTTPS request" kind flow step 1 from e to w }
+  front-door -> api-management { id front-door-to-apim label "Forward request" kind flow step 2 from e to w }
+  api-management -> app-api { id apim-to-api label "Route request" kind flow step 3 from e to w }
+  app-api -> sql-private-endpoint { id api-to-sql-endpoint label "SQL read/write" kind flow step 4 from e to w }
+  app-api -> work-queue { id api-to-work-queue label "Enqueue work" kind flow step 4 from e to w }
+  work-queue -> function-worker { id work-queue-to-function label "Consume work" kind flow step 5 from e to w }
+  function-worker -> sql-private-endpoint { id function-to-sql-endpoint label "Write SQL status" kind flow step 6 from e to w }
+  function-worker -> storage-private-endpoint { id function-to-storage-endpoint label "Write files" kind flow step 6 from e to w }
+  sql-private-endpoint -> sql-database { id sql-endpoint-to-sql label "Private endpoint to SQL" kind flow step 7 from e to w }
+  storage-private-endpoint -> storage-account { id storage-endpoint-to-storage label "Private endpoint to Storage" kind flow step 7 from e to w }
+  work-queue -> dead-letter-queue { id work-to-dead-letter label "Retry limit reached" style dashed kind fail from s to n }
+  operations-client -> dead-letter-queue { id operations-inspects-dlq label "Inspect dead letters" style dashed kind peer from e to w }
+  operations-client -> work-queue { id operations-triggers-redrive label "Trigger redrive" style dashed kind peer from e to w }
+  dead-letter-queue -> work-queue { id dlq-redrive-to-work label "Redrive messages" style dashed kind peer from e to w }
+  app-api -> key-vault { id api-reads-key-vault label "Read secrets" style dashed kind peer from e to w }
+  function-worker -> key-vault { id function-reads-key-vault label "Read secrets" style dashed kind peer from e to w }
+  app-api -> monitor { id api-emits-telemetry label "Telemetry" style dashed kind peer from e to w }
+  function-worker -> monitor { id function-emits-telemetry label "Telemetry" style dashed kind peer from e to w }
+}

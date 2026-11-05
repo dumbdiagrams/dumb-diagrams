@@ -1,0 +1,311 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "azure-cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure asynchronous order processing."
+      }
+    },
+    {
+      "id": "storefront",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API."
+      }
+    },
+    {
+      "id": "intake-function",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "An intake function validates each order, queues it for processing, and archives the request."
+      }
+    },
+    {
+      "id": "work-queue",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "The intake function queues orders for processing."
+      }
+    },
+    {
+      "id": "request-archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "The intake function archives each request."
+      }
+    },
+    {
+      "id": "processor-function",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "A processor consumes queued orders and archive events."
+      }
+    },
+    {
+      "id": "sql-database",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processor saves completed orders in SQL."
+      }
+    },
+    {
+      "id": "monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processor sends processing metrics to Azure Monitor."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "storefront-submit",
+      "source": "storefront",
+      "target": "intake-function",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The storefront submits orders through an API to the intake function."
+      }
+    },
+    {
+      "id": "intake-to-queue",
+      "source": "intake-function",
+      "target": "work-queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The intake function validates each order and queues it for processing."
+      }
+    },
+    {
+      "id": "intake-to-archive",
+      "source": "intake-function",
+      "target": "request-archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The intake function archives the request."
+      }
+    },
+    {
+      "id": "queue-to-processor",
+      "source": "work-queue",
+      "target": "processor-function",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor consumes queued orders."
+      }
+    },
+    {
+      "id": "archive-to-processor",
+      "source": "request-archive",
+      "target": "processor-function",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor consumes archive events."
+      }
+    },
+    {
+      "id": "processor-to-sql",
+      "source": "processor-function",
+      "target": "sql-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor saves completed orders in SQL."
+      }
+    },
+    {
+      "id": "processor-to-monitor",
+      "source": "processor-function",
+      "target": "monitor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor sends processing metrics to Azure Monitor."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "cloud_group_count",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 cloud component(s) shown."
+      }
+    },
+    {
+      "id": "client_resource_count",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 client component(s) shown."
+      }
+    },
+    {
+      "id": "function_apps_resource_count",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 function apps component(s) shown."
+      }
+    },
+    {
+      "id": "azure_service_bus_resource_count",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 azure service bus component(s) shown."
+      }
+    },
+    {
+      "id": "storage_accounts_resource_count",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 storage accounts component(s) shown."
+      }
+    },
+    {
+      "id": "sql_database_resource_count",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 sql database component(s) shown."
+      }
+    },
+    {
+      "id": "monitor_resource_count",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 monitor component(s) shown."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "azure-cloud_root",
+      "component": "azure-cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure Cloud is external to the Azure containment."
+      }
+    },
+    {
+      "id": "storefront_root",
+      "component": "storefront",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Storefront is external to the Azure containment."
+      }
+    },
+    {
+      "id": "intake-function_parent",
+      "component": "intake-function",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Order Intake Function is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "work-queue_parent",
+      "component": "work-queue",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Order Work Queue is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "request-archive_parent",
+      "component": "request-archive",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Request Archive is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "processor-function_parent",
+      "component": "processor-function",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Order Processor is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "sql-database_parent",
+      "component": "sql-database",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Completed Orders SQL is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "monitor_parent",
+      "component": "monitor",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure Monitor is placed directly inside azure cloud."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

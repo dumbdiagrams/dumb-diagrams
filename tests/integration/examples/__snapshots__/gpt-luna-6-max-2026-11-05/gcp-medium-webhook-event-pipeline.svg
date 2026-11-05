@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1429" height="600" viewBox="0 0 1429 600">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-organization">
+  <rect class="group-border" x="240" y="32" width="1156.6" height="302"
+    fill="rgba(66,133,244,0.03)" stroke="#4285F4" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/gcp/gcp-group-organization-b82052fc-a8977b88.svg" x="240" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="272" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Google Cloud Organization</text>
+  
+</g>
+
+<g id="group-project">
+  <rect class="group-border" x="256" y="64" width="1124.6" height="246"
+    fill="rgba(66,133,244,0.04)" stroke="#4285F4" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/gcp/gcp-group-project-b82052fc-a8977b88.svg" x="256" y="64" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="288" y="80.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Event Processing Project</text>
+  
+</g>
+
+<g id="group-region">
+  <rect class="group-border" x="274" y="97" width="1088.6" height="186"
+    fill="rgba(154,160,166,0.05)" stroke="#9AA0A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/gcp/gcp-group-region-c88d1b7d-7da1d66c.svg" x="274" y="97" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="306" y="113.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Primary Region</text>
+  
+</g>
+
+<g id="edge-send_webhook" class="edge edge-flow edge-solid">
+  <path d="M 88 171 L 344 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="216" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="216" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="send_webhook" x="156" y="163" text-anchor="middle" font-size="11" fill="#163964">webhook event</text>
+</g>
+
+<g id="edge-forward_to_ingress" class="edge edge-flow edge-solid">
+  <path d="M 392 171 L 532 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="462" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="462" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="forward_to_ingress" x="484" y="191" text-anchor="middle" font-size="11" fill="#163964">forward event</text>
+</g>
+
+<g id="edge-publish_event" class="edge edge-flow edge-solid">
+  <path d="M 580 171 L 709 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="644.5" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="644.5" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="publish_event" x="644.5" y="191" text-anchor="middle" font-size="11" fill="#163964">publish event</text>
+</g>
+
+<g id="edge-stream_to_dataflow" class="edge edge-flow edge-solid">
+  <path d="M 757 171 L 896 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="826.5" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="826.5" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="stream_to_dataflow" x="826.5" y="191" text-anchor="middle" font-size="11" fill="#163964">process events</text>
+</g>
+
+<g id="edge-write_records" class="edge edge-flow edge-solid">
+  <path d="M 944 171 L 1096 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1020" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1020" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="write_records" x="1020" y="191" text-anchor="middle" font-size="11" fill="#163964">processed records</text>
+</g>
+
+<g id="edge-write_raw_files" class="edge edge-flow edge-solid">
+  <path d="M 944 159 L 968 159 L 968 120 L 1168 120 L 1168 171 L 1239 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1068" cy="104" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1068" y="108" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="write_raw_files" x="1004" y="112" text-anchor="middle" font-size="11" fill="#163964">raw event files</text>
+</g>
+
+<g id="res-partner">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-actor-88289826-a985cd8f.svg" x="40" y="147" width="48" height="48"/>
+  <text x="64" y="211" text-anchor="middle" font-size="12" font-weight="500">Actor</text>
+  <text x="64" y="229" text-anchor="middle" font-size="11" font-style="italic">Partner</text>
+</g>
+
+<g id="res-load_balancing">
+  <image href="catalog-icons/gcp/gcp-resource-cloud-load-balancing-c88d1b7d-7da1d66c.svg" x="344" y="147" width="48" height="48"/>
+  <text x="368" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Load Balancing</text>
+  
+</g>
+
+<g id="res-ingress">
+  <image href="catalog-icons/gcp/gcp-resource-cloud-functions-971fec34-ca062aa8.svg" x="532" y="147" width="48" height="48"/>
+  <text x="555.575" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Functions</text>
+  <text x="555.575" y="229" text-anchor="middle" font-size="11" font-style="italic">Cloud Functions Ingress</text>
+</g>
+
+<g id="res-topic">
+  <image href="catalog-icons/gcp/gcp-resource-pub-sub-f4a14bb1-8c379e25.svg" x="709" y="147" width="48" height="48"/>
+  <text x="733.325" y="211" text-anchor="middle" font-size="12" font-weight="500">Pub/Sub</text>
+  <text x="733.325" y="229" text-anchor="middle" font-size="11" font-style="italic">Pub/Sub Topic</text>
+</g>
+
+<g id="res-dataflow">
+  <image href="catalog-icons/gcp/gcp-resource-dataflow-b32c8b47-a1dd3c79.svg" x="896" y="147" width="48" height="48"/>
+  <text x="920.4" y="211" text-anchor="middle" font-size="12" font-weight="500">Dataflow</text>
+  
+</g>
+
+<g id="res-bigquery">
+  <image href="catalog-icons/gcp/gcp-resource-bigquery-6c088a2a-8507abcc.svg" x="1096" y="147" width="48" height="48"/>
+  <text x="1120.4" y="211" text-anchor="middle" font-size="12" font-weight="500">BigQuery</text>
+  
+</g>
+
+<g id="res-raw_storage">
+  <image href="catalog-icons/gcp/gcp-resource-cloud-storage-df42fc4b-ccc702b2.svg" x="1239" y="147" width="48" height="48"/>
+  <text x="1262.6" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Storage</text>
+  <text x="1262.6" y="229" text-anchor="middle" font-size="11" font-style="italic">Cloud Storage Raw Events</text>
+</g>
+</svg>

@@ -1,0 +1,232 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "sensors",
+      "kind": "resource",
+      "type": "cloud-agnostic.device",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "iot",
+      "kind": "resource",
+      "type": "aws.aws-iot-core",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "stream",
+      "kind": "resource",
+      "type": "aws.kinesis-data-streams",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "consumer",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "tsdb",
+      "kind": "resource",
+      "type": "aws.timestream",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "alerts",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings to AWS IoT Core, routed to Kinesis Data Streams; Lambda normalizes to Timestream and sends threshold alerts to SNS; exter..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "readings",
+      "source": "sensors",
+      "target": "iot",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Readings (sensors to iot) per the request."
+      }
+    },
+    {
+      "id": "route",
+      "source": "iot",
+      "target": "stream",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route readings (iot to stream) per the request."
+      }
+    },
+    {
+      "id": "consume",
+      "source": "stream",
+      "target": "consumer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume (stream to consumer) per the request."
+      }
+    },
+    {
+      "id": "write",
+      "source": "consumer",
+      "target": "tsdb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Time-series writes (consumer to tsdb) per the request."
+      }
+    },
+    {
+      "id": "alert",
+      "source": "consumer",
+      "target": "alerts",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Threshold alerts (consumer to alerts) per the request."
+      }
+    },
+    {
+      "id": "query",
+      "source": "dashboard",
+      "target": "tsdb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read query (dashboard to tsdb) per the request."
+      }
+    },
+    {
+      "id": "telemetry",
+      "source": "tsdb",
+      "target": "dashboard",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Returned telemetry (tsdb to dashboard) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "sensors_root",
+      "component": "sensors",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "aws_root",
+      "component": "aws",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "iot_in_aws",
+      "component": "iot",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "stream_in_aws",
+      "component": "stream",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "consumer_in_aws",
+      "component": "consumer",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "tsdb_in_aws",
+      "component": "tsdb",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "alerts_in_aws",
+      "component": "alerts",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "dashboard_root",
+      "component": "dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

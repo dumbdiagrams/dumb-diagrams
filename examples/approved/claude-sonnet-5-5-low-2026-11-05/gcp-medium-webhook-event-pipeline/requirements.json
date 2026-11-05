@@ -1,0 +1,261 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "org",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "lb",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "ingress",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "topic",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "dataflow",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "bq",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    },
+    {
+      "id": "raw",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner webhooks via Cloud Load Balancing to Cloud Functions ingress; publishes to Pub/Sub; Dataflow writes records to BigQuery and raw files to Cloud Storage."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "webhook",
+      "source": "partner",
+      "target": "lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Webhook events (partner to lb) per the request."
+      }
+    },
+    {
+      "id": "route",
+      "source": "lb",
+      "target": "ingress",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route (lb to ingress) per the request."
+      }
+    },
+    {
+      "id": "publish",
+      "source": "ingress",
+      "target": "topic",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish (ingress to topic) per the request."
+      }
+    },
+    {
+      "id": "process",
+      "source": "topic",
+      "target": "dataflow",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Events (topic to dataflow) per the request."
+      }
+    },
+    {
+      "id": "records",
+      "source": "dataflow",
+      "target": "bq",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processed records (dataflow to bq) per the request."
+      }
+    },
+    {
+      "id": "raw_files",
+      "source": "dataflow",
+      "target": "raw",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Raw files (dataflow to raw) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "partner_root",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "org_root",
+      "component": "org",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "parent",
+      "group": "org",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_in_region",
+      "component": "lb",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "ingress_in_region",
+      "component": "ingress",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "topic_in_region",
+      "component": "topic",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "dataflow_in_region",
+      "component": "dataflow",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "bq_in_region",
+      "component": "bq",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "raw_in_region",
+      "component": "raw",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

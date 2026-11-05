@@ -1,0 +1,307 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "application_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The catalog requires a parent for a private network boundary, so a provider-neutral cloud scope supplies the minimal context."
+      }
+    },
+    {
+      "id": "private_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server, database, and cache are kept in a private network."
+      }
+    },
+    {
+      "id": "team_users",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach the portal."
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer."
+      }
+    },
+    {
+      "id": "portal_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The load balancer forwards requests to a portal server."
+      }
+    },
+    {
+      "id": "project_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server reads project data from a database."
+      }
+    },
+    {
+      "id": "lookup_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server uses a cache for frequent lookups."
+      }
+    },
+    {
+      "id": "attachment_storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server retrieves attachments from object storage."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "users_to_lb",
+      "source": "team_users",
+      "target": "load_balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach the load balancer."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "lb_to_portal",
+      "source": "load_balancer",
+      "target": "portal_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The load balancer forwards requests to the portal server."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "portal_to_database",
+      "source": "portal_server",
+      "target": "project_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server reads project data from the database."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "portal_to_cache",
+      "source": "portal_server",
+      "target": "lookup_cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server uses a cache for frequent lookups."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "portal_to_storage",
+      "source": "portal_server",
+      "target": "attachment_storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The server retrieves attachments from object storage."
+      },
+      "kind": "flow"
+    }
+  ],
+  "counts": [
+    {
+      "id": "exactly_one_application_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Application Cloud is specified."
+      }
+    },
+    {
+      "id": "exactly_one_private_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Private Network is specified."
+      },
+      "within": "application_cloud"
+    },
+    {
+      "id": "exactly_one_team_users",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Team Users is specified."
+      }
+    },
+    {
+      "id": "exactly_one_load_balancer",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Load Balancer is specified."
+      }
+    },
+    {
+      "id": "exactly_one_portal_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Portal Server is specified."
+      },
+      "within": "private_network"
+    },
+    {
+      "id": "exactly_one_project_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Project Database is specified."
+      },
+      "within": "private_network"
+    },
+    {
+      "id": "exactly_one_lookup_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Lookup Cache is specified."
+      },
+      "within": "private_network"
+    },
+    {
+      "id": "exactly_one_attachment_storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Attachment Storage is specified."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "application_cloud_placement",
+      "component": "application_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "Application Cloud is at the diagram root."
+      }
+    },
+    {
+      "id": "private_network_placement",
+      "component": "private_network",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private Network is directly inside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "team_users_placement",
+      "component": "team_users",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Team Users is outside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "load_balancer_placement",
+      "component": "load_balancer",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Load Balancer is outside Private Network."
+      },
+      "group": "private_network"
+    },
+    {
+      "id": "portal_server_placement",
+      "component": "portal_server",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Portal Server is directly inside Private Network."
+      },
+      "group": "private_network"
+    },
+    {
+      "id": "project_database_placement",
+      "component": "project_database",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Project Database is directly inside Private Network."
+      },
+      "group": "private_network"
+    },
+    {
+      "id": "lookup_cache_placement",
+      "component": "lookup_cache",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lookup Cache is directly inside Private Network."
+      },
+      "group": "private_network"
+    },
+    {
+      "id": "attachment_storage_placement",
+      "component": "attachment_storage",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Attachment Storage is outside Private Network."
+      },
+      "group": "private_network"
+    }
+  ],
+  "allowAdditionalResources": false
+}

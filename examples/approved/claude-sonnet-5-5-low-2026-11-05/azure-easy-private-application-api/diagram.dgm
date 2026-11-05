@@ -1,0 +1,23 @@
+dgm 1
+diagram azure-easy-private-application-api {
+  grammar azure
+  flow lr
+  title "Azure private application API"
+
+  cloud-agnostic.client client "Client"
+  azure.subscription sub "Azure subscription" {
+    azure.region region "Azure region" {
+      azure.api-management-services apim "API Management"
+      azure.function-apps func "Function"
+      azure.vnet vnet "Application network" {
+        azure.private-endpoints sql_pe "SQL private endpoint"
+      }
+      azure.sql-database sql "Azure SQL"
+    }
+  }
+
+  client -> apim { id call step 1 label "HTTPS" kind flow }
+  apim -> func { id route step 2 label "Route" kind flow }
+  func -> sql_pe { id access step 3 label "Private access" kind flow }
+  sql_pe -> sql { id link step 4 label "Private link" kind flow }
+}

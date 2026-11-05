@@ -1,0 +1,16 @@
+dgm 1
+diagram azure-easy-private-application-api { grammar azure flow lr title "Azure Easy Private Application Api"
+  cloud-agnostic.cloud azure-cloud "Azure Cloud" {
+    azure.vnet application-network "Application Network" {
+      azure.function-apps function-app "Azure Function" {}
+      azure.private-endpoints sql-private-endpoint "SQL Private Endpoint" {}
+    }
+    azure.api-management-services api-management "API Management" {}
+    azure.sql-database sql-database "Azure SQL" {}
+  }
+  cloud-agnostic.client client "Client" {}
+  client -> api-management { id client-request label "API request" kind flow step 1 }
+  api-management -> function-app { id route-to-function label "Route request" kind flow step 2 }
+  function-app -> sql-private-endpoint { id function-to-endpoint label "SQL access" kind flow step 3 }
+  sql-private-endpoint -> sql-database { id endpoint-to-sql label "Private connection" kind flow step 4 }
+}

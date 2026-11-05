@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1372" height="600" viewBox="0 0 1372 600">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-org">
+  <rect class="group-border" x="200" y="32" width="1139.85" height="302"
+    fill="rgba(66,133,244,0.03)" stroke="#4285F4" stroke-width="1.5"  rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22none%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M273.599%2C141.8H69.978c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h203.621c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M273.599%2C402.2H69.978c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h203.621c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M124.818%2C272h-54.841c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h54.841c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M441.978%2C141.8h-56.793c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h56.793c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M329.392%2C197.6c-39.587%2C0-71.793-32.209-71.793-71.8s32.206-71.8%2C71.793-71.8%2C71.793%2C32.209%2C71.793%2C71.8-32.206%2C71.8-71.793%2C71.8ZM329.392%2C86c-21.942%2C0-39.793%2C17.854-39.793%2C39.8s17.851%2C39.8%2C39.793%2C39.8%2C39.793-17.854%2C39.793-39.8-17.851-39.8-39.793-39.8Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M441.978%2C272h-205.573c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h205.573c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M180.611%2C327.8c-39.587%2C0-71.793-32.209-71.793-71.8s32.206-71.8%2C71.793-71.8%2C71.793%2C32.209%2C71.793%2C71.8-32.206%2C71.8-71.793%2C71.8ZM180.611%2C216.2c-21.942%2C0-39.793%2C17.854-39.793%2C39.8s17.851%2C39.8%2C39.793%2C39.8%2C39.793-17.854%2C39.793-39.8-17.851-39.8-39.793-39.8h0Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M441.978%2C402.2h-56.793c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h56.793c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M329.392%2C458c-39.587%2C0-71.793-32.209-71.793-71.8s32.206-71.8%2C71.793-71.8%2C71.793%2C32.209%2C71.793%2C71.8-32.206%2C71.8-71.793%2C71.8ZM329.392%2C346.4c-21.942%2C0-39.793%2C17.854-39.793%2C39.8s17.851%2C39.8%2C39.793%2C39.8%2C39.793-17.854%2C39.793-39.8-17.851-39.8-39.793-39.8Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="200" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="232" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Google Cloud organization</text>
+  
+</g>
+
+<g id="group-project">
+  <rect class="group-border" x="216" y="64" width="1107.85" height="246"
+    fill="rgba(66,133,244,0.04)" stroke="#4285F4" stroke-width="1.5"  rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22none%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M273.599%2C141.8H69.978c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h203.621c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M273.599%2C402.2H69.978c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h203.621c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M124.818%2C272h-54.841c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h54.841c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M441.978%2C141.8h-56.793c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h56.793c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M329.392%2C197.6c-39.587%2C0-71.793-32.209-71.793-71.8s32.206-71.8%2C71.793-71.8%2C71.793%2C32.209%2C71.793%2C71.8-32.206%2C71.8-71.793%2C71.8ZM329.392%2C86c-21.942%2C0-39.793%2C17.854-39.793%2C39.8s17.851%2C39.8%2C39.793%2C39.8%2C39.793-17.854%2C39.793-39.8-17.851-39.8-39.793-39.8Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M441.978%2C272h-205.573c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h205.573c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M180.611%2C327.8c-39.587%2C0-71.793-32.209-71.793-71.8s32.206-71.8%2C71.793-71.8%2C71.793%2C32.209%2C71.793%2C71.8-32.206%2C71.8-71.793%2C71.8ZM180.611%2C216.2c-21.942%2C0-39.793%2C17.854-39.793%2C39.8s17.851%2C39.8%2C39.793%2C39.8%2C39.793-17.854%2C39.793-39.8-17.851-39.8-39.793-39.8h0Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M441.978%2C402.2h-56.793c-8.837%2C0-16-7.163-16-16s7.163-16%2C16-16h56.793c8.837%2C0%2C16%2C7.163%2C16%2C16s-7.163%2C16-16%2C16Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M329.392%2C458c-39.587%2C0-71.793-32.209-71.793-71.8s32.206-71.8%2C71.793-71.8%2C71.793%2C32.209%2C71.793%2C71.8-32.206%2C71.8-71.793%2C71.8ZM329.392%2C346.4c-21.942%2C0-39.793%2C17.854-39.793%2C39.8s17.851%2C39.8%2C39.793%2C39.8%2C39.793-17.854%2C39.793-39.8-17.851-39.8-39.793-39.8Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="216" y="64" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="248" y="80.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Project</text>
+  
+</g>
+
+<g id="group-region">
+  <rect class="group-border" x="234" y="97" width="1071.85" height="186"
+    fill="rgba(154,160,166,0.05)" stroke="#9AA0A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.2.1%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20116)%20%20--%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22none%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M331.66%2C331.66l-22.627-22.627c29.242-29.243%2C29.242-76.823%2C0-106.066l22.627-22.627c41.72%2C41.719%2C41.72%2C109.602%2C0%2C151.32h0Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M180.34%2C331.66c-41.72-41.719-41.72-109.602%2C0-151.32l22.627%2C22.627c-29.242%2C29.243-29.242%2C76.823%2C0%2C106.066l-22.627%2C22.627Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M309.033%2C202.967c-29.242-29.242-76.824-29.242-106.066%2C0l-22.627-22.627c20.21-20.21%2C47.08-31.34%2C75.66-31.34s55.45%2C11.13%2C75.66%2C31.34l-22.627%2C22.627h0Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M256%2C363c-28.58%2C0-55.45-11.13-75.66-31.34l22.627-22.627c29.242%2C29.242%2C76.824%2C29.242%2C106.066%2C0l22.627%2C22.627c-20.21%2C20.21-47.08%2C31.34-75.66%2C31.34Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M170.229%2C147.603c5.406-9.256%2C8.521-20.007%2C8.521-31.478%2C0-34.531-28.094-62.625-62.625-62.625s-62.625%2C28.094-62.625%2C62.625%2C28.094%2C62.625%2C62.625%2C62.625c11.471%2C0%2C22.222-3.114%2C31.478-8.52l45.281%2C45.281c5.831-9.07%2C13.557-16.796%2C22.627-22.627l-45.281-45.281h-.001ZM116.125%2C146.75c-16.887%2C0-30.625-13.738-30.625-30.625s13.738-30.625%2C30.625-30.625%2C30.625%2C13.738%2C30.625%2C30.625-13.738%2C30.625-30.625%2C30.625Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M215.51%2C319.117c-9.07-5.831-16.796-13.557-22.627-22.627l-45.281%2C45.281c-9.256-5.406-20.007-8.52-31.478-8.52-34.531%2C0-62.625%2C28.094-62.625%2C62.625s28.094%2C62.625%2C62.625%2C62.625%2C62.625-28.094%2C62.625-62.625c0-11.471-3.114-22.222-8.521-31.478l45.281-45.281h0ZM116.125%2C426.5c-16.887%2C0-30.625-13.738-30.625-30.625s13.738-30.625%2C30.625-30.625%2C30.625%2C13.738%2C30.625%2C30.625-13.738%2C30.625-30.625%2C30.625Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M395.875%2C333.25c-11.471%2C0-22.222%2C3.114-31.478%2C8.52l-45.281-45.281c-5.831%2C9.07-13.557%2C16.796-22.627%2C22.627l45.281%2C45.281c-5.406%2C9.256-8.521%2C20.007-8.521%2C31.478%2C0%2C34.531%2C28.094%2C62.625%2C62.625%2C62.625s62.625-28.094%2C62.625-62.625-28.094-62.625-62.625-62.625h.001ZM395.875%2C426.5c-16.887%2C0-30.625-13.738-30.625-30.625s13.738-30.625%2C30.625-30.625%2C30.625%2C13.738%2C30.625%2C30.625-13.738%2C30.625-30.625%2C30.625Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M395.875%2C53.5c-34.531%2C0-62.625%2C28.094-62.625%2C62.625%2C0%2C11.645%2C3.205%2C22.551%2C8.764%2C31.902l-45.118%2C45.118c9.03%2C5.887%2C16.707%2C13.663%2C22.481%2C22.773l45.444-45.444c9.16%2C5.255%2C19.758%2C8.276%2C31.054%2C8.276%2C34.531%2C0%2C62.625-28.094%2C62.625-62.625s-28.094-62.625-62.625-62.625ZM395.875%2C146.75c-16.887%2C0-30.625-13.738-30.625-30.625s13.738-30.625%2C30.625-30.625%2C30.625%2C13.738%2C30.625%2C30.625-13.738%2C30.625-30.625%2C30.625Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="234" y="97" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="266" y="113.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Primary region</text>
+  
+</g>
+
+<g id="edge-upload" class="edge edge-flow edge-solid">
+  <path d="M 88 171 L 280 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="184" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="184" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="upload" x="148" y="163" text-anchor="middle" font-size="11" fill="#163964">Upload</text>
+</g>
+
+<g id="edge-store" class="edge edge-flow edge-solid">
+  <path d="M 328 171 L 473 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="400.5" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="400.5" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="store" x="400.5" y="191" text-anchor="middle" font-size="11" fill="#163964">Store original</text>
+</g>
+
+<g id="edge-notify" class="edge edge-flow edge-solid">
+  <path d="M 521 171 L 693 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="607" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="607" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="notify" x="607" y="191" text-anchor="middle" font-size="11" fill="#163964">Object notifications</text>
+</g>
+
+<g id="edge-deliver" class="edge edge-flow edge-solid">
+  <path d="M 741 183 L 836 183" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="764.75" cy="167" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="764.75" y="171" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="deliver" x="777" y="203" text-anchor="middle" font-size="11" fill="#163964">Events</text>
+</g>
+
+<g id="edge-read" class="edge edge-flow edge-solid">
+  <path d="M 521 159 L 560 159 L 560 120 L 784 120 L 784 171 L 836 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="672" cy="104" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="672" y="108" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="read" x="835.325" y="128" text-anchor="middle" font-size="11" fill="#163964">Read original</text>
+</g>
+
+<g id="edge-write" class="edge edge-flow edge-solid">
+  <path d="M 884 171 L 1049 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="966.5" cy="155" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="966.5" y="159" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="write" x="960" y="191" text-anchor="middle" font-size="11" fill="#163964">Normalized output</text>
+</g>
+
+<g id="edge-status" class="edge edge-flow edge-solid">
+  <path d="M 884 159 L 936 159 L 936 136 L 1144 136 L 1144 171 L 1199 171" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1040" cy="120" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1040" y="124" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="status" x="964" y="128" text-anchor="middle" font-size="11" fill="#163964">Status and metadata</text>
+</g>
+
+<g id="res-partner">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%225%22%20y%3D%224%22%20width%3D%2222%22%20height%3D%2216%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M12%2027h8M16%2020v7M9%2027h14%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="40" y="147" width="48" height="48"/>
+  <text x="64" y="211" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="64" y="229" text-anchor="middle" font-size="11" font-style="italic">Partner</text>
+</g>
+
+<g id="res-intake">
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.st0%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%234285f4%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st2%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%2334a853%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fbbc04%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23ea4335%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20class%3D%22st0%22%20width%3D%22512%22%20height%3D%22512%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20class%3D%22st3%22%20d%3D%22M144.4%2C272c-6.4%2C0-12.4-3.8-14.9-10.1L55.4%2C75.9c-3.3-8.2.7-17.5%2C8.9-20.8%2C8.2-3.3%2C17.5.7%2C20.8%2C8.9l74.2%2C186c3.3%2C8.2-.7%2C17.5-8.9%2C20.8-1.9.8-3.9%2C1.1-5.9%2C1.1h-.1Z%22%2F%3E%0A%20%20%20%20%3Cg%20id%3D%22b%22%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M256%2C272c-6.4%2C0-12.4-3.8-14.9-10.1l-74.1-186c-2.6-6.6-.6-14.1%2C5-18.5s13.4-4.5%2C19.2-.4l260.1%2C186c7.2%2C5.1%2C8.9%2C15.1%2C3.7%2C22.3s-15.1%2C8.9-22.3%2C3.7L216.9%2C114.7l54%2C135.3c3.3%2C8.2-.7%2C17.5-8.9%2C20.8-1.9.8-4%2C1.1-5.9%2C1.1h-.1Z%22%2F%3E%0A%20%20%20%20%3C%2Fg%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M127.2%2C256l-72%2C180c-3.3%2C8.2.7%2C17.5%2C8.9%2C20.8%2C3.1%2C1.2%2C4%2C1.1%2C5.9%2C1.1%2C6.3%2C0%2C12.4-3.8%2C14.9-10.1l74.4-186c.8-2%2C1.1-4%2C1.1-5.9h-33.2Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M414.5%2C256l-197.7%2C141.2%2C54.1-135.3c.8-2%2C1.1-4%2C1.1-5.9h-33.2l-72%2C180c-2.6%2C6.6-.6%2C14.1%2C5%2C18.5%2C2.9%2C2.3%2C6.4%2C3.4%2C9.9%2C3.4s6.5-1%2C9.3-3l260.4-186c4.4-3.1%2C6.7-8%2C6.7-13h-43.6Z%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="280" y="147" width="48" height="48"/>
+  <text x="304.35" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Run</text>
+  <text x="304.35" y="229" text-anchor="middle" font-size="11" font-style="italic">Intake service</text>
+</g>
+
+<g id="res-source">
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.st0%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%234285f4%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st2%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%2334a853%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fbbc04%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23ea4335%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20class%3D%22st0%22%20width%3D%22512%22%20height%3D%22512%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M442%2C277.9H70c-8.8%2C0-16%2C7.2-16%2C16v148.1c0%2C8.8%2C7.2%2C16%2C16%2C16h107.2c1.5.5%2C3.1.7%2C4.8.7s3.3-.3%2C4.8-.7h255.2c8.8%2C0%2C16-7.2%2C16-16v-148.1c0-8.8-7.2-16-16-16ZM86%2C309.9h80v116.1h-80v-116.1ZM426%2C425.9h-228v-116.1h228v116.1Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st3%22%20d%3D%22M442%2C54H70c-8.8%2C0-16%2C7.2-16%2C16v148.8c0%2C8.8%2C7.2%2C16%2C16%2C16h372c8.8%2C0%2C16-7.2%2C16-16V70c0-8.8-7.2-16-16-16ZM86%2C86h80v116.8h-80v-116.8ZM426%2C202.8h-228v-116.8h228v116.8Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M442%2C234.8h-16V86H54v-16c0-8.8%2C7.2-16%2C16-16h372c8.8%2C0%2C16%2C7.2%2C16%2C16v148.8c0%2C8.8-7.2%2C16-16%2C16Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M442%2C457.9h-16v-148.1H54v-16c0-8.8%2C7.2-16%2C16-16h372c8.8%2C0%2C16%2C7.2%2C16%2C16v148.1c0%2C8.8-7.2%2C16-16%2C16Z%22%2F%3E%0A%20%20%20%20%3Ccircle%20class%3D%22st4%22%20cx%3D%22349%22%20cy%3D%22144.4%22%20r%3D%2237%22%2F%3E%0A%20%20%20%20%3Ccircle%20class%3D%22st1%22%20cx%3D%22349%22%20cy%3D%22367.9%22%20r%3D%2237%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="473" y="147" width="48" height="48"/>
+  <text x="496.9" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Storage</text>
+  <text x="496.9" y="229" text-anchor="middle" font-size="11" font-style="italic">Source bucket</text>
+</g>
+
+<g id="res-events">
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22none%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M346.683%2C112.611l-.039-75.171c-.005-8.834-7.167-15.992-16-15.992h-.008c-8.837.004-15.997%2C7.172-15.992%2C16.008l.039%2C75.155H118c-17.673%2C0-32%2C14.327-32%2C32v111.865c0%2C89.085%2C76.262%2C161.562%2C170%2C161.562s170-72.477%2C170-161.562v-111.865c0-17.673-14.327-32-32-32h-47.317ZM394%2C256.477c0%2C71.44-61.906%2C129.562-138%2C129.562s-138-58.121-138-129.562v-111.865h276v111.865Z%22%20fill%3D%22%234285f4%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M314.644%2C144.611v-32h-117.294l-.039-75.171c-.005-8.834-7.167-15.992-16-15.992h-.008c-8.837.004-15.997%2C7.172-15.992%2C16.008l.039%2C75.155h-47.35c-17.673%2C0-32%2C14.327-32%2C32v111.865c0%2C83.959%2C67.741%2C153.155%2C154.007%2C160.841v56.679c0%2C8.616%2C6.621%2C16.029%2C15.228%2C16.433%2C9.188.432%2C16.772-6.889%2C16.772-15.982v-89.277c-6.594.627-8.014.652-16%2C.867h-.007c-76.094%2C0-138-58.121-138-129.562v-111.865h196.644%2C0Z%22%20fill%3D%22%239aa0a6%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="693" y="147" width="48" height="48"/>
+  <text x="717.325" y="211" text-anchor="middle" font-size="12" font-weight="500">Pub/Sub</text>
+  <text x="717.325" y="229" text-anchor="middle" font-size="11" font-style="italic">Object events</text>
+</g>
+
+<g id="res-processor">
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.st0%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%234285f4%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st2%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%2334a853%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fbbc04%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23ea4335%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20class%3D%22st0%22%20width%3D%22512%22%20height%3D%22512%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20class%3D%22st3%22%20d%3D%22M144.4%2C272c-6.4%2C0-12.4-3.8-14.9-10.1L55.4%2C75.9c-3.3-8.2.7-17.5%2C8.9-20.8%2C8.2-3.3%2C17.5.7%2C20.8%2C8.9l74.2%2C186c3.3%2C8.2-.7%2C17.5-8.9%2C20.8-1.9.8-3.9%2C1.1-5.9%2C1.1h-.1Z%22%2F%3E%0A%20%20%20%20%3Cg%20id%3D%22b%22%3E%0A%20%20%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M256%2C272c-6.4%2C0-12.4-3.8-14.9-10.1l-74.1-186c-2.6-6.6-.6-14.1%2C5-18.5s13.4-4.5%2C19.2-.4l260.1%2C186c7.2%2C5.1%2C8.9%2C15.1%2C3.7%2C22.3s-15.1%2C8.9-22.3%2C3.7L216.9%2C114.7l54%2C135.3c3.3%2C8.2-.7%2C17.5-8.9%2C20.8-1.9.8-4%2C1.1-5.9%2C1.1h-.1Z%22%2F%3E%0A%20%20%20%20%3C%2Fg%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M127.2%2C256l-72%2C180c-3.3%2C8.2.7%2C17.5%2C8.9%2C20.8%2C3.1%2C1.2%2C4%2C1.1%2C5.9%2C1.1%2C6.3%2C0%2C12.4-3.8%2C14.9-10.1l74.4-186c.8-2%2C1.1-4%2C1.1-5.9h-33.2Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M414.5%2C256l-197.7%2C141.2%2C54.1-135.3c.8-2%2C1.1-4%2C1.1-5.9h-33.2l-72%2C180c-2.6%2C6.6-.6%2C14.1%2C5%2C18.5%2C2.9%2C2.3%2C6.4%2C3.4%2C9.9%2C3.4s6.5-1%2C9.3-3l260.4-186c4.4-3.1%2C6.7-8%2C6.7-13h-43.6Z%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="836" y="147" width="48" height="48"/>
+  <text x="860.45" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Run</text>
+  <text x="860.45" y="229" text-anchor="middle" font-size="11" font-style="italic">Processing service</text>
+</g>
+
+<g id="res-output">
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.st0%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%234285f4%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st2%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%2334a853%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fbbc04%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23ea4335%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20class%3D%22st0%22%20width%3D%22512%22%20height%3D%22512%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M442%2C277.9H70c-8.8%2C0-16%2C7.2-16%2C16v148.1c0%2C8.8%2C7.2%2C16%2C16%2C16h107.2c1.5.5%2C3.1.7%2C4.8.7s3.3-.3%2C4.8-.7h255.2c8.8%2C0%2C16-7.2%2C16-16v-148.1c0-8.8-7.2-16-16-16ZM86%2C309.9h80v116.1h-80v-116.1ZM426%2C425.9h-228v-116.1h228v116.1Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st3%22%20d%3D%22M442%2C54H70c-8.8%2C0-16%2C7.2-16%2C16v148.8c0%2C8.8%2C7.2%2C16%2C16%2C16h372c8.8%2C0%2C16-7.2%2C16-16V70c0-8.8-7.2-16-16-16ZM86%2C86h80v116.8h-80v-116.8ZM426%2C202.8h-228v-116.8h228v116.8Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M442%2C234.8h-16V86H54v-16c0-8.8%2C7.2-16%2C16-16h372c8.8%2C0%2C16%2C7.2%2C16%2C16v148.8c0%2C8.8-7.2%2C16-16%2C16Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M442%2C457.9h-16v-148.1H54v-16c0-8.8%2C7.2-16%2C16-16h372c8.8%2C0%2C16%2C7.2%2C16%2C16v148.1c0%2C8.8-7.2%2C16-16%2C16Z%22%2F%3E%0A%20%20%20%20%3Ccircle%20class%3D%22st4%22%20cx%3D%22349%22%20cy%3D%22144.4%22%20r%3D%2237%22%2F%3E%0A%20%20%20%20%3Ccircle%20class%3D%22st1%22%20cx%3D%22349%22%20cy%3D%22367.9%22%20r%3D%2237%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="1049" y="147" width="48" height="48"/>
+  <text x="1073.425" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud Storage</text>
+  <text x="1073.425" y="229" text-anchor="middle" font-size="11" font-style="italic">Normalized bucket</text>
+</g>
+
+<g id="res-db">
+  <image href="data:image/svg+xml;charset=utf-8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%0A%3Csvg%20id%3D%22standard_product_icon%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20version%3D%221.1%22%20viewBox%3D%220%200%20512%20512%22%3E%0A%20%20%3C!--%20Generator%3A%20Adobe%20Illustrator%2029.1.0%2C%20SVG%20Export%20Plug-In%20.%20SVG%20Version%3A%202.1.0%20Build%20142)%20%20--%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3Cstyle%3E%0A%20%20%20%20%20%20.st0%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20none%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st1%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%234285f4%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st2%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%2334a853%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st3%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23fbbc04%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20.st4%20%7B%0A%20%20%20%20%20%20%20%20fill%3A%20%23ea4335%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%3C%2Fstyle%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20id%3D%22bounding_box%22%3E%0A%20%20%20%20%3Crect%20class%3D%22st0%22%20width%3D%22512%22%20height%3D%22512%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Cg%20id%3D%22art%22%3E%0A%20%20%20%20%3Cpath%20class%3D%22st3%22%20d%3D%22M447.5%2C123.7l-186-68.7c-3.6-1.3-7.5-1.3-11.1%2C0l-40.7%2C15-145.2%2C53.5c-6.3%2C2.3-10.5%2C8.3-10.5%2C15s4.2%2C12.7%2C10.5%2C15l145.1%2C53.4s0%2C0%2C0%2C0l40.8%2C15c1.8.6%2C3.7%2C1%2C5.5%2C1s3.7-.3%2C5.5-1l185.9-68.2c6.3-2.3%2C10.5-8.3%2C10.5-15%2C0-6.7-4.2-12.7-10.5-15h0ZM256%2C189.9l-139.6-51.4%2C139.6-51.4%2C139.7%2C51.6-139.6%2C51.2Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M447.5%2C388.8l-185.9%2C68.2c-1.8.6-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15h0l-145.1-53.4c-8.3-3-12.5-12.2-9.5-20.5%2C3-8.3%2C12.2-12.5%2C20.5-9.5l180.4%2C66.4%2C180.4-66.2c8.3-3%2C17.5%2C1.2%2C20.5%2C9.5%2C3%2C8.3-1.2%2C17.5-9.5%2C20.5h0Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M447.5%2C310.4l-185.9%2C68.2c-1.8.6-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15h0l-145.1-53.4c-8.3-3-12.5-12.2-9.5-20.5%2C3-8.3%2C12.2-12.5%2C20.5-9.5l180.4%2C66.4%2C180.4-66.2c8.3-3%2C17.5%2C1.2%2C20.5%2C9.5%2C3%2C8.3-1.2%2C17.5-9.5%2C20.5h0Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st2%22%20d%3D%22M447.5%2C232.1l-185.9%2C68.2c-1.8.7-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15h0l-145.1-53.4c-8.3-3.1-12.5-12.2-9.5-20.5%2C3-8.3%2C12.2-12.5%2C20.5-9.5l180.4%2C66.4%2C180.4-66.2c8.3-3%2C17.5%2C1.2%2C20.5%2C9.5%2C3%2C8.3-1.2%2C17.5-9.5%2C20.5h0Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st4%22%20d%3D%22M458%2C138.7c0%2C6.7-4.2%2C12.7-10.5%2C15l-186%2C68.2c-1.8.7-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15h0s46.4-17%2C46.4-17l139.6-51.2-139.7-51.6-46.2-17.1%2C40.7-15c3.6-1.3%2C7.5-1.3%2C11.1%2C0l186%2C68.7c6.3%2C2.3%2C10.5%2C8.3%2C10.5%2C15h0Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M447.5%2C388.8l-185.9%2C68.2c-1.8.6-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15%2C46.4-17%2C180.4-66.2c8.3-3%2C17.5%2C1.2%2C20.5%2C9.5%2C3%2C8.3-1.2%2C17.5-9.5%2C20.5h0Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M447.5%2C310.4l-185.9%2C68.2c-1.8.6-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15h0l46.4-17%2C180.4-66.2c8.3-3%2C17.5%2C1.2%2C20.5%2C9.5%2C3%2C8.3-1.2%2C17.5-9.5%2C20.5Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st1%22%20d%3D%22M447.5%2C232.1l-185.9%2C68.2c-1.8.7-3.6%2C1-5.5%2C1s-3.7-.3-5.5-1l-40.8-15h0l46.4-17%2C180.4-66.2c8.3-3%2C17.5%2C1.2%2C20.5%2C9.5%2C3%2C8.3-1.2%2C17.5-9.5%2C20.5h0Z%22%2F%3E%0A%20%20%20%20%3Cpath%20class%3D%22st3%22%20d%3D%22M302.4%2C206.9l-186-68.5-51.8-15c-6.3%2C2.3-10.5%2C8.3-10.5%2C15s4.2%2C12.7%2C10.5%2C15l145.1%2C53.4s0%2C0%2C0%2C0l40.8%2C15c1.8.6%2C3.7%2C1%2C5.5%2C1s3.7-.3%2C5.5-1l40.9-15h0Z%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E" x="1199" y="147" width="48" height="48"/>
+  <text x="1223.475" y="211" text-anchor="middle" font-size="12" font-weight="500">Cloud SQL</text>
+  <text x="1223.475" y="229" text-anchor="middle" font-size="11" font-style="italic">Status and metadata</text>
+</g>
+</svg>

@@ -1,0 +1,262 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "azure-cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure private application API."
+      }
+    },
+    {
+      "id": "application-network",
+      "kind": "group",
+      "type": "azure.vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "private endpoint in the application network."
+      }
+    },
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management."
+      }
+    },
+    {
+      "id": "api-management",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management, which routes requests to an Azure Function."
+      }
+    },
+    {
+      "id": "function-app",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Management routes requests to an Azure Function; the function accesses Azure SQL through a private endpoint."
+      }
+    },
+    {
+      "id": "sql-database",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The function accesses an Azure SQL database."
+      }
+    },
+    {
+      "id": "sql-private-endpoint",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure SQL is accessed through a private endpoint in the application network."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client-request",
+      "source": "client",
+      "target": "api-management",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management."
+      }
+    },
+    {
+      "id": "route-to-function",
+      "source": "api-management",
+      "target": "function-app",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Management routes requests to an Azure Function."
+      }
+    },
+    {
+      "id": "function-to-endpoint",
+      "source": "function-app",
+      "target": "sql-private-endpoint",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The function accesses SQL through the private endpoint."
+      }
+    },
+    {
+      "id": "endpoint-to-sql",
+      "source": "sql-private-endpoint",
+      "target": "sql-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The private endpoint connects to the Azure SQL database."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "cloud_group_count",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 cloud component(s) shown."
+      }
+    },
+    {
+      "id": "vnet_group_count",
+      "kind": "group",
+      "type": "azure.vnet",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 vnet component(s) shown."
+      }
+    },
+    {
+      "id": "client_resource_count",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 client component(s) shown."
+      }
+    },
+    {
+      "id": "api_management_services_resource_count",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 api management services component(s) shown."
+      }
+    },
+    {
+      "id": "function_apps_resource_count",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 function apps component(s) shown."
+      }
+    },
+    {
+      "id": "sql_database_resource_count",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 sql database component(s) shown."
+      }
+    },
+    {
+      "id": "private_endpoints_resource_count",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 private endpoints component(s) shown."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "azure-cloud_root",
+      "component": "azure-cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure Cloud is external to the Azure containment."
+      }
+    },
+    {
+      "id": "application-network_parent",
+      "component": "application-network",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Application Network is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "client_root",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client is external to the Azure containment."
+      }
+    },
+    {
+      "id": "api-management_parent",
+      "component": "api-management",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Management is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "function-app_parent",
+      "component": "function-app",
+      "relation": "parent",
+      "group": "application-network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure Function is placed directly inside application network."
+      }
+    },
+    {
+      "id": "sql-database_parent",
+      "component": "sql-database",
+      "relation": "parent",
+      "group": "azure-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure SQL is placed directly inside azure cloud."
+      }
+    },
+    {
+      "id": "sql-private-endpoint_parent",
+      "component": "sql-private-endpoint",
+      "relation": "parent",
+      "group": "application-network",
+      "basis": {
+        "kind": "explicit",
+        "text": "SQL Private Endpoint is placed directly inside application network."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

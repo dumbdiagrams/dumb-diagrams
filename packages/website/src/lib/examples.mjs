@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseDgmResult } from '@dumb-diagrams/runtime/dsl';
 
 // Build-time only. Studio imports these same files in editor/src/examples.ts.
 export const exampleIds = [
@@ -25,11 +26,13 @@ export function approvedRoot() {
   return root;
 }
 
-/** The site features exactly one approved run. */
+/** The approved run whose manifest is marked `featured`; the site's default examples. */
 export function approvedRun() {
-  const runs = readdirSync(approvedRoot(), { withFileTypes: true }).filter(entry => entry.isDirectory());
-  if (runs.length !== 1) throw new Error(`examples/approved must hold exactly one run, found ${runs.length}`);
-  return join(approvedRoot(), runs[0].name);
+  const featured = readdirSync(approvedRoot(), { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .filter(entry => JSON.parse(readFileSync(join(approvedRoot(), entry.name, 'manifest.json'), 'utf8')).featured);
+  if (featured.length !== 1) throw new Error(`examples/approved must feature exactly one run, found ${featured.length}`);
+  return join(approvedRoot(), featured[0].name);
 }
 
 export function loadExamples() {
@@ -40,7 +43,7 @@ export function loadExamples() {
     const prompt = readFileSync(join(directory, 'user-prompt.md'), 'utf8');
     const interpretation = readFileSync(join(directory, 'architecture-brief.md'), 'utf8');
     const requirements = readFileSync(join(directory, 'requirements.json'), 'utf8');
-    const title = source.match(/^\s*title "([^"]+)"/m)?.[1];
+    const title = parseDgmResult(source).map(doc => doc.title).unwrapOr(undefined);
     if (!title) throw new Error(`Missing example title: ${id}`);
     return { id, title, description: descriptions[id], source, prompt, interpretation, requirements };
   });

@@ -1,3 +1,5 @@
+import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
+
 export interface DiagramExample {
   id: string;
   title: string;
@@ -14,6 +16,14 @@ const files = import.meta.glob<string>(
   { query: "?raw", import: "default", eager: true },
 );
 
+const manifests = import.meta.glob<{ featured?: boolean }>("../../../examples/approved/*/manifest.json", {
+  import: "default",
+  eager: true,
+});
+const featured = Object.keys(manifests)
+  .filter((path) => manifests[path]!.featured)
+  .map((path) => path.slice(0, -"manifest.json".length));
+
 const PROVIDERS: Record<string, string> = {
   aws: "AWS",
   azure: "Azure",
@@ -22,9 +32,9 @@ const PROVIDERS: Record<string, string> = {
 };
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
-/** Approved model runs, one card per prompt, ordered by provider then difficulty. */
+/** The featured approved run, one card per prompt, ordered by provider then difficulty. */
 export const DIAGRAM_EXAMPLES: DiagramExample[] = Object.keys(files)
-  .filter((path) => path.endsWith("/diagram.dgm"))
+  .filter((path) => path.endsWith("/diagram.dgm") && featured.some((run) => path.startsWith(run)))
   .map((path): DiagramExample & { order: number } => {
     const bundle = path.slice(0, -"/diagram.dgm".length);
     const id = bundle.slice(bundle.lastIndexOf("/") + 1);
@@ -34,7 +44,10 @@ export const DIAGRAM_EXAMPLES: DiagramExample[] = Object.keys(files)
     const prompt = files[`${bundle}/user-prompt.md`]!.replace(/^# .*\n+/, "").trim();
     return {
       id,
-      title: source.match(/^\s*title "([^"]+)"/m)?.[1] ?? id,
+      title:
+        parseDgmResult(source)
+          .map((doc) => doc.title)
+          .unwrapOr(undefined) ?? id,
       description: prompt.split(/(?<=\.)\s/)[0]!,
       tags: [PROVIDERS[provider]!, difficulty],
       source,

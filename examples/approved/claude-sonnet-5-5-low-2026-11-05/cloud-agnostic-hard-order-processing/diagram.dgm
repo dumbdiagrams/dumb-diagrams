@@ -1,0 +1,52 @@
+dgm 1
+diagram cloud-agnostic-hard-order-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Order processing (cloud-neutral)"
+
+  cloud-agnostic.client buyer "Buyer"
+  cloud-agnostic.actor payment "External payment service"
+  cloud-agnostic.actor warehouse "External warehouse"
+  cloud-agnostic.account account "Cloud account" {
+    cloud-agnostic.region primary "Primary region" {
+      cloud-agnostic.load-balancer lb "Load balancer"
+      cloud-agnostic.network network "Primary application network" {
+        cloud-agnostic.cluster cluster "Application cluster" {
+          cloud-agnostic.server api "API server"
+          cloud-agnostic.server worker "Worker server"
+        }
+        cloud-agnostic.database db "Primary database"
+        cloud-agnostic.cache cache "Cache"
+      }
+      cloud-agnostic.queue queue "Work queue"
+      cloud-agnostic.object-storage receipts "Receipt storage"
+    }
+    cloud-agnostic.region recovery "Recovery region" {
+      cloud-agnostic.load-balancer rlb "Recovery load balancer"
+      cloud-agnostic.network rnetwork "Recovery network" {
+        cloud-agnostic.server rapp "Recovery app server"
+        cloud-agnostic.database rdb "Recovery database"
+      }
+    }
+  }
+
+  buyer -> lb { id order step 1 label "Orders" kind flow }
+  lb -> api { id forward step 2 label "Forward" kind flow }
+  api -> db { id db_query step 3 label "Query" kind flow }
+  api -> cache { id cache_lookup step 3 label "Lookup" kind flow }
+  api -> payment { id charge step 3 label "Charge" kind flow }
+  db -> api { id db_resp label "Database response" kind flow style dashed }
+  cache -> api { id cache_resp label "Cache response" kind flow style dashed }
+  payment -> api { id payment_resp label "Payment response" kind flow style dashed }
+  api -> queue { id enqueue step 4 label "Enqueue work" kind flow }
+  queue -> worker { id dispatch step 5 label "Work" kind flow }
+  worker -> warehouse { id fulfill step 6 label "Fulfillment" kind flow }
+  warehouse -> worker { id ack label "Acknowledgment" kind flow style dashed }
+  worker -> queue { id retry label "Retry" kind fail }
+  worker -> db { id order_status step 6 label "Order status" kind flow }
+  worker -> receipts { id write_receipts step 6 label "Receipts" kind flow }
+  db -> rdb { id replicate step 7 label "Replication" kind flow }
+  rdb -> rapp { id read_replica step 8 label "Read replica" kind flow }
+  buyer -> rlb { id failover label "Failover requests" kind flow style dashed }
+  rlb -> rapp { id failover_fwd label "Forward" kind flow style dashed }
+}

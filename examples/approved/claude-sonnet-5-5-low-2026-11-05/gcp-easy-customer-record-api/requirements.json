@@ -1,0 +1,174 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    },
+    {
+      "id": "org",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    },
+    {
+      "id": "lb",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "External web client sends HTTPS through Cloud Load Balancing to a Cloud Run API, which reads and writes Cloud SQL. Project and region inside organization; cl..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "https",
+      "source": "client",
+      "target": "lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "HTTPS (client to lb) per the request."
+      }
+    },
+    {
+      "id": "route",
+      "source": "lb",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route (lb to api) per the request."
+      }
+    },
+    {
+      "id": "records",
+      "source": "api",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read/write records (api to db) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "client_root",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "org_root",
+      "component": "org",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "parent",
+      "group": "org",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_in_region",
+      "component": "lb",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "api_in_region",
+      "component": "api",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "db_in_region",
+      "component": "db",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

@@ -1,0 +1,271 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "org",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "source",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "output",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner uploads via Cloud Run intake to source bucket; notifications publish to Pub/Sub; second Cloud Run reads the original, stores normalized output in a s..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "upload",
+      "source": "partner",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Upload (partner to intake) per the request."
+      }
+    },
+    {
+      "id": "store",
+      "source": "intake",
+      "target": "source",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Store original (intake to source) per the request."
+      }
+    },
+    {
+      "id": "notify",
+      "source": "source",
+      "target": "events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Object notifications (source to events) per the request."
+      }
+    },
+    {
+      "id": "deliver",
+      "source": "events",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Events (events to processor) per the request."
+      }
+    },
+    {
+      "id": "read",
+      "source": "source",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read original (source to processor) per the request."
+      }
+    },
+    {
+      "id": "write",
+      "source": "processor",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Normalized output (processor to output) per the request."
+      }
+    },
+    {
+      "id": "status",
+      "source": "processor",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Status and metadata (processor to db) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "partner_root",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "org_root",
+      "component": "org",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "parent",
+      "group": "org",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "intake_in_region",
+      "component": "intake",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "source_in_region",
+      "component": "source",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "events_in_region",
+      "component": "events",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "processor_in_region",
+      "component": "processor",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "output_in_region",
+      "component": "output",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "db_in_region",
+      "component": "db",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

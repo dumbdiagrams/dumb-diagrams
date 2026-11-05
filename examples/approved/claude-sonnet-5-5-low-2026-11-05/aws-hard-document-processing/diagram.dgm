@@ -1,0 +1,56 @@
+dgm 1
+diagram aws-hard-document-processing {
+  grammar aws
+  flow lr
+  title "AWS document processing"
+
+  cloud-agnostic.client client "Document intake client"
+  cloud-agnostic.actor ops "Operations user"
+  aws.cloud aws "AWS Cloud" {
+    aws.region region "AWS Region" {
+      aws.api-gateway apigw "API Gateway"
+      aws.aws-lambda intake "Intake handler"
+      aws.simple-storage-service s3_in "Input bucket"
+      aws.simple-queue-service jobs "Jobs queue"
+      aws.simple-queue-service dlq "Dead-letter queue"
+      aws.vpc vpc "VPC" {
+        aws.az az1 "Availability Zone 1" {
+          aws.subnet.private sub1 "Private subnet 1" {
+            aws.aws-fargate worker1 "Worker 1"
+          }
+        }
+        aws.az az2 "Availability Zone 2" {
+          aws.subnet.private sub2 "Private subnet 2" {
+            aws.aws-fargate worker2 "Worker 2"
+          }
+        }
+      }
+      aws.simple-storage-service s3_out "Output bucket"
+      aws.dynamodb status "Job status"
+      aws.simple-notification-service done "Completion topic"
+      aws.cloudfront cdn "CloudFront"
+    }
+  }
+
+  client -> apigw { id submit step 1 label "Submit documents" kind flow }
+  apigw -> intake { id invoke step 2 label "Invoke" kind flow }
+  intake -> s3_in { id store_input step 3 label "Store originals" kind flow }
+  intake -> jobs { id queue_job step 3 label "Queue jobs" kind flow }
+  jobs -> worker1 { id jobs_w1 step 4 label "Jobs" kind flow }
+  jobs -> worker2 { id jobs_w2 step 4 label "Jobs" kind flow }
+  s3_in -> worker1 { id read_w1 step 5 label "Read input" kind flow }
+  s3_in -> worker2 { id read_w2 step 5 label "Read input" kind flow }
+  worker1 -> s3_out { id out_w1 step 6 label "Write output" kind flow }
+  worker2 -> s3_out { id out_w2 step 6 label "Write output" kind flow }
+  worker1 -> status { id status_w1 step 6 label "Update status" kind flow }
+  worker2 -> status { id status_w2 step 6 label "Update status" kind flow }
+  worker1 -> done { id done_w1 step 6 label "Publish completion" kind flow }
+  worker2 -> done { id done_w2 step 6 label "Publish completion" kind flow }
+  done -> ops { id notify step 7 label "Completion notice" kind flow }
+  client -> cdn { id download step 1 label "Download" kind flow }
+  cdn -> s3_out { id origin step 7 label "Origin fetch" kind flow }
+  jobs -> dlq { id dead_letter label "Max attempts" kind fail }
+  ops -> dlq { id inspect_dlq label "Inspect" kind peer style dashed }
+  ops -> status { id inspect_status label "Inspect" kind peer style dashed }
+  dlq -> jobs { id redrive label "Redrive" kind flow style dashed }
+}

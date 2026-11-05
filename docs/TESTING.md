@@ -63,10 +63,12 @@ contract, routing findings, and flow direction; `generatedBy` from
 `requirements.json` is shown next to the model you pass. The script exits 1
 when any bundle misses its reference, preferences, contract, or validity.
 
-To make a scored run the golden set, run
-`pnpm approve:run <run-dir> --model <name> --reasoning <level> --decision "<text>"`.
-It replaces `examples/approved/` and regenerates the SVGs, routing reviews,
-layout contracts, engine snapshots, and performance budget; review the diff.
+To add a scored run to the golden set, run
+`pnpm approve:run <run-dir> --model <name> --reasoning <level> [--featured] --decision "<text>"`.
+It copies the run into `examples/approved/` (replacing a run of the same name)
+and regenerates the SVGs, routing reviews, layout contracts, engine snapshots,
+and performance budget for every approved run; review the diff. Delete a run's
+folder to retire it. The featured run feeds Studio's picker and the website.
 
 `check:engine` checks that every approved bundle satisfies its requirements
 contract and that removing any required component or relationship is reported.

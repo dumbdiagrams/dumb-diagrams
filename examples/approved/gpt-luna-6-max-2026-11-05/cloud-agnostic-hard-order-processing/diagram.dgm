@@ -1,0 +1,56 @@
+dgm 1
+diagram cloud-agnostic-hard-order-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Order Processing with Recovery Region"
+  cloud-agnostic.boundary external_parties "External Parties" {
+    cloud-agnostic.client buyer "Public Buyer" {}
+    cloud-agnostic.actor payment_service "Payment Service" {}
+    cloud-agnostic.actor warehouse "External Warehouse" {}
+  }
+  cloud-agnostic.cloud application_cloud "Application Cloud" {
+    cloud-agnostic.account cloud_account "Cloud Account" {
+      cloud-agnostic.region primary_region "Primary Region" {
+        cloud-agnostic.network primary_network "Primary Private Network" {
+          cloud-agnostic.cluster primary_cluster "Application Cluster" {
+            cloud-agnostic.server api_server "API Server" {}
+            cloud-agnostic.server worker_server "Worker Server" {}
+          }
+          cloud-agnostic.database primary_database "Primary Database" {}
+          cloud-agnostic.cache primary_cache "Primary Cache" {}
+        }
+        cloud-agnostic.load-balancer primary_lb "Primary Load Balancer" {}
+        cloud-agnostic.queue work_queue "Regional Work Queue" {}
+        cloud-agnostic.object-storage receipt_storage "Receipt Storage" {}
+      }
+      cloud-agnostic.region recovery_region "Recovery Region" {
+        cloud-agnostic.network recovery_network "Recovery Network" {
+          cloud-agnostic.database recovery_database "Recovery Database" {}
+          cloud-agnostic.server recovery_app "Recovery Application Server" {}
+        }
+        cloud-agnostic.load-balancer recovery_lb "Recovery Load Balancer" {}
+      }
+    }
+  }
+  buyer -> primary_lb { id buyer_primary label "order request" step 1 kind flow from e to w }
+  primary_lb -> api_server { id primary_lb_api label "forward request" step 2 kind flow from e to w }
+  api_server -> primary_database { id api_db_request label "database request" step 3 kind flow from e to w }
+  primary_database -> api_server { id db_api_response label "database response" style dashed kind flow from w to e }
+  api_server -> primary_cache { id api_cache_request label "cache lookup" step 4 kind flow from s to n }
+  primary_cache -> api_server { id cache_api_response label "cache response" step 5 kind flow from n to s }
+  api_server -> payment_service { id api_payment_request label "payment request" step 6 kind flow from w to e }
+  payment_service -> api_server { id payment_api_response label "payment response" step 7 kind flow from e to w }
+  api_server -> work_queue { id api_to_queue label "enqueue work" step 8 kind flow from e to w }
+  work_queue -> worker_server { id queue_to_worker label "queued order" step 9 kind flow from w to e }
+  worker_server -> warehouse { id worker_to_warehouse label "fulfillment" step 10 kind flow from w to e }
+  warehouse -> worker_server { id warehouse_ack label "fulfillment acknowledgment" step 11 kind flow from e to w }
+  worker_server -> primary_database { id worker_status label "write order status" step 12 kind flow from e to w }
+  worker_server -> receipt_storage { id worker_receipt label "write receipt" step 12 kind flow from e to w }
+  worker_server -> work_queue { id worker_retry label "retry work" kind fail style dashed from e to w }
+  primary_database -> recovery_database { id database_replication label "replicate data" step 13 kind flow from e to w }
+  recovery_database -> recovery_app { id recovery_read label "replica read" step 14 kind flow from e to w }
+  buyer -> recovery_lb { id buyer_recovery label "recovery request" step 1 kind flow from e to w }
+  recovery_lb -> recovery_app { id recovery_lb_app label "forward recovery request" step 2 kind flow from e to w }
+  recovery_app -> recovery_lb { id recovery_app_lb label "recovery response" step 15 kind flow from w to e }
+  recovery_lb -> buyer { id recovery_to_buyer label "serve buyer" step 16 kind flow from w to e }
+}

@@ -1,0 +1,379 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1882" height="676" viewBox="0 0 1882 676">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-aws">
+  <rect class="group-border-contrast" x="301.1" y="32" width="1298.1000000000001" height="612"
+    fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"  rx="0"/>
+  <rect class="group-border" x="301.1" y="32" width="1298.1000000000001" height="612"
+    fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/aws/aws-group-aws-cloud-8caea10d-6f947a0e.svg" x="301.1" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="333.1" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Cloud</text>
+  
+</g>
+
+<g id="group-region">
+  <rect class="group-border" x="317.1" y="64" width="1266.1000000000001" height="556"
+    fill="rgba(0,164,166,0.05)" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/aws/aws-group-region-848203d4-a8b346a6.svg" x="317.1" y="64" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="349.1" y="80.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">AWS Region</text>
+  
+</g>
+
+<g id="group-vpc">
+  <rect class="group-border" x="985.1" y="98" width="392" height="492"
+    fill="rgba(140,79,255,0.05)" stroke="#8C4FFF" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/aws/aws-group-vpc-a2252869-7a031ea4.svg" x="985.1" y="98" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="1017.1" y="114.55"
+    font-size="13" font-weight="600" dominant-baseline="alphabetic">VPC</text>
+  
+</g>
+
+<g id="group-az1">
+  <rect class="group-border" x="1001.1" y="130" width="348" height="215"
+    fill="rgba(0,164,166,0.04)" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/aws/aws-group-availability-zone-848203d4-a8b346a6.svg" x="1001.1" y="130" width="20" height="20" preserveAspectRatio="none"/>
+  <text x="1029.1" y="144.2"
+    font-size="12" font-weight="600" dominant-baseline="alphabetic">Availability Zone 1</text>
+  
+</g>
+
+<g id="group-sub1">
+  <rect class="group-border" x="1093.1" y="166.5" width="164" height="148"
+    fill="rgba(0,164,166,0.04)" stroke="#00A4A6" stroke-width="1"  rx="0"/>
+  <image href="catalog-icons/aws/aws-group-private-subnet-0666b2c8-7a60d4cf.svg" x="1093.1" y="166.5" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="1119.1" y="179.35"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Private subnet 1</text>
+  
+</g>
+
+<g id="group-az2">
+  <rect class="group-border" x="1001.1" y="362" width="348" height="215"
+    fill="rgba(0,164,166,0.04)" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/aws/aws-group-availability-zone-848203d4-a8b346a6.svg" x="1001.1" y="362" width="20" height="20" preserveAspectRatio="none"/>
+  <text x="1029.1" y="376.2"
+    font-size="12" font-weight="600" dominant-baseline="alphabetic">Availability Zone 2</text>
+  
+</g>
+
+<g id="group-sub2">
+  <rect class="group-border" x="1093.1" y="398.5" width="164" height="148"
+    fill="rgba(0,164,166,0.04)" stroke="#00A4A6" stroke-width="1"  rx="0"/>
+  <image href="catalog-icons/aws/aws-group-private-subnet-0666b2c8-7a60d4cf.svg" x="1093.1" y="398.5" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="1119.1" y="411.35"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Private subnet 2</text>
+  
+</g>
+
+<g id="edge-submit" class="edge edge-flow edge-solid">
+  <path d="M 131 194 L 389.1 194" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="260.05" cy="178" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="260.05" y="182" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="submit" x="195.525" y="186" text-anchor="middle" font-size="11" fill="#163964">Submit documents</text>
+</g>
+
+<g id="edge-invoke" class="edge edge-flow edge-solid">
+  <path d="M 437.1 194 L 520 194 L 520 330 L 563.1 330" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="462.55" cy="178" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="462.55" y="182" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="invoke" x="524" y="322" text-anchor="middle" font-size="11" fill="#163964">Invoke</text>
+</g>
+
+<g id="edge-store_input" class="edge edge-flow edge-solid">
+  <path d="M 611.1 318 L 752 318 L 752 258 L 789.1 258" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="681.55" cy="302" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="681.55" y="306" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="store_input" x="719.1" y="338" text-anchor="middle" font-size="11" fill="#163964">Store originals</text>
+</g>
+
+<g id="edge-queue_job" class="edge edge-flow edge-solid">
+  <path d="M 611.1 330 L 668 330 L 668 414 L 787.1 414" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="695.55" cy="398" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="695.55" y="402" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="queue_job" x="682.8875" y="374" text-anchor="middle" font-size="11" fill="#163964">Queue jobs</text>
+</g>
+
+<g id="edge-jobs_w1" class="edge edge-flow edge-solid">
+  <path d="M 835.1 390 L 904 390 L 904 229.5 L 1150.9 229.5" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1027.45" cy="245.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1027.45" y="249.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="jobs_w1" x="1058.3125" y="249.5" text-anchor="middle" font-size="11" fill="#163964">Jobs</text>
+</g>
+
+<g id="edge-jobs_w2" class="edge edge-flow edge-solid">
+  <path d="M 835.1 402 L 904 402 L 904 449.5 L 1150.9 449.5" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1027.45" cy="465.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1027.45" y="469.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="jobs_w2" x="956" y="441.5" text-anchor="middle" font-size="11" fill="#163964">Jobs</text>
+</g>
+
+<g id="edge-read_w1" class="edge edge-flow edge-solid">
+  <path d="M 837.1 258 L 872 258 L 872 217.5 L 1150.9 217.5" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1011.45" cy="201.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1011.45" y="205.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="read_w1" x="941.725" y="209.5" text-anchor="middle" font-size="11" fill="#163964">Read input</text>
+</g>
+
+<g id="edge-read_w2" class="edge edge-flow edge-solid">
+  <path d="M 837.1 270 L 973.1 270 L 973.1 437.5 L 1150.9 437.5" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1062" cy="421.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1062" y="425.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="read_w2" x="930.85" y="294.9375" text-anchor="middle" font-size="11" fill="#163964">Read input</text>
+</g>
+
+<g id="edge-out_w1" class="edge edge-flow edge-solid">
+  <path d="M 1198.9 205.5 L 1416 205.5 L 1416 440 L 1496.1 440 L 1496.1 466" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1307.45" cy="189.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1307.45" y="193.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="out_w1" x="1464.3" y="437.50000000000006" text-anchor="middle" font-size="11" fill="#163964">Write output</text>
+</g>
+
+<g id="edge-out_w2" class="edge edge-flow edge-solid">
+  <path d="M 1198.9 449.5 L 1432 449.5 L 1432 478 L 1472.1 478" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1315.45" cy="465.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1315.45" y="469.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="out_w2" x="1426.9" y="469.5" text-anchor="middle" font-size="11" fill="#163964">Write output</text>
+</g>
+
+<g id="edge-status_w1" class="edge edge-flow edge-solid">
+  <path d="M 1198.9 217.5 L 1447.1 217.5 L 1447.1 182 L 1471.1 182" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1431.1" cy="190.875" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1431.1" y="194.875" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="status_w1" x="1362.9" y="209.5" text-anchor="middle" font-size="11" fill="#163964">Update status</text>
+</g>
+
+<g id="edge-status_w2" class="edge edge-flow edge-solid">
+  <path d="M 1198.9 461.5 L 1264 461.5 L 1264 170 L 1471.1 170" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1367.55" cy="154" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1367.55" y="158" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="status_w2" x="1300" y="162" text-anchor="middle" font-size="11" fill="#163964">Update status</text>
+</g>
+
+<g id="edge-done_w1" class="edge edge-flow edge-solid">
+  <path d="M 1198.9 229.5 L 1408 229.5 L 1408 310 L 1472.1 310" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1303.45" cy="245.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1303.45" y="249.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="done_w1" x="1474.45" y="269.5" text-anchor="middle" font-size="11" fill="#163964">Publish completion</text>
+</g>
+
+<g id="edge-done_w2" class="edge edge-flow edge-solid">
+  <path d="M 1198.9 437.5 L 1408 437.5 L 1408 322 L 1472.1 322" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1303.45" cy="421.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1303.45" y="425.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="done_w2" x="1341.55" y="398.1875" text-anchor="middle" font-size="11" fill="#163964">Publish completion</text>
+</g>
+
+<g id="edge-notify" class="edge edge-flow edge-solid">
+  <path d="M 1520.1 310 L 1772.2000000000003 310" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1646.15" cy="294" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1646.15" y="298" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
+  <text class="edge-label" data-edge-label="notify" x="1662.15" y="330" text-anchor="middle" font-size="11" fill="#163964">Completion notice</text>
+</g>
+
+<g id="edge-download" class="edge edge-flow edge-solid">
+  <path d="M 131 206 L 200 206 L 200 474 L 386.1 474" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="293.05" cy="458" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="293.05" y="462" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="download" x="252" y="466" text-anchor="middle" font-size="11" fill="#163964">Download</text>
+</g>
+
+<g id="edge-origin" class="edge edge-flow edge-solid">
+  <path d="M 434.1 474 L 464 474 L 464 572.5 L 1432 572.5 L 1432 490 L 1472.1 490" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="948" cy="556.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="948" y="560.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
+  <text class="edge-label" data-edge-label="origin" x="892" y="564.5" text-anchor="middle" font-size="11" fill="#163964">Origin fetch</text>
+</g>
+
+<g id="edge-dead_letter" class="edge edge-fail edge-solid">
+  <path d="M 787.1 402 L 727.1 402 L 727.1 430 L 327.1 430 L 327.1 280 L 411.1 280 L 411.1 298" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow-red)"/>
+  
+  
+  <text class="edge-label" data-edge-label="dead_letter" x="451.1" y="422" text-anchor="middle" font-size="11" fill="#D92D20">Max attempts</text>
+</g>
+
+<g id="edge-inspect_dlq" class="edge edge-peer edge-dashed">
+  <path d="M 1796.2000000000003 285 L 1796.2000000000003 62 L 495.1 62 L 495.1 310 L 435.1 310" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
+  
+  
+  <text class="edge-label" data-edge-label="inspect_dlq" x="1632.2000000000003" y="54" text-anchor="middle" font-size="11" fill="#163964">Inspect</text>
+</g>
+
+<g id="edge-inspect_status" class="edge edge-peer edge-dashed">
+  <path d="M 1772.2000000000003 297 L 1728 297 L 1728 170 L 1519.1 170" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
+  
+  
+  <text class="edge-label" data-edge-label="inspect_status" x="1636" y="162" text-anchor="middle" font-size="11" fill="#163964">Inspect</text>
+</g>
+
+<g id="edge-redrive" class="edge edge-flow edge-dashed">
+  <path d="M 435.1 322 L 495.1 322 L 495.1 422 L 717.1 422 L 717.1 390 L 787.1 390" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 435.1 322 L 495.1 322 L 495.1 422 L 717.1 422 L 717.1 390 L 787.1 390" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="redrive" x="515.1" y="414" text-anchor="middle" font-size="11" fill="#163964">Redrive</text>
+</g>
+
+<g id="res-client">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="83" y="170" width="48" height="48"/>
+  <text x="106.55000000000001" y="234" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="106.55000000000001" y="252" text-anchor="middle" font-size="11" font-style="italic">Document intake client</text>
+</g>
+
+<g id="res-apigw">
+  <image href="catalog-icons/aws/aws-resource-api-gateway-a91afd65-2aabe4b4.svg" x="389.1" y="170" width="48" height="48"/>
+  <text x="413.40000000000003" y="234" text-anchor="middle" font-size="12" font-weight="500">API Gateway</text>
+  
+</g>
+
+<g id="res-intake">
+  <image href="catalog-icons/aws/aws-resource-lambda-5818c80c-4738d75e.svg" x="563.1" y="306" width="48" height="48"/>
+  <text x="587.45" y="370" text-anchor="middle" font-size="12" font-weight="500">Lambda</text>
+  <text x="587.45" y="388" text-anchor="middle" font-size="11" font-style="italic">Intake handler</text>
+</g>
+
+<g id="res-s3_in">
+  <image href="catalog-icons/aws/aws-resource-s3-b92c5101-c4cde455.svg" x="789.1" y="234" width="48" height="48"/>
+  <text x="813.4" y="298" text-anchor="middle" font-size="12" font-weight="500">S3</text>
+  <text x="813.4" y="316" text-anchor="middle" font-size="11" font-style="italic">Input bucket</text>
+</g>
+
+<g id="res-jobs">
+  <image href="catalog-icons/aws/aws-resource-simple-queue-service-bbab2545-51201074.svg" x="787.1" y="378" width="48" height="48"/>
+  <text x="811.1" y="442" text-anchor="middle" font-size="12" font-weight="500">Simple Queue Service</text>
+  <text x="811.1" y="460" text-anchor="middle" font-size="11" font-style="italic">Jobs queue</text>
+</g>
+
+<g id="res-dlq">
+  <image href="catalog-icons/aws/aws-resource-simple-queue-service-bbab2545-51201074.svg" x="387.1" y="298" width="48" height="48"/>
+  <text x="411.1" y="362" text-anchor="middle" font-size="12" font-weight="500">Simple Queue Service</text>
+  <text x="411.1" y="380" text-anchor="middle" font-size="11" font-style="italic">Dead-letter queue</text>
+</g>
+
+<g id="res-worker1">
+  <image href="catalog-icons/aws/aws-resource-fargate-003cc528-de155c75.svg" x="1150.9" y="193.5" width="48" height="48"/>
+  <text x="1175.1000000000001" y="257.5" text-anchor="middle" font-size="12" font-weight="500">Fargate</text>
+  <text x="1175.1000000000001" y="275.5" text-anchor="middle" font-size="11" font-style="italic">Worker 1</text>
+</g>
+
+<g id="res-worker2">
+  <image href="catalog-icons/aws/aws-resource-fargate-003cc528-de155c75.svg" x="1150.9" y="425.5" width="48" height="48"/>
+  <text x="1175.1000000000001" y="489.5" text-anchor="middle" font-size="12" font-weight="500">Fargate</text>
+  <text x="1175.1000000000001" y="507.5" text-anchor="middle" font-size="11" font-style="italic">Worker 2</text>
+</g>
+
+<g id="res-s3_out">
+  <image href="catalog-icons/aws/aws-resource-s3-b92c5101-c4cde455.svg" x="1472.1" y="466" width="48" height="48"/>
+  <text x="1496.425" y="530" text-anchor="middle" font-size="12" font-weight="500">S3</text>
+  <text x="1496.425" y="548" text-anchor="middle" font-size="11" font-style="italic">Output bucket</text>
+</g>
+
+<g id="res-status">
+  <image href="catalog-icons/aws/aws-resource-dynamodb-ed169f04-fd4e8732.svg" x="1471.1" y="146" width="48" height="48"/>
+  <text x="1495.35" y="210" text-anchor="middle" font-size="12" font-weight="500">DynamoDB</text>
+  <text x="1495.35" y="228" text-anchor="middle" font-size="11" font-style="italic">Job status</text>
+</g>
+
+<g id="res-done">
+  <image href="catalog-icons/aws/aws-resource-simple-notification-service-f0781cd5-bf25224d.svg" x="1472.1" y="298" width="48" height="48"/>
+  <text x="1495.8" y="362" text-anchor="middle" font-size="12" font-weight="500">Simple Notification</text>
+  <text x="1495.8" y="378" text-anchor="middle" font-size="12" font-weight="500">Service</text>
+  <text x="1495.8" y="396" text-anchor="middle" font-size="11" font-style="italic">Completion topic</text>
+</g>
+
+<g id="res-cdn">
+  <image href="catalog-icons/aws/aws-resource-cloudfront-66491998-3e3ea365.svg" x="386.1" y="450" width="48" height="48"/>
+  <text x="410.1" y="514" text-anchor="middle" font-size="12" font-weight="500">CloudFront</text>
+  
+</g>
+
+<g id="res-ops">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-actor-88289826-a985cd8f.svg" x="1772.2000000000003" y="285" width="48" height="48"/>
+  <text x="1796.5750000000003" y="349" text-anchor="middle" font-size="12" font-weight="500">Actor</text>
+  <text x="1796.5750000000003" y="367" text-anchor="middle" font-size="11" font-style="italic">Operations user</text>
+</g>
+</svg>

@@ -1,0 +1,601 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "producer",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "ops",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "org",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "lb",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "completion",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "dead",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "ingest",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "input",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "output",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "vpc",
+      "kind": "group",
+      "type": "gcp.vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "subnet_a",
+      "kind": "group",
+      "type": "gcp.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "worker1",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "subnet_b",
+      "kind": "group",
+      "type": "gcp.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "worker2",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    },
+    {
+      "id": "notifier",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Producer via Cloud Load Balancing to Cloud Run ingest; Cloud Storage and global Pub/Sub jobs; two Compute Engine workers in separate regional subnets of one ..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "upload",
+      "source": "producer",
+      "target": "lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Upload (producer to lb) per the request."
+      }
+    },
+    {
+      "id": "route",
+      "source": "lb",
+      "target": "ingest",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route (lb to ingest) per the request."
+      }
+    },
+    {
+      "id": "write_input",
+      "source": "ingest",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write input (ingest to input) per the request."
+      }
+    },
+    {
+      "id": "publish_job",
+      "source": "ingest",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish job (ingest to jobs) per the request."
+      }
+    },
+    {
+      "id": "jobs_w1",
+      "source": "jobs",
+      "target": "worker1",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs (jobs to worker1) per the request."
+      }
+    },
+    {
+      "id": "jobs_w2",
+      "source": "jobs",
+      "target": "worker2",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs (jobs to worker2) per the request."
+      }
+    },
+    {
+      "id": "read_w1",
+      "source": "input",
+      "target": "worker1",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read input (input to worker1) per the request."
+      }
+    },
+    {
+      "id": "read_w2",
+      "source": "input",
+      "target": "worker2",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read input (input to worker2) per the request."
+      }
+    },
+    {
+      "id": "out_w1",
+      "source": "worker1",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processed objects (worker1 to output) per the request."
+      }
+    },
+    {
+      "id": "out_w2",
+      "source": "worker2",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processed objects (worker2 to output) per the request."
+      }
+    },
+    {
+      "id": "db_w1",
+      "source": "worker1",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Job status (worker1 to db) per the request."
+      }
+    },
+    {
+      "id": "db_w2",
+      "source": "worker2",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Job status (worker2 to db) per the request."
+      }
+    },
+    {
+      "id": "done_w1",
+      "source": "worker1",
+      "target": "completion",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Completion (worker1 to completion) per the request."
+      }
+    },
+    {
+      "id": "done_w2",
+      "source": "worker2",
+      "target": "completion",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Completion (worker2 to completion) per the request."
+      }
+    },
+    {
+      "id": "notify",
+      "source": "completion",
+      "target": "notifier",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Completion events (completion to notifier) per the request."
+      }
+    },
+    {
+      "id": "deliver",
+      "source": "notifier",
+      "target": "ops",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Deliver notice (notifier to ops) per the request."
+      }
+    },
+    {
+      "id": "dead_letter",
+      "source": "jobs",
+      "target": "dead",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "Dead-letter (jobs to dead) per the request."
+      }
+    },
+    {
+      "id": "inspect",
+      "source": "ops",
+      "target": "dead",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Inspect (ops to dead) per the request."
+      }
+    },
+    {
+      "id": "redrive",
+      "source": "dead",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Redrive (dead to jobs) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "producer_root",
+      "component": "producer",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "ops_root",
+      "component": "ops",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "org_root",
+      "component": "org",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "parent",
+      "group": "org",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_in_project",
+      "component": "lb",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "jobs_in_project",
+      "component": "jobs",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "completion_in_project",
+      "component": "completion",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "dead_in_project",
+      "component": "dead",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "ingest_in_region",
+      "component": "ingest",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "input_in_region",
+      "component": "input",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "output_in_region",
+      "component": "output",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "vpc_in_region",
+      "component": "vpc",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "subnet_a_in_vpc",
+      "component": "subnet_a",
+      "relation": "parent",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "worker1_in_subnet_a",
+      "component": "worker1",
+      "relation": "parent",
+      "group": "subnet_a",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "subnet_b_in_vpc",
+      "component": "subnet_b",
+      "relation": "parent",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "worker2_in_subnet_b",
+      "component": "worker2",
+      "relation": "parent",
+      "group": "subnet_b",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "db_in_region",
+      "component": "db",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "notifier_in_region",
+      "component": "notifier",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_outside_region",
+      "component": "lb",
+      "relation": "outside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "jobs_outside_region",
+      "component": "jobs",
+      "relation": "outside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "completion_outside_region",
+      "component": "completion",
+      "relation": "outside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "dead_outside_region",
+      "component": "dead",
+      "relation": "outside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

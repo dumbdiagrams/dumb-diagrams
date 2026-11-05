@@ -137,7 +137,8 @@ test('approved examples are copied byte-for-byte and expose provenance in the do
   for (const provider of ['AWS', 'Azure', 'Google Cloud', 'Cloud-agnostic']) assert.match(html, new RegExp(`<h2[^>]*>${provider}</h2>`));
   const providerLabels = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', 'cloud-agnostic': 'Cloud-agnostic' };
   for (const example of examples) {
-    assert.ok(html.includes(`${providerLabels[example.provider]} · ${example.model} · ${example.generatedOn}`), `${example.id}: provider and run shown`);
+    assert.ok(html.includes(`${providerLabels[example.provider]} · ${example.generatedOn}`), `${example.id}: provider and date shown`);
+    assert.match(html, new RegExp(`for="${example.id}-${example.run}"[^>]*>${example.label.replace(/[.()]/g, '\\$&')}</label>`), `${example.id}: ${example.run} is switchable`);
     assert.ok(publicManifest.examples.some(record => record.id === example.id && record.run === example.run), `${example.id}: public provenance record`);
     for (const key of Object.keys(example.files)) {
       const copied = await readFile(join(dist, 'reviewed-examples', example.files[key]));
