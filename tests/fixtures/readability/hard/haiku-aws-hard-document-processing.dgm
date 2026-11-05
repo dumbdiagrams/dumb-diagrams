@@ -1,0 +1,57 @@
+dgm 1
+diagram aws_document_processing {
+  grammar aws
+  flow lr
+  title "AWS document processing"
+
+  cloud-agnostic.client intake_client "Document intake client"
+  cloud-agnostic.actor ops "Operations user"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.region region "Region" {
+      aws.api-gateway api "API"
+      aws.aws-lambda intake "Intake handler"
+      aws.simple-queue-service jobs "Jobs queue"
+      aws.simple-queue-service dlq "Dead-letter queue"
+      aws.simple-storage-service input_s3 "Input bucket"
+      aws.vpc vpc "VPC" {
+        aws.az az_a "Availability Zone A" {
+          aws.subnet.private subnet_a "Private subnet A" {
+            aws.aws-fargate worker_a "Worker A"
+          }
+        }
+        aws.az az_b "Availability Zone B" {
+          aws.subnet.private subnet_b "Private subnet B" {
+            aws.aws-fargate worker_b "Worker B"
+          }
+        }
+      }
+      aws.simple-storage-service output_s3 "Output bucket"
+      aws.cloudfront downloads "Output delivery"
+      aws.dynamodb status_table "Job status"
+      aws.simple-notification-service completion "Completion notifications"
+    }
+  }
+
+  intake_client -> api { id submit_documents label "submit documents" step 1 }
+  api -> intake { id invoke_intake label "invoke" step 2 }
+  intake -> input_s3 { id store_originals label "store originals" step 3 }
+  intake -> jobs { id queue_jobs label "queue jobs" step 3 }
+  jobs -> worker_a { id consume_job_a label "consume job" step 4 }
+  jobs -> worker_b { id consume_job_b label "consume job" step 4 }
+  jobs -> dlq { id failed_jobs_to_dlq kind fail label "after max attempts" }
+  worker_a -> input_s3 { id read_input_a label "read input" step 5 }
+  worker_b -> input_s3 { id read_input_b label "read input" step 5 }
+  worker_a -> output_s3 { id write_output_a label "write processed file" step 6 }
+  worker_b -> output_s3 { id write_output_b label "write processed file" step 6 }
+  worker_a -> status_table { id update_status_a label "update status" step 6 }
+  worker_b -> status_table { id update_status_b label "update status" step 6 }
+  worker_a -> completion { id publish_completion_a label "publish completion" step 6 }
+  worker_b -> completion { id publish_completion_b label "publish completion" step 6 }
+  intake_client -> downloads { id download_request label "download outputs" step 7 }
+  downloads -> output_s3 { id fetch_output label "fetch from output origin" step 8 }
+  completion -> ops { id notify_ops label "completion notifications" step 7 }
+  ops -> dlq { id inspect_dlq kind peer label "inspect dead letters" style dashed }
+  ops -> status_table { id inspect_status kind peer label "inspect status" style dashed }
+  dlq -> jobs { id redrive_jobs label "redrive messages" style dashed }
+}

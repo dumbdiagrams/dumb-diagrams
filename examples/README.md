@@ -2,7 +2,8 @@
 
 - `prompts/` holds the prompt bank: one plain-language request per case, named
   `<provider>-<difficulty>-<slug>.md`. Give these to a model in a fresh
-  `dumbdiagrams init` workspace, one agent per prompt.
+  `dumbdiagrams init` workspace, one agent per prompt. Each prompt has a
+  reviewed `<id>.reference.json` that `pnpm score:run` checks runs against.
 - `model-runs/<model>-<YYYY-MM-DD>/` holds a run awaiting review, one bundle
   per prompt with the same name. Create it when adding a run.
 - `approved/<model>-<YYYY-MM-DD>/` holds reviewed runs. Studio's example

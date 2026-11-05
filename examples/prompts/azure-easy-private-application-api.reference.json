@@ -1,0 +1,49 @@
+{
+  "$comment": "Reviewed reference for azure-easy-private-application-api.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "azure",
+  "exclusive": false,
+  "roles": {
+    "client": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "vnet"
+    },
+    "vnet": {
+      "types": [
+        "azure.vnet"
+      ]
+    },
+    "apim": {
+      "types": [
+        "azure.api-management-services"
+      ]
+    },
+    "function": {
+      "types": [
+        "azure.function-apps"
+      ]
+    },
+    "endpoint": {
+      "types": [
+        "azure.private-endpoints"
+      ],
+      "within": "vnet"
+    },
+    "sql": {
+      "types": [
+        "azure.sql-database",
+        "azure.azure-sql"
+      ],
+      "outside": "vnet"
+    }
+  },
+  "edges": [
+    "client -> apim",
+    "apim -> function",
+    "function -> endpoint",
+    "endpoint -- sql"
+  ]
+}

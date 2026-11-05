@@ -31,6 +31,8 @@ secrets, unrelated conversation, or hidden reasoning.
 | `counts` | `{id, kind, type, min?, max?, within?, basis}`; at least one bound; `within` names an ancestor group |
 | `placement` | `{id, component, relation, group?, basis}`; `relation` is `inside`, `parent`, `outside`, or `root` |
 | `allowAdditionalResources` | Defaults to `true`; use `false` for an explicit "no other services" requirement |
+| `preferences` | Optional `{numberedSteps?, edgeLabels?, flow?}`; record it only when the user explicitly overrides `preferences.json` for this diagram |
+| `generatedBy` | Optional `{model, reasoning?}`: your model name and selected reasoning or thinking level, exactly as known. Omit unknown values; never guess. Debugging only |
 
 All four lists are required; lists other than `components` may be empty.
 IDs must be unique within each list. Resources and groups share a component
@@ -51,8 +53,9 @@ dumbdiagrams validate --json diagrams/example/diagram.dgm
 ```
 
 Normal validation requires the companion contract and checks source/provider
-validity and completeness. Routing findings are reported separately; `--strict`
-also fails on them. Use `--requirements <path>` for a custom contract or stdin.
+validity, completeness, and the project preferences (with any per-diagram
+override from the contract). Routing findings are reported separately;
+`--strict` also fails on them. Use `--requirements <path>` for a custom contract or stdin.
 
 Keep the contract unchanged during layout repairs. Correct genuine extraction
 mistakes in the contract and explain them in the brief. Never omit a required

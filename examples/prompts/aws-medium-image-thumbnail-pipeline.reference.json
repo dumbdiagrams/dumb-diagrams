@@ -1,0 +1,55 @@
+{
+  "$comment": "Reviewed reference for aws-medium-image-thumbnail-pipeline.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "aws",
+  "exclusive": false,
+  "roles": {
+    "uploader": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ]
+    },
+    "api": {
+      "types": [
+        "aws.api-gateway"
+      ]
+    },
+    "handler": {
+      "types": [
+        "aws.aws-lambda"
+      ]
+    },
+    "queue": {
+      "types": [
+        "aws.simple-queue-service",
+        "aws.simple-queue-service-queue"
+      ]
+    },
+    "processor": {
+      "types": [
+        "aws.aws-lambda"
+      ]
+    },
+    "storage": {
+      "types": [
+        "aws.simple-storage-service",
+        "aws.simple-storage-service-bucket"
+      ]
+    },
+    "cdn": {
+      "types": [
+        "aws.cloudfront"
+      ]
+    }
+  },
+  "edges": [
+    "uploader -> api",
+    "api -> handler",
+    "handler -> storage",
+    "handler -> queue",
+    "queue -- processor",
+    "processor -> storage | processor ~> cdn",
+    "cdn -- storage"
+  ]
+}

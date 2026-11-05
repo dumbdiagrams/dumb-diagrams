@@ -1,0 +1,78 @@
+{
+  "$comment": "Reviewed reference for azure-medium-industrial-iot-telemetry.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "azure",
+  "exclusive": true,
+  "roles": {
+    "sensors": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "subscription"
+    },
+    "dashboard": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "subscription"
+    },
+    "subscription": {
+      "types": [
+        "azure.subscription"
+      ]
+    },
+    "region": {
+      "types": [
+        "azure.region"
+      ],
+      "within": "subscription"
+    },
+    "rg": {
+      "types": [
+        "azure.resource-group"
+      ],
+      "within": "region"
+    },
+    "iothub": {
+      "types": [
+        "azure.iot-hub"
+      ],
+      "within": "rg"
+    },
+    "eventhubs": {
+      "types": [
+        "azure.event-hubs"
+      ],
+      "within": "rg"
+    },
+    "archive": {
+      "types": [
+        "azure.storage-accounts"
+      ],
+      "within": "rg"
+    },
+    "function": {
+      "types": [
+        "azure.function-apps"
+      ],
+      "within": "rg"
+    },
+    "cosmos": {
+      "types": [
+        "azure.azure-cosmos-db"
+      ],
+      "within": "rg"
+    }
+  },
+  "edges": [
+    "sensors -> iothub",
+    "iothub -> eventhubs",
+    "iothub -> archive",
+    "eventhubs -- function",
+    "function -> cosmos",
+    "dashboard -- cosmos"
+  ]
+}

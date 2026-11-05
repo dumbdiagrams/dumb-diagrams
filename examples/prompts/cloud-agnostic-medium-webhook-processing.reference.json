@@ -1,0 +1,98 @@
+{
+  "$comment": "Reviewed reference for cloud-agnostic-medium-webhook-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "cloud-agnostic",
+  "exclusive": true,
+  "roles": {
+    "partner": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "cloud"
+    },
+    "cloud": {
+      "types": [
+        "cloud-agnostic.cloud"
+      ]
+    },
+    "account": {
+      "types": [
+        "cloud-agnostic.account"
+      ],
+      "within": "cloud"
+    },
+    "region": {
+      "types": [
+        "cloud-agnostic.region"
+      ],
+      "within": "account"
+    },
+    "network": {
+      "types": [
+        "cloud-agnostic.network"
+      ],
+      "within": "region"
+    },
+    "edge": {
+      "types": [
+        "cloud-agnostic.boundary"
+      ],
+      "within": "region"
+    },
+    "processing": {
+      "types": [
+        "cloud-agnostic.boundary"
+      ],
+      "within": "network"
+    },
+    "gateway": {
+      "types": [
+        "cloud-agnostic.gateway"
+      ],
+      "within": "edge"
+    },
+    "ingress": {
+      "types": [
+        "cloud-agnostic.function"
+      ],
+      "within": "edge"
+    },
+    "queue": {
+      "types": [
+        "cloud-agnostic.queue"
+      ],
+      "within": "processing"
+    },
+    "processor": {
+      "types": [
+        "cloud-agnostic.function",
+        "cloud-agnostic.container",
+        "cloud-agnostic.server"
+      ],
+      "within": "processing"
+    },
+    "database": {
+      "types": [
+        "cloud-agnostic.database"
+      ],
+      "within": "processing"
+    },
+    "archive": {
+      "types": [
+        "cloud-agnostic.object-storage"
+      ],
+      "within": "region",
+      "outside": "network"
+    }
+  },
+  "edges": [
+    "partner -> gateway",
+    "gateway -> ingress",
+    "ingress -> queue",
+    "ingress -> database",
+    "queue -- processor",
+    "processor -> database",
+    "processor -> archive"
+  ]
+}

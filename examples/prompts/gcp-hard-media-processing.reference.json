@@ -1,0 +1,140 @@
+{
+  "$comment": "Reviewed reference for gcp-hard-media-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "gcp",
+  "exclusive": false,
+  "roles": {
+    "producer": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "organization"
+    },
+    "ops": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "organization"
+    },
+    "organization": {
+      "types": [
+        "gcp.organization"
+      ]
+    },
+    "project": {
+      "types": [
+        "gcp.project"
+      ],
+      "within": "organization"
+    },
+    "region": {
+      "types": [
+        "gcp.region"
+      ],
+      "within": "project"
+    },
+    "vpc": {
+      "types": [
+        "gcp.vpc"
+      ],
+      "within": "project"
+    },
+    "subnet1": {
+      "types": [
+        "gcp.subnet"
+      ],
+      "within": "vpc"
+    },
+    "subnet2": {
+      "types": [
+        "gcp.subnet"
+      ],
+      "within": "vpc"
+    },
+    "lb": {
+      "types": [
+        "gcp.cloud-load-balancing"
+      ],
+      "within": "project"
+    },
+    "ingest": {
+      "types": [
+        "gcp.cloud-run"
+      ],
+      "within": "region"
+    },
+    "storage": {
+      "types": [
+        "gcp.cloud-storage"
+      ],
+      "within": "project"
+    },
+    "sql": {
+      "types": [
+        "gcp.cloud-sql"
+      ],
+      "within": "project"
+    },
+    "jobs": {
+      "types": [
+        "gcp.pub-sub"
+      ],
+      "within": "project",
+      "outside": "region"
+    },
+    "done": {
+      "types": [
+        "gcp.pub-sub"
+      ],
+      "within": "project",
+      "outside": "region"
+    },
+    "deadletter": {
+      "types": [
+        "gcp.pub-sub"
+      ],
+      "within": "project",
+      "outside": "region"
+    },
+    "w1": {
+      "types": [
+        "gcp.compute-engine"
+      ],
+      "within": "subnet1"
+    },
+    "w2": {
+      "types": [
+        "gcp.compute-engine"
+      ],
+      "within": "subnet2"
+    },
+    "notify": {
+      "types": [
+        "gcp.cloud-run"
+      ],
+      "within": "region"
+    }
+  },
+  "edges": [
+    "producer -> lb",
+    "lb -> ingest",
+    "ingest -> storage",
+    "ingest -> jobs",
+    "jobs -- w1",
+    "jobs -- w2",
+    "w1 -- storage",
+    "w2 -- storage",
+    "w1 -> sql",
+    "w2 -> sql",
+    "w1 -> done",
+    "w2 -> done",
+    "done -- notify",
+    "notify -> ops",
+    "jobs -> deadletter",
+    "ops -- deadletter",
+    "deadletter -> jobs | ops -> jobs"
+  ]
+}

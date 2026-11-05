@@ -23,8 +23,9 @@ does not need to write a structured Dumb Diagrams prompt.
 6. Read `requirements.md` and write the requirements contract before the `.dgm`.
    Check it against the prompt: expand "both workers" and similar statements
    into individual components and relationships. Record short prompt evidence
-   or an inference rationale. Consult one relevant example if useful; examples
-   never override the user's architecture.
+   or an inference rationale. Add `generatedBy` with your model name and
+   selected reasoning or thinking level when you know them; omit what you do
+   not know.
 7. Write the `.dgm` using the contract's component and edge IDs, applying
    `preferences.json` (see Project preferences below). Run
    `dumbdiagrams validate <path-to-diagram.dgm>` before layout repairs. Fix all
@@ -67,21 +68,27 @@ when revising an existing diagram.
 
 ## Project preferences
 
-`preferences.json` sets this project's default style. An explicit user request
-overrides any value in it.
+`preferences.json` sets this project's default style, and `dumbdiagrams
+validate` fails when a diagram does not follow it. An explicit user request
+overrides any value: record that override in the diagram's requirements
+contract as `preferences` (for example `{ "numberedSteps": false }`), never by
+editing `preferences.json` for one diagram.
 
 - `numberedSteps` (default `true`): give every solid flow arrow a `step`
   number in the order the request or data moves, so the diagram shows numbered
-  badges. Parallel branches may share a number; leave dashed, peer, and failure
-  connectors unnumbered. When `false`, add steps only if the user asks for
-  numbered stages.
+  badges. Steps run from 1 without gaps; parallel branches may share a number.
+  Leave dashed, peer, and failure connectors unnumbered. When `false`, number
+  no edges.
+- `edgeLabels` (default `true`): give every connector a short label.
+- `flow` (default `lr`): the diagram's `flow` direction.
 
 ## Layout defaults and refinements
 
-For every new diagram, use horizontal left-to-right flow (`flow lr`) unless
-the user explicitly requests vertical/top-to-bottom flow (`flow tb`). Apply
-this default to every provider. Keep the primary sequence left-to-right
-inside nested boundaries too; a horizontal outer flow alone is not enough.
+For every new diagram, use the preferred `flow` (horizontal left-to-right,
+`flow lr`, by default) unless the user explicitly requests another direction.
+Apply this default to every provider. Keep the primary sequence in that
+direction inside nested boundaries too; a matching outer flow alone is not
+enough.
 Use vertical stacking for parallel branches and supporting resources, not
 for successive stages of the main flow.
 
@@ -105,7 +112,7 @@ supporting resources away from the main path. Make the requested edit in the
 named `.dgm` file, validate it, and inspect the result using the working order
 above. Pure visual refinements do not require rewriting the architecture brief.
 
-Briefs must use the same shape as the bundled examples: `Goal`, `Explicit
+Briefs must use the shape shown in `diagrams/README.md`: `Goal`, `Explicit
 requirements`, `Relationships and containment`, and `Inferred decisions and
 exclusions`. Capture the enriched interpretation—not a transcript or hidden
 reasoning—and keep explicit and inferred choices distinguishable. Never

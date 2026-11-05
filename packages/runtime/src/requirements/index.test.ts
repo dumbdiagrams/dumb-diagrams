@@ -1,8 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { createEmptyDocument } from "../core/document.js";
+import { parseDgmResult } from "../dsl/index.js";
 import {
+  checkPreferences,
   checkRequirements,
+  DEFAULT_PREFERENCES,
+  parsePreferences,
   parseRequirements,
   requirementsSchema,
   validateRequirements,
@@ -309,5 +313,44 @@ describe("requirements contract", () => {
         .filter((entry) => entry.code === "additional-resource")
         .map((entry) => entry.elementIds[0]),
     ).toEqual(["api2", "db"]);
+  });
+});
+
+describe("project preferences", () => {
+  const doc = parseDgmResult(`diagram prefs { grammar cloud-agnostic flow lr
+    cloud-agnostic.server a cloud-agnostic.server b cloud-agnostic.server c
+    a -> b { id ab label "send" step 1 }
+    b -> c { id bc step 3 }
+    c -> a { id ca label "retry" style dashed step 4 }
+  }`)._unsafeUnwrap();
+  const codes = (preferences = DEFAULT_PREFERENCES) => checkPreferences(doc, preferences).map((entry) => entry.code);
+
+  it("defaults omitted values and rejects unknown or mistyped ones", () => {
+    expect(parsePreferences('{ "$schema": "./preferences.schema.json" }')._unsafeUnwrap()).toEqual(DEFAULT_PREFERENCES);
+    expect(
+      parsePreferences('{ "numberedSteps": "yes", "badges": true }')
+        ._unsafeUnwrapErr()
+        .issues.map((entry) => entry.code),
+    ).toEqual(["unknown-field", "invalid-boolean"]);
+  });
+
+  it("reports unlabeled edges, numbered secondary edges, step gaps, and flow", () => {
+    expect(codes()).toEqual(["preference-label-missing", "preference-step-secondary", "preference-step-sequence"]);
+    expect(codes({ numberedSteps: false, edgeLabels: false, flow: "tb" })).toEqual([
+      "preference-flow",
+      "preference-step-unwanted",
+      "preference-step-unwanted",
+      "preference-step-unwanted",
+    ]);
+  });
+
+  it("accepts a contract override and model metadata", () => {
+    const contract = {
+      ...base(),
+      preferences: { numberedSteps: false },
+      generatedBy: { model: "claude-sonnet-5.5", reasoning: "low" },
+    };
+    expect(validateRequirements(contract).isOk()).toBe(true);
+    expect(validateRequirements({ ...contract, generatedBy: { model: "" } }).isErr()).toBe(true);
   });
 });

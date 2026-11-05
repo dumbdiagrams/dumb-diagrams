@@ -39,6 +39,7 @@ const SOFT_INVARIANT_CODES = new Set([
   "edge-badge-connector-collision",
   "edge-label-overlap",
   "edge-badge-overlap",
+  "edge-detour",
   "az-asymmetry",
 ]);
 
@@ -60,6 +61,7 @@ const INVARIANT_WEIGHTS: Record<string, number> = {
   "edge-badge-connector-collision": 10_000,
   "edge-label-overlap": 10_000,
   "edge-badge-overlap": 10_000,
+  "edge-detour": 50_000,
   "az-asymmetry": 50_000,
 };
 

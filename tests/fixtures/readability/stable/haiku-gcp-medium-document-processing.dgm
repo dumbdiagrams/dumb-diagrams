@@ -1,0 +1,29 @@
+dgm 1
+diagram gcp_document_processing {
+  grammar gcp
+  flow lr
+  title "Google Cloud document processing"
+
+  cloud-agnostic.actor partner "Partner"
+
+  gcp.organization org "Organization" {
+    gcp.project project "Project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-run intake_service "Intake service"
+        gcp.cloud-storage source_bucket "Source bucket"
+        gcp.pub-sub object_notifications "Object notifications"
+        gcp.cloud-run processing_service "Processing service"
+        gcp.cloud-storage normalized_bucket "Normalized output bucket"
+        gcp.cloud-sql status_db "Status and metadata"
+      }
+    }
+  }
+
+  partner -> intake_service { id upload_documents label "upload documents" step 1 }
+  intake_service -> source_bucket { id store_originals label "store originals" step 2 }
+  source_bucket -> object_notifications { id publish_notifications label "object notifications" step 3 }
+  object_notifications -> processing_service { id deliver_events label "deliver events" step 4 }
+  processing_service -> source_bucket { id read_original label "read original" step 5 }
+  processing_service -> normalized_bucket { id store_normalized label "store normalized output" step 6 }
+  processing_service -> status_db { id write_status label "write status and metadata" step 6 }
+}

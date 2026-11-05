@@ -1,0 +1,61 @@
+dgm 1
+diagram azure_hard_private_order_processing { grammar azure flow lr title "Private Order Processing with Redrive"
+  cloud-agnostic.client public_client "Public client" {
+  }
+  cloud-agnostic.client ops_client "Operations client" {
+  }
+  azure.subscription sub "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group rg "Resource Group" {
+
+        azure.front-door-and-cdn-profiles frontdoor "Front Door" {
+        }
+        azure.api-management-services apim "API Management" {
+        }
+        azure.azure-service-bus workq "Service Bus work queue" {
+        }
+        azure.azure-service-bus dlq "Service Bus DLQ" {
+        }
+        azure.sql-database sql "Azure SQL" {
+        }
+        azure.storage-accounts storage "Storage Account" {
+        }
+        azure.key-vaults kv "Key Vault" {
+        }
+        azure.monitor monitor "Azure Monitor" {
+        }
+        azure.vnet vnet "Application VNet" {
+          azure.subnet appsubnet "Application subnet" {
+            azure.app-services api "App Service API" {
+            }
+            azure.function-apps worker "Function worker" {
+            }
+          }
+          azure.subnet datasubnet "Data subnet" {
+            azure.private-endpoints sqlpe "SQL private endpoint" {
+            }
+            azure.private-endpoints storagepe "Storage private endpoint" {
+            }
+          }
+        }
+      }
+    }
+  }
+  public_client -> frontdoor { id client_frontdoor label "HTTPS request" kind flow step 1 }
+  frontdoor -> apim { id frontdoor_apim label "request" kind flow step 2 }
+  apim -> api { id apim_api label "request" kind flow step 3 }
+  api -> sqlpe { id api_sqlpe label "SQL read/write" kind flow step 4 }
+  sqlpe -> sql { id sqlpe_sql label "private endpoint to SQL" kind flow step 5 }
+  api -> workq { id api_workq label "enqueue work" kind flow step 6 }
+  workq -> worker { id workq_worker label "work item" kind flow step 7 }
+  worker -> storagepe { id worker_storagepe label "private file access" kind flow step 8 }
+  storagepe -> storage { id storagepe_storage label "private endpoint to Storage" kind flow step 9 }
+  worker -> sqlpe { id worker_sqlpe label "status write" kind flow step 10 }
+  workq -> dlq { id work_retry_dlq label "retry limit" kind fail style dashed }
+  ops_client -> dlq { id ops_dlq label "inspect dead letters" kind flow step 11 }
+  dlq -> workq { id dlq_redrive label "redrive" kind flow step 12 }
+  api -> kv { id api_kv label "secret/config read" kind peer style dashed }
+  worker -> kv { id worker_kv label "secret/config read" kind peer style dashed }
+  api -> monitor { id api_monitor label "telemetry" kind peer style dashed }
+  worker -> monitor { id worker_monitor label "telemetry" kind peer style dashed }
+}

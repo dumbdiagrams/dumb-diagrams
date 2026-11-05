@@ -159,7 +159,7 @@ Report security issues as described in [SECURITY.md](../SECURITY.md).
 | Canonical sources | `tests/integration/canonical-sources.test.ts` | Every tracked `.dgm` is canonical and valid |
 | Approved examples | `tests/integration/examples/` | SVG goldens, layout contracts, exact provider warnings |
 | Editor goldens | `packages/editor/src/editor-model.golden.test.ts` | The source each editor operation writes |
-| Baselines | `pnpm check:routing`, `pnpm check:performance` | Reviewed routing warnings; routing work counters |
+| Baselines | `pnpm check:routing`, `pnpm check:readability`, `pnpm check:performance` | Reviewed routing warnings; hard-diagram flow direction and frozen easy/medium SVGs; routing work counters |
 | Browser | `e2e/`, `e2e-packed/` | Studio journeys on Chromium; the packed CLI's Studio |
 | Package | `pnpm smoke:package` | The npm tarball, installed into a clean project |
 

@@ -1,3 +1,6 @@
 {
-  "numberedSteps": true
+  "$schema": "./preferences.schema.json",
+  "numberedSteps": true,
+  "edgeLabels": true,
+  "flow": "lr"
 }

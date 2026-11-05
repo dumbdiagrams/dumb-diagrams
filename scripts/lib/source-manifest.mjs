@@ -65,7 +65,7 @@ export const SOURCE_MANIFEST = Object.freeze({
     { path: "e2e", extensions: [".ts"] },
     { path: "e2e-packed", extensions: [".ts"] },
     { path: "examples/approved", extensions: [".json", ".dgm", ".md", ".svg"] },
-    { path: "examples/prompts", extensions: [".md"] },
+    { path: "examples/prompts", extensions: [".json", ".md"] },
     { path: "packages/cli/src", extensions: [".ts"] },
     { path: "packages/cli/templates", extensions: [".md", ".json"] },
     { path: "packages/editor/src", extensions: [".css", ".ts", ".tsx"] },
@@ -79,6 +79,7 @@ export const SOURCE_MANIFEST = Object.freeze({
     { path: "tests/compat", extensions: [".dgm", ".svg", ".ts"] },
     { path: "tests/fixtures/automatic-quality", extensions: [".dgm", ".json", ".md"] },
     { path: "tests/fixtures/engine", extensions: [".dgm"] },
+    { path: "tests/fixtures/readability", extensions: [".dgm", ".json"] },
     { path: "tests/integration", extensions: [".svg", ".ts"] },
   ]),
 });

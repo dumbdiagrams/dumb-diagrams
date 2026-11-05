@@ -1,0 +1,54 @@
+dgm 1
+diagram gcp_media_processing {
+  grammar gcp
+  flow lr
+  title "Google Cloud media processing"
+
+  cloud-agnostic.actor producer "Media producer"
+
+  gcp.organization org "Organization" {
+    gcp.project project "Project" {
+      gcp.cloud-load-balancing load_balancer "Upload entry"
+      gcp.pub-sub jobs_topic "Jobs topic"
+      gcp.pub-sub dead_letter_topic "Dead-letter topic"
+      gcp.pub-sub completion_topic "Completion topic"
+      gcp.region region "Region" {
+        gcp.cloud-run ingest_service "Ingest service"
+        gcp.cloud-storage input_objects "Input objects"
+        gcp.cloud-storage processed_objects "Processed objects"
+        gcp.cloud-sql job_status_db "Job status"
+        gcp.cloud-run notification_service "Notification service"
+        gcp.vpc vpc "VPC" {
+          gcp.subnet subnet_a "Regional subnet A" {
+            gcp.compute-engine worker_a "Worker A"
+          }
+          gcp.subnet subnet_b "Regional subnet B" {
+            gcp.compute-engine worker_b "Worker B"
+          }
+        }
+      }
+    }
+  }
+
+  cloud-agnostic.client ops_client "Operations client"
+
+  producer -> load_balancer { id upload_media label "upload media" step 1 }
+  load_balancer -> ingest_service { id forward_uploads label "forward uploads" step 2 }
+  ingest_service -> input_objects { id write_input label "write input object" step 3 }
+  ingest_service -> jobs_topic { id publish_job label "publish job" step 3 }
+  jobs_topic -> worker_a { id deliver_job_a label "deliver job" step 4 }
+  jobs_topic -> worker_b { id deliver_job_b label "deliver job" step 4 }
+  worker_a -> input_objects { id read_input_a label "read input" step 5 }
+  worker_b -> input_objects { id read_input_b label "read input" step 5 }
+  worker_a -> processed_objects { id write_output_a label "write processed object" step 6 }
+  worker_b -> processed_objects { id write_output_b label "write processed object" step 6 }
+  worker_a -> job_status_db { id update_status_a label "update job status" step 6 }
+  worker_b -> job_status_db { id update_status_b label "update job status" step 6 }
+  worker_a -> completion_topic { id publish_completion_a label "publish completion" step 7 }
+  worker_b -> completion_topic { id publish_completion_b label "publish completion" step 7 }
+  completion_topic -> notification_service { id deliver_completion label "deliver completion" step 8 }
+  notification_service -> ops_client { id notify_ops label "notify operations" step 9 }
+  jobs_topic -> dead_letter_topic { id failed_jobs_to_dead_letter kind fail label "after max deliveries" }
+  ops_client -> dead_letter_topic { id inspect_dead_letters kind peer style dashed label "inspect dead letters" }
+  dead_letter_topic -> jobs_topic { id redrive_dead_letters style dashed label "deliberate redrive" }
+}

@@ -8,6 +8,11 @@ export interface InvariantFailure {
 
 export const INVARIANT_DIAGNOSTICS_TRUNCATED_CODE = "invariant-diagnostics-truncated";
 
+// A route may bend around content, but not loop around the drawing: flag one
+// that adds both a large absolute and a large relative detour.
+const DETOUR_MIN_EXTRA = 800;
+const DETOUR_MAX_RATIO = 1.5;
+
 export function checkInvariants(layout: LayoutResult, options?: { maxFailures?: number }): InvariantFailure[] {
   const maxFailures = normalizeMaxFailures(options?.maxFailures);
   const failures: InvariantFailure[] = [];
@@ -106,6 +111,18 @@ export function checkInvariants(layout: LayoutResult, options?: { maxFailures?: 
           });
         }
       }
+    }
+
+    const start = edge.points[0]!;
+    const end = edge.points.at(-1)!;
+    const direct = Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
+    const extra = routeLength(edge.points) - direct;
+    if (extra > DETOUR_MIN_EXTRA && extra > direct * DETOUR_MAX_RATIO) {
+      recordFailure({
+        code: "edge-detour",
+        message: `Edge ${edge.id} detours ${Math.round(extra)}px beyond its ${Math.round(direct)}px endpoint distance`,
+        elementIds: [edge.id, edge.source, edge.target],
+      });
     }
   }
 
@@ -243,6 +260,13 @@ export function checkInvariants(layout: LayoutResult, options?: { maxFailures?: 
   }
 
   return failures;
+}
+
+function routeLength(points: Array<{ x: number; y: number }>): number {
+  let length = 0;
+  for (let index = 1; index < points.length; index++)
+    length += Math.abs(points[index]!.x - points[index - 1]!.x) + Math.abs(points[index]!.y - points[index - 1]!.y);
+  return length;
 }
 
 function normalizeMaxFailures(value: number | undefined): number | undefined {

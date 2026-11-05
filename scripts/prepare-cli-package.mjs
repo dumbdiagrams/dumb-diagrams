@@ -57,6 +57,7 @@ copyFiles(projectTemplatesSource, projectTemplatesTarget, [
   ".dumbdiagrams/requirements.schema.json",
   ".dumbdiagrams/requirements.example.json",
   ".dumbdiagrams/preferences.json",
+  ".dumbdiagrams/preferences.schema.json",
   ".dumbdiagrams/providers/aws.md",
   ".dumbdiagrams/providers/azure.md",
   ".dumbdiagrams/providers/cloud-agnostic.md",

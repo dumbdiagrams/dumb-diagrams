@@ -1,0 +1,50 @@
+dgm 1
+diagram gcp_hard_media_processing {
+  grammar gcp
+  flow lr
+  title "GCP media processing"
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Media processing project" {
+      gcp.pub-sub jobs "Global jobs topic"
+      gcp.pub-sub done "Global completion topic"
+      gcp.pub-sub dlq "Dead-letter topic"
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing lb "Cloud Load Balancing"
+        gcp.cloud-run ingest "Cloud Run ingest"
+        gcp.cloud-storage input "Input objects"
+        gcp.cloud-storage processed "Processed objects"
+        gcp.cloud-sql sql "Cloud SQL job status"
+        gcp.cloud-run notify "Cloud Run notification service"
+        gcp.vpc vpc "Worker VPC" {
+          gcp.subnet subnet_a "Worker subnet A" {
+            gcp.compute-engine worker_a "Compute Engine worker A"
+          }
+          gcp.subnet subnet_b "Worker subnet B" {
+            gcp.compute-engine worker_b "Compute Engine worker B"
+          }
+        }
+      }
+    }
+  }
+  cloud-agnostic.actor producer "Media producer"
+  cloud-agnostic.client ops "Operations client"
+  producer -> lb { id producer_lb label "Submit media" kind flow step 1 }
+  lb -> ingest { id lb_ingest label "Ingest" kind flow step 2 }
+  ingest -> input { id ingest_input label "Write input object" kind flow step 3 }
+  ingest -> jobs { id ingest_jobs label "Publish job" kind flow step 4 }
+  jobs -> worker_a { id jobs_worker_a label "Consume job" kind flow step 5 }
+  jobs -> worker_b { id jobs_worker_b label "Consume job" kind flow step 5 }
+  worker_a -> input { id worker_a_read label "Read input" kind flow step 6 }
+  worker_b -> input { id worker_b_read label "Read input" kind flow step 6 }
+  worker_a -> processed { id worker_a_write label "Write processed object" kind flow step 7 }
+  worker_b -> processed { id worker_b_write label "Write processed object" kind flow step 7 }
+  worker_a -> sql { id worker_a_status label "Update job status" kind flow step 8 }
+  worker_b -> sql { id worker_b_status label "Update job status" kind flow step 8 }
+  worker_a -> done { id worker_a_done label "Publish completion" kind flow step 9 }
+  worker_b -> done { id worker_b_done label "Publish completion" kind flow step 9 }
+  done -> notify { id done_notify label "Deliver completion" kind flow step 10 }
+  notify -> ops { id notify_ops label "Completion notification" kind flow step 11 }
+  jobs -> dlq { id jobs_dlq label "Dead-letter" kind fail }
+  ops -> dlq { id ops_inspect label "Inspect dead letters" kind flow step 12 }
+  dlq -> jobs { id ops_redrive label "Deliberate redrive" kind flow step 13 }
+}

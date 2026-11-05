@@ -9,6 +9,7 @@ import { checkInvariants } from "./invariants.js";
 import { renderSvg } from "./svg.js";
 import { validateEmbeddedAssets } from "./validate-assets.js";
 import { compileAutomaticLayout } from "./automatic-layout.js";
+import { readabilityMetrics } from "./readability.js";
 
 export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
   const catalog = getCatalogMap();
@@ -33,6 +34,7 @@ export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
     ok: true as const,
     issues: [...issues, ...routingWarnings],
     invariantFailures,
+    readability: readabilityMetrics(doc, fullLayout, invariantFailures),
     layout: fullLayout,
     svg,
   };

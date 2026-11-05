@@ -1,0 +1,26 @@
+dgm 1
+diagram aws-medium-image-thumbnail-pipeline {
+  grammar aws
+  flow lr
+  title "Image thumbnail pipeline"
+  cloud-agnostic.client uploader "Image uploader"
+  aws.cloud cloud "AWS Cloud" {
+    aws.api-gateway api "Image API"
+    aws.aws-lambda handler "Upload handler"
+    aws.simple-storage-service original "Original images"
+    aws.simple-queue-service jobs "Thumbnail jobs"
+    aws.aws-lambda processor "Thumbnail processor"
+    aws.cloudfront cdn "Content delivery"
+    aws.simple-storage-service thumb "Thumbnail images"
+  }
+  uploader -> api { id upload_api label "submit image" kind flow step 1 }
+  api -> handler { id api_handler label "upload request" kind flow step 2 }
+  handler -> original { id handler_original label "store original" kind flow step 3 }
+  handler -> jobs { id handler_jobs label "enqueue job" kind flow step 4 }
+  jobs -> processor { id jobs_processor label "thumbnail job" kind flow step 5 }
+  processor -> thumb { id processor_thumb label "create thumbnail" kind flow step 6 }
+  cdn -> original { id cdn_original label "origin request" kind peer }
+  cdn -> thumb { id cdn_thumb label "origin request" kind peer }
+  original -> cdn { id original_cdn label "original image" kind flow step 8 }
+  thumb -> cdn { id thumb_cdn label "thumbnail image" kind flow step 9 }
+}

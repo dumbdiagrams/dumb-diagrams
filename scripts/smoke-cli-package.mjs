@@ -1,5 +1,14 @@
-import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
@@ -50,6 +59,7 @@ const required = [
   "package/dist/templates/project/.dumbdiagrams/requirements.schema.json",
   "package/dist/templates/project/.dumbdiagrams/requirements.example.json",
   "package/dist/templates/project/.dumbdiagrams/preferences.json",
+  "package/dist/templates/project/.dumbdiagrams/preferences.schema.json",
   "package/dist/templates/project/.dumbdiagrams/providers/aws.md",
   "package/dist/templates/project/.dumbdiagrams/providers/azure.md",
   "package/dist/templates/project/.dumbdiagrams/providers/gcp.md",
@@ -145,6 +155,7 @@ try {
     ".dumbdiagrams/requirements.schema.json",
     ".dumbdiagrams/requirements.example.json",
     ".dumbdiagrams/preferences.json",
+    ".dumbdiagrams/preferences.schema.json",
     ".dumbdiagrams/providers/aws.md",
     ".dumbdiagrams/providers/azure.md",
     ".dumbdiagrams/providers/gcp.md",
@@ -158,6 +169,22 @@ try {
   mkdirSync(smokeDir, { recursive: true });
   for (const file of ["diagram.dgm", "requirements.json"]) copyFileSync(join(smokeBundle, file), join(smokeDir, file));
   const smokeDiagram = join(smokeDir, "diagram.dgm");
+  // The approved bundle predates numbered, fully labeled defaults: the project
+  // preferences must reject it until the user configures that style.
+  const defaults = JSON.parse(
+    spawnSync(npxCommand, ["--yes", `--package=${tarballPath}`, "dumbdiagrams", "validate", "--json", smokeDiagram], {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
+    }).stdout,
+  );
+  if (defaults.ok || defaults.files[0]?.preferences.status !== "fail") {
+    throw new Error("packed CLI did not enforce the initialized project preferences");
+  }
+  writeFileSync(
+    join(initializedProject, ".dumbdiagrams/preferences.json"),
+    `${JSON.stringify({ numberedSteps: false, edgeLabels: false, flow: "lr" }, null, 2)}\n`,
+  );
   if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams validate failed");
   }

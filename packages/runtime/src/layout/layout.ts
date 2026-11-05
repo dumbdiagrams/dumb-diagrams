@@ -28,7 +28,7 @@ type LayoutChild = {
   h: number;
 };
 
-type RegionColumn = "left" | "center" | "right";
+type RegionColumn = "left" | "feed" | "center" | "right";
 
 export function layoutDocument(doc: DiagramDocument, options: { compoundFlow?: boolean } = {}): LayoutResult {
   const state: LayoutState = {
@@ -354,7 +354,12 @@ function layoutRegionGroup(doc: DiagramDocument, group: Group, state: LayoutStat
     // authored child order on the primary axis and move dashed-only support
     // boundaries (IAM, monitoring, telemetry, and similar concerns) below it.
     const participantIds = new Set(participants);
-    const primary = children.filter((child) => participantIds.has(child.id));
+    const rank = new Map((childFlowLayers(doc, group) ?? []).flatMap((layer, index) => layer.map((id) => [id, index])));
+    const primary = children
+      .filter((child) => participantIds.has(child.id))
+      .map((child, index) => ({ child, index }))
+      .sort((a, b) => (rank.get(a.child.id) ?? 0) - (rank.get(b.child.id) ?? 0) || a.index - b.index)
+      .map(({ child }) => child);
     const support = children.filter((child) => !participantIds.has(child.id));
     const gaps = primary.slice(1).map((child, index) => genericChildGap(doc, primary[index]!, child, state));
     const primaryW = primary.reduce((sum, item, index) => sum + item.w + (index ? gaps[index - 1]! : 0), 0);
@@ -390,12 +395,15 @@ function layoutRegionGroup(doc: DiagramDocument, group: Group, state: LayoutStat
   }
   const columns: Record<RegionColumn, LayoutChild[]> = {
     left: [],
+    feed: [],
     center: [],
     right: [],
   };
 
+  const feeders = vpcFeeders(doc, group);
   for (const child of children) {
-    columns[regionColumn(doc, child)].push(child);
+    const column = regionColumn(doc, child);
+    columns[column === "right" && feeders.has(child.id) ? "feed" : column].push(child);
   }
 
   const columnSizes = (items: LayoutChild[]) => ({
@@ -406,7 +414,9 @@ function layoutRegionGroup(doc: DiagramDocument, group: Group, state: LayoutStat
   const center = columnSizes(columns.center);
   const right = columnSizes(columns.right);
   const contentH = Math.max(left.h, center.h, right.h, 40);
-  const activeColumns = (["left", "center", "right"] as RegionColumn[]).filter((column) => columns[column].length > 0);
+  const activeColumns = (["left", "feed", "center", "right"] as RegionColumn[]).filter(
+    (column) => columns[column].length > 0,
+  );
   const contentW = activeColumns.reduce(
     (width, column, index) => width + (index > 0 ? H_GAP : 0) + columnSizes(columns[column]).w,
     0,
@@ -1155,6 +1165,40 @@ function placeStack(state: LayoutState, items: LayoutChild[], x: number, y: numb
     placeLayoutChild(state, item, x, y, doc);
     y += item.h + V_GAP;
   }
+}
+
+/** Region children whose solid flow reaches a VPC without first coming out of one. */
+function vpcFeeders(doc: DiagramDocument, group: Group): Set<ID> {
+  const owners = new Map<ID, ID>();
+  const collect = (id: ID, owner: ID): void => {
+    if (getResource(doc, id)) owners.set(id, owner);
+    else for (const child of getGroup(doc, id)?.children ?? []) collect(child, owner);
+  };
+  for (const child of group.children) collect(child, child);
+  const vpcs = group.children.filter((id) => getGroup(doc, id)?.kind === "vpc");
+  const forward = new Map<ID, Set<ID>>();
+  const backward = new Map<ID, Set<ID>>();
+  for (const edge of doc.edges) {
+    if (edge.style === "dashed" || edge.kind === "fail" || edge.kind === "peer") continue;
+    const source = owners.get(edge.source);
+    const target = owners.get(edge.target);
+    if (!source || !target || source === target) continue;
+    forward.set(source, (forward.get(source) ?? new Set()).add(target));
+    backward.set(target, (backward.get(target) ?? new Set()).add(source));
+  }
+  const reach = (edges: Map<ID, Set<ID>>): Set<ID> => {
+    const seen = new Set<ID>(vpcs);
+    const queue = [...vpcs];
+    for (let index = 0; index < queue.length; index++)
+      for (const next of edges.get(queue[index]!) ?? [])
+        if (!seen.has(next)) {
+          seen.add(next);
+          queue.push(next);
+        }
+    return seen;
+  };
+  const downstream = reach(forward);
+  return new Set([...reach(backward)].filter((id) => !downstream.has(id)));
 }
 
 function regionColumn(doc: DiagramDocument, child: LayoutChild): RegionColumn {

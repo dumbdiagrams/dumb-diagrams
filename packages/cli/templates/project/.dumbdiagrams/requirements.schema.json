@@ -53,11 +53,51 @@
       "type": "boolean",
       "default": true
     },
+    "preferences": {
+      "$ref": "#/$defs/preferences"
+    },
+    "generatedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "reasoning": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
     "$schema": {
       "type": "string"
     }
   },
   "$defs": {
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numberedSteps": {
+          "type": "boolean"
+        },
+        "edgeLabels": {
+          "type": "boolean"
+        },
+        "flow": {
+          "enum": [
+            "lr",
+            "tb"
+          ]
+        }
+      }
+    },
     "basis": {
       "type": "object",
       "additionalProperties": false,

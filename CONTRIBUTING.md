@@ -69,6 +69,7 @@ reviewing why it changed; never edit a baseline just to turn CI green.
 | Editor operation goldens (`packages/editor/src/__snapshots__/editor-model/`) | `pnpm exec vitest run -u packages/editor/src/editor-model.golden.test.ts` | Each `.dgm` diff is the source an operation writes |
 | Layout contracts (`examples/layout-contracts.json`) | `pnpm update:layout-contracts` | Geometry changes for the approved examples |
 | Routing warnings (`examples/routing-warnings.json`) | Edit by hand | Inspect the diagram; every entry needs a `reviews[]` note |
+| Readability (`tests/fixtures/readability/baseline.json`) | `node scripts/check-readability.mjs --update` | Render the hard fixtures; stable fixtures must not change |
 | Routing work counters (`scripts/performance-baseline.json`) | `node scripts/check-performance-budget.mjs --update` | CI fails when a counter grows more than 25% |
 
 In CI, a missing snapshot fails instead of being written.

@@ -282,6 +282,11 @@
       "message": "Edges warehouse_to_worker and db_replication cross"
     },
     {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-detour",
+      "message": "Edge api_to_payment detours 1428px beyond its 896px endpoint distance"
+    },
+    {
       "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
       "code": "edge-crossing",
       "message": "Edges upload and to_notify cross"
@@ -779,6 +784,13 @@
       "message": "Edges warehouse_to_worker and db_replication cross",
       "status": "reviewed",
       "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-detour",
+      "message": "Edge api_to_payment detours 1428px beyond its 896px endpoint distance",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05): the external payment service sits beyond the recovery region, so the request loops around it. Recorded when edge-detour was introduced; the next approved run should remove it."
     },
     {
       "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",

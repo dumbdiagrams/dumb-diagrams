@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { getCatalogEntry } from "../catalog/catalog.js";
-import type { DiagramDocument, EdgeKind, Grammar } from "../core/types.js";
+import type { DiagramDocument, EdgeKind, FlowDirection, Grammar } from "../core/types.js";
 
 export interface RequirementBasis {
   kind: "explicit" | "inferred";
@@ -35,6 +35,18 @@ export interface PlacementRequirement {
   group?: string;
   basis: RequirementBasis;
 }
+/** Project style defaults from `.dumbdiagrams/preferences.json`. */
+export interface DiagramPreferences {
+  numberedSteps: boolean;
+  edgeLabels: boolean;
+  flow: FlowDirection;
+}
+export const DEFAULT_PREFERENCES: DiagramPreferences = { numberedSteps: true, edgeLabels: true, flow: "lr" };
+/** Self-reported authoring model, recorded for debugging only. */
+export interface GeneratedBy {
+  model: string;
+  reasoning?: string;
+}
 export interface RequirementsDocument {
   version: 1;
   grammar: Grammar;
@@ -43,6 +55,9 @@ export interface RequirementsDocument {
   counts: CountRequirement[];
   placement: PlacementRequirement[];
   allowAdditionalResources?: boolean;
+  /** Per-diagram override recorded when the user explicitly asks for a different style. */
+  preferences?: Partial<DiagramPreferences>;
+  generatedBy?: GeneratedBy;
   $schema?: string;
 }
 export interface RequirementsIssue {
@@ -68,8 +83,11 @@ const rootKeys = [
   "counts",
   "placement",
   "allowAdditionalResources",
+  "preferences",
+  "generatedBy",
   "$schema",
 ];
+const preferenceKeys = ["numberedSteps", "edgeLabels", "flow"];
 const basisKeys = ["kind", "text"];
 
 function issue(
@@ -151,6 +169,17 @@ export function validateRequirements(value: unknown): Result<RequirementsDocumen
       issues.push(issue("invalid-boolean", "allowAdditionalResources must be a boolean", "$.allowAdditionalResources"));
     if (value.$schema !== undefined && typeof value.$schema !== "string")
       issues.push(issue("invalid-schema-uri", "$schema must be a string", "$.$schema"));
+    if (value.preferences !== undefined) checkPreferenceValues(value.preferences, "$.preferences", issues);
+    if (value.generatedBy !== undefined) {
+      if (!isRecord(value.generatedBy))
+        issues.push(issue("invalid-generated-by", "generatedBy must be an object", "$.generatedBy"));
+      else {
+        unknownKeys(value.generatedBy, ["model", "reasoning"], "$.generatedBy", issues);
+        reqString(value.generatedBy.model, "$.generatedBy.model", issues);
+        if (value.generatedBy.reasoning !== undefined)
+          reqString(value.generatedBy.reasoning, "$.generatedBy.reasoning", issues);
+      }
+    }
 
     const components = Array.isArray(value.components) ? value.components : [];
     const relationships = Array.isArray(value.relationships) ? value.relationships : [];
@@ -304,6 +333,91 @@ export function validateRequirements(value: unknown): Result<RequirementsDocumen
     const message = cause instanceof Error ? cause.message : "Invalid requirements value";
     return fail("invalid-document", message, [issue("invalid-document", message, "$")]);
   }
+}
+
+function checkPreferenceValues(
+  value: unknown,
+  path: string,
+  issues: RequirementsIssue[],
+  extraKeys: string[] = [],
+): void {
+  if (!isRecord(value)) {
+    issues.push(issue("invalid-preferences", "preferences must be an object", path));
+    return;
+  }
+  unknownKeys(value, [...preferenceKeys, ...extraKeys], path, issues);
+  for (const key of ["numberedSteps", "edgeLabels"])
+    if (value[key] !== undefined && typeof value[key] !== "boolean")
+      issues.push(issue("invalid-boolean", `${key} must be a boolean`, `${path}.${key}`));
+  if (value.flow !== undefined && value.flow !== "lr" && value.flow !== "tb")
+    issues.push(issue("invalid-flow", "flow must be lr or tb", `${path}.flow`));
+}
+
+/** Parse `.dumbdiagrams/preferences.json`; omitted values take the defaults. */
+export function parsePreferences(source: string): Result<DiagramPreferences, RequirementsParseError> {
+  let value: unknown;
+  try {
+    value = JSON.parse(source);
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Invalid JSON";
+    return fail("invalid-json", `Preferences are not valid JSON: ${message}`, [issue("invalid-json", message, "$")]);
+  }
+  const issues: RequirementsIssue[] = [];
+  checkPreferenceValues(value, "$", issues, ["$schema"]);
+  if (issues.length) return fail("invalid-preferences", "Preferences document is invalid", issues);
+  const { $schema: _, ...preferences } = value as Record<string, unknown>;
+  return ok({ ...DEFAULT_PREFERENCES, ...(preferences as Partial<DiagramPreferences>) });
+}
+
+/** Check that a diagram follows the effective project style preferences. */
+export function checkPreferences(doc: DiagramDocument, preferences: DiagramPreferences): RequirementsIssue[] {
+  const issues: RequirementsIssue[] = [];
+  if (doc.flow !== preferences.flow)
+    issues.push(
+      issue("preference-flow", `Diagram flow ${doc.flow} does not match preferred flow ${preferences.flow}`, "$.flow"),
+    );
+  const steps = new Set<number>();
+  for (const edge of doc.edges) {
+    const primary = edge.style !== "dashed" && edge.kind !== "fail" && edge.kind !== "peer";
+    if (preferences.edgeLabels && !edge.label?.trim())
+      issues.push(issue("preference-label-missing", `Edge ${edge.id} has no label`, undefined, undefined, [edge.id]));
+    if (!preferences.numberedSteps) {
+      if (edge.step !== undefined)
+        issues.push(
+          issue(
+            "preference-step-unwanted",
+            `Edge ${edge.id} is numbered but numberedSteps is false`,
+            undefined,
+            undefined,
+            [edge.id],
+          ),
+        );
+    } else if (primary && edge.step === undefined)
+      issues.push(
+        issue("preference-step-missing", `Flow edge ${edge.id} has no step`, undefined, undefined, [edge.id]),
+      );
+    else if (!primary && edge.step !== undefined)
+      issues.push(
+        issue(
+          "preference-step-secondary",
+          `Dashed, peer, or failure edge ${edge.id} should not be numbered`,
+          undefined,
+          undefined,
+          [edge.id],
+        ),
+      );
+    if (edge.step !== undefined) steps.add(edge.step);
+  }
+  const ordered = [...steps].sort((a, b) => a - b);
+  const gap = ordered.findIndex((step, index) => step !== index + 1);
+  if (preferences.numberedSteps && gap !== -1)
+    issues.push(
+      issue(
+        "preference-step-sequence",
+        `Steps must run 1..${ordered.length} without gaps; found ${ordered.join(", ")}`,
+      ),
+    );
+  return issues;
 }
 
 function reqString(value: unknown, path: string, issues: RequirementsIssue[]): void {
@@ -479,9 +593,28 @@ export const requirementsSchema = {
     counts: { type: "array", items: { $ref: "#/$defs/count" } },
     placement: { type: "array", items: { $ref: "#/$defs/placement" } },
     allowAdditionalResources: { type: "boolean", default: true },
+    preferences: { $ref: "#/$defs/preferences" },
+    generatedBy: {
+      type: "object",
+      additionalProperties: false,
+      required: ["model"],
+      properties: {
+        model: { type: "string", minLength: 1, pattern: "\\S" },
+        reasoning: { type: "string", minLength: 1, pattern: "\\S" },
+      },
+    },
     $schema: { type: "string" },
   },
   $defs: {
+    preferences: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        numberedSteps: { type: "boolean" },
+        edgeLabels: { type: "boolean" },
+        flow: { enum: ["lr", "tb"] },
+      },
+    },
     basis: {
       type: "object",
       additionalProperties: false,
@@ -553,5 +686,20 @@ export const requirementsSchema = {
         },
       ],
     },
+  },
+} as const;
+
+/** JSON Schema for `.dumbdiagrams/preferences.json`. */
+export const preferencesSchema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "urn:dumb-diagrams:preferences:1",
+  title: "Dumb Diagrams project preferences",
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    $schema: { type: "string" },
+    numberedSteps: { type: "boolean", default: DEFAULT_PREFERENCES.numberedSteps },
+    edgeLabels: { type: "boolean", default: DEFAULT_PREFERENCES.edgeLabels },
+    flow: { enum: ["lr", "tb"], default: DEFAULT_PREFERENCES.flow },
   },
 } as const;

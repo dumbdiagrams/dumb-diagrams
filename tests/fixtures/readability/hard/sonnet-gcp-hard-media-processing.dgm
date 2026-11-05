@@ -1,0 +1,61 @@
+dgm 1
+diagram gcp-media-processing {
+  grammar gcp
+  flow lr
+  title "GCP Media Processing"
+
+  cloud-agnostic.client producer "Media producer"
+  cloud-agnostic.client ops "Operations"
+
+  gcp.organization org "Organization" {
+    gcp.project project "Project" {
+      gcp.cloud-load-balancing lb "Load balancer"
+
+      gcp.region svc_region "us-central1" {
+        gcp.cloud-run ingest "Ingest"
+        gcp.cloud-storage storage "Media"
+        gcp.cloud-sql sql "Job status"
+        gcp.cloud-run notify "Notifier"
+      }
+
+      gcp.pub-sub jobs "Jobs"
+
+      gcp.vpc vpc "VPC" {
+        gcp.region region_a "us-central1" {
+          gcp.subnet subnet_a "Subnet A" {
+            gcp.compute-engine worker_a "Worker A"
+          }
+        }
+
+        gcp.region region_b "europe-west1" {
+          gcp.subnet subnet_b "Subnet B" {
+            gcp.compute-engine worker_b "Worker B"
+          }
+        }
+      }
+
+      gcp.pub-sub done "Completion"
+      gcp.pub-sub dlq "Dead letters"
+    }
+  }
+
+  producer -> lb { id upload label "upload" }
+  lb -> ingest { id to_ingest }
+  ingest -> storage { id store_input label "input" }
+  ingest -> jobs { id publish_job label "job" }
+  jobs -> worker_a { id consume_a }
+  jobs -> worker_b { id consume_b }
+  storage -> worker_a { id read_a label "read" }
+  storage -> worker_b { id read_b label "read" }
+  worker_a -> storage { id write_a label "write" }
+  worker_b -> storage { id write_b label "write" }
+  worker_a -> sql { id status_a label "status" }
+  worker_b -> sql { id status_b label "status" }
+  worker_a -> done { id complete_a }
+  worker_b -> done { id complete_b }
+  done -> notify { id to_notify }
+  notify -> ops { id deliver label "notify" }
+  jobs -> dlq { id dead_letter label "dead-letter" kind fail }
+  ops -> dlq { id inspect label "inspect" style dashed }
+  ops -> jobs { id redrive label "redrive" style dashed }
+}

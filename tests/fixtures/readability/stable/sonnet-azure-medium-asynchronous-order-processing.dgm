@@ -1,0 +1,27 @@
+dgm 1
+diagram azure-asynchronous-order-processing {
+  grammar azure
+  flow lr
+  title "Azure Asynchronous Order Processing"
+
+  cloud-agnostic.client storefront "Storefront"
+
+  cloud-agnostic.boundary orders "Order processing" {
+    azure.api-management-services api "Orders API"
+    azure.function-apps intake "Intake"
+    azure.storage-queue queue "Order queue"
+    azure.storage-container archive "Archive"
+    azure.function-apps processor "Processor"
+    azure.sql-database sql "Orders DB"
+    azure.monitor monitor "Monitor"
+  }
+
+  storefront -> api { id submit label "orders" }
+  api -> intake { id invoke }
+  intake -> queue { id enqueue label "queue" }
+  intake -> archive { id archive-request label "archive" }
+  queue -> processor { id consume-queue label "orders" }
+  archive -> processor { id archive-events label "events" }
+  processor -> sql { id save-order label "save" }
+  processor -> monitor { id send-metrics label "metrics" style dashed kind peer }
+}

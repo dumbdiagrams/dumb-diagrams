@@ -20,7 +20,7 @@ describe("checked-in .dgm sources", () => {
     const parsed = parseDgmResult(source);
     if (parsed.isErr()) throw new Error(`${file}:${formatParseError(parsed.error)}`);
     const canonical = printDgm(parsed.value);
-    const historical = file.startsWith("examples/approved/") || file.startsWith("examples/model-runs/") || file.startsWith("tests/fixtures/automatic-quality/");
+    const historical = file.startsWith("examples/approved/") || file.startsWith("examples/model-runs/") || file.startsWith("tests/fixtures/automatic-quality/") || file.startsWith("tests/fixtures/readability/");
     if (historical) {
       // Preserve historical source bytes alongside original exports and model
       // failures. They must still parse, validate, and canonicalize stably.

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dumb-diagrams:preferences:1",
+  "title": "Dumb Diagrams project preferences",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "numberedSteps": {
+      "type": "boolean",
+      "default": true
+    },
+    "edgeLabels": {
+      "type": "boolean",
+      "default": true
+    },
+    "flow": {
+      "enum": [
+        "lr",
+        "tb"
+      ],
+      "default": "lr"
+    }
+  }
+}

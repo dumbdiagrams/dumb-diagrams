@@ -24,8 +24,16 @@ import {
   renderPortableSvg,
   validateEmbeddedAssets,
   type CompiledDiagram,
+  type ReadabilityMetrics,
 } from "@dumb-diagrams/runtime/render";
-import { checkRequirements, parseRequirements } from "@dumb-diagrams/runtime/requirements";
+import {
+  checkPreferences,
+  checkRequirements,
+  DEFAULT_PREFERENCES,
+  parsePreferences,
+  parseRequirements,
+  type RequirementsDocument,
+} from "@dumb-diagrams/runtime/requirements";
 
 import { createCliUi } from "./cli-ui.js";
 import { loadCatalogSvg } from "./catalog-loader.js";
@@ -210,6 +218,8 @@ interface ValidationFileReport {
   validity: ValidationSection;
   completeness: ValidationSection;
   routing: ValidationSection;
+  preferences: ValidationSection;
+  readability: ReadabilityMetrics | null;
 }
 
 function validateInput(input: string, requirementsOverride?: string, stdinText?: string): ValidationFileReport {
@@ -222,6 +232,9 @@ function validateInput(input: string, requirementsOverride?: string, stdinText?:
   const validity: ValidationSection = { status: "pass", issues: [] };
   const completeness: ValidationSection = { status: "skipped", issues: [] };
   const routing: ValidationSection = { status: "skipped", issues: [] };
+  const preferences: ValidationSection = { status: "skipped", issues: [] };
+  let contract: RequirementsDocument | undefined;
+  let readability: ReadabilityMetrics | null = null;
   let source: string | undefined;
   let doc: DiagramDocument | undefined;
   try {
@@ -283,6 +296,7 @@ function validateInput(input: string, requirementsOverride?: string, stdinText?:
             path: "$",
           });
       } else if (doc) {
+        contract = parsedRequirements.value;
         const issues = checkRequirements(doc, parsedRequirements.value);
         completeness.issues.push(...issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })));
         completeness.status = issues.length ? "fail" : "pass";
@@ -298,6 +312,31 @@ function validateInput(input: string, requirementsOverride?: string, stdinText?:
     });
   }
 
+  const preferencesFile = input === "-" ? undefined : projectPreferencesPath(input);
+  if (doc && (preferencesFile || contract?.preferences)) {
+    let project = DEFAULT_PREFERENCES;
+    if (preferencesFile) {
+      try {
+        const parsed = parsePreferences(readFileSync(preferencesFile, "utf8"));
+        if (parsed.isOk()) project = parsed.value;
+        else {
+          preferences.status = "fail";
+          preferences.issues.push(
+            ...parsed.error.issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })),
+          );
+        }
+      } catch (cause) {
+        preferences.status = "fail";
+        preferences.issues.push({ code: "preferences-file-read-failed", message: errorMessage(cause), elementIds: [] });
+      }
+    }
+    if (preferences.status !== "fail") {
+      const issues = checkPreferences(doc, { ...project, ...contract?.preferences });
+      preferences.issues.push(...issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })));
+      preferences.status = issues.length ? "fail" : "pass";
+    }
+  }
+
   if (doc && validity.status === "pass") {
     try {
       const compiled = compileDiagramResult(doc);
@@ -311,6 +350,7 @@ function validateInput(input: string, requirementsOverride?: string, stdinText?:
           })),
         );
       } else {
+        readability = compiled.value.readability;
         const warnings = compiled.value.issues.filter((issue) => issue.level === "warning");
         routing.issues.push(
           ...warnings.map((issue) => ({
@@ -338,13 +378,34 @@ function validateInput(input: string, requirementsOverride?: string, stdinText?:
     }
   }
   return {
-    ok: validity.status === "pass" && completeness.status === "pass" && routing.status !== "fail",
+    ok:
+      validity.status === "pass" &&
+      completeness.status === "pass" &&
+      preferences.status !== "fail" &&
+      routing.status !== "fail",
     diagram,
     requirements,
     validity,
     completeness,
+    preferences,
     routing,
+    readability,
   };
+}
+
+/** `preferences.json` of the nearest project (`.dumbdiagrams/`) above the diagram, if any. */
+function projectPreferencesPath(input: string): string | undefined {
+  let dir = dirname(resolve(process.cwd(), input));
+  for (;;) {
+    const project = join(dir, ".dumbdiagrams");
+    if (existsSync(project)) {
+      const candidate = join(project, "preferences.json");
+      return existsSync(candidate) ? candidate : undefined;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
 }
 
 function requirementsPath(input: string): string {
@@ -360,6 +421,7 @@ function printValidationReport(report: ValidationFileReport, strict: boolean): v
   for (const [sectionName, section] of [
     ["validity", report.validity],
     ["completeness", report.completeness],
+    ["preferences", report.preferences],
     ["routing", report.routing],
   ] as const) {
     for (const issue of section.issues) {
@@ -609,6 +671,7 @@ function createInitProject(options: ResolvedInitOptions): Result<number, CliErro
     ".dumbdiagrams/requirements.schema.json",
     ".dumbdiagrams/requirements.example.json",
     ".dumbdiagrams/preferences.json",
+    ".dumbdiagrams/preferences.schema.json",
   ];
 
   const prepared = safeTry<{ files: readonly PreparedInitFile[] }, CliError>(function* () {

@@ -14,6 +14,8 @@ pnpm install --frozen-lockfile
 - `tests/fixtures/engine/` holds older engine regression diagrams that unit and browser tests target directly.
 - Every maintained diagram has `requirements.json` (bundles) or `<stem>.requirements.json` (flat files). These contracts freeze component IDs, relationships, counts, and placement from the prompt before authoring.
 - `examples/routing-warnings.json` and `scripts/performance-baseline.json` track routing findings and work.
+- `tests/fixtures/readability/` copies Sonnet, Luna 6, and Haiku 5.5 runs. `pnpm check:readability` fails when a `hard/` diagram gains backward or backtracking flow or crossings over `baseline.json`, and when any `stable/` SVG changes at all.
+- `examples/prompts/<id>.reference.json` is the reviewed contract for each prompt: required roles by catalog type, containment, and edge direction. It does not depend on the model's own IDs or contract.
 - Editor operation goldens are under `packages/editor/src/__snapshots__/editor-model/`.
 - `tests/fixtures/automatic-quality/` freezes 16 Luna 6 inputs. Keep their prompts, sources and contracts unchanged. Their replay requires visible connections, clear captions, compact simple flows and deterministic output. Ordinary crossings use plain lines and remain reported; collisions and shared corridors are not accepted.
 
@@ -23,6 +25,7 @@ Run the focused checks:
 pnpm check:engine
 pnpm test:golden
 pnpm check:routing
+pnpm check:readability
 pnpm check:performance
 ```
 
@@ -42,6 +45,23 @@ Use `--requirements <path>` with a custom contract or stdin. Requirements do not
 change during layout repairs; correcting extraction must be explained in the
 architecture brief. The checker verifies the extracted contract, not the model's
 understanding of natural language.
+
+Validation also applies `.dumbdiagrams/preferences.json` (numbered steps, edge
+labels, flow direction), overridden per diagram by the contract's
+`preferences`. `validate --json` reports `readability`: backward and
+backtracking flow edges, bends, and crossings.
+
+## Score a model run
+
+```bash
+pnpm score:run <run-dir> --model <name> --reasoning <level> [--json score.json]
+```
+
+`<run-dir>` is an initialized project or an `examples/` run folder. Each bundle
+is scored against its prompt reference, the run's preferences, its own
+contract, routing findings, and flow direction; `generatedBy` from
+`requirements.json` is shown next to the model you pass. The script exits 1
+when any bundle misses its reference, preferences, contract, or validity.
 
 `check:engine` checks that every approved bundle satisfies its requirements
 contract and that removing any required component or relationship is reported.

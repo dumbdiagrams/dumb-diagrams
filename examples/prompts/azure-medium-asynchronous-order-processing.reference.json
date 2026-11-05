@@ -1,0 +1,56 @@
+{
+  "$comment": "Reviewed reference for azure-medium-asynchronous-order-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "azure",
+  "exclusive": false,
+  "roles": {
+    "storefront": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ]
+    },
+    "intake": {
+      "types": [
+        "azure.function-apps"
+      ]
+    },
+    "processor": {
+      "types": [
+        "azure.function-apps"
+      ]
+    },
+    "queue": {
+      "types": [
+        "azure.azure-service-bus",
+        "azure.storage-queue"
+      ]
+    },
+    "archive": {
+      "types": [
+        "azure.storage-accounts",
+        "azure.storage-container"
+      ]
+    },
+    "sql": {
+      "types": [
+        "azure.sql-database",
+        "azure.azure-sql"
+      ]
+    },
+    "monitor": {
+      "types": [
+        "azure.monitor"
+      ]
+    }
+  },
+  "edges": [
+    "storefront ~> intake",
+    "intake -> queue",
+    "intake -> archive",
+    "queue -- processor",
+    "archive -- processor",
+    "processor -> sql",
+    "processor -> monitor"
+  ]
+}
