@@ -19,7 +19,7 @@ describe("initialized architecture requirements", () => {
   it("ships the runtime schema unchanged", () => {
     expect(JSON.parse(readFileSync(resolve(template, "requirements.schema.json"), "utf8"))).toEqual(requirementsSchema);
     expect(JSON.parse(readFileSync(resolve(template, "preferences.schema.json"), "utf8"))).toEqual(preferencesSchema);
-    expect(parsePreferences(readFileSync(resolve(template, "preferences.json"), "utf8")).isOk()).toBe(true);
+    expect(parsePreferences(readFileSync(resolve(template, "../preferences.json"), "utf8")).isOk()).toBe(true);
   });
 
   it("provides a valid contract example with distinct intent and source", () => {

@@ -27,7 +27,7 @@ does not need to write a structured Dumb Diagrams prompt.
    selected reasoning or thinking level when you know them; omit what you do
    not know.
 7. Write the `.dgm` using the contract's component and edge IDs, applying
-   `preferences.json` (see Project preferences below). Run
+   the project-root `preferences.json` (see Project preferences below). Run
    `dumbdiagrams validate <path-to-diagram.dgm>` before layout repairs. Fix all
    source, catalog, provider, and completeness failures first.
 8. Repair layout without changing requirements, then run normal validation and
@@ -68,8 +68,9 @@ when revising an existing diagram.
 
 ## Project preferences
 
-`preferences.json` sets this project's default style, and `dumbdiagrams
-validate` fails when a diagram does not follow it. An explicit user request
+The user's `preferences.json` at the project root (beside `.dumbdiagrams/`)
+sets this project's default style, and `dumbdiagrams validate` fails when a
+diagram does not follow it. An explicit user request
 overrides any value: record that override in the diagram's requirements
 contract as `preferences` (for example `{ "numberedSteps": false }`), never by
 editing `preferences.json` for one diagram.

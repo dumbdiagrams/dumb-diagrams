@@ -16,7 +16,7 @@
   edge an `id`. Preserve explicit labels and counts.
 - The format has no comments. Put notes in an `annotation` or the brief.
 - Express the primary flow with directed edges. Use concise edge labels and
-  `step` numbers as `preferences.json` directs. Use dashed edges for peer or
+  `step` numbers as the project-root `preferences.json` directs. Use dashed edges for peer or
   supporting relationships. Add `from`/`to` face hints only when the intended
   attachment is unambiguous and automatic routing needs help.
 - Default every new diagram to horizontal left-to-right layout (`flow lr`);

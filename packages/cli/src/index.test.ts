@@ -479,13 +479,14 @@ describe("runCli", () => {
       expect(
         JSON.parse(readFileSync(join(projectRoot, ".dumbdiagrams/requirements.example.json"), "utf8")),
       ).toHaveProperty("components");
-      expect(JSON.parse(readFileSync(join(projectRoot, ".dumbdiagrams/preferences.json"), "utf8"))).toEqual({
-        $schema: "./preferences.schema.json",
+      expect(JSON.parse(readFileSync(join(projectRoot, "preferences.json"), "utf8"))).toEqual({
+        $schema: "./.dumbdiagrams/preferences.schema.json",
         numberedSteps: true,
         edgeLabels: true,
         flow: "lr",
       });
       expect(existsSync(join(projectRoot, ".dumbdiagrams/preferences.schema.json"))).toBe(true);
+      expect(readFileSync(join(projectRoot, "README.md"), "utf8")).toContain("Edit `preferences.json`");
       const dgmGuide = readFileSync(join(projectRoot, ".dumbdiagrams/dgm.md"), "utf8");
       for (const grammar of ["aws", "azure", "gcp", "cloud-agnostic"]) {
         expect(dgmGuide).toContain(grammar);
@@ -515,7 +516,6 @@ describe("runCli", () => {
       expect(catalog).toContain('"type": "cloud-agnostic.boundary"');
       // Bundled examples would leak reference answers into model evaluations.
       expect(existsSync(join(projectRoot, ".dumbdiagrams/examples"))).toBe(false);
-      expect(existsSync(join(projectRoot, "README.md"))).toBe(false);
     } finally {
       log.mockRestore();
       process.chdir(previous);

@@ -393,13 +393,12 @@ function validateInput(input: string, requirementsOverride?: string, stdinText?:
   };
 }
 
-/** `preferences.json` of the nearest project (`.dumbdiagrams/`) above the diagram, if any. */
+/** `preferences.json` at the root of the nearest project (beside `.dumbdiagrams/`), if any. */
 function projectPreferencesPath(input: string): string | undefined {
   let dir = dirname(resolve(process.cwd(), input));
   for (;;) {
-    const project = join(dir, ".dumbdiagrams");
-    if (existsSync(project)) {
-      const candidate = join(project, "preferences.json");
+    if (existsSync(join(dir, ".dumbdiagrams"))) {
+      const candidate = join(dir, "preferences.json");
       return existsSync(candidate) ? candidate : undefined;
     }
     const parent = dirname(dir);
@@ -670,8 +669,9 @@ function createInitProject(options: ResolvedInitOptions): Result<number, CliErro
     ".dumbdiagrams/requirements.md",
     ".dumbdiagrams/requirements.schema.json",
     ".dumbdiagrams/requirements.example.json",
-    ".dumbdiagrams/preferences.json",
     ".dumbdiagrams/preferences.schema.json",
+    "preferences.json",
+    "README.md",
   ];
 
   const prepared = safeTry<{ files: readonly PreparedInitFile[] }, CliError>(function* () {

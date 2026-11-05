@@ -58,7 +58,8 @@ const required = [
   "package/dist/templates/project/.dumbdiagrams/requirements.md",
   "package/dist/templates/project/.dumbdiagrams/requirements.schema.json",
   "package/dist/templates/project/.dumbdiagrams/requirements.example.json",
-  "package/dist/templates/project/.dumbdiagrams/preferences.json",
+  "package/dist/templates/project/README.md",
+  "package/dist/templates/project/preferences.json",
   "package/dist/templates/project/.dumbdiagrams/preferences.schema.json",
   "package/dist/templates/project/.dumbdiagrams/providers/aws.md",
   "package/dist/templates/project/.dumbdiagrams/providers/azure.md",
@@ -149,12 +150,13 @@ try {
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "README.md",
+    "preferences.json",
     "diagrams/README.md",
     ".dumbdiagrams/instructions.md",
     ".dumbdiagrams/requirements.md",
     ".dumbdiagrams/requirements.schema.json",
     ".dumbdiagrams/requirements.example.json",
-    ".dumbdiagrams/preferences.json",
     ".dumbdiagrams/preferences.schema.json",
     ".dumbdiagrams/providers/aws.md",
     ".dumbdiagrams/providers/azure.md",
@@ -182,7 +184,7 @@ try {
     throw new Error("packed CLI did not enforce the initialized project preferences");
   }
   writeFileSync(
-    join(initializedProject, ".dumbdiagrams/preferences.json"),
+    join(initializedProject, "preferences.json"),
     `${JSON.stringify({ numberedSteps: false, edgeLabels: false, flow: "lr" }, null, 2)}\n`,
   );
   if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {

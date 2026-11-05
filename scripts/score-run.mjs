@@ -38,7 +38,7 @@ if (positionals.length !== 1) {
 }
 const runDir = resolve(positionals[0]);
 const bundleRoot = existsSync(join(runDir, "diagrams")) ? join(runDir, "diagrams") : runDir;
-const preferencesFile = join(runDir, ".dumbdiagrams/preferences.json");
+const preferencesFile = join(runDir, "preferences.json");
 const project = existsSync(preferencesFile)
   ? parsePreferences(readFileSync(preferencesFile, "utf8")).unwrapOr(DEFAULT_PREFERENCES)
   : DEFAULT_PREFERENCES;

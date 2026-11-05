@@ -10,18 +10,21 @@
     },
     "numberedSteps": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Number the main flow arrows with step badges (1, 2, 3, ...)."
     },
     "edgeLabels": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Give every arrow a short label."
     },
     "flow": {
       "enum": [
         "lr",
         "tb"
       ],
-      "default": "lr"
+      "default": "lr",
+      "description": "Main flow direction: lr (left to right) or tb (top to bottom)."
     }
   }
 }

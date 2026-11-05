@@ -12,7 +12,9 @@ handles placement and routing, and you review the result in Studio.
 
 `dumbdiagrams init` creates agent entrypoints (`AGENTS.md`, `CLAUDE.md`,
 `GEMINI.md`) and shared guidance under `.dumbdiagrams/`: the workflow, the
-format, provider notes, the catalog, and examples. Open the project in any
+format, provider notes, the catalog, and examples. You do not need to edit
+these; set your diagram style in the root `preferences.json` instead (see
+[Preferences](../quick-start/#preferences)). Open the project in any
 coding agent: Codex, Claude Code, Cursor, Gemini, or an open-source tool.
 Dumb Diagrams does not provide model access and sends nothing anywhere; review
 your agent's own data settings before giving it a private project.

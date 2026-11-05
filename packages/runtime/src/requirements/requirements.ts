@@ -35,7 +35,7 @@ export interface PlacementRequirement {
   group?: string;
   basis: RequirementBasis;
 }
-/** Project style defaults from `.dumbdiagrams/preferences.json`. */
+/** Project style defaults from the project-root `preferences.json`. */
 export interface DiagramPreferences {
   numberedSteps: boolean;
   edgeLabels: boolean;
@@ -353,7 +353,7 @@ function checkPreferenceValues(
     issues.push(issue("invalid-flow", "flow must be lr or tb", `${path}.flow`));
 }
 
-/** Parse `.dumbdiagrams/preferences.json`; omitted values take the defaults. */
+/** Parse the project-root `preferences.json`; omitted values take the defaults. */
 export function parsePreferences(source: string): Result<DiagramPreferences, RequirementsParseError> {
   let value: unknown;
   try {
@@ -689,7 +689,7 @@ export const requirementsSchema = {
   },
 } as const;
 
-/** JSON Schema for `.dumbdiagrams/preferences.json`. */
+/** JSON Schema for the project-root `preferences.json`. */
 export const preferencesSchema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "urn:dumb-diagrams:preferences:1",
@@ -698,8 +698,20 @@ export const preferencesSchema = {
   additionalProperties: false,
   properties: {
     $schema: { type: "string" },
-    numberedSteps: { type: "boolean", default: DEFAULT_PREFERENCES.numberedSteps },
-    edgeLabels: { type: "boolean", default: DEFAULT_PREFERENCES.edgeLabels },
-    flow: { enum: ["lr", "tb"], default: DEFAULT_PREFERENCES.flow },
+    numberedSteps: {
+      type: "boolean",
+      default: DEFAULT_PREFERENCES.numberedSteps,
+      description: "Number the main flow arrows with step badges (1, 2, 3, ...).",
+    },
+    edgeLabels: {
+      type: "boolean",
+      default: DEFAULT_PREFERENCES.edgeLabels,
+      description: "Give every arrow a short label.",
+    },
+    flow: {
+      enum: ["lr", "tb"],
+      default: DEFAULT_PREFERENCES.flow,
+      description: "Main flow direction: lr (left to right) or tb (top to bottom).",
+    },
   },
 } as const;

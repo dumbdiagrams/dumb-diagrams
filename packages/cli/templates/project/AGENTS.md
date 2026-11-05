@@ -8,7 +8,8 @@ write a valid portable `.dgm` source file at the location the user requests.
 For new diagrams, use the documented `diagrams/<descriptive-slug>/` bundle and
 write `architecture-brief.md` and `requirements.json` before its source.
 Preserve named flat paths, using `<stem>.architecture-brief.md` and
-`<stem>.requirements.json`. Run normal and strict `dumbdiagrams validate`, then
+`<stem>.requirements.json`. Follow the user's `preferences.json` at the project
+root. Run normal and strict `dumbdiagrams validate`, then
 inspect in Studio. Preserve every required relationship during layout repair.
 After two unsuccessful layout attempts, report remaining routing warnings
 without claiming full completion or weakening requirements.
