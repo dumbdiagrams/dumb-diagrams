@@ -4,85 +4,73 @@
       "backward": 0,
       "backtracking": 1,
       "crossings": 10,
-      "bends": 44,
-      "flowEdges": 17
+      "bends": 44
     },
     "haiku-azure-hard-private-order-processing.dgm": {
       "backward": 2,
       "backtracking": 3,
       "crossings": 19,
-      "bends": 35,
-      "flowEdges": 8
+      "bends": 35
     },
     "haiku-cloud-agnostic-hard-order-processing.dgm": {
       "backward": 2,
       "backtracking": 1,
       "crossings": 13,
-      "bends": 51,
-      "flowEdges": 13
+      "bends": 51
     },
     "haiku-gcp-hard-media-processing.dgm": {
       "backward": 0,
       "backtracking": 5,
       "crossings": 28,
-      "bends": 44,
-      "flowEdges": 16
+      "bends": 44
     },
     "luna-aws-hard-document-processing.dgm": {
       "backward": 0,
       "backtracking": 3,
       "crossings": 34,
-      "bends": 56,
-      "flowEdges": 20
+      "bends": 56
     },
     "luna-azure-hard-private-order-processing.dgm": {
       "backward": 2,
       "backtracking": 3,
       "crossings": 14,
-      "bends": 42,
-      "flowEdges": 12
+      "bends": 42
     },
     "luna-cloud-agnostic-hard-order-processing.dgm": {
       "backward": 0,
       "backtracking": 2,
       "crossings": 19,
-      "bends": 52,
-      "flowEdges": 20
+      "bends": 52
     },
     "luna-gcp-hard-media-processing.dgm": {
       "backward": 2,
       "backtracking": 7,
       "crossings": 13,
-      "bends": 52,
-      "flowEdges": 18
+      "bends": 52
     },
     "sonnet-aws-hard-document-processing.dgm": {
       "backward": 0,
       "backtracking": 1,
       "crossings": 14,
-      "bends": 51,
-      "flowEdges": 17
+      "bends": 51
     },
     "sonnet-azure-hard-private-order-processing.dgm": {
       "backward": 2,
       "backtracking": 5,
       "crossings": 17,
-      "bends": 50,
-      "flowEdges": 12
+      "bends": 50
     },
     "sonnet-cloud-agnostic-hard-order-processing.dgm": {
       "backward": 1,
       "backtracking": 2,
       "crossings": 24,
-      "bends": 53,
-      "flowEdges": 18
+      "bends": 53
     },
     "sonnet-gcp-hard-media-processing.dgm": {
       "backward": 7,
       "backtracking": 2,
       "crossings": 21,
-      "bends": 45,
-      "flowEdges": 16
+      "bends": 45
     }
   },
   "stable": {

@@ -1,9 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Build-time only. Studio imports these same files in editor/src/examples.ts.
-const run = 'sonnet-5-5-low-2026-11-05';
 export const exampleIds = [
   'aws-medium-image-thumbnail-pipeline',
   'aws-medium-factory-iot-telemetry',
@@ -26,8 +25,15 @@ export function approvedRoot() {
   return root;
 }
 
+/** The site features exactly one approved run. */
+export function approvedRun() {
+  const runs = readdirSync(approvedRoot(), { withFileTypes: true }).filter(entry => entry.isDirectory());
+  if (runs.length !== 1) throw new Error(`examples/approved must hold exactly one run, found ${runs.length}`);
+  return join(approvedRoot(), runs[0].name);
+}
+
 export function loadExamples() {
-  const runRoot = join(approvedRoot(), run);
+  const runRoot = approvedRun();
   return exampleIds.map(id => {
     const directory = join(runRoot, id);
     const source = readFileSync(join(directory, 'diagram.dgm'), 'utf8');

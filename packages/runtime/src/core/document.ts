@@ -34,6 +34,11 @@ export function getEdge(doc: DiagramDocument, id: ID): Edge | undefined {
   return doc.edges.find((e) => e.id === id);
 }
 
+/** The main path: solid arrows that are not failure or peer links. */
+export function isPrimaryFlowEdge(edge: Edge): boolean {
+  return edge.style !== "dashed" && edge.kind !== "fail" && edge.kind !== "peer";
+}
+
 export function getDefaultView(doc: DiagramDocument): View {
   return doc.views.find((v) => v.id === "default") ?? doc.views[0]!;
 }

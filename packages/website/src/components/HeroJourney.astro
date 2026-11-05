@@ -1,22 +1,17 @@
 ---
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Image } from 'astro:assets';
 import Terminal from './Terminal.astro';
 import WindowControls from './WindowControls.astro';
 import logo from '../assets/logo_dumbdiagrams_highres.png';
 import { url } from '../lib/site';
+import { approvedRun } from '../lib/examples.mjs';
 import '../styles/hero-journey.css';
 
-function readExample(relativePath: string) {
-  const candidates = [resolve(relativePath), resolve('../..', relativePath)];
-  const match = candidates.find(path => existsSync(path));
-  if (!match) throw new Error(`Could not find ${relativePath}`);
-  return readFileSync(match, 'utf8').trimEnd();
-}
-
-const prompt = readExample('examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline/user-prompt.md');
-const source = readExample('examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline/diagram.dgm');
+const heroBundle = resolve(approvedRun(), 'aws-medium-image-thumbnail-pipeline');
+const prompt = readFileSync(resolve(heroBundle, 'user-prompt.md'), 'utf8').trimEnd();
+const source = readFileSync(resolve(heroBundle, 'diagram.dgm'), 'utf8').trimEnd();
 const preview = readFileSync(resolve('public/diagrams/aws-medium-image-thumbnail-pipeline-preview.svg'), 'utf8');
 const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
 if (!dimensions) throw new Error('Missing Image thumbnail pipeline preview dimensions');

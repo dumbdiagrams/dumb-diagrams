@@ -9,7 +9,7 @@ import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/req
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
 import { createCliUi } from '../../cli/src/cli-ui.ts';
 import { stripVTControlCharacters } from 'node:util';
-import { loadExamples } from '../src/lib/examples.mjs';
+import { approvedRun, loadExamples } from '../src/lib/examples.mjs';
 import { loadReviewedExamples } from '../src/lib/reviewed-examples.mjs';
 import { ansiToHtml } from '../src/lib/ansi.mjs';
 import { analyticsConfig } from '../src/lib/analytics-config.mjs';
@@ -355,7 +355,7 @@ test('terminal fallback contains the real CLI banner and runnable package comman
 
 test('hero journey preserves the canonical CLI, agent prompt, and Studio result', async () => {
   const html = await readFile(join(dist, 'index.html'), 'utf8');
-  const prompt = await readFile(resolve(site, '../../examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline/user-prompt.md'), 'utf8');
+  const prompt = await readFile(join(approvedRun(), 'aws-medium-image-thumbnail-pipeline/user-prompt.md'), 'utf8');
   const escapedPrompt = prompt.trimEnd().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
   assert.match(html, /data-hero-journey/);
   assert.match(html, /Create project/);

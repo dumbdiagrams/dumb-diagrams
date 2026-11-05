@@ -1,5 +1,5 @@
 import { getCatalogEntry } from "../catalog/index.js";
-import { getDefaultView, getGroup, getResource } from "../core/index.js";
+import { getDefaultView, getGroup, getResource, isPrimaryFlowEdge } from "../core/index.js";
 import type { DiagramDocument, Group, GroupGeom, ID, LayoutResult, NodeGeom, Rect, Resource } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES, snap } from "../grammar-aws/index.js";
 
@@ -334,7 +334,7 @@ function regionFlowParticipants(doc: DiagramDocument, group: Group): ID[] {
 
   const active = new Set<ID>();
   for (const edge of doc.edges) {
-    if (edge.style === "dashed" || edge.kind === "fail" || edge.kind === "peer") continue;
+    if (!isPrimaryFlowEdge(edge)) continue;
     const source = owners.get(edge.source);
     const target = owners.get(edge.target);
     if (source && target && source !== target) {
@@ -488,12 +488,8 @@ function layoutVpcGroup(doc: DiagramDocument, group: Group, state: LayoutState):
   const leftSize = stackSize(leftRail);
   const rightSize = stackSize(rightRail);
 
-  // Azure VNets commonly put an application/subnet boundary first and a
-  // vertical bank of Private Endpoint resources after it. Reusing the AWS
-  // VPC rail convention reversed that topology (direct resources on the
-  // left, child boundaries on the right), forcing every data path to double
-  // back across the application tier. Keep the Azure no-AZ composition in
-  // source/flow order: child boundaries on the left, endpoints on the right.
+  // Azure VNets without zones keep flow order: subnet boundaries on the left,
+  // the bank of Private Endpoints on the right (the AWS rails reverse it).
   if (group.type === "azure.vnet" && availabilityZones.length === 0 && leftRail.length > 0 && rightRail.length > 0) {
     const endpointOffset = leftRail.length > 1 ? 72 : 0;
     const contentH = Math.max(leftSize.h + endpointOffset, rightSize.h, 40);
@@ -1180,7 +1176,7 @@ function vpcFeeders(doc: DiagramDocument, group: Group): Set<ID> {
   const forward = new Map<ID, Set<ID>>();
   const backward = new Map<ID, Set<ID>>();
   for (const edge of doc.edges) {
-    if (edge.style === "dashed" || edge.kind === "fail" || edge.kind === "peer") continue;
+    if (!isPrimaryFlowEdge(edge)) continue;
     const source = owners.get(edge.source);
     const target = owners.get(edge.target);
     if (!source || !target || source === target) continue;
@@ -1251,12 +1247,11 @@ function measureResource(resource: Resource, state: LayoutState): Measured {
   const serviceLines = hidden ? [] : wrapResourceLabel(serviceLabel, GRAMMAR.serviceFontSize, RESOURCE_LABEL_MAX_WIDTH);
   const roleLines =
     roleLabel && !hidden ? wrapResourceLabel(roleLabel, GRAMMAR.roleFontSize, RESOURCE_LABEL_MAX_WIDTH) : [];
-  const labelWidth = hidden
-    ? 0
-    : Math.max(
-        ...serviceLines.map((line) => estimateTextWidth(line, GRAMMAR.serviceFontSize)),
-        ...roleLines.map((line) => estimateTextWidth(line, GRAMMAR.roleFontSize)),
-      );
+  const labelWidth = Math.max(
+    0,
+    ...serviceLines.map((line) => estimateTextWidth(line, GRAMMAR.serviceFontSize)),
+    ...roleLines.map((line) => estimateTextWidth(line, GRAMMAR.roleFontSize)),
+  );
   const labelHeight = hidden
     ? 0
     : serviceLines.length * GRAMMAR.labelLineHeight +

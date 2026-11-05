@@ -23,8 +23,6 @@ const PROVIDERS: Record<string, string> = {
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
 /** Approved model runs, one card per prompt, ordered by provider then difficulty. */
-// ponytail: ids are bundle names, so a second approved run of the same prompts
-// would duplicate cards; prefix ids with the run folder when that happens.
 export const DIAGRAM_EXAMPLES: DiagramExample[] = Object.keys(files)
   .filter((path) => path.endsWith("/diagram.dgm"))
   .map((path): DiagramExample & { order: number } => {

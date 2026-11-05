@@ -63,6 +63,11 @@ contract, routing findings, and flow direction; `generatedBy` from
 `requirements.json` is shown next to the model you pass. The script exits 1
 when any bundle misses its reference, preferences, contract, or validity.
 
+To make a scored run the golden set, run
+`pnpm approve:run <run-dir> --model <name> --reasoning <level> --decision "<text>"`.
+It replaces `examples/approved/` and regenerates the SVGs, routing reviews,
+layout contracts, engine snapshots, and performance budget; review the diff.
+
 `check:engine` checks that every approved bundle satisfies its requirements
 contract and that removing any required component or relationship is reported.
 Hard prompts must pass completeness even while their routing findings remain

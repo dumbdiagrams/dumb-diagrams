@@ -1,4 +1,4 @@
-import type { DiagramDocument, ID, LayoutResult } from "../core/index.js";
+import { type DiagramDocument, type ID, isPrimaryFlowEdge as isFlow, type LayoutResult } from "../core/index.js";
 import type { InvariantFailure } from "./invariants.js";
 
 export interface ReadabilityMetrics {
@@ -12,7 +12,6 @@ export interface ReadabilityMetrics {
   /** Flow edges that point forward but whose route doubles back against the flow. */
   backtrackingEdges: ID[];
   bends: number;
-  maxBends: number;
   crossings: number;
 }
 
@@ -34,20 +33,15 @@ export function readabilityMetrics(
     backwardEdges: [],
     backtrackingEdges: [],
     bends: 0,
-    maxBends: 0,
     crossings: invariantFailures.filter((failure) => failure.code === "edge-crossing").length,
   };
-  const isFlow = (edge: DiagramDocument["edges"][number]) =>
-    edge.style !== "dashed" && edge.kind !== "fail" && edge.kind !== "peer";
   const pairs = new Set(doc.edges.filter(isFlow).map((edge) => `${edge.source}\0${edge.target}`));
   for (const edge of doc.edges) {
     const points = routes.get(edge.id);
     const source = nodes.get(edge.source);
     const target = nodes.get(edge.target);
     if (!points || !source || !target) continue;
-    const bends = Math.max(0, points.length - 2);
-    metrics.bends += bends;
-    metrics.maxBends = Math.max(metrics.maxBends, bends);
+    metrics.bends += Math.max(0, points.length - 2);
     if (!isFlow(edge)) continue;
     metrics.flowEdges++;
     const advance = target[axis] + target[size] / 2 - (source[axis] + source[size] / 2);

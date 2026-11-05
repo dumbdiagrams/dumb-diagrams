@@ -174,18 +174,8 @@ function stagedRootIds(doc: DiagramDocument): Set<ID> {
 }
 
 /**
- * Snap authored layout anchors without disturbing the layout engine's
- * hierarchy.
- *
- * The AWS layout engine intentionally uses a smaller internal rhythm for
- * headers, padding, icons, and labels. Snapping every nested rectangle to the
- * editor's 24px grid independently changes those relationships and can make
- * containers touch or appear compressed. Instead, each top-level object is a
- * single movable unit: its anchor is snapped and every descendant keeps the
- * exact relative geometry produced by the layout engine.
- *
- * Auto-fix remains the structural layout operation. Snap to grid is only a
- * safe positioning aid for manually authored top-level objects.
+ * Snap only top-level anchors to the grid; descendants keep the engine's finer
+ * internal spacing, which per-rectangle snapping would distort.
  */
 export function snapLayoutToGrid(layout: LayoutResult, enabled: boolean, doc: DiagramDocument): LayoutResult {
   if (!enabled) return layout;

@@ -81,7 +81,6 @@ describe("flow readability", () => {
     expect(metrics.flowEdges).toBe(4);
     expect(metrics.backwardEdges).toEqual(["ca"]);
     expect(metrics.backtrackingEdges).toEqual(["bc"]);
-    expect(metrics.maxBends).toBe(3);
   });
 
   it("reports a route that loops far beyond its endpoint distance", () => {

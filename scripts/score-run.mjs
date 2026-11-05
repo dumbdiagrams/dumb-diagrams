@@ -142,7 +142,6 @@ function scoreBundle(id, dir) {
         hard: invariantFailures.filter((failure) => invariantTier(failure.code) === "hard").length,
         soft: invariantFailures.filter((failure) => invariantTier(failure.code) === "soft").length,
         crossings: readability.crossings,
-        detours: invariantFailures.filter((failure) => failure.code === "edge-detour").length,
         backward: readability.backwardEdges.length,
         backtracking: readability.backtrackingEdges.length,
       };

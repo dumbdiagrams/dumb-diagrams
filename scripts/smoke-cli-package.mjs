@@ -29,7 +29,20 @@ const tarballPath = requestedArtifact
   : join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
-const smokeBundle = join(root, "examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline");
+// Matches the initialized `.dumbdiagrams/requirements.example.json` and the default preferences.
+const smokeSource = `dgm 1
+diagram smoke {
+  grammar cloud-agnostic
+  flow lr
+
+  cloud-agnostic.client client "External client"
+  cloud-agnostic.cloud cloud "Cloud" {
+    cloud-agnostic.server api "API server"
+  }
+
+  client -> api { id request label "request" step 1 }
+}
+`;
 
 mkdirSync(artifactsDir, { recursive: true });
 
@@ -72,7 +85,6 @@ const required = [
   "package/dist/source/packages/runtime/src/core/types.ts",
   "package/dist/source/assets/catalog/sources.lock.json",
   "package/dist/source/assets/catalog/sources/cloud-agnostic/server.svg",
-  "package/dist/source/examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline/diagram.dgm",
   "package/dist/source/examples/prompts/aws-medium-image-thumbnail-pipeline.md",
   "package/dist/source/examples/routing-warnings.json",
   "package/dist/source/registry.npmrc",
@@ -169,24 +181,26 @@ try {
 
   const smokeDir = join(initializedProject, "diagrams/smoke");
   mkdirSync(smokeDir, { recursive: true });
-  for (const file of ["diagram.dgm", "requirements.json"]) copyFileSync(join(smokeBundle, file), join(smokeDir, file));
   const smokeDiagram = join(smokeDir, "diagram.dgm");
-  // The approved bundle predates numbered, fully labeled defaults: the project
-  // preferences must reject it until the user configures that style.
-  const defaults = JSON.parse(
+  writeFileSync(smokeDiagram, smokeSource);
+  copyFileSync(
+    join(initializedProject, ".dumbdiagrams/requirements.example.json"),
+    join(smokeDir, "requirements.json"),
+  );
+  const preferencesFile = join(initializedProject, "preferences.json");
+  const defaultPreferences = readFileSync(preferencesFile, "utf8");
+  writeFileSync(preferencesFile, `${JSON.stringify({ resourceLabels: false })}\n`);
+  const iconsOnly = JSON.parse(
     spawnSync(npxCommand, ["--yes", `--package=${tarballPath}`, "dumbdiagrams", "validate", "--json", smokeDiagram], {
       cwd: root,
       encoding: "utf8",
       env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
     }).stdout,
   );
-  if (defaults.ok || defaults.files[0]?.preferences.status !== "fail") {
-    throw new Error("packed CLI did not enforce the initialized project preferences");
+  if (iconsOnly.ok || iconsOnly.files[0]?.preferences.status !== "fail") {
+    throw new Error("packed CLI did not enforce the project preferences.json");
   }
-  writeFileSync(
-    join(initializedProject, "preferences.json"),
-    `${JSON.stringify({ numberedSteps: false, edgeLabels: false, resourceLabels: true }, null, 2)}\n`,
-  );
+  writeFileSync(preferencesFile, defaultPreferences);
   if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams validate failed");
   }

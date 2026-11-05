@@ -41,6 +41,8 @@
     "precheck:routing": "pnpm --filter @dumb-diagrams/runtime build",
     "check:routing": "node scripts/check-routing-baseline.mjs",
     "precheck:readability": "pnpm --filter @dumb-diagrams/runtime build",
+    "preapprove:run": "pnpm build",
+    "approve:run": "node scripts/approve-run.mjs",
     "prescore:run": "pnpm --filter @dumb-diagrams/runtime build",
     "score:run": "node scripts/score-run.mjs",
     "check:readability": "node scripts/check-readability.mjs",

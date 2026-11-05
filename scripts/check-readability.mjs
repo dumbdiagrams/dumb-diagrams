@@ -36,7 +36,6 @@ for (const name of files("hard")) {
     backtracking: r.backtrackingEdges.length,
     crossings: r.crossings,
     bends: r.bends,
-    flowEdges: r.flowEdges,
   };
 }
 for (const name of files("stable"))

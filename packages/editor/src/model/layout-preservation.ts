@@ -4,12 +4,8 @@ import { getDefaultView } from "@dumb-diagrams/runtime/core";
 import { cloneDocument } from "./document-structure";
 
 /**
- * Snapshot rendered places and connector paths as the manual editing baseline.
- *
- * Existing pinned routes are authored data, so they remain byte-for-byte
- * equivalent (apart from the document clone). Unpinned routes are upgraded to
- * pinned manual routes using their current rendered polyline while retaining
- * any authored route and decoration preferences.
+ * Snapshot rendered places and routes as the manual editing baseline: pinned
+ * routes stay as authored, unpinned ones are pinned to their rendered path.
  */
 export function preserveManualLayout(doc: DiagramDocument, layout: LayoutResult): DiagramDocument {
   return snapshotLayoutWithRoutes(doc, layout, false);
@@ -29,12 +25,9 @@ export function preserveUnplacedManualLayout(
 }
 
 /**
- * Reconcile manual routes after a document mutation. When both endpoints of
- * an unchanged edge move by the same delta, shift its complete route so the
- * internal elbows follow them. When only one endpoint moves, the old path no
- * longer fits, so drop its geometry (keeping decorations) and let the router
- * draw a clean connector. A route whose geometry was explicitly edited by the
- * mutation is left alone, allowing that edit to win.
+ * After a mutation, shift a manual route whose endpoints moved together; drop
+ * the geometry (keeping decorations) when only one moved. Routes the mutation
+ * edited itself are left alone.
  */
 export function reconcileManualRouteMoves(beforeDoc: DiagramDocument, afterDoc: DiagramDocument): DiagramDocument {
   const beforeView = getDefaultView(beforeDoc);

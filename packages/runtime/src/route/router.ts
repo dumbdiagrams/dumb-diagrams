@@ -1752,12 +1752,6 @@ function nudgeAutomaticRoutesOffBoundaries(
   }
 }
 
-/**
- * Place badges only after every connector is known. Doing this during the
- * routing pass made badge 2 blind to badge 1's arrow (and vice versa), which
- * allowed a badge to cover a nearby connector even when the opposite side of
- * its own path was completely clear.
- */
 /** Keep text and step numbers out of the clearance needed by crossing jumps. */
 function crossingDecorationObstacles(edges: RoutedEdge[]): Obstacle[] {
   const obstacles: Obstacle[] = [];
@@ -3739,11 +3733,8 @@ function orthogonalSegmentIntersections(a: Point, b: Point, c: Point, d: Point):
 }
 
 /**
- * Keep user-authored connector breakpoints orthogonal. Manual turn-point
- * drags are intentionally permissive, but a diagonal segment would make the
- * diagram inconsistent with the AWS-style connector language and impossible
- * to edit with the segment handles. Preserve collinear authored points so a
- * user can add a breakpoint without having it disappear during normalization.
+ * Keep authored breakpoints orthogonal (segment handles cannot edit diagonals),
+ * preserving collinear points so a newly added breakpoint does not disappear.
  */
 export function normalizeOrthogonalRoute(points: Point[]): Point[] {
   const clean = points.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));

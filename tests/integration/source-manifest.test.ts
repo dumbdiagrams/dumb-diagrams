@@ -16,7 +16,7 @@ describe("source manifest", () => {
     const files = collectSourceManifestFiles(resolve(import.meta.dirname, "../.."));
 
     expect(files).toEqual(expect.arrayContaining([
-      "examples/approved/sonnet-5-5-low-2026-11-05/aws-easy-static-website-delivery/diagram.dgm",
+      "examples/prompts/aws-easy-static-website-delivery.md",
       "tests/fixtures/engine/transfer-hub.dgm",
       "packages/runtime/test-fixtures.ts",
     ]));

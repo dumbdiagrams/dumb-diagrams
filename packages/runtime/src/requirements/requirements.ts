@@ -1,5 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { getCatalogEntry } from "../catalog/catalog.js";
+import { isPrimaryFlowEdge } from "../core/document.js";
 import type { DiagramDocument, EdgeKind, Grammar } from "../core/types.js";
 
 export interface RequirementBasis {
@@ -380,48 +381,37 @@ export function checkPreferences(doc: DiagramDocument, preferences: DiagramPrefe
         "$.hideResourceLabels",
       ),
     );
+  const edgeIssue = (code: string, message: string, ...ids: string[]) =>
+    issues.push(issue(code, message, undefined, undefined, ids));
   const steps = new Set<number>();
   for (const edge of doc.edges) {
-    const primary = edge.style !== "dashed" && edge.kind !== "fail" && edge.kind !== "peer";
+    const primary = isPrimaryFlowEdge(edge);
     if (preferences.edgeLabels && !edge.label?.trim())
-      issues.push(issue("preference-label-missing", `Edge ${edge.id} has no label`, undefined, undefined, [edge.id]));
+      edgeIssue("preference-label-missing", `Edge ${edge.id} has no label`, edge.id);
     if (!preferences.numberedSteps) {
       if (edge.step !== undefined)
-        issues.push(
-          issue(
-            "preference-step-unwanted",
-            `Edge ${edge.id} is numbered but numberedSteps is false`,
-            undefined,
-            undefined,
-            [edge.id],
-          ),
-        );
+        edgeIssue("preference-step-unwanted", `Edge ${edge.id} is numbered but numberedSteps is false`, edge.id);
     } else if (primary && edge.step === undefined)
-      issues.push(
-        issue("preference-step-missing", `Flow edge ${edge.id} has no step`, undefined, undefined, [edge.id]),
-      );
+      edgeIssue("preference-step-missing", `Flow edge ${edge.id} has no step`, edge.id);
     else if (!primary && edge.step !== undefined)
-      issues.push(
-        issue(
-          "preference-step-secondary",
-          `Dashed, peer, or failure edge ${edge.id} should not be numbered`,
-          undefined,
-          undefined,
-          [edge.id],
-        ),
+      edgeIssue(
+        "preference-step-secondary",
+        `Dashed, peer, or failure edge ${edge.id} should not be numbered`,
+        edge.id,
       );
     if (edge.step !== undefined) steps.add(edge.step);
   }
-  const ordered = [...steps].sort((a, b) => a - b);
-  const gap = ordered.findIndex((step, index) => step !== index + 1);
-  if (preferences.numberedSteps && gap !== -1)
-    issues.push(
-      issue(
-        "preference-step-sequence",
-        `Steps must run 1..${ordered.length} without gaps; found ${ordered.join(", ")}`,
-      ),
-    );
-  if (preferences.numberedSteps) issues.push(...checkStepOrder(doc));
+  if (preferences.numberedSteps) {
+    const ordered = [...steps].sort((a, b) => a - b);
+    if (ordered.some((step, index) => step !== index + 1))
+      issues.push(
+        issue(
+          "preference-step-sequence",
+          `Steps must run 1..${ordered.length} without gaps; found ${ordered.join(", ")}`,
+        ),
+      );
+    issues.push(...checkStepOrder(doc));
+  }
   return issues;
 }
 

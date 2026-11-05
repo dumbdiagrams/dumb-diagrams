@@ -3,12 +3,9 @@ import type { DiagramDocument, ValidationIssue } from "../core/index.js";
 import { sanitizeSvgResult } from "./sanitize-svg.js";
 
 /**
- * Validate embedded SVGs before a compiler reaches the rendering boundary.
- *
- * The document constraint validator intentionally only checks asset metadata
- * and size limits. SVG markup is untrusted content, so it must be checked at
- * the render boundary without allowing sanitizer errors to escape as compiler
- * exceptions.
+ * Sanitize embedded SVG markup (untrusted) before rendering, reporting
+ * failures as issues instead of compiler exceptions. Document validation only
+ * checks asset metadata and size.
  */
 export function validateEmbeddedAssets(doc: DiagramDocument): ValidationIssue[] {
   const issues: ValidationIssue[] = [];

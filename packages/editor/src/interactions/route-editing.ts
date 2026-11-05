@@ -9,12 +9,9 @@ import { GRID_SIZE } from "../grid.js";
 export const BEND_MERGE_SNAP_PX = GRID_SIZE;
 
 /**
- * Move an orthogonal turn without leaving either adjoining segment behind.
- *
- * A corner belongs to one horizontal and one vertical leg. Moving only the
- * corner creates a diagonal which normalization can turn into a 180-degree
- * hairpin. Instead, shift the complete horizontal run on Y and the complete
- * vertical run on X, matching the behavior of the segment handles.
+ * Move an orthogonal turn with both adjoining legs (horizontal run on Y,
+ * vertical run on X); moving the corner alone creates a diagonal that
+ * normalization can turn into a hairpin.
  */
 export function snapBendMergeTarget(
   points: Point[],
