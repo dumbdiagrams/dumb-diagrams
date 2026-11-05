@@ -51,7 +51,7 @@ The parser is strict: an unknown keyword or value is an error reported as
 
 ```text
 dgm 1
-diagram <id> { grammar flow title annotation <declarations> <edges> }
+diagram <id> { grammar flow title hide-resource-labels annotation <declarations> <edges> }
 <type> <id> "Label" { ... }            # boundary or resource, from the catalog
 <from> -> <to> { ... }                 # edge
 annotation <id> "Text" { ... }
@@ -61,7 +61,7 @@ view <id> { place <id> { ... }  route <edge-id> { ... }  annotation <id> { ... }
 
 | Block | Keywords and values |
 | --- | --- |
-| `diagram` | `grammar` `aws`/`azure`/`gcp`/`cloud-agnostic`; `flow` `lr`/`tb`; `title` |
+| `diagram` | `grammar` `aws`/`azure`/`gcp`/`cloud-agnostic`; `flow` `lr`/`tb`; `title`; `hide-resource-labels` (icons only, per `resourceLabels`) |
 | `boundary` | `step`; `label-position` `top-left`/`top-right`; `hide-icon`; `style` `solid`/`dashed`; `color`; `fill` `subtle`/`none` |
 | `resource` | `service`; `label-position` `top`/`bottom`; `role` `primary`/`secondary`/`border`; `icon` |
 | `edge` | `id`; `label`; `step`; `style` `solid`/`dashed`; `kind` `flow`/`bidirectional`/`peer`/`fail`; `color`; `from`/`to` `n`/`s`/`e`/`w`, optionally `offset` 0-1 |

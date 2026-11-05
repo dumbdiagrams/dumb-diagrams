@@ -60,6 +60,7 @@ escapes. IDs start with a letter or `_` and contain letters, digits, `_`, and
 | `grammar` | `aws`, `azure`, `gcp`, `cloud-agnostic`. Selects the provider catalog and its rules. |
 | `flow` | `lr` (left to right) or `tb` (top to bottom) |
 | `title` | A quoted string |
+| `hide-resource-labels` | No value; draws resources as icons only. Labels stay in the source and appear as SVG tooltips. |
 
 ## Declarations
 

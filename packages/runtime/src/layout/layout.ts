@@ -33,6 +33,7 @@ type RegionColumn = "left" | "feed" | "center" | "right";
 export function layoutDocument(doc: DiagramDocument, options: { compoundFlow?: boolean } = {}): LayoutResult {
   const state: LayoutState = {
     compoundFlow: options.compoundFlow,
+    hideResourceLabels: doc.hideResourceLabels,
     nodeGeoms: new Map(),
     groupGeoms: new Map(),
   };
@@ -1246,16 +1247,21 @@ function measureResource(resource: Resource, state: LayoutState): Measured {
   const roleLabel = isDuplicateCatalogLabel(resource.label.role, serviceLabel, entry?.aliases)
     ? undefined
     : resource.label.role;
-  const serviceLines = wrapResourceLabel(serviceLabel, GRAMMAR.serviceFontSize, RESOURCE_LABEL_MAX_WIDTH);
-  const roleLines = roleLabel ? wrapResourceLabel(roleLabel, GRAMMAR.roleFontSize, RESOURCE_LABEL_MAX_WIDTH) : [];
-  const labelWidth = Math.max(
-    ...serviceLines.map((line) => estimateTextWidth(line, GRAMMAR.serviceFontSize)),
-    ...roleLines.map((line) => estimateTextWidth(line, GRAMMAR.roleFontSize)),
-  );
-  const labelHeight =
-    serviceLines.length * GRAMMAR.labelLineHeight +
-    (roleLines.length ? roleLines.length * GRAMMAR.labelLineHeight + 6 : 0) +
-    GRAMMAR.labelPad;
+  const hidden = state.hideResourceLabels;
+  const serviceLines = hidden ? [] : wrapResourceLabel(serviceLabel, GRAMMAR.serviceFontSize, RESOURCE_LABEL_MAX_WIDTH);
+  const roleLines =
+    roleLabel && !hidden ? wrapResourceLabel(roleLabel, GRAMMAR.roleFontSize, RESOURCE_LABEL_MAX_WIDTH) : [];
+  const labelWidth = hidden
+    ? 0
+    : Math.max(
+        ...serviceLines.map((line) => estimateTextWidth(line, GRAMMAR.serviceFontSize)),
+        ...roleLines.map((line) => estimateTextWidth(line, GRAMMAR.roleFontSize)),
+      );
+  const labelHeight = hidden
+    ? 0
+    : serviceLines.length * GRAMMAR.labelLineHeight +
+      (roleLines.length ? roleLines.length * GRAMMAR.labelLineHeight + 6 : 0) +
+      GRAMMAR.labelPad;
   const labelPosition = resource.label.position ?? "bottom";
   const gap = 4;
   const w = Math.max(iconSize, labelWidth) + 16;

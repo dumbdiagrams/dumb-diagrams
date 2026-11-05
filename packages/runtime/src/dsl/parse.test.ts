@@ -83,7 +83,7 @@ describe("parseDgm / printDgm round-trip", () => {
     [
       "legacy group shorthand",
       'diagram d {\n  group g "G"\n}',
-      '2:3 Unknown diagram option "group"; expected grammar, flow, title, annotation, a typed declaration, or an edge',
+      '2:3 Unknown diagram option "group"; expected grammar, flow, title, hide-resource-labels, annotation, a typed declaration, or an edge',
     ],
     [
       "edge inside a group",

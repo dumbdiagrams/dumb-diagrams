@@ -194,6 +194,8 @@ export interface DiagramDocument {
   title?: string;
   grammar: Grammar;
   flow: FlowDirection;
+  /** Draw resources as icons only; their labels remain as SVG titles. */
+  hideResourceLabels?: boolean;
   resources: Resource[];
   groups: Group[];
   edges: Edge[];

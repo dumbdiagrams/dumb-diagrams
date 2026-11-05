@@ -132,8 +132,15 @@ async function promptProjectName(defaultName: string): Promise<string> {
 }
 
 function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
-  const argumentResult = requireNoArguments(args, "studio");
-  if (argumentResult.isErr()) return errAsync(argumentResult.error);
+  if (args.positionals.length || args.flags.size) {
+    const file = args.positionals.find((value) => value.endsWith(".dgm"));
+    return errAsync(
+      invalidArguments(
+        `studio does not accept file paths, positionals, or options. Run dumbdiagrams studio, choose Open, and pick ${file ?? "your .dgm file"}.`,
+        "studio",
+      ),
+    );
+  }
   const testPort = Number(process.env.DUMBDIAGRAMS_STUDIO_PORT);
   return startStudioServer({
     port: Number.isInteger(testPort) && testPort >= 0 && testPort <= 65535 ? testPort : undefined,
@@ -848,13 +855,6 @@ function createCatalogReference(): { markdown: string; json: string } {
 
 function invalidArguments(message: string, command: string): CliError {
   return { code: "invalid-arguments", message, command };
-}
-
-function requireNoArguments(args: ParsedArgs, command: string): Result<void, CliError> {
-  if (args.positionals.length || args.flags.size) {
-    return err(invalidArguments(`${command} does not accept file paths, positionals, or options.`, command));
-  }
-  return ok(undefined);
 }
 
 function reportCliError(error: CliError): number {

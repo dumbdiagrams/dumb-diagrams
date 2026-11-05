@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "neverthrow";
 import { getCatalogEntry } from "../catalog/catalog.js";
-import type { DiagramDocument, EdgeKind, FlowDirection, Grammar } from "../core/types.js";
+import type { DiagramDocument, EdgeKind, Grammar } from "../core/types.js";
 
 export interface RequirementBasis {
   kind: "explicit" | "inferred";
@@ -39,9 +39,9 @@ export interface PlacementRequirement {
 export interface DiagramPreferences {
   numberedSteps: boolean;
   edgeLabels: boolean;
-  flow: FlowDirection;
+  resourceLabels: boolean;
 }
-export const DEFAULT_PREFERENCES: DiagramPreferences = { numberedSteps: true, edgeLabels: true, flow: "lr" };
+export const DEFAULT_PREFERENCES: DiagramPreferences = { numberedSteps: true, edgeLabels: true, resourceLabels: true };
 /** Self-reported authoring model, recorded for debugging only. */
 export interface GeneratedBy {
   model: string;
@@ -87,7 +87,7 @@ const rootKeys = [
   "generatedBy",
   "$schema",
 ];
-const preferenceKeys = ["numberedSteps", "edgeLabels", "flow"];
+const preferenceKeys = ["numberedSteps", "edgeLabels", "resourceLabels"];
 const basisKeys = ["kind", "text"];
 
 function issue(
@@ -346,11 +346,9 @@ function checkPreferenceValues(
     return;
   }
   unknownKeys(value, [...preferenceKeys, ...extraKeys], path, issues);
-  for (const key of ["numberedSteps", "edgeLabels"])
+  for (const key of preferenceKeys)
     if (value[key] !== undefined && typeof value[key] !== "boolean")
       issues.push(issue("invalid-boolean", `${key} must be a boolean`, `${path}.${key}`));
-  if (value.flow !== undefined && value.flow !== "lr" && value.flow !== "tb")
-    issues.push(issue("invalid-flow", "flow must be lr or tb", `${path}.flow`));
 }
 
 /** Parse the project-root `preferences.json`; omitted values take the defaults. */
@@ -372,9 +370,15 @@ export function parsePreferences(source: string): Result<DiagramPreferences, Req
 /** Check that a diagram follows the effective project style preferences. */
 export function checkPreferences(doc: DiagramDocument, preferences: DiagramPreferences): RequirementsIssue[] {
   const issues: RequirementsIssue[] = [];
-  if (doc.flow !== preferences.flow)
+  if (preferences.resourceLabels === Boolean(doc.hideResourceLabels))
     issues.push(
-      issue("preference-flow", `Diagram flow ${doc.flow} does not match preferred flow ${preferences.flow}`, "$.flow"),
+      issue(
+        "preference-resource-labels",
+        preferences.resourceLabels
+          ? "Diagram hides resource labels; remove hide-resource-labels"
+          : "Diagram shows resource labels; add hide-resource-labels to draw icons only",
+        "$.hideResourceLabels",
+      ),
     );
   const steps = new Set<number>();
   for (const edge of doc.edges) {
@@ -612,7 +616,7 @@ export const requirementsSchema = {
       properties: {
         numberedSteps: { type: "boolean" },
         edgeLabels: { type: "boolean" },
-        flow: { enum: ["lr", "tb"] },
+        resourceLabels: { type: "boolean" },
       },
     },
     basis: {
@@ -708,10 +712,10 @@ export const preferencesSchema = {
       default: DEFAULT_PREFERENCES.edgeLabels,
       description: "Give every arrow a short label.",
     },
-    flow: {
-      enum: ["lr", "tb"],
-      default: DEFAULT_PREFERENCES.flow,
-      description: "Main flow direction: lr (left to right) or tb (top to bottom).",
+    resourceLabels: {
+      type: "boolean",
+      default: DEFAULT_PREFERENCES.resourceLabels,
+      description: "Show names under icons. Set false to draw icons only.",
     },
   },
 } as const;

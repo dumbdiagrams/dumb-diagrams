@@ -191,6 +191,14 @@ function renderNode(
     )
     .join("\n  ");
 
+  if (doc.hideResourceLabels) {
+    const title = [node.serviceLabel, node.roleLabel].filter(Boolean).join(": ");
+    return `
+<g id="res-${node.id}">
+  <title>${escapeXml(title)}</title>
+  ${iconTag}
+</g>`;
+  }
   return `
 <g id="res-${node.id}">
   ${iconTag}

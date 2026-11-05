@@ -185,7 +185,7 @@ try {
   }
   writeFileSync(
     join(initializedProject, "preferences.json"),
-    `${JSON.stringify({ numberedSteps: false, edgeLabels: false, flow: "lr" }, null, 2)}\n`,
+    `${JSON.stringify({ numberedSteps: false, edgeLabels: false, resourceLabels: true }, null, 2)}\n`,
   );
   if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams validate failed");

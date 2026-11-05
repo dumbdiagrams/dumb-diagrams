@@ -23,7 +23,7 @@ dumbdiagrams studio    # local editor; use Open to pick any .dgm file
 `.dumbdiagrams/` guidance (format, architecture, providers, catalog), a
 `diagrams/` workspace, and a root `preferences.json` for your diagram style:
 `numberedSteps` (step badges on the main flow), `edgeLabels` (label every
-arrow), and `flow` (`lr` or `tb`). Validation fails when a diagram ignores
+arrow), and `resourceLabels` (`false` draws icons only). Validation fails when a diagram ignores
 them. Edit `preferences.json`; the entrypoints and `.dumbdiagrams/` normally
 stay as they are. With a blank name, or without a
 terminal, it uses a timestamped folder. `dgm` is a shorthand for

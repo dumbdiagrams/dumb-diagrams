@@ -334,14 +334,19 @@ describe("project preferences", () => {
     ).toEqual(["unknown-field", "invalid-boolean"]);
   });
 
-  it("reports unlabeled edges, numbered secondary edges, step gaps, and flow", () => {
+  it("reports unlabeled edges, numbered secondary edges, step gaps, and resource labels", () => {
     expect(codes()).toEqual(["preference-label-missing", "preference-step-secondary", "preference-step-sequence"]);
-    expect(codes({ numberedSteps: false, edgeLabels: false, flow: "tb" })).toEqual([
-      "preference-flow",
+    expect(codes({ numberedSteps: false, edgeLabels: false, resourceLabels: false })).toEqual([
+      "preference-resource-labels",
       "preference-step-unwanted",
       "preference-step-unwanted",
       "preference-step-unwanted",
     ]);
+    const iconsOnly = { ...doc, hideResourceLabels: true };
+    const labels = (resourceLabels: boolean) =>
+      checkPreferences(iconsOnly, { ...DEFAULT_PREFERENCES, resourceLabels }).map((entry) => entry.code);
+    expect(labels(false)).not.toContain("preference-resource-labels");
+    expect(labels(true)).toContain("preference-resource-labels");
   });
 
   it("accepts a contract override and model metadata", () => {

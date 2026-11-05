@@ -59,7 +59,7 @@ describe("runCli", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     try {
       expect(await runCli(["studio", "diagram.dgm"])).toBe(1);
-      expect(error.mock.calls.flat().join("\n")).toContain("studio does not accept file paths");
+      expect(error.mock.calls.flat().join("\n")).toContain("choose Open, and pick diagram.dgm");
     } finally {
       error.mockRestore();
     }
@@ -465,7 +465,7 @@ describe("runCli", () => {
       expect(instructions).toContain("stop and ask the user");
       expect(instructions).toContain("single-provider");
       expect(instructions).toContain("dumbdiagrams validate --strict <path-to-diagram.dgm>");
-      expect(instructions).toContain("unless the user explicitly requests another direction");
+      expect(instructions).toContain("unless\nthe user explicitly requests another direction");
       expect(instructions).toContain("record that override in the diagram's requirements");
       expect(instructions).toContain("preserve its orientation unless the user");
       expect(instructions).toContain("adjusting saved positions, ports, or manual routes");
@@ -483,7 +483,7 @@ describe("runCli", () => {
         $schema: "./.dumbdiagrams/preferences.schema.json",
         numberedSteps: true,
         edgeLabels: true,
-        flow: "lr",
+        resourceLabels: true,
       });
       expect(existsSync(join(projectRoot, ".dumbdiagrams/preferences.schema.json"))).toBe(true);
       expect(readFileSync(join(projectRoot, "README.md"), "utf8")).toContain("Edit `preferences.json`");

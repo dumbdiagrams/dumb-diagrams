@@ -90,11 +90,8 @@
         "edgeLabels": {
           "type": "boolean"
         },
-        "flow": {
-          "enum": [
-            "lr",
-            "tb"
-          ]
+        "resourceLabels": {
+          "type": "boolean"
         }
       }
     },

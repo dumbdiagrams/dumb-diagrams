@@ -11,7 +11,7 @@ Edit `preferences.json` to set the style every diagram in this project follows:
 | --- | --- | --- |
 | `numberedSteps` | `true` | Number the main flow arrows with step badges (1, 2, 3, ...). |
 | `edgeLabels` | `true` | Give every arrow a short label. |
-| `flow` | `"lr"` | Main flow direction: `"lr"` (left to right) or `"tb"` (top to bottom). |
+| `resourceLabels` | `true` | Show names under icons. Set `false` to draw icons only. |
 
 `dumbdiagrams validate` fails when a diagram ignores them, so the agent fixes it.
 To change the style of one diagram only, just ask the agent; it records the

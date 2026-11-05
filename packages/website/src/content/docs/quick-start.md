@@ -23,7 +23,7 @@ dumbdiagrams studio
 The project contains your style preferences, agent instructions, `.dumbdiagrams/` knowledge, and a documented `diagrams/` workspace:
 
 ```text
-  preferences.json   Your diagram style: step badges, arrow labels, flow direction
+  preferences.json   Your diagram style: step badges, arrow labels, icon labels
   README.md          What to edit and what to leave alone
   diagrams/          Diagram bundles with persisted architecture briefs
   .dumbdiagrams/     Instructions, format, and catalog the agent reads
@@ -43,7 +43,7 @@ The project contains your style preferences, agent instructions, `.dumbdiagrams/
   "$schema": "./.dumbdiagrams/preferences.schema.json",
   "numberedSteps": true,
   "edgeLabels": true,
-  "flow": "lr"
+  "resourceLabels": true
 }
 ```
 
@@ -51,7 +51,7 @@ The project contains your style preferences, agent instructions, `.dumbdiagrams/
 | --- | --- | --- |
 | `numberedSteps` | `true` | Number the main flow arrows with step badges (1, 2, 3, ...). Dashed and failure arrows stay unnumbered. |
 | `edgeLabels` | `true` | Give every arrow a short label. |
-| `flow` | `"lr"` | Main flow direction: `"lr"` (left to right) or `"tb"` (top to bottom). |
+| `resourceLabels` | `true` | Show names under icons. Set `false` to draw icons only. |
 
 `dumbdiagrams validate` fails when a diagram ignores a preference, so the agent corrects it before finishing. To change one diagram only, ask the agent; it records the exception in that diagram's `requirements.json` under `preferences` and leaves the project file alone.
 

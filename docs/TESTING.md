@@ -47,7 +47,7 @@ architecture brief. The checker verifies the extracted contract, not the model's
 understanding of natural language.
 
 Validation also applies the project-root `preferences.json` (numbered steps, edge
-labels, flow direction), overridden per diagram by the contract's
+labels, icon labels), overridden per diagram by the contract's
 `preferences`. `validate --json` reports `readability`: backward and
 backtracking flow edges, bends, and crossings.
 

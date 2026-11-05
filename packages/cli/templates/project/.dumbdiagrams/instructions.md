@@ -34,7 +34,9 @@ does not need to write a structured Dumb Diagrams prompt.
    `dumbdiagrams validate --strict <path-to-diagram.dgm>`. Never remove,
    redirect, or leave a requested relationship implicit to eliminate a routing
    warning. An omission recorded in the brief does not satisfy a requirement.
-9. Open the result with `dumbdiagrams studio` and inspect it. After two
+9. Inspect the result in Studio. `dumbdiagrams studio` takes no file path:
+   tell the user to run `dumbdiagrams studio`, choose **Open**, and pick the
+   `.dgm` file (name its path). After two
    unsuccessful layout-repair attempts, preserve the complete graph and report
    remaining routing findings. Say "architecture complete; routing warnings
    remain" only when normal validation passes. Claim full completion only when
@@ -81,12 +83,14 @@ editing `preferences.json` for one diagram.
   Leave dashed, peer, and failure connectors unnumbered. When `false`, number
   no edges.
 - `edgeLabels` (default `true`): give every connector a short label.
-- `flow` (default `lr`): the diagram's `flow` direction.
+- `resourceLabels` (default `true`): when `false`, add `hide-resource-labels`
+  to the diagram header so resources render as icons only. Still give every
+  resource its descriptive label; it stays in the source and the SVG tooltip.
 
 ## Layout defaults and refinements
 
-For every new diagram, use the preferred `flow` (horizontal left-to-right,
-`flow lr`, by default) unless the user explicitly requests another direction.
+For every new diagram, use horizontal left-to-right layout (`flow lr`) unless
+the user explicitly requests another direction.
 Apply this default to every provider. Keep the primary sequence in that
 direction inside nested boundaries too; a matching outer flow alone is not
 enough.

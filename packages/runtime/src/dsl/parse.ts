@@ -25,7 +25,7 @@ export const DGM_FORMAT_VERSION = 1;
 /** Option keywords accepted inside each block, in canonical print order. */
 export const DGM_KEYWORDS = {
   topLevel: ["dgm", "diagram", "assets", "view"],
-  diagram: ["grammar", "flow", "title", "annotation"],
+  diagram: ["grammar", "flow", "title", "hide-resource-labels", "annotation"],
   group: ["step", "label-position", "hide-icon", "style", "color", "fill"],
   resource: ["service", "label-position", "role", "icon"],
   annotation: ["anchor", "style", "font", "size", "align"],
@@ -247,6 +247,7 @@ class Parser {
             if (key === "grammar") parser.doc.grammar = yield* parser.oneOf("grammar", DGM_VALUES.grammar);
             else if (key === "flow") parser.doc.flow = yield* parser.oneOf("flow", DGM_VALUES.flow);
             else if (key === "title") parser.doc.title = (yield* parser.expect("string")).value;
+            else if (key === "hide-resource-labels") parser.doc.hideResourceLabels = true;
             else yield* parser.parseAnnotation();
             return ok(undefined);
           }),
@@ -702,6 +703,7 @@ export function parseDgmResult(source: string): Result<DiagramDocument, DgmParse
 export function printDgm(doc: DiagramDocument): string {
   const header = [`  grammar ${doc.grammar}`, `  flow ${doc.flow}`];
   if (doc.title) header.push(`  title "${escapeString(doc.title)}"`);
+  if (doc.hideResourceLabels) header.push("  hide-resource-labels");
   const lines = [`dgm ${DGM_FORMAT_VERSION}`, `diagram ${doc.id} {`, ...header];
   const sections = [
     printSiblings(doc, findRoots(doc), 1),

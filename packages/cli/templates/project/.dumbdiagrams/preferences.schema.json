@@ -18,13 +18,10 @@
       "default": true,
       "description": "Give every arrow a short label."
     },
-    "flow": {
-      "enum": [
-        "lr",
-        "tb"
-      ],
-      "default": "lr",
-      "description": "Main flow direction: lr (left to right) or tb (top to bottom)."
+    "resourceLabels": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show names under icons. Set false to draw icons only."
     }
   }
 }
