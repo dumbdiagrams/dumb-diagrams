@@ -80,6 +80,8 @@ editing `preferences.json` for one diagram.
 - `numberedSteps` (default `true`): give every solid flow arrow a `step`
   number in the order the request or data moves, so the diagram shows numbered
   badges. Steps run from 1 without gaps; parallel branches may share a number.
+  Validation rejects a service (other than the flow's starter) that sends a
+  step before every numbered arrow into it.
   Leave dashed, peer, and failure connectors unnumbered. When `false`, number
   no edges.
 - `edgeLabels` (default `true`): give every connector a short label.

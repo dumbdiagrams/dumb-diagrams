@@ -349,6 +349,26 @@ describe("project preferences", () => {
     expect(labels(true)).toContain("preference-resource-labels");
   });
 
+  it("requires steps to follow the arrows, allowing replies, starters, and shared hubs", () => {
+    const order = (edges: string) =>
+      checkPreferences(
+        parseDgmResult(`diagram o { grammar cloud-agnostic flow lr
+          cloud-agnostic.client u cloud-agnostic.server a cloud-agnostic.server b cloud-agnostic.database d
+          ${edges}
+        }`)._unsafeUnwrap(),
+        { ...DEFAULT_PREFERENCES, edgeLabels: false },
+      ).flatMap((entry) => (entry.code === "preference-step-order" ? entry.elementIds : []));
+    // ponytail: a reversal whose sender owns step 1 is indistinguishable from a flow starter.
+    expect(order("u -> a { id ua step 2 } a -> d { id ad step 1 }")).toEqual([]);
+    expect(order("u -> a { id ua step 1 } a -> b { id ab step 3 } b -> d { id bd step 2 }")).toEqual(["bd", "ab"]);
+    expect(
+      order("u -> a { id ua step 1 } a -> d { id ad step 2 } d -> a { id da step 3 } a -> u { id au step 4 }"),
+    ).toEqual([]);
+    expect(
+      order("u -> a { id ua step 1 } a -> d { id ad step 2 } b -> d { id bd step 3 } d -> b { id db step 4 }"),
+    ).toEqual([]);
+  });
+
   it("accepts a contract override and model metadata", () => {
     const contract = {
       ...base(),

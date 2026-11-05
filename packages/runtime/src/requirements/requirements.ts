@@ -421,6 +421,51 @@ export function checkPreferences(doc: DiagramDocument, preferences: DiagramPrefe
         `Steps must run 1..${ordered.length} without gaps; found ${ordered.join(", ")}`,
       ),
     );
+  if (preferences.numberedSteps) issues.push(...checkStepOrder(doc));
+  return issues;
+}
+
+/**
+ * A node may not send step j when every numbered arrow into it comes later,
+ * unless it starts the flow (sends the first step) or the later arrow returns
+ * along a loop (a response to the caller).
+ */
+function checkStepOrder(doc: DiagramDocument): RequirementsIssue[] {
+  const directed = doc.edges.filter(
+    (edge) => edge.step !== undefined && edge.style !== "dashed" && (edge.kind ?? "flow") === "flow",
+  );
+  const reaches = (from: string, to: string) => {
+    const seen = new Set([from]);
+    for (const queue = [from]; queue.length; ) {
+      const current = queue.shift()!;
+      if (current === to) return true;
+      for (const edge of directed)
+        if (edge.source === current && !seen.has(edge.target)) {
+          seen.add(edge.target);
+          queue.push(edge.target);
+        }
+    }
+    return false;
+  };
+  const first = Math.min(...directed.map((edge) => edge.step!));
+  const starters = new Set(directed.filter((edge) => edge.step === first).map((edge) => edge.source));
+  const issues: RequirementsIssue[] = [];
+  for (const next of directed) {
+    if (starters.has(next.source)) continue;
+    const incoming = directed.filter((edge) => edge.target === next.source);
+    if (incoming.some((edge) => edge.step! <= next.step!)) continue;
+    const earlier = incoming.find((edge) => !reaches(next.target, edge.source));
+    if (earlier)
+      issues.push(
+        issue(
+          "preference-step-order",
+          `Edge ${next.id} (step ${next.step}) continues edge ${earlier.id} (step ${earlier.step}); number steps in the order the flow moves`,
+          undefined,
+          undefined,
+          [next.id, earlier.id],
+        ),
+      );
+  }
   return issues;
 }
 
