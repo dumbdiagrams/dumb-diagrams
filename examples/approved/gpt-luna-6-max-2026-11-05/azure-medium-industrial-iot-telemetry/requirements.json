@@ -3,399 +3,47 @@
   "version": 1,
   "grammar": "azure",
   "components": [
-    {
-      "id": "azure-cloud",
-      "kind": "group",
-      "type": "cloud-agnostic.cloud",
-      "basis": {
-        "kind": "explicit",
-        "text": "Nest Azure resources in a subscription, region, and resource group."
-      }
-    },
-    {
-      "id": "subscription",
-      "kind": "group",
-      "type": "azure.subscription",
-      "basis": {
-        "kind": "explicit",
-        "text": "Nest Azure resources in a subscription."
-      }
-    },
-    {
-      "id": "region",
-      "kind": "group",
-      "type": "azure.region",
-      "basis": {
-        "kind": "explicit",
-        "text": "Nest Azure resources in a region."
-      }
-    },
-    {
-      "id": "resource-group",
-      "kind": "group",
-      "type": "azure.resource-group",
-      "basis": {
-        "kind": "explicit",
-        "text": "Nest Azure resources in a resource group."
-      }
-    },
-    {
-      "id": "sensor-fleet",
-      "kind": "resource",
-      "type": "cloud-agnostic.device",
-      "basis": {
-        "kind": "explicit",
-        "text": "An industrial sensor fleet sends readings to Azure IoT Hub."
-      }
-    },
-    {
-      "id": "iot-hub",
-      "kind": "resource",
-      "type": "azure.iot-hub",
-      "basis": {
-        "kind": "explicit",
-        "text": "Sensor fleet sends readings to Azure IoT Hub."
-      }
-    },
-    {
-      "id": "event-hubs",
-      "kind": "resource",
-      "type": "azure.event-hubs",
-      "basis": {
-        "kind": "explicit",
-        "text": "IoT Hub routes readings to Event Hubs for processing."
-      }
-    },
-    {
-      "id": "raw-archive",
-      "kind": "resource",
-      "type": "azure.storage-accounts",
-      "basis": {
-        "kind": "explicit",
-        "text": "IoT Hub routes readings to a Storage Account for a raw archive."
-      }
-    },
-    {
-      "id": "function-app",
-      "kind": "resource",
-      "type": "azure.function-apps",
-      "basis": {
-        "kind": "explicit",
-        "text": "Function App consumes the event stream, normalizes readings, and writes current equipment status."
-      }
-    },
-    {
-      "id": "cosmos-db",
-      "kind": "resource",
-      "type": "azure.azure-cosmos-db",
-      "basis": {
-        "kind": "explicit",
-        "text": "Function App writes current equipment status to Cosmos DB."
-      }
-    },
-    {
-      "id": "operations-dashboard",
-      "kind": "resource",
-      "type": "cloud-agnostic.client",
-      "basis": {
-        "kind": "explicit",
-        "text": "An external operations dashboard reads the current status."
-      }
-    }
+    { "id": "subscription", "kind": "group", "type": "azure.subscription", "basis": { "kind": "explicit", "text": "one subscription" } },
+    { "id": "region", "kind": "group", "type": "azure.region", "basis": { "kind": "explicit", "text": "one region" } },
+    { "id": "resource_group", "kind": "group", "type": "azure.resource-group", "basis": { "kind": "explicit", "text": "one resource group" } },
+    { "id": "sensor_fleet", "kind": "resource", "type": "cloud-agnostic.device", "basis": { "kind": "explicit", "text": "industrial sensor fleet" } },
+    { "id": "iot_hub", "kind": "resource", "type": "azure.iot-hub", "basis": { "kind": "explicit", "text": "Azure IoT Hub" } },
+    { "id": "event_hubs", "kind": "resource", "type": "azure.event-hubs", "basis": { "kind": "explicit", "text": "Event Hubs for processing" } },
+    { "id": "raw_archive", "kind": "resource", "type": "azure.storage-accounts", "basis": { "kind": "explicit", "text": "Storage Account raw archive" } },
+    { "id": "normalizer", "kind": "resource", "type": "azure.function-apps", "basis": { "kind": "explicit", "text": "Azure Function App consumes the event stream, normalizes readings" } },
+    { "id": "status_db", "kind": "resource", "type": "azure.azure-cosmos-db", "basis": { "kind": "explicit", "text": "writes current equipment status to Cosmos DB" } },
+    { "id": "operations_dashboard", "kind": "resource", "type": "cloud-agnostic.client", "basis": { "kind": "explicit", "text": "external operations dashboard reads current status" } }
   ],
   "relationships": [
-    {
-      "id": "sensor-readings",
-      "source": "sensor-fleet",
-      "target": "iot-hub",
-      "kind": "flow",
-      "basis": {
-        "kind": "explicit",
-        "text": "The sensor fleet sends readings to IoT Hub."
-      }
-    },
-    {
-      "id": "iot-to-events",
-      "source": "iot-hub",
-      "target": "event-hubs",
-      "kind": "flow",
-      "basis": {
-        "kind": "explicit",
-        "text": "IoT Hub routes readings to Event Hubs for processing."
-      }
-    },
-    {
-      "id": "iot-to-archive",
-      "source": "iot-hub",
-      "target": "raw-archive",
-      "kind": "flow",
-      "basis": {
-        "kind": "explicit",
-        "text": "IoT Hub routes readings to a Storage Account for a raw archive."
-      }
-    },
-    {
-      "id": "events-to-function",
-      "source": "event-hubs",
-      "target": "function-app",
-      "kind": "flow",
-      "basis": {
-        "kind": "explicit",
-        "text": "Function App consumes the event stream."
-      }
-    },
-    {
-      "id": "function-to-cosmos",
-      "source": "function-app",
-      "target": "cosmos-db",
-      "kind": "flow",
-      "basis": {
-        "kind": "explicit",
-        "text": "The Function normalizes readings and writes current equipment status to Cosmos DB."
-      }
-    },
-    {
-      "id": "cosmos-to-dashboard",
-      "source": "cosmos-db",
-      "target": "operations-dashboard",
-      "kind": "flow",
-      "basis": {
-        "kind": "explicit",
-        "text": "The external dashboard reads the current status."
-      }
-    }
+    { "id": "telemetry_to_hub", "source": "sensor_fleet", "target": "iot_hub", "kind": "flow", "basis": { "kind": "explicit", "text": "sensor fleet -> Azure IoT Hub" } },
+    { "id": "hub_to_events", "source": "iot_hub", "target": "event_hubs", "kind": "flow", "basis": { "kind": "explicit", "text": "IoT Hub routes readings to Event Hubs for processing" } },
+    { "id": "hub_to_archive", "source": "iot_hub", "target": "raw_archive", "kind": "flow", "basis": { "kind": "explicit", "text": "IoT Hub routes readings to a Storage Account raw archive" } },
+    { "id": "events_to_function", "source": "event_hubs", "target": "normalizer", "kind": "flow", "basis": { "kind": "explicit", "text": "Function App consumes the event stream" } },
+    { "id": "function_to_status", "source": "normalizer", "target": "status_db", "kind": "flow", "basis": { "kind": "explicit", "text": "normalizes readings, writes current equipment status to Cosmos DB" } },
+    { "id": "status_to_dashboard", "source": "status_db", "target": "operations_dashboard", "kind": "flow", "basis": { "kind": "explicit", "text": "external operations dashboard reads current status" } }
   ],
   "counts": [
-    {
-      "id": "cloud_group_count",
-      "kind": "group",
-      "type": "cloud-agnostic.cloud",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 cloud component(s) shown."
-      }
-    },
-    {
-      "id": "subscription_group_count",
-      "kind": "group",
-      "type": "azure.subscription",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 subscription component(s) shown."
-      }
-    },
-    {
-      "id": "region_group_count",
-      "kind": "group",
-      "type": "azure.region",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 region component(s) shown."
-      }
-    },
-    {
-      "id": "resource_group_group_count",
-      "kind": "group",
-      "type": "azure.resource-group",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 resource group component(s) shown."
-      }
-    },
-    {
-      "id": "device_resource_count",
-      "kind": "resource",
-      "type": "cloud-agnostic.device",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 device component(s) shown."
-      }
-    },
-    {
-      "id": "iot_hub_resource_count",
-      "kind": "resource",
-      "type": "azure.iot-hub",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 iot hub component(s) shown."
-      }
-    },
-    {
-      "id": "event_hubs_resource_count",
-      "kind": "resource",
-      "type": "azure.event-hubs",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 event hubs component(s) shown."
-      }
-    },
-    {
-      "id": "storage_accounts_resource_count",
-      "kind": "resource",
-      "type": "azure.storage-accounts",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 storage accounts component(s) shown."
-      }
-    },
-    {
-      "id": "function_apps_resource_count",
-      "kind": "resource",
-      "type": "azure.function-apps",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 function apps component(s) shown."
-      }
-    },
-    {
-      "id": "azure_cosmos_db_resource_count",
-      "kind": "resource",
-      "type": "azure.azure-cosmos-db",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 azure cosmos db component(s) shown."
-      }
-    },
-    {
-      "id": "client_resource_count",
-      "kind": "resource",
-      "type": "cloud-agnostic.client",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 client component(s) shown."
-      }
-    }
+    { "id": "one_subscription", "kind": "group", "type": "azure.subscription", "min": 1, "max": 1, "basis": { "kind": "explicit", "text": "one subscription" } },
+    { "id": "one_region", "kind": "group", "type": "azure.region", "min": 1, "max": 1, "within": "subscription", "basis": { "kind": "explicit", "text": "one region" } },
+    { "id": "one_resource_group", "kind": "group", "type": "azure.resource-group", "min": 1, "max": 1, "within": "region", "basis": { "kind": "explicit", "text": "one resource group" } },
+    { "id": "one_sensor_fleet", "kind": "resource", "type": "cloud-agnostic.device", "min": 1, "max": 1, "basis": { "kind": "explicit", "text": "industrial sensor fleet" } },
+    { "id": "one_iot_hub", "kind": "resource", "type": "azure.iot-hub", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "Azure IoT Hub" } },
+    { "id": "one_event_hubs", "kind": "resource", "type": "azure.event-hubs", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "Event Hubs for processing" } },
+    { "id": "one_archive", "kind": "resource", "type": "azure.storage-accounts", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "Storage Account raw archive" } },
+    { "id": "one_function", "kind": "resource", "type": "azure.function-apps", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "Azure Function App" } },
+    { "id": "one_cosmos_db", "kind": "resource", "type": "azure.azure-cosmos-db", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "Cosmos DB" } },
+    { "id": "one_dashboard", "kind": "resource", "type": "cloud-agnostic.client", "min": 1, "max": 1, "basis": { "kind": "explicit", "text": "external operations dashboard" } }
   ],
   "placement": [
-    {
-      "id": "azure-cloud_root",
-      "component": "azure-cloud",
-      "relation": "root",
-      "basis": {
-        "kind": "explicit",
-        "text": "Azure Cloud is external to the Azure containment."
-      }
-    },
-    {
-      "id": "subscription_parent",
-      "component": "subscription",
-      "relation": "parent",
-      "group": "azure-cloud",
-      "basis": {
-        "kind": "explicit",
-        "text": "Subscription is placed directly inside azure cloud."
-      }
-    },
-    {
-      "id": "region_parent",
-      "component": "region",
-      "relation": "parent",
-      "group": "subscription",
-      "basis": {
-        "kind": "explicit",
-        "text": "Primary Region is placed directly inside subscription."
-      }
-    },
-    {
-      "id": "resource-group_parent",
-      "component": "resource-group",
-      "relation": "parent",
-      "group": "region",
-      "basis": {
-        "kind": "explicit",
-        "text": "Resource Group is placed directly inside region."
-      }
-    },
-    {
-      "id": "sensor-fleet_root",
-      "component": "sensor-fleet",
-      "relation": "root",
-      "basis": {
-        "kind": "explicit",
-        "text": "Industrial Sensor Fleet is external to the Azure containment."
-      }
-    },
-    {
-      "id": "iot-hub_parent",
-      "component": "iot-hub",
-      "relation": "parent",
-      "group": "resource-group",
-      "basis": {
-        "kind": "explicit",
-        "text": "IoT Hub is placed directly inside resource group."
-      }
-    },
-    {
-      "id": "event-hubs_parent",
-      "component": "event-hubs",
-      "relation": "parent",
-      "group": "resource-group",
-      "basis": {
-        "kind": "explicit",
-        "text": "Event Hubs is placed directly inside resource group."
-      }
-    },
-    {
-      "id": "raw-archive_parent",
-      "component": "raw-archive",
-      "relation": "parent",
-      "group": "resource-group",
-      "basis": {
-        "kind": "explicit",
-        "text": "Raw Archive Storage is placed directly inside resource group."
-      }
-    },
-    {
-      "id": "function-app_parent",
-      "component": "function-app",
-      "relation": "parent",
-      "group": "resource-group",
-      "basis": {
-        "kind": "explicit",
-        "text": "Telemetry Function App is placed directly inside resource group."
-      }
-    },
-    {
-      "id": "cosmos-db_parent",
-      "component": "cosmos-db",
-      "relation": "parent",
-      "group": "resource-group",
-      "basis": {
-        "kind": "explicit",
-        "text": "Cosmos DB is placed directly inside resource group."
-      }
-    },
-    {
-      "id": "operations-dashboard_root",
-      "component": "operations-dashboard",
-      "relation": "root",
-      "basis": {
-        "kind": "explicit",
-        "text": "Operations Dashboard is external to the Azure containment."
-      }
-    }
+    { "id": "region_inside_subscription", "component": "region", "relation": "inside", "group": "subscription", "basis": { "kind": "explicit", "text": "one region inside one subscription" } },
+    { "id": "rg_inside_region", "component": "resource_group", "relation": "inside", "group": "region", "basis": { "kind": "explicit", "text": "one resource group inside the region" } },
+    { "id": "iot_hub_in_rg", "component": "iot_hub", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "Nest all Azure resources in one subscription, region, and resource group." } },
+    { "id": "event_hubs_in_rg", "component": "event_hubs", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "Nest all Azure resources in one subscription, region, and resource group." } },
+    { "id": "archive_in_rg", "component": "raw_archive", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "Nest all Azure resources in one subscription, region, and resource group." } },
+    { "id": "function_in_rg", "component": "normalizer", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "Nest all Azure resources in one subscription, region, and resource group." } },
+    { "id": "cosmos_in_rg", "component": "status_db", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "Nest all Azure resources in one subscription, region, and resource group." } },
+    { "id": "sensor_outside_azure", "component": "sensor_fleet", "relation": "root", "basis": { "kind": "explicit", "text": "device/dashboard outside Azure scope" } },
+    { "id": "dashboard_outside_azure", "component": "operations_dashboard", "relation": "root", "basis": { "kind": "explicit", "text": "device/dashboard outside Azure scope" } }
   ],
   "allowAdditionalResources": false
 }

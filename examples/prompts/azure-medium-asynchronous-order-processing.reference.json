@@ -49,7 +49,7 @@
     "intake -> queue",
     "intake -> archive",
     "queue -- processor",
-    "archive -- processor",
+    "archive ~> processor",
     "processor -> sql",
     "processor -> monitor"
   ]

@@ -193,25 +193,25 @@
       "repairCandidates": 4250
     },
     "examples/approved/gpt-luna-6-max-2026-11-05/azure-easy-private-application-api/diagram.dgm": {
-      "scorePathCalls": 8505,
-      "routeConflictChecks": 106,
-      "astarExpansions": 448856,
-      "repairCandidates": 1408
+      "scorePathCalls": 1383,
+      "routeConflictChecks": 2,
+      "astarExpansions": 0,
+      "repairCandidates": 0
     },
     "examples/approved/gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing/diagram.dgm": {
-      "scorePathCalls": 81803,
-      "routeConflictChecks": 1827,
-      "astarExpansions": 591813,
-      "repairCandidates": 3727
+      "scorePathCalls": 44959,
+      "routeConflictChecks": 1185,
+      "astarExpansions": 548257,
+      "repairCandidates": 5634
     },
     "examples/approved/gpt-luna-6-max-2026-11-05/azure-medium-asynchronous-order-processing/diagram.dgm": {
-      "scorePathCalls": 1700,
-      "routeConflictChecks": 6,
+      "scorePathCalls": 4193,
+      "routeConflictChecks": 2,
       "astarExpansions": 0,
       "repairCandidates": 0
     },
     "examples/approved/gpt-luna-6-max-2026-11-05/azure-medium-industrial-iot-telemetry/diagram.dgm": {
-      "scorePathCalls": 1488,
+      "scorePathCalls": 1509,
       "routeConflictChecks": 2,
       "astarExpansions": 0,
       "repairCandidates": 0

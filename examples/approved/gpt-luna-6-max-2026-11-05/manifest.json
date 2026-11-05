@@ -46,7 +46,7 @@
       "provider": "azure",
       "difficulty": "hard",
       "strictPass": false,
-      "routingWarnings": 32
+      "routingWarnings": 19
     },
     {
       "id": "azure-medium-asynchronous-order-processing",

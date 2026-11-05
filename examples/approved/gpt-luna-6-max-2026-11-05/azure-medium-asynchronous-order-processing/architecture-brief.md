@@ -2,22 +2,30 @@
 
 ## Goal
 
-Show storefront orders validated by an intake Function, split to a processing queue and request archive, then consumed by a processor that saves results and emits metrics.
+Model an Azure asynchronous order-processing system with an explicit intake path, queued processing, archive-event delivery, SQL persistence, and operational metrics.
 
 ## Explicit requirements
 
 - A storefront submits orders through an API.
 - An intake function validates each order, queues it for processing, and archives the request.
 - A processor consumes queued orders and archive events, saves completed orders in SQL, and sends processing metrics to Azure Monitor.
+- Use Azure grammar and a left-to-right layout.
 
 ## Relationships and containment
 
-- The storefront is outside Azure Cloud.
-- The two Function App components, Service Bus queue, Storage Account, SQL Database, and Monitor are Azure services inside Azure Cloud.
+- Storefront → API → intake function.
+- Intake function → processing queue and archive storage.
+- Archive storage → Event Grid subscription → processor; queue → processor.
+- Processor → SQL Database for completed orders.
+- Processor → Azure Monitor through a directed dashed support flow.
+- Azure resources are contained by an Azure subscription with a region; storefront remains outside that scope. No resource group is specified.
 
 ## Inferred decisions and exclusions
 
-- The processor is represented as a second Azure Function App because its runtime type was not specified.
-- Archive events are represented as a directed Storage Account to processor relationship; no eventing service was named.
-- The parallel queue and archive outputs share step 2.
-
+- API Management Services represents the generic API ingress because a concrete Azure API component is needed to show the storefront's API hop.
+- A second Function App represents the processor because the request names a distinct consumer role.
+- Event Grid Subscription delivers archive events to that processor, matching the specified archive-event consumption.
+- A Storage Account provides the archive destination.
+- The processing queue is represented by one Azure Service Bus resource.
+- No resource group or unrelated infrastructure services are added.
+- The main order path is laid out left-to-right; metrics are a dashed supporting flow.

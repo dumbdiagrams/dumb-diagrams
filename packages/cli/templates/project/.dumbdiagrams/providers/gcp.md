@@ -1,13 +1,13 @@
 # GCP conventions (Experimental)
 
-GCP support is experimental. Until refined, inherit the current AWS layout,
-routing, and composition conventions in this project while using GCP catalog
-types and their GCP icons.
+GCP support is experimental. GCP diagrams follow the AWS layout, routing,
+and composition conventions; only the catalog types and icons are GCP's own.
 
 Use canonical `gcp.*` types from `../catalog.md` or `../catalog.json` and obey
-each entry's allowed parent boundaries. Use the GCP cloud/project/region or
-network boundaries only when explicit, strongly implied, or necessary to show
-placement. Use `cloud-agnostic.boundary` for logical application groupings.
+each entry's allowed parent boundaries. Show the GCP scope as
+`gcp.organization` containing `gcp.project`, and add region, VPC network, zone,
+or subnet boundaries only when explicit, strongly implied, or necessary to show
+placement. Never use `cloud-agnostic.cloud`; validation rejects it. Use `cloud-agnostic.boundary` for logical application groupings.
 
 Preserve explicitly named GCP services and public/private or runtime
 placement. Do not translate a request into AWS services or add unrequested

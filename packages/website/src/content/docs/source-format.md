@@ -169,7 +169,9 @@ diagram.dgm:3:8: Invalid flow "sideways"; expected lr, tb
 Warnings render but point at something worth fixing. Provider rules are
 specific to each grammar. For example, `managed-service-in-network` flags
 DynamoDB inside a VPC, Key Vault inside a VNet, or BigQuery inside a VPC
-network, because those managed services sit outside the network.
+network, because those managed services sit outside the network. The error
+`generic-cloud-boundary` rejects `cloud-agnostic.cloud` in a provider diagram;
+use `aws.cloud`, `azure.subscription`, or `gcp.organization` instead.
 `dumbdiagrams validate --strict` turns warnings into failures for CI.
 
 ## Formatting

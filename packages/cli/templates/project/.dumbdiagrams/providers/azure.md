@@ -1,13 +1,15 @@
 # Azure conventions (Experimental)
 
-Azure support is experimental. Until refined, inherit the current AWS layout,
-routing, and composition conventions in this project while using Azure catalog
-types and their Azure icons.
+Azure support is experimental. Azure diagrams follow the AWS layout, routing,
+and composition conventions; only the catalog types and icons are Azure's own.
 
 Use canonical `azure.*` types from `../catalog.md` or `../catalog.json` and obey
-each entry's allowed parent boundaries. Use the Azure cloud/account/region or
-network boundaries only when explicit, strongly implied, or necessary to show
-placement. Use `cloud-agnostic.boundary` for logical application groupings.
+each entry's allowed parent boundaries. Azure has no cloud boundary: show the
+Azure scope as `azure.subscription` containing `azure.region`, and add
+`azure.resource-group`, `azure.vnet`, or `azure.subnet` only when explicit,
+strongly implied, or necessary to show placement. Never use
+`cloud-agnostic.cloud`; validation rejects it with `generic-cloud-boundary`. Use
+`cloud-agnostic.boundary` for logical application groupings.
 
 Preserve explicitly named Azure services and public/private or runtime
 placement. Do not translate a request into AWS services or add unrequested

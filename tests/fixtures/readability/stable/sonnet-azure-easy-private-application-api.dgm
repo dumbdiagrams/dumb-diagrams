@@ -4,7 +4,7 @@ diagram azure-private-application-api {
   flow lr
   title "Azure Private Application API"
 
-  cloud-agnostic.cloud cloud "Azure" {
+  azure.subscription cloud "Azure subscription" {
     cloud-agnostic.client client "Client"
     azure.api-management-services apim "API Management"
 

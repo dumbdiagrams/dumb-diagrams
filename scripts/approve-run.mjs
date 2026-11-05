@@ -14,6 +14,8 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync,
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
+import { getCatalogMap } from "../packages/runtime/dist/catalog/index.js";
+import { hasErrors, validateDocument } from "../packages/runtime/dist/core/index.js";
 import { formatParseError, parseDgmResult } from "../packages/runtime/dist/dsl/index.js";
 import { compileDiagram, invariantTier } from "../packages/runtime/dist/render/index.js";
 import { compiledGeometry } from "./lib/compiled-geometry.mjs";
@@ -104,6 +106,19 @@ for (const { id, file, baselineName } of approvedDiagrams()) {
     geometry: compiledGeometry(compiled.layout),
   };
   if (!id.startsWith(`${run}/`)) continue;
+  const issues = validateDocument(parsed.value, getCatalogMap());
+  if (hasErrors(issues)) throw new Error(`${id}: ${issues.map((issue) => issue.message).join("; ")}`);
+  const svgPath = join(approved, id, "diagram.svg");
+  const { x, y, w, h } = contentBounds(compiled.layout);
+  writeFileSync(
+    svgPath,
+    readFileSync(svgPath, "utf8").replace(/<svg\b[^>]*>/, (tag) =>
+      tag
+        .replace(/ width="[^"]*"/, ` width="${w}"`)
+        .replace(/ height="[^"]*"/, ` height="${h}"`)
+        .replace(/ viewBox="[^"]*"/, ` viewBox="${x} ${y} ${w} ${h}"`),
+    ),
+  );
   const bundle = id.slice(run.length + 1);
   const [provider] = ["cloud-agnostic", "aws", "azure", "gcp"].filter((name) => bundle.startsWith(`${name}-`));
   manifestBundles.push({
@@ -157,3 +172,17 @@ console.log(
   `\nApproved ${bundles.length} bundles as examples/approved/${run}; ${runs.length} runs, ${warnings.length} reviewed routing findings.`,
 );
 console.log("Review the git diff, then run pnpm test and pnpm check:website before committing.");
+
+/** The bounds Studio's selection-only export uses when everything is selected. */
+function contentBounds({ groups, nodes, edges }, padding = 24) {
+  const rects = [
+    ...groups.map((group) => group.bounds),
+    ...nodes.map((node) => node.obstacle),
+    ...edges.flatMap((edge) => edge.points.map((point) => ({ ...point, w: 0, h: 0 }))),
+  ];
+  const x = Math.min(...rects.map((rect) => rect.x)) - padding;
+  const y = Math.min(...rects.map((rect) => rect.y)) - padding;
+  const w = Math.max(...rects.map((rect) => rect.x + rect.w)) + padding - x;
+  const h = Math.max(...rects.map((rect) => rect.y + rect.h)) + padding - y;
+  return { x, y, w, h };
+}

@@ -2,20 +2,22 @@
 
 ## Goal
 
-Show a simple private Azure application API: a client enters through API Management, which routes to a Function App in an application VNet; the function uses a private endpoint to reach Azure SQL.
+Show a simple Azure API path from a client through API Management to a Function App, with SQL access routed through a private endpoint in the application network.
 
 ## Explicit requirements
 
 - A client calls API Management, which routes requests to an Azure Function.
-- The function accesses an Azure SQL database through a private endpoint in the application network.
+- The Function accesses Azure SQL through a private endpoint in the application network.
 
 ## Relationships and containment
 
-- The Azure Function and SQL private endpoint are contained in the application VNet.
-- API Management and Azure SQL remain outside the VNet; Azure SQL remains within Azure Cloud.
+- The client calls API Management; API Management routes to the Function App.
+- The Function App reaches SQL Database through a Private Endpoint.
+- The Function App is in the application subnet; the Private Endpoint is in a subnet in the same VNet. SQL Database remains outside the VNet.
 
 ## Inferred decisions and exclusions
 
-- The function is shown inside the application VNet so its private endpoint access is clear.
-- No subscription or region boundary was requested, so the cloud and application network are the only Azure boundaries.
-
+- Add one Azure subscription, region, and resource group to scope the resources; no location or resource-group name was specified.
+- Use an application VNet with separate application and private-endpoint subnets to make the requested private endpoint placement clear.
+- Place API Management outside the VNet as the client-facing entry point. Its public/private exposure was not specified.
+- Do not add supporting services or additional application stages.

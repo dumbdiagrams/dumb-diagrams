@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1038" height="600" viewBox="0 0 1038 600">
+<svg xmlns="http://www.w3.org/2000/svg" width="1585" height="600" viewBox="0 0 1585 600">
 <rect width="100%" height="100%" fill="#FFFFFF"/>
 <defs>
   <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
@@ -52,119 +52,154 @@
   <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
 </defs>
 
-<g id="group-azure-cloud">
-  <rect class="group-border-contrast" x="236.5" y="32" width="769.2" height="288"
-    fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"  rx="0"/>
-  <rect class="group-border" x="236.5" y="32" width="769.2" height="288"
-    fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5"  rx="0"/>
-  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-group-cloud-b03d89b9-60f0138a.svg" x="236.5" y="32" width="24" height="24" preserveAspectRatio="none"/>
+<g id="group-subscription">
+  <rect class="group-border" x="236.5" y="32" width="1315.75" height="350"
+    fill="rgba(255,147,0,0.04)" stroke="#FF9300" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-subscription-d69843a7-07a65830.svg" x="236.5" y="32" width="24" height="24" preserveAspectRatio="none"/>
   <text x="268.5" y="48.9"
-    font-size="14" font-weight="600" dominant-baseline="alphabetic">Azure Cloud</text>
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Azure Subscription</text>
   
 </g>
 
-<g id="edge-storefront-submit" class="edge edge-flow edge-solid">
-  <path d="M 94 152 L 300.5 152" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="group-region">
+  <rect class="group-border" x="254.5" y="65" width="1279.75" height="290"
+    fill="rgba(239,113,0,0.05)" stroke="#EF7100" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/azure/azure-group-region-a31366e6-e15fe4de.svg" x="254.5" y="65" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="286.5" y="81.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Region</text>
   
-  
-  <circle class="edge-badge-circle" cx="197.25" cy="136" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="197.25" y="140" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
-  <text class="edge-label" data-edge-label="storefront-submit" x="146" y="144" text-anchor="middle" font-size="11" fill="#163964">Submit order</text>
 </g>
 
-<g id="edge-intake-to-queue" class="edge edge-flow edge-solid">
-  <path d="M 348.5 140 L 448 140 L 448 88 L 500.5 88" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="edge-submit_order" class="edge edge-flow edge-solid">
+  <path d="M 94 139 L 334.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="398.25" cy="124" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="398.25" y="128" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
-  <text class="edge-label" data-edge-label="intake-to-queue" x="390.625" y="105" text-anchor="middle" font-size="11" fill="#163964">Validated order</text>
+  <circle class="edge-badge-circle" cx="214.25" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="214.25" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="submit_order" x="162" y="131" text-anchor="middle" font-size="11" fill="#163964">Submit order</text>
 </g>
 
-<g id="edge-intake-to-archive" class="edge edge-flow edge-solid">
-  <path d="M 348.5 152 L 448 152 L 448 216 L 497.5 216" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="edge-api_to_intake" class="edge edge-flow edge-solid">
+  <path d="M 382.5 139 L 517.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="432" cy="160" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="432" y="164" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
-  <text class="edge-label" data-edge-label="intake-to-archive" x="505.375" y="180" text-anchor="middle" font-size="11" fill="#163964">Archive request</text>
+  <circle class="edge-badge-circle" cx="450" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="450" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="api_to_intake" x="450" y="159" text-anchor="middle" font-size="11" fill="#163964">Order request</text>
 </g>
 
-<g id="edge-queue-to-processor" class="edge edge-flow edge-solid">
-  <path d="M 548.5 88 L 648 88 L 648 140 L 689.5 140" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="edge-queue_order" class="edge edge-flow edge-solid">
+  <path d="M 565.5 139 L 714.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="598.25" cy="72" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="598.25" y="76" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
-  <text class="edge-label" data-edge-label="queue-to-processor" x="630.25" y="108" text-anchor="middle" font-size="11" fill="#163964">Queued order</text>
+  <circle class="edge-badge-circle" cx="640" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="640" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="queue_order" x="657.5" y="159" text-anchor="middle" font-size="11" fill="#163964">Validated order</text>
 </g>
 
-<g id="edge-archive-to-processor" class="edge edge-flow edge-solid">
-  <path d="M 545.5 216 L 648 216 L 648 152 L 689.5 152" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="edge-archive_request" class="edge edge-flow edge-solid">
+  <path d="M 565.5 151 L 608 151 L 608 232 L 968 232 L 968 139 L 911.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="596.75" cy="200" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="596.75" y="204" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
-  <text class="edge-label" data-edge-label="archive-to-processor" x="596.75" y="236" text-anchor="middle" font-size="11" fill="#163964">Archive event</text>
+  <circle class="edge-badge-circle" cx="788" cy="248" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="788" y="252" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="archive_request" x="724" y="252" text-anchor="middle" font-size="11" fill="#163964">Archive request</text>
 </g>
 
-<g id="edge-processor-to-sql" class="edge edge-flow edge-solid">
-  <path d="M 737.5 152 L 880 152 L 880 96 L 916.5 96" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="edge-publish_archive_event" class="edge edge-flow edge-solid">
+  <path d="M 911.5 127 L 1041.5 127" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="808.75" cy="136" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="808.75" y="140" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
-  <text class="edge-label" data-edge-label="processor-to-sql" x="837.5" y="172" text-anchor="middle" font-size="11" fill="#163964">Completed order</text>
+  <circle class="edge-badge-circle" cx="976.5" cy="111" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="976.5" y="115" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="publish_archive_event" x="992.5" y="147" text-anchor="middle" font-size="11" fill="#163964">Archive event</text>
 </g>
 
-<g id="edge-processor-to-monitor" class="edge edge-flow edge-solid">
-  <path d="M 737.5 164 L 784 164 L 784 224 L 916.5 224" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<g id="edge-deliver_queued_order" class="edge edge-flow edge-solid">
+  <path d="M 762.5 139 L 816 139 L 816 88 L 1176 88 L 1176 139 L 1223.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="850.25" cy="208" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="850.25" y="212" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
-  <text class="edge-label" data-edge-label="processor-to-monitor" x="850.25" y="244" text-anchor="middle" font-size="11" fill="#163964">Processing metrics</text>
+  <circle class="edge-badge-circle" cx="996" cy="72" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="996" y="76" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="deliver_queued_order" x="809.3125" y="131" text-anchor="middle" font-size="11" fill="#163964">Queued order</text>
+</g>
+
+<g id="edge-deliver_archive_event" class="edge edge-flow edge-solid">
+  <path d="M 1089.5 151 L 1223.5 151" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1172.5" cy="167" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1172.5" y="171" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="deliver_archive_event" x="1157.5" y="143" text-anchor="middle" font-size="11" fill="#163964">Archive event</text>
+</g>
+
+<g id="edge-save_order" class="edge edge-flow edge-solid">
+  <path d="M 1271.5 139 L 1442.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1357" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1357" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="save_order" x="1357" y="159" text-anchor="middle" font-size="11" fill="#163964">Save completed order</text>
+</g>
+
+<g id="edge-send_metrics" class="edge edge-flow edge-dashed">
+  <path d="M 1247.5 163 L 1247.5 267 L 914.5 267" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 1247.5 163 L 1247.5 267 L 914.5 267" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="send_metrics" x="1081" y="259" text-anchor="middle" font-size="11" fill="#163964">Processing metrics</text>
 </g>
 
 <g id="res-storefront">
-  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="46" y="128" width="48" height="48"/>
-  <text x="70.25" y="192" text-anchor="middle" font-size="12" font-weight="500">Client</text>
-  <text x="70.25" y="210" text-anchor="middle" font-size="11" font-style="italic">Storefront</text>
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="46" y="115" width="48" height="48"/>
+  <text x="70.25" y="179" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="70.25" y="197" text-anchor="middle" font-size="11" font-style="italic">Storefront</text>
 </g>
 
-<g id="res-intake-function">
-  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="300.5" y="128" width="48" height="48"/>
-  <text x="324.025" y="192" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
-  <text x="324.025" y="210" text-anchor="middle" font-size="11" font-style="italic">Order Intake Function</text>
+<g id="res-api">
+  <image href="catalog-icons/azure/azure-resource-api-management-services-cf794288-596432f0.svg" x="334.5" y="115" width="48" height="48"/>
+  <text x="358.4" y="179" text-anchor="middle" font-size="12" font-weight="500">API Management Services</text>
+  <text x="358.4" y="197" text-anchor="middle" font-size="11" font-style="italic">Order API</text>
 </g>
 
-<g id="res-work-queue">
-  <image href="catalog-icons/azure/azure-resource-azure-service-bus-eaf42cb8-c6271a29.svg" x="500.5" y="64" width="48" height="48"/>
-  <text x="524.6" y="128" text-anchor="middle" font-size="12" font-weight="500">Azure Service Bus</text>
-  <text x="524.6" y="146" text-anchor="middle" font-size="11" font-style="italic">Order Work Queue</text>
+<g id="res-intake">
+  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="517.5" y="115" width="48" height="48"/>
+  <text x="541.4" y="179" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
+  <text x="541.4" y="197" text-anchor="middle" font-size="11" font-style="italic">Order Intake</text>
 </g>
 
-<g id="res-request-archive">
-  <image href="catalog-icons/azure/azure-resource-storage-accounts-7190d3bb-a0819274.svg" x="497.5" y="192" width="48" height="48"/>
-  <text x="521.3" y="256" text-anchor="middle" font-size="12" font-weight="500">Storage Accounts</text>
-  <text x="521.3" y="274" text-anchor="middle" font-size="11" font-style="italic">Request Archive</text>
+<g id="res-queue">
+  <image href="catalog-icons/azure/azure-resource-azure-service-bus-eaf42cb8-c6271a29.svg" x="714.5" y="115" width="48" height="48"/>
+  <text x="738.6" y="179" text-anchor="middle" font-size="12" font-weight="500">Azure Service Bus</text>
+  <text x="738.6" y="197" text-anchor="middle" font-size="11" font-style="italic">Order Queue</text>
 </g>
 
-<g id="res-processor-function">
-  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="689.5" y="128" width="48" height="48"/>
-  <text x="713.875" y="192" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
-  <text x="713.875" y="210" text-anchor="middle" font-size="11" font-style="italic">Order Processor</text>
+<g id="res-archive">
+  <image href="catalog-icons/azure/azure-resource-storage-accounts-7190d3bb-a0819274.svg" x="863.5" y="115" width="48" height="48"/>
+  <text x="887.3" y="179" text-anchor="middle" font-size="12" font-weight="500">Storage Accounts</text>
+  <text x="887.3" y="197" text-anchor="middle" font-size="11" font-style="italic">Request Archive</text>
 </g>
 
-<g id="res-sql-database">
-  <image href="catalog-icons/azure/azure-resource-sql-database-a26124a2-d605a666.svg" x="916.5" y="72" width="48" height="48"/>
-  <text x="940.1" y="136" text-anchor="middle" font-size="12" font-weight="500">SQL Database</text>
-  <text x="940.1" y="154" text-anchor="middle" font-size="11" font-style="italic">Azure SQL</text>
+<g id="res-archive_events">
+  <image href="catalog-icons/azure/azure-resource-event-grid-subscriptions-d685b65f-77cb7f4e.svg" x="1041.5" y="115" width="48" height="48"/>
+  <text x="1065.7" y="179" text-anchor="middle" font-size="12" font-weight="500">Event Grid Subscriptions</text>
+  <text x="1065.7" y="197" text-anchor="middle" font-size="11" font-style="italic">Archive Events</text>
+</g>
+
+<g id="res-processor">
+  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="1223.5" y="115" width="48" height="48"/>
+  <text x="1247.875" y="179" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
+  <text x="1247.875" y="197" text-anchor="middle" font-size="11" font-style="italic">Order Processor</text>
+</g>
+
+<g id="res-orders_db">
+  <image href="catalog-icons/azure/azure-resource-sql-database-a26124a2-d605a666.svg" x="1442.5" y="115" width="48" height="48"/>
+  <text x="1466.1" y="179" text-anchor="middle" font-size="12" font-weight="500">SQL Database</text>
+  <text x="1466.1" y="197" text-anchor="middle" font-size="11" font-style="italic">Orders SQL</text>
 </g>
 
 <g id="res-monitor">
-  <image href="catalog-icons/azure/azure-resource-monitor-1396f59a-015c1312.svg" x="916.5" y="200" width="48" height="48"/>
-  <text x="940.5" y="264" text-anchor="middle" font-size="12" font-weight="500">Monitor</text>
+  <image href="catalog-icons/azure/azure-resource-monitor-1396f59a-015c1312.svg" x="866.5" y="243" width="48" height="48"/>
+  <text x="890.5" y="307" text-anchor="middle" font-size="12" font-weight="500">Monitor</text>
   
 </g>
 </svg>

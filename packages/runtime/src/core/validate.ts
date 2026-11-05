@@ -162,6 +162,15 @@ export function validateDocument(
       const providerIssue = validateProvider(doc.grammar, rule.provider, "Group", g.id, g.type);
       if (providerIssue) issues.push(providerIssue);
     }
+    const { rootBoundary } = PROVIDER_RULES[doc.grammar];
+    if (enforceCatalogRules && g.type === "cloud-agnostic.cloud" && rootBoundary !== g.type) {
+      issues.push({
+        level: "error",
+        code: "generic-cloud-boundary",
+        message: `Group ${g.id}: grammar ${doc.grammar} draws its outer boundary with ${rootBoundary}, not cloud-agnostic.cloud`,
+        id: g.id,
+      });
+    }
     if (enforceCatalogRules && g.type && !g.parent && rule && !rule.allowRoot) {
       issues.push({
         level: "error",

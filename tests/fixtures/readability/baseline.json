@@ -101,7 +101,7 @@
     "sonnet-aws-easy-static-website-delivery.dgm": "f6a26a6f3bb0d34ea8519f8f69faf7eac8bad06bb0a1e4330324cdce9340a11a",
     "sonnet-aws-medium-factory-iot-telemetry.dgm": "911007ee7a8191e40181ca782cf4b904f759ec6b7bc0cdab1b0fd2d1540ea486",
     "sonnet-aws-medium-image-thumbnail-pipeline.dgm": "a1510e25c25ba53caba71ad19e91f9188336d9f51b4b1c10318c908af55c320c",
-    "sonnet-azure-easy-private-application-api.dgm": "7ee8c978c43d8167ae6b0f6f459d7ebf8138cbd2a8638c02fa6e444817c5bcc0",
+    "sonnet-azure-easy-private-application-api.dgm": "608b32333034538303ee9e753e732bf74113996c3338e551abd00736b017f4e7",
     "sonnet-azure-medium-asynchronous-order-processing.dgm": "30bb239a1747f852c8e32349c6c85426c09a8923ca7f3a18f6558d0ac3748220",
     "sonnet-azure-medium-industrial-iot-telemetry.dgm": "3b3018e3c260a8355c7ff5ed3b9b2f952ba3c81caaa79b43b00bbdad448418a3",
     "sonnet-cloud-agnostic-easy-customer-record-api.dgm": "dd5d0d73805b83dc47d9ddee72c5f64114e2203db9cda3d3b5b5cfefa101dcf6",

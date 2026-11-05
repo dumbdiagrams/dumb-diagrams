@@ -4,66 +4,93 @@
   "grammar": "azure",
   "components": [
     {
-      "id": "azure-cloud",
-      "kind": "group",
-      "type": "cloud-agnostic.cloud",
-      "basis": {
-        "kind": "explicit",
-        "text": "Azure asynchronous order processing."
-      }
-    },
-    {
       "id": "storefront",
       "kind": "resource",
       "type": "cloud-agnostic.client",
       "basis": {
         "kind": "explicit",
-        "text": "A storefront submits orders through an API."
+        "text": "storefront submits orders"
       }
     },
     {
-      "id": "intake-function",
+      "id": "subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure resources need subscription scope"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure subscription contains a region per provider conventions"
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure API Management represents the generic API ingress"
+      }
+    },
+    {
+      "id": "intake",
       "kind": "resource",
       "type": "azure.function-apps",
       "basis": {
         "kind": "explicit",
-        "text": "An intake function validates each order, queues it for processing, and archives the request."
+        "text": "an intake function validates each order"
       }
     },
     {
-      "id": "work-queue",
+      "id": "queue",
       "kind": "resource",
       "type": "azure.azure-service-bus",
       "basis": {
         "kind": "explicit",
-        "text": "The intake function queues orders for processing."
+        "text": "queues it for processing"
       }
     },
     {
-      "id": "request-archive",
+      "id": "archive",
       "kind": "resource",
       "type": "azure.storage-accounts",
       "basis": {
-        "kind": "explicit",
-        "text": "The intake function archives each request."
+        "kind": "inferred",
+        "text": "Storage Account is the archive destination"
       }
     },
     {
-      "id": "processor-function",
+      "id": "archive_events",
+      "kind": "resource",
+      "type": "azure.event-grid-subscriptions",
+      "basis": {
+        "kind": "inferred",
+        "text": "Event Grid subscription delivers archive events to the processor"
+      }
+    },
+    {
+      "id": "processor",
       "kind": "resource",
       "type": "azure.function-apps",
       "basis": {
-        "kind": "explicit",
-        "text": "A processor consumes queued orders and archive events."
+        "kind": "inferred",
+        "text": "a distinct Function App represents the processor role"
       }
     },
     {
-      "id": "sql-database",
+      "id": "orders_db",
       "kind": "resource",
       "type": "azure.sql-database",
       "basis": {
         "kind": "explicit",
-        "text": "Processor saves completed orders in SQL."
+        "text": "saves completed orders in SQL"
       }
     },
     {
@@ -72,240 +99,321 @@
       "type": "azure.monitor",
       "basis": {
         "kind": "explicit",
-        "text": "Processor sends processing metrics to Azure Monitor."
+        "text": "sends processing metrics to Azure Monitor"
       }
     }
   ],
   "relationships": [
     {
-      "id": "storefront-submit",
+      "id": "submit_order",
       "source": "storefront",
-      "target": "intake-function",
+      "target": "api",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The storefront submits orders through an API to the intake function."
+        "text": "storefront submits orders through an API"
       }
     },
     {
-      "id": "intake-to-queue",
-      "source": "intake-function",
-      "target": "work-queue",
+      "id": "api_to_intake",
+      "source": "api",
+      "target": "intake",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The intake function validates each order and queues it for processing."
+        "text": "orders pass from API to intake function"
       }
     },
     {
-      "id": "intake-to-archive",
-      "source": "intake-function",
-      "target": "request-archive",
+      "id": "queue_order",
+      "source": "intake",
+      "target": "queue",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The intake function archives the request."
+        "text": "intake queues each order for processing"
       }
     },
     {
-      "id": "queue-to-processor",
-      "source": "work-queue",
-      "target": "processor-function",
+      "id": "archive_request",
+      "source": "intake",
+      "target": "archive",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The processor consumes queued orders."
+        "text": "intake archives the request"
       }
     },
     {
-      "id": "archive-to-processor",
-      "source": "request-archive",
-      "target": "processor-function",
+      "id": "publish_archive_event",
+      "source": "archive",
+      "target": "archive_events",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "Event Grid carries archive-generated events to the processor."
+      }
+    },
+    {
+      "id": "deliver_archive_event",
+      "source": "archive_events",
+      "target": "processor",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The processor consumes archive events."
+        "text": "processor consumes archive events"
       }
     },
     {
-      "id": "processor-to-sql",
-      "source": "processor-function",
-      "target": "sql-database",
+      "id": "deliver_queued_order",
+      "source": "queue",
+      "target": "processor",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The processor saves completed orders in SQL."
+        "text": "processor consumes queued orders"
       }
     },
     {
-      "id": "processor-to-monitor",
-      "source": "processor-function",
+      "id": "save_order",
+      "source": "processor",
+      "target": "orders_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "saves completed orders in SQL"
+      }
+    },
+    {
+      "id": "send_metrics",
+      "source": "processor",
       "target": "monitor",
       "kind": "flow",
       "basis": {
         "kind": "explicit",
-        "text": "The processor sends processing metrics to Azure Monitor."
+        "text": "sends processing metrics to Azure Monitor"
       }
     }
   ],
   "counts": [
     {
-      "id": "cloud_group_count",
-      "kind": "group",
-      "type": "cloud-agnostic.cloud",
-      "min": 1,
-      "max": 1,
-      "basis": {
-        "kind": "explicit",
-        "text": "1 cloud component(s) shown."
-      }
-    },
-    {
-      "id": "client_resource_count",
+      "id": "one_storefront",
       "kind": "resource",
       "type": "cloud-agnostic.client",
       "min": 1,
       "max": 1,
       "basis": {
         "kind": "explicit",
-        "text": "1 client component(s) shown."
+        "text": "the storefront"
       }
     },
     {
-      "id": "function_apps_resource_count",
-      "kind": "resource",
-      "type": "azure.function-apps",
-      "min": 2,
-      "max": 2,
+      "id": "one_subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "min": 1,
+      "max": 1,
       "basis": {
-        "kind": "explicit",
-        "text": "2 function apps component(s) shown."
+        "kind": "inferred",
+        "text": "provider-required Azure subscription scope"
       }
     },
     {
-      "id": "azure_service_bus_resource_count",
+      "id": "one_region",
+      "kind": "group",
+      "type": "azure.region",
+      "min": 1,
+      "max": 1,
+      "within": "subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "one region to contain the Azure resources"
+      }
+    },
+    {
+      "id": "one_api",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "one API ingress component"
+      }
+    },
+    {
+      "id": "one_queue",
       "kind": "resource",
       "type": "azure.azure-service-bus",
       "min": 1,
       "max": 1,
+      "within": "region",
       "basis": {
         "kind": "explicit",
-        "text": "1 azure service bus component(s) shown."
+        "text": "the processing queue"
       }
     },
     {
-      "id": "storage_accounts_resource_count",
+      "id": "one_archive",
       "kind": "resource",
       "type": "azure.storage-accounts",
       "min": 1,
       "max": 1,
+      "within": "region",
       "basis": {
-        "kind": "explicit",
-        "text": "1 storage accounts component(s) shown."
+        "kind": "inferred",
+        "text": "one archive storage destination"
       }
     },
     {
-      "id": "sql_database_resource_count",
+      "id": "one_event_subscription",
+      "kind": "resource",
+      "type": "azure.event-grid-subscriptions",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "one archive event delivery subscription"
+      }
+    },
+    {
+      "id": "two_functions",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 2,
+      "max": 2,
+      "within": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "One Function App represents intake and a second represents the distinct processor role."
+      }
+    },
+    {
+      "id": "one_sql",
       "kind": "resource",
       "type": "azure.sql-database",
       "min": 1,
       "max": 1,
+      "within": "region",
       "basis": {
         "kind": "explicit",
-        "text": "1 sql database component(s) shown."
+        "text": "SQL"
       }
     },
     {
-      "id": "monitor_resource_count",
+      "id": "one_monitor",
       "kind": "resource",
       "type": "azure.monitor",
       "min": 1,
       "max": 1,
+      "within": "region",
       "basis": {
         "kind": "explicit",
-        "text": "1 monitor component(s) shown."
+        "text": "Azure Monitor"
       }
     }
   ],
   "placement": [
     {
-      "id": "azure-cloud_root",
-      "component": "azure-cloud",
-      "relation": "root",
-      "basis": {
-        "kind": "explicit",
-        "text": "Azure Cloud is external to the Azure containment."
-      }
-    },
-    {
       "id": "storefront_root",
       "component": "storefront",
       "relation": "root",
       "basis": {
-        "kind": "explicit",
-        "text": "Storefront is external to the Azure containment."
+        "kind": "inferred",
+        "text": "storefront is an external actor outside Azure scope"
       }
     },
     {
-      "id": "intake-function_parent",
-      "component": "intake-function",
-      "relation": "parent",
-      "group": "azure-cloud",
+      "id": "region_in_subscription",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure subscription contains a region"
+      }
+    },
+    {
+      "id": "api_in_region",
+      "component": "api",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "API ingress is an Azure resource"
+      }
+    },
+    {
+      "id": "intake_in_region",
+      "component": "intake",
+      "relation": "inside",
+      "group": "region",
       "basis": {
         "kind": "explicit",
-        "text": "Order Intake Function is placed directly inside azure cloud."
+        "text": "intake function is part of the Azure system"
       }
     },
     {
-      "id": "work-queue_parent",
-      "component": "work-queue",
-      "relation": "parent",
-      "group": "azure-cloud",
+      "id": "queue_in_region",
+      "component": "queue",
+      "relation": "inside",
+      "group": "region",
       "basis": {
         "kind": "explicit",
-        "text": "Order Work Queue is placed directly inside azure cloud."
+        "text": "processing queue is part of the Azure system"
       }
     },
     {
-      "id": "request-archive_parent",
-      "component": "request-archive",
-      "relation": "parent",
-      "group": "azure-cloud",
+      "id": "archive_in_region",
+      "component": "archive",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "archive storage is an Azure resource"
+      }
+    },
+    {
+      "id": "events_in_region",
+      "component": "archive_events",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "Event Grid subscription is an Azure resource"
+      }
+    },
+    {
+      "id": "processor_in_region",
+      "component": "processor",
+      "relation": "inside",
+      "group": "region",
       "basis": {
         "kind": "explicit",
-        "text": "Request Archive is placed directly inside azure cloud."
+        "text": "processor is part of the Azure system"
       }
     },
     {
-      "id": "processor-function_parent",
-      "component": "processor-function",
-      "relation": "parent",
-      "group": "azure-cloud",
+      "id": "sql_in_region",
+      "component": "orders_db",
+      "relation": "inside",
+      "group": "region",
       "basis": {
         "kind": "explicit",
-        "text": "Order Processor is placed directly inside azure cloud."
+        "text": "SQL database is part of the Azure system"
       }
     },
     {
-      "id": "sql-database_parent",
-      "component": "sql-database",
-      "relation": "parent",
-      "group": "azure-cloud",
-      "basis": {
-        "kind": "explicit",
-        "text": "Completed Orders SQL is placed directly inside azure cloud."
-      }
-    },
-    {
-      "id": "monitor_parent",
+      "id": "monitor_in_region",
       "component": "monitor",
-      "relation": "parent",
-      "group": "azure-cloud",
+      "relation": "inside",
+      "group": "region",
       "basis": {
         "kind": "explicit",
-        "text": "Azure Monitor is placed directly inside azure cloud."
+        "text": "Azure Monitor is part of the Azure system"
       }
     }
-  ],
-  "allowAdditionalResources": true
+  ]
 }

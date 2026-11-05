@@ -1,13 +1,19 @@
 # AWS conventions (First-class)
 
 AWS is the first-class provider. Use the current AWS catalog and conventions
-below; the other provider guides are experimental adaptations for now.
+below. Azure, GCP, and cloud-agnostic diagrams follow these same conventions
+with their own catalog types and icons.
 
 Use canonical `aws.*` types from `../catalog.md` or `../catalog.json` and obey
 each entry's allowed parent boundaries. Use `aws.cloud` for the AWS scope shown
 by the diagram and add account, region, VPC, availability-zone, or subnet
 boundaries only when explicit, strongly implied, or necessary to communicate
 placement. Use `cloud-agnostic.boundary` for logical application groupings.
+
+Prefer the filled service icons (`aws.simple-storage-service`, `aws.dynamodb`,
+`aws.aws-lambda`) over the outlined resource icons such as
+`aws.simple-storage-service-bucket` or `aws.dynamodb-table`, unless the user asks
+for that specific resource.
 
 Preserve explicitly named AWS services and public/private or runtime placement.
 For an underspecified highly available design, infer only the multiplicity and

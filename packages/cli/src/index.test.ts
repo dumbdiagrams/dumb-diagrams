@@ -509,7 +509,8 @@ describe("runCli", () => {
           provider === "aws" ? "AWS" : provider === "azure" ? "Azure" : provider === "gcp" ? "GCP" : "Cloud-agnostic";
         expect(guide).toContain(`# ${heading} conventions`);
         expect(guide).toContain(marker);
-        if (provider !== "aws") expect(guide).toMatch(/current AWS\s+layout/);
+        if (provider !== "aws")
+          expect(guide).toMatch(/follow the AWS\s+layout, routing,\s+and composition conventions/);
       }
       const catalog = readFileSync(join(projectRoot, ".dumbdiagrams/catalog.json"), "utf8");
       expect(catalog).toContain('"entries"');

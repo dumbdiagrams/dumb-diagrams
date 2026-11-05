@@ -1,8 +1,8 @@
 # Cloud-agnostic conventions (Experimental)
 
-Cloud-agnostic support is experimental. Until refined, inherit the current AWS
-layout, routing, and composition conventions in this project while using
-cloud-agnostic catalog types and their icons.
+Cloud-agnostic support is experimental. Cloud-agnostic diagrams follow the AWS
+layout, routing, and composition conventions; only the catalog types and icons
+are generic.
 
 Use canonical `cloud-agnostic.*` types from `../catalog.md` or
 `../catalog.json`. Use generic cloud, account, region, network, or other

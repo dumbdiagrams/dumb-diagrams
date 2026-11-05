@@ -409,162 +409,97 @@
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges front-door-to-apim and work-to-dead-letter cross"
+      "message": "Edges apim_to_api and ops_to_work_queue cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges front-door-to-apim and operations-triggers-redrive cross"
+      "message": "Edges api_to_sql_endpoint and worker_to_sql_endpoint cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges front-door-to-apim and dlq-redrive-to-work cross"
+      "message": "Edges api_to_sql_endpoint and worker_to_key_vault cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges apim-to-api and sql-endpoint-to-sql cross"
+      "message": "Edges api_to_sql_endpoint and api_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges apim-to-api and api-reads-key-vault cross"
+      "message": "Edges api_to_work_queue and worker_to_storage_endpoint cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and api-to-work-queue cross"
+      "message": "Edges api_to_work_queue and worker_to_sql_endpoint cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges api_to_work_queue and work_queue_to_dlq share a corridor outside a fan-out stem"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and sql-endpoint-to-sql cross"
+      "message": "Edges api_to_work_queue and ops_to_work_queue cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and function-reads-key-vault cross"
+      "message": "Edges api_to_work_queue and worker_to_key_vault cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and function-emits-telemetry cross"
+      "message": "Edges api_to_work_queue and worker_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-to-sql-endpoint cross"
+      "message": "Edges work_queue_to_worker and work_queue_to_dlq cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-to-storage-endpoint cross"
+      "message": "Edges work_queue_to_worker and ops_to_work_queue cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and sql-endpoint-to-sql cross"
+      "message": "Edges work_queue_to_worker and worker_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and storage-endpoint-to-storage cross"
+      "message": "Edges worker_to_storage_endpoint and worker_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-reads-key-vault cross"
+      "message": "Edges worker_to_sql_endpoint and worker_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-emits-telemetry cross"
+      "message": "Edges sql_endpoint_to_database and storage_endpoint_to_account cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges work-queue-to-function and storage-endpoint-to-storage cross"
+      "message": "Edges sql_endpoint_to_database and worker_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges function-to-sql-endpoint and function-reads-key-vault cross"
+      "message": "Edges work_queue_to_dlq and ops_to_work_queue cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and work-to-dead-letter cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and operations-triggers-redrive cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and dlq-redrive-to-work cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and api-reads-key-vault cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and function-reads-key-vault cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and api-emits-telemetry cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and function-emits-telemetry cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges storage-endpoint-to-storage and work-to-dead-letter cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges storage-endpoint-to-storage and dlq-redrive-to-work cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges work-to-dead-letter and operations-triggers-redrive cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges operations-inspects-dlq and operations-triggers-redrive cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges operations-triggers-redrive and dlq-redrive-to-work cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges api-reads-key-vault and function-emits-telemetry cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges function-reads-key-vault and api-emits-telemetry cross"
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges api-emits-telemetry and function-emits-telemetry cross"
+      "message": "Edges worker_to_key_vault and api_to_monitor cross"
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
@@ -1238,224 +1173,133 @@
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges front-door-to-apim and work-to-dead-letter cross",
+      "message": "Edges apim_to_api and ops_to_work_queue cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges front-door-to-apim and operations-triggers-redrive cross",
+      "message": "Edges api_to_sql_endpoint and worker_to_sql_endpoint cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges front-door-to-apim and dlq-redrive-to-work cross",
+      "message": "Edges api_to_sql_endpoint and worker_to_key_vault cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges apim-to-api and sql-endpoint-to-sql cross",
+      "message": "Edges api_to_sql_endpoint and api_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges apim-to-api and api-reads-key-vault cross",
+      "message": "Edges api_to_work_queue and worker_to_storage_endpoint cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and api-to-work-queue cross",
+      "message": "Edges api_to_work_queue and worker_to_sql_endpoint cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges api_to_work_queue and work_queue_to_dlq share a corridor outside a fan-out stem",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and sql-endpoint-to-sql cross",
+      "message": "Edges api_to_work_queue and ops_to_work_queue cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and function-reads-key-vault cross",
+      "message": "Edges api_to_work_queue and worker_to_key_vault cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-sql-endpoint and function-emits-telemetry cross",
+      "message": "Edges api_to_work_queue and worker_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-to-sql-endpoint cross",
+      "message": "Edges work_queue_to_worker and work_queue_to_dlq cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-to-storage-endpoint cross",
+      "message": "Edges work_queue_to_worker and ops_to_work_queue cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and sql-endpoint-to-sql cross",
+      "message": "Edges work_queue_to_worker and worker_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and storage-endpoint-to-storage cross",
+      "message": "Edges worker_to_storage_endpoint and worker_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-reads-key-vault cross",
+      "message": "Edges worker_to_sql_endpoint and worker_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges api-to-work-queue and function-emits-telemetry cross",
+      "message": "Edges sql_endpoint_to_database and storage_endpoint_to_account cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges work-queue-to-function and storage-endpoint-to-storage cross",
+      "message": "Edges sql_endpoint_to_database and worker_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges function-to-sql-endpoint and function-reads-key-vault cross",
+      "message": "Edges work_queue_to_dlq and ops_to_work_queue cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },
     {
       "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and work-to-dead-letter cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and operations-triggers-redrive cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and dlq-redrive-to-work cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and api-reads-key-vault cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and function-reads-key-vault cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and api-emits-telemetry cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges sql-endpoint-to-sql and function-emits-telemetry cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges storage-endpoint-to-storage and work-to-dead-letter cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges storage-endpoint-to-storage and dlq-redrive-to-work cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges work-to-dead-letter and operations-triggers-redrive cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges operations-inspects-dlq and operations-triggers-redrive cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges operations-triggers-redrive and dlq-redrive-to-work cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges api-reads-key-vault and function-emits-telemetry cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges function-reads-key-vault and api-emits-telemetry cross",
-      "status": "reviewed",
-      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
-    },
-    {
-      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
-      "code": "edge-crossing",
-      "message": "Edges api-emits-telemetry and function-emits-telemetry cross",
+      "message": "Edges worker_to_key_vault and api_to_monitor cross",
       "status": "reviewed",
       "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     },

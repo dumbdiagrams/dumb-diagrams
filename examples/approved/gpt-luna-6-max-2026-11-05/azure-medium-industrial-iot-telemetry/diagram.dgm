@@ -1,24 +1,29 @@
 dgm 1
-diagram azure-medium-industrial-iot-telemetry { grammar azure flow lr title "Azure Medium Industrial Iot Telemetry"
-  cloud-agnostic.cloud azure-cloud "Azure Cloud" {
-    azure.subscription subscription "Subscription" {
-      azure.region region "Primary Region" {
-        azure.resource-group resource-group "Resource Group" {
-          azure.iot-hub iot-hub "IoT Hub" {}
-          azure.event-hubs event-hubs "Event Hubs" {}
-          azure.storage-accounts raw-archive "Raw Archive Storage" {}
-          azure.function-apps function-app "Azure Function" {}
-          azure.azure-cosmos-db cosmos-db "Cosmos Db" {}
-        }
+diagram azure-industrial-iot-telemetry {
+  grammar azure
+  flow lr
+  title "Industrial IoT telemetry"
+
+  cloud-agnostic.device sensor_fleet "Industrial sensor fleet" {}
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      azure.resource-group resource_group "Telemetry resource group" {
+        azure.iot-hub iot_hub "IoT Hub" {}
+        azure.event-hubs event_hubs "Event Hubs" {}
+        azure.storage-accounts raw_archive "Raw telemetry archive" {}
+        azure.function-apps normalizer "Reading normalizer" {}
+        azure.azure-cosmos-db status_db "Current equipment status" {}
       }
     }
   }
-  cloud-agnostic.device sensor-fleet "Industrial Sensor Fleet" {}
-  cloud-agnostic.client operations-dashboard "Operations Dashboard" {}
-  sensor-fleet -> iot-hub { id sensor-readings label "Telemetry readings" kind flow step 1 }
-  iot-hub -> event-hubs { id iot-to-events label "Processing stream" kind flow step 2 }
-  iot-hub -> raw-archive { id iot-to-archive label "Raw archive" kind flow step 2 }
-  event-hubs -> function-app { id events-to-function label "Consume stream" kind flow step 3 }
-  function-app -> cosmos-db { id function-to-cosmos label "Normalized status" kind flow step 4 }
-  cosmos-db -> operations-dashboard { id cosmos-to-dashboard label "Read current status" kind flow step 5 }
+
+  cloud-agnostic.client operations_dashboard "Operations dashboard" {}
+
+  sensor_fleet -> iot_hub { id telemetry_to_hub label "Telemetry readings" step 1 }
+  iot_hub -> event_hubs { id hub_to_events label "Processing stream" step 2 }
+  iot_hub -> raw_archive { id hub_to_archive label "Raw archive" step 2 }
+  event_hubs -> normalizer { id events_to_function label "Event stream" step 3 }
+  normalizer -> status_db { id function_to_status label "Normalized status" step 4 }
+  status_db -> operations_dashboard { id status_to_dashboard label "Current status" step 5 }
 }
