@@ -10,7 +10,8 @@ pnpm install --frozen-lockfile
 ## Engine and golden set
 
 - `tests/compat/v1/` freezes format compatibility.
-- `examples/curated/` holds provider and cloud-agnostic cases. Semantic expectations are in `examples/evaluations/`; layout contracts and SVG snapshots freeze geometry and output.
+- `examples/approved/<model>-<date>/` holds reviewed model runs of the `examples/prompts/` bank (see [`examples/README.md`](../examples/README.md)). Layout contracts and SVG snapshots freeze their geometry and output.
+- `tests/fixtures/engine/` holds older engine regression diagrams that unit and browser tests target directly.
 - Every maintained diagram has `requirements.json` (bundles) or `<stem>.requirements.json` (flat files). These contracts freeze component IDs, relationships, counts, and placement from the prompt before authoring.
 - `examples/routing-warnings.json` and `scripts/performance-baseline.json` track routing findings and work.
 - Editor operation goldens are under `packages/editor/src/__snapshots__/editor-model/`.
@@ -42,18 +43,10 @@ change during layout repairs; correcting extraction must be explained in the
 architecture brief. The checker verifies the extracted contract, not the model's
 understanding of natural language.
 
-`check:engine` checks contract coverage, positive examples, and deliberately
-incomplete Composer outputs under `examples/evaluations/incomplete-composer/`.
-The full hard candidates must pass completeness even while routing findings
-remain. Historical SVGs and their hashes are preserved.
-
-## Reviewed Studio exports
-
-`examples/reviewed/manifest.json` records the historical app version, dimensions, and SHA-256 for each original export. The website copies those SVGs byte-for-byte alongside their metadata-extracted `.dgm` source and frozen prompt; it does not compile them with the current engine. The docs gallery displays provider and historical version on every example.
-
-`pnpm test:golden` also renders those archived sources against separate SVG snapshots to detect engine changes. Review notes in the manifest record known visual polish issues.
-
-[`examples/review-candidates/`](../examples/review-candidates/README.md) contains one hard prompt per provider for the next manual pass. These candidates have routing findings and are outside the accepted baselines.
+`check:engine` checks that every approved bundle satisfies its requirements
+contract and that removing any required component or relationship is reported.
+Hard prompts must pass completeness even while their routing findings remain
+baselined.
 
 ## Test the packed CLI manually
 

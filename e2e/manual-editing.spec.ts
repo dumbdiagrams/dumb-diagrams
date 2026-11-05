@@ -97,7 +97,7 @@ test("Manual edits keep other nodes and routes stable, while Auto-fix repairs an
 
 test("A shortcut pressed while a drop is still routing builds on the dropped position", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/curated/aws-high-availability-web-app/diagram.dgm`);
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/tests/fixtures/engine/aws-high-availability-web-app.dgm`);
   await waitForStudioReady(page);
   const resources = page.locator('.canvas-artboard .diagram-svg g[id^="res-"]');
   const count = await resources.count();

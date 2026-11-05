@@ -310,10 +310,7 @@ describe("async-docs fixture", () => {
 
   it("keeps curated Bedrock automatic routes inside the rendered canvas", () => {
     const doc = parseDgm(
-      readFileSync(
-        new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
-        "utf8",
-      ),
+      readFileSync(new URL("../../../../tests/fixtures/engine/bedrock-claims-processing.dgm", import.meta.url), "utf8"),
     );
     const result = compileDiagram(doc);
 
@@ -376,10 +373,7 @@ describe("async-docs fixture", () => {
 
   it("keeps decorated cross-boundary labels clear in the thumbnail pipeline", () => {
     const doc = parseDgm(
-      readFileSync(
-        new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
-        "utf8",
-      ),
+      readFileSync(new URL("../../../../tests/fixtures/engine/image-thumbnail-pipeline.dgm", import.meta.url), "utf8"),
     );
     const result = compileDiagram(doc);
 

@@ -13,8 +13,10 @@ export default defineConfig({
     },
   },
   test: {
-    // Routing and coverage instrumentation compete for CPU during parallel runs.
+    // Routing and coverage instrumentation compete for CPU during parallel runs;
+    // full compiles of the hard fixtures exceed the 5s default when instrumented.
     maxWorkers: 4,
+    testTimeout: 30_000,
     include: [
       "packages/**/src/**/*.test.{ts,tsx}",
       "tests/integration/**/*.test.{ts,tsx}",

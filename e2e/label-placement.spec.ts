@@ -5,7 +5,7 @@ import { ROOT, waitForStudioReady } from "./support/helpers";
 test("keeps the full payment label readable beside a crowded fan-out", async ({ page }) => {
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(
-    `${ROOT}/examples/curated/event-driven-order-fulfillment/diagram.dgm`,
+    `${ROOT}/tests/fixtures/engine/event-driven-order-fulfillment.dgm`,
   );
   await waitForStudioReady(page);
   const label = page.locator('.canvas-artboard .diagram-svg [data-edge-label="authorize_payment"]');

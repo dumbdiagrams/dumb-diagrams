@@ -2,8 +2,8 @@
 
 This repository is initialized for Dumb Diagrams work. Read
 `.dumbdiagrams/instructions.md` for the canonical workflow and follow its
-selective-reading links to the format, architecture, provider, catalog, and
-examples documentation. Interpret the user's architecture intent first, then
+selective-reading links to the format, architecture, provider, and catalog
+documentation. Interpret the user's architecture intent first, then
 write a valid portable `.dgm` source file at the location the user requests.
 For new diagrams, use the documented `diagrams/<descriptive-slug>/` bundle and
 write `architecture-brief.md` and `requirements.json` before its source.

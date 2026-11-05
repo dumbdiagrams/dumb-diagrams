@@ -453,7 +453,7 @@ test("auto-fix after ungroup keeps the detached aws cloud fixed and preserves ar
 });
 
 test("ungroups image thumbnail pipeline aws cloud while preserving nested content", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/image-thumbnail-pipeline/diagram.dgm");
+  const example = join(ROOT, "tests/fixtures/engine/image-thumbnail-pipeline.dgm");
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 

@@ -1,1 +1,0 @@
-Create an Azure asynchronous order processing diagram. A storefront submits orders through an API; an intake function validates each order, queues it for processing, and archives the request. A processor consumes queued orders and archive events, saves completed orders in SQL, and sends processing metrics to Azure Monitor.

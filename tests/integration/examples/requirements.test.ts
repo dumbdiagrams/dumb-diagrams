@@ -14,7 +14,6 @@ const parseContract = (path: string): RequirementsDocument =>
 type Example = { name: string; source: string; contract: string };
 function maintainedExamples(): Example[] {
   return globSync("examples/**/*.dgm", { cwd: root })
-    .filter((source) => !source.startsWith("examples/evaluations/incomplete-composer/"))
     .map((source) => ({
       name: source,
       source,
@@ -33,22 +32,6 @@ describe("per-example requirements contracts", () => {
     const doc = parseDgm(source);
     expect(doc.grammar).toBe(parsedContract.grammar);
     expect(checkRequirements(doc, parsedContract)).toEqual([]);
-  });
-
-  it("reports each composer negative fixture through missing required relationships", () => {
-    const expectedMissing: Record<string, string[]> = {
-      "aws-document-processing": ["worker_a_reads_input", "worker_b_reads_input", "worker_b_to_output", "worker_a_to_status", "worker_b_to_status", "worker_a_to_sns", "worker_b_to_sns"],
-      "azure-private-order-processing": ["api_to_queue", "api_to_key_vault", "worker_to_key_vault", "api_to_monitor", "worker_to_monitor", "worker_to_sql_pe", "ops_redrive"],
-      "gcp-media-processing": ["worker_a_reads_input", "worker_b_reads_input", "worker_a_writes_processed", "worker_b_writes_processed", "worker_a_updates_status", "worker_b_updates_status", "worker_a_publishes_completion", "worker_b_publishes_completion", "ops_inspects_dead_letters", "ops_redrives_jobs"],
-      "cloud-agnostic-order-processing": ["db_to_api_response", "cache_to_api_response", "payment_to_api_response", "worker_retry_queue", "warehouse_ack", "worker_to_db_status", "worker_to_receipts"],
-    };
-    for (const [slug, expectedIds] of Object.entries(expectedMissing)) {
-      const base = `examples/evaluations/incomplete-composer/${slug}`;
-      const issues = checkRequirements(parseDgm(`${base}/diagram.dgm`), parseContract(`${base}/requirements.json`));
-      expect(issues.length, slug).toBeGreaterThan(0);
-      expect(issues.every((issue) => issue.code === "missing-relationship"), slug).toBe(true);
-      expect(issues.map((issue) => issue.requirementId).sort(), slug).toEqual([...expectedIds].sort());
-    }
   });
 
   it("detects removal of every required component and relationship", () => {

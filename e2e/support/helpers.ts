@@ -3,8 +3,8 @@ import { join } from "node:path";
 
 export const ROOT = join(import.meta.dirname, "..", "..");
 
-export const ASYNC_DOCS = `${ROOT}/examples/diagrams/async-docs.dgm`;
-export const SIMPLE_SERVERLESS = `${ROOT}/examples/curated/simple-serverless-web-application/diagram.dgm`;
+export const ASYNC_DOCS = `${ROOT}/tests/fixtures/engine/async-docs.dgm`;
+export const SIMPLE_SERVERLESS = `${ROOT}/tests/fixtures/engine/simple-serverless-web-application.dgm`;
 export const MOD = process.platform === "darwin" ? "Meta" : "Control";
 
 export async function waitForStudioReady(page: Page) {

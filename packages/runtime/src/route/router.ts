@@ -532,23 +532,6 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
     const target = nodeMap.get(edge.target);
     if (!source || !target) continue;
     edge.points = anchorRouteEndpoints(edge.points, source.icon, target.icon);
-    // A visible emergency route may have been repaired once all connectors
-    // were known. Report degradation only if that unsafe fallback survives.
-    if (unresolvedFallbackEdges.has(edge.id)) {
-      const sourceSide = perimeterSide(source.icon, edge.points[0]!);
-      const targetSide = perimeterSide(target.icon, edge.points.at(-1)!);
-      const context: RouteContext = {
-        sourceId: edge.source,
-        targetId: edge.target,
-        sourcePoint: edge.points[0]!,
-        targetPoint: edge.points.at(-1)!,
-        sourceSide,
-        targetSide,
-        style: edge.style,
-      };
-      if (!Number.isFinite(scorePath(edge.points, obstacles, context, [], Infinity, [], budget, true)))
-        budget.markDegraded();
-    }
   }
   if (doc.edges.length > 16 && doc.edges.length <= 48 && layout.nodes.length <= 32) {
     clearTerminalCaptions(doc, documentRoutes, nodeMap, obstacles, budget);
@@ -567,6 +550,24 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
       view.routes,
       labelReservations,
     );
+  // A visible emergency route may have been repaired once all connectors were
+  // known. Report degradation only if that unsafe fallback survives every pass.
+  for (const edge of documentRoutes) {
+    if (!unresolvedFallbackEdges.has(edge.id)) continue;
+    const source = nodeMap.get(edge.source)!;
+    const target = nodeMap.get(edge.target)!;
+    const context: RouteContext = {
+      sourceId: edge.source,
+      targetId: edge.target,
+      sourcePoint: edge.points[0]!,
+      targetPoint: edge.points.at(-1)!,
+      sourceSide: perimeterSide(source.icon, edge.points[0]!),
+      targetSide: perimeterSide(target.icon, edge.points.at(-1)!),
+      style: edge.style,
+    };
+    if (!Number.isFinite(scorePath(edge.points, obstacles, context, [], Infinity, [], budget, true)))
+      budget.markDegraded();
+  }
   placeEdgeDecorations(documentRoutes, view.routes, [
     ...buildDecorationObstacles(layout),
     ...(doc.edges.length > 16 ? crossingDecorationObstacles(documentRoutes) : []),
@@ -1013,7 +1014,6 @@ function clearTerminalCaptions(
         }
       }
       if (best) edge.points = reverse ? best.reverse() : best;
-      else budget.markDegraded();
     }
   }
 }

@@ -1,4 +1,4 @@
-import source from "../../../examples/curated/image-thumbnail-pipeline/diagram.dgm?raw";
+import source from "../../../tests/fixtures/engine/image-thumbnail-pipeline.dgm?raw";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";

@@ -22,6 +22,7 @@ const [
   { routeEdges, routeConnectionPreview, attachRoutes },
   { getCatalogMap },
   { checkInvariants, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE },
+  { compileAutomaticLayout },
 ] = await Promise.all([
   import("../packages/runtime/dist/core/index.js"),
   import("../packages/runtime/dist/dsl/index.js"),
@@ -29,6 +30,7 @@ const [
   import("../packages/runtime/dist/route/index.js"),
   import("../packages/runtime/dist/catalog/index.js"),
   import("../packages/runtime/dist/render/index.js"),
+  import("../packages/runtime/dist/render/automatic-layout.js"),
 ]);
 
 function checkCompilationLimits() {
@@ -152,10 +154,12 @@ for (const path of performanceDiagrams()) {
     continue;
   }
   const doc = parsed.value;
-  const { routes, diagnostics } = routingWork(doc);
+  // Measure the compile path users get: a discarded alternative may exhaust its
+  // budget, but the retained drawing must not.
+  const { layout, diagnostics, routingDegraded } = compileAutomaticLayout(doc);
   measured[key] = Object.fromEntries(COUNTERS.map((counter) => [counter, diagnostics[counter]]));
-  if (routes.length !== doc.edges.length) failures.push(`${key}: route count mismatch`);
-  if (diagnostics.exhausted) failures.push(`${key}: default routing work budget exhausted`);
+  if (layout.edges.length !== doc.edges.length) failures.push(`${key}: route count mismatch`);
+  if (routingDegraded) failures.push(`${key}: default routing work budget exhausted`);
   const expected = baseline[key];
   if (!expected) {
     failures.push(`${key}: missing baseline; run with --update`);

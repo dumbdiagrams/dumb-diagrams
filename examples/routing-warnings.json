@@ -1,19 +1,931 @@
 {
-  "description": "Reviewed routing warnings for checked-in examples. New or removed warnings fail check:routing and require a visual review before this file changes.",
+  "description": "Reviewed routing warnings for the approved example runs. New or removed warnings fail check:routing and require a visual review before this file changes.",
   "warnings": [
     {
-      "file": "aws-data-transfer-hub.dgm",
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges ui-appsync and ui-oidc cross"
+      "message": "Edges invoke and inspect_dlq cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges store and consume_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and redrive cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume_b and read_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and status_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and status_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and publish_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and publish_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_b and status_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_a and status_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_b and publish_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_b and publish_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges fail and redrive cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges inspect_ddb and notify cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges fd_to_apim and bus_to_dlq cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges apim_to_api and api_to_bus cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and api_to_bus cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and api_to_kv cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and worker_to_kv cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and api_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and worker_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pe_sql_to_sql and pe_storage_to_storage cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_bus and api_to_kv cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges bus_to_worker and worker_to_pe_sql cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges bus_to_worker and worker_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_pe_storage and worker_to_pe_sql cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_pe_storage and worker_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pe_storage_to_storage and worker_to_pe_sql cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_pe_sql and worker_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_kv and worker_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_monitor and worker_to_monitor cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges buyer_to_lb and api_to_payment cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges lb_to_api and api_to_queue cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges lb_to_api and queue_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges lb_to_api and worker_retry cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_db and warehouse_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_to_api and api_to_cache cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_to_api and warehouse_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_to_api and worker_to_db cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_cache and cache_to_api cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_cache and warehouse_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_cache and worker_to_db cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_to_api and warehouse_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_to_api and worker_to_db cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_payment and payment_to_api cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_payment and queue_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges api_to_payment and worker_retry share a corridor outside a fan-out stem"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_payment and buyer_to_recovery_lb cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and api_to_queue cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and queue_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and worker_to_warehouse cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and warehouse_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and worker_retry cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_queue and queue_to_worker cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_queue and worker_retry cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges warehouse_to_worker and db_replication cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges upload and to_notify cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges to_ingest and status_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and read_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and read_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and write_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and write_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume_b and write_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and write_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and write_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and status_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and complete_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and dead_letter cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_b and write_a cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_b and write_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_b and dead_letter cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and write_b cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and dead_letter cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_b and dead_letter cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_a and redrive cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_b and dead_letter cross"
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges to_notify and inspect cross"
     }
   ],
   "reviews": [
     {
-      "file": "aws-data-transfer-hub.dgm",
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges ui-appsync and ui-oidc cross",
+      "message": "Edges invoke and inspect_dlq cross",
       "status": "reviewed",
-      "decision": "Plain perpendicular crossings are accepted for this diagram. User requested ordinary crossing lines without bridge arcs; no shared corridor, icon or caption collision is present."
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges store and consume_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume_b and read_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and status_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and status_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and publish_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and publish_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_b and status_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_a and status_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_b and publish_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_b and publish_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges fail and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges inspect_ddb and notify cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges fd_to_apim and bus_to_dlq cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges apim_to_api and api_to_bus cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and api_to_bus cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and api_to_kv cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and worker_to_kv cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and api_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_pe_sql and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pe_sql_to_sql and pe_storage_to_storage cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_bus and api_to_kv cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges bus_to_worker and worker_to_pe_sql cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges bus_to_worker and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_pe_storage and worker_to_pe_sql cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_pe_storage and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges pe_storage_to_storage and worker_to_pe_sql cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_pe_sql and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_kv and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_monitor and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges buyer_to_lb and api_to_payment cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges lb_to_api and api_to_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges lb_to_api and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges lb_to_api and worker_retry cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_db and warehouse_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_to_api and api_to_cache cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_to_api and warehouse_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_to_api and worker_to_db cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_cache and cache_to_api cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_cache and warehouse_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_cache and worker_to_db cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_to_api and warehouse_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_to_api and worker_to_db cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_payment and payment_to_api cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_payment and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges api_to_payment and worker_retry share a corridor outside a fan-out stem",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_payment and buyer_to_recovery_lb cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and api_to_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and worker_to_warehouse cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and warehouse_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_to_api and worker_retry cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_queue and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_queue and worker_retry cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges warehouse_to_worker and db_replication cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges upload and to_notify cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges to_ingest and status_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and read_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and read_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and write_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges publish_job and write_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume_b and write_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and write_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and write_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and status_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and complete_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_a and dead_letter cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_b and write_a cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_b and write_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges read_b and dead_letter cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and write_b cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_a and dead_letter cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_b and dead_letter cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_a and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_b and dead_letter cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
+    },
+    {
+      "file": "sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges to_notify and inspect cross",
+      "status": "reviewed",
+      "decision": "Accepted with the approved Sonnet 5.5 low run (2026-11-05); the hard prompt's required relationships leave these routing findings."
     }
   ]
 }

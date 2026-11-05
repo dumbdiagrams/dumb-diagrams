@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { planAutoFix } from "./auto-fix";
 import { compileDiagramSource, compileDocument, warmDiagramCompilationCache } from "./diagram-compiler";
 import { clearView, setRoute } from "./editor-model";
-import { DIAGRAM_EXAMPLES } from "./examples";
+import simpleServerlessWebApplicationSource from "../../../tests/fixtures/engine/simple-serverless-web-application.dgm?raw";
 
 const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
@@ -33,7 +33,7 @@ const FLAT_CLOUD_BRANCH = `diagram autofix-branch {
 
 describe("planAutoFix", () => {
   it("leaves a clean manually positioned diagram unchanged", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "simple-serverless-web-application")!;
+    const example = { source: simpleServerlessWebApplicationSource };
     const doc = parseDgm(example.source);
     const view = getDefaultView(doc);
     view.places.cdn = { x: 180, y: 96, pin: true, manual: true };

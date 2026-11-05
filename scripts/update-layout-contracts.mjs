@@ -25,4 +25,4 @@ for (const [id, contract] of Object.entries(contracts.examples ?? {})) {
 }
 
 writeFileSync(contractsPath, `${JSON.stringify(contracts, null, 2)}\n`);
-console.log(`Updated compiled geometry for ${Object.keys(contracts.examples).length} curated examples.`);
+console.log(`Updated compiled geometry for ${Object.keys(contracts.examples).length} approved examples.`);

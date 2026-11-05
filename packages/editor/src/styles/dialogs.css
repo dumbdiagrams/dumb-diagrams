@@ -835,13 +835,6 @@
   white-space: pre;
 }
 
-.example-reference-note {
-  margin: 7px 0 0;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.4;
-}
-
 .help-content {
   display: flex;
   flex-direction: column;

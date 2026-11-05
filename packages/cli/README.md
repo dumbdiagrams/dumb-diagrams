@@ -20,8 +20,7 @@ dumbdiagrams studio    # local editor; use Open to pick any .dgm file
 ```
 
 `init` writes agent entrypoints (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`),
-`.dumbdiagrams/` guidance (format, architecture, providers, catalog,
-examples), and a `diagrams/` workspace. With a blank name, or without a
+`.dumbdiagrams/` guidance (format, architecture, providers, catalog), and a `diagrams/` workspace. With a blank name, or without a
 terminal, it uses a timestamped folder. `dgm` is a shorthand for
 `dumbdiagrams`.
 

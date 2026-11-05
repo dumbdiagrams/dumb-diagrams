@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -37,7 +36,6 @@ import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const VERSION = readCliVersion();
 const ui = createCliUi();
 
@@ -45,38 +43,6 @@ interface ParsedArgs {
   positionals: string[];
   flags: Map<string, string | true>;
 }
-
-const CURATED_EXAMPLE_IDS = [
-  "aws-high-availability-web-app",
-  "aws-data-transfer-hub",
-  "aws-review-medium-iot-telemetry",
-  "aws-review-medium-thumbnail-pipeline",
-  "aws-review-simple-static-site",
-  "azure-private-app-service",
-  "azure-review-medium-async-orders",
-  "azure-review-medium-iot-telemetry",
-  "azure-review-simple-private-api",
-  "bedrock-claims-processing",
-  "simple-serverless-web-application",
-  "image-thumbnail-pipeline",
-  "asynchronous-report-generation",
-  "event-driven-order-fulfillment",
-  "cloud-agnostic-order-processing",
-  "cloud-agnostic-review-medium-portal-stack",
-  "cloud-agnostic-review-medium-webhook-flow",
-  "cloud-agnostic-review-simple-api",
-  "gcp-review-medium-document-processing",
-  "gcp-review-medium-event-pipeline",
-  "gcp-review-simple-api",
-  "gcp-streaming-analytics",
-] as const;
-const CURATED_FILE_NAMES = [
-  "user-prompt.md",
-  "architecture-brief.md",
-  "reference-spec.md",
-  "diagram.dgm",
-  "requirements.json",
-] as const;
 
 export async function runCli(argv: string[], options: { stdin?: string } = {}): Promise<number> {
   const [command, ...rawArgs] = argv;
@@ -627,7 +593,6 @@ function createInitProject(options: ResolvedInitOptions): Result<number, CliErro
   const agentsPath = join(projectRoot, "AGENTS.md");
   const claudePath = join(projectRoot, "CLAUDE.md");
   const geminiPath = join(projectRoot, "GEMINI.md");
-  const examplesRoot = join(knowledgeRoot, "examples");
 
   const templateVars = { projectName };
   const catalogMarkdownPath = join(knowledgeRoot, "catalog.md");
@@ -675,7 +640,7 @@ function createInitProject(options: ResolvedInitOptions): Result<number, CliErro
     });
   });
 
-  return prepared.andThen(({ files }) => writeInitProject(projectRoot, projectName, examplesRoot, files));
+  return prepared.andThen(({ files }) => writeInitProject(projectRoot, projectName, files));
 }
 
 function initTemplateError(error: InitTemplateError): CliError {
@@ -693,7 +658,6 @@ function renderTemplateFile(
 function writeInitProject(
   projectRoot: string,
   projectName: string,
-  examplesRoot: string,
   files: readonly PreparedInitFile[],
 ): Result<number, CliError> {
   return Result.fromThrowable(
@@ -715,7 +679,6 @@ function writeInitProject(
         console.log(ui.success(`Created ${relativeForLog(filePath)}`));
         created++;
       }
-      created += copyBundledExamples(examplesRoot);
 
       console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
       console.log(ui.info("next", ui.command(`cd ${relativeForLog(projectRoot)} && dumbdiagrams studio`)));
@@ -818,44 +781,6 @@ function createCatalogReference(): { markdown: string; json: string } {
   ].join("\n");
 
   return { markdown, json: `${JSON.stringify(catalogJson, null, 2)}\n` };
-}
-
-function copyBundledExamples(examplesRoot: string): number {
-  mkdirSync(examplesRoot, { recursive: true });
-  const files = [
-    "README.md",
-    ...CURATED_EXAMPLE_IDS.flatMap((id) => CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`)),
-  ];
-  let created = 0;
-
-  for (const fileName of files) {
-    const sourcePath = resolveBundledExample(fileName);
-    if (!sourcePath) {
-      console.warn(ui.warning(`Bundled example not found: ${fileName}`));
-      continue;
-    }
-    const targetPath = join(examplesRoot, fileName);
-    mkdirSync(dirname(targetPath), { recursive: true });
-    if (existsAsFileOrDirectory(targetPath)) {
-      console.log(ui.skip(`Skipped ${relativeForLog(targetPath)} (already exists)`));
-      continue;
-    }
-    copyFileSync(sourcePath, targetPath);
-    console.log(ui.success(`Created ${relativeForLog(targetPath)}`));
-    created++;
-  }
-  return created;
-}
-
-function resolveBundledExample(fileName: string): string | undefined {
-  const candidates = [
-    resolve(__dirname, "templates", "examples", fileName),
-    resolve(__dirname, "..", "templates", "examples", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", "diagrams", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", "curated", fileName),
-  ];
-  return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
 }
 
 function invalidArguments(message: string, command: string): CliError {

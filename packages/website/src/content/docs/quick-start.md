@@ -30,7 +30,7 @@ The project contains agent instructions, `.dumbdiagrams/` knowledge, and a docum
   GEMINI.md          Another agent entry point
 ```
 
-Keep `.dumbdiagrams/examples/` as reference material. By default, an agent creates `diagrams/<name>/diagram.requirements.json` before `diagram.dgm`, beside an `architecture-brief.md` that records the goal and important decisions. The requirements file lists stable component and relationship IDs, required counts, and containment. Keep it alongside the diagram through layout edits. Studio can open the `.dgm` wherever you decide to keep it.
+By default, an agent creates `diagrams/<name>/diagram.requirements.json` before `diagram.dgm`, beside an `architecture-brief.md` that records the goal and important decisions. The requirements file lists stable component and relationship IDs, required counts, and containment. Keep it alongside the diagram through layout edits. Studio can open the `.dgm` wherever you decide to keep it.
 
 ## Create and edit a first draft
 

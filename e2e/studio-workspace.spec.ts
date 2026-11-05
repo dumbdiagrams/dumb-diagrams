@@ -230,28 +230,19 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 10…|Previews ready/);
-  await expect(examples.locator(".example-card")).toHaveCount(10);
-  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(10);
-  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(10);
-  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(10);
-  await expect(examples.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(10);
-  await expect(examples.getByText("Private Azure App Service", { exact: true })).toBeVisible();
-  await expect(examples.getByText("Google Cloud streaming analytics", { exact: true })).toBeVisible();
-  await expect(examples.getByText("Cloud-agnostic order processing", { exact: true })).toBeVisible();
+  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d+ of 16…|Previews ready/);
+  await expect(examples.locator(".example-card")).toHaveCount(16);
+  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(16);
+  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(16);
+  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(16);
+  await expect(examples.getByText("Azure Private Order Processing", { exact: true })).toBeVisible();
+  await expect(examples.getByText("GCP Media Processing", { exact: true })).toBeVisible();
+  await expect(examples.getByText("Order Processing with Recovery Region", { exact: true })).toBeVisible();
 
-  const claims = examples.locator(".example-card").filter({ hasText: "Claims processing with Amazon Bedrock" });
-  await expect(claims.locator(".example-prompt pre").first()).toContainText(
-    "Design an AWS claims-processing workflow for a web application",
-  );
-  await claims.getByText("How DumbDiagrams interprets it", { exact: true }).click();
-  await expect(claims.locator(".example-prompt pre").nth(1)).toContainText(
-    "separate blueprint-creation path",
-  );
-  await claims.getByText("Advanced · Detailed specification", { exact: true }).click();
-  await expect(claims.locator(".example-prompt pre").last()).toContainText(
-    'Create a diagram titled "Claims processing with Amazon Bedrock"',
-  );
+  const thumbnails = examples.locator(".example-card").filter({ hasText: "Image thumbnail pipeline" });
+  await expect(thumbnails.locator(".example-prompt pre").first()).toContainText("Create an AWS image thumbnail pipeline");
+  await thumbnails.getByText("How DumbDiagrams interprets it", { exact: true }).click();
+  await expect(thumbnails.locator(".example-prompt pre").nth(1)).toContainText("a CDN serves originals and thumbnails");
 
   await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
@@ -317,8 +308,8 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
   await page.goto("/");
   const input = page.locator('input[type="file"]');
   await input.setInputFiles([
-    `${ROOT}/examples/diagrams/async-docs.dgm`,
-    `${ROOT}/examples/diagrams/transfer-hub.dgm`,
+    `${ROOT}/tests/fixtures/engine/async-docs.dgm`,
+    `${ROOT}/tests/fixtures/engine/transfer-hub.dgm`,
   ]);
 
   await expect(page.getByRole("tab")).toHaveCount(3);
@@ -340,7 +331,7 @@ test("covers the empty canvas with progress feedback while importing a diagram",
   });
 
   const opening = page.locator('input[type="file"]').setInputFiles(
-    `${ROOT}/examples/diagrams/async-docs.dgm`,
+    `${ROOT}/tests/fixtures/engine/async-docs.dgm`,
   );
   const loading = page.locator(".workspace-loading.operation-loading");
   await expect(loading).toContainText("Opening 1 diagram…");
@@ -357,7 +348,7 @@ test("covers the empty canvas with progress feedback while importing a diagram",
 
 test("updates an imported filename when the diagram is renamed", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/tests/fixtures/engine/async-docs.dgm`);
 
   const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
   await expect(title).toHaveValue("Async Docs");

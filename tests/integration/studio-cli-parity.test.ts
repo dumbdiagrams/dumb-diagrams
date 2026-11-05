@@ -150,7 +150,7 @@ describe("CLI and Studio automatic geometry parity", () => {
   it.each(automaticQualitySources)("matches the CLI for frozen automatic-quality source %s", (id) => {
     const source = readFileSync(resolve(root, "tests/fixtures/automatic-quality", id, "diagram.dgm"), "utf8");
     expectParity(source, id);
-  }, 15_000);
+  });
 
   it("keeps a short-caption CloudFront centered on its AWS service row", () => {
     const layout = successfulLayout(compileDiagramSource(shortCaptionCloudFrontSource, false));

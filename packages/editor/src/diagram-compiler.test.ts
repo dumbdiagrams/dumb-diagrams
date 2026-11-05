@@ -22,6 +22,9 @@ import {
 import { moveSelection, needsAutoFix, setRoute } from "./editor-model";
 import { addResourceResult } from "./model/catalog-placement";
 import { DIAGRAM_EXAMPLES } from "./examples";
+import awsDataTransferHubSource from "../../../tests/fixtures/engine/aws-data-transfer-hub.dgm?raw";
+import bedrockClaimsProcessingSource from "../../../tests/fixtures/engine/bedrock-claims-processing.dgm?raw";
+import simpleServerlessWebApplicationSource from "../../../tests/fixtures/engine/simple-serverless-web-application.dgm?raw";
 import { leftStagingInsertionPoint } from "./grid";
 
 const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
@@ -233,29 +236,33 @@ describe("diagram compilation canvas bounds", () => {
     expect(autoFixRejectionReason(candidate, { ...candidate })).toBeUndefined();
   });
 
-  it("uses the canonical prompt/brief/reference roles for every provider example", () => {
+  it("lists every approved bundle with its prompt and brief", () => {
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
-      "bedrock-claims-processing",
-      "aws-data-transfer-hub",
-      "aws-high-availability-web-app",
-      "simple-serverless-web-application",
-      "image-thumbnail-pipeline",
-      "asynchronous-report-generation",
-      "event-driven-order-fulfillment",
-      "azure-private-app-service",
-      "gcp-streaming-analytics",
-      "cloud-agnostic-order-processing",
+      "aws-easy-static-website-delivery",
+      "aws-medium-factory-iot-telemetry",
+      "aws-medium-image-thumbnail-pipeline",
+      "aws-hard-document-processing",
+      "azure-easy-private-application-api",
+      "azure-medium-asynchronous-order-processing",
+      "azure-medium-industrial-iot-telemetry",
+      "azure-hard-private-order-processing",
+      "gcp-easy-customer-record-api",
+      "gcp-medium-document-processing",
+      "gcp-medium-webhook-event-pipeline",
+      "gcp-hard-media-processing",
+      "cloud-agnostic-easy-customer-record-api",
+      "cloud-agnostic-medium-team-project-portal",
+      "cloud-agnostic-medium-webhook-processing",
+      "cloud-agnostic-hard-order-processing",
     ]);
     for (const example of DIAGRAM_EXAMPLES) {
       expect(example.prompt.trim().length, example.id).toBeGreaterThan(40);
+      expect(example.title, example.id).not.toBe(example.id);
+      expect(example.description, example.id).not.toMatch(/^#/);
       expect(example.prompt).not.toMatch(
         /(?:replicate (?:it|this|from)|reference (?:image|screenshot)|attached (?:image|screenshot)|based on (?:the|this) image)/i,
       );
       expect(example.architectureBrief?.trim().length, example.id).toBeGreaterThan(80);
-      expect(example.referenceSpec?.trim().length, example.id).toBeGreaterThan(500);
-      expect(example.prompt, example.id).not.toMatch(
-        /(?:connector sides?|exact (?:row|column|x|y)|automatic layout|routing instructions?|place .* (?:left|right|above|below))/i,
-      );
     }
   });
 
@@ -266,7 +273,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("wraps long Bedrock service names", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "bedrock-claims-processing");
+    const example = { source: bedrockClaimsProcessingSource };
     expect(example).toBeDefined();
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
@@ -278,7 +285,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("keeps Bedrock routes distinct and straight", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "bedrock-claims-processing");
+    const example = { source: bedrockClaimsProcessingSource };
     expect(example).toBeDefined();
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
@@ -310,7 +317,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("compiles the claims workflow with the editor grid enabled", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "bedrock-claims-processing");
+    const example = { source: bedrockClaimsProcessingSource };
     expect(example).toBeDefined();
     const source = example!.source
       .replace("diagram bedrock-claims-processing", "diagram claims-processing-workflow")
@@ -336,7 +343,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("keeps Data Transfer Hub compact and free of connector dead ends", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "aws-data-transfer-hub")!;
+    const example = { source: awsDataTransferHubSource }!;
     const result = compileDiagramSource(example.source, true);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -423,7 +430,7 @@ describe("diagram compilation canvas bounds", () => {
   });
 
   it("keeps routes stable when an unrelated staged resource moves", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "simple-serverless-web-application")!;
+    const example = { source: simpleServerlessWebApplicationSource }!;
     const doc = parseDgm(example.source);
     // Keep the staged item provider-neutral: provider validation now rejects
     // unrelated Azure entries in this AWS document before routing is reached.

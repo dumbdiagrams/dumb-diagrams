@@ -67,7 +67,7 @@ reviewing why it changed; never edit a baseline just to turn CI green.
 | --- | --- | --- |
 | SVG goldens (`tests/**/__snapshots__/*.svg`) | `pnpm exec vitest run -u <test>` | Open the old and new SVG and compare them |
 | Editor operation goldens (`packages/editor/src/__snapshots__/editor-model/`) | `pnpm exec vitest run -u packages/editor/src/editor-model.golden.test.ts` | Each `.dgm` diff is the source an operation writes |
-| Layout contracts (`examples/layout-contracts.json`) | `pnpm update:layout-contracts` | Geometry changes for the curated examples |
+| Layout contracts (`examples/layout-contracts.json`) | `pnpm update:layout-contracts` | Geometry changes for the approved examples |
 | Routing warnings (`examples/routing-warnings.json`) | Edit by hand | Inspect the diagram; every entry needs a `reviews[]` note |
 | Routing work counters (`scripts/performance-baseline.json`) | `node scripts/check-performance-budget.mjs --update` | CI fails when a counter grows more than 25% |
 
@@ -78,8 +78,8 @@ Never edit them; add a new file instead.
 
 For an engine change:
 
-1. Run `pnpm check:engine` before and after. It covers curated examples,
-   legacy diagrams, versioned compatibility fixtures, and a locale probe.
+1. Run `pnpm check:engine` before and after. It covers approved examples,
+   engine fixtures, versioned compatibility fixtures, and a locale probe.
    Compilation must not mutate its inputs. Full geometry, SVG, and diagnostics
    must repeat exactly; the check never rounds coordinates or updates baselines.
 2. Run `pnpm test:golden` to identify intentional output changes, and
@@ -92,8 +92,8 @@ For an engine change:
    any code. Per-code ceilings cannot judge visual balance or authorize a new
    crossing just because another crossing disappeared.
 
-Add each curated example to its AWS or provider semantic contract and layout
-contract; coverage tests reject omissions. When a regression needs a new graph,
+Each approved bundle needs its `requirements.json` and a layout contract;
+coverage tests reject omissions. When a regression needs a new graph,
 add a small named fixture or focused test instead of expanding one kitchen sink.
 
 ## Catalog

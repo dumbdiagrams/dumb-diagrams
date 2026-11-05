@@ -26,7 +26,7 @@ requirements to clear routing findings.
 
 ## Brief template
 
-Use this Markdown shape, matching the bundled examples:
+Use this Markdown shape:
 
 ```markdown
 # Architecture brief

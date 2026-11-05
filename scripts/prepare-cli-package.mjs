@@ -2,7 +2,7 @@ import { build } from "esbuild";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { curatedIds, repoRoot } from "./lib/example-manifest.mjs";
+import { repoRoot } from "./lib/example-manifest.mjs";
 import { copySourceManifest } from "./lib/source-manifest.mjs";
 
 const root = repoRoot();
@@ -14,18 +14,8 @@ const sourceSnapshot = join(cliDist, "source");
 const packagedExamples = join(cliDist, "templates/examples");
 const projectTemplatesSource = join(cliPackageRoot, "templates/project");
 const projectTemplatesTarget = join(cliDist, "templates/project");
-const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
 const entry = join(cliDist, "index.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
-const curatedExampleIds = curatedIds();
-const curatedExampleFileNames = [
-  "user-prompt.md",
-  "architecture-brief.md",
-  "reference-spec.md",
-  "diagram.dgm",
-  "requirements.json",
-];
-const exampleFiles = curatedExampleIds.flatMap((id) => curatedExampleFileNames.map((fileName) => `${id}/${fileName}`));
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
 if (!existsSync(join(editorDist, "index.html"))) {
@@ -74,14 +64,6 @@ copyFiles(projectTemplatesSource, projectTemplatesTarget, [
 ]);
 
 rmSync(packagedExamples, { recursive: true, force: true });
-mkdirSync(packagedExamples, { recursive: true });
-copyFiles(exampleTemplateSource, packagedExamples, ["README.md"]);
-for (const fileName of exampleFiles) {
-  const target = join(packagedExamples, fileName);
-  mkdirSync(dirname(target), { recursive: true });
-  const source = join(root, "examples", "curated", fileName);
-  cpSync(source, target);
-}
 
 buildSourceSnapshot();
 
@@ -100,7 +82,6 @@ console.log("Prepared DumbDiagrams package assets:");
 console.log(`  CLI:    ${entry} (bundled runtime)`);
 console.log(`  Studio: ${standaloneEditor}`);
 console.log(`  Source: ${sourceSnapshot}`);
-console.log(`  Examples: ${packagedExamples}`);
 console.log(`  Templates: ${projectTemplatesTarget}`);
 
 function cleanupDistArtifacts(distDir) {

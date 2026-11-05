@@ -11,8 +11,6 @@ import { parseCliError } from "./cli-errors.js";
 import { runCli } from "./index.js";
 import { readCliVersion } from "./version.js";
 
-const ROOT = resolve(import.meta.dirname, "../../..");
-
 function writeRequirementsForDiagram(path: string, source: string): void {
   const parsed = parseDgmResult(source);
   if (parsed.isErr()) throw new Error(parsed.error.message);
@@ -430,7 +428,7 @@ describe("runCli", () => {
     }
   });
 
-  it("creates a timestamped project folder with agent guidance and portable examples", async () => {
+  it("creates a timestamped project folder with agent guidance and no bundled examples", async () => {
     const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-init-"));
     const previous = process.cwd();
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -510,32 +508,8 @@ describe("runCli", () => {
       const catalog = readFileSync(join(projectRoot, ".dumbdiagrams/catalog.json"), "utf8");
       expect(catalog).toContain('"entries"');
       expect(catalog).toContain('"type": "cloud-agnostic.boundary"');
-      const generatedPilot = join(projectRoot, ".dumbdiagrams/examples/simple-serverless-web-application");
-      const sourcePilot = join(ROOT, "examples/curated/simple-serverless-web-application");
-      for (const file of [
-        "user-prompt.md",
-        "architecture-brief.md",
-        "reference-spec.md",
-        "diagram.dgm",
-        "requirements.json",
-      ]) {
-        expect(readFileSync(join(generatedPilot, file), "utf8")).toBe(readFileSync(join(sourcePilot, file), "utf8"));
-      }
-      for (const id of ["azure-private-app-service", "gcp-streaming-analytics", "cloud-agnostic-order-processing"]) {
-        expect(readFileSync(join(projectRoot, `.dumbdiagrams/examples/${id}/diagram.dgm`), "utf8")).toBe(
-          readFileSync(join(ROOT, `examples/curated/${id}/diagram.dgm`), "utf8"),
-        );
-      }
-      for (const id of [
-        "aws-review-medium-iot-telemetry",
-        "azure-review-medium-async-orders",
-        "gcp-review-simple-api",
-      ]) {
-        const generated = join(projectRoot, `.dumbdiagrams/examples/${id}/requirements.json`);
-        expect(readFileSync(generated, "utf8")).toBe(
-          readFileSync(join(ROOT, `examples/curated/${id}/requirements.json`), "utf8"),
-        );
-      }
+      // Bundled examples would leak reference answers into model evaluations.
+      expect(existsSync(join(projectRoot, ".dumbdiagrams/examples"))).toBe(false);
       expect(existsSync(join(projectRoot, "README.md"))).toBe(false);
     } finally {
       log.mockRestore();

@@ -10,27 +10,27 @@ const examples = loadReviewedExamples().filter(example => example.provider === p
 
 <div class="reviewed-examples">
   {examples.map((example, index) => {
-    const svgUrl = url(`reviewed-examples/${example.svgName}`);
-    const sourceUrl = url(`reviewed-examples/${example.sourceName}`);
-    const promptUrl = url(`reviewed-examples/${example.promptName}`);
-    const requirementsUrl = url(`reviewed-examples/${example.requirementsName}`);
+    const svgUrl = url(`reviewed-examples/${example.files.svg}`);
+    const sourceUrl = url(`reviewed-examples/${example.files.source}`);
+    const promptUrl = url(`reviewed-examples/${example.files.prompt}`);
+    const requirementsUrl = url(`reviewed-examples/${example.files.requirements}`);
     return <details class="reviewed-card" open={index === 0}>
       <summary>
         <span class="reviewed-title">{example.title}</span>
-        <span class="reviewed-meta"><span>{labels[provider]} · v{example.appVersion}</span><span>{example.difficulty}</span></span>
+        <span class="reviewed-meta"><span>{labels[provider]} · {example.model} · {example.generatedOn}</span><span>{example.difficulty[0].toUpperCase() + example.difficulty.slice(1)}</span></span>
       </summary>
-      <a class="reviewed-preview" href={svgUrl} aria-label={`Open original ${example.title} SVG`}>
+      <a class="reviewed-preview" href={svgUrl} aria-label={`Open ${example.title} SVG`}>
         <img src={svgUrl} alt={`${example.title} architecture diagram`} width={example.width} height={example.height} loading="lazy" />
       </a>
       <div class="reviewed-detail">
         {example.reviewNote && <p class="reviewed-note"><strong>Review note:</strong> {example.reviewNote}</p>}
-        <span class="mono">ORIGINAL REQUEST</span>
+        <span class="mono">PROMPT</span>
         <p>{example.promptText.trim()}</p>
         <nav aria-label={`${example.title} files`}>
-          <a href={svgUrl}>Original SVG</a>
+          <a href={svgUrl}>SVG</a>
           <a href={sourceUrl}>Source (.dgm)</a>
           <a href={requirementsUrl}>Requirements (.json)</a>
-          <a href={promptUrl}>Original prompt</a>
+          <a href={promptUrl}>Prompt</a>
         </nav>
       </div>
     </details>;

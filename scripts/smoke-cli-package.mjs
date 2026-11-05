@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
-import { curatedIds, repoRoot } from "./lib/example-manifest.mjs";
+import { repoRoot } from "./lib/example-manifest.mjs";
 import { collectSourceManifestFiles } from "./lib/source-manifest.mjs";
 
 const root = repoRoot();
@@ -20,14 +20,7 @@ const tarballPath = requestedArtifact
   : join(artifactsDir, tarballName);
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
-const curatedExampleIds = curatedIds();
-const curatedExampleFiles = [
-  "user-prompt.md",
-  "architecture-brief.md",
-  "reference-spec.md",
-  "diagram.dgm",
-  "requirements.json",
-];
+const smokeBundle = join(root, "examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline");
 
 mkdirSync(artifactsDir, { recursive: true });
 
@@ -62,18 +55,14 @@ const required = [
   "package/dist/templates/project/.dumbdiagrams/providers/gcp.md",
   "package/dist/templates/project/.dumbdiagrams/providers/cloud-agnostic.md",
   "package/dist/templates/project/diagrams/README.md",
-  "package/dist/templates/examples/README.md",
-  ...curatedExampleIds.flatMap((id) =>
-    curatedExampleFiles.map((file) => `package/dist/templates/examples/${id}/${file}`),
-  ),
   "package/dist/source/CORRESPONDING_SOURCE.md",
   "package/dist/source/packages/cli/src/index.ts",
   "package/dist/source/packages/editor/src/main.tsx",
   "package/dist/source/packages/runtime/src/core/types.ts",
   "package/dist/source/assets/catalog/sources.lock.json",
   "package/dist/source/assets/catalog/sources/cloud-agnostic/server.svg",
-  "package/dist/source/examples/curated/aws-high-availability-web-app/diagram.dgm",
-  "package/dist/source/examples/curated/simple-serverless-web-application/diagram.dgm",
+  "package/dist/source/examples/approved/sonnet-5-5-low-2026-11-05/aws-medium-image-thumbnail-pipeline/diagram.dgm",
+  "package/dist/source/examples/prompts/aws-medium-image-thumbnail-pipeline.md",
   "package/dist/source/examples/routing-warnings.json",
   "package/dist/source/registry.npmrc",
   "package/dist/source/scripts/prepare-cli-package.mjs",
@@ -160,12 +149,15 @@ try {
     ".dumbdiagrams/providers/azure.md",
     ".dumbdiagrams/providers/gcp.md",
     ".dumbdiagrams/providers/cloud-agnostic.md",
-    ...curatedExampleIds.flatMap((id) => curatedExampleFiles.map((file) => `.dumbdiagrams/examples/${id}/${file}`)),
   ]) {
     if (!existsSync(join(initializedProject, generated))) throw new Error(`init did not create ${generated}`);
   }
+  if (existsSync(join(initializedProject, ".dumbdiagrams/examples"))) throw new Error("init must not bundle examples");
 
-  const smokeDiagram = join(initializedProject, ".dumbdiagrams/examples/simple-serverless-web-application/diagram.dgm");
+  const smokeDir = join(initializedProject, "diagrams/smoke");
+  mkdirSync(smokeDir, { recursive: true });
+  for (const file of ["diagram.dgm", "requirements.json"]) copyFileSync(join(smokeBundle, file), join(smokeDir, file));
+  const smokeDiagram = join(smokeDir, "diagram.dgm");
   if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams validate failed");
   }

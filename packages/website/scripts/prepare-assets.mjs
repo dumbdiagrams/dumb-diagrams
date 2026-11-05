@@ -16,7 +16,7 @@ const examples = loadExamples();
 for (const filename of await readdir(new URL('src/examples/', site))) {
   if (filename.endsWith('.dgm')) examples.push({ id: filename.slice(0, -4), source: await readFile(new URL(`src/examples/${filename}`, site), 'utf8') });
 }
-for (const { id, source, prompt, referenceSpec, requirements } of examples) {
+for (const { id, source, prompt, requirements } of examples) {
   const filename = `${id}.dgm`;
   const parsed = parseDgmResult(source);
   if (parsed.isErr()) {
@@ -70,7 +70,6 @@ for (const { id, source, prompt, referenceSpec, requirements } of examples) {
   await writeFile(new URL(`public/diagrams/${filename}`, site), source);
   await writeFile(new URL(`public/diagrams/${id}.requirements.json`, site), requirementsText);
   if (prompt) await writeFile(new URL(`public/diagrams/${id}-prompt.txt`, site), prompt);
-  if (referenceSpec) await writeFile(new URL(`public/diagrams/${id}-reference-spec.md`, site), referenceSpec);
 }
 await copyFile(new URL('packages/editor/public/logo_dumbdiagrams.png', root), new URL('public/logo.png', site));
 await copyFile(new URL('packages/editor/public/favicon.png', root), new URL('public/favicon.png', site));

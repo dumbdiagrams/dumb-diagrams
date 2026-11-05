@@ -40,7 +40,7 @@ test("rejects invalid, oversized, and non-.dgm imports without replacing the wor
   await expect(page.locator(".toast")).toContainText("over 1 MiB");
   await expect(page.getByRole("tab")).toHaveCount(2);
 
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/transfer-hub.dgm`);
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/tests/fixtures/engine/transfer-hub.dgm`);
   await waitForStudioReady(page);
   await expect(page.getByRole("tab")).toHaveCount(3);
   await expect(page.locator(".workspace-tab.is-active")).toContainText("Transfer Hub");

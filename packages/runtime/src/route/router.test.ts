@@ -378,10 +378,7 @@ describe("routeEdgePreview", () => {
 
   it("keeps Azure step badges clear of resource cards and subnet headers", () => {
     const doc = parseDgm(
-      readFileSync(
-        new URL("../../../../examples/curated/azure-private-app-service/diagram.dgm", import.meta.url),
-        "utf8",
-      ),
+      readFileSync(new URL("../../../../tests/fixtures/engine/azure-private-app-service.dgm", import.meta.url), "utf8"),
     );
     const layout = layoutDocument(doc);
     const routes = routeEdges(doc, layout);
@@ -396,10 +393,7 @@ describe("routeEdgePreview", () => {
 
   it("keeps automatic badges at the same parent-edge distance used by dragging", () => {
     const doc = parseDgm(
-      readFileSync(
-        new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
-        "utf8",
-      ),
+      readFileSync(new URL("../../../../tests/fixtures/engine/image-thumbnail-pipeline.dgm", import.meta.url), "utf8"),
     );
     const routes = routeEdges(doc, layoutDocument(doc));
 
@@ -512,7 +506,7 @@ describe("routeEdgePreview", () => {
   it("keeps order-flow labels visibly attached to their connectors", () => {
     const doc = parseDgm(
       readFileSync(
-        new URL("../../../../examples/curated/event-driven-order-fulfillment/diagram.dgm", import.meta.url),
+        new URL("../../../../tests/fixtures/engine/event-driven-order-fulfillment.dgm", import.meta.url),
         "utf8",
       ),
     );
@@ -554,7 +548,7 @@ describe("routeEdgePreview", () => {
   it("keeps report-flow labels clear of resource and boundary copy", () => {
     const doc = parseDgm(
       readFileSync(
-        new URL("../../../../examples/curated/asynchronous-report-generation/diagram.dgm", import.meta.url),
+        new URL("../../../../tests/fixtures/engine/asynchronous-report-generation.dgm", import.meta.url),
         "utf8",
       ),
     );
@@ -649,7 +643,7 @@ describe("routeEdgePreview", () => {
   it("keeps cross-boundary labels visibly attached to their connectors", () => {
     const doc = parseDgm(
       readFileSync(
-        new URL("../../../../examples/curated/aws-high-availability-web-app/diagram.dgm", import.meta.url),
+        new URL("../../../../tests/fixtures/engine/aws-high-availability-web-app.dgm", import.meta.url),
         "utf8",
       ),
     );
@@ -662,10 +656,7 @@ describe("routeEdgePreview", () => {
 
   it("routes the curated Bedrock workflow around extraction cards", () => {
     const doc = parseDgm(
-      readFileSync(
-        new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
-        "utf8",
-      ),
+      readFileSync(new URL("../../../../tests/fixtures/engine/bedrock-claims-processing.dgm", import.meta.url), "utf8"),
     );
     const layout = layoutDocument(doc);
     const route = routeEdges(doc, layout).find((edge) => edge.id === "workflow_to_state")!;

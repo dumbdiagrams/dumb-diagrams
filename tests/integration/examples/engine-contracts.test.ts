@@ -6,20 +6,20 @@ import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramResult, invariantTier } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
-import { curatedDiagrams, repoRoot } from "../../../scripts/lib/example-manifest.mjs";
+import { approvedDiagrams, repoRoot } from "../../../scripts/lib/example-manifest.mjs";
 
 const root = repoRoot();
 const contracts = JSON.parse(readFileSync(resolve(root, "examples/layout-contracts.json"), "utf8"));
 const reviewed = JSON.parse(readFileSync(resolve(root, "examples/routing-warnings.json"), "utf8"));
 
 // These assertions describe acceptable output without requiring today's coordinates
-// or SVG markup. Exact output remains in curated-layout.test.ts.
-describe("engine-independent curated contracts", () => {
-  it("covers every curated example", () => {
-    expect(Object.keys(contracts.examples).sort()).toEqual(curatedDiagrams().map(({ id }) => id).sort());
+// or SVG markup. Exact output remains in approved-layout.test.ts.
+describe("engine-independent approved contracts", () => {
+  it("covers every approved example", () => {
+    expect(Object.keys(contracts.examples).sort()).toEqual(approvedDiagrams().map(({ id }) => id).sort());
   });
 
-  for (const { id, file, baselineName } of curatedDiagrams()) {
+  for (const { id, file, baselineName } of approvedDiagrams()) {
     it(`${id} preserves layout intent and does not increase reviewed defects`, () => {
       const contract = contracts.examples[id];
       expect(contract, `${id} missing layout contract`).toBeDefined();

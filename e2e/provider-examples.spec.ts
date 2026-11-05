@@ -6,17 +6,17 @@ import { ROOT, waitForStudioReady } from "./support/helpers";
 
 const providerExamples = [
   {
-    path: join(ROOT, "examples/curated/azure-private-app-service/diagram.dgm"),
+    path: join(ROOT, "tests/fixtures/engine/azure-private-app-service.dgm"),
     tab: "Azure private write-through application",
     renderedId: "#res-app_service",
   },
   {
-    path: join(ROOT, "examples/curated/gcp-streaming-analytics/diagram.dgm"),
+    path: join(ROOT, "tests/fixtures/engine/gcp-streaming-analytics.dgm"),
     tab: "Google Cloud streaming analytics platform",
     renderedId: "#res-gke",
   },
   {
-    path: join(ROOT, "examples/curated/cloud-agnostic-order-processing/diagram.dgm"),
+    path: join(ROOT, "tests/fixtures/engine/cloud-agnostic-order-processing.dgm"),
     tab: "Cloud-agnostic order processing",
     renderedId: "#res-order_service",
   },

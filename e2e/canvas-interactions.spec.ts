@@ -692,8 +692,8 @@ test("keeps a connected resource draggable from beneath its connector endpoint",
 
 test("moves the adjoining leg when a connector bend is dragged past its line", async ({ page }) => {
   await openAsyncDocs(page);
-  const edge = await selectEdge(page, "e1");
-  const bend = page.locator('[data-bend-handle="e1:2"]');
+  const edge = await selectEdge(page, "e2");
+  const bend = page.locator('[data-bend-handle="e2:2"]');
   await expect(bend).toHaveCount(1);
   const beforeBox = await bend.boundingBox();
   expect(beforeBox).not.toBeNull();
@@ -735,13 +735,13 @@ test("moves the adjoining leg when a connector bend is dragged past its line", a
 
 test("merges connector controls when a bend collapses onto its neighbor", async ({ page }) => {
   await openAsyncDocs(page);
-  await selectEdge(page, "e1");
-  const bendHandles = page.locator('[data-bend-handle^="e1:"]');
+  await selectEdge(page, "e2");
+  const bendHandles = page.locator('[data-bend-handle^="e2:"]');
   const beforeCount = await bendHandles.count();
   expect(beforeCount).toBeGreaterThan(1);
 
-  const moving = page.locator('[data-bend-handle="e1:2"]');
-  const neighbor = page.locator('[data-bend-handle="e1:1"]');
+  const moving = page.locator('[data-bend-handle="e2:1"]');
+  const neighbor = page.locator('[data-bend-handle="e2:2"]');
   const movingBox = await moving.boundingBox();
   const neighborBox = await neighbor.boundingBox();
   expect(movingBox).not.toBeNull();
