@@ -9,7 +9,9 @@ export const ROUTE_PATH_COSTS = {
   astarOverlapPerUnit: 4_000,
   nearParallelPerUnit: 160,
   portSideFallback: 900,
-  portOffsetFallback: 120,
+  // A quarter-face shift should cost slightly more than one bend. Clear,
+  // centred attachments remain the default; conflicts can still justify lanes.
+  portOffsetFallback: 360,
   portBacktrack: 4_000,
   labelSideFallback: 6_000,
 } as const;

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { formatParseError, parseDgmResult } from '@dumb-diagrams/runtime/dsl';
+import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/requirements';
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
 import { createCliUi } from '../../cli/src/cli-ui.ts';
 import { stripVTControlCharacters } from 'node:util';
@@ -79,6 +80,9 @@ test('complete documentation and homepage examples compile through the actual ru
     if (parsed.isErr()) continue;
     const result = compileDiagram(parsed.value);
     assert.equal(result.ok, true, `${example.id}: original Studio source compiles`);
+    const requirements = parseRequirements(example.requirements);
+    assert.equal(requirements.isOk(), true, `${example.id}: requirements contract parses`);
+    if (requirements.isOk()) assert.deepEqual(checkRequirements(parsed.value, requirements.value), [], `${example.id}: requirements cover the source`);
     // These are the app's existing examples, including any existing routing
     // notes. The website must not rewrite their geometry to hide those notes.
     checked++;
@@ -97,11 +101,17 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
     assert.equal(await readFile(join(dist, 'diagrams', `${name}.dgm`), 'utf8'), await readFile(join(site, 'src/examples', `${name}.dgm`), 'utf8'));
+    assert.deepEqual(
+      await readFile(join(dist, 'diagrams', `${name}.requirements.json`)),
+      await readFile(join(site, 'src/examples', `${name}.requirements.json`)),
+      `${name}: requirements companion copied byte-for-byte`,
+    );
   }
   for (const example of loadExamples()) {
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}.dgm`), 'utf8'), example.source);
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-prompt.txt`), 'utf8'), example.prompt);
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-reference-spec.md`), 'utf8'), example.referenceSpec);
+    assert.deepEqual(JSON.parse(await readFile(join(dist, 'diagrams', `${example.id}.requirements.json`), 'utf8')), JSON.parse(example.requirements));
     const svg = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
@@ -141,6 +151,17 @@ test('reviewed examples preserve archived files and expose provenance in the doc
       assert.deepEqual(copied, original, `${example.id}: ${key} copied byte-for-byte`);
       assert.ok(html.includes(`/reviewed-examples/${outputRecord.files[key]}`), `${example.id}: ${key} is linked from the gallery`);
       if (key === 'svg') assert.equal(createHash('sha256').update(copied).digest('hex'), example.sha256, `${example.id}: archived SVG hash`);
+    }
+    const contract = await readFile(resolve(repoRoot, example.source.replace(/\.dgm$/, '.requirements.json')));
+    const copiedContract = await readFile(join(dist, 'reviewed-examples', outputRecord.files.requirements));
+    assert.deepEqual(copiedContract, contract, `${example.id}: requirements copied byte-for-byte`);
+    assert.ok(html.includes(`/reviewed-examples/${outputRecord.files.requirements}`), `${example.id}: requirements linked from the gallery`);
+    const sourceParsed = parseDgmResult(await readFile(resolve(repoRoot, example.source), 'utf8'));
+    const requirementsParsed = parseRequirements(contract.toString('utf8'));
+    assert.equal(sourceParsed.isOk(), true, `${example.id}: source parses`);
+    assert.equal(requirementsParsed.isOk(), true, `${example.id}: requirements parse`);
+    if (sourceParsed.isOk() && requirementsParsed.isOk()) {
+      assert.deepEqual(checkRequirements(sourceParsed.value, requirementsParsed.value), [], `${example.id}: requirements cover the archived source`);
     }
     const svgText = await readFile(join(dist, 'reviewed-examples', outputRecord.files.svg), 'utf8');
     const embeddedSource = svgText.match(/<metadata id="dumb-diagrams-source">DumbDiagrams\n([\s\S]*?)<\/metadata>/)?.[1];
@@ -182,6 +203,10 @@ test('mechanics documentation is generated, ordered, and grounded in runtime out
   assert.equal(
     await readFile(join(dist, 'docs-explainers/core-flow.dgm'), 'utf8'),
     await readFile(join(site, 'src/examples/mechanics/core-flow.dgm'), 'utf8'),
+  );
+  assert.deepEqual(
+    await readFile(join(dist, 'docs-explainers/core-flow.requirements.json')),
+    await readFile(join(site, 'src/examples/mechanics/core-flow.requirements.json')),
   );
   const svg = await readFile(join(dist, 'docs-explainers/core-flow.svg'), 'utf8');
   assert.match(svg, /data:image\/svg\+xml/);

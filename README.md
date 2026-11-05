@@ -67,12 +67,16 @@ diagram payments {
 Check and render it from a terminal or CI:
 
 ```bash
-dumbdiagrams validate --strict diagrams/*/*.dgm    # exit 1 on errors or warnings
+dumbdiagrams validate diagrams/*/*.dgm             # source validity and requirements
+dumbdiagrams validate --strict diagrams/*/*.dgm    # also fail on routing findings
 dumbdiagrams format --check diagram.dgm            # canonical formatting
 dumbdiagrams render diagram.dgm -o diagram.svg
 ```
 
 The full syntax reference is on the website under **Source format**.
+Validation requires a companion requirements contract extracted before authoring:
+`requirements.json` beside `diagram.dgm`, or `<stem>.requirements.json` for a flat
+file. Initialized projects include its schema and authoring instructions.
 
 ## Developing
 

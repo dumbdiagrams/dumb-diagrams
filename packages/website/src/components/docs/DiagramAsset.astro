@@ -16,7 +16,7 @@ const previewWidth = Number(dimensions[1]);
 const previewHeight = Number(dimensions[2]);
 ---
 <figure class="mechanic-figure diagram-asset" aria-labelledby={`${id}-title`}>
-  <div class="figure-heading"><div><span class="figure-kicker">REAL EXAMPLE · {example.title}</span><h3 id={`${id}-title`}>{title}</h3></div><a class="figure-chip" href={url(`diagrams/${id}.dgm`)} download>Download .dgm ↓</a></div>
+  <div class="figure-heading"><div><span class="figure-kicker">REAL EXAMPLE · {example.title}</span><h3 id={`${id}-title`}>{title}</h3></div><nav class="figure-links"><a class="figure-chip" href={url(`diagrams/${id}.dgm`)} download>Download .dgm ↓</a><a class="figure-chip" href={url(`diagrams/${id}.requirements.json`)} download>Requirements ↓</a></nav></div>
   <div class="diagram-workspace">
     <section class="diagram-source-panel" aria-label="Diagram source">
       <div class="diagram-panel-heading"><span>01 / SOURCE</span><strong>{id}.dgm</strong></div>

@@ -2,7 +2,8 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath } from "node:url";
 
@@ -44,7 +45,15 @@ function loadFixtures() {
     if (!existsSync(file)) throw new Error(`Missing engine fixture ${baselineName}: ${file}`);
     return { id, baselineName, source: readFileSync(file, "utf8") };
   });
-  return [...fixtures, SYNTHETIC_FIXTURE];
+  const automaticRoot = join(ROOT, "tests/fixtures/automatic-quality");
+  const automatic = readdirSync(automaticRoot)
+    .sort()
+    .map((id) => ({
+      id: `automatic-${id}`,
+      baselineName: `automatic-quality/${id}`,
+      source: readFileSync(join(automaticRoot, id, "diagram.dgm"), "utf8"),
+    }));
+  return [...fixtures, ...automatic, SYNTHETIC_FIXTURE];
 }
 
 function compileFixture(fixture) {

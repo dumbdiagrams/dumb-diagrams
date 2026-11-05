@@ -1,0 +1,774 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "user",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; User is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "customer",
+      "kind": "group",
+      "type": "aws.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer's AWS Account in this architecture."
+      }
+    },
+    {
+      "id": "auth",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Authentication in this architecture."
+      }
+    },
+    {
+      "id": "cognito",
+      "kind": "resource",
+      "type": "aws.cognito",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Amazon Cognito in this architecture."
+      }
+    },
+    {
+      "id": "oidc",
+      "kind": "resource",
+      "type": "cloud-agnostic.identity",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names OpenID Connect in this architecture."
+      }
+    },
+    {
+      "id": "state",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Data transfer task information in this architecture."
+      }
+    },
+    {
+      "id": "frontend",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Public web UI in this architecture."
+      }
+    },
+    {
+      "id": "ui",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Data Transfer Hub UI in this architecture."
+      }
+    },
+    {
+      "id": "cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Amazon CloudFront in this architecture."
+      }
+    },
+    {
+      "id": "ui_bucket",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Static web assets in this architecture."
+      }
+    },
+    {
+      "id": "appsync",
+      "kind": "resource",
+      "type": "aws.aws-appsync",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names GraphQL backend API in this architecture."
+      }
+    },
+    {
+      "id": "api_lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names API Lambda in this architecture."
+      }
+    },
+    {
+      "id": "workflow",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names AWS Step Functions workflow in this architecture."
+      }
+    },
+    {
+      "id": "workflow_lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Workflow Lambda in this architecture."
+      }
+    },
+    {
+      "id": "cloudformation",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Plugin deployment in this architecture."
+      }
+    },
+    {
+      "id": "workloads",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application workloads in this architecture."
+      }
+    },
+    {
+      "id": "fargate",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Plugin transfer tasks in this architecture."
+      }
+    },
+    {
+      "id": "managed",
+      "kind": "group",
+      "type": "aws.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names AWS Managed Account in this architecture."
+      }
+    },
+    {
+      "id": "s3_component",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation-template",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names S3 replication component template in this architecture."
+      }
+    },
+    {
+      "id": "dynamodb_component",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation-template",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names DynamoDB replication component template in this architecture."
+      }
+    },
+    {
+      "id": "templates",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Centralized plugin templates in this architecture."
+      }
+    },
+    {
+      "id": "ecr_component",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation-template",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names ECR replication component template in this architecture."
+      }
+    },
+    {
+      "id": "ecr",
+      "kind": "resource",
+      "type": "aws.elastic-container-registry",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Plugin container images in this architecture."
+      }
+    },
+    {
+      "id": "ecr_image",
+      "kind": "resource",
+      "type": "aws.elastic-container-registry-image",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names ECR replication Docker image in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "user-ui",
+      "source": "user",
+      "target": "ui",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this User to Data Transfer Hub UI edge is the reference mapping."
+      }
+    },
+    {
+      "id": "ui-cloudfront",
+      "source": "ui",
+      "target": "cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Data Transfer Hub UI to Amazon CloudFront direction."
+      }
+    },
+    {
+      "id": "cloudfront-ui_bucket",
+      "source": "cloudfront",
+      "target": "ui_bucket",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Amazon CloudFront to Static web assets direction."
+      }
+    },
+    {
+      "id": "ui-appsync",
+      "source": "ui",
+      "target": "appsync",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Data Transfer Hub UI to GraphQL backend API direction."
+      }
+    },
+    {
+      "id": "ui-cognito",
+      "source": "ui",
+      "target": "cognito",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Data Transfer Hub UI to Amazon Cognito direction."
+      }
+    },
+    {
+      "id": "ui-oidc",
+      "source": "ui",
+      "target": "oidc",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Data Transfer Hub UI to OpenID Connect direction."
+      }
+    },
+    {
+      "id": "appsync-api_lambda",
+      "source": "appsync",
+      "target": "api_lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the GraphQL backend API to API Lambda direction."
+      }
+    },
+    {
+      "id": "api_lambda-workflow_lambda",
+      "source": "api_lambda",
+      "target": "workflow_lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the API Lambda to Workflow Lambda direction."
+      }
+    },
+    {
+      "id": "workflow_lambda-cloudformation",
+      "source": "workflow_lambda",
+      "target": "cloudformation",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Workflow Lambda to Plugin deployment direction."
+      }
+    },
+    {
+      "id": "cloudformation-fargate",
+      "source": "cloudformation",
+      "target": "fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Plugin deployment to Plugin transfer tasks direction."
+      }
+    },
+    {
+      "id": "templates-cloudformation",
+      "source": "templates",
+      "target": "cloudformation",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Centralized plugin templates to Plugin deployment direction."
+      }
+    },
+    {
+      "id": "ecr-fargate",
+      "source": "ecr",
+      "target": "fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Plugin container images to Plugin transfer tasks direction."
+      }
+    },
+    {
+      "id": "appsync-state",
+      "source": "appsync",
+      "target": "state",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the GraphQL backend API to Data transfer task information direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_aws-appsync",
+      "kind": "resource",
+      "type": "aws.aws-appsync",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-appsync; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-cloudformation",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-cloudformation; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-cloudformation-template",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation-template",
+      "min": 3,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 3 records the selected reference normalization for aws.aws-cloudformation-template; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-fargate",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-fargate; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloudfront; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cognito",
+      "kind": "resource",
+      "type": "aws.cognito",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cognito; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_dynamodb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.dynamodb; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_elastic-container-registry",
+      "kind": "resource",
+      "type": "aws.elastic-container-registry",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.elastic-container-registry; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_elastic-container-registry-image",
+      "kind": "resource",
+      "type": "aws.elastic-container-registry-image",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.elastic-container-registry-image; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_identity",
+      "kind": "resource",
+      "type": "cloud-agnostic.identity",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.identity; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_account",
+      "kind": "group",
+      "type": "aws.account",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.account; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 4,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 4 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_user",
+      "component": "user",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps User at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_customer",
+      "component": "customer",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer's AWS Account inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_auth",
+      "component": "auth",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Authentication inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_cognito",
+      "component": "cognito",
+      "relation": "inside",
+      "group": "auth",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Amazon Cognito inside Authentication."
+      }
+    },
+    {
+      "id": "place_oidc",
+      "component": "oidc",
+      "relation": "inside",
+      "group": "auth",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places OpenID Connect inside Authentication."
+      }
+    },
+    {
+      "id": "place_state",
+      "component": "state",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Data transfer task information inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_frontend",
+      "component": "frontend",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Public web UI inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_ui",
+      "component": "ui",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Data Transfer Hub UI inside Public web UI."
+      }
+    },
+    {
+      "id": "place_cloudfront",
+      "component": "cloudfront",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Amazon CloudFront inside Public web UI."
+      }
+    },
+    {
+      "id": "place_ui_bucket",
+      "component": "ui_bucket",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Static web assets inside Public web UI."
+      }
+    },
+    {
+      "id": "place_appsync",
+      "component": "appsync",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places GraphQL backend API inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_api_lambda",
+      "component": "api_lambda",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places API Lambda inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_workflow",
+      "component": "workflow",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places AWS Step Functions workflow inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_workflow_lambda",
+      "component": "workflow_lambda",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Workflow Lambda inside AWS Step Functions workflow."
+      }
+    },
+    {
+      "id": "place_cloudformation",
+      "component": "cloudformation",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Plugin deployment inside AWS Step Functions workflow."
+      }
+    },
+    {
+      "id": "place_workloads",
+      "component": "workloads",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application workloads inside Customer's AWS Account."
+      }
+    },
+    {
+      "id": "place_fargate",
+      "component": "fargate",
+      "relation": "inside",
+      "group": "workloads",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Plugin transfer tasks inside Application workloads."
+      }
+    },
+    {
+      "id": "place_managed",
+      "component": "managed",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places AWS Managed Account inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_s3_component",
+      "component": "s3_component",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places S3 replication component template inside AWS Managed Account."
+      }
+    },
+    {
+      "id": "place_dynamodb_component",
+      "component": "dynamodb_component",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places DynamoDB replication component template inside AWS Managed Account."
+      }
+    },
+    {
+      "id": "place_templates",
+      "component": "templates",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Centralized plugin templates inside AWS Managed Account."
+      }
+    },
+    {
+      "id": "place_ecr_component",
+      "component": "ecr_component",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places ECR replication component template inside AWS Managed Account."
+      }
+    },
+    {
+      "id": "place_ecr",
+      "component": "ecr",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Plugin container images inside AWS Managed Account."
+      }
+    },
+    {
+      "id": "place_ecr_image",
+      "component": "ecr_image",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places ECR replication Docker image inside AWS Managed Account."
+      }
+    }
+  ]
+}

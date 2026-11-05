@@ -207,7 +207,13 @@ function readJson(path) {
 function validateCuratedBundle(root, contract) {
   const failures = [];
   const results = {};
-  const requiredFiles = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
+  const requiredFiles = [
+    "user-prompt.md",
+    "architecture-brief.md",
+    "reference-spec.md",
+    "diagram.dgm",
+    "requirements.json",
+  ];
   if (!contract || contract.version !== 1 || !contract.examples || typeof contract.examples !== "object") {
     return failure("curated contract must have version 1 and an examples object");
   }

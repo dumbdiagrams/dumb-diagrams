@@ -38,28 +38,15 @@ function fanoutCrossingPins(api = { x: 280, y: 20 }, storage = { x: 280, y: 200 
 }
 
 describe("planAutoFix crossed fan-out", () => {
-  it("repairs auto-routed CloudFront crossings by unpinning branch nodes", () => {
+  it("keeps a clear automatic fan-out without moving pinned branch nodes", () => {
     const doc = fanoutCrossingPins({ x: 260, y: 80 }, { x: 260, y: 200 });
     const before = compileDocument(doc, true);
     expect(before.ok).toBe(true);
     if (!before.ok) return;
-    expect(before.invariantFailures).toContainEqual(
-      expect.objectContaining({
-        code: "edge-crossing",
-        elementIds: ["client-cloudfront", "cloudfront-api-gateway"],
-      }),
-    );
-
+    expect(before.invariantFailures).toEqual([]);
     const plan = planAutoFix(doc, true);
-    expect(plan.status).toBe("repaired");
-    expect(plan.strategy).toBe("clear-places-targeted");
-
-    const after = compileDocument(plan.doc, true);
-    expect(after.ok).toBe(true);
-    if (!after.ok) return;
-    expect(after.invariantFailures).toEqual([]);
-    expect(getDefaultView(plan.doc).places.lambda?.x).toBe(380);
-    expect(getDefaultView(plan.doc).places.dynamodb?.x).toBe(480);
+    expect(plan.status).toBe("unchanged");
+    expect(getDefaultView(plan.doc).places).toEqual(getDefaultView(doc).places);
   });
 
   it("repairs pinned crossing routes from a CloudFront branch layout", () => {

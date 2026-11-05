@@ -683,6 +683,43 @@ describe("diagram root ordering", () => {
     expect(orderRootsForFlow(doc, findDiagramRoots(doc))).toEqual(["alpha", "beta", "wrapper"]);
   });
 
+  it("starts a request/response cycle at the root that sends the first request", () => {
+    const doc = parseDgm(`dgm 1
+diagram cycle {
+  grammar aws
+  flow lr
+  cloud-agnostic.client uploader "Uploader"
+  aws.cloud cloud "AWS Cloud" {
+    aws.api-gateway api "API"
+    aws.cloudfront cdn "CDN"
+  }
+  uploader -> api { id upload }
+  api -> cdn { id publish }
+  cdn -> uploader { id deliver }
+}`);
+    expect(orderRootsForFlow(doc, findDiagramRoots(doc))).toEqual(["uploader", "cloud"]);
+  });
+
+  it("leaves a labelled root connector room for its copy outside the boundary", () => {
+    const doc = parseDgm(`dgm 1
+diagram root_label {
+  grammar aws
+  flow lr
+  cloud-agnostic.client visitor "Website visitor"
+  aws.cloud cloud "AWS Cloud" {
+    aws.route-53 dns "DNS"
+  }
+  visitor -> dns { id resolve label "look up site" }
+}`);
+    const layout = layoutDocument(doc);
+    const routed = attachRoutes(layout, routeEdges(doc, layout));
+    const visitor = routed.nodes.find((node) => node.id === "visitor")!;
+    const cloud = routed.groups.find((group) => group.id === "cloud")!;
+    const label = routed.edges.find((edge) => edge.id === "resolve")!.labelRect!;
+    expect(label.x).toBeGreaterThanOrEqual(visitor.icon.x + visitor.icon.w);
+    expect(label.x + label.w).toBeLessThanOrEqual(cloud.bounds.x - 8);
+  });
+
   it("orders mixed-case root identifiers lexically regardless of locale", () => {
     const doc = createEmptyDocument("locale-stable-roots");
     doc.flow = "lr";

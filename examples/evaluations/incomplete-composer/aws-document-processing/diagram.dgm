@@ -1,0 +1,57 @@
+dgm 1
+diagram aws-document-processing {
+  grammar aws
+  flow lr
+  title "AWS document processing"
+
+  cloud-agnostic.client intake_client "Document intake client"
+  cloud-agnostic.actor operations "Operations user"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.region region "Region" {
+      aws.api-gateway api "API Gateway"
+      aws.aws-lambda intake_handler "Intake handler"
+      aws.simple-storage-service input_bucket "Input S3"
+      aws.simple-queue-service jobs_queue "Jobs queue"
+      aws.simple-queue-service dead_letter_queue "Dead-letter queue" { role secondary }
+      aws.cloudfront delivery "CloudFront"
+      aws.simple-storage-service output_bucket "Output S3"
+      aws.dynamodb job_status "DynamoDB"
+      aws.simple-notification-service completions "SNS"
+
+      aws.vpc vpc "VPC" {
+        aws.az zone_a "Availability Zone A" {
+          aws.subnet.private subnet_a "Private subnet" {
+            aws.aws-fargate worker_a "Fargate worker"
+          }
+        }
+
+        aws.az zone_b "Availability Zone B" {
+          aws.subnet.private subnet_b "Private subnet" {
+            aws.aws-fargate worker_b "Fargate worker"
+          }
+        }
+      }
+    }
+  }
+
+  intake_client -> delivery { id client_to_cdn label "download outputs" }
+  delivery -> output_bucket { id cdn_to_output label "origin" }
+
+  intake_client -> api { id client_to_api step 1 label "submit documents" }
+  api -> intake_handler { id api_to_intake step 2 }
+  intake_handler -> input_bucket { id intake_to_input label "store originals" }
+  intake_handler -> jobs_queue { id intake_to_queue step 3 label "enqueue jobs" }
+
+  jobs_queue -> worker_a { id queue_to_worker_a step 4 label "process job" }
+  jobs_queue -> worker_b { id queue_to_worker_b label "process job" }
+
+  worker_a -> output_bucket { id worker_a_to_output step 5 label "write processed" }
+
+  jobs_queue -> dead_letter_queue { id jobs_to_dlq label "failed jobs" style dashed kind fail }
+  dead_letter_queue -> jobs_queue { id dlq_redrive style dashed kind peer }
+
+  operations -> dead_letter_queue { id ops_inspect_dlq label "inspect DLQ" style dashed kind peer }
+  operations -> job_status { id ops_inspect_status label "inspect status" style dashed kind peer }
+  completions -> operations { id sns_to_ops label "completion notifications" style dashed kind peer }
+}

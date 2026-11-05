@@ -1,0 +1,438 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "uploader",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Image uploader in this architecture."
+      }
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "upload_api",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Upload API in this architecture."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Upload API in this architecture."
+      }
+    },
+    {
+      "id": "upload_handler",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Upload handler in this architecture."
+      }
+    },
+    {
+      "id": "thumbnail_jobs",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Thumbnail jobs in this architecture."
+      }
+    },
+    {
+      "id": "thumbnail_queue",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Thumbnail jobs in this architecture."
+      }
+    },
+    {
+      "id": "processing",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Processing is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "thumbnail_processor",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Thumbnail processor in this architecture."
+      }
+    },
+    {
+      "id": "image_storage",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Image storage in this architecture."
+      }
+    },
+    {
+      "id": "original_images",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Original images in this architecture."
+      }
+    },
+    {
+      "id": "thumbnail_images",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Thumbnail images in this architecture."
+      }
+    },
+    {
+      "id": "delivery",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Content delivery in this architecture."
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Content delivery in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "uploader_to_api",
+      "source": "uploader",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Image uploader to Upload API direction."
+      }
+    },
+    {
+      "id": "api_to_handler",
+      "source": "api",
+      "target": "upload_handler",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Upload API to Upload handler direction."
+      }
+    },
+    {
+      "id": "handler_to_originals",
+      "source": "upload_handler",
+      "target": "original_images",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Upload handler to Original images direction."
+      }
+    },
+    {
+      "id": "handler_to_queue",
+      "source": "upload_handler",
+      "target": "thumbnail_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Upload handler to Thumbnail jobs direction."
+      }
+    },
+    {
+      "id": "queue_to_processor",
+      "source": "thumbnail_queue",
+      "target": "thumbnail_processor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Thumbnail jobs to Thumbnail processor direction."
+      }
+    },
+    {
+      "id": "processor_to_thumbnails",
+      "source": "thumbnail_processor",
+      "target": "thumbnail_images",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Thumbnail processor to Thumbnail images direction."
+      }
+    },
+    {
+      "id": "uploader_to_cdn",
+      "source": "uploader",
+      "target": "cdn",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Image uploader to Content delivery direction."
+      }
+    },
+    {
+      "id": "cdn_to_originals",
+      "source": "cdn",
+      "target": "original_images",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Content delivery to Original images direction."
+      }
+    },
+    {
+      "id": "cdn_to_thumbnails",
+      "source": "cdn",
+      "target": "thumbnail_images",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Content delivery to Thumbnail images direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_api-gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.api-gateway; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloudfront; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-queue-service",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-queue-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 5,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 5 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_uploader",
+      "component": "uploader",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Image uploader at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws_cloud",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_upload_api",
+      "component": "upload_api",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Upload API inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "upload_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Upload API inside Upload API."
+      }
+    },
+    {
+      "id": "place_upload_handler",
+      "component": "upload_handler",
+      "relation": "inside",
+      "group": "upload_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Upload handler inside Upload API."
+      }
+    },
+    {
+      "id": "place_thumbnail_jobs",
+      "component": "thumbnail_jobs",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Thumbnail jobs inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_thumbnail_queue",
+      "component": "thumbnail_queue",
+      "relation": "inside",
+      "group": "thumbnail_jobs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Thumbnail jobs inside Thumbnail jobs."
+      }
+    },
+    {
+      "id": "place_processing",
+      "component": "processing",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Processing in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_thumbnail_processor",
+      "component": "thumbnail_processor",
+      "relation": "inside",
+      "group": "processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Thumbnail processor inside Processing."
+      }
+    },
+    {
+      "id": "place_image_storage",
+      "component": "image_storage",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Image storage inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_original_images",
+      "component": "original_images",
+      "relation": "inside",
+      "group": "image_storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Original images inside Image storage."
+      }
+    },
+    {
+      "id": "place_thumbnail_images",
+      "component": "thumbnail_images",
+      "relation": "inside",
+      "group": "image_storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Thumbnail images inside Image storage."
+      }
+    },
+    {
+      "id": "place_delivery",
+      "component": "delivery",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Content delivery inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_cdn",
+      "component": "cdn",
+      "relation": "inside",
+      "group": "delivery",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Content delivery inside Content delivery."
+      }
+    }
+  ]
+}

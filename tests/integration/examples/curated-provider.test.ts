@@ -32,6 +32,7 @@ describe("curated provider semantic contracts", () => {
       "architecture-brief.md",
       "diagram.dgm",
       "reference-spec.md",
+      "requirements.json",
       "user-prompt.md",
     ]);
   });

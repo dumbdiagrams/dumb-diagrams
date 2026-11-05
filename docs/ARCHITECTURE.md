@@ -38,6 +38,15 @@ flowchart LR
 IDs. If the architecture changes, compatible overrides are kept and stale ones
 are ignored.
 
+CLI authoring validation also reads a required companion requirements contract.
+The pure `runtime/requirements` module checks the parsed component and edge IDs,
+counts, and hierarchy without invoking layout. The CLI reports source/provider
+validity, contract completeness, and routing separately. Normal validation fails
+on validity or completeness; strict validation additionally fails on routing
+findings. Studio and the source format remain independent of this companion file.
+Contracts record model-extracted intent; checking them does not verify the model's
+interpretation of the original prompt.
+
 ## Packages
 
 | Package | Owns |

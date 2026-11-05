@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Web client in this architecture."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application cloud in this architecture."
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Production account in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary region in this architecture."
+      }
+    },
+    {
+      "id": "gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names API gateway in this architecture."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer API service in this architecture."
+      }
+    },
+    {
+      "id": "database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer database in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "https_requests",
+      "source": "client",
+      "target": "gateway",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Web client to API gateway direction."
+      }
+    },
+    {
+      "id": "api_requests",
+      "source": "gateway",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the API gateway to Customer API service direction."
+      }
+    },
+    {
+      "id": "customer_data",
+      "source": "api",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Customer API service to Customer database direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.database; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.gateway; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.server; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.account; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.region; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_client",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Web client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Application cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_account",
+      "component": "account",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Production account inside Application cloud."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary region inside Production account."
+      }
+    },
+    {
+      "id": "place_gateway",
+      "component": "gateway",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places API gateway inside Primary region."
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer API service inside Primary region."
+      }
+    },
+    {
+      "id": "place_database",
+      "component": "database",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer database inside Primary region."
+      }
+    }
+  ]
+}

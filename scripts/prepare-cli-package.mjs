@@ -18,7 +18,13 @@ const exampleTemplateSource = join(cliPackageRoot, "templates/examples");
 const entry = join(cliDist, "index.js");
 const temporaryEntry = join(cliDist, ".index.standalone.js");
 const curatedExampleIds = curatedIds();
-const curatedExampleFileNames = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
+const curatedExampleFileNames = [
+  "user-prompt.md",
+  "architecture-brief.md",
+  "reference-spec.md",
+  "diagram.dgm",
+  "requirements.json",
+];
 const exampleFiles = curatedExampleIds.flatMap((id) => curatedExampleFileNames.map((fileName) => `${id}/${fileName}`));
 
 if (!existsSync(entry)) throw new Error("CLI build is missing. Run `pnpm build` before preparing the npm package.");
@@ -57,6 +63,10 @@ copyFiles(projectTemplatesSource, projectTemplatesTarget, [
   ".dumbdiagrams/architecture.md",
   ".dumbdiagrams/dgm.md",
   ".dumbdiagrams/instructions.md",
+  ".dumbdiagrams/requirements.md",
+  ".dumbdiagrams/requirements.schema.json",
+  ".dumbdiagrams/requirements.example.json",
+  ".dumbdiagrams/preferences.json",
   ".dumbdiagrams/providers/aws.md",
   ".dumbdiagrams/providers/azure.md",
   ".dumbdiagrams/providers/cloud-agnostic.md",

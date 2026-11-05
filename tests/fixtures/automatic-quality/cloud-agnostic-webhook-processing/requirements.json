@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "application-cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: application cloud"
+      }
+    },
+    {
+      "id": "production-account",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: production account"
+      }
+    },
+    {
+      "id": "primary-region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary region"
+      }
+    },
+    {
+      "id": "private-network",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: private network"
+      }
+    },
+    {
+      "id": "webhook-edge",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: webhook-edge boundary"
+      }
+    },
+    {
+      "id": "event-processing",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: event-processing boundary"
+      }
+    },
+    {
+      "id": "partner",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external partner"
+      },
+      "type": "cloud-agnostic.actor"
+    },
+    {
+      "id": "api-gateway",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: API gateway"
+      },
+      "type": "cloud-agnostic.gateway"
+    },
+    {
+      "id": "ingress-function",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: webhook ingress function"
+      },
+      "type": "cloud-agnostic.function"
+    },
+    {
+      "id": "event-queue",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: queue"
+      },
+      "type": "cloud-agnostic.queue"
+    },
+    {
+      "id": "event-processor",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: event processor"
+      },
+      "type": "cloud-agnostic.function"
+    },
+    {
+      "id": "event-database",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: event database"
+      },
+      "type": "cloud-agnostic.database"
+    },
+    {
+      "id": "payload-archive",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: object storage"
+      },
+      "type": "cloud-agnostic.object-storage"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "partner-gateway",
+      "source": "partner",
+      "target": "api-gateway",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external partner sends webhook events to an API gateway"
+      }
+    },
+    {
+      "id": "gateway-ingress",
+      "source": "api-gateway",
+      "target": "ingress-function",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: API gateway and webhook ingress function"
+      }
+    },
+    {
+      "id": "ingress-queue",
+      "source": "ingress-function",
+      "target": "event-queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: ingress function queues events"
+      }
+    },
+    {
+      "id": "ingress-idempotency",
+      "source": "ingress-function",
+      "target": "event-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: writes an idempotency key to the event database"
+      }
+    },
+    {
+      "id": "queue-processor",
+      "source": "event-queue",
+      "target": "event-processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: event processor consumes the queue"
+      }
+    },
+    {
+      "id": "processor-status",
+      "source": "event-processor",
+      "target": "event-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: stores processed status in the same database"
+      }
+    },
+    {
+      "id": "processor-archive",
+      "source": "event-processor",
+      "target": "payload-archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: archives the payload in object storage"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "cloud-count",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an application cloud"
+      }
+    },
+    {
+      "id": "account-count",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a production account"
+      }
+    },
+    {
+      "id": "region-count",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a primary region"
+      }
+    },
+    {
+      "id": "network-count",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a private network"
+      }
+    },
+    {
+      "id": "partner-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an external partner"
+      }
+    },
+    {
+      "id": "gateway-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an API gateway"
+      }
+    },
+    {
+      "id": "queue-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a queue"
+      }
+    },
+    {
+      "id": "database-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an event database"
+      }
+    },
+    {
+      "id": "archive-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: object storage"
+      }
+    },
+    {
+      "id": "boundaries-in-region",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 2,
+      "max": 2,
+      "within": "primary-region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: webhook-edge boundary and event-processing boundary"
+      }
+    },
+    {
+      "id": "ingress-function-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "min": 1,
+      "max": 1,
+      "within": "webhook-edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: webhook ingress function"
+      }
+    },
+    {
+      "id": "processor-function-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "min": 1,
+      "max": 1,
+      "within": "event-processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: event processor"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "cloud-root",
+      "component": "application-cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: application cloud"
+      }
+    },
+    {
+      "id": "account-in-cloud",
+      "component": "production-account",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Nest a production account ... inside an application cloud"
+      },
+      "group": "application-cloud"
+    },
+    {
+      "id": "region-in-account",
+      "component": "primary-region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Nest ... primary region ... inside an application cloud"
+      },
+      "group": "production-account"
+    },
+    {
+      "id": "network-in-region",
+      "component": "private-network",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: private network inside an application cloud [primary region]"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "edge-in-region",
+      "component": "webhook-edge",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: webhook-edge boundary; not stated inside the private network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "processing-in-network",
+      "component": "event-processing",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: event-processing boundary within the network"
+      },
+      "group": "private-network"
+    },
+    {
+      "id": "gateway-in-edge",
+      "component": "api-gateway",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Place the gateway ... in a webhook-edge boundary"
+      },
+      "group": "webhook-edge"
+    },
+    {
+      "id": "ingress-in-edge",
+      "component": "ingress-function",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Place ... ingress function together in a webhook-edge boundary"
+      },
+      "group": "webhook-edge"
+    },
+    {
+      "id": "queue-in-processing",
+      "component": "event-queue",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Place the queue ... in an event-processing boundary within the network"
+      },
+      "group": "event-processing"
+    },
+    {
+      "id": "processor-in-processing",
+      "component": "event-processor",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Place ... processor ... in an event-processing boundary within the network"
+      },
+      "group": "event-processing"
+    },
+    {
+      "id": "db-in-processing",
+      "component": "event-database",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Place ... database in an event-processing boundary within the network"
+      },
+      "group": "event-processing"
+    },
+    {
+      "id": "archive-in-region",
+      "component": "payload-archive",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Keep the payload archive in the region outside the private network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "partner-outside-cloud",
+      "component": "partner",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external partner"
+      },
+      "group": "application-cloud"
+    }
+  ],
+  "allowAdditionalResources": false
+}

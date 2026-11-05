@@ -1,0 +1,532 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "claims_analyst",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names claims analyst in this architecture."
+      }
+    },
+    {
+      "id": "web_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names web client in this architecture."
+      }
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "aws.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Region is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "blueprint_creation",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Blueprints Creation is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "sample_docs",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Sample documents bucket in this architecture."
+      }
+    },
+    {
+      "id": "blueprint_generation",
+      "kind": "resource",
+      "type": "aws.bedrock",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Blueprints generation in this architecture."
+      }
+    },
+    {
+      "id": "claims_processing",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Claims Processing in this architecture."
+      }
+    },
+    {
+      "id": "claims_docs",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Claims document bucket in this architecture."
+      }
+    },
+    {
+      "id": "workflow",
+      "kind": "group",
+      "type": "aws.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names AWS Step Functions Workflow \u00b7 Claims Processing in this architecture."
+      }
+    },
+    {
+      "id": "extractor",
+      "kind": "resource",
+      "type": "aws.bedrock",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Multimodal extraction in this architecture."
+      }
+    },
+    {
+      "id": "fraud_model",
+      "kind": "resource",
+      "type": "aws.sagemaker-ai",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Fraud detection model in this architecture."
+      }
+    },
+    {
+      "id": "claims_state",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Claims processing state in this architecture."
+      }
+    },
+    {
+      "id": "nova",
+      "kind": "resource",
+      "type": "aws.bedrock",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Insights generation in this architecture."
+      }
+    },
+    {
+      "id": "sns",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; sns is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "email",
+      "kind": "resource",
+      "type": "aws.simple-notification-service-email-notification",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names email in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "analyst_to_samples",
+      "source": "claims_analyst",
+      "target": "sample_docs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the claims analyst to Sample documents bucket direction."
+      }
+    },
+    {
+      "id": "sample_to_blueprints",
+      "source": "sample_docs",
+      "target": "blueprint_generation",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Sample documents bucket to Blueprints generation edge is the reference mapping."
+      }
+    },
+    {
+      "id": "client_to_claims",
+      "source": "web_client",
+      "target": "claims_docs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the web client to Claims document bucket direction."
+      }
+    },
+    {
+      "id": "claims_to_extract",
+      "source": "claims_docs",
+      "target": "extractor",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Claims document bucket to Multimodal extraction edge is the reference mapping."
+      }
+    },
+    {
+      "id": "workflow_to_state",
+      "source": "claims_docs",
+      "target": "claims_state",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Claims document bucket to Claims processing state direction."
+      }
+    },
+    {
+      "id": "extractor_to_fraud",
+      "source": "extractor",
+      "target": "fraud_model",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Multimodal extraction to Fraud detection model edge is the reference mapping."
+      }
+    },
+    {
+      "id": "fraud_to_state",
+      "source": "fraud_model",
+      "target": "claims_state",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fraud detection model to Claims processing state direction."
+      }
+    },
+    {
+      "id": "state_to_nova",
+      "source": "claims_state",
+      "target": "nova",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Claims processing state to Insights generation direction."
+      }
+    },
+    {
+      "id": "nova_to_sns",
+      "source": "nova",
+      "target": "sns",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Insights generation to sns edge is the reference mapping."
+      }
+    },
+    {
+      "id": "sns_to_email",
+      "source": "sns",
+      "target": "email",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this sns to email edge is the reference mapping."
+      }
+    },
+    {
+      "id": "notify_client",
+      "source": "email",
+      "target": "web_client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the email to web client direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_bedrock",
+      "kind": "resource",
+      "type": "aws.bedrock",
+      "min": 3,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 3 records the selected reference normalization for aws.bedrock; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_dynamodb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.dynamodb; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_sagemaker-ai",
+      "kind": "resource",
+      "type": "aws.sagemaker-ai",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.sagemaker-ai; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-notification-service",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-notification-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-notification-service-email-notification",
+      "kind": "resource",
+      "type": "aws.simple-notification-service-email-notification",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-notification-service-email-notification; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_account",
+      "kind": "group",
+      "type": "aws.account",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.account; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_region",
+      "kind": "group",
+      "type": "aws.region",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.region; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_claims_analyst",
+      "component": "claims_analyst",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps claims analyst at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_web_client",
+      "component": "web_client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps web client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws_cloud",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Region in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_blueprint_creation",
+      "component": "blueprint_creation",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Blueprints Creation in this scope; Region is the reference grouping."
+      }
+    },
+    {
+      "id": "place_sample_docs",
+      "component": "sample_docs",
+      "relation": "inside",
+      "group": "blueprint_creation",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Sample documents bucket inside Blueprints Creation."
+      }
+    },
+    {
+      "id": "place_blueprint_generation",
+      "component": "blueprint_generation",
+      "relation": "inside",
+      "group": "blueprint_creation",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Blueprints generation in this scope; Blueprints Creation is the reference grouping."
+      }
+    },
+    {
+      "id": "place_claims_processing",
+      "component": "claims_processing",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Claims Processing inside Region."
+      }
+    },
+    {
+      "id": "place_claims_docs",
+      "component": "claims_docs",
+      "relation": "inside",
+      "group": "claims_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Claims document bucket inside Claims Processing."
+      }
+    },
+    {
+      "id": "place_workflow",
+      "component": "workflow",
+      "relation": "inside",
+      "group": "claims_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places AWS Step Functions Workflow \u00b7 Claims Processing inside Claims Processing."
+      }
+    },
+    {
+      "id": "place_extractor",
+      "component": "extractor",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Multimodal extraction inside AWS Step Functions Workflow \u00b7 Claims Processing."
+      }
+    },
+    {
+      "id": "place_fraud_model",
+      "component": "fraud_model",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Fraud detection model inside AWS Step Functions Workflow \u00b7 Claims Processing."
+      }
+    },
+    {
+      "id": "place_claims_state",
+      "component": "claims_state",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Claims processing state inside AWS Step Functions Workflow \u00b7 Claims Processing."
+      }
+    },
+    {
+      "id": "place_nova",
+      "component": "nova",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Insights generation inside AWS Step Functions Workflow \u00b7 Claims Processing."
+      }
+    },
+    {
+      "id": "place_sns",
+      "component": "sns",
+      "relation": "inside",
+      "group": "claims_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places sns inside Claims Processing."
+      }
+    },
+    {
+      "id": "place_email",
+      "component": "email",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places email inside Region."
+      }
+    }
+  ]
+}

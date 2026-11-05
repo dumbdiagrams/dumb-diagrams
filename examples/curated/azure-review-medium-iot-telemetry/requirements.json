@@ -1,0 +1,364 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "sensor_fleet",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Industrial sensor fleet in this architecture."
+      }
+    },
+    {
+      "id": "operations_dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Operations dashboard in this architecture."
+      }
+    },
+    {
+      "id": "subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Azure subscription in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Azure region in this architecture."
+      }
+    },
+    {
+      "id": "iot_group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names IoT telemetry in this architecture."
+      }
+    },
+    {
+      "id": "iot_hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Telemetry IoT Hub in this architecture."
+      }
+    },
+    {
+      "id": "event_hubs",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Telemetry Event Hubs in this architecture."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Telemetry processing function in this architecture."
+      }
+    },
+    {
+      "id": "status_db",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Current equipment status in this architecture."
+      }
+    },
+    {
+      "id": "raw_archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Raw telemetry archive in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "send_telemetry",
+      "source": "sensor_fleet",
+      "target": "iot_hub",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Industrial sensor fleet to Telemetry IoT Hub direction."
+      }
+    },
+    {
+      "id": "route_to_stream",
+      "source": "iot_hub",
+      "target": "event_hubs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Telemetry IoT Hub to Telemetry Event Hubs direction."
+      }
+    },
+    {
+      "id": "archive_readings",
+      "source": "iot_hub",
+      "target": "raw_archive",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Telemetry IoT Hub to Raw telemetry archive direction."
+      }
+    },
+    {
+      "id": "consume_stream",
+      "source": "event_hubs",
+      "target": "processor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Telemetry Event Hubs to Telemetry processing function direction."
+      }
+    },
+    {
+      "id": "write_status",
+      "source": "processor",
+      "target": "status_db",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Telemetry processing function to Current equipment status direction."
+      }
+    },
+    {
+      "id": "read_status",
+      "source": "status_db",
+      "target": "operations_dashboard",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Current equipment status to Operations dashboard direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_azure_azure-cosmos-db",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.azure-cosmos-db; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_event-hubs",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.event-hubs; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_function-apps",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.function-apps; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_iot-hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.iot-hub; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_storage-accounts",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.storage-accounts; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_azure_region",
+      "kind": "group",
+      "type": "azure.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.region; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_azure_resource-group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.resource-group; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_azure_subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.subscription; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_sensor_fleet",
+      "component": "sensor_fleet",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Industrial sensor fleet at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_operations_dashboard",
+      "component": "operations_dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Operations dashboard at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_subscription",
+      "component": "subscription",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Azure subscription at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Azure region inside Azure subscription."
+      }
+    },
+    {
+      "id": "place_iot_group",
+      "component": "iot_group",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places IoT telemetry inside Azure region."
+      }
+    },
+    {
+      "id": "place_iot_hub",
+      "component": "iot_hub",
+      "relation": "inside",
+      "group": "iot_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Telemetry IoT Hub inside IoT telemetry."
+      }
+    },
+    {
+      "id": "place_event_hubs",
+      "component": "event_hubs",
+      "relation": "inside",
+      "group": "iot_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Telemetry Event Hubs inside IoT telemetry."
+      }
+    },
+    {
+      "id": "place_processor",
+      "component": "processor",
+      "relation": "inside",
+      "group": "iot_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Telemetry processing function inside IoT telemetry."
+      }
+    },
+    {
+      "id": "place_status_db",
+      "component": "status_db",
+      "relation": "inside",
+      "group": "iot_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Current equipment status inside IoT telemetry."
+      }
+    },
+    {
+      "id": "place_raw_archive",
+      "component": "raw_archive",
+      "relation": "inside",
+      "group": "iot_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Raw telemetry archive inside IoT telemetry."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

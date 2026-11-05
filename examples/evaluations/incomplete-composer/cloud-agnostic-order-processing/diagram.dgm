@@ -1,0 +1,56 @@
+dgm 1
+diagram cloud-agnostic-order-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Order processing"
+
+  cloud-agnostic.client buyer "Public buyer"
+  cloud-agnostic.client payment "Payment service"
+  cloud-agnostic.client warehouse "Warehouse"
+
+  cloud-agnostic.cloud cloud "Application cloud" {
+    cloud-agnostic.account account "Cloud account" {
+      cloud-agnostic.region recovery_region "Recovery region" {
+        cloud-agnostic.load-balancer recovery_lb "Recovery load balancer"
+
+        cloud-agnostic.network recovery_network "Recovery network" {
+          cloud-agnostic.server recovery_app "Recovery application server"
+          cloud-agnostic.database recovery_db "Recovery database"
+        }
+      }
+
+      cloud-agnostic.region primary_region "Primary region" {
+        cloud-agnostic.load-balancer primary_lb "Regional load balancer"
+
+        cloud-agnostic.network primary_network "Private application network" {
+          cloud-agnostic.cluster app_cluster "Application cluster" {
+            cloud-agnostic.server api_server "API server"
+            cloud-agnostic.server worker_server "Worker server"
+          }
+
+          cloud-agnostic.database order_db "Order database"
+          cloud-agnostic.cache order_cache "Order cache"
+        }
+
+        cloud-agnostic.queue work_queue "Regional work queue"
+        cloud-agnostic.object-storage receipts "Order receipts"
+      }
+    }
+  }
+
+  buyer -> primary_lb { id buyer_to_primary_lb step 1 label "orders" kind flow }
+  primary_lb -> api_server { id primary_lb_to_api step 2 label "forward requests" kind flow }
+
+  api_server -> order_db { id api_to_db label "read and write" kind flow }
+  api_server -> order_cache { id api_to_cache label "cache lookup" kind flow }
+  api_server -> work_queue { id api_to_queue step 3 label "enqueue work" kind flow }
+  api_server -> payment { id api_to_payment label "authorize payment" kind flow }
+
+  work_queue -> worker_server { id queue_to_worker step 4 label "consume work" kind flow }
+  worker_server -> warehouse { id worker_to_warehouse label "fulfillment" kind flow }
+
+  order_db -> recovery_db { id db_replicate label "replicate" kind flow }
+  recovery_app -> recovery_db { id recovery_read label "read replica" kind flow }
+  buyer -> recovery_lb { id buyer_to_recovery_lb label "failover orders" style dashed kind peer }
+  recovery_lb -> recovery_app { id recovery_lb_to_app label "serve buyer" kind flow }
+}

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "visitor",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Website visitor"
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS Cloud"
+      }
+    },
+    {
+      "id": "web_delivery",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Static website delivery"
+      }
+    },
+    {
+      "id": "dns",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "DNS"
+      },
+      "type": "aws.route-53"
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Content delivery service"
+      },
+      "type": "aws.cloudfront"
+    },
+    {
+      "id": "site_bucket",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Website files bucket"
+      },
+      "type": "aws.simple-storage-service"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "resolve_site",
+      "source": "visitor",
+      "target": "dns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Visitor requests website DNS"
+      }
+    },
+    {
+      "id": "deliver_site",
+      "source": "dns",
+      "target": "cdn",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "DNS directs visitor to content delivery"
+      }
+    },
+    {
+      "id": "fetch_site",
+      "source": "cdn",
+      "target": "site_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Fetch website files"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [],
+  "allowAdditionalResources": false
+}

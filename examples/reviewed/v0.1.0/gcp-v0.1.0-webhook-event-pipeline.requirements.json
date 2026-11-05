@@ -1,0 +1,371 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Partner in this architecture."
+      }
+    },
+    {
+      "id": "organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Google Cloud organization in this architecture."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Event-processing project in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary region in this architecture."
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Cloud Load Balancing in this architecture."
+      }
+    },
+    {
+      "id": "ingress",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Ingress handler in this architecture."
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Pub/Sub topic in this architecture."
+      }
+    },
+    {
+      "id": "pipeline",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Dataflow in this architecture."
+      }
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names BigQuery in this architecture."
+      }
+    },
+    {
+      "id": "raw_archive",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Cloud Storage in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "partner_to_lb",
+      "source": "partner",
+      "target": "load_balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Partner to Cloud Load Balancing direction."
+      }
+    },
+    {
+      "id": "lb_to_ingress",
+      "source": "load_balancer",
+      "target": "ingress",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Cloud Load Balancing to Ingress handler direction."
+      }
+    },
+    {
+      "id": "ingress_to_pubsub",
+      "source": "ingress",
+      "target": "events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Ingress handler to Pub/Sub topic direction."
+      }
+    },
+    {
+      "id": "pubsub_to_dataflow",
+      "source": "events",
+      "target": "pipeline",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Pub/Sub topic to Dataflow direction."
+      }
+    },
+    {
+      "id": "dataflow_to_bigquery",
+      "source": "pipeline",
+      "target": "warehouse",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Dataflow to BigQuery direction."
+      }
+    },
+    {
+      "id": "dataflow_to_storage",
+      "source": "pipeline",
+      "target": "raw_archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Dataflow to Cloud Storage direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_bigquery",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.bigquery; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-functions",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-functions; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-load-balancing",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-load-balancing; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-storage",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-storage; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_dataflow",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.dataflow; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_pub-sub",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.pub-sub; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_gcp_organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.organization; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_gcp_project",
+      "kind": "group",
+      "type": "gcp.project",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.project; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_gcp_region",
+      "kind": "group",
+      "type": "gcp.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.region; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_partner",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Partner at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_organization",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Google Cloud organization at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_project",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Event-processing project inside Google Cloud organization."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary region inside Event-processing project."
+      }
+    },
+    {
+      "id": "place_load_balancer",
+      "component": "load_balancer",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Cloud Load Balancing inside Primary region."
+      }
+    },
+    {
+      "id": "place_ingress",
+      "component": "ingress",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Ingress handler inside Primary region."
+      }
+    },
+    {
+      "id": "place_events",
+      "component": "events",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Pub/Sub topic inside Primary region."
+      }
+    },
+    {
+      "id": "place_pipeline",
+      "component": "pipeline",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Dataflow inside Primary region."
+      }
+    },
+    {
+      "id": "place_warehouse",
+      "component": "warehouse",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places BigQuery inside Primary region."
+      }
+    },
+    {
+      "id": "place_raw_archive",
+      "component": "raw_archive",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Cloud Storage inside Primary region."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

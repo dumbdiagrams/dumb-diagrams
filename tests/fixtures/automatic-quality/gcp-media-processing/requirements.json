@@ -1,0 +1,641 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Google Cloud organization"
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "project nested in organization"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional services are placed in a region"
+      }
+    },
+    {
+      "id": "vpc",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "one VPC contains two regional subnets"
+      }
+    },
+    {
+      "id": "subnet_a",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "first separate regional subnet"
+      }
+    },
+    {
+      "id": "subnet_b",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "second separate regional subnet"
+      }
+    },
+    {
+      "id": "producer",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "external media producer sends uploads"
+      }
+    },
+    {
+      "id": "ops_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "external operations client inspects and redrives dead letters"
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Load Balancing"
+      }
+    },
+    {
+      "id": "ingest",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional Cloud Run ingest service"
+      }
+    },
+    {
+      "id": "input_storage",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Storage input objects"
+      }
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "global Pub/Sub jobs topic"
+      }
+    },
+    {
+      "id": "worker_a",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "basis": {
+        "kind": "explicit",
+        "text": "first Compute Engine worker"
+      }
+    },
+    {
+      "id": "worker_b",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "basis": {
+        "kind": "explicit",
+        "text": "second Compute Engine worker"
+      }
+    },
+    {
+      "id": "processed_storage",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Storage processed objects"
+      }
+    },
+    {
+      "id": "database",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud SQL job status"
+      }
+    },
+    {
+      "id": "completion",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "global Pub/Sub completion topic"
+      }
+    },
+    {
+      "id": "notify",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Run notification service"
+      }
+    },
+    {
+      "id": "dead_letters",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "second Pub/Sub dead-letter topic"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "uploads",
+      "source": "producer",
+      "target": "load_balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Media uploads"
+      }
+    },
+    {
+      "id": "route_uploads",
+      "source": "load_balancer",
+      "target": "ingest",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route uploads"
+      }
+    },
+    {
+      "id": "store_input",
+      "source": "ingest",
+      "target": "input_storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write input object"
+      }
+    },
+    {
+      "id": "publish_job",
+      "source": "ingest",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish job"
+      }
+    },
+    {
+      "id": "worker_a_consumes_jobs",
+      "source": "jobs",
+      "target": "worker_a",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume jobs"
+      }
+    },
+    {
+      "id": "worker_b_consumes_jobs",
+      "source": "jobs",
+      "target": "worker_b",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume jobs"
+      }
+    },
+    {
+      "id": "worker_a_reads_input",
+      "source": "input_storage",
+      "target": "worker_a",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read input object"
+      }
+    },
+    {
+      "id": "worker_b_reads_input",
+      "source": "input_storage",
+      "target": "worker_b",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read input object"
+      }
+    },
+    {
+      "id": "worker_a_writes_processed",
+      "source": "worker_a",
+      "target": "processed_storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write processed object"
+      }
+    },
+    {
+      "id": "worker_b_writes_processed",
+      "source": "worker_b",
+      "target": "processed_storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write processed object"
+      }
+    },
+    {
+      "id": "worker_a_updates_status",
+      "source": "worker_a",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Update job status"
+      }
+    },
+    {
+      "id": "worker_b_updates_status",
+      "source": "worker_b",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Update job status"
+      }
+    },
+    {
+      "id": "worker_a_publishes_completion",
+      "source": "worker_a",
+      "target": "completion",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish completion"
+      }
+    },
+    {
+      "id": "worker_b_publishes_completion",
+      "source": "worker_b",
+      "target": "completion",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish completion"
+      }
+    },
+    {
+      "id": "completion_to_notify",
+      "source": "completion",
+      "target": "notify",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Deliver completion"
+      }
+    },
+    {
+      "id": "notify_to_ops",
+      "source": "notify",
+      "target": "ops_client",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Completion notification"
+      }
+    },
+    {
+      "id": "jobs_dead_letter",
+      "source": "jobs",
+      "target": "dead_letters",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Dead-letter failed jobs"
+      }
+    },
+    {
+      "id": "ops_inspects_dead_letters",
+      "source": "dead_letters",
+      "target": "ops_client",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The operations client can inspect dead letters."
+      }
+    },
+    {
+      "id": "ops_redrives_jobs",
+      "source": "ops_client",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Deliberately redrive jobs"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "load_balancer_count",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Load Balancing"
+      }
+    },
+    {
+      "id": "gcp_cloud-run_count_region",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 2,
+      "max": 2,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Regional Cloud Run ingest and notification services."
+      }
+    },
+    {
+      "id": "gcp_cloud-storage_count_project",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 2,
+      "max": 2,
+      "within": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Input and processed object storage resources, represented separately."
+      }
+    },
+    {
+      "id": "gcp_pub-sub_count_project",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 3,
+      "max": 3,
+      "within": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Global jobs, completion, and second dead-letter Pub/Sub topics."
+      }
+    },
+    {
+      "id": "worker_a_count",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "min": 2,
+      "max": 2,
+      "within": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers"
+      }
+    },
+    {
+      "id": "database_count",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud SQL job status"
+      }
+    },
+    {
+      "id": "worker_subnets_count",
+      "kind": "group",
+      "type": "gcp.subnet",
+      "min": 2,
+      "max": 2,
+      "within": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers in separate regional subnets of one VPC."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "show the organization"
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "show the organization/project"
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional services in their region"
+      }
+    },
+    {
+      "id": "vpc_in_region",
+      "component": "vpc",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional subnets of one VPC"
+      }
+    },
+    {
+      "id": "subnet_a_in_vpc",
+      "component": "subnet_a",
+      "relation": "inside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "first regional subnet of one VPC"
+      }
+    },
+    {
+      "id": "subnet_b_in_vpc",
+      "component": "subnet_b",
+      "relation": "inside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "second regional subnet of one VPC"
+      }
+    },
+    {
+      "id": "worker_a_in_subnet_a",
+      "component": "worker_a",
+      "relation": "inside",
+      "group": "subnet_a",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers in separate regional subnets"
+      }
+    },
+    {
+      "id": "worker_b_in_subnet_b",
+      "component": "worker_b",
+      "relation": "inside",
+      "group": "subnet_b",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers in separate regional subnets"
+      }
+    },
+    {
+      "id": "producer_outside_org",
+      "component": "producer",
+      "relation": "outside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "external media producer"
+      }
+    },
+    {
+      "id": "ops_outside_org",
+      "component": "ops_client",
+      "relation": "outside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "external operations client"
+      }
+    },
+    {
+      "id": "load_balancer_in_region",
+      "component": "load_balancer",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional Cloud Run service and regional services"
+      }
+    },
+    {
+      "id": "ingest_in_region",
+      "component": "ingest",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional Cloud Run service and regional services"
+      }
+    },
+    {
+      "id": "database_in_region",
+      "component": "database",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional Cloud Run service and regional services"
+      }
+    },
+    {
+      "id": "notify_in_region",
+      "component": "notify",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "regional Cloud Run service and regional services"
+      }
+    },
+    {
+      "id": "input_storage_project_scope",
+      "component": "input_storage",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "global services at project scope"
+      }
+    },
+    {
+      "id": "processed_storage_project_scope",
+      "component": "processed_storage",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "global services at project scope"
+      }
+    },
+    {
+      "id": "jobs_project_scope",
+      "component": "jobs",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "global services at project scope"
+      }
+    },
+    {
+      "id": "completion_project_scope",
+      "component": "completion",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "global services at project scope"
+      }
+    },
+    {
+      "id": "dead_letters_project_scope",
+      "component": "dead_letters",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "global services at project scope"
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

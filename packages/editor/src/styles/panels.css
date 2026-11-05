@@ -2669,13 +2669,18 @@
 .edge-color-options {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px 6px;
+}
+
+/* Default spans its own row so the eight named colours fill two even rows. */
+.edge-color-option.edge-color-auto {
+  grid-column: 1 / -1;
 }
 
 .edge-color-option {
   display: flex;
   min-width: 0;
-  min-height: 43px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
   gap: 5px;

@@ -1,18 +1,14 @@
 import { getCatalogMap } from "../catalog/index.js";
 import { validateDocument, hasErrors } from "../core/index.js";
 import type { ValidationIssue } from "../core/index.js";
-import { layoutDocument } from "../layout/index.js";
+import type { layoutDocument } from "../layout/index.js";
 import { err, ok, type Result } from "neverthrow";
-import {
-  routeEdges,
-  attachRoutes,
-  ROUTING_BUDGET_WARNING_CODE,
-  ROUTING_BUDGET_WARNING_MESSAGE,
-} from "../route/index.js";
+import { ROUTING_BUDGET_WARNING_CODE, ROUTING_BUDGET_WARNING_MESSAGE } from "../route/index.js";
 
 import { checkInvariants } from "./invariants.js";
 import { renderSvg } from "./svg.js";
 import { validateEmbeddedAssets } from "./validate-assets.js";
+import { compileAutomaticLayout } from "./automatic-layout.js";
 
 export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
   const catalog = getCatalogMap();
@@ -21,19 +17,15 @@ export function compileDiagram(doc: Parameters<typeof layoutDocument>[0]) {
     return { ok: false as const, issues, svg: null, layout: null };
   }
 
-  const layout = layoutDocument(doc);
   const routingWarnings: ValidationIssue[] = [];
-  const edges = routeEdges(doc, layout, {
-    onDiagnostics: ({ exhausted }) => {
-      if (exhausted)
-        routingWarnings.push({
-          level: "warning",
-          code: ROUTING_BUDGET_WARNING_CODE,
-          message: ROUTING_BUDGET_WARNING_MESSAGE,
-        });
-    },
-  });
-  const fullLayout = attachRoutes(layout, edges);
+  const automatic = compileAutomaticLayout(doc);
+  if (automatic.routingDegraded)
+    routingWarnings.push({
+      level: "warning",
+      code: ROUTING_BUDGET_WARNING_CODE,
+      message: ROUTING_BUDGET_WARNING_MESSAGE,
+    });
+  const fullLayout = automatic.layout;
   const invariantFailures = checkInvariants(fullLayout);
   const svg = renderSvg(doc, fullLayout, { resolveIconHref: (path) => path });
 

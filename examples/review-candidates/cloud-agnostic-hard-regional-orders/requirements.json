@@ -1,0 +1,740 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "buyer",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Public buyer in this architecture."
+      }
+    },
+    {
+      "id": "payment_service",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names External payment service in this architecture."
+      }
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names External warehouse system in this architecture."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Cloud environment is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Orders account in this architecture."
+      }
+    },
+    {
+      "id": "primary_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary region in this architecture."
+      }
+    },
+    {
+      "id": "primary_lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary load balancer in this architecture."
+      }
+    },
+    {
+      "id": "primary_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary private application network in this architecture."
+      }
+    },
+    {
+      "id": "app_cluster",
+      "kind": "group",
+      "type": "cloud-agnostic.cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application cluster in this architecture."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Order API server in this architecture."
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Fulfillment worker server in this architecture."
+      }
+    },
+    {
+      "id": "primary_db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary order database in this architecture."
+      }
+    },
+    {
+      "id": "primary_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary order cache in this architecture."
+      }
+    },
+    {
+      "id": "fulfillment_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Regional fulfillment queue in this architecture."
+      }
+    },
+    {
+      "id": "receipts",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Order receipts storage in this architecture."
+      }
+    },
+    {
+      "id": "recovery_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Recovery region in this architecture."
+      }
+    },
+    {
+      "id": "recovery_lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Recovery load balancer in this architecture."
+      }
+    },
+    {
+      "id": "recovery_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Recovery network in this architecture."
+      }
+    },
+    {
+      "id": "recovery_db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Recovery database replica in this architecture."
+      }
+    },
+    {
+      "id": "recovery_app",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Recovery application server in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "primary_buyer_request",
+      "source": "buyer",
+      "target": "primary_lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Public buyer to Primary load balancer direction."
+      }
+    },
+    {
+      "id": "primary_route_request",
+      "source": "primary_lb",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Primary load balancer to Order API server direction."
+      }
+    },
+    {
+      "id": "read_write_orders",
+      "source": "api",
+      "target": "primary_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order API server to Primary order database direction."
+      }
+    },
+    {
+      "id": "return_order_data",
+      "source": "primary_db",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Primary order database to Order API server direction."
+      }
+    },
+    {
+      "id": "use_order_cache",
+      "source": "api",
+      "target": "primary_cache",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order API server to Primary order cache direction."
+      }
+    },
+    {
+      "id": "return_cached_order",
+      "source": "primary_cache",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Primary order cache to Order API server direction."
+      }
+    },
+    {
+      "id": "authorize_payment",
+      "source": "api",
+      "target": "payment_service",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order API server to External payment service direction."
+      }
+    },
+    {
+      "id": "payment_result",
+      "source": "payment_service",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the External payment service to Order API server direction."
+      }
+    },
+    {
+      "id": "enqueue_fulfillment",
+      "source": "api",
+      "target": "fulfillment_queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order API server to Regional fulfillment queue direction."
+      }
+    },
+    {
+      "id": "deliver_fulfillment",
+      "source": "fulfillment_queue",
+      "target": "worker",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Regional fulfillment queue to Fulfillment worker server direction."
+      }
+    },
+    {
+      "id": "retry_fulfillment",
+      "source": "worker",
+      "target": "fulfillment_queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fulfillment worker server to Regional fulfillment queue direction."
+      }
+    },
+    {
+      "id": "send_fulfillment",
+      "source": "worker",
+      "target": "warehouse",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fulfillment worker server to External warehouse system direction."
+      }
+    },
+    {
+      "id": "warehouse_acknowledgment",
+      "source": "warehouse",
+      "target": "worker",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the External warehouse system to Fulfillment worker server direction."
+      }
+    },
+    {
+      "id": "persist_order_status",
+      "source": "worker",
+      "target": "primary_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fulfillment worker server to Primary order database direction."
+      }
+    },
+    {
+      "id": "store_receipt",
+      "source": "worker",
+      "target": "receipts",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fulfillment worker server to Order receipts storage direction."
+      }
+    },
+    {
+      "id": "replicate_orders",
+      "source": "primary_db",
+      "target": "recovery_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Primary order database to Recovery database replica direction."
+      }
+    },
+    {
+      "id": "read_replica",
+      "source": "recovery_app",
+      "target": "recovery_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Recovery application server to Recovery database replica direction."
+      }
+    },
+    {
+      "id": "recovery_buyer_request",
+      "source": "buyer",
+      "target": "recovery_lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Public buyer to Recovery load balancer direction."
+      }
+    },
+    {
+      "id": "recovery_route_request",
+      "source": "recovery_lb",
+      "target": "recovery_app",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Recovery load balancer to Recovery application server direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires primary cache."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires public buyer."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_cloud-agnostic_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires primary and recovery databases."
+      },
+      "max": 2
+    },
+    {
+      "id": "count_resource_cloud-agnostic_load-balancer",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires primary and recovery load balancers."
+      },
+      "max": 2
+    },
+    {
+      "id": "count_resource_cloud-agnostic_object-storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires receipt object storage."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_cloud-agnostic_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires regional fulfillment queue."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_cloud-agnostic_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 5,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires API server, worker server, recovery application server, external payment service, and external warehouse."
+      },
+      "max": 5
+    },
+    {
+      "id": "count_group_cloud-agnostic_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one cloud account."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_cloud-agnostic_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one cloud."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_cloud-agnostic_cluster",
+      "kind": "group",
+      "type": "cloud-agnostic.cluster",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires primary application cluster."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_cloud-agnostic_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires primary and recovery networks."
+      },
+      "max": 2
+    },
+    {
+      "id": "count_group_cloud-agnostic_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires primary and recovery regions."
+      },
+      "max": 2
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_buyer",
+      "component": "buyer",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Public buyer at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_payment_service",
+      "component": "payment_service",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps External payment service at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_warehouse",
+      "component": "warehouse",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps External warehouse system at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies one cloud account as the top-level environment."
+      }
+    },
+    {
+      "id": "place_account",
+      "component": "account",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Orders account inside Cloud environment."
+      }
+    },
+    {
+      "id": "place_primary_region",
+      "component": "primary_region",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes regional ingest; the reference places the regional services in one region."
+      }
+    },
+    {
+      "id": "place_primary_lb",
+      "component": "primary_lb",
+      "relation": "inside",
+      "group": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary load balancer inside Primary region."
+      }
+    },
+    {
+      "id": "place_primary_network",
+      "component": "primary_network",
+      "relation": "inside",
+      "group": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary private application network inside Primary region."
+      }
+    },
+    {
+      "id": "place_app_cluster",
+      "component": "app_cluster",
+      "relation": "inside",
+      "group": "primary_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application cluster inside Primary private application network."
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "app_cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Order API server inside Application cluster."
+      }
+    },
+    {
+      "id": "place_worker",
+      "component": "worker",
+      "relation": "inside",
+      "group": "app_cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Fulfillment worker server inside Application cluster."
+      }
+    },
+    {
+      "id": "place_primary_db",
+      "component": "primary_db",
+      "relation": "inside",
+      "group": "primary_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary order database inside Primary private application network."
+      }
+    },
+    {
+      "id": "place_primary_cache",
+      "component": "primary_cache",
+      "relation": "inside",
+      "group": "primary_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary order cache inside Primary private application network."
+      }
+    },
+    {
+      "id": "place_fulfillment_queue",
+      "component": "fulfillment_queue",
+      "relation": "inside",
+      "group": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Regional fulfillment queue inside Primary region."
+      }
+    },
+    {
+      "id": "place_receipts",
+      "component": "receipts",
+      "relation": "inside",
+      "group": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Order receipts storage inside Primary region."
+      }
+    },
+    {
+      "id": "place_recovery_region",
+      "component": "recovery_region",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Recovery region inside Orders account."
+      }
+    },
+    {
+      "id": "place_recovery_lb",
+      "component": "recovery_lb",
+      "relation": "inside",
+      "group": "recovery_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Recovery load balancer inside Recovery region."
+      }
+    },
+    {
+      "id": "place_recovery_network",
+      "component": "recovery_network",
+      "relation": "inside",
+      "group": "recovery_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Recovery network inside Recovery region."
+      }
+    },
+    {
+      "id": "place_recovery_db",
+      "component": "recovery_db",
+      "relation": "inside",
+      "group": "recovery_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Recovery database replica inside Recovery network."
+      }
+    },
+    {
+      "id": "place_recovery_app",
+      "component": "recovery_app",
+      "relation": "inside",
+      "group": "recovery_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Recovery application server inside Recovery network."
+      }
+    },
+    {
+      "id": "place_scope_buyer_outside_cloud",
+      "component": "buyer",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt identifies the buyer as public and the payment service and warehouse as external to the cloud."
+      },
+      "group": "cloud"
+    },
+    {
+      "id": "place_scope_payment_service_outside_cloud",
+      "component": "payment_service",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt identifies the buyer as public and the payment service and warehouse as external to the cloud."
+      },
+      "group": "cloud"
+    },
+    {
+      "id": "place_scope_warehouse_outside_cloud",
+      "component": "warehouse",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt identifies the buyer as public and the payment service and warehouse as external to the cloud."
+      },
+      "group": "cloud"
+    }
+  ]
+}

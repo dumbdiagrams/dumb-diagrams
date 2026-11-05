@@ -1,8 +1,8 @@
 import type { DiagramDocument, ID, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
-import { findDiagramRoots, orderRootsForFlow } from "@dumb-diagrams/runtime/layout";
+import { AUTOMATIC_GRID_SIZE, findDiagramRoots, orderRootsForFlow } from "@dumb-diagrams/runtime/layout";
 
-export const GRID_SIZE = 24;
+export const GRID_SIZE = AUTOMATIC_GRID_SIZE;
 export const ALIGNMENT_GUIDE_THRESHOLD_PX = 6;
 /** Gutter between the fixed staging slot and the diagram's leftmost content. */
 export const STAGING_GUTTER_PX = 50;

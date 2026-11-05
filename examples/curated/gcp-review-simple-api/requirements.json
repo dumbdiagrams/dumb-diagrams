@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Web client in this architecture."
+      }
+    },
+    {
+      "id": "organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Google Cloud organization in this architecture."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer API project in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary region in this architecture."
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Cloud Load Balancing in this architecture."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer API (Cloud Run) in this architecture."
+      }
+    },
+    {
+      "id": "database",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer database (Cloud SQL) in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "https_requests",
+      "source": "client",
+      "target": "load_balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Web client to Cloud Load Balancing direction."
+      }
+    },
+    {
+      "id": "api_requests",
+      "source": "load_balancer",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Cloud Load Balancing to Customer API (Cloud Run) direction."
+      }
+    },
+    {
+      "id": "customer_data",
+      "source": "api",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Customer API (Cloud Run) to Customer database (Cloud SQL) direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-load-balancing",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-load-balancing; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-run",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-run; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-sql",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-sql; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_gcp_organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.organization; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_gcp_project",
+      "kind": "group",
+      "type": "gcp.project",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.project; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_gcp_region",
+      "kind": "group",
+      "type": "gcp.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.region; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_client",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Web client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_organization",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Google Cloud organization at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_project",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer API project inside Google Cloud organization."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary region inside Customer API project."
+      }
+    },
+    {
+      "id": "place_load_balancer",
+      "component": "load_balancer",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Cloud Load Balancing inside Primary region."
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer API (Cloud Run) inside Primary region."
+      }
+    },
+    {
+      "id": "place_database",
+      "component": "database",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer database (Cloud SQL) inside Primary region."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

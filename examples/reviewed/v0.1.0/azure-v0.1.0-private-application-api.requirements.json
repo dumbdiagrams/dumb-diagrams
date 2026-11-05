@@ -1,0 +1,330 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Client is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Azure subscription is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Azure region is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "application",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Private application API in this architecture."
+      }
+    },
+    {
+      "id": "apim",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names apim in this architecture."
+      }
+    },
+    {
+      "id": "app_network",
+      "kind": "group",
+      "type": "azure.vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application network in this architecture."
+      }
+    },
+    {
+      "id": "compute",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application tier in this architecture."
+      }
+    },
+    {
+      "id": "api_function",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names api function in this architecture."
+      }
+    },
+    {
+      "id": "sql_pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names sql pe in this architecture."
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names sql in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client_to_apim",
+      "source": "client",
+      "target": "apim",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Client to apim edge is the reference mapping."
+      }
+    },
+    {
+      "id": "apim_to_function",
+      "source": "apim",
+      "target": "api_function",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this apim to api function edge is the reference mapping."
+      }
+    },
+    {
+      "id": "function_to_pe",
+      "source": "api_function",
+      "target": "sql_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the api function to sql pe direction."
+      }
+    },
+    {
+      "id": "pe_to_sql",
+      "source": "sql_pe",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the sql pe to sql direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_azure_api-management-services",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.api-management-services; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_azure_function-apps",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.function-apps; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_azure_private-endpoints",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.private-endpoints; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_azure_sql-database",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.sql-database; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_azure_region",
+      "kind": "group",
+      "type": "azure.region",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.region; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_azure_subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.subscription; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_azure_vnet",
+      "kind": "group",
+      "type": "azure.vnet",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.vnet; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_client",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_subscription",
+      "component": "subscription",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Azure subscription at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Azure region in this scope; Azure subscription is the reference grouping."
+      }
+    },
+    {
+      "id": "place_application",
+      "component": "application",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Private application API inside Azure region."
+      }
+    },
+    {
+      "id": "place_apim",
+      "component": "apim",
+      "relation": "inside",
+      "group": "application",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places apim inside Private application API."
+      }
+    },
+    {
+      "id": "place_app_network",
+      "component": "app_network",
+      "relation": "inside",
+      "group": "application",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application network inside Private application API."
+      }
+    },
+    {
+      "id": "place_compute",
+      "component": "compute",
+      "relation": "inside",
+      "group": "app_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application tier inside Application network."
+      }
+    },
+    {
+      "id": "place_api_function",
+      "component": "api_function",
+      "relation": "inside",
+      "group": "compute",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places api function inside Application tier."
+      }
+    },
+    {
+      "id": "place_sql_pe",
+      "component": "sql_pe",
+      "relation": "inside",
+      "group": "app_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places sql pe inside Application network."
+      }
+    },
+    {
+      "id": "place_sql",
+      "component": "sql",
+      "relation": "inside",
+      "group": "application",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places sql inside Private application API."
+      }
+    }
+  ]
+}

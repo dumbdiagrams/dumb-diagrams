@@ -1,0 +1,50 @@
+dgm 1
+diagram gcp-media-processing {
+  grammar gcp
+  flow lr
+  title "GCP media processing"
+
+  cloud-agnostic.client producer "Media producer"
+  cloud-agnostic.client operations "Operations client"
+
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Media processing project" {
+      gcp.pub-sub jobs_topic "Pub/Sub jobs topic"
+      gcp.pub-sub completion_topic "Pub/Sub completion topic"
+      gcp.pub-sub dead_letter_topic "Pub/Sub dead-letter topic" { role secondary }
+
+      gcp.vpc vpc "VPC network" {
+        gcp.subnet subnet_a "Regional subnet A" {
+          gcp.compute-engine worker_a "Compute Engine worker"
+        }
+
+        gcp.subnet subnet_b "Regional subnet B" {
+          gcp.compute-engine worker_b "Compute Engine worker"
+        }
+      }
+
+      gcp.region ingest_region "Ingest region" {
+        gcp.cloud-load-balancing load_balancer "Cloud Load Balancing"
+        gcp.cloud-run ingest "Cloud Run ingest"
+        gcp.cloud-run notifier "Cloud Run notification"
+        gcp.cloud-storage input_bucket "Cloud Storage input"
+        gcp.cloud-storage processed_bucket "Cloud Storage processed"
+        gcp.cloud-sql job_db "Cloud SQL"
+      }
+    }
+  }
+
+  producer -> load_balancer { id producer_to_lb step 1 label "uploads" kind flow }
+  load_balancer -> ingest { id lb_to_ingest step 2 kind flow }
+  ingest -> input_bucket { id ingest_to_input step 3 label "input object" kind flow }
+  ingest -> jobs_topic { id ingest_to_jobs step 4 label "publish job" kind flow }
+
+  jobs_topic -> worker_a { id jobs_to_worker_a step 5 label "process job" kind flow }
+  jobs_topic -> worker_b { id jobs_to_worker_b label "process job" kind flow }
+
+  jobs_topic -> dead_letter_topic { id jobs_to_dlq label "dead letter" style dashed kind fail }
+  dead_letter_topic -> jobs_topic { id dlq_redrive label "redrive" style dashed kind peer }
+
+  completion_topic -> notifier { id completion_to_notifier step 6 label "deliver" kind flow }
+  notifier -> operations { id notifier_to_ops step 7 label "completion" kind flow }
+}

@@ -1848,7 +1848,7 @@ function App() {
               className={`snap-toggle${snapToGrid ? " is-active" : ""}`}
               aria-label="Snap to grid"
               aria-pressed={snapToGrid}
-              title={`Snap top-level objects to the ${GRID_SIZE}px grid without changing nested spacing`}
+              title={`Snap moved objects to the ${GRID_SIZE}px grid`}
               onClick={() => setSnapToGrid((current) => !current)}
             >
               <IconGrid />

@@ -1,0 +1,21 @@
+dgm 1
+diagram gcp-customer-record-api {
+  grammar gcp
+  flow lr
+  title "Google Cloud customer-record API"
+
+  cloud-agnostic.client client "Web client"
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Customer API project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing load_balancer "Cloud Load Balancing"
+        gcp.cloud-run api "Customer-record API (Cloud Run)"
+        gcp.cloud-sql database "Customer records (Cloud SQL)"
+      }
+    }
+  }
+
+  client -> load_balancer { id https_requests label "HTTPS requests" kind flow }
+  load_balancer -> api { id api_requests label "Forward requests" kind flow }
+  api -> database { id read_write_customer_records label "Read and write customer records" kind flow }
+}

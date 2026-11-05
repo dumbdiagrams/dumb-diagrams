@@ -46,7 +46,7 @@ const examples = loadExamples().map(example => {
         <div id={`source-${example.id}`} role="tabpanel" aria-labelledby={`source-tab-${example.id}`} class="source-pane" hidden>
           <div class="mac-titlebar"><WindowControls /><span class="mac-window-title">{example.id}.dgm</span><button class="source-copy" type="button" data-copy-target={`source-text-${example.id}`} aria-label={`Copy ${example.title} source`}>Copy ⧉</button></div>
           <div id={`source-text-${example.id}`} class="source-code" tabindex="0" aria-label={`${example.title} generated source`}><Code code={example.source.trimEnd()} lang={dgmLanguage} theme="github-dark" /></div>
-          <div class="input-footer"><span>REVIEWABLE SOURCE</span><a href={url(`diagrams/${example.id}.dgm`)} download>Save .dgm ↓</a></div>
+          <div class="input-footer"><span>REVIEWABLE SOURCE</span><a href={url(`diagrams/${example.id}.dgm`)} download>Save .dgm ↓</a><a href={url(`diagrams/${example.id}.requirements.json`)} download>Save requirements ↓</a></div>
         </div>
         <details class="reference-spec">
           <summary>Advanced: detailed specification</summary>

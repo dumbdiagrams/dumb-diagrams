@@ -57,7 +57,7 @@ describe("parseDgm / printDgm round-trip", () => {
     [
       "edge color",
       "diagram d {\n  a -> b { color pink }\n}",
-      '2:18 Invalid edge color "pink"; expected graphite, blue, teal, purple, amber, red, green',
+      '2:18 Invalid edge color "pink"; expected graphite, blue, teal, purple, amber, coral, red, green',
     ],
     [
       "edge kind",

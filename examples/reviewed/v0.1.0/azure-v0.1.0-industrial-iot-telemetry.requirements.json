@@ -1,0 +1,370 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "sensor_fleet",
+      "kind": "resource",
+      "type": "cloud-agnostic.device",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Industrial sensor fleet in this architecture."
+      }
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Operations dashboard in this architecture."
+      }
+    },
+    {
+      "id": "subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Azure subscription in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Azure region in this architecture."
+      }
+    },
+    {
+      "id": "resource_group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Resource group in this architecture."
+      }
+    },
+    {
+      "id": "iot_hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names iot hub in this architecture."
+      }
+    },
+    {
+      "id": "raw_archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names raw archive in this architecture."
+      }
+    },
+    {
+      "id": "event_hubs",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names event hubs in this architecture."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names processor in this architecture."
+      }
+    },
+    {
+      "id": "equipment_status",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names equipment status in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "sensors_to_hub",
+      "source": "sensor_fleet",
+      "target": "iot_hub",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Industrial sensor fleet to iot hub direction."
+      }
+    },
+    {
+      "id": "hub_to_archive",
+      "source": "iot_hub",
+      "target": "raw_archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the iot hub to raw archive direction."
+      }
+    },
+    {
+      "id": "hub_to_events",
+      "source": "iot_hub",
+      "target": "event_hubs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the iot hub to event hubs direction."
+      }
+    },
+    {
+      "id": "events_to_function",
+      "source": "event_hubs",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this event hubs to processor edge is the reference mapping."
+      }
+    },
+    {
+      "id": "function_to_cosmos",
+      "source": "processor",
+      "target": "equipment_status",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this processor to equipment status edge is the reference mapping."
+      }
+    },
+    {
+      "id": "cosmos_to_dashboard",
+      "source": "equipment_status",
+      "target": "dashboard",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the equipment status to Operations dashboard direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_azure_azure-cosmos-db",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.azure-cosmos-db; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_event-hubs",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.event-hubs; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_function-apps",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.function-apps; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_iot-hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.iot-hub; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_azure_storage-accounts",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.storage-accounts; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_device",
+      "kind": "resource",
+      "type": "cloud-agnostic.device",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.device; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_azure_region",
+      "kind": "group",
+      "type": "azure.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.region; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_azure_resource-group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.resource-group; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_azure_subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for azure.subscription; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_sensor_fleet",
+      "component": "sensor_fleet",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Industrial sensor fleet at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_dashboard",
+      "component": "dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Operations dashboard at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_subscription",
+      "component": "subscription",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Azure subscription at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Azure region inside Azure subscription."
+      }
+    },
+    {
+      "id": "place_resource_group",
+      "component": "resource_group",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Resource group inside Azure region."
+      }
+    },
+    {
+      "id": "place_iot_hub",
+      "component": "iot_hub",
+      "relation": "inside",
+      "group": "resource_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places iot hub inside Resource group."
+      }
+    },
+    {
+      "id": "place_raw_archive",
+      "component": "raw_archive",
+      "relation": "inside",
+      "group": "resource_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places raw archive inside Resource group."
+      }
+    },
+    {
+      "id": "place_event_hubs",
+      "component": "event_hubs",
+      "relation": "inside",
+      "group": "resource_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places event hubs inside Resource group."
+      }
+    },
+    {
+      "id": "place_processor",
+      "component": "processor",
+      "relation": "inside",
+      "group": "resource_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places processor inside Resource group."
+      }
+    },
+    {
+      "id": "place_equipment_status",
+      "component": "equipment_status",
+      "relation": "inside",
+      "group": "resource_group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places equipment status inside Resource group."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

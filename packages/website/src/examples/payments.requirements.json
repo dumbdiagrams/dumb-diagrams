@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    { "id": "customer", "kind": "resource", "type": "cloud-agnostic.actor", "basis": { "kind": "inferred", "text": "The example depicts a customer initiating the payment request." } },
+    { "id": "region", "kind": "group", "basis": { "kind": "inferred", "text": "The example places the AWS services within an AWS Region." } },
+    { "id": "api", "kind": "resource", "type": "aws.api-gateway", "basis": { "kind": "inferred", "text": "The example uses an API endpoint as its entry point." } },
+    { "id": "handler", "kind": "resource", "type": "aws.aws-lambda", "basis": { "kind": "inferred", "text": "A Lambda handler processes the request." } },
+    { "id": "ledger", "kind": "resource", "type": "aws.dynamodb", "basis": { "kind": "inferred", "text": "The handler writes the payment record to a DynamoDB ledger." } }
+  ],
+  "relationships": [
+    { "id": "request", "source": "customer", "target": "api", "kind": "flow", "basis": { "kind": "inferred", "text": "The customer calls the API." } },
+    { "id": "invoke", "source": "api", "target": "handler", "kind": "flow", "basis": { "kind": "inferred", "text": "The API invokes the payment handler." } },
+    { "id": "persist", "source": "handler", "target": "ledger", "kind": "flow", "basis": { "kind": "inferred", "text": "The handler persists the payment record." } }
+  ],
+  "counts": [],
+  "placement": []
+}

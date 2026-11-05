@@ -1,0 +1,350 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Document partner in this architecture."
+      }
+    },
+    {
+      "id": "organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Google Cloud organization in this architecture."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Document processing project in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary region in this architecture."
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Document intake (Cloud Run) in this architecture."
+      }
+    },
+    {
+      "id": "source",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Original documents bucket in this architecture."
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Document events topic in this architecture."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Document processor (Cloud Run) in this architecture."
+      }
+    },
+    {
+      "id": "normalized",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Normalized documents bucket in this architecture."
+      }
+    },
+    {
+      "id": "metadata",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Processing status and metadata in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "upload_documents",
+      "source": "partner",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Document partner to Document intake (Cloud Run) direction."
+      }
+    },
+    {
+      "id": "store_original",
+      "source": "intake",
+      "target": "source",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Document intake (Cloud Run) to Original documents bucket direction."
+      }
+    },
+    {
+      "id": "publish_object_event",
+      "source": "source",
+      "target": "events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Original documents bucket to Document events topic direction."
+      }
+    },
+    {
+      "id": "consume_document_event",
+      "source": "events",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Document events topic to Document processor (Cloud Run) direction."
+      }
+    },
+    {
+      "id": "read_original",
+      "source": "source",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Original documents bucket to Document processor (Cloud Run) direction."
+      }
+    },
+    {
+      "id": "write_normalized",
+      "source": "processor",
+      "target": "normalized",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Document processor (Cloud Run) to Normalized documents bucket direction."
+      }
+    },
+    {
+      "id": "write_processing_metadata",
+      "source": "processor",
+      "target": "metadata",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Document processor (Cloud Run) to Processing status and metadata direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-run",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for gcp.cloud-run; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-sql",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.cloud-sql; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_gcp_cloud-storage",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for gcp.cloud-storage; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_gcp_pub-sub",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.pub-sub; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_gcp_organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.organization; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_gcp_project",
+      "kind": "group",
+      "type": "gcp.project",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.project; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_gcp_region",
+      "kind": "group",
+      "type": "gcp.region",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for gcp.region; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_partner",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Document partner at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_organization",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Google Cloud organization at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_project",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Document processing project inside Google Cloud organization."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary region inside Document processing project."
+      }
+    },
+    {
+      "id": "place_intake",
+      "component": "intake",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Document intake (Cloud Run) inside Primary region."
+      }
+    },
+    {
+      "id": "place_source",
+      "component": "source",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Original documents bucket inside Primary region."
+      }
+    },
+    {
+      "id": "place_events",
+      "component": "events",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Document events topic inside Primary region."
+      }
+    },
+    {
+      "id": "place_processor",
+      "component": "processor",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Document processor (Cloud Run) inside Primary region."
+      }
+    },
+    {
+      "id": "place_normalized",
+      "component": "normalized",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Normalized documents bucket inside Primary region."
+      }
+    },
+    {
+      "id": "place_metadata",
+      "component": "metadata",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Processing status and metadata inside Primary region."
+      }
+    }
+  ]
+}

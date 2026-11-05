@@ -12,6 +12,16 @@ export type RoutingDiagnostics = {
   repairCandidates: number;
   exhausted: boolean;
   limits: Required<RoutingBudgetOptions>;
+  emergency: {
+    scorePathCalls: number;
+    visibilityQueries: number;
+    visibilityExpansions: number;
+    limits: {
+      scorePathCalls: number;
+      visibilityQueries: number;
+      visibilityExpansions: number;
+    };
+  };
 };
 
 export type RoutingOptions = RoutingBudgetOptions & {
@@ -41,6 +51,12 @@ const DEFAULT_ROUTING_BUDGET: Required<RoutingBudgetOptions> = {
   maxRepairCandidates: 20_000,
 };
 
+export const EMERGENCY_ROUTING_LIMITS = {
+  scorePathCallsPerEdge: 200,
+  visibilityQueries: 64,
+  visibilityExpansions: 80_000,
+} as const;
+
 export class RoutingBudget {
   readonly limits: Required<RoutingBudgetOptions>;
   readonly counts = {
@@ -51,8 +67,19 @@ export class RoutingBudget {
   };
   exhausted = false;
   private degraded = false;
+  private readonly emergencyCounts = { scorePathCalls: 0, visibilityQueries: 0, visibilityExpansions: 0 };
+  private readonly emergencyLimits: {
+    scorePathCalls: number;
+    visibilityQueries: number;
+    visibilityExpansions: number;
+  };
 
-  constructor(options: RoutingBudgetOptions, complexity: number) {
+  constructor(options: RoutingBudgetOptions, complexity: number, emergencyScorePathCallLimit = 200) {
+    this.emergencyLimits = {
+      scorePathCalls: emergencyScorePathCallLimit,
+      visibilityQueries: EMERGENCY_ROUTING_LIMITS.visibilityQueries,
+      visibilityExpansions: EMERGENCY_ROUTING_LIMITS.visibilityExpansions,
+    };
     const scale = Math.max(1, complexity / 100);
     const scaled = (key: keyof RoutingBudgetOptions, fallback: number, minimum: number) =>
       options[key] ?? Math.max(minimum, Math.floor(fallback / scale));
@@ -76,11 +103,37 @@ export class RoutingBudget {
     this.degraded = true;
   }
 
+  /** Count hard-safe last-resort work separately so explicit route limits stay authoritative. */
+  recordEmergencyScorePathCall(): boolean {
+    if (this.emergencyCounts.scorePathCalls >= this.emergencyLimits.scorePathCalls) {
+      this.markDegraded();
+      return false;
+    }
+    this.emergencyCounts.scorePathCalls++;
+    return true;
+  }
+
+  consumeEmergencyVisibilityQuery(): boolean {
+    if (this.emergencyCounts.visibilityQueries >= EMERGENCY_ROUTING_LIMITS.visibilityQueries) return false;
+    this.emergencyCounts.visibilityQueries++;
+    return true;
+  }
+
+  consumeEmergencyVisibilityExpansion(): boolean {
+    if (this.emergencyCounts.visibilityExpansions >= EMERGENCY_ROUTING_LIMITS.visibilityExpansions) return false;
+    this.emergencyCounts.visibilityExpansions++;
+    return true;
+  }
+
   diagnostics(): RoutingDiagnostics {
     return {
       ...this.counts,
       exhausted: this.exhausted || this.degraded,
       limits: { ...this.limits },
+      emergency: {
+        ...this.emergencyCounts,
+        limits: { ...this.emergencyLimits },
+      },
     };
   }
 }

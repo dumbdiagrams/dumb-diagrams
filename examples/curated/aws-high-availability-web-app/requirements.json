@@ -1,0 +1,833 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "browser",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Web client in this architecture."
+      }
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "public_edge",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Frontend services in this architecture."
+      }
+    },
+    {
+      "id": "dns",
+      "kind": "resource",
+      "type": "aws.route-53",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names dns in this architecture."
+      }
+    },
+    {
+      "id": "identity",
+      "kind": "resource",
+      "type": "aws.cognito",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names User authentication in this architecture."
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names cdn in this architecture."
+      }
+    },
+    {
+      "id": "static_site",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Static content is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names gateway in this architecture."
+      }
+    },
+    {
+      "id": "network",
+      "kind": "group",
+      "type": "aws.vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names VPC in this architecture."
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "aws.elastic-load-balancing-application-load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names load balancer in this architecture."
+      }
+    },
+    {
+      "id": "zone_one",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Availability Zone A in this architecture."
+      }
+    },
+    {
+      "id": "app_subnet_one",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Private application subnet in this architecture."
+      }
+    },
+    {
+      "id": "service_one",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names ECS service in this architecture."
+      }
+    },
+    {
+      "id": "tasks_one",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Fargate tasks in this architecture."
+      }
+    },
+    {
+      "id": "zone_two",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Availability Zone B in this architecture."
+      }
+    },
+    {
+      "id": "app_subnet_two",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Private application subnet in this architecture."
+      }
+    },
+    {
+      "id": "service_two",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names ECS service in this architecture."
+      }
+    },
+    {
+      "id": "tasks_two",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Fargate tasks in this architecture."
+      }
+    },
+    {
+      "id": "platform_services",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Shared platform services in this architecture."
+      }
+    },
+    {
+      "id": "data_subnet_one",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names DynamoDB data services A in this architecture."
+      }
+    },
+    {
+      "id": "table_one",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names DynamoDB table in this architecture."
+      }
+    },
+    {
+      "id": "data_subnet_two",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names DynamoDB data services B in this architecture."
+      }
+    },
+    {
+      "id": "table_two",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names DynamoDB table in this architecture."
+      }
+    },
+    {
+      "id": "monitoring",
+      "kind": "resource",
+      "type": "aws.cloudwatch",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application + database monitoring in this architecture."
+      }
+    },
+    {
+      "id": "registry",
+      "kind": "resource",
+      "type": "aws.elastic-container-registry",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Container images in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "request_dns",
+      "source": "browser",
+      "target": "dns",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Web client to dns edge is the reference mapping."
+      }
+    },
+    {
+      "id": "resolve_identity",
+      "source": "dns",
+      "target": "identity",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this dns to User authentication edge is the reference mapping."
+      }
+    },
+    {
+      "id": "identity_to_cdn",
+      "source": "identity",
+      "target": "cdn",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this User authentication to cdn edge is the reference mapping."
+      }
+    },
+    {
+      "id": "static_origin",
+      "source": "cdn",
+      "target": "static_site",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this cdn to Static content edge is the reference mapping."
+      }
+    },
+    {
+      "id": "cdn_to_api",
+      "source": "cdn",
+      "target": "gateway",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this cdn to gateway edge is the reference mapping."
+      }
+    },
+    {
+      "id": "api_authorizer",
+      "source": "identity",
+      "target": "gateway",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the User authentication to gateway direction."
+      }
+    },
+    {
+      "id": "api_to_alb",
+      "source": "gateway",
+      "target": "load_balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the gateway to load balancer direction."
+      }
+    },
+    {
+      "id": "distribute_a",
+      "source": "load_balancer",
+      "target": "service_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the load balancer to ECS service direction."
+      }
+    },
+    {
+      "id": "distribute_b",
+      "source": "load_balancer",
+      "target": "service_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the load balancer to ECS service direction."
+      }
+    },
+    {
+      "id": "run_tasks_a",
+      "source": "service_one",
+      "target": "tasks_one",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the ECS service to Fargate tasks direction."
+      }
+    },
+    {
+      "id": "run_tasks_b",
+      "source": "service_two",
+      "target": "tasks_two",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the ECS service to Fargate tasks direction."
+      }
+    },
+    {
+      "id": "pull_image_a",
+      "source": "registry",
+      "target": "tasks_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Container images to Fargate tasks direction."
+      }
+    },
+    {
+      "id": "pull_image_b",
+      "source": "registry",
+      "target": "tasks_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Container images to Fargate tasks direction."
+      }
+    },
+    {
+      "id": "read_data_a",
+      "source": "tasks_one",
+      "target": "table_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fargate tasks to DynamoDB table direction."
+      }
+    },
+    {
+      "id": "read_data_b",
+      "source": "tasks_two",
+      "target": "table_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fargate tasks to DynamoDB table direction."
+      }
+    },
+    {
+      "id": "monitor_app_a",
+      "source": "tasks_one",
+      "target": "monitoring",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fargate tasks to Application + database monitoring direction."
+      }
+    },
+    {
+      "id": "monitor_app_b",
+      "source": "tasks_two",
+      "target": "monitoring",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Fargate tasks to Application + database monitoring direction."
+      }
+    },
+    {
+      "id": "monitor_data_a",
+      "source": "table_one",
+      "target": "monitoring",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the DynamoDB table to Application + database monitoring direction."
+      }
+    },
+    {
+      "id": "monitor_data_b",
+      "source": "table_two",
+      "target": "monitoring",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the DynamoDB table to Application + database monitoring direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_api-gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 api gateway."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-fargate",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.aws-fargate; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 cloudfront."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudwatch",
+      "kind": "resource",
+      "type": "aws.cloudwatch",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 cloudwatch."
+      }
+    },
+    {
+      "id": "count_resource_aws_cognito",
+      "kind": "resource",
+      "type": "aws.cognito",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 cognito."
+      }
+    },
+    {
+      "id": "count_resource_aws_dynamodb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 2 dynamodb."
+      }
+    },
+    {
+      "id": "count_resource_aws_elastic-container-registry",
+      "kind": "resource",
+      "type": "aws.elastic-container-registry",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.elastic-container-registry; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_elastic-container-service",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.elastic-container-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_elastic-load-balancing-application-load-balancer",
+      "kind": "resource",
+      "type": "aws.elastic-load-balancing-application-load-balancer",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.elastic-load-balancing-application-load-balancer; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_route-53",
+      "kind": "resource",
+      "type": "aws.route-53",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 route 53."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 client."
+      }
+    },
+    {
+      "id": "count_group_aws_az",
+      "kind": "group",
+      "type": "aws.az",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.az; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 cloud."
+      }
+    },
+    {
+      "id": "count_group_aws_subnet_private",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 2 private."
+      }
+    },
+    {
+      "id": "count_group_aws_vpc",
+      "kind": "group",
+      "type": "aws.vpc",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 vpc."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 4,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 4 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_browser",
+      "component": "browser",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Web client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws_cloud",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_public_edge",
+      "component": "public_edge",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Frontend services inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_dns",
+      "component": "dns",
+      "relation": "inside",
+      "group": "public_edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places dns inside Frontend services."
+      }
+    },
+    {
+      "id": "place_identity",
+      "component": "identity",
+      "relation": "inside",
+      "group": "public_edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places User authentication inside Frontend services."
+      }
+    },
+    {
+      "id": "place_cdn",
+      "component": "cdn",
+      "relation": "inside",
+      "group": "public_edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places cdn inside Frontend services."
+      }
+    },
+    {
+      "id": "place_static_site",
+      "component": "static_site",
+      "relation": "inside",
+      "group": "public_edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Static content inside Frontend services."
+      }
+    },
+    {
+      "id": "place_gateway",
+      "component": "gateway",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places gateway inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_network",
+      "component": "network",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places VPC inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_load_balancer",
+      "component": "load_balancer",
+      "relation": "inside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places load balancer inside VPC."
+      }
+    },
+    {
+      "id": "place_zone_one",
+      "component": "zone_one",
+      "relation": "inside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Availability Zone A inside VPC."
+      }
+    },
+    {
+      "id": "place_app_subnet_one",
+      "component": "app_subnet_one",
+      "relation": "inside",
+      "group": "zone_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Private application subnet inside Availability Zone A."
+      }
+    },
+    {
+      "id": "place_service_one",
+      "component": "service_one",
+      "relation": "inside",
+      "group": "app_subnet_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places ECS service inside Private application subnet."
+      }
+    },
+    {
+      "id": "place_tasks_one",
+      "component": "tasks_one",
+      "relation": "inside",
+      "group": "app_subnet_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Fargate tasks inside Private application subnet."
+      }
+    },
+    {
+      "id": "place_zone_two",
+      "component": "zone_two",
+      "relation": "inside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Availability Zone B inside VPC."
+      }
+    },
+    {
+      "id": "place_app_subnet_two",
+      "component": "app_subnet_two",
+      "relation": "inside",
+      "group": "zone_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Private application subnet inside Availability Zone B."
+      }
+    },
+    {
+      "id": "place_service_two",
+      "component": "service_two",
+      "relation": "inside",
+      "group": "app_subnet_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places ECS service inside Private application subnet."
+      }
+    },
+    {
+      "id": "place_tasks_two",
+      "component": "tasks_two",
+      "relation": "inside",
+      "group": "app_subnet_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Fargate tasks inside Private application subnet."
+      }
+    },
+    {
+      "id": "place_platform_services",
+      "component": "platform_services",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Shared platform services inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_data_subnet_one",
+      "component": "data_subnet_one",
+      "relation": "inside",
+      "group": "platform_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places DynamoDB data services A inside Shared platform services."
+      }
+    },
+    {
+      "id": "place_table_one",
+      "component": "table_one",
+      "relation": "inside",
+      "group": "data_subnet_one",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places DynamoDB table inside DynamoDB data services A."
+      }
+    },
+    {
+      "id": "place_data_subnet_two",
+      "component": "data_subnet_two",
+      "relation": "inside",
+      "group": "platform_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places DynamoDB data services B inside Shared platform services."
+      }
+    },
+    {
+      "id": "place_table_two",
+      "component": "table_two",
+      "relation": "inside",
+      "group": "data_subnet_two",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places DynamoDB table inside DynamoDB data services B."
+      }
+    },
+    {
+      "id": "place_monitoring",
+      "component": "monitoring",
+      "relation": "inside",
+      "group": "platform_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application + database monitoring inside Shared platform services."
+      }
+    },
+    {
+      "id": "place_registry",
+      "component": "registry",
+      "relation": "inside",
+      "group": "platform_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Container images inside Shared platform services."
+      }
+    }
+  ]
+}

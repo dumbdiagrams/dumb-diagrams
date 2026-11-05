@@ -35,5 +35,5 @@ diagram image-thumbnail-pipeline {
 }
 
 view default {
-  place cdn { x 241 y 204 pin manual }
+  place cdn { x 361 y 204 pin manual }
 }

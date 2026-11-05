@@ -1,0 +1,562 @@
+{
+  "$schema": "../../dumb-diagrams-2026-11-05-10-52-49/.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "one cloud"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "aws.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "one region"
+      }
+    },
+    {
+      "id": "vpc",
+      "kind": "group",
+      "type": "aws.vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "one VPC"
+      }
+    },
+    {
+      "id": "az_a",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "explicit",
+        "text": "two Availability Zones"
+      }
+    },
+    {
+      "id": "az_b",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "explicit",
+        "text": "two Availability Zones"
+      }
+    },
+    {
+      "id": "subnet_a",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group per AZ"
+      }
+    },
+    {
+      "id": "subnet_b",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group per AZ"
+      }
+    },
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "document intake client and client downloads"
+      }
+    },
+    {
+      "id": "ops",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "operations user"
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Gateway"
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda intake handler"
+      }
+    },
+    {
+      "id": "input",
+      "kind": "resource",
+      "type": "aws.simple-storage-service-bucket",
+      "basis": {
+        "kind": "explicit",
+        "text": "input S3 bucket"
+      }
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "jobs queue"
+      }
+    },
+    {
+      "id": "dlq",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "dead-letter queue"
+      }
+    },
+    {
+      "id": "worker_a",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "two Fargate workers in two Availability Zones"
+      }
+    },
+    {
+      "id": "worker_b",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "two Fargate workers in two Availability Zones"
+      }
+    },
+    {
+      "id": "output",
+      "kind": "resource",
+      "type": "aws.simple-storage-service-bucket",
+      "basis": {
+        "kind": "explicit",
+        "text": "output S3 bucket"
+      }
+    },
+    {
+      "id": "ddb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "DynamoDB status"
+      }
+    },
+    {
+      "id": "sns",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "SNS completion notifications"
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "CloudFront downloads"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client_api",
+      "source": "client",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "document intake client submits documents through API Gateway"
+      }
+    },
+    {
+      "id": "api_intake",
+      "source": "api",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Gateway invokes Lambda intake handler"
+      }
+    },
+    {
+      "id": "intake_input",
+      "source": "intake",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "intake handler stores originals in input S3"
+      }
+    },
+    {
+      "id": "intake_jobs",
+      "source": "intake",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "intake handler queues jobs in SQS"
+      }
+    },
+    {
+      "id": "jobs_worker_a",
+      "source": "jobs",
+      "target": "worker_a",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "jobs queue is consumed by both workers"
+      }
+    },
+    {
+      "id": "jobs_worker_b",
+      "source": "jobs",
+      "target": "worker_b",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "jobs queue is consumed by both workers"
+      }
+    },
+    {
+      "id": "worker_a_input",
+      "source": "worker_a",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers read input S3"
+      }
+    },
+    {
+      "id": "worker_b_input",
+      "source": "worker_b",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers read input S3"
+      }
+    },
+    {
+      "id": "worker_a_output",
+      "source": "worker_a",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers write processed files to output S3"
+      }
+    },
+    {
+      "id": "worker_b_output",
+      "source": "worker_b",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers write processed files to output S3"
+      }
+    },
+    {
+      "id": "worker_a_ddb",
+      "source": "worker_a",
+      "target": "ddb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers update DynamoDB status"
+      }
+    },
+    {
+      "id": "worker_b_ddb",
+      "source": "worker_b",
+      "target": "ddb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers update DynamoDB status"
+      }
+    },
+    {
+      "id": "worker_a_sns",
+      "source": "worker_a",
+      "target": "sns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers publish completion to SNS"
+      }
+    },
+    {
+      "id": "worker_b_sns",
+      "source": "worker_b",
+      "target": "sns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "both workers publish completion to SNS"
+      }
+    },
+    {
+      "id": "client_cdn",
+      "source": "client",
+      "target": "cdn",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "client downloads outputs through CloudFront"
+      }
+    },
+    {
+      "id": "cdn_output",
+      "source": "cdn",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "request flow client to CloudFront to output S3 origin"
+      }
+    },
+    {
+      "id": "jobs_dlq",
+      "source": "jobs",
+      "target": "dlq",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "failed jobs move to DLQ after maximum attempts"
+      }
+    },
+    {
+      "id": "ops_dlq",
+      "source": "ops",
+      "target": "dlq",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "operations user inspects DLQ"
+      }
+    },
+    {
+      "id": "ops_ddb",
+      "source": "ops",
+      "target": "ddb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "operations user inspects DynamoDB"
+      }
+    },
+    {
+      "id": "dlq_jobs",
+      "source": "dlq",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "operations user can redrive messages from DLQ to jobs queue"
+      }
+    },
+    {
+      "id": "sns_ops",
+      "source": "sns",
+      "target": "ops",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "SNS sends completion notifications to operations"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_region",
+      "kind": "group",
+      "type": "aws.region",
+      "min": 1,
+      "max": 1,
+      "within": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "one region"
+      }
+    },
+    {
+      "id": "one_vpc",
+      "kind": "group",
+      "type": "aws.vpc",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "one VPC"
+      }
+    },
+    {
+      "id": "two_az",
+      "kind": "group",
+      "type": "aws.az",
+      "min": 2,
+      "max": 2,
+      "within": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "two Availability Zones"
+      }
+    },
+    {
+      "id": "two_private_subnets",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "min": 2,
+      "max": 2,
+      "within": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group per AZ"
+      }
+    },
+    {
+      "id": "two_workers",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 2,
+      "max": 2,
+      "within": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "two Fargate workers in two Availability Zones"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "region_in_cloud",
+      "component": "region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one cloud and one region"
+      },
+      "group": "aws"
+    },
+    {
+      "id": "vpc_in_region",
+      "component": "vpc",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one VPC in one region"
+      },
+      "group": "region"
+    },
+    {
+      "id": "az_a_in_vpc",
+      "component": "az_a",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "two AZs in the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "az_b_in_vpc",
+      "component": "az_b",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "two AZs in the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "subnet_a_in_az",
+      "component": "subnet_a",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group per AZ"
+      },
+      "group": "az_a"
+    },
+    {
+      "id": "subnet_b_in_az",
+      "component": "subnet_b",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group per AZ"
+      },
+      "group": "az_b"
+    },
+    {
+      "id": "worker_a_in_subnet",
+      "component": "worker_a",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "worker in private subnet of one AZ"
+      },
+      "group": "subnet_a"
+    },
+    {
+      "id": "worker_b_in_subnet",
+      "component": "worker_b",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "worker in private subnet of one AZ"
+      },
+      "group": "subnet_b"
+    },
+    {
+      "id": "client_external",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "clients outside AWS"
+      }
+    },
+    {
+      "id": "ops_external",
+      "component": "ops",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "operations user external to AWS"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

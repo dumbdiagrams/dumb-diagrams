@@ -1,0 +1,514 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "customer",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer in this architecture."
+      }
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "customer_experience",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer experience in this architecture."
+      }
+    },
+    {
+      "id": "storefront_delivery",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Storefront delivery in this architecture."
+      }
+    },
+    {
+      "id": "storefront",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Storefront in this architecture."
+      }
+    },
+    {
+      "id": "gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names gateway in this architecture."
+      }
+    },
+    {
+      "id": "order_domain",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Order domain in this architecture."
+      }
+    },
+    {
+      "id": "order_service",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Order service in this architecture."
+      }
+    },
+    {
+      "id": "orders_database",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Orders database in this architecture."
+      }
+    },
+    {
+      "id": "event_backbone",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Event backbone in this architecture."
+      }
+    },
+    {
+      "id": "order_events",
+      "kind": "resource",
+      "type": "aws.eventbridge",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Order events in this architecture."
+      }
+    },
+    {
+      "id": "fulfillment_services",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Fulfillment services in this architecture."
+      }
+    },
+    {
+      "id": "inventory_service",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Inventory service in this architecture."
+      }
+    },
+    {
+      "id": "payment_service",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Payment service in this architecture."
+      }
+    },
+    {
+      "id": "shipping_service",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Shipping service in this architecture."
+      }
+    },
+    {
+      "id": "customer_notifications",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Customer notifications in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "customer_to_delivery",
+      "source": "customer",
+      "target": "storefront_delivery",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Customer to Storefront delivery direction."
+      }
+    },
+    {
+      "id": "delivery_to_storefront",
+      "source": "storefront_delivery",
+      "target": "storefront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Storefront delivery to Storefront direction."
+      }
+    },
+    {
+      "id": "delivery_to_api",
+      "source": "storefront_delivery",
+      "target": "gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Storefront delivery to gateway direction."
+      }
+    },
+    {
+      "id": "api_to_order",
+      "source": "gateway",
+      "target": "order_service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the gateway to Order service direction."
+      }
+    },
+    {
+      "id": "persist_order",
+      "source": "order_service",
+      "target": "orders_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order service to Orders database direction."
+      }
+    },
+    {
+      "id": "publish_order_created",
+      "source": "order_service",
+      "target": "order_events",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order service to Order events direction."
+      }
+    },
+    {
+      "id": "reserve_stock",
+      "source": "order_events",
+      "target": "inventory_service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order events to Inventory service direction."
+      }
+    },
+    {
+      "id": "authorize_payment",
+      "source": "order_events",
+      "target": "payment_service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order events to Payment service direction."
+      }
+    },
+    {
+      "id": "create_shipment",
+      "source": "order_events",
+      "target": "shipping_service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order events to Shipping service direction."
+      }
+    },
+    {
+      "id": "send_confirmation",
+      "source": "order_events",
+      "target": "customer_notifications",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Order events to Customer notifications direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_api-gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 api gateway."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-fargate",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-fargate; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 3,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 3 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 cloudfront."
+      }
+    },
+    {
+      "id": "count_resource_aws_dynamodb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 dynamodb."
+      }
+    },
+    {
+      "id": "count_resource_aws_eventbridge",
+      "kind": "resource",
+      "type": "aws.eventbridge",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 eventbridge."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-notification-service",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-notification-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 1 cloud."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 4,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 4 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_customer",
+      "component": "customer",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Customer at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws_cloud",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_customer_experience",
+      "component": "customer_experience",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer experience inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_storefront_delivery",
+      "component": "storefront_delivery",
+      "relation": "inside",
+      "group": "customer_experience",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Storefront delivery inside Customer experience."
+      }
+    },
+    {
+      "id": "place_storefront",
+      "component": "storefront",
+      "relation": "inside",
+      "group": "customer_experience",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Storefront inside Customer experience."
+      }
+    },
+    {
+      "id": "place_gateway",
+      "component": "gateway",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places gateway inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_order_domain",
+      "component": "order_domain",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Order domain inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_order_service",
+      "component": "order_service",
+      "relation": "inside",
+      "group": "order_domain",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Order service inside Order domain."
+      }
+    },
+    {
+      "id": "place_orders_database",
+      "component": "orders_database",
+      "relation": "inside",
+      "group": "order_domain",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Orders database inside Order domain."
+      }
+    },
+    {
+      "id": "place_event_backbone",
+      "component": "event_backbone",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Event backbone inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_order_events",
+      "component": "order_events",
+      "relation": "inside",
+      "group": "event_backbone",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Order events inside Event backbone."
+      }
+    },
+    {
+      "id": "place_fulfillment_services",
+      "component": "fulfillment_services",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Fulfillment services inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_inventory_service",
+      "component": "inventory_service",
+      "relation": "inside",
+      "group": "fulfillment_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Inventory service inside Fulfillment services."
+      }
+    },
+    {
+      "id": "place_payment_service",
+      "component": "payment_service",
+      "relation": "inside",
+      "group": "fulfillment_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Payment service inside Fulfillment services."
+      }
+    },
+    {
+      "id": "place_shipping_service",
+      "component": "shipping_service",
+      "relation": "inside",
+      "group": "fulfillment_services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Shipping service inside Fulfillment services."
+      }
+    },
+    {
+      "id": "place_customer_notifications",
+      "component": "customer_notifications",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Customer notifications inside AWS Cloud."
+      }
+    }
+  ]
+}

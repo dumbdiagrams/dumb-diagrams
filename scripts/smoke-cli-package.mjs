@@ -21,7 +21,13 @@ const tarballPath = requestedArtifact
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
 const curatedExampleIds = curatedIds();
-const curatedExampleFiles = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"];
+const curatedExampleFiles = [
+  "user-prompt.md",
+  "architecture-brief.md",
+  "reference-spec.md",
+  "diagram.dgm",
+  "requirements.json",
+];
 
 mkdirSync(artifactsDir, { recursive: true });
 
@@ -47,6 +53,10 @@ const required = [
   "package/dist/templates/project/CLAUDE.md",
   "package/dist/templates/project/GEMINI.md",
   "package/dist/templates/project/.dumbdiagrams/instructions.md",
+  "package/dist/templates/project/.dumbdiagrams/requirements.md",
+  "package/dist/templates/project/.dumbdiagrams/requirements.schema.json",
+  "package/dist/templates/project/.dumbdiagrams/requirements.example.json",
+  "package/dist/templates/project/.dumbdiagrams/preferences.json",
   "package/dist/templates/project/.dumbdiagrams/providers/aws.md",
   "package/dist/templates/project/.dumbdiagrams/providers/azure.md",
   "package/dist/templates/project/.dumbdiagrams/providers/gcp.md",
@@ -142,6 +152,10 @@ try {
     "GEMINI.md",
     "diagrams/README.md",
     ".dumbdiagrams/instructions.md",
+    ".dumbdiagrams/requirements.md",
+    ".dumbdiagrams/requirements.schema.json",
+    ".dumbdiagrams/requirements.example.json",
+    ".dumbdiagrams/preferences.json",
     ".dumbdiagrams/providers/aws.md",
     ".dumbdiagrams/providers/azure.md",
     ".dumbdiagrams/providers/gcp.md",
@@ -154,6 +168,15 @@ try {
   const smokeDiagram = join(initializedProject, ".dumbdiagrams/examples/simple-serverless-web-application/diagram.dgm");
   if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams validate failed");
+  }
+  const validation = JSON.parse(runNpxCapture(tarballPath, ["validate", "--json", smokeDiagram]));
+  if (!validation.ok || validation.files[0]?.completeness.status !== "pass") {
+    throw new Error("packed CLI did not verify the initialized requirements contract");
+  }
+  const incomplete = join(workRoot, "incomplete.dgm");
+  copyFileSync(smokeDiagram, incomplete);
+  if (runNpx(tarballPath, ["validate", incomplete], "dumbdiagrams", projectDir) === 0) {
+    throw new Error("packed CLI accepted a diagram without its requirements contract");
   }
   const formatCopy = join(workRoot, "packed-format.dgm");
   copyFileSync(smokeDiagram, formatCopy);

@@ -16,10 +16,17 @@ import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 import { err, errAsync, ok, okAsync, Result, safeTry, ResultAsync } from "neverthrow";
-import { listAssets } from "@dumb-diagrams/runtime/catalog";
+import { getCatalogMap, listAssets } from "@dumb-diagrams/runtime/catalog";
+import { validateDocument } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
-import { compileDiagramResult, renderPortableSvg, type CompiledDiagram } from "@dumb-diagrams/runtime/render";
+import {
+  compileDiagramResult,
+  renderPortableSvg,
+  validateEmbeddedAssets,
+  type CompiledDiagram,
+} from "@dumb-diagrams/runtime/render";
+import { checkRequirements, parseRequirements } from "@dumb-diagrams/runtime/requirements";
 
 import { createCliUi } from "./cli-ui.js";
 import { loadCatalogSvg } from "./catalog-loader.js";
@@ -42,25 +49,47 @@ interface ParsedArgs {
 const CURATED_EXAMPLE_IDS = [
   "aws-high-availability-web-app",
   "aws-data-transfer-hub",
+  "aws-review-medium-iot-telemetry",
+  "aws-review-medium-thumbnail-pipeline",
+  "aws-review-simple-static-site",
+  "azure-private-app-service",
+  "azure-review-medium-async-orders",
+  "azure-review-medium-iot-telemetry",
+  "azure-review-simple-private-api",
   "bedrock-claims-processing",
   "simple-serverless-web-application",
   "image-thumbnail-pipeline",
   "asynchronous-report-generation",
   "event-driven-order-fulfillment",
-  "azure-private-app-service",
-  "gcp-streaming-analytics",
   "cloud-agnostic-order-processing",
+  "cloud-agnostic-review-medium-portal-stack",
+  "cloud-agnostic-review-medium-webhook-flow",
+  "cloud-agnostic-review-simple-api",
+  "gcp-review-medium-document-processing",
+  "gcp-review-medium-event-pipeline",
+  "gcp-review-simple-api",
+  "gcp-streaming-analytics",
 ] as const;
-const CURATED_FILE_NAMES = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"] as const;
+const CURATED_FILE_NAMES = [
+  "user-prompt.md",
+  "architecture-brief.md",
+  "reference-spec.md",
+  "diagram.dgm",
+  "requirements.json",
+] as const;
 
-export async function runCli(argv: string[]): Promise<number> {
+export async function runCli(argv: string[], options: { stdin?: string } = {}): Promise<number> {
   const [command, ...rawArgs] = argv;
   const parsed = parseArgs(rawArgs, command);
 
-  return dispatchCommand(command, parsed).match((code) => code, reportCliError);
+  return dispatchCommand(command, parsed, options.stdin).match((code) => code, reportCliError);
 }
 
-function dispatchCommand(command: string | undefined, parsed: ParsedArgs): ResultAsync<number, CliError> {
+function dispatchCommand(
+  command: string | undefined,
+  parsed: ParsedArgs,
+  stdinText?: string,
+): ResultAsync<number, CliError> {
   if (parsed.flags.has("help")) return okAsync(0).andTee(() => printHelp());
   if (parsed.flags.has("version") || command === "--version" || command === "-v") {
     return okAsync(0).andTee(() => console.log(`${ui.heading("DUMB DIAGRAMS")} ${ui.muted(`v${VERSION}`)}`));
@@ -76,7 +105,7 @@ function dispatchCommand(command: string | undefined, parsed: ParsedArgs): Resul
     case "init":
       return cmdInit(parsed);
     case "validate":
-      return cmdValidate(parsed);
+      return cmdValidate(parsed, stdinText);
     case "format":
       return cmdFormat(parsed);
     case "render":
@@ -101,7 +130,7 @@ ${ui.heading("Usage")}
 ${ui.heading("Commands")}
   ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
-  ${ui.command("validate <file.dgm>...")}  Validate diagrams (--strict fails on warnings)
+  ${ui.command("validate <file.dgm>...")}  Validate diagrams and required contracts
   ${ui.command("format <file.dgm>")}       Print canonical .dgm source
   ${ui.command("render <file.dgm>")}       Render deterministic SVG (use -o for a file)
 
@@ -110,6 +139,8 @@ ${ui.heading("Quick start")}
   ${ui.command("dumbdiagrams validate diagrams/example/diagram.dgm")}
   ${ui.command("dumbdiagrams render diagrams/example/diagram.dgm -o diagram.svg")}
   ${ui.command("dumbdiagrams studio")}
+
+${ui.muted("validate uses sibling requirements.json for diagram.dgm, or <stem>.requirements.json otherwise. Use --requirements <file> for a custom contract or stdin; --json prints a machine-readable report, and --strict fails on routing warnings.")}
 
 ${ui.muted("Tip: dgm is a shorthand alias for dumbdiagrams.")}
 `);
@@ -154,43 +185,235 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
     });
 }
 
-function cmdValidate(args: ParsedArgs): ResultAsync<number, CliError> {
-  if (!args.positionals.length || [...args.flags.keys()].some((flag) => flag !== "strict")) {
+function cmdValidate(args: ParsedArgs, stdinText?: string): ResultAsync<number, CliError> {
+  if (
+    !args.positionals.length ||
+    [...args.flags.keys()].some((flag) => !["strict", "json", "requirements"].includes(flag))
+  ) {
     return errAsync(
       invalidArguments(
-        "validate expects one or more .dgm file paths (or - for stdin), with optional --strict.",
+        "validate expects one or more .dgm file paths (or - for stdin), with optional --strict, --json, and --requirements <file>.",
         "validate",
       ),
     );
   }
+  const requirementsArg = args.flags.get("requirements");
+  if (requirementsArg !== undefined && (typeof requirementsArg !== "string" || !requirementsArg.trim())) {
+    return errAsync(invalidArguments("validate --requirements requires a path.", "validate"));
+  }
+  if (requirementsArg !== undefined && args.positionals.length !== 1) {
+    return errAsync(invalidArguments("validate --requirements can only be used with one diagram input.", "validate"));
+  }
+  if (args.positionals.includes("-") && requirementsArg === undefined) {
+    return errAsync(invalidArguments("validate with stdin requires --requirements <file>.", "validate"));
+  }
   const strict = args.flags.has("strict");
+  const json = args.flags.has("json");
   let failed = false;
-  for (const input of args.positionals) {
-    const checked = readSourceResult(input)
-      .andThen((source) => parseSourceResult(source, input))
-      .andThen((doc) => compileSourceResult(doc, input));
-    if (checked.isErr()) {
-      reportCliError(checked.error);
-      failed = true;
-      continue;
-    }
-    const { issues, invariantFailures } = checked.value.result;
-    const path = displayInputForInput(input);
-    const warnings = [
-      ...issues.map((issue) => issueLine(path, issue.code, issue.id, issue.message)),
-      ...invariantFailures.map((failure) =>
-        issueLine(path, failure.code, failure.elementIds.join(", "), failure.message),
-      ),
-    ];
-    for (const warning of warnings) console.error(ui.warning(warning));
-    if (strict && warnings.length) {
-      console.error(ui.error(`Warnings fail --strict: ${path}`));
-      failed = true;
-    } else {
-      console.log(ui.success(`Valid diagram: ${path}`));
-    }
+  const reports = args.positionals.map((input) =>
+    validateInput(input, typeof requirementsArg === "string" ? requirementsArg : undefined, stdinText),
+  );
+  if (json) {
+    process.stdout.write(
+      `${JSON.stringify({ ok: reports.every((report) => report.ok && (!strict || report.routing.status !== "warnings")), files: reports.map(({ ok: _ok, ...report }) => report) }, null, 2)}\n`,
+    );
+  } else {
+    for (const report of reports) printValidationReport(report, strict);
+  }
+  for (const report of reports) {
+    if (!report.ok || (strict && report.routing.status === "warnings")) failed = true;
   }
   return okAsync(failed ? 1 : 0);
+}
+
+interface ValidationIssueReport {
+  code: string;
+  message: string;
+  requirementId?: string;
+  elementIds: string[];
+  path?: string;
+}
+interface ValidationSection {
+  status: "pass" | "fail" | "skipped" | "warnings";
+  issues: ValidationIssueReport[];
+}
+interface ValidationFileReport {
+  ok: boolean;
+  diagram: string;
+  requirements: string | null;
+  validity: ValidationSection;
+  completeness: ValidationSection;
+  routing: ValidationSection;
+}
+
+function validateInput(input: string, requirementsOverride?: string, stdinText?: string): ValidationFileReport {
+  const diagram = input === "-" ? "<stdin>" : displayInputForInput(input);
+  const requirements = requirementsOverride
+    ? displayInputForInput(requirementsOverride)
+    : input === "-"
+      ? null
+      : displayInputForInput(requirementsPath(input));
+  const validity: ValidationSection = { status: "pass", issues: [] };
+  const completeness: ValidationSection = { status: "skipped", issues: [] };
+  const routing: ValidationSection = { status: "skipped", issues: [] };
+  let source: string | undefined;
+  let doc: DiagramDocument | undefined;
+  try {
+    source = readDiagramSource(input, stdinText);
+  } catch (cause) {
+    validity.status = "fail";
+    validity.issues.push({ code: "file-input-read-failed", message: errorMessage(cause), elementIds: [] });
+  }
+  if (source !== undefined) {
+    const parsed = parseSourceResult(source, input);
+    if (parsed.isErr()) {
+      validity.status = "fail";
+      const location =
+        parsed.error.code === "parse-failed" && parsed.error.line
+          ? `${parsed.error.line}:${parsed.error.column ?? 1}: `
+          : "";
+      validity.issues.push({ code: parsed.error.code, message: `${location}${parsed.error.message}`, elementIds: [] });
+    } else doc = parsed.value;
+  }
+
+  if (doc) {
+    const semanticIssues = [...validateDocument(doc, getCatalogMap()), ...validateEmbeddedAssets(doc)];
+    validity.issues.push(
+      ...semanticIssues.map((issue) => ({
+        code: issue.code,
+        message: issue.message,
+        elementIds: issue.id ? [issue.id] : [],
+      })),
+    );
+    if (semanticIssues.length) validity.status = "fail";
+  }
+
+  if (requirements) {
+    const reqPath = requirementsOverride ? resolve(process.cwd(), requirementsOverride) : requirementsPath(input);
+    let contents: string | undefined;
+    try {
+      contents = readFileSync(reqPath, "utf8");
+    } catch (cause) {
+      completeness.status = "fail";
+      const missing = (cause as NodeJS.ErrnoException).code === "ENOENT";
+      completeness.issues.push({
+        code: missing ? "requirements-missing" : "requirements-file-read-failed",
+        message: missing ? "Required companion requirements file was not found" : errorMessage(cause),
+        elementIds: [],
+      });
+    }
+    if (contents !== undefined) {
+      const parsedRequirements = parseRequirements(contents);
+      if (parsedRequirements.isErr()) {
+        completeness.status = "fail";
+        completeness.issues.push(
+          ...parsedRequirements.error.issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })),
+        );
+        if (!parsedRequirements.error.issues.length)
+          completeness.issues.push({
+            code: parsedRequirements.error.code,
+            message: parsedRequirements.error.message,
+            elementIds: [],
+            path: "$",
+          });
+      } else if (doc) {
+        const issues = checkRequirements(doc, parsedRequirements.value);
+        completeness.issues.push(...issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })));
+        completeness.status = issues.length ? "fail" : "pass";
+      } else completeness.status = "skipped";
+    }
+  } else {
+    completeness.status = "fail";
+    completeness.issues.push({
+      code: "requirements-missing",
+      message: "Required companion requirements file was not found",
+      elementIds: [],
+      path: requirements ?? undefined,
+    });
+  }
+
+  if (doc && validity.status === "pass") {
+    try {
+      const compiled = compileDiagramResult(doc);
+      if (compiled.isErr()) {
+        routing.status = "fail";
+        routing.issues.push(
+          ...compiled.error.issues.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            elementIds: issue.id ? [issue.id] : [],
+          })),
+        );
+      } else {
+        const warnings = compiled.value.issues.filter((issue) => issue.level === "warning");
+        routing.issues.push(
+          ...warnings.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            elementIds: issue.id ? [issue.id] : [],
+          })),
+        );
+        routing.issues.push(
+          ...compiled.value.invariantFailures.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            elementIds: issue.elementIds,
+          })),
+        );
+        routing.status = routing.issues.length ? "warnings" : "pass";
+      }
+    } catch (cause) {
+      routing.status = "fail";
+      routing.issues.push({
+        code: "compilation-failed",
+        message: `Unable to complete routing validation: ${errorMessage(cause)}`,
+        elementIds: [],
+      });
+    }
+  }
+  return {
+    ok: validity.status === "pass" && completeness.status === "pass" && routing.status !== "fail",
+    diagram,
+    requirements,
+    validity,
+    completeness,
+    routing,
+  };
+}
+
+function requirementsPath(input: string): string {
+  const path = resolve(process.cwd(), input);
+  const filename = path.split(/[\\/]/).pop() ?? path;
+  return join(
+    dirname(path),
+    filename === "diagram.dgm" ? "requirements.json" : `${filename.replace(/\.dgm$/i, "")}.requirements.json`,
+  );
+}
+
+function printValidationReport(report: ValidationFileReport, strict: boolean): void {
+  for (const [sectionName, section] of [
+    ["validity", report.validity],
+    ["completeness", report.completeness],
+    ["routing", report.routing],
+  ] as const) {
+    for (const issue of section.issues) {
+      const ids = issue.requirementId
+        ? `${issue.requirementId}${issue.elementIds.length ? ` · ${issue.elementIds.join(", ")}` : ""}`
+        : issue.elementIds.join(", ");
+      const filePath = sectionName === "completeness" ? (report.requirements ?? report.diagram) : report.diagram;
+      const location = sectionName === "completeness" && issue.path ? `${filePath}:${issue.path}` : filePath;
+      const message =
+        issue.code === "file-input-read-failed"
+          ? `Unable to read diagram: ${filePath} (${issue.message})`
+          : `${location}: ${sectionName}${ids ? ` (${ids})` : ""}: ${issue.code}: ${issue.message}`;
+      console.error(ui[section.status === "fail" ? "error" : "warning"](message));
+    }
+  }
+  if (report.ok && !(strict && report.routing.status === "warnings"))
+    console.log(ui.success(`Validated: ${report.diagram}`));
+  else if (report.ok && strict && report.routing.status === "warnings")
+    console.error(ui.error(`Routing warnings fail --strict: ${report.diagram}`));
+  else console.error(ui.error(`Validation failed: ${report.diagram}`));
 }
 
 function issueLine(path: string, code: string, id: string | undefined, message: string): string {
@@ -316,8 +539,8 @@ function cmdRender(args: ParsedArgs): ResultAsync<number, CliError> {
     });
 }
 
-function readDiagramSource(input: string): string {
-  return input === "-" ? readFileSync(0, "utf8") : readFileSync(resolve(process.cwd(), input), "utf8");
+function readDiagramSource(input: string, stdinText?: string): string {
+  return input === "-" ? (stdinText ?? readFileSync(0, "utf8")) : readFileSync(resolve(process.cwd(), input), "utf8");
 }
 
 function toAsync<T>(result: Result<T, CliError>): ResultAsync<T, CliError> {
@@ -417,6 +640,10 @@ function createInitProject(options: ResolvedInitOptions): Result<number, CliErro
     ".dumbdiagrams/providers/azure.md",
     ".dumbdiagrams/providers/gcp.md",
     ".dumbdiagrams/providers/cloud-agnostic.md",
+    ".dumbdiagrams/requirements.md",
+    ".dumbdiagrams/requirements.schema.json",
+    ".dumbdiagrams/requirements.example.json",
+    ".dumbdiagrams/preferences.json",
   ];
 
   const prepared = safeTry<{ files: readonly PreparedInitFile[] }, CliError>(function* () {
@@ -696,7 +923,12 @@ function displayInputForInput(input: string): string {
 function parseArgs(args: string[], command?: string): ParsedArgs {
   const positionals: string[] = [];
   const flags = new Map<string, string | true>();
-  const valueFlags = command === "render" ? new Set(["output", "o", "format"]) : new Set<string>();
+  const valueFlags =
+    command === "render"
+      ? new Set(["output", "o", "format"])
+      : command === "validate"
+        ? new Set(["requirements"])
+        : new Set<string>();
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]!;
     if (!argument.startsWith("-") || argument === "-") {

@@ -35,6 +35,10 @@
     "./render": {
       "types": "./dist/render/index.d.ts",
       "import": "./dist/render/index.js"
+    },
+    "./requirements": {
+      "types": "./dist/requirements/index.d.ts",
+      "import": "./dist/requirements/index.js"
     }
   },
   "scripts": {

@@ -63,7 +63,7 @@ function compareStableIds(a: ID, b: ID): number {
  * Order top-level diagram roots for automatic layout. Connected architecture
  * follows declared flow; detached decorative boundaries stay at the end.
  */
-export function orderRootsForFlow(doc: DiagramDocument, roots: ID[]): ID[] {
+export function orderRootsForFlow(doc: DiagramDocument, roots: ID[], preferRequestOrder = false): ID[] {
   if (roots.length <= 1) return [...roots];
 
   const view = getDefaultView(doc);
@@ -95,12 +95,16 @@ export function orderRootsForFlow(doc: DiagramDocument, roots: ID[]): ID[] {
     const source = ownerByResource.get(edge.source) ?? rootOwner(doc, edge.source, rootSet);
     const target = ownerByResource.get(edge.target) ?? rootOwner(doc, edge.target, rootSet);
     if (!source || !target || source === target) continue;
+    // The first request establishes the reading direction. Its later response
+    // must remain drawn, but must not turn the root ordering into a cycle.
+    if (preferRequestOrder && adjacency.get(target)!.has(source)) continue;
     if (!adjacency.get(source)!.has(target)) {
       adjacency.get(source)!.add(target);
       inDegree.set(target, (inDegree.get(target) ?? 0) + 1);
     }
   }
 
+  const initialInDegree = new Map(inDegree);
   const architectureRoots = roots.filter((id) => !isEmptyRootBoundary(doc, id));
   const decorativeRoots = roots.filter((id) => isEmptyRootBoundary(doc, id));
   const ordered: ID[] = [];
@@ -108,20 +112,37 @@ export function orderRootsForFlow(doc: DiagramDocument, roots: ID[]): ID[] {
     .filter((id) => (inDegree.get(id) ?? 0) === 0)
     .sort((a, b) => compareByFlowAxis(doc, view, a, b));
 
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-    ordered.push(id);
-    for (const target of [...(adjacency.get(id) ?? [])].sort((a, b) => compareByFlowAxis(doc, view, a, b))) {
-      inDegree.set(target, (inDegree.get(target) ?? 0) - 1);
-      if (inDegree.get(target) === 0) {
-        queue.push(target);
-        queue.sort((a, b) => compareByFlowAxis(doc, view, a, b));
+  for (;;) {
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      ordered.push(id);
+      for (const target of [...(adjacency.get(id) ?? [])].sort((a, b) => compareByFlowAxis(doc, view, a, b))) {
+        inDegree.set(target, (inDegree.get(target) ?? 0) - 1);
+        if (inDegree.get(target) === 0) {
+          queue.push(target);
+          queue.sort((a, b) => compareByFlowAxis(doc, view, a, b));
+        }
       }
     }
-  }
-
-  for (const id of architectureRoots) {
-    if (!ordered.includes(id)) ordered.push(id);
+    const remaining = architectureRoots.filter((id) => !ordered.includes(id));
+    if (!remaining.length) break;
+    // A cycle stalls the sort. Continue into the root the placed ones feed
+    // most; with nothing placed yet, the first declared request sets the
+    // reading direction, as a person would draw it.
+    const fed = (id: ID) => (initialInDegree.get(id) ?? 0) - (inDegree.get(id) ?? 0);
+    const owner = (id: ID) => ownerByResource.get(id) ?? rootOwner(doc, id, rootSet);
+    const continued = remaining.reduce((best, id) => (fed(id) > fed(best) ? id : best), remaining[0]!);
+    const next =
+      fed(continued) > 0
+        ? continued
+        : (doc.edges
+            .filter((edge) => edge.style !== "dashed" || edge.kind === "peer")
+            .map((edge) => [owner(edge.source), owner(edge.target)] as const)
+            .find(
+              ([source, target]) => source !== target && remaining.includes(source!) && remaining.includes(target!),
+            )?.[0] ?? remaining[0]!);
+    inDegree.set(next, 0);
+    queue.push(next);
   }
   decorativeRoots.sort((a, b) => compareByFlowAxis(doc, view, a, b));
   return [...ordered, ...decorativeRoots];

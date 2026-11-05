@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "uploader",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Image uploader"
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS Cloud"
+      }
+    },
+    {
+      "id": "image_pipeline",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Image processing pipeline"
+      }
+    },
+    {
+      "id": "upload_api",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Upload API"
+      },
+      "type": "aws.api-gateway"
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Upload handler"
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "originals",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Original images"
+      },
+      "type": "aws.simple-storage-service"
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Thumbnail jobs"
+      },
+      "type": "aws.simple-queue-service"
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Thumbnail processor"
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "thumbnails",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Generated thumbnails"
+      },
+      "type": "aws.simple-storage-service"
+    },
+    {
+      "id": "delivery",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Content delivery service"
+      },
+      "type": "aws.cloudfront"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "submit_upload",
+      "source": "uploader",
+      "target": "upload_api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Uploader submits an image through an API"
+      }
+    },
+    {
+      "id": "accept_upload",
+      "source": "upload_api",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "API invokes upload handler"
+      }
+    },
+    {
+      "id": "store_original",
+      "source": "intake",
+      "target": "originals",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Stores original image"
+      }
+    },
+    {
+      "id": "enqueue_thumbnail",
+      "source": "intake",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Queues thumbnail job"
+      }
+    },
+    {
+      "id": "process_job",
+      "source": "jobs",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processor consumes thumbnail job"
+      }
+    },
+    {
+      "id": "save_thumbnail",
+      "source": "processor",
+      "target": "thumbnails",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Creates and stores thumbnail"
+      }
+    },
+    {
+      "id": "serve_original",
+      "source": "originals",
+      "target": "delivery",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Content delivery serves original image"
+      }
+    },
+    {
+      "id": "serve_thumbnail",
+      "source": "thumbnails",
+      "target": "delivery",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Content delivery serves thumbnail image"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [],
+  "allowAdditionalResources": true
+}

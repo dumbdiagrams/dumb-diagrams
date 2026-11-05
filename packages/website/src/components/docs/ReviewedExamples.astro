@@ -13,6 +13,7 @@ const examples = loadReviewedExamples().filter(example => example.provider === p
     const svgUrl = url(`reviewed-examples/${example.svgName}`);
     const sourceUrl = url(`reviewed-examples/${example.sourceName}`);
     const promptUrl = url(`reviewed-examples/${example.promptName}`);
+    const requirementsUrl = url(`reviewed-examples/${example.requirementsName}`);
     return <details class="reviewed-card" open={index === 0}>
       <summary>
         <span class="reviewed-title">{example.title}</span>
@@ -28,6 +29,7 @@ const examples = loadReviewedExamples().filter(example => example.provider === p
         <nav aria-label={`${example.title} files`}>
           <a href={svgUrl}>Original SVG</a>
           <a href={sourceUrl}>Source (.dgm)</a>
+          <a href={requirementsUrl}>Requirements (.json)</a>
           <a href={promptUrl}>Original prompt</a>
         </nav>
       </div>

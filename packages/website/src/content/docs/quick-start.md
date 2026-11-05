@@ -30,7 +30,7 @@ The project contains agent instructions, `.dumbdiagrams/` knowledge, and a docum
   GEMINI.md          Another agent entry point
 ```
 
-Keep `.dumbdiagrams/examples/` as reference material. By default, an agent creates `diagrams/<name>/diagram.dgm` beside an `architecture-brief.md` that records the goal and important decisions. Studio can open the `.dgm` wherever you decide to keep it.
+Keep `.dumbdiagrams/examples/` as reference material. By default, an agent creates `diagrams/<name>/diagram.requirements.json` before `diagram.dgm`, beside an `architecture-brief.md` that records the goal and important decisions. The requirements file lists stable component and relationship IDs, required counts, and containment. Keep it alongside the diagram through layout edits. Studio can open the `.dgm` wherever you decide to keep it.
 
 ## Create and edit a first draft
 
@@ -46,9 +46,9 @@ Open the new diagram in Studio. Change a label in the source editor, move an ite
 | --- | --- |
 | `dumbdiagrams init` | Create a project folder with agent guidance and a diagram workspace. |
 | `dumbdiagrams studio` | Start the local editor, then use **Open** to choose a `.dgm` file. |
-| `dumbdiagrams validate <files…>` | Validate one or more diagrams and print warnings. Add `--strict` to fail on warnings; use `-` for standard input. |
+| `dumbdiagrams validate <files…>` | Check each diagram against its required `.requirements.json` companion and report provider findings. Add `--strict` to include routing findings; use `-` for standard input. |
 | `dumbdiagrams format <file.dgm>` | Print canonical source. Add `--check` to verify formatting or `--write` to update the file. |
 | `dumbdiagrams render <file.dgm> -o diagram.svg` | Render a portable SVG. Omit `-o` to write it to standard output. |
 | `dumbdiagrams --help` | Show command help. Use `--version` to print the installed version. |
 
-Every command also works with the `dgm` alias. Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).
+Run normal validation and then `dumbdiagrams validate --strict <files…>`. If findings are fixable, make at most two focused repair passes and rerun both. The completeness check confirms only that the diagram matches the written contract; review the contract against your request. Every command also works with the `dgm` alias. Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).

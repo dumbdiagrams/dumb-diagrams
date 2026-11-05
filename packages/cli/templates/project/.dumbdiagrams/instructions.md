@@ -8,10 +8,9 @@ does not need to write a structured Dumb Diagrams prompt.
 1. Locate the `.dgm` file the user names, or choose a sensible location for a
    new portable source file. For a new diagram, use
    `diagrams/<descriptive-slug>/diagram.dgm` and keep its
-   `architecture-brief.md` beside it. If the user names an existing or custom
-   flat `.dgm` path, preserve it and place `<stem>.architecture-brief.md`
-   beside it unless directed otherwise. Revise an existing file only when the
-   user identifies it.
+   `architecture-brief.md` and `requirements.json` beside it. For a custom flat
+   `.dgm` path, use `<stem>.architecture-brief.md` and
+   `<stem>.requirements.json`. Revise an existing file only when identified.
 2. Resolve provider intent using the rules below. If clarification is required,
    stop and ask the user before writing or updating either the brief or `.dgm`.
 3. Read `architecture.md` and form the concise architecture brief before
@@ -21,18 +20,24 @@ does not need to write a structured Dumb Diagrams prompt.
 4. Read only the matching provider guide, such as `providers/aws.md`.
 5. Read `dgm.md`, then search `catalog.md` or `catalog.json` for every canonical
    resource type. Never infer a type identifier from a display name.
-6. Consult one relevant example if useful. Examples demonstrate mappings and
-   conventions; they do not override the user or become default architectures.
-7. Resolve architecture semantics before layout. Write a descriptive `.dgm`
-   source file unless revising a named file.
-8. Run `dumbdiagrams validate --strict <path-to-diagram.dgm>` after writing or
-   revising the source. Do not report completion or hand the file to the user
-   unless validation exits successfully; repair every reported parse, type,
-   and containment error and every provider warning, such as
-   `managed-service-in-network`, first.
-9. Open the result with `dumbdiagrams studio` and use Open to choose the `.dgm`
-   file. Correct validation errors, nonsensical routes, overlaps, and
-   unreadable grouping without changing the agreed architecture.
+6. Read `requirements.md` and write the requirements contract before the `.dgm`.
+   Check it against the prompt: expand "both workers" and similar statements
+   into individual components and relationships. Record short prompt evidence
+   or an inference rationale. Consult one relevant example if useful; examples
+   never override the user's architecture.
+7. Write the `.dgm` using the contract's component and edge IDs, applying
+   `preferences.json` (see Project preferences below). Run
+   `dumbdiagrams validate <path-to-diagram.dgm>` before layout repairs. Fix all
+   source, catalog, provider, and completeness failures first.
+8. Repair layout without changing requirements, then run normal validation and
+   `dumbdiagrams validate --strict <path-to-diagram.dgm>`. Never remove,
+   redirect, or leave a requested relationship implicit to eliminate a routing
+   warning. An omission recorded in the brief does not satisfy a requirement.
+9. Open the result with `dumbdiagrams studio` and inspect it. After two
+   unsuccessful layout-repair attempts, preserve the complete graph and report
+   remaining routing findings. Say "architecture complete; routing warnings
+   remain" only when normal validation passes. Claim full completion only when
+   strict validation and visual review also pass.
 
 ## Provider selection
 
@@ -60,6 +65,17 @@ Infer only what makes an underspecified request coherent, and do not add
 merely plausible best-practice services. Preserve saved view/layout metadata
 when revising an existing diagram.
 
+## Project preferences
+
+`preferences.json` sets this project's default style. An explicit user request
+overrides any value in it.
+
+- `numberedSteps` (default `true`): give every solid flow arrow a `step`
+  number in the order the request or data moves, so the diagram shows numbered
+  badges. Parallel branches may share a number; leave dashed, peer, and failure
+  connectors unnumbered. When `false`, add steps only if the user asks for
+  numbered stages.
+
 ## Layout defaults and refinements
 
 For every new diagram, use horizontal left-to-right flow (`flow lr`) unless
@@ -68,6 +84,13 @@ this default to every provider. Keep the primary sequence left-to-right
 inside nested boundaries too; a horizontal outer flow alone is not enough.
 Use vertical stacking for parallel branches and supporting resources, not
 for successive stages of the main flow.
+
+- Use only minimal provider-required containment; a simple chain needs no
+  decorative logical wrapper. Keep resource and edge labels short, without
+  repeating service names, and preserve a clean reading order for the main path.
+- Keep required response, feedback, and operations relationships explicit even
+  when they are secondary or use a secondary connector style. Do not add manual
+  coordinates to compensate for engine layout behavior.
 
 When editing an existing diagram, preserve its orientation unless the user
 asks to change it. A request to switch orientation authorizes changing the
@@ -87,5 +110,8 @@ requirements`, `Relationships and containment`, and `Inferred decisions and
 exclusions`. Capture the enriched interpretation—not a transcript or hidden
 reasoning—and keep explicit and inferred choices distinguishable. Never
 persist credentials, secrets, unrelated conversation, or chain-of-thought.
-The `.dgm` source remains authoritative; update the brief when its semantic
-normalization changes.
+The `.dgm` is the drawn architecture; the requirements contract records the
+intended architecture. Update the brief and contract for requested semantic
+changes or genuine extraction corrections, explaining corrections in the brief.
+Never weaken the contract to make validation pass. Layout-only edits leave it
+unchanged. The checker verifies the contract, not natural-language understanding.

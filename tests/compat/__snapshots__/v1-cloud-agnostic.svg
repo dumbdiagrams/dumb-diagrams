@@ -31,11 +31,17 @@
   <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
   </marker>
-  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
   </marker>
-  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
   </marker>
   <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
@@ -58,21 +64,21 @@
 </g>
 
 <g id="edge-client-gateway" class="edge edge-flow edge-solid">
-  <path d="M 88 84 L 152 84" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  <path d="M 96 96 L 144 96" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
   
 </g>
 
 <g id="res-client">
-  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="40" y="60" width="48" height="48"/>
-  <text x="64" y="124" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="48" y="72" width="48" height="48"/>
+  <text x="72" y="136" text-anchor="middle" font-size="12" font-weight="500">Client</text>
   
 </g>
 
 <g id="res-gateway">
-  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-gateway-de7a6424-fa9a7de4.svg" x="152" y="64" width="48" height="48"/>
-  <text x="176" y="128" text-anchor="middle" font-size="12" font-weight="500">Gateway</text>
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-gateway-de7a6424-fa9a7de4.svg" x="144" y="72" width="48" height="48"/>
+  <text x="168" y="136" text-anchor="middle" font-size="12" font-weight="500">Gateway</text>
   
 </g>
 </svg>

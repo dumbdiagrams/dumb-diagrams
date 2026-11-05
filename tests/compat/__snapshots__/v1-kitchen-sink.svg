@@ -33,11 +33,17 @@
   <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
   </marker>
-  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
   </marker>
-  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
   </marker>
   <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
@@ -98,7 +104,7 @@
 </g>
 
 <g id="edge-peer_link" class="edge edge-peer edge-solid">
-  <path d="M 326 234 L 424 234 L 424 173 L 459.8 173" fill="none" stroke="#f0531e" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  />
+  <path d="M 326 234 L 424 234 L 424 173 L 459.8 173" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  />
   
   
   
@@ -106,6 +112,13 @@
 
 <g id="edge-failure" class="edge edge-fail edge-solid">
   <path d="M 362 116 L 424 116 L 424 161 L 459.8 161" fill="none" stroke="#2F855A" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow-green)"/>
+  
+  
+  
+</g>
+
+<g id="edge-highlight" class="edge edge-flow edge-solid">
+  <path d="M 159 184 L 302 184 L 302 210" fill="none" stroke="#f0531e" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow-coral)"/>
   
   
   

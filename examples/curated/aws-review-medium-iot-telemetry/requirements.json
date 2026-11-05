@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "sensors",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Factory sensor fleet in this architecture."
+      }
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Operations dashboard in this architecture."
+      }
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "iot_core",
+      "kind": "resource",
+      "type": "aws.aws-iot-core",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names AWS IoT Core in this architecture."
+      }
+    },
+    {
+      "id": "telemetry_stream",
+      "kind": "resource",
+      "type": "aws.kinesis-data-streams",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Kinesis Data Streams in this architecture."
+      }
+    },
+    {
+      "id": "consumer",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Lambda telemetry consumer in this architecture."
+      }
+    },
+    {
+      "id": "time_series",
+      "kind": "resource",
+      "type": "aws.timestream",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Amazon Timestream in this architecture."
+      }
+    },
+    {
+      "id": "alerts",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Amazon SNS in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "send_readings",
+      "source": "sensors",
+      "target": "iot_core",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Factory sensor fleet to AWS IoT Core direction."
+      }
+    },
+    {
+      "id": "route_readings",
+      "source": "iot_core",
+      "target": "telemetry_stream",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the AWS IoT Core to Kinesis Data Streams direction."
+      }
+    },
+    {
+      "id": "consume_readings",
+      "source": "telemetry_stream",
+      "target": "consumer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Kinesis Data Streams to Lambda telemetry consumer direction."
+      }
+    },
+    {
+      "id": "write_time_series",
+      "source": "consumer",
+      "target": "time_series",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Lambda telemetry consumer to Amazon Timestream direction."
+      }
+    },
+    {
+      "id": "publish_alerts",
+      "source": "consumer",
+      "target": "alerts",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Lambda telemetry consumer to Amazon SNS direction."
+      }
+    },
+    {
+      "id": "read_time_series",
+      "source": "time_series",
+      "target": "dashboard",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Amazon Timestream to Operations dashboard direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_aws-iot-core",
+      "kind": "resource",
+      "type": "aws.aws-iot-core",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-iot-core; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_aws_kinesis-data-streams",
+      "kind": "resource",
+      "type": "aws.kinesis-data-streams",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.kinesis-data-streams; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-notification-service",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-notification-service; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_aws_timestream",
+      "kind": "resource",
+      "type": "aws.timestream",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.timestream; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_sensors",
+      "component": "sensors",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Factory sensor fleet at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_dashboard",
+      "component": "dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Operations dashboard at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws_cloud",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_iot_core",
+      "component": "iot_core",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places AWS IoT Core inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_telemetry_stream",
+      "component": "telemetry_stream",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Kinesis Data Streams inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_consumer",
+      "component": "consumer",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Lambda telemetry consumer inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_time_series",
+      "component": "time_series",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Amazon Timestream inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_alerts",
+      "component": "alerts",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Amazon SNS inside AWS Cloud."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

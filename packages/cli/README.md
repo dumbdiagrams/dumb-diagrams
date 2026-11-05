@@ -28,15 +28,24 @@ terminal, it uses a timestamped folder. `dgm` is a shorthand for
 ## Commands
 
 ```bash
-dumbdiagrams validate a.dgm b.dgm           # validate files; warnings print as path: code (id): message
-dumbdiagrams validate --strict diagrams/*/*.dgm   # also exit 1 on any warning
+dumbdiagrams validate a.dgm b.dgm           # source/provider validity and required architecture
+dumbdiagrams validate --strict diagrams/*/*.dgm   # also fail on routing findings
+dumbdiagrams validate --json a.dgm          # separate validity, completeness, routing reports
+dumbdiagrams validate --requirements custom.json a.dgm
 dumbdiagrams format a.dgm                   # print canonical source
 dumbdiagrams format --check a.dgm           # exit 1 if not canonical
 dumbdiagrams format --write a.dgm           # rewrite in place
 dumbdiagrams render a.dgm -o a.svg          # deterministic, self-contained SVG
 ```
 
-Use `-` as the path to read standard input. Parse errors print as
+Validation requires `requirements.json` beside `diagram.dgm`, or
+`<stem>.requirements.json` for other filenames. Agents extract this contract
+before writing source; layout repairs must preserve it. Initialized projects
+include the schema, an example, and concise authoring instructions. The checker
+verifies the extracted contract, not natural-language interpretation.
+
+Use `-` as the path to read standard input; validation also needs
+`--requirements <path>` in that case. Parse errors print as
 `path:line:column: message`. Nothing is written when the input is invalid.
 Studio listens on `127.0.0.1:4788`, or on a free port if 4788 is taken, and
 targets Chromium-based desktop browsers.

@@ -1,0 +1,52 @@
+dgm 1
+diagram gcp-media-processing {
+  grammar gcp
+  flow lr
+  title "GCP media processing"
+
+  cloud-agnostic.client producer "External media producer"
+  cloud-agnostic.client ops_client "External operations client"
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Media processing project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing load_balancer "Cloud Load Balancing"
+        gcp.cloud-run ingest "Media ingest (Cloud Run)"
+        gcp.cloud-sql database "Job status (Cloud SQL)"
+        gcp.cloud-run notify "Completion notification (Cloud Run)"
+        gcp.vpc vpc "Media processing VPC" {
+          gcp.subnet subnet_a "Worker subnet A" {
+            gcp.compute-engine worker_a "Media worker A"
+          }
+          gcp.subnet subnet_b "Worker subnet B" {
+            gcp.compute-engine worker_b "Media worker B"
+          }
+        }
+      }
+      gcp.cloud-storage input_storage "Input objects (Cloud Storage)"
+      gcp.cloud-storage processed_storage "Processed objects (Cloud Storage)"
+      gcp.pub-sub jobs "Media jobs topic (Pub/Sub)"
+      gcp.pub-sub completion "Completion topic (Pub/Sub)"
+      gcp.pub-sub dead_letters "Dead-letter topic (Pub/Sub)"
+    }
+  }
+
+  producer -> load_balancer { id uploads label "Media uploads" kind flow }
+  load_balancer -> ingest { id route_uploads label "Route uploads" kind flow }
+  ingest -> input_storage { id store_input label "Write input object" kind flow }
+  ingest -> jobs { id publish_job label "Publish job" kind flow }
+  jobs -> worker_a { id worker_a_consumes_jobs label "Consume jobs" kind flow }
+  jobs -> worker_b { id worker_b_consumes_jobs label "Consume jobs" kind flow }
+  input_storage -> worker_a { id worker_a_reads_input label "Read input object" kind flow }
+  input_storage -> worker_b { id worker_b_reads_input label "Read input object" kind flow }
+  worker_a -> processed_storage { id worker_a_writes_processed label "Write processed object" kind flow }
+  worker_b -> processed_storage { id worker_b_writes_processed label "Write processed object" kind flow }
+  worker_a -> database { id worker_a_updates_status label "Update job status" kind flow }
+  worker_b -> database { id worker_b_updates_status label "Update job status" kind flow }
+  worker_a -> completion { id worker_a_publishes_completion label "Publish completion" kind flow }
+  worker_b -> completion { id worker_b_publishes_completion label "Publish completion" kind flow }
+  completion -> notify { id completion_to_notify label "Deliver completion" kind flow }
+  notify -> ops_client { id notify_to_ops label "Completion notification" kind flow }
+  jobs -> dead_letters { id jobs_dead_letter label "Dead-letter failed jobs" kind flow }
+  dead_letters -> ops_client { id ops_inspects_dead_letters label "Dead letters for inspection" kind flow }
+  ops_client -> jobs { id ops_redrives_jobs label "Deliberately redrive jobs" kind flow }
+}

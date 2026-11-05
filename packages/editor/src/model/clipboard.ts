@@ -1,6 +1,7 @@
 import type { DiagramAsset, DiagramDocument, PlaceOverride, Point, Side } from "@dumb-diagrams/runtime/core";
 import {
   DIAGRAM_LIMITS,
+  EDGE_COLOR_VALUES,
   getDefaultView,
   hasErrors,
   utf8ByteLength,
@@ -360,14 +361,7 @@ function validGroup(value: unknown): boolean {
     (value.labelPosition === undefined || value.labelPosition === "top-left" || value.labelPosition === "top-right") &&
     (value.hideIcon === undefined || typeof value.hideIcon === "boolean") &&
     (value.style === undefined || value.style === "solid" || value.style === "dashed") &&
-    (value.color === undefined ||
-      value.color === "graphite" ||
-      value.color === "blue" ||
-      value.color === "teal" ||
-      value.color === "purple" ||
-      value.color === "amber" ||
-      value.color === "red" ||
-      value.color === "green") &&
+    (value.color === undefined || (typeof value.color === "string" && Object.hasOwn(EDGE_COLOR_VALUES, value.color))) &&
     (value.fill === undefined || value.fill === "subtle" || value.fill === "none") &&
     (value.step === undefined ||
       (typeof value.step === "number" && Number.isInteger(value.step) && value.step >= 0 && value.step <= 99))
@@ -401,14 +395,7 @@ function validEdge(value: unknown): boolean {
       value.kind === "bidirectional" ||
       value.kind === "peer" ||
       value.kind === "fail") &&
-    (value.color === undefined ||
-      value.color === "graphite" ||
-      value.color === "blue" ||
-      value.color === "teal" ||
-      value.color === "purple" ||
-      value.color === "amber" ||
-      value.color === "red" ||
-      value.color === "green")
+    (value.color === undefined || (typeof value.color === "string" && Object.hasOwn(EDGE_COLOR_VALUES, value.color)))
   );
 }
 

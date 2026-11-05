@@ -19,7 +19,15 @@ describe("checked-in .dgm sources", () => {
     const source = readFileSync(resolve(root, file), "utf8");
     const parsed = parseDgmResult(source);
     if (parsed.isErr()) throw new Error(`${file}:${formatParseError(parsed.error)}`);
-    expect(printDgm(parsed.value), "run dumbdiagrams format --write").toBe(source);
+    const canonical = printDgm(parsed.value);
+    const historical = file.startsWith("examples/reviewed/") || file.startsWith("examples/model-runs/") || file.startsWith("examples/evaluations/incomplete-composer/") || file.startsWith("tests/fixtures/automatic-quality/");
+    if (historical) {
+      // Preserve historical source bytes alongside original exports and model
+      // failures. They must still parse, validate, and canonicalize stably.
+      expect(printDgm(parseDgmResult(canonical)._unsafeUnwrap())).toBe(canonical);
+    } else {
+      expect(canonical, "run dumbdiagrams format --write").toBe(source);
+    }
     const errors = validateDocument(parsed.value, getCatalogMap()).filter((issue) => issue.level === "error");
     expect(errors).toEqual([]);
   });

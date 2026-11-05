@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    { "id": "client", "kind": "resource", "type": "cloud-agnostic.actor", "basis": { "kind": "inferred", "text": "A client starts the request flow." } },
+    { "id": "api", "kind": "resource", "type": "cloud-agnostic.server", "basis": { "kind": "inferred", "text": "The flow passes through an API service." } },
+    { "id": "worker", "kind": "resource", "type": "cloud-agnostic.server", "basis": { "kind": "inferred", "text": "A worker handles the dispatched work." } },
+    { "id": "storage", "kind": "resource", "type": "cloud-agnostic.server", "basis": { "kind": "inferred", "text": "The worker persists data to storage." } }
+  ],
+  "relationships": [
+    { "id": "request", "source": "client", "target": "api", "kind": "flow", "basis": { "kind": "inferred", "text": "The client submits the request to the API." } },
+    { "id": "dispatch", "source": "api", "target": "worker", "kind": "flow", "basis": { "kind": "inferred", "text": "The API dispatches work to the worker." } },
+    { "id": "persist", "source": "worker", "target": "storage", "kind": "flow", "basis": { "kind": "inferred", "text": "The worker persists the result." } }
+  ],
+  "counts": [],
+  "placement": []
+}

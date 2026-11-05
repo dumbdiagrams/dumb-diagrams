@@ -164,6 +164,36 @@ describe("routeEdgePreview", () => {
     expect(preview?.at(-1)).toEqual(routed?.points.at(-1));
   });
 
+  it("keeps fractional A* endpoints orthogonal and clear of a blocking card", () => {
+    const doc = createEmptyDocument("fractional-astar-bridge");
+    doc.resources = [
+      routingResource("source", "cloud-agnostic.actor", "Source"),
+      routingResource("target", "cloud-agnostic.actor", "Target"),
+      routingResource("blocker", "cloud-agnostic.actor", "Blocker"),
+    ];
+    doc.edges = [{ id: "source-target", source: "source", target: "target", style: "solid", kind: "flow" }];
+    const source = routingNode("source", 100.5, 100.5, 104);
+    const target = routingNode("target", 500.5, 100.5, 104);
+    const blocker = routingNode("blocker", 300.5, 80.5, 200);
+    const layout: LayoutResult = {
+      nodes: [source, target, blocker],
+      groups: [],
+      edges: [],
+      width: 800,
+      height: 600,
+      symmetries: [],
+    };
+
+    const route = routeEdges(doc, layout, { maxScorePathCalls: 1 }).find((edge) => edge.id === "source-target")!;
+    expect(route.points.length).toBeGreaterThanOrEqual(2);
+    for (let index = 0; index < route.points.length - 1; index++) {
+      const a = route.points[index]!;
+      const b = route.points[index + 1]!;
+      expect(a.x === b.x || a.y === b.y, `segment ${index} is orthogonal`).toBe(true);
+      expect(segmentIntersects(a, b, inflate(blocker.obstacle, 8)), `segment ${index} hits blocker`).toBe(false);
+    }
+  });
+
   it("keeps numbered badges offset from the path and supports both sides", () => {
     const points = [
       { x: 0, y: 100 },

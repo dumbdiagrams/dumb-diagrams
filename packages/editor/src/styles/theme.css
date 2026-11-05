@@ -44,8 +44,8 @@
   --badge-fill: var(--brand-navy);
   --badge-text: #ffffff;
   --success: #2f7d62;
-  --danger: var(--brand-coral-deep);
-  --danger-soft: var(--brand-coral-soft);
+  --danger: #b42318;
+  --danger-soft: #fee4e2;
   --focus: var(--brand-navy);
   --artboard: #ffffff;
   --artboard-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.1);

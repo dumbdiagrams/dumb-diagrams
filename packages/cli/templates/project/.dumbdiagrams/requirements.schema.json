@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dumb-diagrams:requirements:1",
+  "title": "Dumb Diagrams requirements v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "grammar",
+    "components",
+    "relationships",
+    "counts",
+    "placement"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "grammar": {
+      "enum": [
+        "aws",
+        "azure",
+        "gcp",
+        "cloud-agnostic"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
+    },
+    "counts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/count"
+      }
+    },
+    "placement": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/placement"
+      }
+    },
+    "allowAdditionalResources": {
+      "type": "boolean",
+      "default": true
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "text"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "explicit",
+            "inferred"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "basis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "kind": {
+          "enum": [
+            "resource",
+            "group"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "basis": {
+          "$ref": "#/$defs/basis"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "resource"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "type"
+            ]
+          }
+        }
+      ]
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "target",
+        "basis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "kind": {
+          "enum": [
+            "flow",
+            "fail",
+            "peer",
+            "bidirectional"
+          ]
+        },
+        "basis": {
+          "$ref": "#/$defs/basis"
+        }
+      }
+    },
+    "count": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "type",
+        "basis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "kind": {
+          "enum": [
+            "resource",
+            "group"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "within": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "basis": {
+          "$ref": "#/$defs/basis"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "min"
+          ]
+        },
+        {
+          "required": [
+            "max"
+          ]
+        }
+      ]
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "component",
+        "relation",
+        "basis"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "component": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "relation": {
+          "enum": [
+            "inside",
+            "parent",
+            "outside",
+            "root"
+          ]
+        },
+        "group": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "basis": {
+          "$ref": "#/$defs/basis"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "relation": {
+                "const": "root"
+              }
+            },
+            "required": [
+              "relation"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "group"
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "group"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

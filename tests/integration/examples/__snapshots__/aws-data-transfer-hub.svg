@@ -31,11 +31,17 @@
   <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
   </marker>
-  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
   </marker>
-  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
   </marker>
   <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
     <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
@@ -112,7 +118,7 @@
 </g>
 
 <g id="edge-user-ui" class="edge edge-flow edge-solid">
-  <path d="M 88 344 L 157.75 344 L 157.75 541 L 219 541" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  <path d="M 88 541 L 219 541" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
   
@@ -128,7 +134,7 @@
 </g>
 
 <g id="edge-cloudfront-ui_bucket" class="edge edge-flow edge-solid">
-  <path d="M 399 549 L 473 549" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  <path d="M 399 541 L 473 541" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
   
@@ -144,16 +150,16 @@
 </g>
 
 <g id="edge-ui-cognito" class="edge edge-peer edge-dashed">
-  <path d="M 231 517 L 231 232 L 302 232 L 302 211" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
+  <path d="M 231 517 L 231 244.75 L 302 244.75 L 302 227" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
   
   
-  <circle class="edge-badge-circle" cx="250.5" cy="216" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="250.5" y="220" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <circle class="edge-badge-circle" cx="250.5" cy="228.75" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="250.5" y="232.75" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
   
 </g>
 
 <g id="edge-ui-oidc" class="edge edge-peer edge-dashed">
-  <path d="M 255 517 L 255 248 L 408 248 L 408 225" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
+  <path d="M 255 517 L 255 264 L 408 264 L 408 225" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" />
   
   
   
@@ -185,27 +191,27 @@
 </g>
 
 <g id="edge-cloudformation-fargate" class="edge edge-flow edge-solid">
-  <path d="M 969 325 L 1016 325 L 1016 424 L 800 424 L 800 517 L 862 517" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  <path d="M 969 337 L 1016 337 L 1016 424 L 800 424 L 800 517 L 862 517" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
   
 </g>
 
 <g id="edge-templates-cloudformation" class="edge edge-flow edge-solid">
-  <path d="M 1151 341 L 969 341" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  <path d="M 1151 353 L 1024 353 L 1024 325 L 969 325" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="1060" cy="325" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="1060" y="329" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <circle class="edge-badge-circle" cx="1087.5" cy="337" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1087.5" y="341" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
   
 </g>
 
 <g id="edge-ecr-fargate" class="edge edge-flow edge-solid">
-  <path d="M 1152 501 L 910 501" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  <path d="M 1152 489 L 976 489 L 976 517 L 910 517" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
   
   
-  <circle class="edge-badge-circle" cx="1031" cy="485" r="10" fill="#163964"/>
-  <text class="edge-badge-text" x="1031" y="489" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
+  <circle class="edge-badge-circle" cx="1064" cy="473" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1064" y="477" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
   
 </g>
 
@@ -219,14 +225,14 @@
 </g>
 
 <g id="res-user">
-  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-actor-88289826-a985cd8f.svg" x="40" y="320" width="48" height="48"/>
-  <text x="64" y="384" text-anchor="middle" font-size="12" font-weight="500">Actor</text>
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-actor-88289826-a985cd8f.svg" x="40" y="517" width="48" height="48"/>
+  <text x="64" y="581" text-anchor="middle" font-size="12" font-weight="500">Actor</text>
   
 </g>
 
 <g id="res-cognito">
-  <image href="catalog-icons/aws/aws-resource-cognito-cf9c55ba-07136d0d.svg" x="278" y="163" width="48" height="48"/>
-  <text x="302" y="145" text-anchor="middle" font-size="12" font-weight="500">Cognito</text>
+  <image href="catalog-icons/aws/aws-resource-cognito-cf9c55ba-07136d0d.svg" x="278" y="179" width="48" height="48"/>
+  <text x="302" y="161" text-anchor="middle" font-size="12" font-weight="500">Cognito</text>
   
 </g>
 
@@ -250,8 +256,8 @@
 </g>
 
 <g id="res-cloudfront">
-  <image href="catalog-icons/aws/aws-resource-cloudfront-66491998-3e3ea365.svg" x="351" y="525" width="48" height="48"/>
-  <text x="375" y="589" text-anchor="middle" font-size="12" font-weight="500">CloudFront</text>
+  <image href="catalog-icons/aws/aws-resource-cloudfront-66491998-3e3ea365.svg" x="351" y="517" width="48" height="48"/>
+  <text x="375" y="581" text-anchor="middle" font-size="12" font-weight="500">CloudFront</text>
   
 </g>
 

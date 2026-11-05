@@ -2,9 +2,8 @@ import type { DiagramDocument, LayoutResult, ValidationIssue } from "@dumb-diagr
 import { getDefaultView, hasErrors, validateDocument } from "@dumb-diagrams/runtime/core";
 import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, type DgmParseError } from "@dumb-diagrams/runtime/dsl";
-import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import {
-  checkInvariants,
+  compileAutomaticLayout,
   INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
   qualityFindings,
   qualityHardRegressionReason,
@@ -13,14 +12,11 @@ import {
   type InvariantFailure,
 } from "@dumb-diagrams/runtime/render";
 import {
-  attachRoutes,
-  routeEdges,
   ROUTING_BUDGET_WARNING_CODE,
   ROUTING_BUDGET_WARNING_MESSAGE,
   type RoutingOptions,
 } from "@dumb-diagrams/runtime/route";
 
-import { snapLayoutToGrid } from "./grid";
 import { ByteBudgetLruCache } from "./compilation-cache";
 
 export type DiagramCompilation =
@@ -200,7 +196,7 @@ export function compileDocument(
 
 function compileParsedDocument(
   doc: DiagramDocument,
-  snapToGrid: boolean,
+  _snapToGrid: boolean,
   routingOptions: RoutingOptions,
 ): DiagramCompilation {
   const issues = [
@@ -218,24 +214,26 @@ function compileParsedDocument(
   }
   let phase: CompilationError["phase"] = "layout";
   try {
-    const placedLayout = snapToGrid ? snapLayoutToGrid(layoutDocument(doc), true, doc) : layoutDocument(doc);
-    phase = "routing";
     const routingWarnings: ValidationIssue[] = [];
-    const routedEdges = routeEdges(doc, placedLayout, {
-      ...routingOptions,
-      onDiagnostics: (diagnostics) => {
-        routingOptions.onDiagnostics?.(diagnostics);
-        if (diagnostics.exhausted)
-          routingWarnings.push({
-            level: "warning",
-            code: ROUTING_BUDGET_WARNING_CODE,
-            message: ROUTING_BUDGET_WARNING_MESSAGE,
-          });
+    const automatic = compileAutomaticLayout(doc, {
+      maxInvariantFailures: MAX_STUDIO_INVARIANT_FAILURES,
+      prepareLayout: (layout) => {
+        // Automatic geometry belongs to the shared runtime. The grid toggle
+        // controls editing gestures; it must not change a file's rendered graph.
+        phase = "routing";
+        return layout;
       },
+      routing: routingOptions,
     });
+    if (automatic.routingDegraded)
+      routingWarnings.push({
+        level: "warning",
+        code: ROUTING_BUDGET_WARNING_CODE,
+        message: ROUTING_BUDGET_WARNING_MESSAGE,
+      });
     phase = "render";
-    const layout = expandLayoutToContent(doc, attachRoutes(placedLayout, routedEdges));
-    const invariantFailures = checkInvariants(layout, { maxFailures: MAX_STUDIO_INVARIANT_FAILURES });
+    const layout = expandLayoutToContent(doc, automatic.layout);
+    const invariantFailures = automatic.invariantFailures;
     const svg = renderSvg(doc, layout, { resolveIconHref: catalogIconUrl });
     return {
       ok: true,

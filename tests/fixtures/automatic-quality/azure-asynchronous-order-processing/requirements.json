@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "subscription",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure resources require a subscription scope"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A region is the minimal deployment scope for the Azure resources"
+      }
+    },
+    {
+      "id": "resource-group",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A resource group provides the Azure resource container"
+      }
+    },
+    {
+      "id": "storefront",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders"
+      }
+    },
+    {
+      "id": "intake-function",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "an intake function validates each order"
+      }
+    },
+    {
+      "id": "work-queue",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "inferred",
+        "text": "Service Bus is the minimal Azure queue implementation for queued orders"
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "inferred",
+        "text": "Storage Account provides the request archive"
+      }
+    },
+    {
+      "id": "archive-events",
+      "kind": "resource",
+      "type": "azure.event-grid-subscriptions",
+      "basis": {
+        "kind": "inferred",
+        "text": "Event Grid subscription delivers the explicitly requested archive events"
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "inferred",
+        "text": "A Function App is a minimal runtime for the processor role"
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "saves completed orders in SQL"
+      }
+    },
+    {
+      "id": "monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "sends processing metrics to Azure Monitor"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "storefront-intake",
+      "source": "storefront",
+      "target": "intake-function",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates each order"
+      }
+    },
+    {
+      "id": "intake-queue",
+      "source": "intake-function",
+      "target": "work-queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "queues it for processing"
+      }
+    },
+    {
+      "id": "intake-archive",
+      "source": "intake-function",
+      "target": "archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "archives the request"
+      }
+    },
+    {
+      "id": "queue-processor",
+      "source": "work-queue",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "A processor consumes queued orders"
+      }
+    },
+    {
+      "id": "archive-event-subscription",
+      "source": "archive",
+      "target": "archive-events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "processor consumes ... archive events"
+      }
+    },
+    {
+      "id": "events-processor",
+      "source": "archive-events",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "processor consumes ... archive events"
+      }
+    },
+    {
+      "id": "processor-sql",
+      "source": "processor",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "saves completed orders in SQL"
+      }
+    },
+    {
+      "id": "processor-monitor",
+      "source": "processor",
+      "target": "monitor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "sends processing metrics to Azure Monitor"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "intake-function-in-rg",
+      "component": "intake-function",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "work-queue-in-rg",
+      "component": "work-queue",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "archive-in-rg",
+      "component": "archive",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "archive-events-in-rg",
+      "component": "archive-events",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "processor-in-rg",
+      "component": "processor",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "sql-in-rg",
+      "component": "sql",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "monitor-in-rg",
+      "component": "monitor",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure service is contained in the order-processing resource group"
+      }
+    },
+    {
+      "id": "region-in-subscription",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure deployment scope under a subscription"
+      }
+    },
+    {
+      "id": "rg-in-region",
+      "component": "resource-group",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure resources are contained in a resource group"
+      }
+    },
+    {
+      "id": "storefront-root",
+      "component": "storefront",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Storefront is an external request source"
+      }
+    }
+  ]
+}

@@ -1,0 +1,877 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "public_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Public client in this architecture."
+      }
+    },
+    {
+      "id": "operations",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Operations client in this architecture."
+      }
+    },
+    {
+      "id": "subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Azure subscription in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Azure region in this architecture."
+      }
+    },
+    {
+      "id": "resource_group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Resource group in this architecture."
+      }
+    },
+    {
+      "id": "platform",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Private order processing in this architecture."
+      }
+    },
+    {
+      "id": "front_door",
+      "kind": "resource",
+      "type": "azure.front-door-and-cdn-profiles",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names front door in this architecture."
+      }
+    },
+    {
+      "id": "apim",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names apim in this architecture."
+      }
+    },
+    {
+      "id": "vnet",
+      "kind": "group",
+      "type": "azure.vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Virtual network in this architecture."
+      }
+    },
+    {
+      "id": "app_subnet",
+      "kind": "group",
+      "type": "azure.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application subnet in this architecture."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "azure.app-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names api in this architecture."
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names worker in this architecture."
+      }
+    },
+    {
+      "id": "data_subnet",
+      "kind": "group",
+      "type": "azure.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Data subnet in this architecture."
+      }
+    },
+    {
+      "id": "sql_pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names sql pe in this architecture."
+      }
+    },
+    {
+      "id": "storage_pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names storage pe in this architecture."
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names sql in this architecture."
+      }
+    },
+    {
+      "id": "storage",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names storage in this architecture."
+      }
+    },
+    {
+      "id": "work_queue",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names work queue in this architecture."
+      }
+    },
+    {
+      "id": "dead_letter",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names dead letter in this architecture."
+      }
+    },
+    {
+      "id": "key_vault",
+      "kind": "resource",
+      "type": "azure.key-vaults",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names key vault in this architecture."
+      }
+    },
+    {
+      "id": "monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names monitor in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "ops_inspect_dlq",
+      "source": "operations",
+      "target": "dead_letter",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Operations client to dead letter direction."
+      }
+    },
+    {
+      "id": "dlq_redrive",
+      "source": "dead_letter",
+      "target": "work_queue",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the dead letter to work queue direction."
+      }
+    },
+    {
+      "id": "client_to_fd",
+      "source": "public_client",
+      "target": "front_door",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Public client to front door direction."
+      }
+    },
+    {
+      "id": "fd_to_apim",
+      "source": "front_door",
+      "target": "apim",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this front door to apim edge is the reference mapping."
+      }
+    },
+    {
+      "id": "apim_to_api",
+      "source": "apim",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this apim to api edge is the reference mapping."
+      }
+    },
+    {
+      "id": "api_to_sql_pe",
+      "source": "api",
+      "target": "sql_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the api to sql pe direction."
+      }
+    },
+    {
+      "id": "sql_pe_to_sql",
+      "source": "sql_pe",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the sql pe to sql direction."
+      }
+    },
+    {
+      "id": "queue_to_worker",
+      "source": "work_queue",
+      "target": "worker",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the work queue to worker direction."
+      }
+    },
+    {
+      "id": "worker_to_storage_pe",
+      "source": "worker",
+      "target": "storage_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the worker to storage pe direction."
+      }
+    },
+    {
+      "id": "storage_pe_to_storage",
+      "source": "storage_pe",
+      "target": "storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the storage pe to storage direction."
+      }
+    },
+    {
+      "id": "queue_to_dlq",
+      "source": "work_queue",
+      "target": "dead_letter",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the work queue to dead letter direction."
+      }
+    },
+    {
+      "id": "api_to_key_vault",
+      "source": "api",
+      "target": "key_vault",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the api to key vault direction."
+      }
+    },
+    {
+      "id": "worker_to_key_vault",
+      "source": "worker",
+      "target": "key_vault",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the worker to key vault direction."
+      }
+    },
+    {
+      "id": "api_to_monitor",
+      "source": "api",
+      "target": "monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the api to monitor direction."
+      }
+    },
+    {
+      "id": "worker_to_monitor",
+      "source": "worker",
+      "target": "monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the worker to monitor direction."
+      }
+    },
+    {
+      "id": "worker_to_sql_pe",
+      "source": "worker",
+      "target": "sql_pe",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the worker to sql pe direction."
+      }
+    },
+    {
+      "id": "ops_redrive",
+      "source": "operations",
+      "target": "work_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Operations client to work queue direction."
+      }
+    },
+    {
+      "id": "api_to_queue",
+      "source": "api",
+      "target": "work_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the api to work queue direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_azure_api-management-services",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires API Management."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_app-services",
+      "kind": "resource",
+      "type": "azure.app-services",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one App Service API."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_azure-service-bus",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires work queue and dead-letter queue."
+      },
+      "max": 2
+    },
+    {
+      "id": "count_resource_azure_front-door-and-cdn-profiles",
+      "kind": "resource",
+      "type": "azure.front-door-and-cdn-profiles",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires Front Door."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_function-apps",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one Function worker."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_key-vaults",
+      "kind": "resource",
+      "type": "azure.key-vaults",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires Key Vault."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires Azure Monitor."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_private-endpoints",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires SQL and Storage private endpoints."
+      },
+      "max": 2
+    },
+    {
+      "id": "count_resource_azure_sql-database",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires Azure SQL."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_azure_storage-accounts",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires Storage."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires public client and operations client."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_azure_region",
+      "kind": "group",
+      "type": "azure.region",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one region."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_azure_resource-group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one resource group."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_azure_subnet",
+      "kind": "group",
+      "type": "azure.subnet",
+      "min": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires application subnet and data subnet."
+      },
+      "max": 2
+    },
+    {
+      "id": "count_group_azure_subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one subscription."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_azure_vnet",
+      "kind": "group",
+      "type": "azure.vnet",
+      "min": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt requires one VNet."
+      },
+      "max": 1
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_public_client",
+      "component": "public_client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Public client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_operations",
+      "component": "operations",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Operations client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_subscription",
+      "component": "subscription",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt scopes the architecture to one Azure subscription."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Azure region inside Azure subscription."
+      },
+      "group": "subscription"
+    },
+    {
+      "id": "place_resource_group",
+      "component": "resource_group",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Resource group inside Azure region."
+      },
+      "group": "region"
+    },
+    {
+      "id": "place_platform",
+      "component": "platform",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Private order processing inside Resource group."
+      },
+      "group": "resource_group"
+    },
+    {
+      "id": "place_front_door",
+      "component": "front_door",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places front door inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_apim",
+      "component": "apim",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places apim inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_vnet",
+      "component": "vnet",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Virtual network inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_app_subnet",
+      "component": "app_subnet",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application subnet inside Virtual network."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places api inside Application subnet."
+      },
+      "group": "app_subnet"
+    },
+    {
+      "id": "place_worker",
+      "component": "worker",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places worker inside Application subnet."
+      },
+      "group": "app_subnet"
+    },
+    {
+      "id": "place_data_subnet",
+      "component": "data_subnet",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Data subnet inside Virtual network."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_sql_pe",
+      "component": "sql_pe",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places sql pe inside Data subnet."
+      },
+      "group": "data_subnet"
+    },
+    {
+      "id": "place_storage_pe",
+      "component": "storage_pe",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places storage pe inside Data subnet."
+      },
+      "group": "data_subnet"
+    },
+    {
+      "id": "place_sql",
+      "component": "sql",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places sql inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_storage",
+      "component": "storage",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places storage inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_work_queue",
+      "component": "work_queue",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places work queue inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_dead_letter",
+      "component": "dead_letter",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places dead letter inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_key_vault",
+      "component": "key_vault",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places key vault inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_monitor",
+      "component": "monitor",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places monitor inside Private order processing."
+      },
+      "group": "platform"
+    },
+    {
+      "id": "place_scope_public_client_outside_subscription",
+      "component": "public_client",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places the public and operations clients outside the Azure subscription."
+      },
+      "group": "subscription"
+    },
+    {
+      "id": "place_scope_operations_outside_subscription",
+      "component": "operations",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places the public and operations clients outside the Azure subscription."
+      },
+      "group": "subscription"
+    },
+    {
+      "id": "place_scope_front_door_outside_vnet",
+      "component": "front_door",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_apim_outside_vnet",
+      "component": "apim",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_sql_outside_vnet",
+      "component": "sql",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_storage_outside_vnet",
+      "component": "storage",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_work_queue_outside_vnet",
+      "component": "work_queue",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_dead_letter_outside_vnet",
+      "component": "dead_letter",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_key_vault_outside_vnet",
+      "component": "key_vault",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    },
+    {
+      "id": "place_scope_monitor_outside_vnet",
+      "component": "monitor",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt keeps managed services outside the VNet."
+      },
+      "group": "vnet"
+    }
+  ]
+}

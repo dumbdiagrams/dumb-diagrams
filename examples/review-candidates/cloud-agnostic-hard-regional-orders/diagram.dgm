@@ -12,20 +12,24 @@ diagram cloud_agnostic_hard_regional_orders {
     cloud-agnostic.account account "Orders account" {
       cloud-agnostic.region primary_region "Primary region" {
         cloud-agnostic.load-balancer primary_lb "Primary load balancer"
+
         cloud-agnostic.network primary_network "Primary private application network" {
           cloud-agnostic.cluster app_cluster "Application cluster" {
             cloud-agnostic.server api "Order API server"
             cloud-agnostic.server worker "Fulfillment worker server"
           }
+
           cloud-agnostic.database primary_db "Primary order database"
           cloud-agnostic.cache primary_cache "Primary order cache"
         }
+
         cloud-agnostic.queue fulfillment_queue "Regional fulfillment queue"
         cloud-agnostic.object-storage receipts "Order receipts storage"
       }
 
       cloud-agnostic.region recovery_region "Recovery region" {
         cloud-agnostic.load-balancer recovery_lb "Recovery load balancer"
+
         cloud-agnostic.network recovery_network "Recovery network" {
           cloud-agnostic.database recovery_db "Recovery database replica"
           cloud-agnostic.server recovery_app "Recovery application server"

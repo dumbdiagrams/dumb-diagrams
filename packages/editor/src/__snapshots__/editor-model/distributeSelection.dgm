@@ -35,7 +35,7 @@ diagram image-thumbnail-pipeline {
 }
 
 view default {
-  place cdn { x 193 y 180 pin manual }
-  place original_images { x 436 y 156 pin manual }
-  place thumbnail_processor { x 697 y 156 pin manual }
+  place cdn { x 313 y 180 pin manual }
+  place original_images { x 556 y 156 pin manual }
+  place thumbnail_processor { x 817 y 156 pin manual }
 }

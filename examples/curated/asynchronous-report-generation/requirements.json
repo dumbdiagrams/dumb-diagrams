@@ -1,0 +1,572 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "web_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Web client in this architecture."
+      }
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "frontend",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Frontend services is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Web delivery in this architecture."
+      }
+    },
+    {
+      "id": "report_ui",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Report web UI in this architecture."
+      }
+    },
+    {
+      "id": "gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names gateway in this architecture."
+      }
+    },
+    {
+      "id": "report_api",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Report API in this architecture."
+      }
+    },
+    {
+      "id": "report_handler",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Report request handler in this architecture."
+      }
+    },
+    {
+      "id": "async_queue",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Async Queue Tier in this architecture."
+      }
+    },
+    {
+      "id": "report_jobs",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Report jobs in this architecture."
+      }
+    },
+    {
+      "id": "dead_letter_queue",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Dead-letter queue in this architecture."
+      }
+    },
+    {
+      "id": "worker_tier",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Worker Tier in this architecture."
+      }
+    },
+    {
+      "id": "report_worker",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Report worker in this architecture."
+      }
+    },
+    {
+      "id": "storage_tier",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Storage Tier is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "generated_reports",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Generated reports in this architecture."
+      }
+    },
+    {
+      "id": "job_status",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Job status in this architecture."
+      }
+    },
+    {
+      "id": "notifications",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Report notifications in this architecture."
+      }
+    },
+    {
+      "id": "email",
+      "kind": "resource",
+      "type": "aws.simple-notification-service-email-notification",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Email Notification in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client_to_cdn",
+      "source": "web_client",
+      "target": "cdn",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Web client to Web delivery direction."
+      }
+    },
+    {
+      "id": "cdn_to_report_ui",
+      "source": "cdn",
+      "target": "report_ui",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Web delivery to Report web UI direction."
+      }
+    },
+    {
+      "id": "cdn_to_api",
+      "source": "cdn",
+      "target": "gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Web delivery to gateway direction."
+      }
+    },
+    {
+      "id": "api_to_report_handler",
+      "source": "gateway",
+      "target": "report_handler",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the gateway to Report request handler direction."
+      }
+    },
+    {
+      "id": "enqueue_report",
+      "source": "report_handler",
+      "target": "report_jobs",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report request handler to Report jobs direction."
+      }
+    },
+    {
+      "id": "jobs_to_worker",
+      "source": "report_jobs",
+      "target": "report_worker",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report jobs to Report worker direction."
+      }
+    },
+    {
+      "id": "worker_to_reports",
+      "source": "report_worker",
+      "target": "generated_reports",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report worker to Generated reports direction."
+      }
+    },
+    {
+      "id": "worker_to_status",
+      "source": "report_worker",
+      "target": "job_status",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report worker to Job status direction."
+      }
+    },
+    {
+      "id": "worker_to_notifications",
+      "source": "report_worker",
+      "target": "notifications",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report worker to Report notifications direction."
+      }
+    },
+    {
+      "id": "notifications_to_email",
+      "source": "notifications",
+      "target": "email",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report notifications to Email Notification direction."
+      }
+    },
+    {
+      "id": "failed_jobs",
+      "source": "report_jobs",
+      "target": "dead_letter_queue",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Report jobs to Dead-letter queue direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_api-gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.api-gateway; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-fargate",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-fargate; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloudfront; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_dynamodb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.dynamodb; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-notification-service",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-notification-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-notification-service-email-notification",
+      "kind": "resource",
+      "type": "aws.simple-notification-service-email-notification",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-notification-service-email-notification; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-queue-service",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-queue-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 5,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 5 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_web_client",
+      "component": "web_client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Web client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws_cloud",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_frontend",
+      "component": "frontend",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Frontend services in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_cdn",
+      "component": "cdn",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Web delivery inside Frontend services."
+      }
+    },
+    {
+      "id": "place_report_ui",
+      "component": "report_ui",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Report web UI inside Frontend services."
+      }
+    },
+    {
+      "id": "place_gateway",
+      "component": "gateway",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places gateway inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_report_api",
+      "component": "report_api",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Report API inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_report_handler",
+      "component": "report_handler",
+      "relation": "inside",
+      "group": "report_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Report request handler inside Report API."
+      }
+    },
+    {
+      "id": "place_async_queue",
+      "component": "async_queue",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Async Queue Tier inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_report_jobs",
+      "component": "report_jobs",
+      "relation": "inside",
+      "group": "async_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Report jobs inside Async Queue Tier."
+      }
+    },
+    {
+      "id": "place_dead_letter_queue",
+      "component": "dead_letter_queue",
+      "relation": "inside",
+      "group": "async_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Dead-letter queue inside Async Queue Tier."
+      }
+    },
+    {
+      "id": "place_worker_tier",
+      "component": "worker_tier",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Worker Tier inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_report_worker",
+      "component": "report_worker",
+      "relation": "inside",
+      "group": "worker_tier",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Report worker inside Worker Tier."
+      }
+    },
+    {
+      "id": "place_storage_tier",
+      "component": "storage_tier",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Storage Tier in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_generated_reports",
+      "component": "generated_reports",
+      "relation": "inside",
+      "group": "storage_tier",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Generated reports inside Storage Tier."
+      }
+    },
+    {
+      "id": "place_job_status",
+      "component": "job_status",
+      "relation": "inside",
+      "group": "storage_tier",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Job status inside Storage Tier."
+      }
+    },
+    {
+      "id": "place_notifications",
+      "component": "notifications",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Report notifications inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_email",
+      "component": "email",
+      "relation": "inside",
+      "group": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Email Notification inside AWS Cloud."
+      }
+    }
+  ]
+}

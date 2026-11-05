@@ -15,8 +15,11 @@ import type {
 } from "../core/index.js";
 import { getDefaultView, getParentGroup, nearestPortAnchor, normalizePortOffset, portPoint } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES, snap } from "../grammar-aws/index.js";
-import { RoutingBudget, type RoutingOptions } from "./routing-budget.js";
+import { EMERGENCY_ROUTING_LIMITS, RoutingBudget, type RoutingOptions } from "./routing-budget.js";
 import { routePathBaseCost, ROUTE_PATH_COSTS } from "./mechanics.js";
+import { routeVisibility } from "./visibility.js";
+import { boundaryStrokeRects } from "./decoration-obstacles.js";
+import { routeSimplificationCandidates } from "./path-refinement.js";
 export {
   ROUTING_BUDGET_WARNING_CODE,
   ROUTING_BUDGET_WARNING_MESSAGE,
@@ -40,6 +43,9 @@ const HEADER_COST = 100_000;
 // an exact attachment and therefore locks that endpoint to its requested face.
 const CROSSING_COST = ROUTE_PATH_COSTS.crossing;
 const JUNCTION_COST = ROUTE_PATH_COSTS.junction;
+/** A route this bent is harder to follow than one that crosses a few lines. */
+const DETOUR_BENDS = 7;
+const DETOUR_CROSSING_COST = ROUTE_PATH_COSTS.bend * 4;
 const OVERLAP_COST = ROUTE_PATH_COSTS.astarOverlapPerUnit;
 const NEAR_PARALLEL_COST = ROUTE_PATH_COSTS.nearParallelPerUnit;
 const MIN_CONNECTOR_GAP = CELL;
@@ -69,6 +75,9 @@ const LABEL_TO_LABEL_CLEARANCE = 6;
 const LABEL_TO_CONNECTOR_CLEARANCE = 4;
 const LABEL_COLLISION_COST = 10_000_000;
 const LABEL_NEAR_CONTENT_COST = 100_000;
+// Above any along-route shift, so copy pulled toward a run's middle stops short
+// of a frame line instead of touching it.
+const LABEL_NEAR_FRAME_COST = 2_000;
 // The widest drag gap: copy beside a vertical run sits this far from it.
 const MAX_ATTACHED_LABEL_GAP = 12;
 // Four-bend candidates combine one vertical and one horizontal corridor. A
@@ -78,6 +87,11 @@ const MAX_ATTACHED_LABEL_GAP = 12;
 // set only for the combined fallback shapes.
 const MAX_COMBINED_GUTTERS_PER_AXIS = 4;
 const MAX_ASTAR_PORT_CHOICES = 3;
+const MAX_DENSE_REPAIR_EDGES_PER_PASS = 8;
+const MAX_DENSE_REPAIR_CANDIDATES = 768;
+const MAX_DENSE_REPAIR_PORTS = 12;
+const MAX_DENSE_REPAIR_TEMPLATES_PER_PORT = 16;
+const MAX_DENSE_REPAIR_VISIBILITY_EXPANSIONS = 120_000;
 
 interface PortChoice {
   src: Point;
@@ -111,6 +125,8 @@ interface Obstacle extends Rect {
   id?: string;
   kind: "node" | "header";
   content?: Rect;
+  /** Labels avoid this when they can, but never by covering hard content instead. */
+  soft?: boolean;
 }
 
 interface GroupBoundary {
@@ -128,12 +144,14 @@ interface Grid {
 }
 
 export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: RoutingOptions = {}): RoutedEdge[] {
+  const largeGraph = doc.edges.length > 48 || doc.resources.length > 32;
   const nodeMap = new Map(layout.nodes.map((n) => [n.id, n]));
   const obstacles = buildObstacles(layout);
   const decorationObstacles = buildDecorationObstacles(layout);
   const budget = new RoutingBudget(
     options,
     doc.resources.length + doc.groups.length * 2 + doc.edges.length * 2 + obstacles.length,
+    doc.edges.length * (largeGraph ? 50 : EMERGENCY_ROUTING_LIMITS.scorePathCallsPerEdge),
   );
   const boundaries = buildGroupBoundaries(layout);
   const vGutters = verticalGutters(layout, obstacles);
@@ -144,6 +162,7 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
   const grid = doc.edges.length ? buildGrid(layout, obstacles) : null;
   if (doc.edges.length > 0 && !grid) budget.markDegraded();
   const routed: RoutedEdge[] = [];
+  const unresolvedFallbackEdges = new Set<string>();
   const existing: ExistingRoute[] = [];
   const labelReservations = new Map<string, Rect>();
   const view = getDefaultView(doc);
@@ -232,8 +251,21 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
     const baseHGutters = [...hGutters, ...corridorGutters(existing, "horizontal")];
     const routeVGutters = containment ? guttersInside(baseVGutters, containment, "x") : baseVGutters;
     const routeHGutters = containment ? guttersInside(baseHGutters, containment, "y") : baseHGutters;
+    const denseDiagram = doc.edges.length > 16;
+    const availablePorts = ports.filter(
+      (port) =>
+        !existing.some(
+          (route) =>
+            samePoint(port.src, route.points[0]!) ||
+            samePoint(port.src, route.points.at(-1)!) ||
+            samePoint(port.tgt, route.points[0]!) ||
+            samePoint(port.tgt, route.points.at(-1)!),
+        ),
+    );
+    const preferredPorts = denseDiagram && availablePorts.length ? availablePorts : ports;
+    const routePorts = denseDiagram ? representativePortChoices(preferredPorts, 24) : ports;
 
-    for (const port of ports) {
+    for (const port of routePorts) {
       if (budget.exhausted) break;
       // No orthogonal path between these ports can be shorter than their
       // Manhattan distance. Once another port has already reached or beaten
@@ -242,7 +274,15 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
       const lowerBound = Math.abs(port.src.x - port.tgt.x) + Math.abs(port.src.y - port.tgt.y) + port.preferenceCost;
       if (lowerBound >= bestScore) continue;
       const context = createRouteContext(source, target, port, edge.style, containment);
-      for (const candidate of templates(port, routeVGutters, routeHGutters, source, target)) {
+      const sourceCardExit = extendFromCard(source, port.src, port.srcSide);
+      const targetCardExit = extendFromCard(target, port.tgt, port.tgtSide);
+      const candidateVGutters = denseDiagram
+        ? representativeGutters(routeVGutters, sourceCardExit.x, targetCardExit.x, 8)
+        : routeVGutters;
+      const candidateHGutters = denseDiagram
+        ? representativeGutters(routeHGutters, sourceCardExit.y, targetCardExit.y, 8)
+        : routeHGutters;
+      for (const candidate of templates(port, candidateVGutters, candidateHGutters, source, target)) {
         if (budget.exhausted) break;
         const path = simplify(candidate);
         const s =
@@ -266,12 +306,15 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
       // calculating them repeatedly was the dominant cost in dense diagrams.
       const conflictCostCache = new Map<number, number>();
       const astarPorts = representativePortChoices(
-        [bestPort, ...ports.filter((port) => port !== bestPort)],
-        MAX_ASTAR_PORT_CHOICES,
+        [bestPort, ...preferredPorts.filter((port) => port !== bestPort)],
+        denseDiagram ? 6 : MAX_ASTAR_PORT_CHOICES,
       );
       for (const port of astarPorts) {
         const context = createRouteContext(source, target, port, edge.style, containment);
-        const astarPath = routeAStar(grid, port, source, target, existing, conflictCostCache, budget);
+        const astarPath =
+          denseDiagram && doc.resources.length <= 32 && doc.edges.length <= 48
+            ? exactConnection(port, source, target, obstacles, existing, budget, containment)
+            : routeAStar(grid, port, source, target, existing, conflictCostCache, budget);
         if (!astarPath) continue;
         const smoothed = shortcut(simplify(astarPath), obstacles, context, existing, [], budget);
         const s =
@@ -290,16 +333,18 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
     }
 
     if (!budget.exhausted && !best) {
-      // Established connectors can occasionally form a closed grid wall. In
-      // that case, crossing a connector is preferable to falling back to a
-      // direct elbow through service icons or labels. Rip up this edge's
-      // corridor constraints, but keep every content obstacle hard.
-      for (const port of representativePortChoices(ports, 6)) {
+      // If established connectors close the grid, find a content-safe path
+      // without using them as A* walls. Score the result against all routes so
+      // crossings and corridor sharing remain visible to selection.
+      for (const port of representativePortChoices(preferredPorts, 6)) {
         const context = createRouteContext(source, target, port, edge.style, containment);
-        const astarPath = routeAStar(grid, port, source, target, [], undefined, budget);
+        const astarPath =
+          denseDiagram && doc.resources.length <= 32 && doc.edges.length <= 48
+            ? exactConnection(port, source, target, obstacles, [], budget, containment)
+            : routeAStar(grid, port, source, target, [], undefined, budget);
         if (!astarPath) continue;
         const smoothed = shortcut(simplify(astarPath), obstacles, context, [], [], budget);
-        const score = scorePath(smoothed, obstacles, context, [], Infinity, [], budget) + port.preferenceCost;
+        const score = scorePath(smoothed, obstacles, context, existing, Infinity, [], budget) + port.preferenceCost;
         if (score < bestScore) {
           best = smoothed;
           bestScore = score;
@@ -312,7 +357,7 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
       // The perimeter search is the last automatic escape hatch. It still
       // scores every candidate against hard content obstacles; never replace
       // an exhausted search with an unchecked direct elbow through a card.
-      for (const port of representativePortChoices(ports, 8)) {
+      for (const port of representativePortChoices(preferredPorts, 8)) {
         const context = createRouteContext(source, target, port, edge.style, containment);
         const candidate = perimeterFallback(layout, source, target, port, obstacles, context, existing, budget);
         if (!candidate) continue;
@@ -323,30 +368,41 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
           bestPort = port;
         }
       }
-      if (!budget.exhausted && !best) {
-        // Connector conflicts are soft: if established routes surround the
-        // available lanes, retry the same hard-obstacle-safe perimeter search
-        // without them and allow this edge to cross a connector.
-        for (const port of representativePortChoices(ports, 8)) {
-          const context = createRouteContext(source, target, port, edge.style, containment);
-          const candidate = perimeterFallback(layout, source, target, port, obstacles, context, [], budget);
-          if (!candidate) continue;
-          const score = scorePath(candidate, obstacles, context, [], Infinity, [], budget) + port.preferenceCost;
-          if (score < bestScore) {
-            best = candidate;
-            bestScore = score;
-            bestPort = port;
-          }
-        }
-      }
     }
 
     if (!best) {
-      const port = representativePortChoices(ports, 1)[0] ?? ports[0]!;
-      best = cardsOverlap(source, target)
-        ? simplify(colocatedEdgeFallback(source, target, port))
-        : emergencyEdgeRoute(source, target, port);
-      bestPort = port;
+      // Last-resort search is deliberately independent of route-work budgets
+      // and shared-group containment. It can cross an established connector
+      // or leave a group, but it still treats every visible resource as a hard
+      // obstacle. A direct elbow here used to cut across entire rows of icons
+      // whenever the constrained search ran out of legal ports or budget.
+      const safeFallback = obstacleSafeFallback(
+        layout,
+        source,
+        target,
+        preferredPorts,
+        edge.style,
+        obstacles,
+        budget,
+        () => budget.markDegraded(),
+        containment,
+        existing,
+        largeGraph ? 2 : 8,
+      );
+      if (safeFallback) {
+        best = safeFallback.points;
+        bestPort = safeFallback.port;
+      } else {
+        // Preserve a visible, attached route when the bounded hard-obstacle
+        // search cannot find a corridor. Diagnostics can flag a collision;
+        // silently dropping an authored relationship is worse.
+        unresolvedFallbackEdges.add(edge.id);
+        const port = representativePortChoices(ports, 1)[0] ?? ports[0]!;
+        best = cardsOverlap(source, target)
+          ? simplify(colocatedEdgeFallback(source, target, port))
+          : emergencyEdgeRoute(source, target, port);
+        bestPort = port;
+      }
     }
     let points = best;
     points = shortcut(
@@ -476,10 +532,596 @@ export function routeEdges(doc: DiagramDocument, layout: LayoutResult, options: 
     const target = nodeMap.get(edge.target);
     if (!source || !target) continue;
     edge.points = anchorRouteEndpoints(edge.points, source.icon, target.icon);
+    // A visible emergency route may have been repaired once all connectors
+    // were known. Report degradation only if that unsafe fallback survives.
+    if (unresolvedFallbackEdges.has(edge.id)) {
+      const sourceSide = perimeterSide(source.icon, edge.points[0]!);
+      const targetSide = perimeterSide(target.icon, edge.points.at(-1)!);
+      const context: RouteContext = {
+        sourceId: edge.source,
+        targetId: edge.target,
+        sourcePoint: edge.points[0]!,
+        targetPoint: edge.points.at(-1)!,
+        sourceSide,
+        targetSide,
+        style: edge.style,
+      };
+      if (!Number.isFinite(scorePath(edge.points, obstacles, context, [], Infinity, [], budget, true)))
+        budget.markDegraded();
+    }
   }
-  placeEdgeDecorations(documentRoutes, view.routes, buildDecorationObstacles(layout));
+  if (doc.edges.length > 16 && doc.edges.length <= 48 && layout.nodes.length <= 32) {
+    clearTerminalCaptions(doc, documentRoutes, nodeMap, obstacles, budget);
+    separateCloseLanes(doc, documentRoutes, nodeMap, obstacles, budget);
+  }
+  if (!largeGraph && !budget.exhausted)
+    simplifyFinalRoutes(
+      doc,
+      layout,
+      documentRoutes,
+      nodeMap,
+      obstacles,
+      boundaries,
+      vGutters,
+      hGutters,
+      view.routes,
+      labelReservations,
+    );
+  placeEdgeDecorations(documentRoutes, view.routes, [
+    ...buildDecorationObstacles(layout),
+    ...(doc.edges.length > 16 ? crossingDecorationObstacles(documentRoutes) : []),
+  ]);
   options.onDiagnostics?.(budget.diagnostics());
   return documentRoutes;
+}
+
+/**
+ * Each repair pass splices local lanes into otherwise settled routes, which
+ * can leave detours and few-pixel jogs that no single pass owns. Once every
+ * connector is final, drop any bend or jog whose removal adds no conflict.
+ */
+function simplifyFinalRoutes(
+  doc: DiagramDocument,
+  layout: LayoutResult,
+  edges: RoutedEdge[],
+  nodes: Map<string, NodeGeom>,
+  obstacles: Obstacle[],
+  boundaries: GroupBoundary[],
+  vGutters: number[],
+  hGutters: number[],
+  routeOverrides: Record<string, RouteOverride>,
+  labelReservations: Map<string, Rect>,
+): void {
+  const definitions = new Map(doc.edges.map((item) => [item.id, item]));
+  const containments = new Map(
+    edges.map((edge) => [edge.id, containmentForEdge(doc, layout, edge.source, edge.target)]),
+  );
+  const segmentLengths = (points: Point[]) =>
+    points.slice(1).map((point, index) => Math.abs(point.x - points[index]!.x) + Math.abs(point.y - points[index]!.y));
+  const jogs = (points: Point[]) => segmentLengths(points).filter((length) => length < MIN_TERMINAL_STEM).length;
+  const crossingCount = (points: Point[], other: Point[]) =>
+    points
+      .slice(1)
+      .reduce(
+        (count, b, i) =>
+          count +
+          other.slice(1).filter((d, j) => segmentIntersectionKind(points[i]!, b, other[j]!, d) === "cross").length,
+        0,
+      );
+  // Crossings are reported per route pair, so equal cost may still cross a new route.
+  const crosses = (points: Point[], other: Point[]) => crossingCount(points, other) > 0;
+  // Scored apart from the path: a route already stuck on a frame must still be
+  // able to improve, which an infinite boundary score would rule out.
+  const frameOverlap = (points: Point[]) =>
+    points
+      .slice(1)
+      .reduce(
+        (total, b, i) =>
+          total + boundaries.reduce((sum, boundary) => sum + boundaryParallelOverlapLength(points[i]!, b, boundary), 0),
+        0,
+      );
+  const routeOf = (edge: RoutedEdge, points = edge.points): ExistingRoute => ({
+    points,
+    sourceId: edge.source,
+    targetId: edge.target,
+    style: edge.style,
+    labelRect: labelReservations.get(edge.id),
+  });
+  const othersOf = (edge: RoutedEdge, moved?: RoutedEdge, movedPoints?: Point[]) =>
+    edges.filter((other) => other !== edge).map((other) => routeOf(other, other === moved ? movedPoints : undefined));
+  const contextFor = (edge: RoutedEdge, points: Point[]): RouteContext => ({
+    sourceId: edge.source,
+    targetId: edge.target,
+    sourcePoint: points[0]!,
+    targetPoint: points.at(-1)!,
+    sourceSide: perimeterSide(nodes.get(edge.source)!.icon, points[0]!),
+    targetSide: perimeterSide(nodes.get(edge.target)!.icon, points.at(-1)!),
+    style: edge.style,
+    containment: containments.get(edge.id),
+  });
+  const conflicts = new WeakMap<Point[], WeakMap<ExistingRoute[], number>>();
+  const conflict = (edge: RoutedEdge, points: Point[], others: ExistingRoute[]) => {
+    const byOthers = conflicts.get(points) ?? new WeakMap<ExistingRoute[], number>();
+    conflicts.set(points, byOthers);
+    const cached = byOthers.get(others);
+    if (cached !== undefined) return cached;
+    const value =
+      scorePath(points, obstacles, contextFor(edge, points), others, Infinity) - routePathBaseCost(points).score;
+    byOthers.set(others, value);
+    return value;
+  };
+  /** No more bends, jogs, frame paint, conflict or crossed routes; with `gain`, strictly simpler. */
+  const acceptable = (
+    edge: RoutedEdge,
+    current: Point[],
+    candidate: Point[],
+    after: ExistingRoute[],
+    before: ExistingRoute[],
+    gain: boolean,
+  ) => {
+    const bendsSaved = current.length - candidate.length;
+    const jogsSaved = jogs(current) - jogs(candidate);
+    if (bendsSaved < 0 || jogsSaved < 0 || (gain && bendsSaved + jogsSaved === 0)) return false;
+    const stems = segmentLengths(candidate);
+    const currentStems = segmentLengths(current);
+    if (
+      stems[0]! < Math.min(currentStems[0]!, MIN_TERMINAL_STEM) ||
+      stems.at(-1)! < Math.min(currentStems.at(-1)!, MIN_TERMINAL_STEM)
+    )
+      return false;
+    if (frameOverlap(candidate) > frameOverlap(current)) return false;
+    const candidateConflict = conflict(edge, candidate, after);
+    return (
+      Number.isFinite(candidateConflict) &&
+      candidateConflict <= conflict(edge, current, before) &&
+      after.every((other, index) => !crosses(candidate, other.points) || crosses(current, before[index]!.points))
+    );
+  };
+  /** A jog beside an attachment is often only the port sitting off the lane; slide it along its face. */
+  const endpointSlides = (edge: RoutedEdge, points: Point[], others: ExistingRoute[]) => {
+    const definition = definitions.get(edge.id);
+    const slides: Point[][] = [];
+    if (points.length < 4) return slides;
+    const slide = (icon: Rect, end: Point, jogStart: Point, jogEnd: Point) => {
+      if (Math.abs(jogStart.x - jogEnd.x) + Math.abs(jogStart.y - jogEnd.y) >= MIN_TERMINAL_STEM) return undefined;
+      const moved = { x: end.x + jogStart.x - jogEnd.x, y: end.y + jogStart.y - jogEnd.y };
+      const side = perimeterSide(icon, end);
+      const vertical = side === "e" || side === "w";
+      const [along, origin, size] = vertical ? [moved.y, icon.y, icon.h] : [moved.x, icon.x, icon.w];
+      const onFace =
+        (vertical ? moved.x === end.x : moved.y === end.y) &&
+        along >= origin + size / 12 &&
+        along <= origin + (size * 11) / 12;
+      const clearOfArrows = others.every((other) =>
+        [other.points[0]!, other.points.at(-1)!].every(
+          (point) => Math.abs(point.x - moved.x) + Math.abs(point.y - moved.y) >= CELL,
+        ),
+      );
+      return onFace && clearOfArrows ? moved : undefined;
+    };
+    if (definition?.sourcePortOffset === undefined) {
+      const moved = slide(nodes.get(edge.source)!.icon, points[0]!, points[2]!, points[1]!);
+      if (moved) slides.push([moved, ...points.slice(2)]);
+    }
+    if (definition?.targetPortOffset === undefined) {
+      const moved = slide(nodes.get(edge.target)!.icon, points.at(-1)!, points.at(-3)!, points.at(-2)!);
+      if (moved) slides.push([...points.slice(0, -2), moved]);
+    }
+    return slides;
+  };
+
+  // A second sweep lets earlier edges use space freed by later reroutes.
+  for (const edge of [...edges, ...edges]) {
+    if (routeOverrides[edge.id]?.pin) continue;
+    const source = nodes.get(edge.source);
+    const target = nodes.get(edge.target);
+    if (!source || !target || edge.points.length < 4) continue;
+    const containment = containments.get(edge.id);
+
+    if (edge.points.length - 2 >= DETOUR_BENDS) {
+      // Avoiding a crossing at any price is what produces a loop around half
+      // the canvas. Reprice crossings for this edge only and keep a reroute
+      // only when it at least halves the bends.
+      const others = othersOf(edge);
+      const tolerantScore = (points: Point[], context: RouteContext) =>
+        scorePath(points, obstacles, context, others, Infinity) -
+        others.reduce((count, other) => count + crossingCount(points, other.points), 0) *
+          (CROSSING_COST - DETOUR_CROSSING_COST);
+      const definition = definitions.get(edge.id)!;
+      const bendLimit = (edge.points.length - 2) / 2;
+      const frameLimit = frameOverlap(edge.points);
+      let best: Point[] | undefined;
+      let bestScore = tolerantScore(edge.points, contextFor(edge, edge.points));
+      const searchBudget = new RoutingBudget({}, 0);
+      const ports = uniquePortChoices(
+        candidatePorts(
+          source,
+          target,
+          edge.kind === "fail" || edge.style === "dashed",
+          definition.sourcePort,
+          definition.targetPort,
+          definition.sourcePortOffset,
+          definition.targetPortOffset,
+        ),
+      );
+      const consider = (candidate: Point[], port: PortChoice, context: RouteContext) => {
+        const path = simplify(candidate);
+        if (path.length - 2 > bendLimit || frameOverlap(path) > frameLimit) return;
+        const score = tolerantScore(path, context) + port.preferenceCost;
+        if (score < bestScore) {
+          best = path;
+          bestScore = score;
+        }
+      };
+      const xs = [...vGutters, ...corridorGutters(others, "vertical")];
+      const ys = [...hGutters, ...corridorGutters(others, "horizontal")];
+      const contexts = ports.map((port) => createRouteContext(source, target, port, edge.style, containment));
+      for (const [index, port] of ports.entries()) {
+        for (const candidate of templates(
+          port,
+          containment ? guttersInside(xs, containment, "x") : xs,
+          containment ? guttersInside(ys, containment, "y") : ys,
+          source,
+          target,
+        ))
+          consider(candidate, port, contexts[index]!);
+      }
+      // Templates first: their scores let the costly search skip ports whose
+      // path could not win even at straight-line length.
+      for (const [index, port] of ports.entries()) {
+        if (port.preferenceCost + Math.abs(port.src.x - port.tgt.x) + Math.abs(port.src.y - port.tgt.y) >= bestScore)
+          continue;
+        const exact = exactConnection(
+          port,
+          source,
+          target,
+          obstacles,
+          others,
+          searchBudget,
+          containment,
+          DETOUR_CROSSING_COST,
+        );
+        if (exact) consider(exact, port, contexts[index]!);
+      }
+      if (best) edge.points = anchorRouteEndpoints(best, source.icon, target.icon);
+    }
+
+    // ponytail: each pass scores at most 64 candidates against every other route, O(edges² × candidates);
+    // fine below the large-graph cutoff, index segments if dense diagrams need it.
+    for (let pass = 0; pass < 4; pass++) {
+      const current = edge.points;
+      const others = othersOf(edge);
+      const candidates = [
+        ...endpointSlides(edge, current, others),
+        ...routeSimplificationCandidates(current, { maxCandidates: 64 }),
+      ];
+      const simpler = candidates.find((candidate) => acceptable(edge, current, candidate, others, others, true));
+      if (simpler) {
+        edge.points = simpler;
+        continue;
+      }
+      // The simplest lane is often held by one neighbour that could sit a lane
+      // over at no cost of its own. Move both, or neither.
+      let moved = false;
+      const alone: ExistingRoute[] = [];
+      const singles = new Map(edges.map((other) => [other, [routeOf(other)]]));
+      for (const candidate of candidates.slice(0, 8)) {
+        if (jogs(candidate) > jogs(current) || !Number.isFinite(conflict(edge, candidate, alone))) continue;
+        const blockers = edges.filter(
+          (other) =>
+            other !== edge &&
+            conflict(edge, candidate, singles.get(other)!) > conflict(edge, current, singles.get(other)!),
+        );
+        const blocker = blockers.length === 1 ? blockers[0]! : undefined;
+        if (!blocker || routeOverrides[blocker.id]?.pin) continue;
+        const blockerBefore = othersOf(blocker);
+        const blockerAfter = othersOf(blocker, edge, candidate);
+        const shift = routeSimplificationCandidates(blocker.points, { maxCandidates: 64 }).find(
+          (lane) =>
+            acceptable(edge, current, candidate, othersOf(edge, blocker, lane), others, true) &&
+            acceptable(blocker, blocker.points, lane, blockerAfter, blockerBefore, false),
+        );
+        if (!shift) continue;
+        blocker.points = shift;
+        edge.points = candidate;
+        moved = true;
+        break;
+      }
+      if (!moved) break;
+    }
+  }
+}
+
+/** Repair only the attachment pocket, preserving the rest of the routed graph. */
+function clearTerminalCaptions(
+  doc: DiagramDocument,
+  edges: RoutedEdge[],
+  nodes: Map<string, NodeGeom>,
+  obstacles: Obstacle[],
+  budget: RoutingBudget,
+): void {
+  if (budget.exhausted) return;
+  const view = getDefaultView(doc);
+  for (const edge of edges) {
+    const definition = doc.edges.find((item) => item.id === edge.id)!;
+    if (view.routes[edge.id]?.pin) continue;
+    for (const reverse of [false, true]) {
+      const points = reverse ? [...edge.points].reverse() : edge.points;
+      const source = nodes.get(reverse ? edge.target : edge.source)!;
+      const target = nodes.get(reverse ? edge.source : edge.target)!;
+      if (points.length < 2 || source.label.w <= 0) continue;
+      const captionHit = segmentHits(points[0]!, points[1]!, source.label);
+      const terminalOverlap = edges.some(
+        (other) =>
+          other.id !== edge.id &&
+          points
+            .slice(1, 3)
+            .some(
+              (point, index) =>
+                !(
+                  index === 0 &&
+                  (reverse ? other.target : other.source) === source.id &&
+                  samePoint(points[0]!, reverse ? other.points.at(-1)! : other.points[0]!)
+                ) && overlapLength(points[index]!, point, other.points) > 12,
+            ),
+      );
+      if (!captionHit && !terminalOverlap) continue;
+      if ((reverse ? definition.targetPortOffset : definition.sourcePortOffset) !== undefined) continue;
+      const other = edges
+        .filter((item) => item.id !== edge.id)
+        .map((item) => ({
+          points: reverse ? [...item.points].reverse() : item.points,
+          sourceId: reverse ? item.target : item.source,
+          targetId: reverse ? item.source : item.target,
+          style: item.style,
+        }));
+      const used = (anchor: Point) =>
+        other.some((item) =>
+          [item.points[0], item.points.at(-1)].some(
+            (point) => point && Math.hypot(anchor.x - point.x, anchor.y - point.y) < 8,
+          ),
+        );
+      let best: Point[] | undefined;
+      let bestScore = Infinity;
+      const consider = (candidate: Point[], sourceSide: Side, targetSide: Side) => {
+        if (!budget.consume("repairCandidates")) return;
+        candidate = simplify(candidate);
+        if (
+          candidate
+            .slice(1)
+            .some(
+              (point, i) =>
+                segmentHits(candidate[i]!, point, source.label) || segmentHits(candidate[i]!, point, target.label),
+            )
+        )
+          return;
+        const context: RouteContext = {
+          sourceId: source.id,
+          targetId: target.id,
+          sourcePoint: candidate[0]!,
+          targetPoint: candidate.at(-1)!,
+          sourceSide,
+          targetSide,
+          style: edge.style,
+        };
+        const overlapCount = candidate
+          .slice(1)
+          .reduce(
+            (count, point, i) =>
+              count + other.filter((route) => overlapLength(candidate[i]!, point, route.points) > 0).length,
+            0,
+          );
+        let crowdedCrossings = 0;
+        for (let i = 0; i < candidate.length - 1; i++) {
+          const a = candidate[i]!,
+            b = candidate[i + 1]!;
+          for (const route of other)
+            for (let j = 0; j < route.points.length - 1; j++) {
+              const c = route.points[j]!,
+                d = route.points[j + 1]!;
+              if (segmentIntersectionKind(a, b, c, d) !== "cross") continue;
+              const point = a.x === b.x ? { x: a.x, y: c.y } : { x: c.x, y: a.y };
+              if ([a, b, c, d].some((end) => Math.abs(point.x - end.x) + Math.abs(point.y - end.y) < 8))
+                crowdedCrossings++;
+            }
+        }
+        const score =
+          scorePath(candidate, obstacles, context, other, Infinity, [], budget) +
+          (overlapCount + crowdedCrossings) * 10_000_000;
+        if (score < bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      };
+      const firstOutside = points.findIndex(
+        (point, index) => index > 0 && !pointInRect(point, inflate(source.obstacle, 8)),
+      );
+      for (
+        let joinIndex = Math.max(1, firstOutside);
+        joinIndex < Math.min(points.length - 1, firstOutside + 3);
+        joinIndex++
+      ) {
+        const join = points[joinIndex]!;
+        for (const side of ["e", "w", "n", "s"] as const) {
+          for (const offset of [0.5, 0.25, 0.75, 1 / 12, 11 / 12]) {
+            const anchor = portPoint(source.icon, side, offset);
+            if (portStemHitsLabel(source, side, anchor) || used(anchor)) continue;
+            const baseExit = exitBeyondCard(
+              source,
+              anchor,
+              side,
+              obstacles.find((item) => item.id === source.id),
+            );
+            for (const lane of [0, 12, 24, 36]) {
+              const normal = sideNormal(side);
+              const exit = { x: baseExit.x + normal.x * lane, y: baseExit.y + normal.y * lane };
+              const corners =
+                exit.x === join.x || exit.y === join.y
+                  ? [exit]
+                  : [
+                      { x: exit.x, y: join.y },
+                      { x: join.x, y: exit.y },
+                    ];
+              for (const corner of corners)
+                consider(
+                  [anchor, exit, corner, ...points.slice(joinIndex)],
+                  side,
+                  perimeterSide(target.icon, points.at(-1)!),
+                );
+            }
+          }
+        }
+      }
+      // A straight route may have no body outside both endpoint cards. Offer
+      // a bounded outer lane with new clear attachment faces at both ends.
+      if (!best || points.length === 2) {
+        const ports = candidatePorts(
+          source,
+          target,
+          edge.kind === "fail",
+          undefined,
+          undefined,
+          reverse ? definition.targetPortOffset : definition.sourcePortOffset,
+          reverse ? definition.sourcePortOffset : definition.targetPortOffset,
+        )
+          .flatMap((choice) => [
+            choice,
+            ...[1 / 12, 11 / 12].map((offset) => ({
+              ...choice,
+              src: portPoint(source.icon, choice.srcSide, offset),
+              preferenceCost: choice.preferenceCost + 240,
+            })),
+          ])
+          .filter(
+            (choice) =>
+              !portStemHitsLabel(source, choice.srcSide, choice.src) &&
+              !portStemHitsLabel(target, choice.tgtSide, choice.tgt) &&
+              !used(choice.src) &&
+              !used(choice.tgt),
+          );
+        const xs = [
+          Math.min(...obstacles.map((item) => item.x)) - 24,
+          Math.max(...obstacles.map((item) => item.x + item.w)) + 24,
+        ];
+        const ys = [
+          Math.min(...obstacles.map((item) => item.y)) - 24,
+          Math.max(...obstacles.map((item) => item.y + item.h)) + 24,
+        ];
+        for (const choice of representativePortChoices(ports, 24)) {
+          for (const candidate of templates(choice, xs, ys, source, target))
+            consider(candidate, choice.srcSide, choice.tgtSide);
+        }
+      }
+      if (best) edge.points = reverse ? best.reverse() : best;
+      else budget.markDegraded();
+    }
+  }
+}
+
+/** Separate nearly coincident rails without moving ports or whole branches. */
+function separateCloseLanes(
+  doc: DiagramDocument,
+  edges: RoutedEdge[],
+  nodes: Map<string, NodeGeom>,
+  obstacles: Obstacle[],
+  budget: RoutingBudget,
+): void {
+  const view = getDefaultView(doc);
+  let proposals = 0;
+  for (const edge of edges) {
+    if (view.routes[edge.id]?.pin || budget.exhausted) continue;
+    const others = edges
+      .filter((item) => item.id !== edge.id)
+      .map((item) => ({ points: item.points, sourceId: item.source, targetId: item.target, style: item.style }));
+    const congestion = (points: Point[]) =>
+      points.slice(1).reduce(
+        (sum, b, i) =>
+          sum +
+          others.reduce(
+            (total, other) =>
+              total +
+              other.points.slice(1).reduce((n, d, j) => {
+                const a = points[i]!,
+                  c = other.points[j]!;
+                const distance =
+                  a.x === b.x && c.x === d.x
+                    ? Math.abs(a.x - c.x)
+                    : a.y === b.y && c.y === d.y
+                      ? Math.abs(a.y - c.y)
+                      : Infinity;
+                return n + (distance > 0 && distance < 8 ? nearParallelLength(a, b, c, d, 8) : 0);
+              }, 0),
+            0,
+          ),
+        0,
+      );
+    let current = congestion(edge.points);
+    if (!current) continue;
+    const source = nodes.get(edge.source)!,
+      target = nodes.get(edge.target)!;
+    const context: RouteContext = {
+      sourceId: source.id,
+      targetId: target.id,
+      sourcePoint: edge.points[0]!,
+      targetPoint: edge.points.at(-1)!,
+      sourceSide: perimeterSide(source.icon, edge.points[0]!),
+      targetSide: perimeterSide(target.icon, edge.points.at(-1)!),
+      style: edge.style,
+    };
+    for (let i = 1; i < edge.points.length - 2 && current > 0; i++) {
+      const a = edge.points[i]!,
+        b = edge.points[i + 1]!;
+      const vertical = a.x === b.x;
+      let best: Point[] | undefined;
+      let bestCongestion = current;
+      let bestScore = Infinity;
+      for (const shift of [-12, 12, -24, 24, -36, 36]) {
+        if (++proposals > 128 || !budget.consume("repairCandidates")) return;
+        const candidate = edge.points.map((point) => ({ ...point }));
+        if (vertical) {
+          candidate[i]!.x += shift;
+          candidate[i + 1]!.x += shift;
+        } else {
+          candidate[i]!.y += shift;
+          candidate[i + 1]!.y += shift;
+        }
+        const normalized = normalizeOrthogonalRoute(candidate);
+        const next = congestion(normalized);
+        if (next >= bestCongestion) continue;
+        if (
+          normalized
+            .slice(1)
+            .some(
+              (point, j) =>
+                segmentHits(normalized[j]!, point, source.label) || segmentHits(normalized[j]!, point, target.label),
+            )
+        )
+          continue;
+        // Never exchange a close parallel lane for a shared corridor.
+        if (
+          normalized
+            .slice(1)
+            .some((point, j) => others.some((other) => overlapLength(normalized[j]!, point, other.points) > 12))
+        )
+          continue;
+        const score = scorePath(normalized, obstacles, context, others, Infinity, [], budget);
+        if (!Number.isFinite(score)) continue;
+        if (next < bestCongestion || score < bestScore) {
+          best = normalized;
+          bestCongestion = next;
+          bestScore = score;
+        }
+      }
+      if (best) {
+        edge.points = best;
+        current = bestCongestion;
+      }
+    }
+  }
+}
+
+function pointInRect(point: Point, rect: Rect): boolean {
+  return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
 }
 
 function repairAutomaticRouteCrossings(
@@ -494,19 +1136,44 @@ function repairAutomaticRouteCrossings(
   labelReservations: Map<string, Rect>,
   budget: RoutingBudget,
 ): void {
-  // Dense diagrams already use the global A* pass above. Exhaustively ripping
-  // up every crossing in that case is quadratic in both routes and template
-  // lanes; keep this deterministic refinement for the small/medium diagrams
-  // where it stays comfortably inside the interactive compilation budget.
-  if (edges.length > 16 || budget.exhausted) return;
+  const dense = edges.length > 16;
+  if (dense && (edges.length > 48 || layout.nodes.length > 32)) return;
+  if (budget.exhausted) return;
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
   const edgeDefinitions = new Map(doc.edges.map((edge) => [edge.id, edge]));
-  for (let pass = 0; pass < 3; pass++) {
+  let denseCandidateCount = 0;
+  let denseVisibilityExpansions = 0;
+  for (let pass = 0; pass < (dense ? 2 : 3); pass++) {
     if (budget.exhausted) return;
     let changed = false;
-    for (const edge of edges) {
+    const conflicted = edges
+      .filter((edge) => !routeOverrides[edge.id]?.pin && edge.points.length >= (dense ? 2 : 4))
+      .map((edge, index) => ({
+        edge,
+        index,
+        conflicts: routeConflictCount(
+          edge.points,
+          edges
+            .filter((candidate) => candidate.id !== edge.id)
+            .map((candidate) => ({
+              points: candidate.points,
+              sourceId: candidate.source,
+              targetId: candidate.target,
+              style: candidate.style,
+              labelRect: labelReservations.get(candidate.id),
+            })),
+          budget,
+          edge.source,
+          edge.target,
+        ),
+      }))
+      .filter(({ conflicts }) => conflicts >= 10)
+      .sort((a, b) => b.conflicts - a.conflicts || a.index - b.index)
+      .slice(0, edges.length > 16 ? MAX_DENSE_REPAIR_EDGES_PER_PASS : edges.length)
+      .map(({ edge }) => edge);
+    for (const edge of conflicted) {
       if (budget.exhausted) return;
-      if (routeOverrides[edge.id]?.pin || edge.points.length < 4) continue;
+      if (routeOverrides[edge.id]?.pin || edge.points.length < 2) continue;
       const source = nodes.get(edge.source);
       const target = nodes.get(edge.target);
       const definition = edgeDefinitions.get(edge.id);
@@ -523,7 +1190,11 @@ function repairAutomaticRouteCrossings(
       const reservationRoutes = otherRoutes
         .filter((candidate) => candidate.labelRect)
         .map((candidate) => ({ ...candidate, points: [] }));
-      if (routeConflictCount(edge.points, otherRoutes, budget) < 10) continue;
+      // Dense repair only runs below the graph-size cap and has fixed
+      // candidate/visibility limits, so it can finish after the main routing
+      // budget is exhausted without corrupting its expansion diagnostics.
+      const repairBudget = budget;
+      if (routeConflictCount(edge.points, otherRoutes, repairBudget, edge.source, edge.target) < 10) continue;
       const sourceAnchor = nearestPortAnchor(source.icon, edge.points[0]!);
       const targetAnchor = nearestPortAnchor(target.icon, edge.points.at(-1)!);
       const containment = containmentForEdge(doc, layout, edge.source, edge.target);
@@ -538,15 +1209,20 @@ function repairAutomaticRouteCrossings(
         containment,
       };
       let best = edge.points;
-      let bestConflicts = routeConflictCount(best, otherRoutes, budget);
-      let bestScore = scorePath(best, obstacles, context, reservationRoutes, Infinity, [], budget);
+      let bestConflicts = routeConflictCount(best, otherRoutes, repairBudget, edge.source, edge.target);
+      let bestScore = scorePath(best, obstacles, context, reservationRoutes, Infinity, [], repairBudget);
       const considerRepair = (candidate: Point[], candidateContext: RouteContext, preferenceCost = 0) => {
-        if (!budget.consume("repairCandidates")) return;
+        if (dense) {
+          if (denseCandidateCount >= MAX_DENSE_REPAIR_CANDIDATES) return;
+          if (!budget.consume("repairCandidates")) return;
+          denseCandidateCount++;
+        } else if (!budget.consume("repairCandidates")) return;
         const normalized = normalizeOrthogonalRoute(simplify(candidate));
         const score =
-          scorePath(normalized, obstacles, candidateContext, reservationRoutes, Infinity, [], budget) + preferenceCost;
+          scorePath(normalized, obstacles, candidateContext, reservationRoutes, Infinity, [], repairBudget) +
+          preferenceCost;
         if (!Number.isFinite(score)) return;
-        const conflicts = routeConflictCount(normalized, otherRoutes, budget);
+        const conflicts = routeConflictCount(normalized, otherRoutes, repairBudget, edge.source, edge.target);
         if (conflicts < bestConflicts || (conflicts === bestConflicts && score < bestScore)) {
           best = normalized;
           bestConflicts = conflicts;
@@ -558,7 +1234,7 @@ function repairAutomaticRouteCrossings(
       // cannot anticipate every later corridor. Once the complete route set is
       // known, retry every distinct attachment-face pair against that final
       // geometry before attempting local segment shifts.
-      const retryPorts = candidatePorts(
+      const allRetryPorts = candidatePorts(
         source,
         target,
         definition.kind === "fail" || definition.style === "dashed",
@@ -567,22 +1243,78 @@ function repairAutomaticRouteCrossings(
         definition.sourcePortOffset,
         definition.targetPortOffset,
       );
+      const retryPorts = allRetryPorts.filter(
+        (port) =>
+          !otherRoutes.some(
+            (route) =>
+              samePoint(port.src, route.points[0]!) ||
+              samePoint(port.src, route.points.at(-1)!) ||
+              samePoint(port.tgt, route.points[0]!) ||
+              samePoint(port.tgt, route.points.at(-1)!),
+          ),
+      );
+
       const retryVGutters = containment
         ? guttersInside([...vGutters, ...corridorGutters(otherRoutes, "vertical")], containment, "x")
         : [...vGutters, ...corridorGutters(otherRoutes, "vertical")];
       const retryHGutters = containment
         ? guttersInside([...hGutters, ...corridorGutters(otherRoutes, "horizontal")], containment, "y")
         : [...hGutters, ...corridorGutters(otherRoutes, "horizontal")];
-      for (const port of representativePortChoices(retryPorts, 16)) {
+      for (const port of representativePortChoices(retryPorts, dense ? MAX_DENSE_REPAIR_PORTS : 16)) {
         const retryContext = createRouteContext(source, target, port, edge.style, containment);
-        for (const candidate of templates(port, retryVGutters, retryHGutters, source, target)) {
+        const retryTemplates = templates(port, retryVGutters, retryHGutters, source, target);
+        for (const candidate of dense ? retryTemplates.slice(0, MAX_DENSE_REPAIR_TEMPLATES_PER_PORT) : retryTemplates) {
           considerRepair(candidate, retryContext, port.preferenceCost);
           if (bestConflicts === 0) break;
         }
         if (bestConflicts === 0) break;
+        if (dense && denseVisibilityExpansions < MAX_DENSE_REPAIR_VISIBILITY_EXPANSIONS) {
+          const sourceExit = exitBeyondCard(
+            source,
+            port.src,
+            port.srcSide,
+            obstacles.find((obstacle) => obstacle.id === source.id),
+          );
+          const targetExit = exitBeyondCard(
+            target,
+            port.tgt,
+            port.tgtSide,
+            obstacles.find((obstacle) => obstacle.id === target.id),
+          );
+          const contentObstacles = obstacles.filter(
+            (obstacle) => obstacle.id !== source.id && obstacle.id !== target.id,
+          );
+          const stemsClear =
+            contentObstacles.every((obstacle) => !segmentHits(port.src, sourceExit, obstacle)) &&
+            contentObstacles.every((obstacle) => !segmentHits(targetExit, port.tgt, obstacle));
+          if (stemsClear) {
+            const routeIndex = indexRouteSegments(otherRoutes);
+            const visible = routeVisibility(
+              sourceExit,
+              targetExit,
+              obstacles,
+              (a, b) => segmentRouteConflictCost(a, b, routeIndex),
+              () => {
+                if (
+                  denseVisibilityExpansions >= MAX_DENSE_REPAIR_VISIBILITY_EXPANSIONS ||
+                  !budget.consume("astarExpansions")
+                )
+                  return false;
+                denseVisibilityExpansions++;
+                return true;
+              },
+            );
+            if (visible)
+              considerRepair(
+                [port.src, sourceExit, ...visible.slice(1, -1), targetExit, port.tgt],
+                retryContext,
+                port.preferenceCost,
+              );
+          }
+        }
+        if (bestConflicts === 0) break;
         const routed =
-          routeAStar(grid, port, source, target, otherRoutes, undefined, budget) ??
-          routeAStar(grid, port, source, target, [], undefined, budget);
+          dense || budget.exhausted ? null : routeAStar(grid, port, source, target, otherRoutes, undefined, budget);
         if (routed) {
           const candidate = shortcut(simplify(routed), obstacles, retryContext, otherRoutes, [], budget);
           considerRepair(candidate, retryContext, port.preferenceCost);
@@ -613,9 +1345,9 @@ function repairAutomaticRouteCrossings(
             candidate[index + 1]!.x = value;
           }
           const simplified = simplify(candidate);
-          const score = scorePath(simplified, obstacles, context, reservationRoutes, Infinity, [], budget);
+          const score = scorePath(simplified, obstacles, context, reservationRoutes, Infinity, [], repairBudget);
           if (!Number.isFinite(score)) continue;
-          const conflicts = routeConflictCount(simplified, otherRoutes, budget);
+          const conflicts = routeConflictCount(simplified, otherRoutes, repairBudget, edge.source, edge.target);
           if (conflicts < bestConflicts || (conflicts === bestConflicts && score < bestScore)) {
             best = simplified;
             bestConflicts = conflicts;
@@ -631,7 +1363,13 @@ function repairAutomaticRouteCrossings(
   }
 }
 
-function routeConflictCount(points: Point[], existing: ExistingRoute[], budget?: RoutingBudget): number {
+function routeConflictCount(
+  points: Point[],
+  existing: ExistingRoute[],
+  budget?: RoutingBudget,
+  sourceId?: string,
+  targetId?: string,
+): number {
   if (budget && !budget.consume("routeConflictChecks")) return Infinity;
   let conflicts = 0;
   for (let index = 0; index < points.length - 1; index++) {
@@ -642,7 +1380,15 @@ function routeConflictCount(points: Point[], existing: ExistingRoute[], budget?:
       for (let otherIndex = 0; otherIndex < route.points.length - 1; otherIndex++) {
         const kind = segmentIntersectionKind(a, b, route.points[otherIndex]!, route.points[otherIndex + 1]!);
         if (kind === "cross") conflicts += 10;
-        else if (kind === "touch") conflicts += 1;
+        else if (
+          kind === "touch" &&
+          sourceId !== route.sourceId &&
+          sourceId !== route.targetId &&
+          targetId !== route.sourceId &&
+          targetId !== route.targetId
+        ) {
+          conflicts += 1;
+        }
       }
     }
   }
@@ -651,19 +1397,33 @@ function routeConflictCount(points: Point[], existing: ExistingRoute[], budget?:
 
 function representativePortChoices(ports: PortChoice[], limit: number): PortChoice[] {
   const selected: PortChoice[] = [];
-  const faces = new Set<string>();
+  const byFace = new Map<string, PortChoice[]>();
   for (const port of ports) {
     const key = `${port.srcSide}:${port.tgtSide}`;
-    if (faces.has(key)) continue;
-    faces.add(key);
-    selected.push(port);
+    const choices = byFace.get(key) ?? [];
+    choices.push(port);
+    byFace.set(key, choices);
+  }
+  // Offset variants may have been reordered by label/face preferences. Pick
+  // actual distinct anchors rather than assuming a particular matrix index.
+  for (const choices of byFace.values()) {
+    const sourceAnchors: Point[] = [];
+    const targetAnchors: Point[] = [];
+    for (let offset = 0; offset < 3 && selected.length < limit; offset++) {
+      const remaining = choices.filter((choice) => !selected.includes(choice));
+      const novelty = (choice: PortChoice) =>
+        Number(!sourceAnchors.some((point) => samePoint(point, choice.src))) +
+        Number(!targetAnchors.some((point) => samePoint(point, choice.tgt)));
+      remaining.sort((a, b) => novelty(b) - novelty(a) || a.preferenceCost - b.preferenceCost);
+      const port = remaining[0];
+      if (!port) break;
+      selected.push(port);
+      sourceAnchors.push(port.src);
+      targetAnchors.push(port.tgt);
+    }
     if (selected.length >= limit) return selected;
   }
-  for (const port of ports) {
-    if (selected.includes(port)) continue;
-    selected.push(port);
-    if (selected.length >= limit) break;
-  }
+  for (const port of ports) if (!selected.includes(port) && selected.length < limit) selected.push(port);
   return selected;
 }
 
@@ -676,6 +1436,7 @@ function perimeterFallback(
   context: RouteContext,
   existing: ExistingRoute[],
   budget?: RoutingBudget,
+  emergency = false,
 ): Point[] | null {
   const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
   const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
@@ -741,7 +1502,7 @@ function perimeterFallback(
     let best: Point[] | null = null;
     let bestScore = Infinity;
     for (const candidate of simplifiedCandidates) {
-      const score = scorePath(candidate, obstacles, context, routes, Infinity, [], budget);
+      const score = scorePath(candidate, obstacles, context, routes, Infinity, [], budget, emergency);
       if (score < bestScore) {
         best = candidate;
         bestScore = score;
@@ -752,6 +1513,173 @@ function perimeterFallback(
   return choose(existing);
 }
 
+/**
+ * Bounded final escape hatch that relaxes group containment and connector
+ * conflicts while keeping content obstacles hard. This is intentionally
+ * usable after the normal routing budget has been consumed.
+ */
+function obstacleSafeFallback(
+  layout: LayoutResult,
+  source: NodeGeom,
+  target: NodeGeom,
+  ports: PortChoice[],
+  style: EdgeStyle,
+  obstacles: Obstacle[],
+  budget: RoutingBudget,
+  onFallbackLimit: () => void,
+  containment?: Rect,
+  existing: ExistingRoute[] = [],
+  portLimit = 8,
+): { points: Point[]; port: PortChoice } | null {
+  let best: Point[] | null = null;
+  let bestPort: PortChoice | undefined;
+  let bestScore = Infinity;
+  const fallbackPorts = representativePortChoices(ports, portLimit);
+
+  if (cardsOverlap(source, target)) {
+    // Overlapping endpoint cards have no legal corridor between their ports.
+    // A visible outside loop is the established representation for this
+    // degenerate layout; ignore only those two endpoint cards while validating
+    // the loop against every unrelated obstacle.
+    const endpointObstacles = obstacles.filter((obstacle) => obstacle.id !== source.id && obstacle.id !== target.id);
+    for (const port of fallbackPorts) {
+      const context = createRouteContext(source, target, port, style);
+      const candidate = simplify(colocatedEdgeFallback(source, target, port));
+      const score =
+        scorePath(candidate, endpointObstacles, context, existing, Infinity, [], budget, true) + port.preferenceCost;
+      if (score < bestScore) {
+        best = candidate;
+        bestPort = port;
+        bestScore = score;
+      }
+    }
+    if (best && bestPort) return { points: best, port: bestPort };
+  }
+
+  // Preserve group containment whenever a content-safe route can fit there.
+  // Only relax it after all bounded in-group candidates fail.
+  for (const allowedContainment of [containment, undefined]) {
+    for (const port of fallbackPorts) {
+      const context = createRouteContext(source, target, port, style, allowedContainment);
+      // Perimeter candidates do not depend on the grid and can escape a closed
+      // shared group boundary. They remain available after the regular budget
+      // is exhausted and are counted in the separate emergency-work totals.
+      const perimeter = perimeterFallback(layout, source, target, port, obstacles, context, existing, budget, true);
+      if (perimeter) {
+        const score =
+          scorePath(perimeter, obstacles, context, existing, Infinity, [], budget, true) + port.preferenceCost;
+        if (score < bestScore) {
+          best = perimeter;
+          bestPort = port;
+          bestScore = score;
+        }
+      }
+    }
+    if (best && bestPort) return { points: best, port: bestPort };
+  }
+
+  // The fixed grid can miss a narrow but real corridor and can place its
+  // first cell inside an adjacent card. Search exact obstacle-edge lanes using
+  // short, checked endpoint stems. This route work has its own hard vertex cap
+  // and remains available after the normal routing budget is exhausted.
+  const endpointObstacle = (id: string) => obstacles.find((obstacle) => obstacle.id === id);
+  const otherObstacles = obstacles.filter((obstacle) => obstacle.id !== source.id && obstacle.id !== target.id);
+  const routeSegments = indexRouteSegments(existing);
+  for (const port of fallbackPorts) {
+    const sourceExit = exitBeyondCard(source, port.src, port.srcSide, endpointObstacle(source.id));
+    const targetExit = exitBeyondCard(target, port.tgt, port.tgtSide, endpointObstacle(target.id));
+    if (
+      otherObstacles.some((obstacle) => segmentHits(port.src, sourceExit, obstacle)) ||
+      otherObstacles.some((obstacle) => segmentHits(targetExit, port.tgt, obstacle))
+    )
+      continue;
+    if (!budget.consumeEmergencyVisibilityQuery()) {
+      onFallbackLimit();
+      break;
+    }
+    const middle = routeVisibility(
+      sourceExit,
+      targetExit,
+      obstacles,
+      (a, b) => segmentRouteConflictCost(a, b, routeSegments),
+      () => {
+        if (!budget.consumeEmergencyVisibilityExpansion()) {
+          onFallbackLimit();
+          return false;
+        }
+        return true;
+      },
+    );
+    if (!middle) continue;
+    const candidate = simplify([port.src, sourceExit, ...middle.slice(1, -1), targetExit, port.tgt]);
+    const context = createRouteContext(source, target, port, style);
+    const score = scorePath(candidate, obstacles, context, existing, Infinity, [], budget, true) + port.preferenceCost;
+    if (score < bestScore) {
+      best = candidate;
+      bestPort = port;
+      bestScore = score;
+    }
+  }
+  return best && bestPort ? { points: best, port: bestPort } : null;
+}
+
+function exactConnection(
+  port: PortChoice,
+  source: NodeGeom,
+  target: NodeGeom,
+  obstacles: Obstacle[],
+  existing: ExistingRoute[],
+  budget: RoutingBudget,
+  containment?: Rect,
+  crossingCost: number = CROSSING_COST,
+): Point[] | null {
+  const start = exitBeyondCard(
+    source,
+    port.src,
+    port.srcSide,
+    obstacles.find((item) => item.id === source.id),
+  );
+  const goal = exitBeyondCard(
+    target,
+    port.tgt,
+    port.tgtSide,
+    obstacles.find((item) => item.id === target.id),
+  );
+  if (
+    obstacles.some(
+      (item) =>
+        (item.id !== source.id && segmentHits(port.src, start, item)) ||
+        (item.id !== target.id && segmentHits(goal, port.tgt, item)),
+    )
+  )
+    return null;
+  const index = indexRouteSegments(existing);
+  let queryExpansions = 0;
+  const middle = routeVisibility(
+    start,
+    goal,
+    obstacles,
+    (a, b) => segmentRouteConflictCost(a, b, index, crossingCost),
+    () => ++queryExpansions <= 6_000 && budget.consume("astarExpansions"),
+    containment,
+  );
+  return middle ? simplify([port.src, start, ...middle.slice(1, -1), goal, port.tgt]) : null;
+}
+
+function exitBeyondCard(node: NodeGeom, point: Point, side: Side, obstacle?: Rect): Point {
+  const card = obstacle ?? inflate(node.obstacle, 8);
+  switch (side) {
+    case "e":
+      return { x: Math.max(point.x + 2, card.x + card.w + 2), y: point.y };
+    case "w":
+      return { x: Math.min(point.x - 2, card.x - 2), y: point.y };
+    case "s":
+      return { x: point.x, y: Math.max(point.y + 2, card.y + card.h + 2) };
+    case "n":
+      return { x: point.x, y: Math.min(point.y - 2, card.y - 2) };
+  }
+}
+
 function cardsOverlap(source: NodeGeom, target: NodeGeom, margin = 4): boolean {
   const left = Math.max(source.obstacle.x, target.obstacle.x);
   const top = Math.max(source.obstacle.y, target.obstacle.y);
@@ -760,7 +1688,7 @@ function cardsOverlap(source: NodeGeom, target: NodeGeom, margin = 4): boolean {
   return right - left > margin && bottom - top > margin;
 }
 
-/** Direct elbow used only when every scored search fails. Studio must stay editable. */
+/** Visible last resort when every bounded obstacle-safe corridor search fails. */
 function emergencyEdgeRoute(source: NodeGeom, target: NodeGeom, portChoice: PortChoice): Point[] {
   const start = extendFromCard(source, portChoice.src, portChoice.srcSide);
   const goal = extendFromCard(target, portChoice.tgt, portChoice.tgtSide);
@@ -830,6 +1758,29 @@ function nudgeAutomaticRoutesOffBoundaries(
  * allowed a badge to cover a nearby connector even when the opposite side of
  * its own path was completely clear.
  */
+/** Keep text and step numbers out of the clearance needed by crossing jumps. */
+function crossingDecorationObstacles(edges: RoutedEdge[]): Obstacle[] {
+  const obstacles: Obstacle[] = [];
+  // Dense pathological graphs retain the normal decoration budget. Ordinary
+  // diagrams have a small, fixed pair scan before their decorations are placed.
+  if (edges.length > 48) return obstacles;
+  for (let i = 0; i < edges.length; i++) {
+    for (let j = i + 1; j < edges.length; j++) {
+      const first = edges[i]!.points;
+      const second = edges[j]!.points;
+      for (let a = 0; a < first.length - 1; a++) {
+        for (let b = 0; b < second.length - 1; b++) {
+          if (segmentIntersectionKind(first[a]!, first[a + 1]!, second[b]!, second[b + 1]!) !== "cross") continue;
+          const vertical = first[a]!.x === first[a + 1]!.x ? first[a]! : second[b]!;
+          const horizontal = first[a]!.y === first[a + 1]!.y ? first[a]! : second[b]!;
+          obstacles.push({ x: vertical.x - 8, y: horizontal.y - 8, w: 16, h: 16, kind: "node" });
+        }
+      }
+    }
+  }
+  return obstacles;
+}
+
 function placeEdgeDecorations(
   edges: RoutedEdge[],
   routeOverrides: Record<string, RouteOverride>,
@@ -1085,6 +2036,8 @@ function badgeCollisionScore(
     score += BADGE_CONTENT_COLLISION_COST;
   }
   for (const obstacle of obstacles) {
+    // A filled badge reads fine over a frame line; only label text needs the clearance.
+    if (obstacle.soft) continue;
     if (!circleIntersectsRect(candidate.point, GRAMMAR.badgeRadius, obstacle, BADGE_CONTENT_CLEARANCE)) continue;
     score += BADGE_CONTENT_COLLISION_COST + (GRAMMAR.badgeRadius + BADGE_CONTENT_CLEARANCE) * 10_000;
   }
@@ -1121,7 +2074,7 @@ function buildObstacles(layout: LayoutResult): Obstacle[] {
     // accidental corridors beside an icon where a connector can turn and run
     // alongside the resource, making both the visual result and hit testing
     // ambiguous.
-    out.push({ ...inflate(n.obstacle, 8), id: n.id, kind: "node" });
+    out.push({ ...inflate(n.obstacle, 8), id: n.id, kind: "node", content: undefined });
   }
   for (const g of layout.groups) {
     out.push({ ...headerLabelRect(g), id: g.id, kind: "header" });
@@ -1141,6 +2094,7 @@ function buildDecorationObstacles(layout: LayoutResult): Obstacle[] {
     const content = headerLabelRect(group);
     out.push({ ...inflate(content, 2), content, id: group.id, kind: "header" });
   }
+  for (const stroke of boundaryStrokeRects(layout.groups)) out.push({ ...stroke, kind: "header", soft: true });
   return out;
 }
 
@@ -1327,45 +2281,26 @@ function avoidLabelPorts(
 ): PortChoice[] {
   const sourceLabelSide = labelSide(source);
   const targetLabelSide = labelSide(target);
-  return (
-    choices
-      // A straight connector between facing ports may cross its own endpoint
-      // labels; any detour around them would be the less readable route.
-      .map((choice) =>
-        isStraightFacingChoice(choice)
-          ? choice
-          : {
-              ...choice,
-              preferenceCost:
-                choice.preferenceCost +
-                (!sourceLocked && choice.srcSide === sourceLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
-                (!targetLocked && choice.tgtSide === targetLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
-                (!sourceLocked && portStemHitsLabel(source, choice.srcSide, choice.src)
-                  ? LABEL_PORT_COLLISION_COST
-                  : 0) +
-                (!targetLocked && portStemHitsLabel(target, choice.tgtSide, choice.tgt)
-                  ? LABEL_PORT_COLLISION_COST
-                  : 0),
-            },
-      )
-      .sort((a, b) => a.preferenceCost - b.preferenceCost)
-  );
-}
-
-function isStraightFacingChoice(choice: PortChoice): boolean {
-  const { src, tgt } = choice;
-  switch (`${choice.srcSide}${choice.tgtSide}`) {
-    case "sn":
-      return src.x === tgt.x && tgt.y > src.y;
-    case "ns":
-      return src.x === tgt.x && tgt.y < src.y;
-    case "ew":
-      return src.y === tgt.y && tgt.x > src.x;
-    case "we":
-      return src.y === tgt.y && tgt.x < src.x;
-    default:
-      return false;
-  }
+  const straight = (choice: PortChoice) =>
+    (choice.src.x === choice.tgt.x &&
+      ((choice.srcSide === "n" && choice.tgtSide === "s") || (choice.srcSide === "s" && choice.tgtSide === "n"))) ||
+    (choice.src.y === choice.tgt.y &&
+      ((choice.srcSide === "e" && choice.tgtSide === "w") || (choice.srcSide === "w" && choice.tgtSide === "e")));
+  return choices
+    .map((choice) =>
+      straight(choice)
+        ? choice
+        : {
+            ...choice,
+            preferenceCost:
+              choice.preferenceCost +
+              (!sourceLocked && choice.srcSide === sourceLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
+              (!targetLocked && choice.tgtSide === targetLabelSide ? LABEL_SIDE_FALLBACK_COST : 0) +
+              (!sourceLocked && portStemHitsLabel(source, choice.srcSide, choice.src) ? LABEL_PORT_COLLISION_COST : 0) +
+              (!targetLocked && portStemHitsLabel(target, choice.tgtSide, choice.tgt) ? LABEL_PORT_COLLISION_COST : 0),
+          },
+    )
+    .sort((a, b) => a.preferenceCost - b.preferenceCost);
 }
 
 function portStemHitsLabel(node: NodeGeom, side: Side, anchor: Point): boolean {
@@ -1541,13 +2476,13 @@ function alignNearOpposingPorts(
   sourceOffsetLocked: boolean,
   targetOffsetLocked: boolean,
 ): PortChoice[] {
-  const aligned = choices.map((choice) => {
+  const aligned = choices.flatMap((choice) => {
     const faces = `${choice.srcSide}${choice.tgtSide}`;
     const axis = faces === "ew" || faces === "we" ? "y" : faces === "sn" || faces === "ns" ? "x" : null;
-    if (!axis || choice.src[axis] === choice.tgt[axis]) return choice;
+    if (!axis || choice.src[axis] === choice.tgt[axis]) return [choice];
     // Horizontal flows keep centered attachments beyond a one-cell jog so
     // parallel lanes and edge labels stay where the layout reserved them.
-    if (axis === "y" && Math.abs(choice.src.y - choice.tgt.y) > MICRO_JOG_THRESHOLD) return choice;
+    if (axis === "y" && Math.abs(choice.src.y - choice.tgt.y) > MICRO_JOG_THRESHOLD) return [choice];
     const size = axis === "x" ? "w" : "h";
     const low = Math.max(source.icon[axis], target.icon[axis]);
     const high = Math.min(source.icon[axis] + source.icon[size], target.icon[axis] + target.icon[size]);
@@ -1564,12 +2499,23 @@ function alignNearOpposingPorts(
           : within(choice.tgt[axis])
             ? choice.tgt[axis]
             : (low + high) / 2;
-    if (!within(value)) return choice;
-    return {
+    if (!within(value)) return [choice];
+    const shifted = {
       ...choice,
       src: sourceOffsetLocked ? choice.src : { ...choice.src, [axis]: value },
       tgt: targetOffsetLocked ? choice.tgt : { ...choice.tgt, [axis]: value },
     };
+    // Keep the original centred option available. Straightening a tiny jog
+    // can move an endpoint well away from the middle of its icon; price that
+    // actual displacement instead of inheriting a zero-cost centre preference.
+    const offsetCost = (node: NodeGeom, point: Point) =>
+      (Math.abs(point[axis] - (node.icon[axis] + node.icon[size] / 2)) / node.icon[size]) *
+      4 *
+      PORT_OFFSET_FALLBACK_COST;
+    shifted.preferenceCost +=
+      (sourceOffsetLocked ? 0 : offsetCost(source, shifted.src) - offsetCost(source, choice.src)) +
+      (targetOffsetLocked ? 0 : offsetCost(target, shifted.tgt) - offsetCost(target, choice.tgt));
+    return [choice, shifted];
   });
   return uniquePortChoices(aligned);
 }
@@ -2071,8 +3017,13 @@ function scorePath(
   scoreCeiling = Infinity,
   boundaries: GroupBoundary[] = [],
   budget?: RoutingBudget,
+  emergency = false,
 ): number {
-  if (budget && !budget.consume("scorePathCalls")) return Infinity;
+  if (budget) {
+    if (emergency) {
+      if (!budget.recordEmergencyScorePathCall()) return Infinity;
+    } else if (!budget.consume("scorePathCalls")) return Infinity;
+  }
   if (points.length < 2) return Infinity;
   if (
     samePoint(points[0]!, context.sourcePoint) &&
@@ -2095,8 +3046,12 @@ function scorePath(
     const isLast = i === points.length - 2;
     for (const obs of obstacles) {
       // Only the short attachment segment may enter its own complete card.
-      if (obs.kind === "node" && obs.id === context.sourceId && isFirst && samePoint(a, context.sourcePoint)) continue;
-      if (obs.kind === "node" && obs.id === context.targetId && isLast && samePoint(b, context.targetPoint)) continue;
+      if (obs.kind === "node" && obs.id === context.sourceId && isFirst && samePoint(a, context.sourcePoint)) {
+        continue;
+      }
+      if (obs.kind === "node" && obs.id === context.targetId && isLast && samePoint(b, context.targetPoint)) {
+        continue;
+      }
       if (!segmentHits(a, b, obs)) continue;
       // Visible content is a hard obstacle. A crowded connector may cross
       // another connector as a last resort, but it must never disappear
@@ -2119,10 +3074,11 @@ function scorePath(
       }
       const overlap = overlapLength(a, b, other.points);
       if (overlap) {
-        // Every connector represents a distinct relationship. Even edges that
-        // fan out from the same resource must claim separate attachment lanes
-        // so neither direction nor arrow ownership becomes ambiguous.
-        return Infinity;
+        // Keep corridor sharing as a strong preference rather than making the
+        // path unscorable. Infinite rejection previously forced the fallback
+        // to drop every established route at once, producing reverse overlaps.
+        score += overlap * OVERLAP_COST;
+        if (score >= scoreCeiling) return score;
       }
       for (let j = 0; j < other.points.length - 1; j++) {
         const c = other.points[j]!;
@@ -2560,7 +3516,12 @@ function indexRouteSegments(existing: ExistingRoute[]): RouteSegmentIndex {
 // Every cost term needs the other segment within MIN_CONNECTOR_GAP (one CELL) of a-b, so
 // only adjacent buckets can contribute. Candidates are summed in route order so totals match
 // a full scan bit-for-bit.
-function segmentRouteConflictCost(a: Point, b: Point, index: RouteSegmentIndex): number {
+function segmentRouteConflictCost(
+  a: Point,
+  b: Point,
+  index: RouteSegmentIndex,
+  crossingCost: number = CROSSING_COST,
+): number {
   const ids = [...index.diagonal];
   const collect = (buckets: Map<number, number[]>, from: number, to: number) => {
     for (let key = from; key <= to; key++) {
@@ -2584,8 +3545,22 @@ function segmentRouteConflictCost(a: Point, b: Point, index: RouteSegmentIndex):
     const overlap = segmentOverlapLength(a, b, c, d);
     cost += overlap * OVERLAP_COST;
     const intersection = segmentIntersectionKind(a, b, c, d);
-    if (intersection === "cross") cost += CROSSING_COST;
-    if (intersection === "touch") cost += JUNCTION_COST;
+    if (intersection === "cross") cost += crossingCost;
+    if (intersection === "touch") {
+      const verticalCandidate = a.x === b.x;
+      const verticalA = verticalCandidate ? a : c;
+      const horizontalA = verticalCandidate ? c : a;
+      const at = { x: verticalA.x, y: horizontalA.y };
+      const candidateEndpoint = samePoint(at, a) || samePoint(at, b);
+      const existingInterior =
+        at.x === c.x
+          ? at.y > Math.min(c.y, d.y) && at.y < Math.max(c.y, d.y)
+          : at.y === c.y && at.x > Math.min(c.x, d.x) && at.x < Math.max(c.x, d.x);
+      // A* and visibility often split a true crossing at the candidate's
+      // grid vertex. Charge half on each side so the two pieces sum to the
+      // same cost as the final unsplit crossing.
+      cost += candidateEndpoint && existingInterior ? crossingCost / 2 : JUNCTION_COST;
+    }
     cost += nearParallelLength(a, b, c, d, MIN_CONNECTOR_GAP) * NEAR_PARALLEL_COST;
   }
   return cost;
@@ -2605,11 +3580,28 @@ function reconstruct(grid: Grid, came: Int32Array, current: number, start: Point
     i = came[i]!;
   }
   cells.reverse();
-  if (cells.length) {
-    cells[0] = start;
-    cells[cells.length - 1] = goal;
+  if (!cells.length) return [];
+
+  const firstCell = cells[0]!;
+  const lastCell = cells.at(-1)!;
+  const path = cells;
+  if (!samePoint(start, firstCell)) {
+    // `start` can retain the icon port's fractional cross-axis coordinate,
+    // while its grid cell is snapped to the routing lattice. Replace neither
+    // point: connect them with an orthogonal bridge so A* output remains a
+    // valid Manhattan path and can pass the same obstacle scorer as templates.
+    const corner = { x: firstCell.x, y: start.y };
+    path.unshift(start, corner);
+  } else {
+    path[0] = start;
   }
-  return cells;
+  if (!samePoint(goal, lastCell)) {
+    const corner = { x: goal.x, y: lastCell.y };
+    path.push(corner, goal);
+  } else {
+    path[path.length - 1] = goal;
+  }
+  return simplify(path);
 }
 
 function worldToCell(grid: Grid, x: number, y: number): { c: number; r: number } {
@@ -3043,7 +4035,7 @@ function getEdgeLabelPlacement(
     // still a soft score below, but a candidate that satisfies this contract is
     // preferred even when dense sibling routes make ownership ambiguous.
     const contentClear = obstacles.every(
-      (obstacle) => !rectsIntersect(candidate.rect, obstacle.content ?? obstacle, 2),
+      (obstacle) => obstacle.soft || !rectsIntersect(candidate.rect, obstacle.content ?? obstacle, 2),
     );
     const decorationClear =
       contentClear &&
@@ -3119,9 +4111,12 @@ function labelCollisionScore(
 
   for (const obstacle of obstacles) {
     if (rectsIntersect(candidate.rect, obstacle.content ?? obstacle, 0)) {
-      score += LABEL_COLLISION_COST;
-    } else if (rectsIntersect(candidate.rect, obstacle, LABEL_CONTENT_CLEARANCE)) {
+      // Copy struck through by a frame line reads worse than copy beside a card.
+      score += obstacle.soft ? LABEL_NEAR_CONTENT_COST * 2 : LABEL_COLLISION_COST;
+    } else if (!obstacle.soft && rectsIntersect(candidate.rect, obstacle, LABEL_CONTENT_CLEARANCE)) {
       score += LABEL_NEAR_CONTENT_COST;
+    } else if (obstacle.soft && rectsIntersect(candidate.rect, obstacle, LABEL_CONTENT_CLEARANCE * 2)) {
+      score += LABEL_NEAR_FRAME_COST;
     }
   }
   for (const badge of badges) {

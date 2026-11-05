@@ -1,0 +1,51 @@
+dgm 1
+diagram azure-private-order-processing {
+  grammar azure
+  flow lr
+  title "Private Azure Order Processing"
+
+  cloud-agnostic.actor public-client "Public Client" {}
+  cloud-agnostic.actor operations-client "Operations Client" {}
+  azure.subscription subscription "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group resource-group "Resource Group" {
+        azure.front-door-and-cdn-profiles front-door "Front Door" {}
+        azure.api-management-services apim "API Management" {}
+        azure.azure-service-bus work-queue "Service Bus Work Queue" {}
+        azure.azure-service-bus dead-letter-queue "Service Bus Dead-Letter Queue" {}
+        azure.sql-database sql "Azure SQL" {}
+        azure.storage-accounts storage "Storage Account" {}
+        azure.key-vaults key-vault "Key Vault" {}
+        azure.monitor monitor "Azure Monitor" {}
+        azure.vnet vnet "Application VNet" {
+          azure.subnet app-subnet "Application Subnet" {
+            azure.app-services api "App Service API" {}
+            azure.function-apps function "Function Worker" {}
+          }
+          azure.subnet data-subnet "Data Subnet" {
+            azure.private-endpoints sql-pe "SQL Private Endpoint" {}
+            azure.private-endpoints storage-pe "Storage Private Endpoint" {}
+          }
+        }
+      }
+    }
+  }
+
+  public-client -> front-door { id client-front-door label "HTTPS" }
+  front-door -> apim { id front-door-apim label "API requests" }
+  apim -> api { id apim-api label "route" }
+  api -> sql-pe { id api-sql-pe label "read and write" }
+  sql-pe -> sql { id sql-pe-sql label "private endpoint to SQL" }
+  api -> work-queue { id api-work-queue label "enqueue work" }
+  work-queue -> function { id work-queue-function label "consume work" }
+  function -> storage-pe { id function-storage-pe label "write files" }
+  storage-pe -> storage { id storage-pe-storage label "private endpoint to Storage" }
+  function -> sql-pe { id function-sql-pe label "write order status" }
+  api -> key-vault { id api-key-vault label "read secrets" }
+  function -> key-vault { id function-key-vault label "read secrets" }
+  api -> monitor { id api-monitor label "telemetry" }
+  function -> monitor { id function-monitor label "telemetry" }
+  work-queue -> dead-letter-queue { id work-dead-letter label "retry limit" }
+  operations-client -> dead-letter-queue { id operations-inspect-dlq label "inspect DLQ" }
+  operations-client -> work-queue { id operations-redrive label "trigger redrive" }
+}

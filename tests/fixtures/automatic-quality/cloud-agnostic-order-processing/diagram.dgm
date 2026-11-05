@@ -1,0 +1,47 @@
+dgm 1
+diagram regional-order-processing { grammar cloud-agnostic flow lr title "Regional Order Processing"
+cloud-agnostic.account production-account "Production Account" {
+  cloud-agnostic.region primary-region "Primary Region" {
+    cloud-agnostic.load-balancer primary-lb "Primary Load Balancer" {}
+    cloud-agnostic.network primary-network "Primary Private Application Network" {
+      cloud-agnostic.cluster application-cluster "Application Cluster" {
+        cloud-agnostic.server api-server "Order API Server" {}
+        cloud-agnostic.server worker-server "Fulfillment Worker" {}
+      }
+      cloud-agnostic.database primary-db "Primary Order Database" {}
+      cloud-agnostic.cache primary-cache "Order Cache" {}
+    }
+    cloud-agnostic.queue regional-queue "Regional Work Queue" {}
+    cloud-agnostic.object-storage receipts-storage "Receipt Object Storage" {}
+  }
+  cloud-agnostic.region recovery-region "Recovery Region" {
+    cloud-agnostic.load-balancer recovery-lb "Recovery Load Balancer" {}
+    cloud-agnostic.network recovery-network "Recovery Network" {
+      cloud-agnostic.database recovery-db "Recovery Database" {}
+      cloud-agnostic.server recovery-server "Recovery Application Server" {}
+    }
+  }
+}
+cloud-agnostic.actor buyer "Public Buyer" {}
+cloud-agnostic.server payment-service "External Payment Service" {}
+cloud-agnostic.server warehouse "External Warehouse" {}
+buyer -> primary-lb { id buyer-primary-lb label "Order request" step 1 }
+primary-lb -> api-server { id primary-lb-api step 2 }
+api-server -> primary-db { id api-primary-db-request label "Database request" step 3 }
+primary-db -> api-server { id primary-db-api-response label "Database response" step 4 }
+api-server -> primary-cache { id api-cache-request label "Cache lookup" step 5 }
+primary-cache -> api-server { id cache-api-response label "Cache response" step 6 }
+api-server -> payment-service { id api-payment-request label "Payment request" step 7 }
+payment-service -> api-server { id payment-api-response label "Payment response" step 8 }
+api-server -> regional-queue { id api-enqueue label "Enqueue work" step 9 }
+regional-queue -> worker-server { id queue-worker label "Work item" step 10 }
+worker-server -> warehouse { id worker-fulfill label "Fulfillment" step 11 }
+warehouse -> worker-server { id warehouse-ack label "Acknowledgment" step 12 }
+worker-server -> regional-queue { id worker-retry label "Retry work" step 13 }
+worker-server -> primary-db { id worker-status label "Order status" step 14 }
+worker-server -> receipts-storage { id worker-receipt label "Receipt" step 15 }
+primary-db -> recovery-db { id primary-replication label "Replication" step 16 }
+recovery-db -> recovery-server { id recovery-db-read label "Read replica" step 17 }
+recovery-server -> recovery-lb { id recovery-server-to-lb label "Recovery response" step 18 }
+recovery-lb -> buyer { id recovery-lb-to-buyer label "Serve buyer" step 19 }
+}

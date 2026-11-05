@@ -11,4 +11,9 @@ These four reference bundles were rendered with Dumb Diagrams v0.1.0. They prese
 
 Give a fresh project the prompt, then compare its output with `reference-spec.md`. Run `dumbdiagrams validate --strict <diagram.dgm>` and inspect it in Studio. Record the app version, model, source, exported SVG, and diagnostics for each run. Check arrow meanings and containment before judging route quality.
 
+Extract `requirements.json` before authoring and preserve it during layout
+repairs. Normal validation checks architecture completeness; strict validation
+also fails on routing findings. The incomplete Composer outputs are retained
+as negative completeness cases under `examples/evaluations/incomplete-composer/`.
+
 Review crossings, shared corridors, labels, icon overlaps, and retry/return paths. Preserve the architecture when fixing layout; promote a candidate only after its visual review.

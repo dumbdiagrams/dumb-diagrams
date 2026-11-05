@@ -1,0 +1,487 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "user",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; user is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "customer",
+      "kind": "group",
+      "type": "aws.account",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Customer's AWS Account is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "ui",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; ui is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "auth",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Authentication is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "cognito",
+      "kind": "resource",
+      "type": "aws.cognito",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; cognito is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "appsync",
+      "kind": "resource",
+      "type": "aws.aws-appsync",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; appsync is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; cloudfront is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "workflow",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Step Functions workflow is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "sfn",
+      "kind": "resource",
+      "type": "aws.aws-step-functions",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; sfn is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "lambda1",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Workflow task is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "cfn",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; cfn is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "managed",
+      "kind": "group",
+      "type": "aws.account",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Managed Account is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "s3_templates",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Templates is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "s3_images",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Images is the reference choice used to represent it."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "s1",
+      "source": "user",
+      "target": "ui",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this user to ui edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s2",
+      "source": "ui",
+      "target": "appsync",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this ui to appsync edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s3",
+      "source": "appsync",
+      "target": "cloudfront",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this appsync to cloudfront edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s4",
+      "source": "cloudfront",
+      "target": "sfn",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this cloudfront to sfn edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s5",
+      "source": "sfn",
+      "target": "lambda1",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this sfn to Workflow task edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s6",
+      "source": "lambda1",
+      "target": "s3_templates",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Workflow task to Templates edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s7",
+      "source": "cfn",
+      "target": "s3_images",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this cfn to Images edge is the reference mapping."
+      }
+    },
+    {
+      "id": "s8",
+      "source": "ui",
+      "target": "cognito",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this ui to cognito edge is the reference mapping."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_aws-appsync",
+      "kind": "resource",
+      "type": "aws.aws-appsync",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-appsync; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-cloudformation",
+      "kind": "resource",
+      "type": "aws.aws-cloudformation",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-cloudformation; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-step-functions",
+      "kind": "resource",
+      "type": "aws.aws-step-functions",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-step-functions; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloudfront; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cognito",
+      "kind": "resource",
+      "type": "aws.cognito",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cognito; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_account",
+      "kind": "group",
+      "type": "aws.account",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.account; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_user",
+      "component": "user",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps user at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_customer",
+      "component": "customer",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Customer's AWS Account in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_ui",
+      "component": "ui",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes ui in this scope; Customer's AWS Account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_auth",
+      "component": "auth",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Authentication in this scope; Customer's AWS Account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_cognito",
+      "component": "cognito",
+      "relation": "inside",
+      "group": "auth",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes cognito in this scope; Authentication is the reference grouping."
+      }
+    },
+    {
+      "id": "place_appsync",
+      "component": "appsync",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes appsync in this scope; Customer's AWS Account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_cloudfront",
+      "component": "cloudfront",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes cloudfront in this scope; Customer's AWS Account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_workflow",
+      "component": "workflow",
+      "relation": "inside",
+      "group": "customer",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes AWS Step Functions workflow in this scope; Customer's AWS Account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_sfn",
+      "component": "sfn",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes sfn in this scope; AWS Step Functions workflow is the reference grouping."
+      }
+    },
+    {
+      "id": "place_lambda1",
+      "component": "lambda1",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Workflow task in this scope; AWS Step Functions workflow is the reference grouping."
+      }
+    },
+    {
+      "id": "place_cfn",
+      "component": "cfn",
+      "relation": "inside",
+      "group": "workflow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes cfn in this scope; AWS Step Functions workflow is the reference grouping."
+      }
+    },
+    {
+      "id": "place_managed",
+      "component": "managed",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes AWS Managed Account in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_s3_templates",
+      "component": "s3_templates",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Templates in this scope; AWS Managed Account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_s3_images",
+      "component": "s3_images",
+      "relation": "inside",
+      "group": "managed",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Images in this scope; AWS Managed Account is the reference grouping."
+      }
+    }
+  ]
+}

@@ -35,6 +35,7 @@ diagram kitchen-sink {
   worker -> queue { id sync kind bidirectional color amber }
   queue -> custom { id peer_link kind peer color red }
   worker -> custom { id failure kind fail color green }
+  api -> queue { id highlight color coral }
 }
 
 assets {

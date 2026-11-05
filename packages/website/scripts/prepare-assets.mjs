@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, copyFile, readdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { parseDgmResult, formatParseError } from '@dumb-diagrams/runtime/dsl';
+import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/requirements';
 import { compileDiagram, inlineCatalogIcons } from '@dumb-diagrams/runtime/render';
 import { loadCatalogSvg } from './catalog-loader.mjs';
 import { loadExamples } from '../src/lib/examples.mjs';
@@ -15,11 +16,25 @@ const examples = loadExamples();
 for (const filename of await readdir(new URL('src/examples/', site))) {
   if (filename.endsWith('.dgm')) examples.push({ id: filename.slice(0, -4), source: await readFile(new URL(`src/examples/${filename}`, site), 'utf8') });
 }
-for (const { id, source, prompt, referenceSpec } of examples) {
+for (const { id, source, prompt, referenceSpec, requirements } of examples) {
   const filename = `${id}.dgm`;
   const parsed = parseDgmResult(source);
   if (parsed.isErr()) {
     console.error(`${filename}: ${formatParseError(parsed.error)}`);
+    process.exit(1);
+  }
+  let requirementsText = requirements;
+  if (!requirementsText) {
+    requirementsText = await readFile(new URL(`src/examples/${id}.requirements.json`, site), 'utf8');
+  }
+  const requirementsResult = parseRequirements(requirementsText);
+  if (requirementsResult.isErr()) {
+    console.error(`${id}.requirements.json: ${requirementsResult.error.message}`);
+    process.exit(1);
+  }
+  const requirementIssues = checkRequirements(parsed.value, requirementsResult.value);
+  if (requirementIssues.length) {
+    console.error(`${filename}: requirements are incomplete: ${JSON.stringify(requirementIssues)}`);
     process.exit(1);
   }
   const result = compileDiagram(parsed.value);
@@ -53,6 +68,7 @@ for (const { id, source, prompt, referenceSpec } of examples) {
   const preview = svg.replace(/<svg\b[^>]*>/, `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}">`);
   await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '-preview.svg')}`, site), preview);
   await writeFile(new URL(`public/diagrams/${filename}`, site), source);
+  await writeFile(new URL(`public/diagrams/${id}.requirements.json`, site), requirementsText);
   if (prompt) await writeFile(new URL(`public/diagrams/${id}-prompt.txt`, site), prompt);
   if (referenceSpec) await writeFile(new URL(`public/diagrams/${id}-reference-spec.md`, site), referenceSpec);
 }

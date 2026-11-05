@@ -35,6 +35,26 @@ function crossingLayout(): LayoutResult {
 }
 
 describe("checkInvariants diagnostic limits", () => {
+  it("reports a required edge that has no visible geometry", () => {
+    for (const points of [
+      [],
+      [{ x: 1, y: 1 }],
+      [
+        { x: 1, y: 1 },
+        { x: 1, y: 1 },
+      ],
+    ]) {
+      const layout = crossingLayout();
+      layout.edges = [{ id: "missing", source: "a", target: "b", style: "solid", points }];
+      expect(checkInvariants(layout)).toEqual([
+        {
+          code: "edge-route-missing",
+          message: "Edge missing has no visible route",
+          elementIds: ["missing", "a", "b"],
+        },
+      ]);
+    }
+  });
   it("returns no findings for a clean layout, including with a limit", () => {
     const layout: LayoutResult = {
       nodes: [],

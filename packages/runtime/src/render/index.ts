@@ -1,5 +1,6 @@
 export * from "./svg.js";
 export * from "./compile.js";
+export * from "./automatic-layout.js";
 export * from "./sanitize-svg.js";
 export * from "./assets.js";
 export * from "./validate-assets.js";

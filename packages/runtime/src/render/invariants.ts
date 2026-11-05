@@ -34,6 +34,17 @@ export function checkInvariants(layout: LayoutResult, options?: { maxFailures?: 
   }
 
   for (const edge of layout.edges) {
+    if (
+      edge.points.length < 2 ||
+      !edge.points.some((point) => point.x !== edge.points[0]!.x || point.y !== edge.points[0]!.y)
+    ) {
+      recordFailure({
+        code: "edge-route-missing",
+        message: `Edge ${edge.id} has no visible route`,
+        elementIds: [edge.id, edge.source, edge.target],
+      });
+      continue;
+    }
     const source = layout.nodes.find((node) => node.id === edge.source);
     const target = layout.nodes.find((node) => node.id === edge.target);
     if (source && edge.points[0] && !pointOnRectBorder(edge.points[0], source.icon)) {

@@ -16,7 +16,7 @@
   edge an `id`. Preserve explicit labels and counts.
 - The format has no comments. Put notes in an `annotation` or the brief.
 - Express the primary flow with directed edges. Use concise edge labels and
-  `step` for requested or useful numbered stages. Use dashed edges for peer or
+  `step` numbers as `preferences.json` directs. Use dashed edges for peer or
   supporting relationships. Add `from`/`to` face hints only when the intended
   attachment is unambiguous and automatic routing needs help.
 - Default every new diagram to horizontal left-to-right layout (`flow lr`);
@@ -70,4 +70,4 @@ view <id> { place <id> { ... }  route <edge-id> { ... }  annotation <id> { ... }
 | `place` | `x`, `y`, `w`, `h`; `pin`; `manual`; `locked`; `visible` `true`/`false`; `z` |
 | `route` | `point <x> <y>`; `mode` `auto`/`manual`; `pin`; `badge`/`label` `<0-1>` `top`/`bottom` |
 
-Colors are `graphite`, `blue`, `teal`, `purple`, `amber`, `red`, `green`.
+Colors are `graphite`, `blue`, `teal`, `purple`, `amber`, `coral`, `red`, `green`.

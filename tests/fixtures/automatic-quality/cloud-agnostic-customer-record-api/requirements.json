@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "application-cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: application cloud"
+      }
+    },
+    {
+      "id": "production-account",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: production account"
+      }
+    },
+    {
+      "id": "primary-region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary region"
+      }
+    },
+    {
+      "id": "client",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external web client"
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "api-gateway",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: API gateway"
+      },
+      "type": "cloud-agnostic.gateway"
+    },
+    {
+      "id": "customer-api",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: customer API service"
+      },
+      "type": "cloud-agnostic.container"
+    },
+    {
+      "id": "customer-database",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: customer database"
+      },
+      "type": "cloud-agnostic.database"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client-https-gateway",
+      "source": "client",
+      "target": "api-gateway",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external web client sending HTTPS requests through an API gateway"
+      }
+    },
+    {
+      "id": "gateway-customer-api",
+      "source": "api-gateway",
+      "target": "customer-api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: through an API gateway to a customer API service"
+      }
+    },
+    {
+      "id": "api-read-database",
+      "source": "customer-api",
+      "target": "customer-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: customer API service reads ... a customer database"
+      }
+    },
+    {
+      "id": "api-write-database",
+      "source": "customer-api",
+      "target": "customer-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: customer API service ... writes a customer database"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "cloud-count",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an application cloud"
+      }
+    },
+    {
+      "id": "account-count",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a production account"
+      }
+    },
+    {
+      "id": "region-count",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a primary region"
+      }
+    },
+    {
+      "id": "client-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an external web client"
+      }
+    },
+    {
+      "id": "gateway-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: an API gateway"
+      }
+    },
+    {
+      "id": "api-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.container",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a customer API service"
+      }
+    },
+    {
+      "id": "database-count",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a customer database"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "cloud-root",
+      "component": "application-cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: application cloud"
+      }
+    },
+    {
+      "id": "account-in-cloud",
+      "component": "production-account",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: nest a production account ... inside an application cloud"
+      },
+      "group": "application-cloud"
+    },
+    {
+      "id": "region-in-account",
+      "component": "primary-region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: nest ... primary region inside [account]"
+      },
+      "group": "production-account"
+    },
+    {
+      "id": "client-outside-cloud",
+      "component": "client",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Keep the client outside the cloud"
+      },
+      "group": "application-cloud"
+    },
+    {
+      "id": "gateway-in-region",
+      "component": "api-gateway",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: place the three services in the region"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "api-in-region",
+      "component": "customer-api",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: place the three services in the region"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "database-in-region",
+      "component": "customer-database",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: place the three services in the region"
+      },
+      "group": "primary-region"
+    }
+  ],
+  "allowAdditionalResources": true
+}

@@ -7,6 +7,8 @@ import type { LayoutState } from "./internal.js";
 import { finalizeAbsoluteLayout } from "./absolute.js";
 import { LAYOUT_METRICS } from "./metrics.js";
 import { findDiagramRoots, orderRootsForFlow } from "./roots.js";
+import { childFlowLayers } from "./flow-layers.js";
+import { alignAutomaticIconCentres, isSimpleAutomaticGridFlow } from "./automatic-grid.js";
 
 interface Measured {
   w: number;
@@ -28,13 +30,14 @@ type LayoutChild = {
 
 type RegionColumn = "left" | "center" | "right";
 
-export function layoutDocument(doc: DiagramDocument): LayoutResult {
+export function layoutDocument(doc: DiagramDocument, options: { compoundFlow?: boolean } = {}): LayoutResult {
   const state: LayoutState = {
+    compoundFlow: options.compoundFlow,
     nodeGeoms: new Map(),
     groupGeoms: new Map(),
   };
 
-  const roots = orderRootsForFlow(doc, findDiagramRoots(doc));
+  const roots = orderRootsForFlow(doc, findDiagramRoots(doc), options.compoundFlow);
   for (const rootId of roots) {
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
@@ -45,13 +48,31 @@ export function layoutDocument(doc: DiagramDocument): LayoutResult {
   equalizeSymmetry(doc, state);
   const layout = finalizeAbsoluteLayout(doc, state);
   applyPinnedViewOverrides(doc, layout);
-  sortLayoutByZIndex(doc, layout);
-  return layout;
+  const aligned = isSimpleAutomaticGridFlow(doc) ? alignAutomaticIconCentres(doc, layout) : layout;
+  sortLayoutByZIndex(doc, aligned);
+  return aligned;
 }
 
 function layoutGroup(doc: DiagramDocument, groupId: ID, state: LayoutState): Measured {
   const group = getGroup(doc, groupId)!;
   const style = GROUP_STYLES[group.kind];
+
+  if (state.compoundFlow && !["az", "subnet", "subnet-public", "subnet-private"].includes(group.kind)) {
+    const layers = childFlowLayers(doc, group);
+    if (
+      layers &&
+      group.children.length >= 3 &&
+      group.children.some((id) => getGroup(doc, id)) &&
+      group.children.some((id) => getResource(doc, id))
+    ) {
+      const regionChildren = group.children.filter((id) => getGroup(doc, id)?.kind === "region");
+      const satellites = group.children.filter((id) => getResource(doc, id));
+      if (regionChildren.length === 1 && satellites.length === group.children.length - 1 && satellites.length >= 2) {
+        return layoutRegionalSatellites(doc, group, state, regionChildren[0]!, satellites);
+      }
+      if (group.kind !== "account") return layoutCompoundFlowGroup(doc, group, state, layers);
+    }
+  }
 
   if (group.kind === "az") {
     return layoutAzGroup(doc, group, state);
@@ -73,6 +94,91 @@ function layoutGroup(doc: DiagramDocument, groupId: ID, state: LayoutState): Mea
   }
 
   return layoutGenericGroup(doc, group, state, style.padding);
+}
+
+/** Global services sit outside, but alongside the regional stages they serve. */
+function layoutRegionalSatellites(
+  doc: DiagramDocument,
+  group: Group,
+  state: LayoutState,
+  regionId: ID,
+  satelliteIds: ID[],
+): Measured {
+  const style = GROUP_STYLES[group.kind];
+  const children = measureChildren(doc, group.children, state);
+  const region = children.find((child) => child.id === regionId)!;
+  const regionalNodes = new Map(childResources(doc, region, state).map((node) => [node.id, node]));
+  const satellites = satelliteIds.map((id) => children.find((child) => child.id === id)!);
+  const desired = satellites
+    .map((child, index) => {
+      const neighbors = doc.edges.flatMap((edge) => {
+        const other = edge.source === child.id ? edge.target : edge.target === child.id ? edge.source : undefined;
+        const node = other ? regionalNodes.get(other) : undefined;
+        return node ? [node.icon.x + node.icon.w / 2] : [];
+      });
+      const center = neighbors.length ? neighbors.reduce((sum, value) => sum + value, 0) / neighbors.length : region.w;
+      return { child, center, index };
+    })
+    .sort((a, b) => a.center - b.center || a.index - b.index);
+  const totalW = satellites.reduce((sum, child) => sum + child.w, 0) + (satellites.length - 1) * (H_GAP + 16);
+  const contentW = Math.max(region.w, totalW, groupLabelContentWidth(group, style));
+  const bandH = Math.max(...satellites.map((child) => child.h)) + 64;
+  const regionX = (contentW - region.w) / 2;
+  let x = 0;
+  for (const [index, { child, center }] of desired.entries()) {
+    const remaining =
+      desired.slice(index).reduce((sum, item) => sum + item.child.w, 0) + (desired.length - index - 1) * (H_GAP + 16);
+    x = Math.max(x, Math.min(contentW - remaining, regionX + center - child.w / 2));
+    placeLayoutChild(state, child, x, (bandH - 64 - child.h) / 2, doc);
+    x += child.w + H_GAP + 16;
+  }
+  placeLayoutChild(state, region, regionX, bandH, doc);
+  const w = contentW + style.padding * 2;
+  const h = bandH + region.h + style.headerHeight + style.padding * 2;
+  storeGroupGeom(state, group, 0, 0, w, h);
+  return { w, h };
+}
+
+/** Arrange compound branches by connectivity, with one shared icon baseline. */
+function layoutCompoundFlowGroup(doc: DiagramDocument, group: Group, state: LayoutState, layers: ID[][]): Measured {
+  const style = GROUP_STYLES[group.kind];
+  const children = measureChildren(doc, group.children, state);
+  const childById = new Map(children.map((child) => [child.id, child]));
+  const columns = layers.map((layer) => layer.map((id) => childById.get(id)!));
+  const sizes = columns.map((column) => {
+    let y = 0;
+    const placements = column.map((child) => {
+      const item = { child, y };
+      y += child.h + V_GAP + 24;
+      return item;
+    });
+    const h = y - V_GAP - 24;
+    const anchors = placements.flatMap(({ child, y: itemY }) =>
+      childResources(doc, child, state).map(({ icon }) => itemY + icon.y + icon.h / 2),
+    );
+    const anchor = anchors.length ? anchors.reduce((sum, value) => sum + value, 0) / anchors.length : h / 2;
+    return { placements, h, w: Math.max(...column.map((child) => child.w)), anchor };
+  });
+  const above = Math.max(...sizes.map((size) => size.anchor));
+  const below = Math.max(...sizes.map((size) => size.h - size.anchor));
+  let x = 0;
+  for (const [index, size] of sizes.entries()) {
+    for (const { child, y } of size.placements) {
+      placeLayoutChild(state, child, x + (size.w - child.w) / 2, above - size.anchor + y, doc);
+    }
+    const next = columns[index + 1];
+    x += size.w;
+    if (next) {
+      x += Math.max(
+        H_GAP + 24,
+        ...columns[index]!.flatMap((left) => next.map((right) => genericChildGap(doc, left, right, state))),
+      );
+    }
+  }
+  const w = Math.max(100, groupLabelContentWidth(group, style), x) + style.padding * 2;
+  const h = Math.max(40, above + below) + style.headerHeight + style.padding * 2;
+  storeGroupGeom(state, group, 0, 0, w, h);
+  return { w, h };
 }
 
 function layoutAccountGroup(doc: DiagramDocument, group: Group, state: LayoutState): Measured {
@@ -252,14 +358,24 @@ function layoutRegionGroup(doc: DiagramDocument, group: Group, state: LayoutStat
     const support = children.filter((child) => !participantIds.has(child.id));
     const gaps = primary.slice(1).map((child, index) => genericChildGap(doc, primary[index]!, child, state));
     const primaryW = primary.reduce((sum, item, index) => sum + item.w + (index ? gaps[index - 1]! : 0), 0);
-    const primaryH = Math.max(40, ...primary.map((item) => item.h));
+    const resourceRow = measureResourceRow(doc, primary, state);
+    const primaryIds = new Set(primary.map((item) => item.id));
+    const decorationLane =
+      resourceRow &&
+      doc.edges.some((edge) => edge.step !== undefined && primaryIds.has(edge.source) && primaryIds.has(edge.target))
+        ? 16
+        : 0;
+    const primaryH = decorationLane + Math.max(40, resourceRow?.height ?? 0, ...primary.map((item) => item.h));
     const supportW = support.reduce((sum, item, index) => sum + item.w + (index ? H_GAP : 0), 0);
     const supportH = Math.max(0, ...support.map((item) => item.h));
     const contentW = Math.max(120, groupLabelContentWidth(group, style), primaryW, supportW);
     const contentH = primaryH + (support.length ? V_GAP + supportH : 0);
     let cursor = 0;
     for (const [index, item] of primary.entries()) {
-      placeLayoutChild(state, item, cursor, (primaryH - item.h) / 2, doc);
+      const y = resourceRow
+        ? decorationLane + resourceRow.yFor(item, (primaryH - decorationLane - resourceRow.height) / 2)
+        : (primaryH - item.h) / 2;
+      placeLayoutChild(state, item, cursor, y, doc);
       cursor += item.w + (gaps[index] ?? 0);
     }
     cursor = (contentW - supportW) / 2;
@@ -331,6 +447,24 @@ function layoutVpcGroup(doc: DiagramDocument, group: Group, state: LayoutState):
   const availabilityZones = children.filter((child) => child.group?.kind === "az");
   const leftRail = children.filter((child) => child.resource);
   const rightRail = children.filter((child) => child.group && child.group.kind !== "az");
+  if (
+    doc.flow === "lr" &&
+    availabilityZones.length === 0 &&
+    rightRail.length === 0 &&
+    (leftRail.length === 2 ||
+      (leftRail.length === 3 &&
+        leftRail.some(
+          (child) =>
+            new Set(
+              doc.edges
+                .filter((edge) => edge.source === child.id && leftRail.some((item) => item.id === edge.target))
+                .map((edge) => edge.target),
+            ).size === 2,
+        ))) &&
+    hasHorizontalChildFlow(doc, group)
+  ) {
+    return layoutGenericGroup(doc, group, state, style.padding);
+  }
 
   // A VPC reads as a frame around a centered AZ stack. Direct resources such
   // as an ALB live in a narrow left rail; any other direct groups stay in a
@@ -366,8 +500,10 @@ function layoutVpcGroup(doc: DiagramDocument, group: Group, state: LayoutState):
   const hasAzs = availabilityZones.length > 0;
   const azX = leftRail.length ? leftSize.w + H_GAP : 0;
   const rightX = azX + (hasAzs ? azSize.w : 0) + (hasAzs || leftRail.length ? H_GAP : 0);
+  const compactAzureSingletonEndpoint =
+    group.type === "azure.vnet" && !hasAzs && rightRail.length === 0 && leftRail.length === 1;
   const contentW = Math.max(
-    LAYOUT_METRICS.minVpcContentWidth,
+    compactAzureSingletonEndpoint ? groupLabelContentWidth(group, style) : LAYOUT_METRICS.minVpcContentWidth,
     rightRail.length ? rightX + rightSize.w : azX + azSize.w,
     leftRail.length ? leftSize.w : 0,
   );
@@ -415,11 +551,17 @@ function layoutAzGroup(doc: DiagramDocument, group: Group, state: LayoutState): 
     LAYOUT_METRICS.minAzContentWidth,
     children.reduce((width, item, index) => width + item.w + (index > 0 ? H_GAP : 0), 0),
   );
-  const contentH = Math.max(LAYOUT_METRICS.minAzContentHeight, Math.max(0, ...children.map((item) => item.h)));
+  const resourceRow = measureResourceRow(doc, children, state);
+  const contentH = Math.max(
+    LAYOUT_METRICS.minAzContentHeight,
+    resourceRow?.height ?? 0,
+    Math.max(0, ...children.map((item) => item.h)),
+  );
 
   let x = 0;
   for (const item of children) {
-    placeLayoutChild(state, item, x, (contentH - item.h) / 2, doc);
+    const y = resourceRow ? resourceRow.yFor(item, (contentH - resourceRow.height) / 2) : (contentH - item.h) / 2;
+    placeLayoutChild(state, item, x, y, doc);
     x += item.w + H_GAP;
   }
 
@@ -437,11 +579,13 @@ function layoutSubnetGroup(doc: DiagramDocument, group: Group, state: LayoutStat
     groupLabelContentWidth(group, style),
     children.reduce((width, item, index) => width + item.w + (index > 0 ? RESOURCE_GAP : 0), 0),
   );
-  const contentH = Math.max(80, Math.max(0, ...children.map((item) => item.h)));
+  const resourceRow = measureResourceRow(doc, children, state);
+  const contentH = Math.max(80, resourceRow?.height ?? 0, Math.max(0, ...children.map((item) => item.h)));
 
   let x = 0;
   for (const item of children) {
-    placeLayoutChild(state, item, x, (contentH - item.h) / 2, doc);
+    const y = resourceRow ? resourceRow.yFor(item, (contentH - resourceRow.height) / 2) : (contentH - item.h) / 2;
+    placeLayoutChild(state, item, x, y, doc);
     x += item.w + RESOURCE_GAP;
   }
 
@@ -470,7 +614,9 @@ function layoutLogicalGroup(doc: DiagramDocument, group: Group, state: LayoutSta
       (width, item, index) => width + item.w + (index > 0 ? mainGaps[index - 1]! : 0),
       0,
     );
-    const mainH = connectorLane + Math.max(60, ...mainChildren.map((item) => item.h));
+    const mainRow = measureResourceRow(doc, mainChildren, state);
+    const mainRowH = Math.max(60, mainRow?.height ?? 0, ...mainChildren.map((item) => item.h));
+    const mainH = connectorLane + mainRowH;
     const supportW = supporting.reduce((width, item, index) => width + item.w + (index > 0 ? H_GAP : 0), 0);
     const supportH = Math.max(...supporting.map((item) => item.h));
     const contentW = Math.max(120, groupLabelContentWidth(group, style), mainW, supportW);
@@ -478,7 +624,10 @@ function layoutLogicalGroup(doc: DiagramDocument, group: Group, state: LayoutSta
 
     let x = 0;
     for (const [index, item] of mainChildren.entries()) {
-      placeLayoutChild(state, item, x, connectorLane + (mainH - connectorLane - item.h) / 2, doc);
+      const y =
+        connectorLane +
+        (mainRow ? mainRow.yFor(item, (mainRowH - mainRow.height) / 2) : (mainH - connectorLane - item.h) / 2);
+      placeLayoutChild(state, item, x, y, doc);
       x += item.w + (mainGaps[index] ?? 0);
     }
     x = (contentW - supportW) / 2;
@@ -502,8 +651,10 @@ function layoutLogicalGroup(doc: DiagramDocument, group: Group, state: LayoutSta
         children.reduce((width, item, index) => width + item.w + (index > 0 ? childGaps[index - 1]! : 0), 0),
       )
     : Math.max(120, groupLabelContentWidth(group, style), Math.max(0, ...children.map((item) => item.w)));
+  const resourceRow = horizontal ? measureResourceRow(doc, children, state) : undefined;
+  const horizontalRowH = Math.max(60, resourceRow?.height ?? 0, ...children.map((item) => item.h));
   const contentH = horizontal
-    ? connectorLane + Math.max(60, Math.max(0, ...children.map((item) => item.h)))
+    ? connectorLane + horizontalRowH
     : Math.max(
         60,
         children.reduce((height, item, index) => height + item.h + (index > 0 ? V_GAP : 0), 0),
@@ -512,13 +663,19 @@ function layoutLogicalGroup(doc: DiagramDocument, group: Group, state: LayoutSta
   let cursor = 0;
   for (const [index, item] of children.entries()) {
     const x = horizontal ? cursor : (contentW - item.w) / 2;
-    const y = horizontal ? connectorLane + (contentH - connectorLane - item.h) / 2 : cursor;
+    const y = horizontal
+      ? connectorLane +
+        (resourceRow
+          ? resourceRow.yFor(item, (horizontalRowH - resourceRow.height) / 2)
+          : (horizontalRowH - item.h) / 2)
+      : cursor;
     placeLayoutChild(state, item, x, y, doc);
     cursor += (horizontal ? item.w : item.h) + (horizontal ? (childGaps[index] ?? 0) : V_GAP);
   }
 
   const w = Math.max(contentW, 120) + style.padding * 2;
-  const h = Math.max(contentH, 60) + style.headerHeight + style.padding * 2;
+  const h =
+    Math.max(horizontal ? connectorLane + horizontalRowH : contentH, 60) + style.headerHeight + style.padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
 }
@@ -526,6 +683,81 @@ function layoutLogicalGroup(doc: DiagramDocument, group: Group, state: LayoutSta
 function isSupportingSink(doc: DiagramDocument, id: ID): boolean {
   const incident = doc.edges.filter((edge) => edge.source === id || edge.target === id);
   return incident.length > 0 && incident.every((edge) => edge.target === id && edge.style === "dashed");
+}
+
+/** Measure a horizontal row around endpoint icon centers, leaving room for whole child boundaries. */
+function measureResourceRow(
+  doc: DiagramDocument,
+  children: LayoutChild[],
+  state: LayoutState,
+): { height: number; yFor: (child: LayoutChild, offset: number) => number } | undefined {
+  if (!children.length) return undefined;
+  const view = getDefaultView(doc);
+  const allResources = children.every((child) => child.resource);
+  const owners = new Map<ID, ChildResourceGeom[]>();
+  for (const child of children) {
+    const resources = childResources(doc, child, state);
+    if (!resources.length) return undefined;
+    owners.set(child.id, resources);
+    if (view.places[child.id]?.pin || resources.some((resource) => view.places[resource.id]?.pin)) return undefined;
+  }
+
+  let endpointByOwner = new Map<ID, ID>();
+  if (!allResources) {
+    if (doc.flow !== "lr" || children.some((child) => !child.resource && !child.group)) return undefined;
+    const ownerByResource = new Map<ID, ID>();
+    for (const [owner, resources] of owners) for (const resource of resources) ownerByResource.set(resource.id, owner);
+    const neighbors = new Map(children.map((child) => [child.id, new Set<ID>()]));
+    const endpoints = new Map(children.map((child) => [child.id, new Set<ID>()]));
+    for (const edge of doc.edges) {
+      if (edge.style === "dashed" || edge.kind === "fail" || edge.kind === "peer") continue;
+      const sourceOwner = ownerByResource.get(edge.source);
+      const targetOwner = ownerByResource.get(edge.target);
+      if (!sourceOwner || !targetOwner || sourceOwner === targetOwner) continue;
+      neighbors.get(sourceOwner)!.add(targetOwner);
+      neighbors.get(targetOwner)!.add(sourceOwner);
+      endpoints.get(sourceOwner)!.add(edge.source);
+      endpoints.get(targetOwner)!.add(edge.target);
+    }
+    const active = children.filter((child) => neighbors.get(child.id)!.size > 0);
+    const pairCount = active.reduce((sum, child) => sum + neighbors.get(child.id)!.size, 0) / 2;
+    if (
+      active.length !== children.length ||
+      pairCount !== children.length - 1 ||
+      active.some((child) => neighbors.get(child.id)!.size > 2 || endpoints.get(child.id)!.size !== 1)
+    )
+      return undefined;
+    const visited = new Set<ID>();
+    const visit = (id: ID): void => {
+      if (visited.has(id)) return;
+      visited.add(id);
+      for (const neighbor of neighbors.get(id)!) visit(neighbor);
+    };
+    visit(children[0]!.id);
+    if (visited.size !== children.length) return undefined;
+    endpointByOwner = new Map(children.map((child) => [child.id, [...endpoints.get(child.id)!][0]!]));
+  }
+
+  const measures = children.map((child) => {
+    const resources = owners.get(child.id)!;
+    const endpointId = endpointByOwner.get(child.id);
+    const endpoint = resources.find((resource) => resource.id === endpointId) ?? resources[0]!;
+    const center = child.resource
+      ? state.nodeGeoms.get(child.id)!.icon.y -
+        state.nodeGeoms.get(child.id)!.obstacle.y +
+        state.nodeGeoms.get(child.id)!.icon.h / 2
+      : endpoint.icon.y + endpoint.icon.h / 2;
+    return { child, center, above: center, below: child.h - center };
+  });
+  const above = Math.max(...measures.map((item) => item.above));
+  const below = Math.max(...measures.map((item) => item.below));
+  return {
+    height: above + below,
+    yFor: (child, offset) => {
+      const item = measures.find((measure) => measure.child.id === child.id)!;
+      return offset + above - item.center;
+    },
+  };
 }
 
 function horizontalConnectorLane(doc: DiagramDocument, group: Group): number {
@@ -673,15 +905,23 @@ function layoutGenericGroup(doc: DiagramDocument, group: Group, state: LayoutSta
     children.reduce((width, item, index) => width + item.w + (index > 0 ? childGaps[index - 1]! : 0), 0),
   );
   const contentH = Math.max(40, Math.max(0, ...children.map((item) => item.h)));
+  const resourceRow = measureResourceRow(doc, children, state);
+  const rowH = Math.max(contentH, resourceRow?.height ?? 0);
 
   let x = 0;
   for (const [index, item] of children.entries()) {
-    placeLayoutChild(state, item, x, (contentH - item.h) / 2, doc);
+    placeLayoutChild(
+      state,
+      item,
+      x,
+      resourceRow ? resourceRow.yFor(item, (rowH - resourceRow.height) / 2) : (rowH - item.h) / 2,
+      doc,
+    );
     x += item.w + (childGaps[index] ?? 0);
   }
 
   const w = Math.max(contentW, 100) + padding * 2;
-  const h = contentH + style.headerHeight + padding * 2;
+  const h = rowH + style.headerHeight + padding * 2;
   storeGroupGeom(state, group, 0, 0, w, h);
   return { w, h };
 }

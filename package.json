@@ -44,7 +44,7 @@
     "update:layout-contracts": "node scripts/update-layout-contracts.mjs",
     "check:agent-init-evaluation": "node scripts/check-agent-init-evaluation.mjs",
     "precheck:engine": "pnpm --filter @dumb-diagrams/runtime build",
-    "check:engine": "vitest run tests/integration/examples/engine-contracts.test.ts tests/integration/examples/curated-provider.test.ts && node scripts/check-agent-init-evaluation.mjs && node scripts/check-engine-determinism.mjs",
+    "check:engine": "vitest run tests/integration/examples/engine-contracts.test.ts tests/integration/examples/curated-provider.test.ts tests/integration/examples/requirements.test.ts tests/integration/examples/requirements-template.test.ts tests/integration/automatic-quality.test.ts tests/integration/studio-cli-parity.test.ts && node scripts/check-agent-init-evaluation.mjs && node scripts/check-engine-determinism.mjs",
     "pretest:golden": "pnpm --filter @dumb-diagrams/runtime build",
     "test:golden": "vitest run tests/compat/compat.test.ts tests/integration/examples/curated-layout.test.ts tests/integration/examples/reviewed-layout.test.ts packages/editor/src/editor-model.golden.test.ts",
     "check:performance": "node scripts/check-performance-budget.mjs",

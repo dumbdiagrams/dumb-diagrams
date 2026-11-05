@@ -19,6 +19,7 @@ export type QualityTuple = {
 };
 
 const HARD_INVARIANT_CODES = new Set([
+  "edge-route-missing",
   "edge-icon-collision",
   "edge-obstacle-collision",
   "edge-port-detached",
@@ -42,6 +43,7 @@ const SOFT_INVARIANT_CODES = new Set([
 ]);
 
 const INVARIANT_WEIGHTS: Record<string, number> = {
+  "edge-route-missing": 1_000_000,
   "resource-icon-overlap": 50_000,
   "edge-icon-collision": 1_000_000,
   "edge-obstacle-collision": 1_000_000,

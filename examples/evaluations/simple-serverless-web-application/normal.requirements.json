@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "visitor",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Visitor is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Cloud is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "frontend",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Frontend services in this architecture."
+      }
+    },
+    {
+      "id": "edge",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Web delivery in this architecture."
+      }
+    },
+    {
+      "id": "assets",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Static assets is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application API in this architecture."
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Request handler in this architecture."
+      }
+    },
+    {
+      "id": "database",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application data in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "visitor-edge",
+      "source": "visitor",
+      "target": "edge",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Visitor to Web delivery edge is the reference mapping."
+      }
+    },
+    {
+      "id": "edge-assets",
+      "source": "edge",
+      "target": "assets",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Web delivery to Static assets edge is the reference mapping."
+      }
+    },
+    {
+      "id": "edge-api",
+      "source": "edge",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Web delivery to Application API direction."
+      }
+    },
+    {
+      "id": "api-worker",
+      "source": "api",
+      "target": "worker",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Application API to Request handler edge is the reference mapping."
+      }
+    },
+    {
+      "id": "worker-database",
+      "source": "worker",
+      "target": "database",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Request handler to Application data edge is the reference mapping."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_api-gateway",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.api-gateway; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_aws-lambda",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.aws-lambda; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_cloudfront",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloudfront; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_dynamodb",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.dynamodb; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.cloud; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_visitor",
+      "component": "visitor",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Visitor at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_aws",
+      "component": "aws",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_frontend",
+      "component": "frontend",
+      "relation": "inside",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Frontend services inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_edge",
+      "component": "edge",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Web delivery inside Frontend services."
+      }
+    },
+    {
+      "id": "place_assets",
+      "component": "assets",
+      "relation": "inside",
+      "group": "frontend",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Static assets inside Frontend services."
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application API inside AWS Cloud."
+      }
+    },
+    {
+      "id": "place_worker",
+      "component": "worker",
+      "relation": "inside",
+      "group": "aws",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Request handler in this scope; AWS Cloud is the reference grouping."
+      }
+    },
+    {
+      "id": "place_database",
+      "component": "database",
+      "relation": "inside",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Application data inside AWS Cloud."
+      }
+    }
+  ]
+}

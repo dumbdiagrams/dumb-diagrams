@@ -24,8 +24,9 @@ export function loadExamples() {
     const prompt = readFileSync(join(directory, 'user-prompt.md'), 'utf8');
     const interpretation = readFileSync(join(directory, 'architecture-brief.md'), 'utf8');
     const referenceSpec = readFileSync(join(directory, 'reference-spec.md'), 'utf8');
+    const requirements = readFileSync(join(directory, 'requirements.json'), 'utf8');
     const title = source.match(/^\s*title "([^"]+)"/m)?.[1];
     if (!title) throw new Error(`Missing example title: ${id}`);
-    return { id, title, description: descriptions[id], source, prompt, interpretation, referenceSpec };
+    return { id, title, description: descriptions[id], source, prompt, interpretation, referenceSpec, requirements };
   });
 }

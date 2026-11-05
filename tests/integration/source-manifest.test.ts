@@ -32,6 +32,7 @@ describe("source manifest", () => {
       "docs/ARCHITECTURE.md",
       "docs/RELEASE.md",
       "docs/STYLE_GUIDE.md",
+      "docs/TESTING.md",
     ]);
     expect(files.some((file) => file.endsWith(".DS_Store"))).toBe(false);
   });

@@ -1,0 +1,356 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "users",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Project team in this architecture."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Cloud environment is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Production account is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Primary region is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "edge",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Portal load balancer in this architecture."
+      }
+    },
+    {
+      "id": "attachments",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Project attachments in this architecture."
+      }
+    },
+    {
+      "id": "private_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Private application network in this architecture."
+      }
+    },
+    {
+      "id": "portal_api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Project portal server in this architecture."
+      }
+    },
+    {
+      "id": "project_db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Project metadata in this architecture."
+      }
+    },
+    {
+      "id": "metadata_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Project lookup cache in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "portal_requests",
+      "source": "users",
+      "target": "edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Project team to Portal load balancer direction."
+      }
+    },
+    {
+      "id": "project_requests",
+      "source": "edge",
+      "target": "portal_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Portal load balancer to Project portal server direction."
+      }
+    },
+    {
+      "id": "project_data",
+      "source": "project_db",
+      "target": "portal_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Project metadata to Project portal server direction."
+      }
+    },
+    {
+      "id": "lookup_cache",
+      "source": "metadata_cache",
+      "target": "portal_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Project lookup cache to Project portal server direction."
+      }
+    },
+    {
+      "id": "file_objects",
+      "source": "attachments",
+      "target": "portal_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Project attachments to Project portal server direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.cache; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.database; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_load-balancer",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.load-balancer; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_object-storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.object-storage; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.server; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.account; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.cloud; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.network; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.region; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_users",
+      "component": "users",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Project team at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Cloud environment at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_account",
+      "component": "account",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Production account in this scope; Cloud environment is the reference grouping."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Primary region in this scope; Production account is the reference grouping."
+      }
+    },
+    {
+      "id": "place_edge",
+      "component": "edge",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Portal load balancer inside Primary region."
+      }
+    },
+    {
+      "id": "place_attachments",
+      "component": "attachments",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Project attachments inside Primary region."
+      }
+    },
+    {
+      "id": "place_private_network",
+      "component": "private_network",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Private application network inside Primary region."
+      }
+    },
+    {
+      "id": "place_portal_api",
+      "component": "portal_api",
+      "relation": "inside",
+      "group": "private_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Project portal server inside Private application network."
+      }
+    },
+    {
+      "id": "place_project_db",
+      "component": "project_db",
+      "relation": "inside",
+      "group": "private_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Project metadata inside Private application network."
+      }
+    },
+    {
+      "id": "place_metadata_cache",
+      "component": "metadata_cache",
+      "relation": "inside",
+      "group": "private_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Project lookup cache inside Private application network."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

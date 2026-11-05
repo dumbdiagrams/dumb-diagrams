@@ -1,4 +1,4 @@
-import type { DiagramDocument, ValidationIssue } from "./types.js";
+import { type DiagramDocument, EDGE_COLOR_VALUES, type ValidationIssue } from "./types.js";
 
 export const DIAGRAM_LIMITS = Object.freeze({
   sourceBytes: 1024 * 1024,
@@ -229,15 +229,7 @@ function isGroupLabelPosition(value: string): boolean {
 }
 
 function isDiagramColor(value: string): boolean {
-  return (
-    value === "graphite" ||
-    value === "blue" ||
-    value === "teal" ||
-    value === "purple" ||
-    value === "amber" ||
-    value === "red" ||
-    value === "green"
-  );
+  return Object.hasOwn(EDGE_COLOR_VALUES, value);
 }
 
 function checkCount(issues: ValidationIssue[], name: string, values: unknown[], limit: number): void {

@@ -37,7 +37,7 @@ diagram image-thumbnail-pipeline {
 }
 
 view default {
-  place thumbnail_images { x 904.7 y 92 pin manual }
-  place image_metadata { x 912.7 y 220 pin manual }
-  place outputs { x 892.7 y 58 w 136.79999999999995 h 280 pin manual }
+  place thumbnail_images { x 1024.7 y 92 pin manual }
+  place image_metadata { x 1032.7 y 220 pin manual }
+  place outputs { x 1012.7 y 58 w 136.79999999999995 h 280 pin manual }
 }

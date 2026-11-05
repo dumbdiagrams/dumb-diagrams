@@ -15,12 +15,14 @@ diagram aws-hard-document-processing {
             aws.aws-fargate worker_a { service "Fargate worker A" }
           }
         }
+
         aws.az az_b "Availability Zone B" {
           aws.subnet.private subnet_b "Private subnet B" {
             aws.aws-fargate worker_b { service "Fargate worker B" }
           }
         }
       }
+
       cloud-agnostic.boundary managed "Regional managed services" {
         aws.api-gateway api "API Gateway"
         aws.aws-lambda intake "Lambda intake"
@@ -32,6 +34,7 @@ diagram aws-hard-document-processing {
         aws.simple-notification-service sns "SNS completion topic"
       }
     }
+
     cloud-agnostic.boundary global_delivery "Global delivery" {
       aws.cloudfront cf "CloudFront distribution"
     }

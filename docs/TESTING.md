@@ -11,8 +11,10 @@ pnpm install --frozen-lockfile
 
 - `tests/compat/v1/` freezes format compatibility.
 - `examples/curated/` holds provider and cloud-agnostic cases. Semantic expectations are in `examples/evaluations/`; layout contracts and SVG snapshots freeze geometry and output.
+- Every maintained diagram has `requirements.json` (bundles) or `<stem>.requirements.json` (flat files). These contracts freeze component IDs, relationships, counts, and placement from the prompt before authoring.
 - `examples/routing-warnings.json` and `scripts/performance-baseline.json` track routing findings and work.
 - Editor operation goldens are under `packages/editor/src/__snapshots__/editor-model/`.
+- `tests/fixtures/automatic-quality/` freezes 16 Luna 6 inputs. Keep their prompts, sources and contracts unchanged. Their replay requires visible connections, clear captions, compact simple flows and deterministic output. Ordinary crossings use plain lines and remain reported; collisions and shared corridors are not accepted.
 
 Run the focused checks:
 
@@ -24,6 +26,26 @@ pnpm check:performance
 ```
 
 Review changed SVGs before updating a golden or baseline. See [CONTRIBUTING.md](../CONTRIBUTING.md#baselines) for update commands and review rules.
+
+## Architecture completeness
+
+```bash
+dumbdiagrams validate diagrams/example/diagram.dgm
+dumbdiagrams validate --strict diagrams/example/diagram.dgm
+dumbdiagrams validate --json diagrams/example/diagram.dgm
+```
+
+Normal validation requires the companion contract and fails on source, provider,
+or completeness problems. Strict validation also fails on routing findings.
+Use `--requirements <path>` with a custom contract or stdin. Requirements do not
+change during layout repairs; correcting extraction must be explained in the
+architecture brief. The checker verifies the extracted contract, not the model's
+understanding of natural language.
+
+`check:engine` checks contract coverage, positive examples, and deliberately
+incomplete Composer outputs under `examples/evaluations/incomplete-composer/`.
+The full hard candidates must pass completeness even while routing findings
+remain. Historical SVGs and their hashes are preserved.
 
 ## Reviewed Studio exports
 
@@ -54,5 +76,7 @@ Change into the project directory printed by `init`, then run:
 ```bash
 dumbdiagrams studio
 ```
+
+After replacing the package, restart Studio and reload any existing Studio tabs.
 
 `publish:metadata` needs `remote.origin` or `GITHUB_REPOSITORY=OWNER/REPO`; it writes package URLs but does not publish. The global install replaces any existing `create-dumb-diagrams` install. For automated package checks, run `pnpm smoke:package`; for the release gate, see [RELEASE.md](RELEASE.md).

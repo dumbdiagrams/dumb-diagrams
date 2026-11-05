@@ -4,76 +4,16 @@
     {
       "file": "aws-data-transfer-hub.dgm",
       "code": "edge-crossing",
-      "message": "Edges cloudformation-fargate and templates-cloudformation cross"
-    },
-    {
-      "file": "aws-data-transfer-hub.dgm",
-      "code": "edge-crossing",
       "message": "Edges ui-appsync and ui-oidc cross"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges read_data_b and monitor_app_a cross"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges read_data_b and monitor_app_b cross"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges read_data_b and monitor_data_a cross"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges monitor_app_a and monitor_app_b cross"
     }
   ],
   "reviews": [
     {
       "file": "aws-data-transfer-hub.dgm",
       "code": "edge-crossing",
-      "message": "Edges cloudformation-fargate and templates-cloudformation cross",
-      "decision": "Baselined after visual review. The CloudFormation template fan-in crosses the Fargate deploy edge inside a dense automation cluster; rerouting would backtrack past the preserved reference composition.",
-      "status": "reviewed"
-    },
-    {
-      "file": "aws-data-transfer-hub.dgm",
-      "code": "edge-crossing",
       "message": "Edges ui-appsync and ui-oidc cross",
-      "decision": "Baselined after visual review. The hosted UI's AppSync and OIDC edges leave the same card toward adjacent identity and API targets; uncrossing them would break the compact cross-account stack.",
-      "status": "reviewed"
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges read_data_b and monitor_app_a cross",
       "status": "reviewed",
-      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The AZ B data path crosses the dashed AZ A application telemetry path into the shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges read_data_b and monitor_app_b cross",
-      "status": "reviewed",
-      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The AZ B data and application telemetry branches cross on their separate approaches to the regional table and shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges read_data_b and monitor_data_a cross",
-      "status": "reviewed",
-      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The AZ B data path crosses the dashed regional table A telemetry path into the shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
-    },
-    {
-      "file": "aws-high-availability-web-app.dgm",
-      "code": "edge-crossing",
-      "message": "Edges monitor_app_a and monitor_app_b cross",
-      "status": "reviewed",
-      "decision": "Reviewed the rendered diagram after moving DynamoDB outside the VPC. The two AZ application telemetry branches cross before reaching the single shared CloudWatch service. Routes remain distinct, with no reverse overlap or obscured content; keeping both workloads and one shared monitor preserves the architecture."
+      "decision": "Plain perpendicular crossings are accepted for this diagram. User requested ordinary crossing lines without bridge arcs; no shared corridor, icon or caption collision is present."
     }
   ]
 }

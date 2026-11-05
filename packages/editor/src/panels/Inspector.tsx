@@ -40,7 +40,8 @@ const BOUNDARY_COLOR_OPTIONS: Array<{ id: EdgeColor; label: string }> = [
   { id: "teal", label: "Teal" },
   { id: "purple", label: "Purple" },
   { id: "amber", label: "Orange" },
-  { id: "red", label: "Coral" },
+  { id: "coral", label: "Coral" },
+  { id: "red", label: "Red" },
   { id: "green", label: "Green" },
 ];
 

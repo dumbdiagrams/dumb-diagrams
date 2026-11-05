@@ -1,0 +1,560 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; client is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "use1",
+      "kind": "group",
+      "type": "aws.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; AWS Region (us-east-1) is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "main",
+      "kind": "group",
+      "type": "aws.vpc",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; VPC is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "azA",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Availability Zone A is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "pubA",
+      "kind": "group",
+      "type": "aws.subnet.public",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Public Subnet A is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "api_alb",
+      "kind": "resource",
+      "type": "aws.elastic-load-balancing",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Document API ALB is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "appA",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Private App Subnet A is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "apiA",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Document API is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "workerA",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Document worker is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "azB",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Availability Zone B is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "pubB",
+      "kind": "group",
+      "type": "aws.subnet.public",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Public Subnet B is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "api_alb_b",
+      "kind": "resource",
+      "type": "aws.elastic-load-balancing",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Document API ALB is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "appB",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Private App Subnet B is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "apiB",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Document API is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "workerB",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Document worker is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "queues",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Async Queue Tier is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Processing queue is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "jobs_dlq",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; DLQ is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "storage",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Storage Tier is the reference choice used to represent it."
+      }
+    },
+    {
+      "id": "artifacts",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt asks for this architecture role; Processed artifacts is the reference choice used to represent it."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "e1",
+      "source": "client",
+      "target": "api_alb",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this client to Document API ALB edge is the reference mapping."
+      }
+    },
+    {
+      "id": "e2",
+      "source": "api_alb",
+      "target": "apiA",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Document API ALB to Document API edge is the reference mapping."
+      }
+    },
+    {
+      "id": "e3",
+      "source": "apiA",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Document API to Processing queue edge is the reference mapping."
+      }
+    },
+    {
+      "id": "e4",
+      "source": "jobs",
+      "target": "workerA",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Processing queue to Document worker edge is the reference mapping."
+      }
+    },
+    {
+      "id": "e5",
+      "source": "workerA",
+      "target": "artifacts",
+      "kind": "flow",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Document worker to Processed artifacts edge is the reference mapping."
+      }
+    },
+    {
+      "id": "e6",
+      "source": "jobs",
+      "target": "jobs_dlq",
+      "kind": "fail",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes these roles; this Processing queue to DLQ edge is the reference mapping."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_aws_elastic-container-service",
+      "kind": "resource",
+      "type": "aws.elastic-container-service",
+      "min": 4,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 4 records the selected reference normalization for aws.elastic-container-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_elastic-load-balancing",
+      "kind": "resource",
+      "type": "aws.elastic-load-balancing",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.elastic-load-balancing; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-queue-service",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.simple-queue-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_aws_simple-storage-service",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.simple-storage-service; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.actor; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_az",
+      "kind": "group",
+      "type": "aws.az",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.az; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_region",
+      "kind": "group",
+      "type": "aws.region",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.region; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_subnet_private",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.subnet.private; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_subnet_public",
+      "kind": "group",
+      "type": "aws.subnet.public",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for aws.subnet.public; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_aws_vpc",
+      "kind": "group",
+      "type": "aws.vpc",
+      "min": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for aws.vpc; it is a modeling choice. Further instances are allowed."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 2,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 2 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. Further instances are allowed."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_client",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps client at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_use1",
+      "component": "use1",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps AWS Region (us-east-1) at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_main",
+      "component": "main",
+      "relation": "inside",
+      "group": "use1",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes VPC in this scope; AWS Region (us-east-1) is the reference grouping."
+      }
+    },
+    {
+      "id": "place_azA",
+      "component": "azA",
+      "relation": "inside",
+      "group": "main",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Availability Zone A in this scope; VPC is the reference grouping."
+      }
+    },
+    {
+      "id": "place_pubA",
+      "component": "pubA",
+      "relation": "inside",
+      "group": "azA",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Public Subnet A in this scope; Availability Zone A is the reference grouping."
+      }
+    },
+    {
+      "id": "place_api_alb",
+      "component": "api_alb",
+      "relation": "inside",
+      "group": "pubA",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Document API ALB in this scope; Public Subnet A is the reference grouping."
+      }
+    },
+    {
+      "id": "place_appA",
+      "component": "appA",
+      "relation": "inside",
+      "group": "azA",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Private App Subnet A in this scope; Availability Zone A is the reference grouping."
+      }
+    },
+    {
+      "id": "place_apiA",
+      "component": "apiA",
+      "relation": "inside",
+      "group": "appA",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Document API in this scope; Private App Subnet A is the reference grouping."
+      }
+    },
+    {
+      "id": "place_workerA",
+      "component": "workerA",
+      "relation": "inside",
+      "group": "appA",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Document worker in this scope; Private App Subnet A is the reference grouping."
+      }
+    },
+    {
+      "id": "place_azB",
+      "component": "azB",
+      "relation": "inside",
+      "group": "main",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Availability Zone B in this scope; VPC is the reference grouping."
+      }
+    },
+    {
+      "id": "place_pubB",
+      "component": "pubB",
+      "relation": "inside",
+      "group": "azB",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Public Subnet B in this scope; Availability Zone B is the reference grouping."
+      }
+    },
+    {
+      "id": "place_api_alb_b",
+      "component": "api_alb_b",
+      "relation": "inside",
+      "group": "pubB",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Document API ALB in this scope; Public Subnet B is the reference grouping."
+      }
+    },
+    {
+      "id": "place_appB",
+      "component": "appB",
+      "relation": "inside",
+      "group": "azB",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Private App Subnet B in this scope; Availability Zone B is the reference grouping."
+      }
+    },
+    {
+      "id": "place_apiB",
+      "component": "apiB",
+      "relation": "inside",
+      "group": "appB",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Document API in this scope; Private App Subnet B is the reference grouping."
+      }
+    },
+    {
+      "id": "place_workerB",
+      "component": "workerB",
+      "relation": "inside",
+      "group": "appB",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Document worker in this scope; Private App Subnet B is the reference grouping."
+      }
+    },
+    {
+      "id": "place_queues",
+      "component": "queues",
+      "relation": "inside",
+      "group": "use1",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Async Queue Tier in this scope; AWS Region (us-east-1) is the reference grouping."
+      }
+    },
+    {
+      "id": "place_jobs",
+      "component": "jobs",
+      "relation": "inside",
+      "group": "queues",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Processing queue in this scope; Async Queue Tier is the reference grouping."
+      }
+    },
+    {
+      "id": "place_jobs_dlq",
+      "component": "jobs_dlq",
+      "relation": "inside",
+      "group": "queues",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes DLQ in this scope; Async Queue Tier is the reference grouping."
+      }
+    },
+    {
+      "id": "place_storage",
+      "component": "storage",
+      "relation": "inside",
+      "group": "use1",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Storage Tier in this scope; AWS Region (us-east-1) is the reference grouping."
+      }
+    },
+    {
+      "id": "place_artifacts",
+      "component": "artifacts",
+      "relation": "inside",
+      "group": "storage",
+      "basis": {
+        "kind": "inferred",
+        "text": "The prompt describes Processed artifacts in this scope; Storage Tier is the reference grouping."
+      }
+    }
+  ]
+}

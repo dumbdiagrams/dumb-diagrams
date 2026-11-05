@@ -116,6 +116,7 @@ launches transfer tasks. The managed account supplies templates and images
 without being merged into the customer account.
 
 Download [the source](../../diagrams/aws-data-transfer-hub.dgm),
+[its requirements contract](../../diagrams/aws-data-transfer-hub.requirements.json),
 [the SVG](../../diagrams/aws-data-transfer-hub.svg), or
 [the reference specification](../../diagrams/aws-data-transfer-hub-reference-spec.md).
 

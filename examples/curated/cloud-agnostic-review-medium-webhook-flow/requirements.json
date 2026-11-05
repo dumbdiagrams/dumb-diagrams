@@ -1,0 +1,430 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Webhook partner in this architecture."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Application cloud in this architecture."
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Production account in this architecture."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Primary region in this architecture."
+      }
+    },
+    {
+      "id": "network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Private network in this architecture."
+      }
+    },
+    {
+      "id": "webhook_processing",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Webhook and event processing in this architecture."
+      }
+    },
+    {
+      "id": "gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names API gateway in this architecture."
+      }
+    },
+    {
+      "id": "ingress",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Webhook ingress function in this architecture."
+      }
+    },
+    {
+      "id": "queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Event queue in this architecture."
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Event processor in this architecture."
+      }
+    },
+    {
+      "id": "database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Event database in this architecture."
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt names Payload archive in this architecture."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "webhook_requests",
+      "source": "partner",
+      "target": "gateway",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Webhook partner to API gateway direction."
+      }
+    },
+    {
+      "id": "deliver_webhook",
+      "source": "gateway",
+      "target": "ingress",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the API gateway to Webhook ingress function direction."
+      }
+    },
+    {
+      "id": "enqueue_events",
+      "source": "ingress",
+      "target": "queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Webhook ingress function to Event queue direction."
+      }
+    },
+    {
+      "id": "idempotency_record",
+      "source": "ingress",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Webhook ingress function to Event database direction."
+      }
+    },
+    {
+      "id": "consume_events",
+      "source": "queue",
+      "target": "worker",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Event queue to Event processor direction."
+      }
+    },
+    {
+      "id": "processed_record",
+      "source": "worker",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Event processor to Event database direction."
+      }
+    },
+    {
+      "id": "save_payload",
+      "source": "worker",
+      "target": "archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt specifies the Event processor to Payload archive direction."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_resource_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.client; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.database; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_function",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt explicitly asks for 2 function."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.gateway; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_object-storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.object-storage; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_resource_cloud-agnostic_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.queue; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.account; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_boundary",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.boundary; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.cloud; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.network; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    },
+    {
+      "id": "count_group_cloud-agnostic_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "Minimum 1 records the selected reference normalization for cloud-agnostic.region; it is a modeling choice. The maximum follows the prompt's no-additional-services instruction."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_partner",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Webhook partner at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The reference keeps Application cloud at root to express its external or top-level scope."
+      }
+    },
+    {
+      "id": "place_account",
+      "component": "account",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Production account inside Application cloud."
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Primary region inside Production account."
+      }
+    },
+    {
+      "id": "place_network",
+      "component": "network",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Private network inside Primary region."
+      }
+    },
+    {
+      "id": "place_webhook_processing",
+      "component": "webhook_processing",
+      "relation": "inside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Webhook and event processing inside Private network."
+      }
+    },
+    {
+      "id": "place_gateway",
+      "component": "gateway",
+      "relation": "inside",
+      "group": "webhook_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places API gateway inside Webhook and event processing."
+      }
+    },
+    {
+      "id": "place_ingress",
+      "component": "ingress",
+      "relation": "inside",
+      "group": "webhook_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Webhook ingress function inside Webhook and event processing."
+      }
+    },
+    {
+      "id": "place_queue",
+      "component": "queue",
+      "relation": "inside",
+      "group": "webhook_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Event queue inside Webhook and event processing."
+      }
+    },
+    {
+      "id": "place_worker",
+      "component": "worker",
+      "relation": "inside",
+      "group": "webhook_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Event processor inside Webhook and event processing."
+      }
+    },
+    {
+      "id": "place_database",
+      "component": "database",
+      "relation": "inside",
+      "group": "webhook_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Event database inside Webhook and event processing."
+      }
+    },
+    {
+      "id": "place_archive",
+      "component": "archive",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt places Payload archive inside Primary region."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

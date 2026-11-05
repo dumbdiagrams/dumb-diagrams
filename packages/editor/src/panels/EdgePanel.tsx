@@ -13,7 +13,8 @@ const COLOR_OPTIONS: Array<{ id: EdgeColor; label: string; description: string }
   { id: "teal", label: "Teal", description: "Systems" },
   { id: "purple", label: "Purple", description: "Platform" },
   { id: "amber", label: "Orange", description: "Brand highlight" },
-  { id: "red", label: "Coral", description: "Critical" },
+  { id: "coral", label: "Coral", description: "Warm highlight" },
+  { id: "red", label: "Red", description: "Error" },
   { id: "green", label: "Green", description: "Healthy" },
 ];
 

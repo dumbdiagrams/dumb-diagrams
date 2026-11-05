@@ -8,6 +8,15 @@ A `.dgm` file describes what exists and how it connects. It can also carry a
 `view`, which records the visual decisions you made in Studio. This page lists
 every keyword in format 1.
 
+Each diagram also needs a sibling `<name>.requirements.json` file. Extract its
+component, relationship, count, and placement requirements from the request
+before authoring `.dgm`; assign stable IDs in the contract and use the same IDs
+in the source. Keep the contract beside the diagram during layout changes.
+`dumbdiagrams validate` checks completeness against that contract, while
+`--strict` also treats routing findings as failures. A passing completeness
+check does not establish that the written contract understood the original
+request.
+
 ## A complete example
 
 ```dgm
@@ -72,7 +81,7 @@ Boundaries take these options before their children:
 | `label-position` | `top-left`, `top-right` |
 | `hide-icon` | No value; hides the boundary icon |
 | `style` | `solid`, `dashed` |
-| `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `red`, `green` |
+| `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `coral`, `red`, `green` |
 | `fill` | `subtle`, `none` |
 
 Resources take options in braces after the label:
@@ -100,7 +109,7 @@ api -> handler { id invoke label "process" step 2 from e to w }
 | `step` | A number in the main flow |
 | `style` | `solid`, `dashed` |
 | `kind` | `flow`, `bidirectional`, `peer`, `fail` |
-| `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `red`, `green` |
+| `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `coral`, `red`, `green` |
 | `from`, `to` | A side: `n`, `s`, `e`, `w`, optionally followed by `offset 0.25` (an exact point between 0 and 1 along that side) |
 
 ## Annotations

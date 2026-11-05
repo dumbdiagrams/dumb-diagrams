@@ -182,7 +182,18 @@ describe("async-docs e1 bend merge", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);
     const routed = routeEdges(doc, layout).find((edge) => edge.id === "e1");
-    expect(routed?.points.length).toBeGreaterThan(3);
+    // The automatic ingress is now straight. Exercise the editing operation
+    // on an explicit detour instead of depending on an avoidable layout bend.
+    const start = routed!.points[0]!;
+    const end = routed!.points.at(-1)!;
+    routed!.points = [
+      start,
+      { x: start.x + 24, y: start.y },
+      { x: start.x + 24, y: start.y + 48 },
+      { x: end.x - 24, y: start.y + 48 },
+      { x: end.x - 24, y: end.y },
+      end,
+    ];
 
     const source = layout.nodes.find((node) => node.id === routed!.source)!;
     const target = layout.nodes.find((node) => node.id === routed!.target)!;
