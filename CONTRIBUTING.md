@@ -41,10 +41,12 @@ Editor tests import the built runtime, so run
 | `pnpm check:engine` | Engine-independent semantic/quality contracts and full-output repeatability across processes/locales/time zones |
 | `pnpm test:golden` | Frozen SVG, geometry, format compatibility, and editor operation output |
 
-After `pnpm install`, this repo points Git at `.githooks`: **pre-commit** runs
-`biome check --staged` (run `pnpm fix:style` to fix); **pre-push** runs
-`pnpm check:pr`. Set `DUMB_DIAGRAMS_SKIP_HOOKS=1` once to bypass hooks.
-Re-run `pnpm prepare` if hooks stop firing after cloning an existing worktree.
+After `pnpm install`, [Husky](https://typicode.github.io/husky/) installs the
+Git hooks from `.husky`: **pre-commit** runs `biome check --staged` (run
+`pnpm fix:style` to fix); **pre-push** runs `pnpm check:pr`. Set `HUSKY=0` to
+bypass them once. If your Git client (a GUI or IDE) cannot find `pnpm` or Node,
+put your version manager's setup in `~/.config/husky/init.sh`, for example
+`eval "$(fnm env --shell bash)" && fnm use`.
 
 CI runs two chains that you can run locally too: `pnpm ci:verify` (style,
 dependencies, advisories, build, coverage, typecheck, examples, routing,

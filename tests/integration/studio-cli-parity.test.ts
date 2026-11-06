@@ -7,6 +7,7 @@ import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramResult } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
+import { frozenMemo } from "../helpers/frozen-memo";
 import { compileDiagramSource, compileDocument } from "../../packages/editor/src/diagram-compiler";
 
 const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
@@ -138,22 +139,35 @@ function geometry(layout: LayoutResult) {
   };
 }
 
-function expectParity(source: string, label: string) {
-  const cli = successfulLayout(compileDiagramResult(parseDiagram(source)));
-  for (const snapToGrid of [false, true]) {
-    const studio = successfulLayout(compileDiagramSource(source, snapToGrid));
-    expect(geometry(studio), `${label}, snapToGrid=${snapToGrid}`).toEqual(geometry(cli));
-  }
+// Compiling dominates the runtime, so tests share one frozen compile per source.
+const cliGeometry = frozenMemo((source: string) => geometry(successfulLayout(compileDiagramResult(parseDiagram(source)))));
+const studioCompiles = [false, true].map((snap) => frozenMemo((source: string) => compileDiagramSource(source, snap)));
+const studioCompile = (source: string, snapToGrid: boolean) => studioCompiles[Number(snapToGrid)]!(source);
+
+function expectParity(source: string, label: string, snapToGrid: boolean) {
+  expect(geometry(successfulLayout(studioCompile(source, snapToGrid))), `${label}, snapToGrid=${snapToGrid}`).toEqual(
+    cliGeometry(source),
+  );
 }
 
 describe("CLI and Studio automatic geometry parity", () => {
-  it.each(automaticQualitySources)("matches the CLI for frozen automatic-quality source %s", (id) => {
+  const cases = automaticQualitySources.flatMap((id) => [[id, false] as const, [id, true] as const]);
+  // Each parity check is its own test (one extra compile at most) so no single test carries several compiles.
+  it.each([false, true])("matches the CLI for the short-caption CloudFront source (snapToGrid=%s)", (snapToGrid) => {
+    expectParity(shortCaptionCloudFrontSource, "short-caption CloudFront", snapToGrid);
+  });
+
+  it.each([false, true])("matches the CLI for the fresh GCP media source (snapToGrid=%s)", (snapToGrid) => {
+    expectParity(freshGcpMediaProcessingSource, "fresh GCP producer to regional load balancer", snapToGrid);
+  });
+
+  it.each(cases)("matches the CLI for frozen automatic-quality source %s (snapToGrid=%s)", (id, snapToGrid) => {
     const source = readFileSync(resolve(root, "tests/fixtures/automatic-quality", id, "diagram.dgm"), "utf8");
-    expectParity(source, id);
+    expectParity(source, id, snapToGrid);
   });
 
   it("keeps a short-caption CloudFront centered on its AWS service row", () => {
-    const layout = successfulLayout(compileDiagramSource(shortCaptionCloudFrontSource, false));
+    const layout = successfulLayout(studioCompile(shortCaptionCloudFrontSource, false));
     const nodes = new Map(layout.nodes.map((node: { id: string; icon: { y: number; h: number } }) => [node.id, node]));
     const rowMidpoints = ["dns", "cdn", "site_bucket"].map((id) => {
       const icon = nodes.get(id)!.icon;
@@ -164,11 +178,10 @@ describe("CLI and Studio automatic geometry parity", () => {
       expect((node.icon.x + node.icon.w / 2) % 24).toBe(0);
       expect((node.icon.y + node.icon.h / 2) % 24).toBe(0);
     }
-    expectParity(shortCaptionCloudFrontSource, "short-caption CloudFront");
   });
 
   it("keeps the fresh GCP producer to regional load-balancer route horizontal and direct", () => {
-    const layout = successfulLayout(compileDiagramSource(freshGcpMediaProcessingSource, false));
+    const layout = successfulLayout(studioCompile(freshGcpMediaProcessingSource, false));
     const byId = new Map(layout.nodes.map((node) => [node.id, node]));
     const producer = byId.get("producer")!.icon;
     const loadBalancer = byId.get("lb")!.icon;
@@ -177,7 +190,6 @@ describe("CLI and Studio automatic geometry parity", () => {
     expect(edge.points).toHaveLength(2);
     expect(edge.points[0]!.y).toBe(edge.points[1]!.y);
     expect(edge.points[0]!.y).toBe(producer.y + producer.h / 2);
-    expectParity(freshGcpMediaProcessingSource, "fresh GCP producer to regional load balancer");
   });
 
   it("preserves authored pinned group, resource, and route geometry with either snap setting", () => {

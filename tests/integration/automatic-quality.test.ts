@@ -6,6 +6,8 @@ import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramResult } from "@dumb-diagrams/runtime/render";
 import { describe, expect, it } from "vitest";
 
+import { frozenMemo } from "../helpers/frozen-memo";
+
 const fixtureRoot = resolve(process.cwd(), "tests/fixtures/automatic-quality");
 const slugs = readdirSync(fixtureRoot).sort();
 const hardDeterminismCases = [
@@ -14,6 +16,8 @@ const hardDeterminismCases = [
   "gcp-media-processing",
   "cloud-agnostic-order-processing",
 ];
+// One frozen compile per fixture; the determinism test compares it with a fresh one.
+const compileOnce = frozenMemo((slug: string) => compileDiagramResult(loadFixture(slug).doc));
 function loadFixture(slug: string) {
   const dir = resolve(fixtureRoot, slug);
   const source = readFileSync(resolve(dir, "diagram.dgm"), "utf8");
@@ -55,7 +59,7 @@ describe("frozen automatic-quality inputs", () => {
       expect(requirements.relationships.every((item) => item.basis.text.trim().length > 0)).toBe(true);
       expect(checkRequirements(doc, requirements)).toEqual([]);
 
-      const compiled = compileDiagramResult(doc);
+      const compiled = compileOnce(slug);
       expect(compiled.isOk(), `${slug}: ${compiled.isErr() ? compiled.error.message : ""}`).toBe(true);
       if (compiled.isErr()) return;
       const { layout, invariantFailures, issues, svg } = compiled.value;
@@ -84,7 +88,7 @@ describe("frozen automatic-quality inputs", () => {
   for (const slug of hardDeterminismCases) {
     it(`${slug} produces identical routes and layout on repeated compilation`, () => {
       const { doc } = loadFixture(slug);
-      const first = compileDiagramResult(doc);
+      const first = compileOnce(slug);
       const second = compileDiagramResult(doc);
       expect(first.isOk()).toBe(true);
       expect(second.isOk()).toBe(true);

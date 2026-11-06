@@ -6,9 +6,14 @@ import { compileDiagramResult } from "@dumb-diagrams/runtime/render";
 import type { LayoutResult, Point, Rect } from "@dumb-diagrams/runtime/core";
 import { describe, expect, it } from "vitest";
 
+import { frozenMemo } from "../helpers/frozen-memo";
+
 const fixtureRoot = resolve(process.cwd(), "tests/fixtures/routing-readability");
 
-function compile(slug: string): LayoutResult {
+// Compiling is the expensive part; tests share one frozen compile per fixture.
+const compile = frozenMemo(compileFixture);
+
+function compileFixture(slug: string): LayoutResult {
   const parsed = parseDgmResult(readFileSync(resolve(fixtureRoot, slug, "diagram.dgm"), "utf8"));
   if (parsed.isErr()) throw parsed.error;
   const compiled = compileDiagramResult(parsed.value);
@@ -30,11 +35,9 @@ const crossesFrame = (rect: Rect, frame: Rect) => {
 };
 
 describe("routing readability review cases", () => {
-  it("leaves no few-pixel jogs in any reviewed route", () => {
-    for (const slug of readdirSync(fixtureRoot)) {
-      for (const edge of compile(slug).edges) {
-        expect(Math.min(...segments(edge.points)), `${slug}/${edge.id}`).toBeGreaterThanOrEqual(8);
-      }
+  it.each(readdirSync(fixtureRoot))("leaves no few-pixel jogs in reviewed route %s", (slug) => {
+    for (const edge of compile(slug).edges) {
+      expect(Math.min(...segments(edge.points)), `${slug}/${edge.id}`).toBeGreaterThanOrEqual(8);
     }
   });
 
