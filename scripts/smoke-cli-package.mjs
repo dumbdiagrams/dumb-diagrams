@@ -14,6 +14,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 
 import { repoRoot } from "./lib/example-manifest.mjs";
 import { collectSourceManifestFiles } from "./lib/source-manifest.mjs";
+import { parseTarballListing } from "./lib/tarball-entries.mjs";
 
 const root = repoRoot();
 const artifactsDir = join(root, ".artifacts/packages");
@@ -248,7 +249,7 @@ try {
 
 function listTarballEntries(tarballPath) {
   const listing = execFileSync("tar", ["-tzf", tarballPath], { encoding: "utf8" });
-  return listing.trim().split("\n").filter(Boolean);
+  return parseTarballListing(listing);
 }
 
 function commandInvocation(command, args) {
