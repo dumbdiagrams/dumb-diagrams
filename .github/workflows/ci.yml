@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   website:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.triggering_actor)
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -48,6 +49,7 @@ jobs:
           PUBLIC_ANALYTICS_RETENTION_MONTHS: "2"
 
   verify:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.triggering_actor)
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -74,6 +76,7 @@ jobs:
         run: git diff --exit-code
 
   e2e:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.triggering_actor)
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -108,6 +111,7 @@ jobs:
           if-no-files-found: ignore
 
   cli-windows:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski"]'), github.triggering_actor)
     runs-on: windows-latest
     steps:
       - name: Check out source

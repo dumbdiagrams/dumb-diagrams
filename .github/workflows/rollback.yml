@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   rollback:
+    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski'
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ inputs.version }}

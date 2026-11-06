@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event_name == 'push' || startsWith(inputs.ref, 'v')
+    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' && (github.event_name == 'push' || startsWith(inputs.ref, 'v'))
     runs-on: ubuntu-latest
     environment:
       name: npm-production

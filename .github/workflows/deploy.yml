@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -124,6 +125,7 @@ jobs:
           path: packages/editor/dist
 
   deploy:
+    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski'
     needs: build
     runs-on: ubuntu-latest
     permissions:
