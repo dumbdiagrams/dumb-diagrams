@@ -100,3 +100,11 @@ dumbdiagrams studio
 After replacing the package, restart Studio and reload any existing Studio tabs.
 
 `publish:metadata` needs `remote.origin` or `GITHUB_REPOSITORY=OWNER/REPO`; it writes package URLs but does not publish. The global install replaces any existing `create-dumb-diagrams` install. For automated package checks, run `pnpm smoke:package`; for the release gate, see [RELEASE.md](RELEASE.md).
+
+The automated package smoke uses npm by default, including the Linux verify and
+release checks. Windows CI selects `DUMB_DIAGRAMS_SMOKE_INSTALLER=pnpm` to reuse
+pnpm's dependency store; both installers run the same packed CLI checks. To
+exercise that path locally, run `DUMB_DIAGRAMS_SMOKE_INSTALLER=pnpm pnpm smoke:package`.
+Temporary smoke projects stay under `.artifacts/packages` on the checkout's drive
+so Windows can reuse the cached pnpm store during the source rebuild. The smoke
+log reports source verification and package installation durations separately.

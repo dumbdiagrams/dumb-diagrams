@@ -9,7 +9,6 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 
 import { repoRoot } from "./lib/example-manifest.mjs";
@@ -23,6 +22,10 @@ const cliManifest = JSON.parse(readFileSync(join(cliPackageRoot, "package.json")
 const version = cliManifest.version;
 const tarballName = `create-dumb-diagrams-${version}.tgz`;
 const requestedArtifact = process.env.DUMB_DIAGRAMS_ARTIFACT;
+const installer = process.env.DUMB_DIAGRAMS_SMOKE_INSTALLER ?? "npm";
+if (installer !== "npm" && installer !== "pnpm") {
+  throw new Error(`Unsupported DUMB_DIAGRAMS_SMOKE_INSTALLER: ${installer}. Expected npm or pnpm.`);
+}
 const tarballPath = requestedArtifact
   ? isAbsolute(requestedArtifact)
     ? requestedArtifact
@@ -36,7 +39,7 @@ const npmCliPath = isWindows ? join(dirname(nodeCommand), "node_modules/npm/bin/
 if (isWindows && (!pnpmCliPath || !existsSync(pnpmCliPath))) {
   throw new Error("Windows package smoke must run through pnpm so npm_execpath points to the pnpm JavaScript CLI");
 }
-if (isWindows && !existsSync(npmCliPath)) {
+if (isWindows && installer === "npm" && !existsSync(npmCliPath)) {
   throw new Error(`Could not locate npm's npm-cli.js beside Node at ${npmCliPath}`);
 }
 // Matches the initialized `.dumbdiagrams/requirements.example.json` and the default preferences.
@@ -134,32 +137,32 @@ for (const entry of entries) {
   }
 }
 
-verifyCorrespondingSource(tarballPath);
+timed("Rebuild and verify corresponding source", () => verifyCorrespondingSource(tarballPath));
 
-const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-smoke-"));
+const workRoot = mkdtempSync(join(artifactsDir, "smoke-"));
 const projectDir = join(workRoot, "smoke-project");
 try {
   mkdirSync(projectDir);
-  installPackedCli(tarballPath, join(workRoot, "installed"));
+  timed(`Install packed CLI with ${installer}`, () => installPackedCli(tarballPath, join(workRoot, "installed")));
 
-  const helpOut = runNpxCapture(tarballPath, ["help"], "dumbdiagrams");
+  const helpOut = runInstalledCliCapture(["help"], "dumbdiagrams");
   if (!helpOut.includes("studio")) {
     throw new Error("help output missing studio command");
   }
 
-  const versionOut = runNpxCapture(tarballPath, ["--version"], "dumbdiagrams");
+  const versionOut = runInstalledCliCapture(["--version"], "dumbdiagrams");
   if (!versionOut.includes(version)) {
     throw new Error(`--version output missing ${version}: ${versionOut}`);
   }
 
-  const dgmOut = runNpxCapture(tarballPath, ["--version"], "dgm");
+  const dgmOut = runInstalledCliCapture(["--version"], "dgm");
   if (!dgmOut.includes(version)) {
     throw new Error(`dgm --version output missing ${version}: ${dgmOut}`);
   }
 
   // Smoke tests must never pause for the interactive project-name prompt,
   // even when the script itself is run from a terminal.
-  if (runNpx(tarballPath, ["init"], "dumbdiagrams", projectDir) !== 0) {
+  if (runInstalledCli(["init"], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams init failed");
   }
   const generatedProjects = readdirSync(projectDir, { withFileTypes: true }).filter(
@@ -212,31 +215,31 @@ try {
     throw new Error("packed CLI did not enforce the project preferences.json");
   }
   writeFileSync(preferencesFile, defaultPreferences);
-  if (runNpx(tarballPath, ["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
+  if (runInstalledCli(["validate", smokeDiagram], "dumbdiagrams", projectDir) !== 0) {
     throw new Error("packed dumbdiagrams validate failed");
   }
-  const validation = JSON.parse(runNpxCapture(tarballPath, ["validate", "--json", smokeDiagram]));
+  const validation = JSON.parse(runInstalledCliCapture(["validate", "--json", smokeDiagram]));
   if (!validation.ok || validation.files[0]?.completeness.status !== "pass") {
     throw new Error("packed CLI did not verify the initialized requirements contract");
   }
   const incomplete = join(workRoot, "incomplete.dgm");
   copyFileSync(smokeDiagram, incomplete);
-  if (runNpx(tarballPath, ["validate", incomplete], "dumbdiagrams", projectDir) === 0) {
+  if (runInstalledCli(["validate", incomplete], "dumbdiagrams", projectDir) === 0) {
     throw new Error("packed CLI accepted a diagram without its requirements contract");
   }
   const formatCopy = join(workRoot, "packed-format.dgm");
   copyFileSync(smokeDiagram, formatCopy);
   if (
-    runNpx(tarballPath, ["format", "--write", formatCopy], "dumbdiagrams", projectDir) !== 0 ||
-    runNpx(tarballPath, ["format", "--check", formatCopy], "dumbdiagrams", projectDir) !== 0
+    runInstalledCli(["format", "--write", formatCopy], "dumbdiagrams", projectDir) !== 0 ||
+    runInstalledCli(["format", "--check", formatCopy], "dumbdiagrams", projectDir) !== 0
   ) {
     throw new Error("packed dumbdiagrams format failed");
   }
   const firstSvg = join(workRoot, "packed-first.svg");
   const secondSvg = join(workRoot, "packed-second.svg");
   if (
-    runNpx(tarballPath, ["render", smokeDiagram, "--output", firstSvg], "dumbdiagrams", projectDir) !== 0 ||
-    runNpx(tarballPath, ["render", smokeDiagram, "--output", secondSvg], "dumbdiagrams", projectDir) !== 0
+    runInstalledCli(["render", smokeDiagram, "--output", firstSvg], "dumbdiagrams", projectDir) !== 0 ||
+    runInstalledCli(["render", smokeDiagram, "--output", secondSvg], "dumbdiagrams", projectDir) !== 0
   ) {
     throw new Error("packed dumbdiagrams render failed");
   }
@@ -265,13 +268,16 @@ function execCommand(command, args, options) {
   return execFileSync(invocation.command, invocation.args, options);
 }
 
-function spawnCommand(command, args, options) {
-  const invocation = commandInvocation(command, args);
-  return spawnSync(invocation.command, invocation.args, options);
+function timed(label, action) {
+  const start = performance.now();
+  console.log(`Package smoke: ${label}`);
+  const result = action();
+  console.log(`Package smoke: ${label} completed in ${((performance.now() - start) / 1000).toFixed(1)}s`);
+  return result;
 }
 
 function verifyCorrespondingSource(tarballPath) {
-  const extracted = mkdtempSync(join(tmpdir(), "dumbdiagrams-source-"));
+  const extracted = mkdtempSync(join(artifactsDir, "source-"));
   try {
     execFileSync("tar", ["-xzf", tarballPath, "-C", extracted]);
     const packageRoot = join(extracted, "package");
@@ -311,8 +317,16 @@ function verifyCorrespondingSource(tarballPath) {
 // whole package, which took ~5 minutes per call on Windows runners.
 function installPackedCli(tarballPath, prefix) {
   mkdirSync(prefix);
-  writeFileSync(join(prefix, "package.json"), "{}\n");
-  execCommand("npm", ["install", "--no-audit", "--no-fund", "--prefix", prefix, tarballPath], {
+  writeFileSync(join(prefix, "package.json"), `${JSON.stringify({ private: true })}\n`);
+  // Linux/release smoke keeps npm consumer-install coverage. Windows CI uses
+  // pnpm to reuse the workspace store instead of npm's slow tarball install.
+  const args =
+    installer === "pnpm"
+      ? ["--dir", prefix, "--ignore-workspace", "add", "--prod", "--no-lockfile", "--prefer-offline", tarballPath]
+      : ["install", "--no-audit", "--no-fund", "--prefix", prefix, tarballPath];
+  execCommand(installer, args, {
+    // Preserve npm's existing project configuration (including its registry).
+    cwd: installer === "pnpm" ? prefix : root,
     stdio: ["ignore", "inherit", "inherit"],
   });
   installedRoot = join(prefix, "node_modules", cliManifest.name);
@@ -324,7 +338,7 @@ function installedBin(bin) {
   return join(installedRoot, manifest.bin[bin]);
 }
 
-function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
+function runInstalledCli(args, bin = "dumbdiagrams", cwd = root) {
   try {
     execFileSync(nodeCommand, [installedBin(bin), ...args], {
       cwd,
@@ -338,7 +352,7 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
   }
 }
 
-function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
+function runInstalledCliCapture(args, bin = "dumbdiagrams") {
   return execFileSync(nodeCommand, [installedBin(bin), ...args], {
     cwd: root,
     encoding: "utf8",

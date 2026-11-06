@@ -177,3 +177,5 @@ jobs:
 
       - name: Smoke test publishable CLI package
         run: pnpm smoke:package
+        env:
+          DUMB_DIAGRAMS_SMOKE_INSTALLER: pnpm
