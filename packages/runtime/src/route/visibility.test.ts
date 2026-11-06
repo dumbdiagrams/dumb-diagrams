@@ -25,6 +25,38 @@ describe("exact visibility routing", () => {
     }
     expect(routeVisibility(start, goal, obstacles)).toEqual(path);
   });
+  it("keeps the original tied detour and evaluates each traversable edge once", () => {
+    const start = { x: 0.5, y: 0.5 };
+    const goal = { x: 40.5, y: 0.5 };
+    let consumed = 0;
+    let segmentChecks = 0;
+    const path = routeVisibility(
+      start,
+      goal,
+      [{ x: 10, y: -10, w: 20, h: 20 }],
+      () => {
+        segmentChecks++;
+        return 0;
+      },
+      () => {
+        consumed++;
+        return true;
+      },
+    );
+    expect(path).toEqual([start, { x: 0.5, y: 12 }, { x: 40.5, y: 12 }, goal]);
+    expect(consumed).toBe(50);
+    expect(segmentChecks).toBe(47);
+  });
+  it("routes straight through a one-column or one-row visibility grid", () => {
+    expect(routeVisibility({ x: 0, y: 0 }, { x: 0, y: 30 }, [])).toEqual([
+      { x: 0, y: 0 },
+      { x: 0, y: 30 },
+    ]);
+    expect(routeVisibility({ x: 0, y: 0 }, { x: 30, y: 0 }, [])).toEqual([
+      { x: 0, y: 0 },
+      { x: 30, y: 0 },
+    ]);
+  });
   it("respects a finite operation budget and rejects blocked attachments", () => {
     expect(
       routeVisibility(

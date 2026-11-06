@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { getDefaultView, type LayoutResult } from "@dumb-diagrams/runtime/core";
 import { parseDgmResult } from "@dumb-diagrams/runtime/dsl";
 import { compileDiagramResult } from "@dumb-diagrams/runtime/render";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { frozenMemo } from "../helpers/frozen-memo";
 import { compileDiagramSource, compileDocument } from "../../packages/editor/src/diagram-compiler";
@@ -139,32 +139,41 @@ function geometry(layout: LayoutResult) {
   };
 }
 
-// Compiling dominates the runtime, so tests share one frozen compile per source.
-const cliGeometry = frozenMemo((source: string) => geometry(successfulLayout(compileDiagramResult(parseDiagram(source)))));
+// Studio geometry assertions reuse the frozen result from each parity case.
+const cliGeometry = (source: string) => geometry(successfulLayout(compileDiagramResult(parseDiagram(source))));
 const studioCompiles = [false, true].map((snap) => frozenMemo((source: string) => compileDiagramSource(source, snap)));
 const studioCompile = (source: string, snapToGrid: boolean) => studioCompiles[Number(snapToGrid)]!(source);
 
-function expectParity(source: string, label: string, snapToGrid: boolean) {
+function expectParity(source: string, label: string, snapToGrid: boolean, expected: ReturnType<typeof geometry>) {
   expect(geometry(successfulLayout(studioCompile(source, snapToGrid))), `${label}, snapToGrid=${snapToGrid}`).toEqual(
-    cliGeometry(source),
+    expected,
   );
 }
 
 describe("CLI and Studio automatic geometry parity", () => {
-  const cases = automaticQualitySources.flatMap((id) => [[id, false] as const, [id, true] as const]);
-  // Each parity check is its own test (one extra compile at most) so no single test carries several compiles.
-  it.each([false, true])("matches the CLI for the short-caption CloudFront source (snapToGrid=%s)", (snapToGrid) => {
-    expectParity(shortCaptionCloudFrontSource, "short-caption CloudFront", snapToGrid);
-  });
+  const sources = [
+    { label: "the short-caption CloudFront source", source: shortCaptionCloudFrontSource },
+    { label: "the fresh GCP media source", source: freshGcpMediaProcessingSource },
+    ...automaticQualitySources.map((id) => ({
+      label: `frozen automatic-quality source ${id}`,
+      source: readFileSync(resolve(root, "tests/fixtures/automatic-quality", id, "diagram.dgm"), "utf8"),
+    })),
+  ];
 
-  it.each([false, true])("matches the CLI for the fresh GCP media source (snapToGrid=%s)", (snapToGrid) => {
-    expectParity(freshGcpMediaProcessingSource, "fresh GCP producer to regional load balancer", snapToGrid);
-  });
+  for (const { label, source } of sources) {
+    describe(label, () => {
+      let expected: ReturnType<typeof geometry>;
+      // Reference and Studio compilation each get a separate timed phase. Even
+      // filtered runs compile the CLI reference in setup, never inside parity.
+      beforeAll(() => {
+        expected = cliGeometry(source);
+      }, 30_000);
 
-  it.each(cases)("matches the CLI for frozen automatic-quality source %s (snapToGrid=%s)", (id, snapToGrid) => {
-    const source = readFileSync(resolve(root, "tests/fixtures/automatic-quality", id, "diagram.dgm"), "utf8");
-    expectParity(source, id, snapToGrid);
-  });
+      it.each([false, true])("matches the CLI (snapToGrid=%s)", (snapToGrid) => {
+        expectParity(source, label, snapToGrid, expected);
+      });
+    });
+  }
 
   it("keeps a short-caption CloudFront centered on its AWS service row", () => {
     const layout = successfulLayout(studioCompile(shortCaptionCloudFrontSource, false));

@@ -2,9 +2,10 @@ import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
-// Coverage makes the fixture-heavy layout tests CPU bound. Reserve one core
-// for the Vitest coordinator and coverage work on small CI runners.
-const maxWorkers = Math.min(4, Math.max(1, availableParallelism() - 1));
+// Layout and routing are synchronous CPU work, made more expensive by coverage.
+// Leave half the CPUs available for the coordinator, coverage, and runner load;
+// on a four-core CI runner, three competing compilers leave little timeout margin.
+const maxWorkers = Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
 
 export default defineConfig({
   resolve: {

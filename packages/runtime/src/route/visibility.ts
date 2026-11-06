@@ -36,6 +36,8 @@ export function routeVisibility(
   const startIndex = ys.indexOf(start.y) * width + xs.indexOf(start.x);
   const goalIndex = ys.indexOf(goal.y) * width + xs.indexOf(goal.x);
   const point = (index: number): Point => ({ x: xs[index % width]!, y: ys[Math.floor(index / width)]! });
+  const xAt = (vertex: number) => xs[vertex % width]!;
+  const yAt = (vertex: number) => ys[Math.floor(vertex / width)]!;
   const clear = (a: Point, b: Point) =>
     !obstacles.some((box) => {
       if (a.x === b.x)
@@ -54,7 +56,11 @@ export function routeVisibility(
   const initial = startIndex * 3;
   costs[initial] = 0;
   queue.push(initial, Math.abs(start.x - goal.x) + Math.abs(start.y - goal.y));
-  const segmentCache = new Map<number, number>();
+  // Each grid edge has a stable slot. NaN marks an edge that has not been
+  // checked yet; this avoids allocating numeric Map keys during graph search.
+  const horizontalEdges = Math.max(0, width - 1) * ys.length;
+  const segmentCache = new Float64Array(horizontalEdges + Math.max(0, ys.length - 1) * width);
+  segmentCache.fill(NaN);
   while (queue.length) {
     if (!consume()) return null;
     const state = queue.pop()!;
@@ -66,33 +72,48 @@ export function routeVisibility(
       for (let next = state; next >= 0; next = parent[next]!) path.push(point(Math.floor(next / 3)));
       return simplifyVisibilityPath(path.reverse());
     }
-    const a = point(vertex);
     const column = vertex % width;
     const row = Math.floor(vertex / width);
-    const neighbors = [
-      column > 0 ? vertex - 1 : -1,
-      column + 1 < width ? vertex + 1 : -1,
-      row > 0 ? vertex - width : -1,
-      row + 1 < ys.length ? vertex + width : -1,
-    ];
-    for (const other of neighbors) {
-      if (other < 0) continue;
-      const b = point(other);
-      const direction = a.y === b.y ? 1 : 2;
+    // Keep the original left, right, up, down visitation order for tie stability.
+    for (let neighbor = 0; neighbor < 4; neighbor++) {
+      if (
+        (neighbor === 0 && column === 0) ||
+        (neighbor === 1 && column + 1 === width) ||
+        (neighbor === 2 && row === 0) ||
+        (neighbor === 3 && row + 1 === ys.length)
+      )
+        continue;
+      const horizontal = neighbor < 2;
+      const other =
+        neighbor === 0 ? vertex - 1 : neighbor === 1 ? vertex + 1 : neighbor === 2 ? vertex - width : vertex + width;
+      const direction = horizontal ? 1 : 2;
       const nextState = other * 3 + direction;
       if (closed[nextState]) continue;
-      const key = Math.min(vertex, other) * vertices + Math.max(vertex, other);
-      let travel = segmentCache.get(key);
-      if (travel === undefined) {
-        travel = clear(a, b) ? Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + segmentCost(a, b) : Infinity;
-        segmentCache.set(key, travel);
+      const edgeIndex = horizontal
+        ? row * (width - 1) + Math.min(column, other % width)
+        : horizontalEdges + Math.min(row, Math.floor(other / width)) * width + column;
+      let travel = segmentCache[edgeIndex]!;
+      if (Number.isNaN(travel)) {
+        const ax = xAt(vertex),
+          ay = yAt(vertex),
+          bx = xAt(other),
+          by = yAt(other);
+        const isClear = !obstacles.some((box) =>
+          horizontal
+            ? ay >= box.y && ay <= box.y + box.h && Math.max(ax, bx) >= box.x && Math.min(ax, bx) <= box.x + box.w
+            : ax >= box.x && ax <= box.x + box.w && Math.max(ay, by) >= box.y && Math.min(ay, by) <= box.y + box.h,
+        );
+        travel = isClear
+          ? Math.abs(ax - bx) + Math.abs(ay - by) + segmentCost({ x: ax, y: ay }, { x: bx, y: by })
+          : Infinity;
+        segmentCache[edgeIndex] = travel;
       }
       const turn = state % 3 !== 0 && state % 3 !== direction ? ROUTE_PATH_COSTS.astarTurn : 0;
       const cost = costs[state]! + travel + turn;
       if (cost >= costs[nextState]!) continue;
       costs[nextState] = cost;
       parent[nextState] = state;
-      queue.push(nextState, cost + Math.abs(b.x - goal.x) + Math.abs(b.y - goal.y));
+      queue.push(nextState, cost + Math.abs(xAt(other) - goal.x) + Math.abs(yAt(other) - goal.y));
     }
   }
   return null;

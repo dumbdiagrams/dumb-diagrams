@@ -16,7 +16,7 @@ import type {
 import { getDefaultView, getParentGroup, nearestPortAnchor, normalizePortOffset, portPoint } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES, snap } from "../grammar-aws/index.js";
 import { EMERGENCY_ROUTING_LIMITS, RoutingBudget, type RoutingOptions } from "./routing-budget.js";
-import { routePathBaseCost, ROUTE_PATH_COSTS } from "./mechanics.js";
+import { createPolylineDistance, distanceToPolyline, routePathBaseCost, ROUTE_PATH_COSTS } from "./mechanics.js";
 import { routeVisibility } from "./visibility.js";
 import { boundaryStrokeRects } from "./decoration-obstacles.js";
 import { routeSimplificationCandidates } from "./path-refinement.js";
@@ -2038,10 +2038,6 @@ function badgeCollisionScore(
   return score;
 }
 
-function distanceToPolyline(point: Point, points: Point[]): number {
-  return projectPointToPolyline(point, points)?.distance ?? Infinity;
-}
-
 // ponytail: measures each segment by its bounding box, exact for orthogonal
 // routes and generous for a diagonal straight connector.
 function distanceFromRectToPolyline(rect: Rect, points: Point[]): number {
@@ -4010,17 +4006,23 @@ function getEdgeLabelPlacement(
     }
   }
 
+  // Route points do not change while candidates are scored. Reuse segment
+  // lengths and projection denominators across all candidates in this pass.
+  const ownRouteDistance = createPolylineDistance(points);
+  const otherRoutes = otherEdges.map((edge) => ({ edge, distance: createPolylineDistance(edge.points) }));
   const scored = candidates.map(({ candidate, attached }) => {
-    const centre = {
-      x: candidate.rect.x + candidate.rect.w / 2,
-      y: candidate.rect.y + candidate.rect.h / 2,
-    };
-    const ownDistance = distanceToPolyline(centre, points);
-    const ownPointDistance = distanceToPolyline(candidate.point, points);
-    const ownerClear = otherEdges.every(
-      (edge) =>
-        distanceToPolyline(centre, edge.points) >= ownDistance &&
-        distanceToPolyline(candidate.point, edge.points) >= ownPointDistance,
+    // Ownership and collision scoring use the same point-to-route distances.
+    // Compute them together once per candidate instead of projecting every
+    // candidate onto the complete route set twice.
+    const { score, ownerClear } = labelCollisionScore(
+      candidate,
+      t,
+      preferredSide,
+      obstacles,
+      otherRoutes,
+      allBadges,
+      occupiedLabels,
+      ownRouteDistance,
     );
     // Match the renderer's minimum text-to-content clearance. Wider spacing is
     // still a soft score below, but a candidate that satisfies this contract is
@@ -4040,7 +4042,7 @@ function getEdgeLabelPlacement(
       ownerClear,
       contentClear,
       decorationClear,
-      score: labelCollisionScore(candidate, t, preferredSide, obstacles, otherEdges, allBadges, occupiedLabels, points),
+      score,
     };
   });
   // Prefer the drag gap when it avoids content, then a wider lane whose copy
@@ -4091,11 +4093,12 @@ function labelCollisionScore(
   preferredT: number,
   preferredSide: EdgeLabelSide,
   obstacles: Obstacle[],
-  otherEdges: RoutedEdge[],
+  otherRoutes: Array<{ edge: RoutedEdge; distance: (point: Point) => number }>,
   badges: EdgeBadgePlacement[],
   occupiedLabels: Rect[],
-  ownRoute: Point[],
-): number {
+  ownRouteDistance: (point: Point) => number,
+): { score: number; ownerClear: boolean } {
+  let ownerClear = true;
   let score = Math.abs(candidate.t - preferredT) * 1_000;
   if (candidate.side !== preferredSide) score += 20;
   score += Math.hypot(candidate.point.x - candidate.anchor.x, candidate.point.y - candidate.anchor.y) * 40;
@@ -4128,11 +4131,12 @@ function labelCollisionScore(
     x: candidate.rect.x + candidate.rect.w / 2,
     y: candidate.rect.y + candidate.rect.h / 2,
   };
-  const ownDistance = distanceToPolyline(centre, ownRoute);
-  const ownPointDistance = distanceToPolyline(candidate.point, ownRoute);
-  for (const edge of otherEdges) {
-    const foreignDistance = distanceToPolyline(centre, edge.points);
-    const foreignPointDistance = distanceToPolyline(candidate.point, edge.points);
+  const ownDistance = ownRouteDistance(centre);
+  const ownPointDistance = ownRouteDistance(candidate.point);
+  for (const { edge, distance } of otherRoutes) {
+    const foreignDistance = distance(centre);
+    const foreignPointDistance = distance(candidate.point);
+    if (!(foreignDistance >= ownDistance && foreignPointDistance >= ownPointDistance)) ownerClear = false;
     if (foreignDistance < ownDistance || foreignPointDistance < ownPointDistance) {
       // A candidate that is visibly nearer a different run is not an owner
       // candidate. Keep it out of the clean/attached pool so the resolver
@@ -4150,7 +4154,7 @@ function labelCollisionScore(
       }
     }
   }
-  return score;
+  return { score, ownerClear };
 }
 
 function labelPlacementAt(

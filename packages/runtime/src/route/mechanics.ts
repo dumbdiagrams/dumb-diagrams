@@ -16,6 +16,59 @@ export const ROUTE_PATH_COSTS = {
   labelSideFallback: 6_000,
 } as const;
 
+/** Return the distance from a point to the nearest nonzero polyline segment. */
+export function distanceToPolyline(point: Point, points: Point[]): number {
+  let bestDistance = Infinity;
+  for (let index = 0; index < points.length - 1; index++) {
+    const a = points[index]!;
+    const b = points[index + 1]!;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const length = Math.hypot(dx, dy);
+    if (length === 0) continue;
+
+    const u = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / (length * length)));
+    const projectedX = a.x + dx * u;
+    const projectedY = a.y + dy * u;
+    const distance = Math.hypot(point.x - projectedX, point.y - projectedY);
+    if (distance < bestDistance) bestDistance = distance;
+  }
+  return bestDistance;
+}
+
+/** Create a distance evaluator over a snapshot of a polyline's coordinates. */
+export function createPolylineDistance(points: Point[]): (point: Point) => number {
+  // Store only the scalar segment data needed by each query. In particular,
+  // this keeps route geometry stable if the caller later mutates its points.
+  const segments: Array<{ ax: number; ay: number; dx: number; dy: number; denominator: number }> = [];
+  for (let index = 0; index < points.length - 1; index++) {
+    const a = points[index]!;
+    const b = points[index + 1]!;
+    const ax = a.x;
+    const ay = a.y;
+    const dx = b.x - ax;
+    const dy = b.y - ay;
+    const length = Math.hypot(dx, dy);
+    if (length === 0) continue;
+    segments.push({ ax, ay, dx, dy, denominator: length * length });
+  }
+
+  return (point: Point): number => {
+    let bestDistance = Infinity;
+    for (const segment of segments) {
+      const u = Math.max(
+        0,
+        Math.min(1, ((point.x - segment.ax) * segment.dx + (point.y - segment.ay) * segment.dy) / segment.denominator),
+      );
+      const projectedX = segment.ax + segment.dx * u;
+      const projectedY = segment.ay + segment.dy * u;
+      const distance = Math.hypot(point.x - projectedX, point.y - projectedY);
+      if (distance < bestDistance) bestDistance = distance;
+    }
+    return bestDistance;
+  };
+}
+
 /** Conflict-free base term used by the main orthogonal path scorer. */
 export function routePathBaseCost(points: Point[]): {
   bends: number;
