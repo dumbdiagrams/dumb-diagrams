@@ -1,23 +1,49 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { listAssets } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm } from "@dumb-diagrams/runtime/dsl";
-import { compileDiagram } from "@dumb-diagrams/runtime/render";
+import { err, errAsync, ok, okAsync, Result, safeTry, ResultAsync } from "neverthrow";
+import { getCatalogMap, listAssets } from "@dumb-diagrams/runtime/catalog";
+import { validateDocument } from "@dumb-diagrams/runtime/core";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
+import type { DiagramDocument } from "@dumb-diagrams/runtime/core";
+import {
+  compileDiagramResult,
+  renderPortableSvg,
+  validateEmbeddedAssets,
+  type CompiledDiagram,
+  type ReadabilityMetrics,
+} from "@dumb-diagrams/runtime/render";
+import {
+  checkPreferences,
+  checkRequirements,
+  DEFAULT_PREFERENCES,
+  parsePreferences,
+  parseRequirements,
+  type RequirementsDocument,
+} from "@dumb-diagrams/runtime/requirements";
 
 import { createCliUi } from "./cli-ui.js";
-import { renderInitTemplate } from "./init-templates.js";
-import { resolveInitOptions } from "./init-options.js";
-import { browserLaunchCommand } from "./platform-launch.js";
+import { loadCatalogSvg } from "./catalog-loader.js";
+import { errorMessage, parseCliError, type CliError } from "./cli-errors.js";
+import { renderInitTemplate, type InitTemplateError } from "./init-templates.js";
+import { resolveInitOptions, type ResolvedInitOptions } from "./init-options.js";
+import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const VERSION = readCliVersion();
 const ui = createCliUi();
 
@@ -26,53 +52,40 @@ interface ParsedArgs {
   flags: Map<string, string | true>;
 }
 
-const LEGACY_REFERENCE_FILES = [
-  "azure-private-app-service.dgm",
-  "prompts/azure-private-app-service.md",
-] as const;
-
-const CURATED_EXAMPLE_IDS = [
-  "aws-high-availability-web-app",
-  "aws-data-transfer-hub",
-  "bedrock-claims-processing",
-  "simple-serverless-web-application",
-  "image-thumbnail-pipeline",
-  "asynchronous-report-generation",
-  "event-driven-order-fulfillment",
-] as const;
-const CURATED_FILE_NAMES = ["user-prompt.md", "architecture-brief.md", "reference-spec.md", "diagram.dgm"] as const;
-
-export async function runCli(argv: string[]): Promise<number> {
+export async function runCli(argv: string[], options: { stdin?: string } = {}): Promise<number> {
   const [command, ...rawArgs] = argv;
-  const parsed = parseArgs(rawArgs);
+  const parsed = parseArgs(rawArgs, command);
 
-  if (parsed.flags.has("help")) {
-    printHelp();
-    return 0;
-  }
+  return dispatchCommand(command, parsed, options.stdin).match((code) => code, reportCliError);
+}
+
+function dispatchCommand(
+  command: string | undefined,
+  parsed: ParsedArgs,
+  stdinText?: string,
+): ResultAsync<number, CliError> {
+  if (parsed.flags.has("help")) return okAsync(0).andTee(() => printHelp());
   if (parsed.flags.has("version") || command === "--version" || command === "-v") {
-    console.log(`${ui.heading("DUMB DIAGRAMS")} ${ui.muted(`v${VERSION}`)}`);
-    return 0;
+    return okAsync(0).andTee(() => console.log(`${ui.heading("DUMB DIAGRAMS")} ${ui.muted(`v${VERSION}`)}`));
   }
-
   switch (command) {
     case undefined:
     case "help":
     case "--help":
     case "-h":
-      printHelp();
-      return 0;
+      return okAsync(0).andTee(() => printHelp());
     case "studio":
-      await cmdStudio(parsed);
-      return 0;
+      return cmdStudio(parsed);
     case "init":
-      return await cmdInit(parsed);
+      return cmdInit(parsed);
     case "validate":
-      return cmdValidate(parsed);
+      return cmdValidate(parsed, stdinText);
+    case "format":
+      return cmdFormat(parsed);
+    case "render":
+      return cmdRender(parsed);
     default:
-      console.error(ui.error(`Unknown command: ${command}`));
-      console.error(ui.muted(`  Run ${ui.command("dumbdiagrams help")} to see available commands.`));
-      return 1;
+      return errAsync({ code: "unknown-command", command, message: `Unknown command: ${command}` });
   }
 }
 
@@ -84,17 +97,24 @@ ${ui.brand()}
 ${ui.heading("Usage")}
   ${ui.command("dumbdiagrams init")}       Create a project folder for agents
   ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
-  ${ui.command("dumbdiagrams validate")}   Validate a .dgm source file
+  ${ui.command("dumbdiagrams validate")}   Validate .dgm source files
+  ${ui.command("dumbdiagrams format")}     Canonicalize a .dgm source file
+  ${ui.command("dumbdiagrams render")}     Render a .dgm source file to SVG
 
 ${ui.heading("Commands")}
   ${ui.command("init")}                    Create a project folder for agents
   ${ui.command("studio")}                  Open the generic local .dgm editor
-  ${ui.command("validate <file.dgm>")}      Parse and fully validate a diagram
+  ${ui.command("validate <file.dgm>...")}  Validate diagrams and required contracts
+  ${ui.command("format <file.dgm>")}       Print canonical .dgm source
+  ${ui.command("render <file.dgm>")}       Render deterministic SVG (use -o for a file)
 
 ${ui.heading("Quick start")}
   ${ui.command("dumbdiagrams init")}
   ${ui.command("dumbdiagrams validate diagrams/example/diagram.dgm")}
+  ${ui.command("dumbdiagrams render diagrams/example/diagram.dgm -o diagram.svg")}
   ${ui.command("dumbdiagrams studio")}
+
+${ui.muted("validate uses sibling requirements.json for diagram.dgm, or <stem>.requirements.json otherwise. Use --requirements <file> for a custom contract or stdin; --json prints a machine-readable report, and --strict fails on routing warnings.")}
 
 ${ui.muted("Tip: dgm is a shorthand alias for dumbdiagrams.")}
 `);
@@ -111,78 +131,538 @@ async function promptProjectName(defaultName: string): Promise<string> {
   }
 }
 
-async function cmdStudio(args: ParsedArgs): Promise<void> {
-  rejectArguments(args, "studio");
+function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
+  if (args.positionals.length || args.flags.size) {
+    const file = args.positionals.find((value) => value.endsWith(".dgm"));
+    return errAsync(
+      invalidArguments(
+        `studio does not accept file paths, positionals, or options. Run dumbdiagrams studio, choose Open, and pick ${file ?? "your .dgm file"}.`,
+        "studio",
+      ),
+    );
+  }
   const testPort = Number(process.env.DUMBDIAGRAMS_STUDIO_PORT);
-  const handle = await startStudioServer({
+  return startStudioServer({
     port: Number.isInteger(testPort) && testPort >= 0 && testPort <= 65535 ? testPort : undefined,
-  });
-
-  console.log(`\n${ui.brand()}\n`);
-  console.log(ui.heading("Studio is ready"));
-  console.log(ui.info("local", ui.command(handle.url)));
-  console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
-  console.log(ui.info("stop", "Ctrl+C"));
-
-  if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") openBrowser(handle.url);
-  await waitForShutdown(handle.server);
-}
-
-function cmdValidate(args: ParsedArgs): number {
-  if (args.positionals.length !== 1 || args.flags.size) {
-    console.error(ui.error("validate expects exactly one .dgm file path and no options."));
-    return 1;
-  }
-  const filePath = resolve(process.cwd(), args.positionals[0]!);
-  try {
-    const source = readFileSync(filePath, "utf8");
-    const result = compileDiagram(parseDgm(source));
-    if (!result.ok) {
-      console.error(ui.error(`Invalid diagram: ${relativeForLog(filePath)}`));
-      for (const issue of result.issues) {
-        console.error(`  ${issue.code}${issue.id ? ` (${issue.id})` : ""}: ${issue.message}`);
-      }
-      return 1;
-    }
-    console.log(ui.success(`Valid diagram: ${relativeForLog(filePath)}`));
-    return 0;
-  } catch (error) {
-    console.error(ui.error(`Invalid diagram: ${relativeForLog(filePath)}`));
-    console.error(`  ${error instanceof Error ? error.message : String(error)}`);
-    return 1;
-  }
-}
-
-async function cmdInit(args: ParsedArgs): Promise<number> {
-  console.log(`${ui.banner()}\n\n${ui.brand()}\n`);
-  let options: Awaited<ReturnType<typeof resolveInitOptions>>;
-  try {
-    options = await resolveInitOptions(args, {
-      interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
-      askProjectName: promptProjectName,
+  })
+    .mapErr(
+      (error): CliError => ({
+        code: "studio-start-failed",
+        message: error.message,
+        cause: error.code === "start-failed" ? error.cause : error,
+      }),
+    )
+    .andThen((handle) => {
+      console.log(`\n${ui.brand()}\n`);
+      console.log(ui.heading("Studio is ready"));
+      console.log(ui.info("local", ui.command(handle.url)));
+      console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
+      console.log(ui.info("stop", "Ctrl+C"));
+      if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") launchBrowser(handle.url);
+      return ResultAsync.fromPromise(
+        waitForShutdown(handle.server),
+        (cause): CliError => ({ code: "studio-start-failed", message: errorMessage(cause), cause }),
+      ).map(() => 0);
     });
-  } catch (error) {
-    console.error(ui.error(error instanceof Error ? error.message : "Invalid init options."));
-    return 1;
+}
+
+function cmdValidate(args: ParsedArgs, stdinText?: string): ResultAsync<number, CliError> {
+  if (
+    !args.positionals.length ||
+    [...args.flags.keys()].some((flag) => !["strict", "json", "requirements"].includes(flag))
+  ) {
+    return errAsync(
+      invalidArguments(
+        "validate expects one or more .dgm file paths (or - for stdin), with optional --strict, --json, and --requirements <file>.",
+        "validate",
+      ),
+    );
+  }
+  const requirementsArg = args.flags.get("requirements");
+  if (requirementsArg !== undefined && (typeof requirementsArg !== "string" || !requirementsArg.trim())) {
+    return errAsync(invalidArguments("validate --requirements requires a path.", "validate"));
+  }
+  if (requirementsArg !== undefined && args.positionals.length !== 1) {
+    return errAsync(invalidArguments("validate --requirements can only be used with one diagram input.", "validate"));
+  }
+  if (args.positionals.includes("-") && requirementsArg === undefined) {
+    return errAsync(invalidArguments("validate with stdin requires --requirements <file>.", "validate"));
+  }
+  const strict = args.flags.has("strict");
+  const json = args.flags.has("json");
+  let failed = false;
+  const reports = args.positionals.map((input) =>
+    validateInput(input, typeof requirementsArg === "string" ? requirementsArg : undefined, stdinText),
+  );
+  if (json) {
+    process.stdout.write(
+      `${JSON.stringify({ ok: reports.every((report) => report.ok && (!strict || report.routing.status !== "warnings")), files: reports.map(({ ok: _ok, ...report }) => report) }, null, 2)}\n`,
+    );
+  } else {
+    for (const report of reports) printValidationReport(report, strict);
+  }
+  for (const report of reports) {
+    if (!report.ok || (strict && report.routing.status === "warnings")) failed = true;
+  }
+  return okAsync(failed ? 1 : 0);
+}
+
+interface ValidationIssueReport {
+  code: string;
+  message: string;
+  requirementId?: string;
+  elementIds: string[];
+  path?: string;
+}
+interface ValidationSection {
+  status: "pass" | "fail" | "skipped" | "warnings";
+  issues: ValidationIssueReport[];
+}
+interface ValidationFileReport {
+  ok: boolean;
+  diagram: string;
+  requirements: string | null;
+  validity: ValidationSection;
+  completeness: ValidationSection;
+  routing: ValidationSection;
+  preferences: ValidationSection;
+  readability: ReadabilityMetrics | null;
+}
+
+function validateInput(input: string, requirementsOverride?: string, stdinText?: string): ValidationFileReport {
+  const diagram = input === "-" ? "<stdin>" : displayInputForInput(input);
+  const requirements = requirementsOverride
+    ? displayInputForInput(requirementsOverride)
+    : input === "-"
+      ? null
+      : displayInputForInput(requirementsPath(input));
+  const validity: ValidationSection = { status: "pass", issues: [] };
+  const completeness: ValidationSection = { status: "skipped", issues: [] };
+  const routing: ValidationSection = { status: "skipped", issues: [] };
+  const preferences: ValidationSection = { status: "skipped", issues: [] };
+  let contract: RequirementsDocument | undefined;
+  let readability: ReadabilityMetrics | null = null;
+  let source: string | undefined;
+  let doc: DiagramDocument | undefined;
+  try {
+    source = readDiagramSource(input, stdinText);
+  } catch (cause) {
+    validity.status = "fail";
+    validity.issues.push({ code: "file-input-read-failed", message: errorMessage(cause), elementIds: [] });
+  }
+  if (source !== undefined) {
+    const parsed = parseSourceResult(source, input);
+    if (parsed.isErr()) {
+      validity.status = "fail";
+      const location =
+        parsed.error.code === "parse-failed" && parsed.error.line
+          ? `${parsed.error.line}:${parsed.error.column ?? 1}: `
+          : "";
+      validity.issues.push({ code: parsed.error.code, message: `${location}${parsed.error.message}`, elementIds: [] });
+    } else doc = parsed.value;
   }
 
+  if (doc) {
+    const semanticIssues = [...validateDocument(doc, getCatalogMap()), ...validateEmbeddedAssets(doc)];
+    validity.issues.push(
+      ...semanticIssues.map((issue) => ({
+        code: issue.code,
+        message: issue.message,
+        elementIds: issue.id ? [issue.id] : [],
+      })),
+    );
+    if (semanticIssues.length) validity.status = "fail";
+  }
+
+  if (requirements) {
+    const reqPath = requirementsOverride ? resolve(process.cwd(), requirementsOverride) : requirementsPath(input);
+    let contents: string | undefined;
+    try {
+      contents = readFileSync(reqPath, "utf8");
+    } catch (cause) {
+      completeness.status = "fail";
+      const missing = (cause as NodeJS.ErrnoException).code === "ENOENT";
+      completeness.issues.push({
+        code: missing ? "requirements-missing" : "requirements-file-read-failed",
+        message: missing ? "Required companion requirements file was not found" : errorMessage(cause),
+        elementIds: [],
+      });
+    }
+    if (contents !== undefined) {
+      const parsedRequirements = parseRequirements(contents);
+      if (parsedRequirements.isErr()) {
+        completeness.status = "fail";
+        completeness.issues.push(
+          ...parsedRequirements.error.issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })),
+        );
+        if (!parsedRequirements.error.issues.length)
+          completeness.issues.push({
+            code: parsedRequirements.error.code,
+            message: parsedRequirements.error.message,
+            elementIds: [],
+            path: "$",
+          });
+      } else if (doc) {
+        contract = parsedRequirements.value;
+        const issues = checkRequirements(doc, parsedRequirements.value);
+        completeness.issues.push(...issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })));
+        completeness.status = issues.length ? "fail" : "pass";
+      } else completeness.status = "skipped";
+    }
+  } else {
+    completeness.status = "fail";
+    completeness.issues.push({
+      code: "requirements-missing",
+      message: "Required companion requirements file was not found",
+      elementIds: [],
+      path: requirements ?? undefined,
+    });
+  }
+
+  const preferencesFile = input === "-" ? undefined : projectPreferencesPath(input);
+  if (doc && (preferencesFile || contract?.preferences)) {
+    let project = DEFAULT_PREFERENCES;
+    if (preferencesFile) {
+      try {
+        const parsed = parsePreferences(readFileSync(preferencesFile, "utf8"));
+        if (parsed.isOk()) project = parsed.value;
+        else {
+          preferences.status = "fail";
+          preferences.issues.push(
+            ...parsed.error.issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })),
+          );
+        }
+      } catch (cause) {
+        preferences.status = "fail";
+        preferences.issues.push({ code: "preferences-file-read-failed", message: errorMessage(cause), elementIds: [] });
+      }
+    }
+    if (preferences.status !== "fail") {
+      const issues = checkPreferences(doc, { ...project, ...contract?.preferences });
+      preferences.issues.push(...issues.map((issue) => ({ ...issue, elementIds: issue.elementIds ?? [] })));
+      preferences.status = issues.length ? "fail" : "pass";
+    }
+  }
+
+  if (doc && validity.status === "pass") {
+    try {
+      const compiled = compileDiagramResult(doc);
+      if (compiled.isErr()) {
+        routing.status = "fail";
+        routing.issues.push(
+          ...compiled.error.issues.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            elementIds: issue.id ? [issue.id] : [],
+          })),
+        );
+      } else {
+        readability = compiled.value.readability;
+        const warnings = compiled.value.issues.filter((issue) => issue.level === "warning");
+        routing.issues.push(
+          ...warnings.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            elementIds: issue.id ? [issue.id] : [],
+          })),
+        );
+        routing.issues.push(
+          ...compiled.value.invariantFailures.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            elementIds: issue.elementIds,
+          })),
+        );
+        routing.status = routing.issues.length ? "warnings" : "pass";
+      }
+    } catch (cause) {
+      routing.status = "fail";
+      routing.issues.push({
+        code: "compilation-failed",
+        message: `Unable to complete routing validation: ${errorMessage(cause)}`,
+        elementIds: [],
+      });
+    }
+  }
+  return {
+    ok:
+      validity.status === "pass" &&
+      completeness.status === "pass" &&
+      preferences.status !== "fail" &&
+      routing.status !== "fail",
+    diagram,
+    requirements,
+    validity,
+    completeness,
+    preferences,
+    routing,
+    readability,
+  };
+}
+
+/** `preferences.json` at the root of the nearest project (beside `.dumbdiagrams/`), if any. */
+function projectPreferencesPath(input: string): string | undefined {
+  let dir = dirname(resolve(process.cwd(), input));
+  for (;;) {
+    if (existsSync(join(dir, ".dumbdiagrams"))) {
+      const candidate = join(dir, "preferences.json");
+      return existsSync(candidate) ? candidate : undefined;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
+function requirementsPath(input: string): string {
+  const path = resolve(process.cwd(), input);
+  const filename = path.split(/[\\/]/).pop() ?? path;
+  return join(
+    dirname(path),
+    filename === "diagram.dgm" ? "requirements.json" : `${filename.replace(/\.dgm$/i, "")}.requirements.json`,
+  );
+}
+
+function printValidationReport(report: ValidationFileReport, strict: boolean): void {
+  for (const [sectionName, section] of [
+    ["validity", report.validity],
+    ["completeness", report.completeness],
+    ["preferences", report.preferences],
+    ["routing", report.routing],
+  ] as const) {
+    for (const issue of section.issues) {
+      const ids = issue.requirementId
+        ? `${issue.requirementId}${issue.elementIds.length ? ` · ${issue.elementIds.join(", ")}` : ""}`
+        : issue.elementIds.join(", ");
+      const filePath = sectionName === "completeness" ? (report.requirements ?? report.diagram) : report.diagram;
+      const location = sectionName === "completeness" && issue.path ? `${filePath}:${issue.path}` : filePath;
+      const message =
+        issue.code === "file-input-read-failed"
+          ? `Unable to read diagram: ${filePath} (${issue.message})`
+          : `${location}: ${sectionName}${ids ? ` (${ids})` : ""}: ${issue.code}: ${issue.message}`;
+      console.error(ui[section.status === "fail" ? "error" : "warning"](message));
+    }
+  }
+  if (report.ok && !(strict && report.routing.status === "warnings"))
+    console.log(ui.success(`Validated: ${report.diagram}`));
+  else if (report.ok && strict && report.routing.status === "warnings")
+    console.error(ui.error(`Routing warnings fail --strict: ${report.diagram}`));
+  else console.error(ui.error(`Validation failed: ${report.diagram}`));
+}
+
+function issueLine(path: string, code: string, id: string | undefined, message: string): string {
+  return `${path}: ${code}${id ? ` (${id})` : ""}: ${message}`;
+}
+
+function cmdFormat(args: ParsedArgs): ResultAsync<number, CliError> {
+  const allowed = new Set(["check", "write", "stdout"]);
+  if (args.positionals.length !== 1 || [...args.flags.keys()].some((flag) => !allowed.has(flag))) {
+    return errAsync(
+      invalidArguments(
+        "format expects one .dgm file path (or - for stdin), with optional --check, --write, or --stdout.",
+        "format",
+      ),
+    );
+  }
+  const input = args.positionals[0]!;
+  if (input === "-" && args.flags.has("write")) {
+    return errAsync(invalidArguments("format --write requires a file path; stdin cannot be overwritten.", "format"));
+  }
+  if (args.flags.has("check") && args.flags.has("write")) {
+    return errAsync(invalidArguments("format --check and --write cannot be used together.", "format"));
+  }
+  if (args.flags.has("stdout") && args.flags.has("write")) {
+    return errAsync(invalidArguments("format --stdout and --write cannot be used together.", "format"));
+  }
+
+  const filePath = input === "-" ? undefined : resolve(process.cwd(), input);
+  return toAsync(readSourceResult(input)).andThen((source) =>
+    toAsync(parseSourceResult(source, input)).andThen((doc) =>
+      toAsync(compileSourceResult(doc, input)).andThen(() => {
+        const formatted = formatResult(doc, input);
+        if (formatted.isErr()) return errAsync(formatted.error);
+        if (args.flags.has("check")) {
+          if (source !== formatted.value) {
+            return errAsync<number, CliError>({
+              code: "format-failed",
+              message: `Needs formatting: ${displayInput(filePath)}`,
+              input,
+            });
+          }
+          console.error(ui.success(`Already formatted: ${displayInput(filePath)}`));
+          return okAsync(0);
+        }
+        if (args.flags.has("write")) {
+          const written = writeOutputResult(filePath!, formatted.value, "format");
+          if (written.isErr()) return errAsync(written.error);
+          console.error(ui.success(`Formatted: ${displayInput(filePath)}`));
+          return okAsync(0);
+        }
+        try {
+          process.stdout.write(formatted.value);
+        } catch (cause) {
+          return errAsync<number, CliError>({
+            code: "output-write-failed",
+            message: errorMessage(cause),
+            output: "stdout",
+            cause,
+          });
+        }
+        return okAsync(0);
+      }),
+    ),
+  );
+}
+
+function cmdRender(args: ParsedArgs): ResultAsync<number, CliError> {
+  const allowed = new Set(["output", "o", "stdout", "format"]);
+  if (args.positionals.length !== 1 || [...args.flags.keys()].some((flag) => !allowed.has(flag))) {
+    return errAsync(
+      invalidArguments(
+        "render expects one .dgm file path (or - for stdin), with optional --output/-o and --format svg.",
+        "render",
+      ),
+    );
+  }
+  const input = args.positionals[0]!;
+  const outputValue = args.flags.get("output") ?? args.flags.get("o");
+  if (outputValue !== undefined && typeof outputValue !== "string") {
+    return errAsync(invalidArguments("render --output/-o requires a destination path.", "render"));
+  }
+  const outputPath =
+    typeof outputValue === "string" && outputValue !== "-" ? resolve(process.cwd(), outputValue) : undefined;
+  if (args.flags.has("stdout") && outputPath) {
+    return errAsync(invalidArguments("render --stdout and --output cannot be used together.", "render"));
+  }
+  const format = args.flags.get("format");
+  if (format !== undefined && format !== "svg") {
+    return errAsync(invalidArguments(`Unsupported render format ${String(format)}; only svg is supported.`, "render"));
+  }
+
+  return toAsync(readSourceResult(input))
+    .andThen((source) => toAsync(parseSourceResult(source, input)))
+    .andThen((doc) => toAsync(compileSourceResult(doc, input)))
+    .andThen(({ doc, result }) =>
+      renderPortableSvg(doc, result.layout, { loadCatalogSvg }).mapErr(
+        (error): CliError => ({
+          code: "catalog-asset-failed",
+          message: error.message,
+          asset: error.browserPath,
+          cause: error,
+        }),
+      ),
+    )
+    .andThen((svg) => {
+      if (outputPath) {
+        const written = writeOutputResult(outputPath, svg, "render");
+        if (written.isErr()) return errAsync(written.error);
+        console.error(ui.success(`Rendered SVG: ${relativeForLog(outputPath)}`));
+      } else {
+        try {
+          process.stdout.write(svg);
+        } catch (cause) {
+          return errAsync<number, CliError>({
+            code: "output-write-failed",
+            message: errorMessage(cause),
+            output: "stdout",
+            cause,
+          });
+        }
+      }
+      return okAsync(0);
+    });
+}
+
+function readDiagramSource(input: string, stdinText?: string): string {
+  return input === "-" ? (stdinText ?? readFileSync(0, "utf8")) : readFileSync(resolve(process.cwd(), input), "utf8");
+}
+
+function toAsync<T>(result: Result<T, CliError>): ResultAsync<T, CliError> {
+  return result.isOk() ? okAsync(result.value) : errAsync(result.error);
+}
+
+function readSourceResult(input: string): Result<string, CliError> {
+  try {
+    return ok(readDiagramSource(input));
+  } catch (cause) {
+    return err({ code: "input-read-failed", message: errorMessage(cause), input, cause });
+  }
+}
+
+function parseSourceResult(source: string, input: string): Result<DiagramDocument, CliError> {
+  const result = parseDgmResult(source);
+  return result.isOk() ? ok(result.value) : err(parseCliError(input, result.error));
+}
+
+function compileSourceResult(
+  doc: DiagramDocument,
+  input: string,
+): Result<{ doc: DiagramDocument; result: CompiledDiagram }, CliError> {
+  const result = compileDiagramResult(doc);
+  if (result.isErr()) {
+    return err({ code: "validation-failed", message: "Diagram failed validation", input, issues: result.error.issues });
+  }
+  return ok({ doc, result: result.value });
+}
+
+function formatResult(doc: DiagramDocument, input: string): Result<string, CliError> {
+  try {
+    return ok(printDgm(doc));
+  } catch (cause) {
+    return err({ code: "format-failed", message: errorMessage(cause), input, cause });
+  }
+}
+
+function displayInput(filePath: string | undefined): string {
+  return filePath ? relativeForLog(filePath) : "<stdin>";
+}
+
+function writeOutputResult(
+  outputPath: string,
+  contents: string,
+  operation: "format" | "render",
+): Result<void, CliError> {
+  const temporaryPath = `${outputPath}.tmp-${process.pid}`;
+  let temporaryCreated = false;
+  try {
+    writeFileSync(temporaryPath, contents, { encoding: "utf8", flag: "wx" });
+    temporaryCreated = true;
+    renameSync(temporaryPath, outputPath);
+    return ok(undefined);
+  } catch (error) {
+    try {
+      if (temporaryCreated && existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    } catch {
+      // Preserve the original write error; cleanup is best effort.
+    }
+    return err({
+      code: operation === "format" ? "format-write-failed" : "output-write-failed",
+      message: errorMessage(error),
+      output: outputPath,
+      cause: error,
+    });
+  }
+}
+
+function cmdInit(args: ParsedArgs): ResultAsync<number, CliError> {
+  console.log(`${ui.banner()}\n\n${ui.brand()}\n`);
+  return resolveInitOptions(args, {
+    interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+    askProjectName: promptProjectName,
+  }).andThen((options) => toAsync(createInitProject(options)));
+}
+
+type PreparedInitFile = readonly [filePath: string, contents: string];
+
+function createInitProject(options: ResolvedInitOptions): Result<number, CliError> {
   const projectRoot = resolve(process.cwd(), options.projectDirectory);
   const projectName = options.projectName;
   const knowledgeRoot = join(projectRoot, ".dumbdiagrams");
   const agentsPath = join(projectRoot, "AGENTS.md");
   const claudePath = join(projectRoot, "CLAUDE.md");
   const geminiPath = join(projectRoot, "GEMINI.md");
-  const examplesRoot = join(knowledgeRoot, "examples");
-
-  mkdirSync(projectRoot, { recursive: true });
-  console.log(ui.heading("Creating project"));
-  console.log(ui.info("name", projectName));
-  console.log(ui.info("folder", projectRoot));
-  console.log("");
 
   const templateVars = { projectName };
-  const agentPointer = renderInitTemplate("AGENTS.md", templateVars);
-  const catalogReference = createCatalogReference();
   const catalogMarkdownPath = join(knowledgeRoot, "catalog.md");
   const catalogJsonPath = join(knowledgeRoot, "catalog.json");
   const knowledgeFiles = [
@@ -193,58 +673,103 @@ async function cmdInit(args: ParsedArgs): Promise<number> {
     ".dumbdiagrams/providers/azure.md",
     ".dumbdiagrams/providers/gcp.md",
     ".dumbdiagrams/providers/cloud-agnostic.md",
+    ".dumbdiagrams/requirements.md",
+    ".dumbdiagrams/requirements.schema.json",
+    ".dumbdiagrams/requirements.example.json",
+    ".dumbdiagrams/preferences.schema.json",
+    "preferences.json",
+    "README.md",
   ];
 
-  const files = [
-    ...knowledgeFiles.map((name) => [join(projectRoot, name), renderInitTemplate(name, templateVars)] as const),
-    [join(projectRoot, "diagrams/README.md"), renderInitTemplate("diagrams/README.md", templateVars)],
-    [agentsPath, agentPointer],
-    [claudePath, renderInitTemplate("CLAUDE.md", templateVars)],
-    [geminiPath, renderInitTemplate("GEMINI.md", templateVars)],
-    [catalogMarkdownPath, catalogReference.markdown],
-    [catalogJsonPath, catalogReference.json],
-  ] as const;
-  let created = 0;
-  for (const [filePath, contents] of files) {
-    if (existsAsFileOrDirectory(filePath)) {
-      console.log(ui.skip(`Skipped ${relativeForLog(filePath)} (already exists)`));
-      continue;
+  const prepared = safeTry<{ files: readonly PreparedInitFile[] }, CliError>(function* () {
+    const renderedKnowledge: PreparedInitFile[] = [];
+    for (const name of knowledgeFiles) {
+      renderedKnowledge.push(
+        yield* renderTemplateFile(name, join(projectRoot, name), templateVars).mapErr(initTemplateError),
+      );
     }
-    mkdirSync(dirname(filePath), { recursive: true });
-    writeFileSync(filePath, contents, "utf8");
-    console.log(ui.success(`Created ${relativeForLog(filePath)}`));
-    created++;
-  }
-  created += copyBundledExamples(examplesRoot);
+    const renderedDiagram = yield* renderTemplateFile(
+      "diagrams/README.md",
+      join(projectRoot, "diagrams/README.md"),
+      templateVars,
+    ).mapErr(initTemplateError);
+    const renderedAgents = yield* renderTemplateFile("AGENTS.md", agentsPath, templateVars).mapErr(initTemplateError);
+    const renderedClaude = yield* renderTemplateFile("CLAUDE.md", claudePath, templateVars).mapErr(initTemplateError);
+    const renderedGemini = yield* renderTemplateFile("GEMINI.md", geminiPath, templateVars).mapErr(initTemplateError);
+    const catalogReference = createCatalogReference();
+    return ok({
+      files: [
+        ...renderedKnowledge,
+        renderedDiagram,
+        renderedAgents,
+        renderedClaude,
+        renderedGemini,
+        [catalogMarkdownPath, catalogReference.markdown],
+        [catalogJsonPath, catalogReference.json],
+      ] as const,
+    });
+  });
 
-  console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
-  console.log(ui.info("next", ui.command(`cd ${relativeForLog(projectRoot)} && dumbdiagrams studio`)));
-  return 0;
+  return prepared.andThen(({ files }) => writeInitProject(projectRoot, projectName, files));
+}
+
+function initTemplateError(error: InitTemplateError): CliError {
+  return { code: "init-failed", message: error.message, cause: error };
+}
+
+function renderTemplateFile(
+  fileName: string,
+  filePath: string,
+  vars: { readonly projectName: string },
+): Result<PreparedInitFile, InitTemplateError> {
+  return renderInitTemplate(fileName, vars).map((contents) => [filePath, contents] as const);
+}
+
+function writeInitProject(
+  projectRoot: string,
+  projectName: string,
+  files: readonly PreparedInitFile[],
+): Result<number, CliError> {
+  return Result.fromThrowable(
+    () => {
+      mkdirSync(projectRoot, { recursive: true });
+      console.log(ui.heading("Creating project"));
+      console.log(ui.info("name", projectName));
+      console.log(ui.info("folder", projectRoot));
+      console.log("");
+
+      let created = 0;
+      for (const [filePath, contents] of files) {
+        if (existsAsFileOrDirectory(filePath)) {
+          console.log(ui.skip(`Skipped ${relativeForLog(filePath)} (already exists)`));
+          continue;
+        }
+        mkdirSync(dirname(filePath), { recursive: true });
+        writeFileSync(filePath, contents, "utf8");
+        console.log(ui.success(`Created ${relativeForLog(filePath)}`));
+        created++;
+      }
+
+      console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
+      console.log(ui.info("step 1", ui.command(`cd ${relativeForLog(projectRoot)}`)));
+      console.log(ui.info("step 2", "open it in your LLM-enabled IDE and tell the LLM what to draw"));
+      console.log(ui.info("step 3", ui.command("dumbdiagrams studio")));
+      return 0;
+    },
+    (cause): CliError => ({ code: "init-failed", message: errorMessage(cause), cause }),
+  )();
 }
 
 function createCatalogReference(): { markdown: string; json: string } {
-  const entries = listAssets("all", { includeAliases: false })
-    .sort((left, right) => {
-      const provider = left.provider.localeCompare(right.provider);
-      if (provider) return provider;
-      const kind = left.assetKind.localeCompare(right.assetKind);
-      if (kind) return kind;
-      const category = left.category.localeCompare(right.category);
-      if (category) return category;
-      return left.name.localeCompare(right.name) || left.type.localeCompare(right.type);
-    });
-  const canonicalByIcon = new Map(entries.map((entry) => [entry.icon.sourceId, entry]));
-  const legacyAliases = listAssets("all", { includeAliases: true })
-    .filter((entry) => !entry.canonical && canonicalByIcon.has(entry.icon.sourceId))
-    .map((entry) => ({
-      alias: entry.type,
-      canonicalType: canonicalByIcon.get(entry.icon.sourceId)!.type,
-      name: entry.name,
-      provider: entry.provider,
-      assetKind: entry.assetKind,
-      iconSourceId: entry.icon.sourceId,
-    }))
-    .sort((left, right) => left.alias.localeCompare(right.alias));
+  const entries = listAssets("all").sort((left, right) => {
+    const provider = left.provider.localeCompare(right.provider);
+    if (provider) return provider;
+    const kind = left.assetKind.localeCompare(right.assetKind);
+    if (kind) return kind;
+    const category = left.category.localeCompare(right.category);
+    if (category) return category;
+    return left.name.localeCompare(right.name) || left.type.localeCompare(right.type);
+  });
 
   const jsonEntries = entries.map((entry) => ({
     type: entry.type,
@@ -257,7 +782,6 @@ function createCatalogReference(): { markdown: string; json: string } {
     categories: entry.categories,
     allowedParents: entry.allowedParents,
     allowRoot: entry.allowRoot,
-    scope: entry.scope,
     column: entry.column,
     sizeTier: entry.sizeTier,
     specificity: entry.specificity,
@@ -271,10 +795,10 @@ function createCatalogReference(): { markdown: string; json: string } {
   }, {});
   const catalogJson = {
     schemaVersion: 1,
-    description: "Canonical browsable Dumb Diagrams catalog entries. Use type for .dgm icons; labels are separate display text.",
+    description:
+      "Canonical browsable Dumb Diagrams catalog entries. Use type for .dgm icons; labels are separate display text.",
     entryCount: jsonEntries.length,
     providerCounts,
-    legacyAliases,
     entries: jsonEntries,
   };
 
@@ -295,32 +819,22 @@ function createCatalogReference(): { markdown: string; json: string } {
     "## Icon rules for agents",
     "",
     "- Use the exact `type` value as the first token of a resource or boundary line.",
-    "  Example: `aws.api-gateway gateway \"Public API\"`.",
+    '  Example: `aws.api-gateway gateway "Public API"`.',
     "- The quoted label changes display text only; it does not select the icon.",
     "- Use `assetKind: group` entries for cloud/account/region/network/subnet",
     "  boundaries. Use `assetKind: resource` entries for service/resource nodes.",
-    "- For a general logical container, always use `cloud-agnostic.boundary`.",
-    "  Never author the legacy `group` shorthand or `cloud-agnostic.logical`.",
+    "- For a general logical container, use `cloud-agnostic.boundary`.",
     "- Check `allowedParents` before nesting a node. Check `allowRoot` before",
     "  placing it outside a boundary.",
-    "- Prefer canonical types. Aliases are listed for recognition, but should not",
-    "  be used when a canonical type is available.",
     "- Do not add an `icon` option for normal catalog icons. That option is only",
     "  for explicitly embedded/custom assets.",
     "",
     "Search examples:",
     "",
     "```bash",
-    "rg -n \"DynamoDB|aws\\.dynamodb\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
-    "rg -n \"API Gateway|aws\\.api-gateway\" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json",
+    'rg -n "DynamoDB|aws\\.dynamodb" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json',
+    'rg -n "API Gateway|aws\\.api-gateway" .dumbdiagrams/catalog.md .dumbdiagrams/catalog.json',
     "```",
-    "",
-    "## Legacy aliases",
-    "",
-    "The following legacy aliases are still accepted for compatibility. Prefer",
-    "the canonical type on the right when creating new diagrams:",
-    "",
-    ...legacyAliases.map((entry) => `- \`${entry.alias}\` → \`${entry.canonicalType}\``),
     "",
     "## Full catalog",
     "",
@@ -341,72 +855,73 @@ function createCatalogReference(): { markdown: string; json: string } {
   return { markdown, json: `${JSON.stringify(catalogJson, null, 2)}\n` };
 }
 
-function copyBundledExamples(examplesRoot: string): number {
-  mkdirSync(examplesRoot, { recursive: true });
-  const files = LEGACY_REFERENCE_FILES.map((fileName) => `legacy/${fileName}`);
-  files.unshift("README.md");
-  let created = 0;
-
-  for (const fileName of files) {
-    const sourcePath = resolveBundledExample(fileName.replace(/^legacy\//, ""));
-    if (!sourcePath) {
-      console.warn(ui.warning(`Bundled example not found: ${fileName}`));
-      continue;
-    }
-    const targetPath = join(examplesRoot, fileName);
-    mkdirSync(dirname(targetPath), { recursive: true });
-    if (existsAsFileOrDirectory(targetPath)) {
-      console.log(ui.skip(`Skipped ${relativeForLog(targetPath)} (already exists)`));
-      continue;
-    }
-    copyFileSync(sourcePath, targetPath);
-    console.log(ui.success(`Created ${relativeForLog(targetPath)}`));
-    created++;
-  }
-
-  const curatedFiles = CURATED_EXAMPLE_IDS.flatMap((id) => CURATED_FILE_NAMES.map((fileName) => `${id}/${fileName}`));
-  for (const fileName of curatedFiles) {
-    const sourcePath = resolveBundledExample(fileName);
-    if (!sourcePath) {
-      console.warn(ui.warning(`Bundled curated example file not found: ${fileName}`));
-      continue;
-    }
-    const targetPath = join(examplesRoot, fileName);
-    mkdirSync(dirname(targetPath), { recursive: true });
-    if (existsAsFileOrDirectory(targetPath)) {
-      console.log(ui.skip(`Skipped ${relativeForLog(targetPath)} (already exists)`));
-      continue;
-    }
-    copyFileSync(sourcePath, targetPath);
-    console.log(ui.success(`Created ${relativeForLog(targetPath)}`));
-    created++;
-  }
-  return created;
+function invalidArguments(message: string, command: string): CliError {
+  return { code: "invalid-arguments", message, command };
 }
 
-function resolveBundledExample(fileName: string): string | undefined {
-  const candidates = [
-    resolve(__dirname, "templates", "examples", fileName),
-    resolve(__dirname, "..", "templates", "examples", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", "diagrams", fileName),
-    resolve(__dirname, "..", "..", "..", "examples", "curated", fileName),
-  ];
-  return candidates.find((candidate) => existsAsFileOrDirectory(candidate));
-}
-
-function rejectArguments(args: ParsedArgs, command: string): void {
-  if (args.positionals.length || args.flags.size) {
-    throw new Error(`${command} does not accept file paths, positionals, or options.`);
+function reportCliError(error: CliError): number {
+  switch (error.code) {
+    case "unknown-command":
+      console.error(ui.error(error.message));
+      console.error(ui.muted(`  Run ${ui.command("dumbdiagrams help")} to see available commands.`));
+      return 1;
+    case "invalid-arguments":
+    case "init-failed":
+    case "studio-start-failed":
+      console.error(ui.error(error.message));
+      return 1;
+    case "input-read-failed":
+      console.error(ui.error(`Unable to read diagram: ${displayInputForInput(error.input)}`));
+      console.error(`  ${error.message}`);
+      return 1;
+    case "parse-failed": {
+      const path = displayInputForInput(error.input);
+      console.error(ui.error(`Invalid diagram: ${path}`));
+      console.error(
+        error.line ? `${path}:${error.line}:${error.column}: ${error.message}` : `${path}: ${error.message}`,
+      );
+      return 1;
+    }
+    case "validation-failed":
+      console.error(ui.error(`Invalid diagram: ${displayInputForInput(error.input)}`));
+      for (const issue of error.issues) {
+        console.error(issueLine(displayInputForInput(error.input), issue.code, issue.id, issue.message));
+      }
+      return 1;
+    case "format-failed":
+      console.error(ui.error(error.message));
+      return 1;
+    case "format-write-failed":
+      console.error(ui.error(`Unable to write formatted diagram: ${relativeForLog(error.output)}`));
+      console.error(`  ${error.message}`);
+      return 1;
+    case "catalog-asset-failed":
+      console.error(ui.error(`Unable to load catalog asset: ${error.asset}`));
+      console.error(`  ${error.message}`);
+      return 1;
+    case "output-write-failed":
+      console.error(ui.error(`Unable to write output: ${relativeForLog(error.output)}`));
+      console.error(`  ${error.message}`);
+      return 1;
   }
 }
 
-function parseArgs(args: string[]): ParsedArgs {
+function displayInputForInput(input: string): string {
+  return input === "-" ? "<stdin>" : relativeForLog(resolve(process.cwd(), input));
+}
+
+function parseArgs(args: string[], command?: string): ParsedArgs {
   const positionals: string[] = [];
   const flags = new Map<string, string | true>();
+  const valueFlags =
+    command === "render"
+      ? new Set(["output", "o", "format"])
+      : command === "validate"
+        ? new Set(["requirements"])
+        : new Set<string>();
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]!;
-    if (!argument.startsWith("-")) {
+    if (!argument.startsWith("-") || argument === "-") {
       positionals.push(argument);
       continue;
     }
@@ -417,7 +932,7 @@ function parseArgs(args: string[]): ParsedArgs {
       continue;
     }
     const next = args[index + 1];
-    if (next && !next.startsWith("-")) {
+    if (next && !next.startsWith("-") && valueFlags.has(withoutDashes)) {
       flags.set(withoutDashes, next);
       index += 1;
     } else {
@@ -441,12 +956,6 @@ function relativeForLog(path: string): string {
   return relativePath || ".";
 }
 
-function openBrowser(url: string): void {
-  const { command, args } = browserLaunchCommand(process.platform, url);
-  const child = spawn(command, args, { detached: true, stdio: "ignore" });
-  child.unref();
-}
-
 function waitForShutdown(server: { close(callback?: (error?: Error) => void): void }): Promise<void> {
   return new Promise((resolvePromise) => {
     const close = () => server.close(() => resolvePromise());
@@ -457,10 +966,12 @@ function waitForShutdown(server: { close(callback?: (error?: Error) => void): vo
 
 const entrypoint = process.argv[1] ? realpathSync(process.argv[1]) : "";
 if (entrypoint === realpathSync(fileURLToPath(import.meta.url))) {
-  runCli(process.argv.slice(2)).then((code) => {
-    if (code) process.exitCode = code;
-  }).catch((error: unknown) => {
-    console.error(ui.error(error instanceof Error ? error.message : String(error)));
-    process.exitCode = 1;
-  });
+  runCli(process.argv.slice(2))
+    .then((code) => {
+      if (code) process.exitCode = code;
+    })
+    .catch((error: unknown) => {
+      console.error(ui.error(error instanceof Error ? error.message : String(error)));
+      process.exitCode = 1;
+    });
 }

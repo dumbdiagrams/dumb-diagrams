@@ -1,0 +1,295 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "application-cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A cloud boundary is needed to contain the private network and regional resources."
+      }
+    },
+    {
+      "id": "production-account",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A production account groups the portal environment."
+      }
+    },
+    {
+      "id": "primary-region",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A primary region contains the portal network and external-to-network managed storage."
+      }
+    },
+    {
+      "id": "private-network",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: private network"
+      }
+    },
+    {
+      "id": "users",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Users reach a load balancer"
+      },
+      "type": "cloud-agnostic.actor"
+    },
+    {
+      "id": "load-balancer",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: load balancer"
+      },
+      "type": "cloud-agnostic.load-balancer"
+    },
+    {
+      "id": "portal-server",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: portal server"
+      },
+      "type": "cloud-agnostic.server"
+    },
+    {
+      "id": "project-database",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: database"
+      },
+      "type": "cloud-agnostic.database"
+    },
+    {
+      "id": "project-cache",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: cache"
+      },
+      "type": "cloud-agnostic.cache"
+    },
+    {
+      "id": "attachment-storage",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: object storage"
+      },
+      "type": "cloud-agnostic.object-storage"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "users-to-lb",
+      "source": "users",
+      "target": "load-balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Users reach a load balancer"
+      }
+    },
+    {
+      "id": "lb-to-server",
+      "source": "load-balancer",
+      "target": "portal-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: load balancer that forwards requests to a portal server"
+      }
+    },
+    {
+      "id": "server-to-db",
+      "source": "portal-server",
+      "target": "project-database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: server reads project data from a database"
+      }
+    },
+    {
+      "id": "server-to-cache",
+      "source": "portal-server",
+      "target": "project-cache",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: uses a cache for frequent lookups"
+      }
+    },
+    {
+      "id": "server-to-storage",
+      "source": "portal-server",
+      "target": "attachment-storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: retrieves attachments from object storage"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "cloud-count",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "One cloud boundary contains the specified portal environment."
+      }
+    },
+    {
+      "id": "account-count",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "within": "application-cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "One account groups the portal environment."
+      }
+    },
+    {
+      "id": "region-count",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "within": "production-account",
+      "basis": {
+        "kind": "inferred",
+        "text": "One region contains the portal environment."
+      }
+    },
+    {
+      "id": "network-count",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 1,
+      "max": 1,
+      "within": "primary-region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a private network"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "cloud-root",
+      "component": "application-cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The logical cloud boundary contains the portal deployment."
+      }
+    },
+    {
+      "id": "account-in-cloud",
+      "component": "production-account",
+      "relation": "inside",
+      "group": "application-cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "Account is a logical scope under the cloud boundary."
+      }
+    },
+    {
+      "id": "region-in-account",
+      "component": "primary-region",
+      "relation": "inside",
+      "group": "production-account",
+      "basis": {
+        "kind": "inferred",
+        "text": "Region groups the portal network and regional resources."
+      }
+    },
+    {
+      "id": "network-root",
+      "component": "private-network",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: a private network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "users-root",
+      "component": "users",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Users"
+      },
+      "group": "application-cloud"
+    },
+    {
+      "id": "lb-outside-network",
+      "component": "load-balancer",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: keep the load balancer ... outside [private network]"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "server-inside-network",
+      "component": "portal-server",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Keep the server ... in a private network"
+      },
+      "group": "private-network"
+    },
+    {
+      "id": "db-inside-network",
+      "component": "project-database",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Keep ... database ... in a private network"
+      },
+      "group": "private-network"
+    },
+    {
+      "id": "cache-inside-network",
+      "component": "project-cache",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: Keep ... cache in a private network"
+      },
+      "group": "private-network"
+    },
+    {
+      "id": "storage-outside-network",
+      "component": "attachment-storage",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: keep ... object storage outside [private network]"
+      },
+      "group": "primary-region"
+    }
+  ],
+  "allowAdditionalResources": false
+}

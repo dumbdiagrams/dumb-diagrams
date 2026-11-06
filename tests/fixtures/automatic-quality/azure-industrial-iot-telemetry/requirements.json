@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {"id":"subscription","kind":"group","basis":{"kind":"explicit","text":"Nest Azure resources in a subscription"}},
+    {"id":"region","kind":"group","basis":{"kind":"explicit","text":"Nest Azure resources in ... a region"}},
+    {"id":"resource-group","kind":"group","basis":{"kind":"explicit","text":"Nest Azure resources in ... a resource group"}},
+    {"id":"sensor-fleet","kind":"resource","type":"cloud-agnostic.actor","basis":{"kind":"explicit","text":"An industrial sensor fleet"}},
+    {"id":"iot-hub","kind":"resource","type":"azure.iot-hub","basis":{"kind":"explicit","text":"Azure IoT Hub"}},
+    {"id":"event-hubs","kind":"resource","type":"azure.event-hubs","basis":{"kind":"explicit","text":"Event Hubs for processing"}},
+    {"id":"raw-storage","kind":"resource","type":"azure.storage-accounts","basis":{"kind":"explicit","text":"a Storage Account for a raw archive"}},
+    {"id":"function-app","kind":"resource","type":"azure.function-apps","basis":{"kind":"explicit","text":"An Azure Function App"}},
+    {"id":"cosmos-db","kind":"resource","type":"azure.azure-cosmos-db","basis":{"kind":"explicit","text":"Cosmos DB"}},
+    {"id":"dashboard","kind":"resource","type":"cloud-agnostic.actor","basis":{"kind":"explicit","text":"An external operations dashboard"}}
+  ],
+  "relationships": [
+    {"id":"fleet-iot-hub","source":"sensor-fleet","target":"iot-hub","kind":"flow","basis":{"kind":"explicit","text":"sensor fleet sends readings to Azure IoT Hub"}},
+    {"id":"hub-event-hubs","source":"iot-hub","target":"event-hubs","kind":"flow","basis":{"kind":"explicit","text":"IoT Hub routes readings to Event Hubs for processing"}},
+    {"id":"hub-storage","source":"iot-hub","target":"raw-storage","kind":"flow","basis":{"kind":"explicit","text":"IoT Hub routes ... to a Storage Account for a raw archive"}},
+    {"id":"event-hubs-function","source":"event-hubs","target":"function-app","kind":"flow","basis":{"kind":"explicit","text":"Function App consumes the event stream"}},
+    {"id":"function-cosmos","source":"function-app","target":"cosmos-db","kind":"flow","basis":{"kind":"explicit","text":"writes current equipment status to Cosmos DB"}},
+    {"id":"dashboard-cosmos","source":"dashboard","target":"cosmos-db","kind":"flow","basis":{"kind":"explicit","text":"external operations dashboard reads the current status"}}
+  ],
+  "counts": [],
+  "placement": [
+    {"id":"region-in-subscription","component":"region","relation":"inside","group":"subscription","basis":{"kind":"explicit","text":"Nest Azure resources in a subscription, region"}},
+    {"id":"rg-in-region","component":"resource-group","relation":"inside","group":"region","basis":{"kind":"explicit","text":"Nest Azure resources in ... a region, and resource group"}},
+    {"id":"iot-in-rg","component":"iot-hub","relation":"inside","group":"resource-group","basis":{"kind":"explicit","text":"Nest Azure resources ... in a resource group"}},
+    {"id":"event-hubs-in-rg","component":"event-hubs","relation":"inside","group":"resource-group","basis":{"kind":"explicit","text":"Nest Azure resources ... in a resource group"}},
+    {"id":"storage-in-rg","component":"raw-storage","relation":"inside","group":"resource-group","basis":{"kind":"explicit","text":"Nest Azure resources ... in a resource group"}},
+    {"id":"function-in-rg","component":"function-app","relation":"inside","group":"resource-group","basis":{"kind":"explicit","text":"Nest Azure resources ... in a resource group"}},
+    {"id":"cosmos-in-rg","component":"cosmos-db","relation":"inside","group":"resource-group","basis":{"kind":"explicit","text":"Nest Azure resources ... in a resource group"}}
+  ],
+  "allowAdditionalResources": false
+}

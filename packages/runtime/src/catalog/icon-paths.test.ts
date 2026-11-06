@@ -5,12 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import manifest from "./generated/manifest.json" with { type: "json" };
-import {
-  listAssets,
-  listBrowsableAssets,
-  listCategories,
-  listProviders,
-} from "./catalog.js";
+import { listAssets, listBrowsableAssets, listCategories, listProviders } from "./catalog.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -52,13 +47,7 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
-    // Legacy generic glyphs remain resolvable but are intentionally absent
-    // from the agent/Studio-facing catalog. `cloud-agnostic.boundary` is the
-    // only general-purpose logical container exposed for new diagrams.
-    excluded: [
-      "assets/catalog/sources/cloud-agnostic/custom.svg",
-      "assets/catalog/sources/cloud-agnostic/logical.svg",
-    ],
+    excluded: [],
   },
 ] as const;
 
@@ -118,15 +107,9 @@ describe("catalog icon previews", () => {
 
   it("does not expose Azure export prefixes in service labels", () => {
     const azureResources = listBrowsableAssets("azure", "resources");
-    const malformed = azureResources.filter(
-      (entry) => /^\d+\s|icon service/i.test(entry.name),
-    );
+    const malformed = azureResources.filter((entry) => /^\d+\s|icon service/i.test(entry.name));
     expect(malformed.map((entry) => entry.name)).toEqual([]);
-    expect(
-      azureResources
-        .filter((entry) => entry.name === "Service Group Relationships")
-        .length,
-    ).toBeGreaterThan(0);
+    expect(azureResources.filter((entry) => entry.name === "Service Group Relationships").length).toBeGreaterThan(0);
   });
 
   it.each(SOURCE_ICON_LIBRARIES)(
@@ -141,13 +124,10 @@ describe("catalog icon previews", () => {
         .sort();
       const catalogPaths = manifest.entries
         .filter(
-          (entry) =>
-            entry.provider === provider &&
-            catalogKinds.has(entry.assetKind) &&
-            entry.canonical !== false &&
-            entry.browsable !== false,
+          (entry) => entry.provider === provider && catalogKinds.has(entry.assetKind) && entry.browsable !== false,
         )
         .map((entry) => entry.iconPath)
+        .filter((file) => file.startsWith(`${root}/`))
         .sort();
 
       expect(catalogPaths).toEqual(sourcePaths);
@@ -158,7 +138,7 @@ describe("catalog icon previews", () => {
     const assetsBySourceId = new Map(manifest.assetFiles.map((asset) => [asset.sourceId, asset]));
     const problems: string[] = [];
     for (const entry of manifest.entries) {
-      if (entry.canonical === false || entry.browsable === false) continue;
+      if (entry.browsable === false) continue;
       const asset = assetsBySourceId.get(entry.icon.sourceId);
       if (!asset) {
         problems.push(`${entry.type} -> missing asset record`);
@@ -177,9 +157,7 @@ describe("catalog icon previews", () => {
   it("does not expose empty resource categories", () => {
     for (const provider of listProviders()) {
       for (const category of listCategories(provider, "resources")) {
-        const count = listBrowsableAssets(provider, "resources").filter(
-          (entry) => entry.category === category,
-        ).length;
+        const count = listBrowsableAssets(provider, "resources").filter((entry) => entry.category === category).length;
         expect(count, `${provider}/${category}`).toBeGreaterThan(0);
       }
     }
@@ -188,9 +166,7 @@ describe("catalog icon previews", () => {
   it("includes fixed azure group icons", () => {
     const groups = listAssets("azure", { assetKind: "group" });
     const region = groups.find((entry) => entry.type === "azure.region");
-    const resourceGroup = groups.find(
-      (entry) => entry.type === "azure.resource-group",
-    );
+    const resourceGroup = groups.find((entry) => entry.type === "azure.resource-group");
     expect(region?.iconPath).toBe(
       "assets/catalog/sources/azure/Icons/general/10116-icon-service-Region-Management.svg",
     );

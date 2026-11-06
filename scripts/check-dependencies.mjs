@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { importBoundaryError } from "./lib/import-boundaries.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"]);
@@ -35,31 +36,63 @@ const scopes = [
 const errors = [];
 for (const scope of scopes) {
   const manifest = JSON.parse(readFileSync(scope.manifestPath, "utf8"));
-  const declared = new Set([
+  const productionDependencies = new Set([
     manifest.name,
     ...Object.keys(manifest.dependencies ?? {}),
-    ...Object.keys(manifest.devDependencies ?? {}),
     ...Object.keys(manifest.optionalDependencies ?? {}),
     ...Object.keys(manifest.peerDependencies ?? {}),
   ]);
+  const declared = new Set([...productionDependencies, ...Object.keys(manifest.devDependencies ?? {})]);
 
   for (const file of scope.files) {
     for (const specifier of importsIn(file)) {
+      const boundaryError = importBoundaryError(root, file, specifier);
+      if (boundaryError) errors.push(`${relative(root, file)}: ${boundaryError}`);
       const packageName = externalPackageName(specifier);
       if (packageName && !declared.has(packageName)) {
         errors.push(
           `${relative(root, file)} imports ${packageName}, but ${relative(root, scope.manifestPath)} does not declare it`,
+        );
+      } else if (
+        packageName &&
+        isProductionPackageSource(scope.root, file) &&
+        !productionDependencies.has(packageName) &&
+        !isBundledWorkspaceImport(manifest, packageName)
+      ) {
+        errors.push(
+          `${relative(root, file)} imports ${packageName} in production source, but ${relative(root, scope.manifestPath)} declares it only for development`,
         );
       }
     }
   }
 }
 
+function isBundledWorkspaceImport(manifest, packageName) {
+  const declaration = manifest.devDependencies?.[packageName];
+  return (
+    typeof manifest.scripts?.["prepare:standalone"] === "string" &&
+    typeof declaration === "string" &&
+    declaration.startsWith("workspace:")
+  );
+}
+
+function isProductionPackageSource(packageRoot, file) {
+  if (packageRoot === root) return false;
+  const sourceRoot = join(packageRoot, "src");
+  const relativeSource = relative(sourceRoot, file);
+  return !relativeSource.startsWith("..") && !relativeSource.includes(".test.") && !relativeSource.includes(".spec.");
+}
+
 if (errors.length > 0) {
-  console.error(errors.sort().map((error) => `- ${error}`).join("\n"));
+  console.error(
+    errors
+      .sort()
+      .map((error) => `- ${error}`)
+      .join("\n"),
+  );
   process.exitCode = 1;
 } else {
-  console.log("Dependency declarations match external imports");
+  console.log("Dependency declarations and workspace import boundaries pass");
 }
 
 function sourceFiles(directory) {
@@ -67,9 +100,7 @@ function sourceFiles(directory) {
     if (["dist", "node_modules", "public"].includes(entry.name)) return [];
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(path);
-    return sourceExtensions.has(extname(entry.name)) && !entry.name.endsWith(".d.ts")
-      ? [path]
-      : [];
+    return sourceExtensions.has(extname(entry.name)) && !entry.name.endsWith(".d.ts") ? [path] : [];
   });
 }
 

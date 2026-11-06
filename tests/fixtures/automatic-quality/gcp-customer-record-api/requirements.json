@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Google Cloud organization"
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "project nested in organization"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "primary region nested in project"
+      }
+    },
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "external web client sends HTTPS requests"
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Load Balancing"
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "a Cloud Run API"
+      }
+    },
+    {
+      "id": "database",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud SQL"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "https_requests",
+      "source": "client",
+      "target": "load_balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "HTTPS requests"
+      }
+    },
+    {
+      "id": "api_requests",
+      "source": "load_balancer",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward requests"
+      }
+    },
+    {
+      "id": "read_write_customer_records",
+      "source": "api",
+      "target": "database",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read and write customer records"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "load_balancer_count",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "the Cloud Load Balancing service"
+      }
+    },
+    {
+      "id": "api_count",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "a Cloud Run API"
+      }
+    },
+    {
+      "id": "database_count",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud SQL"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "organization boundary"
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest a project ... inside a Google Cloud organization"
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "primary region inside project"
+      }
+    },
+    {
+      "id": "services_in_region",
+      "component": "load_balancer",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place the three Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "api_in_region",
+      "component": "api",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place the three Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "database_in_region",
+      "component": "database",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place the three Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "client_outside_org",
+      "component": "client",
+      "relation": "outside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the client outside the organization"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

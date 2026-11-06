@@ -1,31 +1,50 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseDgmResult } from '@dumb-diagrams/runtime/dsl';
 
 // Build-time only. Studio imports these same files in editor/src/examples.ts.
 export const exampleIds = [
-  'image-thumbnail-pipeline',
-  'aws-data-transfer-hub',
-  'bedrock-claims-processing',
+  'aws-easy-static-website-delivery',
+  'aws-medium-factory-iot-telemetry',
+  'aws-medium-image-thumbnail-pipeline',
 ];
 const descriptions = {
-  'image-thumbnail-pipeline': 'A direct-upload image flow that uses an S3 event to invoke Lambda and persist thumbnails and metadata.',
-  'aws-data-transfer-hub': 'A compact cross-account deployment flow for UI hosting, authentication, workflow automation, replication templates, and Fargate workloads.',
-  'bedrock-claims-processing': 'A claims workflow that combines S3 document intake, Bedrock Data Automation, SageMaker fraud detection, DynamoDB state, Nova insights, and email notification.',
+  'aws-medium-image-thumbnail-pipeline': 'An upload API that stores originals, queues thumbnail jobs for a processor, and serves both images through a CDN.',
+  'aws-medium-factory-iot-telemetry': 'Factory sensors stream readings through IoT Core and Kinesis to a Lambda that stores time series in Timestream and raises SNS alerts.',
+  'aws-easy-static-website-delivery': 'A visitor resolves the site through DNS and loads it from a CDN backed by the bucket that stores the website files.',
 };
-export function loadExamples() {
-  const curatedRoot = [
-    resolve('examples/curated'),
-    resolve('../../examples/curated'),
+
+/** The checked-in approved runs, wherever the build is started from. */
+export function approvedRoot() {
+  const root = [
+    resolve(fileURLToPath(new URL('../../../../examples/approved', import.meta.url))),
+    resolve('examples/approved'),
+    resolve('../../examples/approved'),
   ].find(existsSync);
-  if (!curatedRoot) throw new Error('Could not locate the canonical examples/curated directory');
+  if (!root) throw new Error('Could not locate the examples/approved directory');
+  return root;
+}
+
+/** The approved run whose manifest is marked `featured`; the site's default examples. */
+export function approvedRun() {
+  const featured = readdirSync(approvedRoot(), { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .filter(entry => JSON.parse(readFileSync(join(approvedRoot(), entry.name, 'manifest.json'), 'utf8')).featured);
+  if (featured.length !== 1) throw new Error(`examples/approved must feature exactly one run, found ${featured.length}`);
+  return join(approvedRoot(), featured[0].name);
+}
+
+export function loadExamples() {
+  const runRoot = approvedRun();
   return exampleIds.map(id => {
-    const directory = join(curatedRoot, id);
+    const directory = join(runRoot, id);
     const source = readFileSync(join(directory, 'diagram.dgm'), 'utf8');
     const prompt = readFileSync(join(directory, 'user-prompt.md'), 'utf8');
     const interpretation = readFileSync(join(directory, 'architecture-brief.md'), 'utf8');
-    const referenceSpec = readFileSync(join(directory, 'reference-spec.md'), 'utf8');
-    const title = source.match(/^\s*title "([^"]+)"/m)?.[1];
+    const requirements = readFileSync(join(directory, 'requirements.json'), 'utf8');
+    const title = parseDgmResult(source).map(doc => doc.title).unwrapOr(undefined);
     if (!title) throw new Error(`Missing example title: ${id}`);
-    return { id, title, description: descriptions[id], source, prompt, interpretation, referenceSpec };
+    return { id, title, description: descriptions[id], source, prompt, interpretation, requirements };
   });
 }

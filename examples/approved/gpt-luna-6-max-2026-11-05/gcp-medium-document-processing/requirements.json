@@ -1,0 +1,366 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest project and primary region inside a Google Cloud organization."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest project and primary region inside a Google Cloud organization."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest project and primary region inside a Google Cloud organization."
+      }
+    },
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the partner outside the organization."
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "source_bucket",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "notifications",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "output_bucket",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "status_db",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "upload_document",
+      "source": "partner",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "store_original",
+      "source": "intake",
+      "target": "source_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "publish_object_notification",
+      "source": "source_bucket",
+      "target": "notifications",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "deliver_event",
+      "source": "notifications",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "read_original",
+      "source": "source_bucket",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "store_normalized",
+      "source": "processor",
+      "target": "output_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "write_status_metadata",
+      "source": "processor",
+      "target": "status_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_gcp_organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.organization component(s) as requested."
+      }
+    },
+    {
+      "id": "count_gcp_project_in_organization",
+      "kind": "group",
+      "type": "gcp.project",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.project component(s) as requested."
+      },
+      "within": "organization"
+    },
+    {
+      "id": "count_gcp_region_in_project",
+      "kind": "group",
+      "type": "gcp.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.region component(s) as requested."
+      },
+      "within": "project"
+    },
+    {
+      "id": "count_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 cloud-agnostic.actor component(s) as requested."
+      }
+    },
+    {
+      "id": "count_gcp_cloud-run_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 gcp.cloud-run component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_cloud-storage_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 gcp.cloud-storage component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_pub-sub_in_region",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.pub-sub component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_cloud-sql_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.cloud-sql component(s) as requested."
+      },
+      "within": "region"
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest project and primary region inside a Google Cloud organization."
+      }
+    },
+    {
+      "id": "project_parent",
+      "component": "project",
+      "relation": "parent",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest project and primary region inside a Google Cloud organization."
+      }
+    },
+    {
+      "id": "region_parent",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest project and primary region inside a Google Cloud organization."
+      }
+    },
+    {
+      "id": "partner_root",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the partner outside the organization."
+      }
+    },
+    {
+      "id": "intake_parent",
+      "component": "intake",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "source_bucket_parent",
+      "component": "source_bucket",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "notifications_parent",
+      "component": "notifications",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "processor_parent",
+      "component": "processor",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "output_bucket_parent",
+      "component": "output_bucket",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    },
+    {
+      "id": "status_db_parent",
+      "component": "status_db",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all Google Cloud services in the primary region."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

@@ -1,0 +1,181 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS architecture and AWS services."
+      },
+      "type": "aws.cloud"
+    },
+    {
+      "id": "visitor",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "A website visitor requests the static site."
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "dns",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "DNS resolves the website name."
+      },
+      "type": "aws.route-53"
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "A content delivery service serves the website."
+      },
+      "type": "aws.cloudfront"
+    },
+    {
+      "id": "site_bucket",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "A bucket stores the website files."
+      },
+      "type": "aws.simple-storage-service-bucket"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "visitor_dns",
+      "source": "visitor",
+      "target": "dns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "site lookup"
+      }
+    },
+    {
+      "id": "dns_cdn",
+      "source": "dns",
+      "target": "cdn",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "resolve to delivery"
+      }
+    },
+    {
+      "id": "cdn_bucket",
+      "source": "cdn",
+      "target": "site_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "fetch site files"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_visitor",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "A website visitor."
+      }
+    },
+    {
+      "id": "one_dns",
+      "kind": "resource",
+      "type": "aws.route-53",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "DNS."
+      }
+    },
+    {
+      "id": "one_cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "A content delivery service."
+      }
+    },
+    {
+      "id": "one_bucket",
+      "kind": "resource",
+      "type": "aws.simple-storage-service-bucket",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The bucket that stores website files."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "cloud_root",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS architecture."
+      }
+    },
+    {
+      "id": "visitor_external",
+      "component": "visitor",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "A website visitor."
+      }
+    },
+    {
+      "id": "dns",
+      "component": "dns",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS service in the AWS architecture."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "cdn",
+      "component": "cdn",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS service in the AWS architecture."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "site_bucket",
+      "component": "site_bucket",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS service in the AWS architecture."
+      },
+      "group": "aws_cloud"
+    }
+  ],
+  "allowAdditionalResources": true
+}

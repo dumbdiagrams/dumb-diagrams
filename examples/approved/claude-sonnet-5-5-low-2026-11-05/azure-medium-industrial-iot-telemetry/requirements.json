@@ -1,0 +1,260 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "sensors",
+      "kind": "resource",
+      "type": "cloud-agnostic.device",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "sub",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "rg",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "func",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    },
+    {
+      "id": "cosmos",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "Sensor fleet -> IoT Hub -> Event Hubs and Storage Account archive; Function App consumes, normalizes, writes status to Cosmos DB; external dashboard reads st..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "readings",
+      "source": "sensors",
+      "target": "hub",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Readings (sensors to hub) per the request."
+      }
+    },
+    {
+      "id": "route_events",
+      "source": "hub",
+      "target": "events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route events (hub to events) per the request."
+      }
+    },
+    {
+      "id": "route_archive",
+      "source": "hub",
+      "target": "archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Raw archive (hub to archive) per the request."
+      }
+    },
+    {
+      "id": "consume",
+      "source": "events",
+      "target": "func",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume stream (events to func) per the request."
+      }
+    },
+    {
+      "id": "status",
+      "source": "func",
+      "target": "cosmos",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Current status (func to cosmos) per the request."
+      }
+    },
+    {
+      "id": "read_status",
+      "source": "dashboard",
+      "target": "cosmos",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read status (dashboard to cosmos) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "dashboard_root",
+      "component": "dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "sensors_root",
+      "component": "sensors",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "sub_root",
+      "component": "sub",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "region_in_sub",
+      "component": "region",
+      "relation": "parent",
+      "group": "sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "rg_in_region",
+      "component": "rg",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "hub_in_rg",
+      "component": "hub",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "archive_in_rg",
+      "component": "archive",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "events_in_rg",
+      "component": "events",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "func_in_rg",
+      "component": "func",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "cosmos_in_rg",
+      "component": "cosmos",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

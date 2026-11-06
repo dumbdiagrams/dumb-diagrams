@@ -116,6 +116,9 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/gcp/Unique Icons",
     include: () => true,
     kinds: ["resource"],
+    // Semantic GCP products may intentionally reuse reviewed artwork from
+    // Category Icons; this parity check covers the distinct product source
+    // tree, while manifest asset validation covers reused category files.
     excluded: new Set(),
   },
   {
@@ -123,15 +126,12 @@ const SOURCE_ICON_LIBRARIES = [
     root: "assets/catalog/sources/cloud-agnostic",
     include: () => true,
     kinds: ["resource", "group"],
-    // Kept for legacy custom SVG imports; it is not a catalog item.
-    excluded: new Set(["assets/catalog/sources/cloud-agnostic/custom.svg"]),
+    excluded: new Set(),
   },
 ];
 
 function safeZipEntries(archive) {
-  const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" })
-    .split(/\r?\n/)
-    .filter(Boolean);
+  const names = execFileSync("unzip", ["-Z1", archive], { encoding: "utf8" }).split(/\r?\n/).filter(Boolean);
   for (const name of names) {
     const normalized = name.replaceAll("\\", "/");
     if (normalized.startsWith("/") || normalized.split("/").includes("..")) {
@@ -183,7 +183,9 @@ async function check() {
   for (const source of lock.sources) {
     const count = counts.get(source.provider) ?? 0;
     const okCount = count >= source.minimumCanonicalCount;
-    console.log(`${source.provider}: ${count} canonical resources (minimum ${source.minimumCanonicalCount}) ${okCount ? "ok" : "FAIL"}`);
+    console.log(
+      `${source.provider}: ${count} canonical resources (minimum ${source.minimumCanonicalCount}) ${okCount ? "ok" : "FAIL"}`,
+    );
     if (!okCount) failed = true;
   }
   for (const library of SOURCE_ICON_LIBRARIES) {
@@ -198,12 +200,10 @@ async function check() {
       manifest.entries
         .filter(
           (entry) =>
-            entry.provider === library.provider &&
-            library.kinds.includes(entry.assetKind) &&
-            entry.canonical !== false &&
-            entry.browsable !== false,
+            entry.provider === library.provider && library.kinds.includes(entry.assetKind) && entry.browsable !== false,
         )
-        .map((entry) => entry.iconPath),
+        .map((entry) => entry.iconPath)
+        .filter((file) => file.startsWith(`${library.root}/`)),
     );
     const missing = [...sourcePaths].filter((file) => !catalogPaths.has(file));
     const extra = [...catalogPaths].filter((file) => !sourcePaths.has(file));
@@ -218,6 +218,9 @@ async function check() {
       console.log(`${library.provider}: source/catalog inventory matches (${sourcePaths.size})`);
     }
   }
+  // The browser copy is ignored and created by catalog:stage/build. Keep this
+  // gate focused on committed source files and manifest metadata so it works
+  // before staging on a clean checkout.
   for (const asset of manifest.assetFiles) {
     const file = join(ROOT, asset.sourcePath);
     if (!existsSync(file)) {
@@ -240,9 +243,8 @@ async function check() {
       failed = true;
     }
     assetsBySourceId.set(asset.sourceId, asset);
-    let staged;
     try {
-      staged = validateBrowserPath(asset.browserPath, asset.sourceId);
+      validateBrowserPath(asset.browserPath, asset.sourceId);
     } catch (error) {
       console.error(error.message);
       failed = true;
@@ -254,24 +256,9 @@ async function check() {
       failed = true;
     }
     browserPaths.set(asset.browserPath, asset.sourceId);
-    if (!existsSync(staged)) {
-      console.error(`missing staged browser asset: ${asset.browserPath}`);
-      failed = true;
-      continue;
-    }
-    try {
-      validateSvg(staged);
-    } catch (error) {
-      console.error(error.message);
-      failed = true;
-    }
-    if (sha256File(staged) !== asset.sha256) {
-      console.error(`staged hash drift: ${asset.browserPath}`);
-      failed = true;
-    }
   }
   for (const entry of manifest.entries) {
-    if (entry.canonical === false || entry.browsable === false) continue;
+    if (entry.browsable === false) continue;
     const asset = assetsBySourceId.get(entry.icon?.sourceId);
     if (!asset) {
       console.error(`entry has no staged asset record: ${entry.type}`);
@@ -288,7 +275,9 @@ async function check() {
     }
   }
   for (const source of lock.sources) {
-    console.log(`${source.provider}: archive ${source.sha256 === "local-curated-assets" ? "local source tree" : "locked; download only during icons:update"}`);
+    console.log(
+      `${source.provider}: archive ${source.sha256 === "local-curated-assets" ? "local source tree" : "locked; download only during icons:update"}`,
+    );
   }
   if (failed) process.exitCode = 1;
 }
@@ -298,7 +287,8 @@ async function update(name, acceptTerms) {
     throw new Error("Usage: icons:update --provider <aws|azure|gcp|cloud-agnostic> --accept-terms");
   }
   const source = sourceFor(name);
-  if (!source.archiveUrl) throw new Error(`${name} has no archive URL; update its pinned source through the reviewed local workflow`);
+  if (!source.archiveUrl)
+    throw new Error(`${name} has no archive URL; update its pinned source through the reviewed local workflow`);
   const temp = mkdtempSync(join(tmpdir(), "dumb-diagrams-icons-"));
   const archive = join(temp, `${name}.zip`);
   try {
@@ -319,7 +309,11 @@ async function update(name, acceptTerms) {
     const prepared = join(temp, "prepared");
     mkdirSync(prepared);
     if (name === "aws") {
-      for (const folder of ["Architecture-Service-Icons_07312026", "Architecture-Group-Icons_07312026", "Resource-Icons_07312026"]) {
+      for (const folder of [
+        "Architecture-Service-Icons_07312026",
+        "Architecture-Group-Icons_07312026",
+        "Resource-Icons_07312026",
+      ]) {
         const found = findDirectory(validationRoot, folder);
         if (found) cpSync(found, join(prepared, folder), { recursive: true });
       }

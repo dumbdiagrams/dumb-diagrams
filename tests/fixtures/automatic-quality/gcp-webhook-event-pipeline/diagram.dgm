@@ -1,0 +1,27 @@
+dgm 1
+diagram gcp-webhook-event-pipeline {
+  grammar gcp
+  flow lr
+  title "Google Cloud webhook event pipeline"
+
+  cloud-agnostic.client partner "Webhook partner"
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Event processing project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing load_balancer "Cloud Load Balancing"
+        gcp.cloud-functions ingress "Webhook ingress (Cloud Functions)"
+        gcp.pub-sub events "Webhook events topic (Pub/Sub)"
+        gcp.dataflow processor "Dataflow event processor"
+        gcp.bigquery warehouse "BigQuery processed records"
+        gcp.cloud-storage archive "Cloud Storage raw event files"
+      }
+    }
+  }
+
+  partner -> load_balancer { id webhook_events label "Webhook events" kind flow }
+  load_balancer -> ingress { id forward_webhooks label "Forward webhook requests" kind flow }
+  ingress -> events { id publish_events label "Publish events" kind flow }
+  events -> processor { id consume_events label "Consume events" kind flow }
+  processor -> warehouse { id write_processed_records label "Processed records" kind flow }
+  processor -> archive { id write_raw_event_files label "Raw event files" kind flow }
+}

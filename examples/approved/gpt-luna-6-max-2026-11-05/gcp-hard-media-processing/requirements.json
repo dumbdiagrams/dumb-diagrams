@@ -1,0 +1,725 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show the Google Cloud organization and project."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show the Google Cloud organization and project."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Use regional placement for regional services."
+      }
+    },
+    {
+      "id": "producer",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the media producer outside the organization."
+      }
+    },
+    {
+      "id": "operations_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the operations client outside the organization."
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "The Cloud Run ingest is regional; global services are at project scope."
+      }
+    },
+    {
+      "id": "ingest",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "The ingest service is regional."
+      }
+    },
+    {
+      "id": "input_bucket",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Ingest writes input objects; workers read them."
+      }
+    },
+    {
+      "id": "jobs_topic",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep global Pub/Sub services at project scope."
+      }
+    },
+    {
+      "id": "vpc",
+      "kind": "group",
+      "type": "gcp.vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Both workers are in separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "subnet_b",
+      "kind": "group",
+      "type": "gcp.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers use separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "worker_b",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers run in separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "subnet_a",
+      "kind": "group",
+      "type": "gcp.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers use separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "worker_a",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers run in separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "output_bucket",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers write processed objects to object storage."
+      }
+    },
+    {
+      "id": "status_db",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers update Cloud SQL job status."
+      }
+    },
+    {
+      "id": "completion_topic",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep global Pub/Sub services at project scope."
+      }
+    },
+    {
+      "id": "notification",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Run notification service is regional."
+      }
+    },
+    {
+      "id": "dead_letter_topic",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep global Pub/Sub services at project scope."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "producer_upload",
+      "source": "producer",
+      "target": "load_balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "route_ingest",
+      "source": "load_balancer",
+      "target": "ingest",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "store_input",
+      "source": "ingest",
+      "target": "input_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "publish_job",
+      "source": "ingest",
+      "target": "jobs_topic",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "dispatch_worker_a",
+      "source": "jobs_topic",
+      "target": "worker_a",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "dispatch_worker_b",
+      "source": "jobs_topic",
+      "target": "worker_b",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "read_input_a",
+      "source": "input_bucket",
+      "target": "worker_a",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "read_input_b",
+      "source": "input_bucket",
+      "target": "worker_b",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "write_output_a",
+      "source": "worker_a",
+      "target": "output_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "write_output_b",
+      "source": "worker_b",
+      "target": "output_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "update_status_a",
+      "source": "worker_a",
+      "target": "status_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "update_status_b",
+      "source": "worker_b",
+      "target": "status_db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "publish_completion_a",
+      "source": "worker_a",
+      "target": "completion_topic",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "publish_completion_b",
+      "source": "worker_b",
+      "target": "completion_topic",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "deliver_completion",
+      "source": "completion_topic",
+      "target": "notification",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "notify_operations",
+      "source": "notification",
+      "target": "operations_client",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "dead_letter_failed",
+      "source": "jobs_topic",
+      "target": "dead_letter_topic",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs that reach their retry limit move to a second Pub/Sub dead-letter topic."
+      }
+    },
+    {
+      "id": "inspect_dead_letters",
+      "source": "operations_client",
+      "target": "dead_letter_topic",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The operations client can inspect dead letters."
+      }
+    },
+    {
+      "id": "trigger_redrive",
+      "source": "operations_client",
+      "target": "jobs_topic",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The operations client deliberately triggers redrive to the jobs topic."
+      }
+    },
+    {
+      "id": "redrive_jobs",
+      "source": "dead_letter_topic",
+      "target": "jobs_topic",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The operations client can deliberately redrive dead letters to the jobs topic."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_gcp_organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.organization component(s) as requested."
+      }
+    },
+    {
+      "id": "count_gcp_project_in_organization",
+      "kind": "group",
+      "type": "gcp.project",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.project component(s) as requested."
+      },
+      "within": "organization"
+    },
+    {
+      "id": "count_gcp_region_in_project",
+      "kind": "group",
+      "type": "gcp.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.region component(s) as requested."
+      },
+      "within": "project"
+    },
+    {
+      "id": "count_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 cloud-agnostic.actor component(s) as requested."
+      }
+    },
+    {
+      "id": "count_cloud-agnostic_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 cloud-agnostic.client component(s) as requested."
+      }
+    },
+    {
+      "id": "count_gcp_cloud-load-balancing_in_project",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.cloud-load-balancing component(s) as requested."
+      },
+      "within": "project"
+    },
+    {
+      "id": "count_gcp_cloud-run_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 gcp.cloud-run component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_cloud-storage_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 gcp.cloud-storage component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_pub-sub_in_project",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 3,
+      "max": 3,
+      "basis": {
+        "kind": "explicit",
+        "text": "3 gcp.pub-sub component(s) as requested."
+      },
+      "within": "project"
+    },
+    {
+      "id": "count_gcp_vpc_in_region",
+      "kind": "group",
+      "type": "gcp.vpc",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.vpc component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_subnet_in_vpc",
+      "kind": "group",
+      "type": "gcp.subnet",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 gcp.subnet component(s) as requested."
+      },
+      "within": "vpc"
+    },
+    {
+      "id": "count_gcp_compute-engine_in_vpc",
+      "kind": "resource",
+      "type": "gcp.compute-engine",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "2 gcp.compute-engine component(s) as requested."
+      },
+      "within": "vpc"
+    },
+    {
+      "id": "count_gcp_cloud-sql_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.cloud-sql component(s) as requested."
+      },
+      "within": "region"
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show the Google Cloud organization and project."
+      }
+    },
+    {
+      "id": "project_parent",
+      "component": "project",
+      "relation": "parent",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show the Google Cloud organization and project."
+      }
+    },
+    {
+      "id": "region_parent",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Use regional placement for regional services."
+      }
+    },
+    {
+      "id": "producer_root",
+      "component": "producer",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the media producer outside the organization."
+      }
+    },
+    {
+      "id": "operations_client_root",
+      "component": "operations_client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the operations client outside the organization."
+      }
+    },
+    {
+      "id": "load_balancer_parent",
+      "component": "load_balancer",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "The Cloud Run ingest is regional; global services are at project scope."
+      }
+    },
+    {
+      "id": "ingest_parent",
+      "component": "ingest",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The ingest service is regional."
+      }
+    },
+    {
+      "id": "input_bucket_parent",
+      "component": "input_bucket",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Ingest writes input objects; workers read them."
+      }
+    },
+    {
+      "id": "jobs_topic_parent",
+      "component": "jobs_topic",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep global Pub/Sub services at project scope."
+      }
+    },
+    {
+      "id": "vpc_parent",
+      "component": "vpc",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Both workers are in separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "subnet_b_parent",
+      "component": "subnet_b",
+      "relation": "parent",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers use separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "worker_b_parent",
+      "component": "worker_b",
+      "relation": "parent",
+      "group": "subnet_b",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers run in separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "subnet_a_parent",
+      "component": "subnet_a",
+      "relation": "parent",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers use separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "worker_a_parent",
+      "component": "worker_a",
+      "relation": "parent",
+      "group": "subnet_a",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two Compute Engine workers run in separate regional subnets of one VPC."
+      }
+    },
+    {
+      "id": "output_bucket_parent",
+      "component": "output_bucket",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers write processed objects to object storage."
+      }
+    },
+    {
+      "id": "status_db_parent",
+      "component": "status_db",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Workers update Cloud SQL job status."
+      }
+    },
+    {
+      "id": "completion_topic_parent",
+      "component": "completion_topic",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep global Pub/Sub services at project scope."
+      }
+    },
+    {
+      "id": "notification_parent",
+      "component": "notification",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Run notification service is regional."
+      }
+    },
+    {
+      "id": "dead_letter_topic_parent",
+      "component": "dead_letter_topic",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep global Pub/Sub services at project scope."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

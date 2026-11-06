@@ -1,0 +1,52 @@
+dgm 1
+diagram aws-hard-document-processing { grammar aws flow lr title "AWS document processing"
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.region primary_region "Region" {
+      aws.vpc processing_vpc "VPC" {
+        aws.az az_a "Availability Zone A" {
+          aws.subnet.private private_subnet_a "Private subnet group A" {
+            aws.aws-fargate worker_a "Fargate worker A" {}
+          }
+        }
+        aws.az az_b "Availability Zone B" {
+          aws.subnet.private private_subnet_b "Private subnet group B" {
+            aws.aws-fargate worker_b "Fargate worker B" {}
+          }
+        }
+      }
+      aws.api-gateway api_gateway "API Gateway" {}
+      aws.aws-lambda intake "Intake handler" {}
+      aws.simple-storage-service-bucket input_s3 "Input S3" {}
+      aws.simple-queue-service jobs_queue "Jobs queue" {}
+      aws.simple-queue-service dlq "Dead-letter queue" {}
+      aws.simple-storage-service-bucket output_s3 "Output S3" {}
+      aws.dynamodb dynamodb "DynamoDB status" {}
+      aws.simple-notification-service sns "SNS completion" {}
+      aws.cloudfront cloudfront "CloudFront" {}
+    }
+  }
+  cloud-agnostic.client client "Document client" {}
+  cloud-agnostic.client operations "Operations user" {}
+  client -> api_gateway { id client_api label "submit document" step 1 from e to w }
+  api_gateway -> intake { id api_intake label "intake request" step 2 from e to w }
+  intake -> input_s3 { id intake_input label "store original" step 3 from e to w }
+  intake -> jobs_queue { id intake_jobs label "enqueue job" step 3 from e to w }
+  jobs_queue -> worker_a { id jobs_worker_a label "consume job" step 4 from e to w }
+  jobs_queue -> worker_b { id jobs_worker_b label "consume job" step 4 from e to w }
+  input_s3 -> worker_a { id input_worker_a label "read input" step 4 from e to w }
+  input_s3 -> worker_b { id input_worker_b label "read input" step 4 from e to w }
+  worker_a -> output_s3 { id worker_a_output label "write file" step 5 from n to w }
+  worker_a -> dynamodb { id worker_a_status label "update status" step 5 from n to w }
+  worker_a -> sns { id worker_a_sns label "publish completion" step 5 from n to w }
+  worker_b -> output_s3 { id worker_b_output label "write file" step 5 from s to w }
+  worker_b -> dynamodb { id worker_b_status label "update status" step 5 from s to w }
+  worker_b -> sns { id worker_b_sns label "publish completion" step 5 from s to w }
+  client -> cloudfront { id client_cloudfront label "download request" step 1 from e to w }
+  cloudfront -> output_s3 { id cloudfront_origin label "origin request" step 2 from e to w }
+  jobs_queue -> dlq { id jobs_dlq label "retry limit" style dashed kind fail from w to e }
+  operations -> dlq { id ops_dlq label "inspect dead letters" style dashed kind peer from e to w }
+  operations -> dynamodb { id ops_dynamo label "inspect status" style dashed kind peer from s to s }
+  operations -> jobs_queue { id ops_redrive label "trigger redrive" style dashed kind peer from s to n }
+  dlq -> jobs_queue { id dlq_redrive label "redrive messages" style dashed kind peer from e to w }
+  sns -> operations { id sns_ops label "completion notice" style dashed kind flow from s to s }
+}

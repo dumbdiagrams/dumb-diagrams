@@ -1,0 +1,151 @@
+{
+  "$comment": "Reviewed reference for cloud-agnostic-hard-order-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "cloud-agnostic",
+  "exclusive": false,
+  "roles": {
+    "buyer": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "account"
+    },
+    "payment": {
+      "types": [
+        "cloud-agnostic.cloud-resource",
+        "cloud-agnostic.server",
+        "cloud-agnostic.client",
+        "cloud-agnostic.actor"
+      ],
+      "outside": "account"
+    },
+    "warehouse": {
+      "types": [
+        "cloud-agnostic.cloud-resource",
+        "cloud-agnostic.server",
+        "cloud-agnostic.client",
+        "cloud-agnostic.actor"
+      ],
+      "outside": "account"
+    },
+    "account": {
+      "types": [
+        "cloud-agnostic.account"
+      ]
+    },
+    "primary": {
+      "types": [
+        "cloud-agnostic.region"
+      ],
+      "within": "account"
+    },
+    "recovery": {
+      "types": [
+        "cloud-agnostic.region"
+      ],
+      "within": "account"
+    },
+    "lb": {
+      "types": [
+        "cloud-agnostic.load-balancer"
+      ],
+      "within": "primary"
+    },
+    "network": {
+      "types": [
+        "cloud-agnostic.network"
+      ],
+      "within": "primary"
+    },
+    "cluster": {
+      "types": [
+        "cloud-agnostic.cluster"
+      ],
+      "within": "network"
+    },
+    "api": {
+      "types": [
+        "cloud-agnostic.server"
+      ],
+      "within": "cluster"
+    },
+    "worker": {
+      "types": [
+        "cloud-agnostic.server"
+      ],
+      "within": "cluster"
+    },
+    "database": {
+      "types": [
+        "cloud-agnostic.database"
+      ],
+      "within": "network"
+    },
+    "cache": {
+      "types": [
+        "cloud-agnostic.cache"
+      ],
+      "within": "network"
+    },
+    "queue": {
+      "types": [
+        "cloud-agnostic.queue"
+      ],
+      "within": "primary",
+      "outside": "network"
+    },
+    "storage": {
+      "types": [
+        "cloud-agnostic.object-storage"
+      ],
+      "within": "primary",
+      "outside": "network"
+    },
+    "recoverynetwork": {
+      "types": [
+        "cloud-agnostic.network"
+      ],
+      "within": "recovery"
+    },
+    "replica": {
+      "types": [
+        "cloud-agnostic.database"
+      ],
+      "within": "recoverynetwork"
+    },
+    "recoveryserver": {
+      "types": [
+        "cloud-agnostic.server"
+      ],
+      "within": "recovery"
+    },
+    "recoverylb": {
+      "types": [
+        "cloud-agnostic.load-balancer"
+      ],
+      "within": "recovery"
+    }
+  },
+  "edges": [
+    "buyer -> lb",
+    "lb -> api",
+    "api -> database",
+    "database -> api",
+    "api -> cache",
+    "cache -> api",
+    "api -> payment",
+    "payment -> api",
+    "api -> queue",
+    "queue -- worker",
+    "worker -> warehouse",
+    "warehouse -> worker",
+    "worker -> queue",
+    "worker -> database",
+    "worker -> storage",
+    "database -> replica",
+    "recoveryserver -- replica",
+    "recoverylb -- buyer",
+    "recoverylb -- recoveryserver"
+  ]
+}

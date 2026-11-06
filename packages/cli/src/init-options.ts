@@ -1,3 +1,7 @@
+import { err, errAsync, ok, okAsync, type Result, ResultAsync } from "neverthrow";
+
+import { errorMessage, type CliError } from "./cli-errors.js";
+
 export interface InitArgs {
   positionals: string[];
   flags: Map<string, string | true>;
@@ -14,21 +18,32 @@ export interface ResolvedInitOptions {
   projectName: string;
 }
 
-export async function resolveInitOptions(
+export function resolveInitOptions(
   args: InitArgs,
   context: InitOptionsContext,
-): Promise<ResolvedInitOptions> {
+): ResultAsync<ResolvedInitOptions, CliError> {
   if (args.positionals.length || args.flags.size) {
-    throw new Error("init does not accept file paths, positionals, or options.");
+    return errAsync(invalidInit("init does not accept file paths, positionals, or options."));
   }
 
   const defaultName = defaultProjectDirectory(context.now ?? new Date());
-  const answer = context.interactive ? await context.askProjectName?.(defaultName) : undefined;
-  const projectName = cleanDisplayText(answer?.trim() || defaultName, "project name", 120);
-  return {
-    projectDirectory: slugify(projectName, "project name"),
-    projectName,
-  };
+  const askProjectName = context.askProjectName;
+  const answer =
+    context.interactive && askProjectName
+      ? ResultAsync.fromPromise(
+          Promise.resolve().then(() => askProjectName(defaultName)),
+          (cause) => invalidInit(errorMessage(cause), cause),
+        )
+      : okAsync<string | undefined, CliError>(undefined);
+  return answer
+    .andThen((value) => cleanDisplayText(value?.trim() || defaultName, "project name", 120))
+    .andThen((projectName) =>
+      slugify(projectName, "project name").map((projectDirectory) => ({ projectDirectory, projectName })),
+    );
+}
+
+function invalidInit(message: string, cause?: unknown): CliError {
+  return { code: "invalid-arguments", message, command: "init", ...(cause === undefined ? {} : { cause }) };
 }
 
 export function defaultProjectDirectory(now = new Date()): string {
@@ -44,16 +59,14 @@ export function defaultProjectDirectory(now = new Date()): string {
   return `dumb-diagrams-${timestamp}`;
 }
 
-function cleanDisplayText(value: string, label: string, maxLength: number): string {
+function cleanDisplayText(value: string, label: string, maxLength: number): Result<string, CliError> {
   const cleaned = value.replace(/\s+/g, " ").trim();
-  if (!cleaned) throw new Error(`${label} cannot be empty.`);
-  if (cleaned.length > maxLength) {
-    throw new Error(`${label} must be ${maxLength} characters or fewer.`);
-  }
-  return cleaned;
+  if (!cleaned) return err(invalidInit(`${label} cannot be empty.`));
+  if (cleaned.length > maxLength) return err(invalidInit(`${label} must be ${maxLength} characters or fewer.`));
+  return ok(cleaned);
 }
 
-function slugify(value: string, label: string): string {
+function slugify(value: string, label: string): Result<string, CliError> {
   const slug = value
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -62,6 +75,5 @@ function slugify(value: string, label: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 80)
     .replace(/-+$/g, "");
-  if (!slug) throw new Error(`${label} must contain at least one letter or number.`);
-  return slug;
+  return slug ? ok(slug) : err(invalidInit(`${label} must contain at least one letter or number.`));
 }

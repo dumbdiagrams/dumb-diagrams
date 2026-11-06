@@ -1,4 +1,5 @@
-import { createAsyncDocsFixture, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { attachRoutes, routeEdges } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
@@ -24,12 +25,14 @@ describe("boundary targeting", () => {
       y: group.bounds.y,
     };
 
-    expect(closestInteractiveTarget(point, layout, doc, getDefaultView(doc), {
-      nodes: [],
-      edges: [edge],
-      groups: [group],
-      annotations: [],
-    })).toEqual({ kind: "group", id: group.id });
+    expect(
+      closestInteractiveTarget(point, layout, doc, getDefaultView(doc), {
+        nodes: [],
+        edges: [edge],
+        groups: [group],
+        annotations: [],
+      }),
+    ).toEqual({ kind: "group", id: group.id });
   });
 
   it("prioritizes a child's visual interior over a nearby group boundary", () => {
@@ -62,11 +65,13 @@ describe("boundary targeting", () => {
       symmetries: [],
     };
 
-    expect(closestInteractiveTarget({ x: 101, y: 101 }, layout, doc, view, {
-      nodes: [node],
-      edges: [],
-      groups: [group],
-      annotations: [],
-    })).toEqual({ kind: "resource", id: node.id });
+    expect(
+      closestInteractiveTarget({ x: 101, y: 101 }, layout, doc, view, {
+        nodes: [node],
+        edges: [],
+        groups: [group],
+        annotations: [],
+      }),
+    ).toEqual({ kind: "resource", id: node.id });
   });
 });

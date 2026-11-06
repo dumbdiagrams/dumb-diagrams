@@ -1,0 +1,50 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    { "id": "subscription", "kind": "group", "type": "azure.subscription", "basis": { "kind": "inferred", "text": "Azure scope boundary for the resources." } },
+    { "id": "region", "kind": "group", "type": "azure.region", "basis": { "kind": "inferred", "text": "Azure scope boundary for the resources; no region was named." } },
+    { "id": "resource_group", "kind": "group", "type": "azure.resource-group", "basis": { "kind": "inferred", "text": "A resource group scopes the application and network resources." } },
+    { "id": "app_vnet", "kind": "group", "type": "azure.vnet", "basis": { "kind": "explicit", "text": "private endpoint in the application network" } },
+    { "id": "app_subnet", "kind": "group", "type": "azure.subnet", "basis": { "kind": "inferred", "text": "Application subnet for the private Function App placement." } },
+    { "id": "data_subnet", "kind": "group", "type": "azure.subnet", "basis": { "kind": "inferred", "text": "A subnet is required to place the private endpoint in the VNet." } },
+    { "id": "client", "kind": "resource", "type": "cloud-agnostic.client", "basis": { "kind": "explicit", "text": "A client calls API Management." } },
+    { "id": "api_management", "kind": "resource", "type": "azure.api-management-services", "basis": { "kind": "explicit", "text": "API Management" } },
+    { "id": "function_app", "kind": "resource", "type": "azure.function-apps", "basis": { "kind": "explicit", "text": "an Azure Function" } },
+    { "id": "sql_private_endpoint", "kind": "resource", "type": "azure.private-endpoints", "basis": { "kind": "explicit", "text": "through a private endpoint in the application network" } },
+    { "id": "sql_database", "kind": "resource", "type": "azure.sql-database", "basis": { "kind": "explicit", "text": "an Azure SQL database" } }
+  ],
+  "relationships": [
+    { "id": "client_to_apim", "source": "client", "target": "api_management", "kind": "flow", "basis": { "kind": "explicit", "text": "A client calls API Management." } },
+    { "id": "apim_to_function", "source": "api_management", "target": "function_app", "kind": "flow", "basis": { "kind": "explicit", "text": "API Management routes requests to an Azure Function." } },
+    { "id": "function_to_sql_endpoint", "source": "function_app", "target": "sql_private_endpoint", "kind": "flow", "basis": { "kind": "explicit", "text": "The function accesses SQL through a private endpoint." } },
+    { "id": "endpoint_to_sql", "source": "sql_private_endpoint", "target": "sql_database", "kind": "flow", "basis": { "kind": "explicit", "text": "The private endpoint provides the route to Azure SQL." } }
+  ],
+  "counts": [
+    { "id": "one_subscription", "kind": "group", "type": "azure.subscription", "min": 1, "max": 1, "basis": { "kind": "inferred", "text": "One Azure scope for this simple architecture." } },
+    { "id": "one_region", "kind": "group", "type": "azure.region", "min": 1, "max": 1, "within": "subscription", "basis": { "kind": "inferred", "text": "One region; none was specified." } },
+    { "id": "one_resource_group", "kind": "group", "type": "azure.resource-group", "min": 1, "max": 1, "within": "region", "basis": { "kind": "inferred", "text": "One group scopes the application resources." } },
+    { "id": "one_vnet", "kind": "group", "type": "azure.vnet", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "one application network" } },
+    { "id": "two_subnets", "kind": "group", "type": "azure.subnet", "min": 2, "max": 2, "within": "app_vnet", "basis": { "kind": "inferred", "text": "Application and private-endpoint subnets make placement readable." } },
+    { "id": "one_client", "kind": "resource", "type": "cloud-agnostic.client", "min": 1, "max": 1, "basis": { "kind": "explicit", "text": "A client." } },
+    { "id": "one_api_management", "kind": "resource", "type": "azure.api-management-services", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "API Management" } },
+    { "id": "one_function_app", "kind": "resource", "type": "azure.function-apps", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "an Azure Function" } },
+    { "id": "one_sql_private_endpoint", "kind": "resource", "type": "azure.private-endpoints", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "a private endpoint" } },
+    { "id": "one_sql_database", "kind": "resource", "type": "azure.sql-database", "min": 1, "max": 1, "within": "resource_group", "basis": { "kind": "explicit", "text": "an Azure SQL database" } }
+  ],
+  "placement": [
+    { "id": "region_under_subscription", "component": "region", "relation": "parent", "group": "subscription", "basis": { "kind": "inferred", "text": "Azure region nested under subscription." } },
+    { "id": "resource_group_in_region", "component": "resource_group", "relation": "parent", "group": "region", "basis": { "kind": "inferred", "text": "Resource group nested under the region." } },
+    { "id": "vnet_in_resource_group", "component": "app_vnet", "relation": "parent", "group": "resource_group", "basis": { "kind": "explicit", "text": "The application network contains the private endpoint." } },
+    { "id": "app_subnet_in_vnet", "component": "app_subnet", "relation": "parent", "group": "app_vnet", "basis": { "kind": "inferred", "text": "Application subnet within the VNet." } },
+    { "id": "data_subnet_in_vnet", "component": "data_subnet", "relation": "parent", "group": "app_vnet", "basis": { "kind": "inferred", "text": "Private-endpoint subnet within the VNet." } },
+    { "id": "client_root", "component": "client", "relation": "root", "basis": { "kind": "explicit", "text": "Client actor outside the Azure resource scope." } },
+    { "id": "apim_in_resource_group", "component": "api_management", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "API Management is an Azure resource in the scoped resource group." } },
+    { "id": "apim_outside_vnet", "component": "api_management", "relation": "outside", "group": "app_vnet", "basis": { "kind": "inferred", "text": "Place the client-facing API entry point outside the application VNet." } },
+    { "id": "function_in_app_subnet", "component": "function_app", "relation": "inside", "group": "app_subnet", "basis": { "kind": "inferred", "text": "The private application Function uses the application subnet." } },
+    { "id": "endpoint_in_data_subnet", "component": "sql_private_endpoint", "relation": "inside", "group": "data_subnet", "basis": { "kind": "explicit", "text": "Private endpoint in the application network." } },
+    { "id": "sql_in_resource_group", "component": "sql_database", "relation": "inside", "group": "resource_group", "basis": { "kind": "explicit", "text": "Azure SQL resource in the same application scope." } },
+    { "id": "sql_outside_vnet", "component": "sql_database", "relation": "outside", "group": "app_vnet", "basis": { "kind": "inferred", "text": "The Private Endpoint connects the VNet to the managed SQL service." } }
+  ]
+}

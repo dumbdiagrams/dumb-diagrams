@@ -1,0 +1,233 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "users",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    },
+    {
+      "id": "network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    },
+    {
+      "id": "portal",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    },
+    {
+      "id": "cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    },
+    {
+      "id": "attachments",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Users reach a load balancer to a portal server; server reads database, uses cache, retrieves attachments from object storage. Server, database, cache in priv..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "visit",
+      "source": "users",
+      "target": "lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Requests (users to lb) per the request."
+      }
+    },
+    {
+      "id": "forward",
+      "source": "lb",
+      "target": "portal",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward (lb to portal) per the request."
+      }
+    },
+    {
+      "id": "projects",
+      "source": "portal",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Project data (portal to db) per the request."
+      }
+    },
+    {
+      "id": "lookups",
+      "source": "portal",
+      "target": "cache",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Frequent lookups (portal to cache) per the request."
+      }
+    },
+    {
+      "id": "files",
+      "source": "portal",
+      "target": "attachments",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Fetch attachments (portal to attachments) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "users_root",
+      "component": "users",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "cloud_root",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "lb_in_cloud",
+      "component": "lb",
+      "relation": "parent",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "network_in_cloud",
+      "component": "network",
+      "relation": "parent",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "portal_in_network",
+      "component": "portal",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "cache_in_network",
+      "component": "cache",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "db_in_network",
+      "component": "db",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "attachments_in_cloud",
+      "component": "attachments",
+      "relation": "parent",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_outside_network",
+      "component": "lb",
+      "relation": "outside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "attachments_outside_network",
+      "component": "attachments",
+      "relation": "outside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

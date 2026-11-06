@@ -1,0 +1,43 @@
+dgm 1
+diagram azure-private-app-service {
+  grammar azure
+  flow lr
+  title "Azure private write-through application"
+
+  cloud-agnostic.client client "Client application"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Azure region" {
+      cloud-agnostic.boundary architecture "Write-through application" {
+        style dashed
+        color blue
+        fill none
+        azure.vnet vnet "Azure virtual network" {
+          cloud-agnostic.boundary application_tier "Application tier" {
+            azure.app-services app_service { service "App Service" }
+            azure.function-apps functions { service "Write-through functions" }
+          }
+
+          azure.private-endpoints redis_pe { service "Redis private endpoint" }
+          azure.private-endpoints sql_pe { service "SQL private endpoint" }
+        }
+
+        azure.sql-database sql { service "Azure SQL Database" }
+        azure.azure-managed-redis redis { service "Azure Managed Redis" }
+        azure.monitor monitor { service "Azure Monitor" }
+      }
+    }
+  }
+
+  client -> app_service { id https_requests label "HTTPS requests" step 1 kind flow }
+  app_service -> redis_pe { id cache_reads label "Cache reads" step 2 kind flow }
+  redis_pe -> redis { id redis_private_link label "private link" kind flow }
+  app_service -> sql_pe { id cache_miss_reads label "Cache-miss reads" step 3 kind flow }
+  sql_pe -> sql { id sql_private_link label "private link" kind flow }
+  app_service -> functions { id writes label "Write requests" step 4 kind flow }
+  functions -> sql_pe { id authoritative_writes label "Authoritative writes" step 5 kind flow }
+  functions -> redis_pe { id cache_updates label "Write-through cache update" step 6 kind flow }
+  app_service -> monitor { id app_telemetry label "Metrics and logs" style dashed kind peer }
+  redis -> monitor { id redis_telemetry style dashed kind peer }
+  sql -> monitor { id sql_telemetry style dashed kind peer }
+}

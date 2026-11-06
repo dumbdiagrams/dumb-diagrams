@@ -1,0 +1,22 @@
+dgm 1
+diagram team-project-portal { grammar cloud-agnostic flow lr title "Team Project Portal"
+cloud-agnostic.actor users "Users" {}
+cloud-agnostic.cloud application-cloud "Application Cloud" {
+  cloud-agnostic.account production-account "Production Account" {
+    cloud-agnostic.region primary-region "Primary Region" {
+      cloud-agnostic.network private-network "Private Network" {
+        cloud-agnostic.server portal-server "Portal Server" {}
+        cloud-agnostic.database project-database "Project Database" {}
+        cloud-agnostic.cache project-cache "Project Cache" {}
+      }
+      cloud-agnostic.object-storage attachment-storage "Attachment Object Storage" {}
+      cloud-agnostic.load-balancer load-balancer "Load Balancer" {}
+    }
+  }
+}
+users -> load-balancer { id users-to-lb step 1 }
+load-balancer -> portal-server { id lb-to-server step 2 }
+portal-server -> project-database { id server-to-db label "Project data" step 3 }
+portal-server -> project-cache { id server-to-cache label "Frequent lookups" step 4 }
+portal-server -> attachment-storage { id server-to-storage label "Attachments" step 5 }
+}

@@ -1,0 +1,158 @@
+---
+import { readFileSync } from 'node:fs';
+import { loadReviewedExamples } from '../../lib/reviewed-examples.mjs';
+import { url } from '../../lib/site';
+
+interface Props { provider: 'aws' | 'azure' | 'gcp' | 'cloud-agnostic' }
+const { provider } = Astro.props;
+const labels = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', 'cloud-agnostic': 'Cloud-agnostic' } as const;
+const examples = loadReviewedExamples().filter(example => example.provider === provider);
+const cards = [...new Set(examples.map(example => example.id))].map(id => examples.filter(example => example.id === id));
+---
+
+<div class="reviewed-examples">
+  {cards.map((variants, index) => {
+    const [first] = variants;
+    return <details class="reviewed-card" open={index === 0}>
+      <summary>
+        <span class="reviewed-title">{first.title}</span>
+        <span class="reviewed-meta"><span>{labels[provider]} · {first.generatedOn}</span><span>{first.difficulty[0].toUpperCase() + first.difficulty.slice(1)}</span></span>
+      </summary>
+      <div class="reviewed-variants" style={`grid-template-columns: repeat(${variants.length}, max-content) 1fr`}>
+        {variants.map((example, variant) => {
+          const asset = (key: 'svg' | 'source' | 'prompt' | 'requirements') => url(`reviewed-examples/${example.files[key]}`);
+          const previewUrl = url(`reviewed-examples/${example.files.svg.replace(/\.svg$/, '-preview.svg')}`);
+          const prefix = `${example.id}-${example.run}`;
+          const tabs = [
+            { key: 'prompt', label: 'Prompt', file: 'prompt' as const, content: example.promptText.trim() },
+            { key: 'source', label: '.dgm source', file: 'source' as const, content: readFileSync(example.paths.source, 'utf8') },
+            { key: 'requirements', label: 'Requirements', file: 'requirements' as const, content: readFileSync(example.paths.requirements, 'utf8') },
+          ];
+          return <div class="reviewed-variant">
+            <input type="radio" name={example.id} id={prefix} checked={variant === 0} />
+            <label for={prefix}>{example.label}</label>
+            <div class="reviewed-panel">
+              {example.reviewNote && <p class="reviewed-note"><strong>Review note:</strong> {example.reviewNote}</p>}
+              <div class="reviewed-preview" data-diagram-preview data-initial-zoom="1">
+                <div class="reviewed-toolbar">
+                  <span class="mono">DIAGRAM</span>
+                  <div class="reviewed-zoom" aria-label={`${example.title} preview controls`}>
+                    <button type="button" data-zoom="out" aria-label={`Zoom out ${example.title}`}>−</button>
+                    <button type="button" data-zoom="fit" aria-label={`Fit ${example.title} to preview`}>100%</button>
+                    <button type="button" data-zoom="in" aria-label={`Zoom in ${example.title}`}>+</button>
+                  </div>
+                  <a class="reviewed-download-svg" href={asset('svg')} download>Download original SVG</a>
+                  <button type="button" class="reviewed-expand" data-open-dialog={`dialog-${prefix}`}>Expand diagram</button>
+                </div>
+                <div class="diagram-viewport" tabindex="0" aria-label={`${example.title} diagram; scroll to pan when zoomed`}>
+                  <img src={previewUrl} alt={`${example.title} architecture diagram by ${example.label}`} width={example.previewWidth} height={example.previewHeight} loading="lazy" />
+                </div>
+                <dialog class="reviewed-dialog" id={`dialog-${prefix}`} aria-label={`${example.title} expanded diagram`} data-diagram-preview data-initial-zoom="1">
+                  <div class="dialog-toolbar">
+                    <span>{example.title} · {example.label}</span>
+                    <div class="reviewed-zoom" aria-label={`${example.title} expanded preview controls`}>
+                      <button type="button" data-zoom="out" aria-label={`Zoom out expanded ${example.title}`}>−</button>
+                      <button type="button" data-zoom="fit" aria-label={`Fit expanded ${example.title} to view`}>100%</button>
+                      <button type="button" data-zoom="in" aria-label={`Zoom in expanded ${example.title}`}>+</button>
+                    </div>
+                    <button type="button" data-close-dialog aria-label="Close expanded diagram">Close</button>
+                  </div>
+                  <div class="diagram-viewport dialog-canvas" tabindex="0" aria-label={`${example.title} expanded diagram; scroll to pan when zoomed`}>
+                    <img src={previewUrl} alt={`${example.title} architecture diagram by ${example.label}`} width={example.previewWidth} height={example.previewHeight} />
+                  </div>
+                </dialog>
+              </div>
+              <div class="reviewed-detail">
+                <div class="reviewed-file-tabs" role="tablist" aria-label={`${example.title} files by ${example.label}`} data-tabs>
+                  {tabs.map((tab, tabIndex) => <button id={`${prefix}-tab-${tab.key}`} type="button" role="tab" aria-selected={tabIndex === 0 ? 'true' : 'false'} aria-controls={`${prefix}-panel-${tab.key}`} tabindex={tabIndex === 0 ? 0 : -1}>{tab.label}</button>)}
+                </div>
+                {tabs.map((tab, tabIndex) => <section id={`${prefix}-panel-${tab.key}`} role="tabpanel" aria-labelledby={`${prefix}-tab-${tab.key}`} hidden={tabIndex !== 0} inert={tabIndex !== 0}>
+                  <div class="reviewed-file-actions"><span>{tab.label}</span><button type="button" data-copy-target={`${prefix}-text-${tab.key}`} aria-label={`Copy ${example.title} ${tab.label}`}>Copy ⧉</button></div>
+                  <pre id={`${prefix}-text-${tab.key}`} class:list={[tab.key === 'prompt' && 'reviewed-prompt']} tabindex="0" aria-label={`${example.title} ${tab.label}`}>{tab.content}</pre>
+                  <a class="reviewed-download" href={asset(tab.file)} download>Download {tab.label} ↓</a>
+                </section>)}
+              </div>
+            </div>
+          </div>;
+        })}
+      </div>
+    </details>;
+  })}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-open-dialog]').forEach(button => {
+    button.addEventListener('click', () => {
+      const dialog = document.getElementById(button.dataset.openDialog || '') as HTMLDialogElement | null;
+      if (dialog && !dialog.open) {
+        dialog.showModal();
+        dialog.dispatchEvent(new Event('preview:visible'));
+      }
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-close-dialog]').forEach(button => {
+    button.addEventListener('click', () => button.closest('dialog')?.close());
+  });
+</script>
+
+<style>
+  .reviewed-examples { display: grid; gap: 12px; margin: 0 0 34px; }
+  .reviewed-card { min-width: 0; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); overflow: hidden; }
+  .reviewed-card > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 16px; cursor: pointer; list-style: none; }
+  .reviewed-card > summary::-webkit-details-marker { display: none; }
+  .reviewed-card > summary:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: -3px; }
+  .reviewed-card > summary::after { content: '+'; color: var(--orange-dark); font: 18px/1 var(--mono); }
+  .reviewed-card[open] > summary::after { content: '−'; }
+  .reviewed-title { font-size: 14px; font-weight: 650; }
+  .reviewed-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; color: var(--muted); font: 10px/1.5 var(--mono); text-align: right; }
+  .reviewed-meta span + span { color: var(--ink); border-left: 1px solid var(--line); padding-left: 7px; }
+  .reviewed-variants { display: grid; border-top: 1px solid var(--line); }
+  .reviewed-variant { display: contents; }
+  .reviewed-variant > input { position: absolute; opacity: 0; pointer-events: none; }
+  .reviewed-variant > label { grid-row: 1; padding: 8px 12px; color: var(--muted); font: 11px/1.4 var(--mono); cursor: pointer; border-bottom: 2px solid transparent; }
+  .reviewed-variant > input:checked + label { color: var(--ink); border-bottom-color: var(--orange); }
+  .reviewed-variant > input:focus-visible + label { outline: 2px solid var(--orange-dark); outline-offset: -3px; }
+  .reviewed-panel { display: none; grid-row: 2; grid-column: 1 / -1; min-width: 0; }
+  .reviewed-variant > input:checked ~ .reviewed-panel { display: block; }
+  .reviewed-note { margin: 12px 14px 0; padding: 9px 11px; border-left: 2px solid var(--orange); background: #f8f4ea; font-size: 12px; line-height: 1.6; }
+  .reviewed-toolbar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--white); }
+  .reviewed-toolbar .mono { color: var(--muted); font-size: 9px; }
+  .reviewed-zoom { display: flex; gap: 4px; margin-left: auto; }
+  .reviewed-zoom button, .reviewed-expand, .dialog-toolbar button { min-height: 30px; border: 1px solid var(--line); border-radius: 3px; padding: 3px 9px; background: var(--white); color: var(--ink); font: 11px var(--mono); cursor: pointer; }
+  .reviewed-zoom button:disabled { opacity: .4; cursor: default; }
+  .reviewed-zoom [data-zoom="fit"] { min-width: 5.5ch; }
+  .reviewed-expand, .reviewed-download-svg { color: var(--orange-dark); text-decoration: underline; text-underline-offset: 2px; }
+  .reviewed-download-svg { margin-left: auto; font-size: 11px; }
+  .reviewed-preview .diagram-viewport { height: min(56vw, 560px); min-height: 280px; padding: 14px; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; background: #f7f8f6; }
+  .reviewed-preview .diagram-viewport img { width: calc(100% * var(--diagram-zoom, 1)); max-width: none; height: auto; flex-shrink: 0; margin: auto 0; background: var(--white); }
+  .reviewed-dialog[open] { display: grid; grid-template-rows: auto minmax(0, 1fr); width: min(1200px, calc(100vw - 32px)); height: min(900px, calc(100vh - 32px)); max-width: none; max-height: none; padding: 0; border: 1px solid var(--line); background: var(--white); color: var(--ink); }
+  .reviewed-dialog::backdrop { background: #112d51cc; }
+  .dialog-toolbar { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 14px; border-bottom: 1px solid var(--line); font-size: 12px; }
+  .dialog-toolbar > span { min-width: 0; }
+  .dialog-canvas { overflow: auto; display: flex; flex-direction: column; padding: 18px; background: #f7f8f6; }
+  .reviewed-dialog .diagram-viewport img { width: calc(100% * var(--diagram-zoom, 1)); max-width: none; height: auto; flex-shrink: 0; margin: auto 0; background: var(--white); }
+  .reviewed-detail { border-top: 1px solid var(--line); }
+  .reviewed-file-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); }
+  .reviewed-file-tabs button { flex: 0 0 auto; padding: 10px 13px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font: 11px var(--mono); cursor: pointer; }
+  .reviewed-file-tabs button[aria-selected="true"] { border-bottom-color: var(--orange); color: var(--ink); }
+  .reviewed-file-tabs button:focus-visible, .reviewed-zoom button:focus-visible, .reviewed-expand:focus-visible, .reviewed-download-svg:focus-visible, .reviewed-file-actions button:focus-visible, .dialog-toolbar button:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: -2px; }
+  .reviewed-detail section { padding: 14px 16px 16px; }
+  .reviewed-file-actions { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; color: var(--muted); font: 9px var(--mono); }
+  .reviewed-file-actions button { border: 0; padding: 4px; background: transparent; color: var(--orange-dark); font: 11px var(--font-brand); text-decoration: underline; cursor: pointer; }
+  .reviewed-detail pre { max-height: 360px; overflow: auto; margin: 0 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); font: 12px/1.65 var(--mono); }
+  .reviewed-detail pre.reviewed-prompt { font: 13px/1.7 var(--font-brand); }
+  .reviewed-download { color: var(--orange-dark); font-size: 12px; text-decoration: underline; text-decoration-color: #f0531e66; }
+  @media (max-width: 520px) {
+    .reviewed-card > summary { align-items: flex-start; padding: 12px; }
+    .reviewed-meta { display: grid; justify-items: end; }
+    .reviewed-meta span + span { border-left: 0; padding-left: 0; }
+    .reviewed-toolbar { flex-wrap: wrap; gap: 6px; padding: 7px; }
+    .reviewed-toolbar > .mono { display: none; }
+    .reviewed-toolbar .reviewed-zoom { margin-left: 0; }
+    .reviewed-download-svg { margin-left: auto; }
+    .reviewed-zoom button, .reviewed-expand { padding: 3px 6px; font-size: 10px; }
+    .reviewed-preview .diagram-viewport { height: 72vw; min-height: 240px; padding: 7px; }
+    .reviewed-dialog { width: calc(100vw - 16px); height: calc(100vh - 16px); }
+  }
+  .reviewed-dialog .diagram-viewport { height: auto; min-height: 0; max-height: none; }
+</style>

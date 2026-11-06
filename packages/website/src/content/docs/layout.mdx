@@ -1,0 +1,36 @@
+---
+title: Layout
+description: How the engine arranges cards and groups, and how to keep your own positions.
+section: How it works
+order: 21
+---
+import LayoutExplainer from '../../components/docs/LayoutExplainer.astro';
+
+Layout decides where resources go before the router connects them. It measures the whole card, including its label, and works from inner groups outward. A longer label can therefore make its surrounding groups larger too.
+
+<LayoutExplainer />
+
+The default flow is `lr`, which arranges the diagram from left to right. Use `flow tb` for a top-to-bottom diagram when you explicitly request that direction. An unrelated edit keeps the diagram's existing flow. The engine also considers connections, resource roles, spacing, and availability-zone symmetry. Experimental providers reuse some AWS layout rules.
+
+## Keep a position you chose
+
+Start with automatic layout. When you need a particular arrangement, save a position in the view. A `pin` requests a position but allows repair to move it; `pin manual` keeps the exact coordinate.
+
+```dgm
+diagram placement_example {
+  grammar aws
+  flow lr
+  cloud-agnostic.actor client "Client"
+  cloud-agnostic.server api "Public API"
+  client -> api { id request label "request" }
+}
+view default {
+  place api { x 420 y 180 pin manual }
+}
+```
+
+Moving a group in Studio moves its children with it. Resizing a group changes the boundary's space without scaling its contents.
+
+The layout follows repeatable rules rather than trying every possible arrangement. If an old manual position gets in the way after the architecture changes, remove it and let the engine place that resource again.
+
+Grid snapping is independent of flow direction, so a grid-aligned position does not by itself turn a horizontal diagram vertical. Saved manual placements can also constrain a new orientation; remove or revise those placements when you want the engine to reorganize the diagram.

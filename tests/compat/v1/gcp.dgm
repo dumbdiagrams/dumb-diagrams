@@ -1,0 +1,13 @@
+dgm 1
+diagram gcp {
+  grammar gcp
+  flow lr
+
+  cloud-agnostic.client client "Client"
+
+  gcp.project project "Project" {
+    gcp.cloud-functions functions "Cloud Functions"
+  }
+
+  client -> functions
+}

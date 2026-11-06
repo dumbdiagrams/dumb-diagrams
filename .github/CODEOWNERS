@@ -1,0 +1,3 @@
+# Require code-owner review in GitHub's default-branch protection settings.
+# This account must retain write access when the repository moves to an organization.
+* @AlexJohnSadowski

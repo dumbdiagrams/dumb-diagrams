@@ -7,7 +7,7 @@ export type ResourceLabelPosition = "top" | "bottom";
 export type GroupLabelPosition = "top-left" | "top-right";
 export type EdgeStyle = "solid" | "dashed";
 export type EdgeKind = "flow" | "bidirectional" | "peer" | "fail";
-export type EdgeColor = "graphite" | "blue" | "teal" | "purple" | "amber" | "red" | "green";
+export type EdgeColor = "graphite" | "blue" | "teal" | "purple" | "amber" | "coral" | "red" | "green";
 export type BoundaryFill = "subtle" | "none";
 
 /** Curated connector colors keep authored diagrams portable and predictable. */
@@ -17,7 +17,8 @@ export const EDGE_COLOR_VALUES: Record<EdgeColor, string> = {
   teal: "#0F766E",
   purple: "#7C3AED",
   amber: "#f7982c",
-  red: "#f0531e",
+  coral: "#f0531e",
+  red: "#D92D20",
   green: "#2F855A",
 };
 
@@ -37,7 +38,12 @@ export type GroupKind =
   | "subnet-public"
   | "subnet-private"
   | "logical"
-  | "overlay";
+  | "overlay"
+  | "auto-scaling"
+  | "ec2-instance"
+  | "elastic-beanstalk"
+  | "spot-fleet"
+  | "step-functions";
 
 export type Side = "n" | "s" | "e" | "w";
 export type RouteMode = "auto" | "manual";
@@ -188,6 +194,8 @@ export interface DiagramDocument {
   title?: string;
   grammar: Grammar;
   flow: FlowDirection;
+  /** Draw resources as icons only; their labels remain as SVG titles. */
+  hideResourceLabels?: boolean;
   resources: Resource[];
   groups: Group[];
   edges: Edge[];
@@ -267,8 +275,9 @@ export interface ValidationIssue {
 
 export interface CatalogRule {
   type: string;
+  /** Provider owning this catalog entry. Cloud-agnostic entries are portable. */
+  provider?: Grammar;
   allowedParents: string[];
-  scope: "regional" | "zonal" | "global" | "any";
   /** Root placement is explicit; an empty parent is not a generic escape hatch. */
   allowRoot?: boolean;
 }

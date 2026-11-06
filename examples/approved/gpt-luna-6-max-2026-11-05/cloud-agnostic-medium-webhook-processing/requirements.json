@@ -1,0 +1,472 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "application_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The production account, primary region, and private network are nested in an application cloud."
+      }
+    },
+    {
+      "id": "production_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "The production account is inside the application cloud."
+      }
+    },
+    {
+      "id": "primary_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The primary region is inside the production account."
+      }
+    },
+    {
+      "id": "private_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "A private network is nested in the primary region."
+      }
+    },
+    {
+      "id": "event_processing",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The queue, processor, and database are in an event-processing boundary within the network."
+      }
+    },
+    {
+      "id": "webhook_edge",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API gateway and ingress function are together in a webhook-edge boundary."
+      }
+    },
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "An external partner sends webhook events."
+      }
+    },
+    {
+      "id": "api_gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "Webhook events are sent to an API gateway."
+      }
+    },
+    {
+      "id": "webhook_ingress",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "basis": {
+        "kind": "explicit",
+        "text": "A webhook ingress function receives webhook events."
+      }
+    },
+    {
+      "id": "event_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The ingress queues events."
+      }
+    },
+    {
+      "id": "event_processor",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "An event processor consumes the queue."
+      }
+    },
+    {
+      "id": "event_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The ingress writes an idempotency key and processor stores processed status in the same database."
+      }
+    },
+    {
+      "id": "payload_archive",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor archives the payload in object storage, kept in the region outside the private network."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "partner_webhook",
+      "source": "partner",
+      "target": "api_gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The external partner sends webhook events to the API gateway."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "gateway_to_ingress",
+      "source": "api_gateway",
+      "target": "webhook_ingress",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API gateway and ingress function receive webhook events."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "ingress_to_queue",
+      "source": "webhook_ingress",
+      "target": "event_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The ingress function queues events."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "ingress_idempotency",
+      "source": "webhook_ingress",
+      "target": "event_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The ingress writes an idempotency key to the event database."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "queue_to_processor",
+      "source": "event_queue",
+      "target": "event_processor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The event processor consumes the queue."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "processor_status",
+      "source": "event_processor",
+      "target": "event_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor stores processed status in the same database."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "processor_archive",
+      "source": "event_processor",
+      "target": "payload_archive",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor archives the payload in object storage."
+      },
+      "kind": "flow"
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One application cloud."
+      }
+    },
+    {
+      "id": "one_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "within": "application_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "One production account."
+      }
+    },
+    {
+      "id": "one_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "within": "production_account",
+      "basis": {
+        "kind": "explicit",
+        "text": "One primary region."
+      }
+    },
+    {
+      "id": "one_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 1,
+      "max": 1,
+      "within": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "One private network."
+      }
+    },
+    {
+      "id": "two_boundaries",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 2,
+      "max": 2,
+      "within": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "One webhook-edge boundary and one event-processing boundary."
+      }
+    },
+    {
+      "id": "one_gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "min": 1,
+      "max": 1,
+      "within": "webhook_edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "An API gateway in the webhook-edge boundary."
+      }
+    },
+    {
+      "id": "one_function",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "min": 1,
+      "max": 1,
+      "within": "webhook_edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "A webhook ingress function in the webhook-edge boundary."
+      }
+    },
+    {
+      "id": "one_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "min": 1,
+      "max": 1,
+      "within": "event_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "One event queue."
+      }
+    },
+    {
+      "id": "one_processor",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "max": 1,
+      "within": "event_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "One event processor."
+      }
+    },
+    {
+      "id": "one_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "within": "event_processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "One event database shared by ingress and processor."
+      }
+    },
+    {
+      "id": "one_archive",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "max": 1,
+      "within": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "One regional payload archive."
+      }
+    },
+    {
+      "id": "one_partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One external partner."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "application_cloud_placement",
+      "component": "application_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "Application Cloud is at the diagram root."
+      }
+    },
+    {
+      "id": "production_account_placement",
+      "component": "production_account",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Production Account is directly inside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "primary_region_placement",
+      "component": "primary_region",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Region is directly inside Production Account."
+      },
+      "group": "production_account"
+    },
+    {
+      "id": "private_network_placement",
+      "component": "private_network",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private Network is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "event_processing_placement",
+      "component": "event_processing",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Event Processing is directly inside Private Network."
+      },
+      "group": "private_network"
+    },
+    {
+      "id": "webhook_edge_placement",
+      "component": "webhook_edge",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Webhook Edge is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "partner_placement",
+      "component": "partner",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "External Partner is outside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "api_gateway_placement",
+      "component": "api_gateway",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Gateway is directly inside Webhook Edge."
+      },
+      "group": "webhook_edge"
+    },
+    {
+      "id": "webhook_ingress_placement",
+      "component": "webhook_ingress",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Webhook Ingress is directly inside Webhook Edge."
+      },
+      "group": "webhook_edge"
+    },
+    {
+      "id": "event_queue_placement",
+      "component": "event_queue",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Event Queue is directly inside Event Processing."
+      },
+      "group": "event_processing"
+    },
+    {
+      "id": "event_processor_placement",
+      "component": "event_processor",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Event Processor is directly inside Event Processing."
+      },
+      "group": "event_processing"
+    },
+    {
+      "id": "event_database_placement",
+      "component": "event_database",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Event Database is directly inside Event Processing."
+      },
+      "group": "event_processing"
+    },
+    {
+      "id": "payload_archive_placement",
+      "component": "payload_archive",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Payload Archive is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    }
+  ],
+  "allowAdditionalResources": false
+}

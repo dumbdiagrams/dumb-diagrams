@@ -1,0 +1,326 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS architecture and AWS services."
+      },
+      "type": "aws.cloud"
+    },
+    {
+      "id": "uploader",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image and receives delivered image assets."
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The upload API accepts the image request."
+      },
+      "type": "aws.api-gateway"
+    },
+    {
+      "id": "upload_handler",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The upload handler stores the original and queues a thumbnail job."
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "assets_bucket",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The bucket stores original and thumbnail images."
+      },
+      "type": "aws.simple-storage-service-bucket"
+    },
+    {
+      "id": "jobs_queue",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The thumbnail job queue."
+      },
+      "type": "aws.simple-queue-service"
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The processor creates a thumbnail."
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The content delivery service serves both images."
+      },
+      "type": "aws.cloudfront"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "uploader_api",
+      "source": "uploader",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "image upload"
+      }
+    },
+    {
+      "id": "api_upload_handler",
+      "source": "api",
+      "target": "upload_handler",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "upload request"
+      }
+    },
+    {
+      "id": "handler_original",
+      "source": "upload_handler",
+      "target": "assets_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "store original"
+      }
+    },
+    {
+      "id": "handler_queue",
+      "source": "upload_handler",
+      "target": "jobs_queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "queue thumbnail job"
+      }
+    },
+    {
+      "id": "queue_processor",
+      "source": "jobs_queue",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "thumbnail job"
+      }
+    },
+    {
+      "id": "processor_thumbnail",
+      "source": "processor",
+      "target": "assets_bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "store thumbnail"
+      }
+    },
+    {
+      "id": "uploader_cdn",
+      "source": "cdn",
+      "target": "uploader",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "The content delivery service serves original and thumbnail images to the uploader/viewer."
+      }
+    },
+    {
+      "id": "cdn_origin",
+      "source": "assets_bucket",
+      "target": "cdn",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "fetch original or thumbnail"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS image pipeline."
+      }
+    },
+    {
+      "id": "one_api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "An API"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_assets_bucket",
+      "kind": "resource",
+      "type": "aws.simple-storage-service-bucket",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "The image bucket"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_jobs_queue",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "A thumbnail job queue"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "A content delivery service"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_uploader",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader."
+      }
+    },
+    {
+      "id": "two_lambda_handlers",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 2,
+      "max": 2,
+      "within": "aws_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The upload handler and thumbnail processor."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "cloud_root",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS architecture."
+      }
+    },
+    {
+      "id": "uploader_external",
+      "component": "uploader",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Uploader is external to AWS."
+      }
+    },
+    {
+      "id": "api_in_cloud",
+      "component": "api",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS pipeline service."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "upload_handler_in_cloud",
+      "component": "upload_handler",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS pipeline service."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "assets_bucket_in_cloud",
+      "component": "assets_bucket",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS pipeline service."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "jobs_queue_in_cloud",
+      "component": "jobs_queue",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS pipeline service."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "processor_in_cloud",
+      "component": "processor",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS pipeline service."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "cdn_in_cloud",
+      "component": "cdn",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS pipeline service."
+      },
+      "group": "aws_cloud"
+    }
+  ],
+  "allowAdditionalResources": true
+}

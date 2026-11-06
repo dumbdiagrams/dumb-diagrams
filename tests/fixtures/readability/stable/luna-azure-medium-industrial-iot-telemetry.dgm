@@ -1,0 +1,29 @@
+dgm 1
+diagram azure_medium_industrial_iot_telemetry { grammar azure flow lr title "Industrial IoT Telemetry"
+  cloud-agnostic.device sensors "Industrial sensor fleet" {
+  }
+  azure.subscription sub "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group rg "Resource Group" {
+        azure.iot-hub hub "IoT Hub" {
+        }
+        azure.event-hubs events "Event Hubs" {
+        }
+        azure.storage-accounts storage "Storage Account" {
+        }
+        azure.function-apps function "Function App" {
+        }
+        azure.azure-cosmos-db cosmos "Cosmos DB" {
+        }
+      }
+    }
+  }
+  cloud-agnostic.client dashboard "Operations dashboard" {
+  }
+  sensors -> hub { id sensor_hub label "readings" kind flow step 1 }
+  hub -> events { id hub_events label "processing route" kind flow step 2 }
+  hub -> storage { id hub_storage label "raw archive route" kind flow step 3 }
+  events -> function { id events_function label "event stream" kind flow step 4 }
+  function -> cosmos { id function_cosmos label "normalized status" kind flow step 5 }
+  cosmos -> dashboard { id cosmos_dashboard label "current status read" kind flow step 6 }
+}

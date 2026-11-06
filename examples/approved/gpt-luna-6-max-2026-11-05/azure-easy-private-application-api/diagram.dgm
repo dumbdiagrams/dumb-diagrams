@@ -1,0 +1,47 @@
+dgm 1
+diagram azure_easy_private_application_api {
+  grammar azure
+  flow lr
+  title "Azure Private Application API"
+
+  azure.subscription subscription "Azure subscription" {
+    azure.region region "Region" {
+      azure.resource-group resource_group "Application resource group" {
+        azure.api-management-services api_management "API Management" {}
+        azure.sql-database sql_database "SQL Database" {}
+
+        azure.vnet app_vnet "Application network" {
+          azure.subnet app_subnet "Application subnet" {
+            azure.function-apps function_app "Function App" {}
+          }
+          azure.subnet data_subnet "Private endpoint subnet" {
+            azure.private-endpoints sql_private_endpoint "SQL private endpoint" {}
+          }
+        }
+      }
+    }
+  }
+
+  cloud-agnostic.client client "Client" {}
+
+  client -> api_management {
+    id client_to_apim
+    label "API request"
+    step 1
+  }
+  api_management -> function_app {
+    id apim_to_function
+    label "Route request"
+    step 2
+  }
+  function_app -> sql_private_endpoint {
+    id function_to_sql_endpoint
+    label "SQL read/write"
+    step 3
+  }
+  sql_private_endpoint -> sql_database {
+    id endpoint_to_sql
+    label "Private endpoint to SQL"
+    step 4
+  }
+}

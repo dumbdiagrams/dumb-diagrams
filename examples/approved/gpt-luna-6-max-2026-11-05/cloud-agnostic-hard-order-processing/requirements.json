@@ -1,0 +1,809 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "external_parties",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "inferred",
+        "text": "The buyer, payment service, and warehouse are grouped outside the application cloud to separate actors from infrastructure."
+      }
+    },
+    {
+      "id": "application_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "One cloud account contains the primary and recovery regions."
+      }
+    },
+    {
+      "id": "cloud_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "One cloud account contains both regions."
+      }
+    },
+    {
+      "id": "primary_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The primary region is in the account."
+      }
+    },
+    {
+      "id": "primary_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API server, database, and cache are in the primary private application network."
+      }
+    },
+    {
+      "id": "primary_cluster",
+      "kind": "group",
+      "type": "cloud-agnostic.cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API server and worker are in the application cluster inside the primary network."
+      }
+    },
+    {
+      "id": "recovery_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The recovery region is in the same account."
+      }
+    },
+    {
+      "id": "recovery_network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "The recovery database is inside a recovery network."
+      }
+    },
+    {
+      "id": "buyer",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "A public buyer reaches the regional load balancer and can be served through the recovery load balancer."
+      }
+    },
+    {
+      "id": "payment_service",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API calls an external payment service."
+      }
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker sends fulfillment to an external warehouse and receives its acknowledgment."
+      }
+    },
+    {
+      "id": "primary_lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "A buyer reaches a regional load balancer in the primary region."
+      }
+    },
+    {
+      "id": "api_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The load balancer forwards requests to an API server in the private application network and cluster."
+      }
+    },
+    {
+      "id": "primary_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The database is in the primary private network and receives order status and replicates to recovery."
+      }
+    },
+    {
+      "id": "primary_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "The cache is in the same primary private network."
+      }
+    },
+    {
+      "id": "work_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API enqueues work in a regional queue outside the network."
+      }
+    },
+    {
+      "id": "worker_server",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "A worker server in the application cluster consumes queued work."
+      }
+    },
+    {
+      "id": "receipt_storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker writes receipts to object storage outside the network."
+      }
+    },
+    {
+      "id": "recovery_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The primary database replicates to a recovery database inside a recovery network."
+      }
+    },
+    {
+      "id": "recovery_app",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "A recovery application server reads that replica."
+      }
+    },
+    {
+      "id": "recovery_lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "The recovery application server can serve the buyer through a recovery load balancer."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "buyer_primary",
+      "source": "buyer",
+      "target": "primary_lb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The public buyer reaches the primary regional load balancer."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "primary_lb_api",
+      "source": "primary_lb",
+      "target": "api_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The primary load balancer forwards requests to the API server."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "api_db_request",
+      "source": "api_server",
+      "target": "primary_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API uses the primary database."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "db_api_response",
+      "source": "primary_database",
+      "target": "api_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a separate database response arrow back to the API."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "api_cache_request",
+      "source": "api_server",
+      "target": "primary_cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API uses the cache."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "cache_api_response",
+      "source": "primary_cache",
+      "target": "api_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a separate cache response arrow back to the API."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "api_payment_request",
+      "source": "api_server",
+      "target": "payment_service",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API calls the external payment service."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "payment_api_response",
+      "source": "payment_service",
+      "target": "api_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a separate payment response arrow back to the API."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "api_to_queue",
+      "source": "api_server",
+      "target": "work_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API enqueues work in a regional queue outside the network."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "queue_to_worker",
+      "source": "work_queue",
+      "target": "worker_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The queue feeds a worker server in the application cluster."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "worker_to_warehouse",
+      "source": "worker_server",
+      "target": "warehouse",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker sends fulfillment to an external warehouse."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "warehouse_ack",
+      "source": "warehouse",
+      "target": "worker_server",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker receives the warehouse acknowledgment."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "worker_status",
+      "source": "worker_server",
+      "target": "primary_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker writes order status to the primary database."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "worker_receipt",
+      "source": "worker_server",
+      "target": "receipt_storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker writes receipts to object storage outside the network."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "worker_retry",
+      "source": "worker_server",
+      "target": "work_queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "The worker retries by sending work back to the queue."
+      },
+      "kind": "fail"
+    },
+    {
+      "id": "database_replication",
+      "source": "primary_database",
+      "target": "recovery_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The primary database replicates to the recovery database."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "recovery_read",
+      "source": "recovery_database",
+      "target": "recovery_app",
+      "basis": {
+        "kind": "explicit",
+        "text": "The recovery application server reads the recovery database replica."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "buyer_recovery",
+      "source": "buyer",
+      "target": "recovery_lb",
+      "basis": {
+        "kind": "explicit",
+        "text": "The recovery application can serve the buyer through a recovery load balancer."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "recovery_lb_app",
+      "source": "recovery_lb",
+      "target": "recovery_app",
+      "basis": {
+        "kind": "explicit",
+        "text": "The recovery load balancer forwards the buyer request to recovery application."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "recovery_app_lb",
+      "source": "recovery_app",
+      "target": "recovery_lb",
+      "basis": {
+        "kind": "inferred",
+        "text": "A serving path returns the recovery application response through its load balancer."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "recovery_to_buyer",
+      "source": "recovery_lb",
+      "target": "buyer",
+      "basis": {
+        "kind": "inferred",
+        "text": "The recovery load balancer returns the served response to the buyer."
+      },
+      "kind": "flow"
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_external_parties",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "inferred",
+        "text": "One logical group for external actors."
+      }
+    },
+    {
+      "id": "one_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One cloud account with primary and recovery regions."
+      }
+    },
+    {
+      "id": "one_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "within": "application_cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "One cloud account."
+      }
+    },
+    {
+      "id": "two_regions",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 2,
+      "max": 2,
+      "within": "cloud_account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary and recovery regions."
+      }
+    },
+    {
+      "id": "two_networks",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "min": 2,
+      "max": 2,
+      "within": "cloud_account",
+      "basis": {
+        "kind": "explicit",
+        "text": "A primary private application network and a recovery network."
+      }
+    },
+    {
+      "id": "one_cluster",
+      "kind": "group",
+      "type": "cloud-agnostic.cluster",
+      "min": 1,
+      "max": 1,
+      "within": "primary_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "One application cluster in the primary private network."
+      }
+    },
+    {
+      "id": "one_buyer",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "A public buyer."
+      }
+    },
+    {
+      "id": "one_primary_lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "min": 1,
+      "max": 1,
+      "within": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "A regional primary load balancer."
+      }
+    },
+    {
+      "id": "one_recovery_lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "min": 1,
+      "max": 1,
+      "within": "recovery_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "A recovery load balancer."
+      }
+    },
+    {
+      "id": "two_primary_servers",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 2,
+      "max": 2,
+      "within": "primary_cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "An API server and worker server in the primary application cluster."
+      }
+    },
+    {
+      "id": "one_recovery_app",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "max": 1,
+      "within": "recovery_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "A recovery application server."
+      }
+    },
+    {
+      "id": "two_databases",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 2,
+      "max": 2,
+      "within": "cloud_account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary and recovery databases."
+      }
+    },
+    {
+      "id": "one_cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "min": 1,
+      "max": 1,
+      "within": "primary_network",
+      "basis": {
+        "kind": "explicit",
+        "text": "A primary cache."
+      }
+    },
+    {
+      "id": "one_queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "min": 1,
+      "max": 1,
+      "within": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "A regional work queue."
+      }
+    },
+    {
+      "id": "one_storage",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "min": 1,
+      "max": 1,
+      "within": "primary_region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Receipt object storage."
+      }
+    },
+    {
+      "id": "two_external_actors",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "One external payment service and one external warehouse."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "external_parties_placement",
+      "component": "external_parties",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "External Parties is at the diagram root."
+      }
+    },
+    {
+      "id": "application_cloud_placement",
+      "component": "application_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "Application Cloud is at the diagram root."
+      }
+    },
+    {
+      "id": "cloud_account_placement",
+      "component": "cloud_account",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Account is directly inside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "primary_region_placement",
+      "component": "primary_region",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Region is directly inside Cloud Account."
+      },
+      "group": "cloud_account"
+    },
+    {
+      "id": "primary_network_placement",
+      "component": "primary_network",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Private Network is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "primary_cluster_placement",
+      "component": "primary_cluster",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Application Cluster is directly inside Primary Private Network."
+      },
+      "group": "primary_network"
+    },
+    {
+      "id": "recovery_region_placement",
+      "component": "recovery_region",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Region is directly inside Cloud Account."
+      },
+      "group": "cloud_account"
+    },
+    {
+      "id": "recovery_network_placement",
+      "component": "recovery_network",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Network is directly inside Recovery Region."
+      },
+      "group": "recovery_region"
+    },
+    {
+      "id": "buyer_placement",
+      "component": "buyer",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public Buyer is directly inside External Parties."
+      },
+      "group": "external_parties"
+    },
+    {
+      "id": "payment_service_placement",
+      "component": "payment_service",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Payment Service is outside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "warehouse_placement",
+      "component": "warehouse",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "External Warehouse is outside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "primary_lb_placement",
+      "component": "primary_lb",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Load Balancer is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "api_server_placement",
+      "component": "api_server",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Server is directly inside Application Cluster."
+      },
+      "group": "primary_cluster"
+    },
+    {
+      "id": "primary_database_placement",
+      "component": "primary_database",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Database is directly inside Primary Private Network."
+      },
+      "group": "primary_network"
+    },
+    {
+      "id": "primary_cache_placement",
+      "component": "primary_cache",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Cache is directly inside Primary Private Network."
+      },
+      "group": "primary_network"
+    },
+    {
+      "id": "work_queue_placement",
+      "component": "work_queue",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Regional Work Queue is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "worker_server_placement",
+      "component": "worker_server",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker Server is directly inside Application Cluster."
+      },
+      "group": "primary_cluster"
+    },
+    {
+      "id": "receipt_storage_placement",
+      "component": "receipt_storage",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Receipt Storage is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "recovery_database_placement",
+      "component": "recovery_database",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Database is directly inside Recovery Network."
+      },
+      "group": "recovery_network"
+    },
+    {
+      "id": "recovery_app_placement",
+      "component": "recovery_app",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Application Server is directly inside Recovery Network."
+      },
+      "group": "recovery_network"
+    },
+    {
+      "id": "recovery_lb_placement",
+      "component": "recovery_lb",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Load Balancer is directly inside Recovery Region."
+      },
+      "group": "recovery_region"
+    }
+  ],
+  "allowAdditionalResources": false
+}

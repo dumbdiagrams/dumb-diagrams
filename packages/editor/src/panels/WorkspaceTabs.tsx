@@ -33,6 +33,7 @@ export function WorkspaceTabs({
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const tabRefs = useRef(new Map<string, HTMLDivElement>());
+  const tabButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const knownTabIdsRef = useRef(new Set(tabs.map((tab) => tab.id)));
   const labelCacheRef = useRef(new Map<string, { source: string; label: string }>());
   const labels = useMemo(() => {
@@ -59,6 +60,20 @@ export function WorkspaceTabs({
     ? `Maximum reached: ${tabLimit} open diagrams. Close a tab to create another.`
     : "New diagram";
 
+  const moveTabFocus = (index: number, key: string) => {
+    if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") return;
+    const nextIndex =
+      key === "Home"
+        ? 0
+        : key === "End"
+          ? tabs.length - 1
+          : (index + (key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const next = tabs[nextIndex];
+    if (!next) return;
+    onSelect(next.id);
+    tabButtonRefs.current.get(next.id)?.focus();
+  };
+
   useEffect(() => {
     const tab = tabRefs.current.get(activeTabId);
     if (!tab) return;
@@ -76,29 +91,32 @@ export function WorkspaceTabs({
       const element = tabRefs.current.get(tab.id);
       if (!element || reducedMotion) continue;
       const targetWidth = element.getBoundingClientRect().width;
-      element.animate([
+      element.animate(
+        [
+          {
+            width: `${targetWidth}px`,
+            minWidth: "0px",
+            maxWidth: `${targetWidth}px`,
+            flexGrow: 0,
+            flexShrink: 0,
+            flexBasis: "0px",
+            opacity: 0.45,
+          },
+          {
+            width: `${targetWidth}px`,
+            minWidth: "0px",
+            maxWidth: `${targetWidth}px`,
+            flexGrow: 0,
+            flexShrink: 0,
+            flexBasis: `${targetWidth}px`,
+            opacity: 1,
+          },
+        ],
         {
-          width: `${targetWidth}px`,
-          minWidth: "0px",
-          maxWidth: `${targetWidth}px`,
-          flexGrow: 0,
-          flexShrink: 0,
-          flexBasis: "0px",
-          opacity: 0.45,
+          duration: 220,
+          easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
         },
-        {
-          width: `${targetWidth}px`,
-          minWidth: "0px",
-          maxWidth: `${targetWidth}px`,
-          flexGrow: 0,
-          flexShrink: 0,
-          flexBasis: `${targetWidth}px`,
-          opacity: 1,
-        },
-      ], {
-        duration: 220,
-        easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-      });
+      );
     }
 
     knownTabIdsRef.current = new Set(tabs.map((tab) => tab.id));
@@ -118,7 +136,10 @@ export function WorkspaceTabs({
                 if (element) {
                   tabRefs.current.set(tab.id, element);
                   if (closing && !element.style.getPropertyValue("--workspace-tab-current-width")) {
-                    element.style.setProperty("--workspace-tab-current-width", `${element.getBoundingClientRect().width}px`);
+                    element.style.setProperty(
+                      "--workspace-tab-current-width",
+                      `${element.getBoundingClientRect().width}px`,
+                    );
                   }
                 } else tabRefs.current.delete(tab.id);
               }}
@@ -170,30 +191,48 @@ export function WorkspaceTabs({
               <button
                 type="button"
                 role="tab"
+                id={`workspace-tab-${tab.id}`}
+                tabIndex={active ? 0 : -1}
                 aria-selected={active}
                 aria-controls="diagram-canvas"
                 className="workspace-tab-select"
                 onClick={() => {
                   if (!closing) onSelect(tab.id);
                 }}
+                onKeyDown={(event) => {
+                  if (closing) return;
+                  moveTabFocus(
+                    tabs.findIndex((candidate) => candidate.id === tab.id),
+                    event.key,
+                  );
+                  if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) event.preventDefault();
+                }}
+                ref={(element) => {
+                  if (element) tabButtonRefs.current.set(tab.id, element);
+                  else tabButtonRefs.current.delete(tab.id);
+                }}
                 title={tab.filename ?? label}
               >
-                {tab.source !== tab.savedSource && <span className="workspace-tab-dirty" aria-label="Unsaved changes" />}
+                {tab.source !== tab.savedSource && (
+                  <span className="workspace-tab-dirty" aria-label="Unsaved changes" />
+                )}
                 <span className="workspace-tab-label">{label}</span>
                 {tab.filename && <span className="workspace-tab-filename">{tab.filename}</span>}
               </button>
-              {canCloseTab(tab) && <button
-                type="button"
-                className="workspace-tab-close"
-                aria-label={`Close ${label}`}
-                title={`Close ${label}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onClose(tab.id);
-                }}
-              >
-                <IconClose />
-              </button>}
+              {canCloseTab(tab) && (
+                <button
+                  type="button"
+                  className="workspace-tab-close"
+                  aria-label={`Close ${label}`}
+                  title={`Close ${label}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClose(tab.id);
+                  }}
+                >
+                  <IconClose />
+                </button>
+              )}
             </div>
           );
         })}

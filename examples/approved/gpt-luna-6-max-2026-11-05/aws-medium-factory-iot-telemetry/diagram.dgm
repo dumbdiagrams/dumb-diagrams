@@ -1,0 +1,18 @@
+dgm 1
+diagram aws-medium-factory-iot-telemetry { grammar aws flow lr title "Factory IoT telemetry"
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.aws-iot-core iot_core "AWS IoT Core" {}
+    aws.kinesis-data-streams stream "Kinesis Data Streams" {}
+    aws.aws-lambda normalizer "Normalize readings" {}
+    aws.timestream timestream "Amazon Timestream" {}
+    aws.simple-notification-service sns "Amazon SNS" {}
+  }
+  cloud-agnostic.client sensor_fleet "Factory sensor fleet" {}
+  cloud-agnostic.client dashboard "Operations dashboard" {}
+  sensor_fleet -> iot_core { id sensors_iot label "sensor readings" step 1 }
+  iot_core -> stream { id iot_stream label "route readings" step 2 }
+  stream -> normalizer { id stream_lambda label "stream records" step 3 }
+  normalizer -> timestream { id lambda_timestream label "normalized time-series" step 4 }
+  normalizer -> sns { id lambda_sns label "threshold alerts" step 4 }
+  timestream -> dashboard { id timestream_dashboard label "read telemetry" step 5 }
+}

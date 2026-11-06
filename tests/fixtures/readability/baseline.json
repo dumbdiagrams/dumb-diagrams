@@ -1,0 +1,114 @@
+{
+  "hard": {
+    "haiku-aws-hard-document-processing.dgm": {
+      "backward": 0,
+      "backtracking": 1,
+      "crossings": 10,
+      "bends": 44
+    },
+    "haiku-azure-hard-private-order-processing.dgm": {
+      "backward": 2,
+      "backtracking": 3,
+      "crossings": 19,
+      "bends": 35
+    },
+    "haiku-cloud-agnostic-hard-order-processing.dgm": {
+      "backward": 2,
+      "backtracking": 1,
+      "crossings": 13,
+      "bends": 51
+    },
+    "haiku-gcp-hard-media-processing.dgm": {
+      "backward": 0,
+      "backtracking": 5,
+      "crossings": 28,
+      "bends": 44
+    },
+    "luna-aws-hard-document-processing.dgm": {
+      "backward": 0,
+      "backtracking": 3,
+      "crossings": 34,
+      "bends": 56
+    },
+    "luna-azure-hard-private-order-processing.dgm": {
+      "backward": 2,
+      "backtracking": 3,
+      "crossings": 14,
+      "bends": 42
+    },
+    "luna-cloud-agnostic-hard-order-processing.dgm": {
+      "backward": 0,
+      "backtracking": 2,
+      "crossings": 19,
+      "bends": 52
+    },
+    "luna-gcp-hard-media-processing.dgm": {
+      "backward": 2,
+      "backtracking": 7,
+      "crossings": 13,
+      "bends": 52
+    },
+    "sonnet-aws-hard-document-processing.dgm": {
+      "backward": 0,
+      "backtracking": 1,
+      "crossings": 14,
+      "bends": 51
+    },
+    "sonnet-azure-hard-private-order-processing.dgm": {
+      "backward": 2,
+      "backtracking": 5,
+      "crossings": 17,
+      "bends": 50
+    },
+    "sonnet-cloud-agnostic-hard-order-processing.dgm": {
+      "backward": 1,
+      "backtracking": 2,
+      "crossings": 24,
+      "bends": 53
+    },
+    "sonnet-gcp-hard-media-processing.dgm": {
+      "backward": 7,
+      "backtracking": 2,
+      "crossings": 21,
+      "bends": 45
+    }
+  },
+  "stable": {
+    "haiku-aws-easy-static-website-delivery.dgm": "008de4df185410467b9dfcb5bf4268681a3dad4284b583020e5173ba6608ecbd",
+    "haiku-aws-medium-factory-iot-telemetry.dgm": "d9cda21db75483053f7975dd798c5357afff1d6b091131a5a3f9daf98ae01de1",
+    "haiku-aws-medium-image-thumbnail-pipeline.dgm": "7797f6ef2c35812cce18799c84eec7e76612a3d61c172d03c62ee02a2e29bebe",
+    "haiku-azure-easy-private-application-api.dgm": "39410e4b8b2b98708ef03fcde9172b62e9fc9a8c9bf73166551d956eb7968b44",
+    "haiku-azure-medium-asynchronous-order-processing.dgm": "f25761532027f4361e2a9be7d0d2d51d83c51454fa312c0c3c606563b77e4bb2",
+    "haiku-azure-medium-industrial-iot-telemetry.dgm": "83fbc8fd98bc5be5a1a8435739319db1b65ab71b3e13770ea4ae7259c1720031",
+    "haiku-cloud-agnostic-easy-customer-record-api.dgm": "9e2d7775ff60fb873e796d194cd1cecb1de83df7304db5f8bb0dbbe53936a9f6",
+    "haiku-cloud-agnostic-medium-team-project-portal.dgm": "b6e760c6918d794acab02713b6159c6f2a5ac504f8cc5383e4ac94d50b5a11b9",
+    "haiku-cloud-agnostic-medium-webhook-processing.dgm": "4ad76a6bb91d5423de8195c0c102e8da741ac0defdd7157265f98b27f529dca5",
+    "haiku-gcp-easy-customer-record-api.dgm": "d493ce1f7d562116ca9e64d84d7118346747c2ee157637c92b88babd1a7d282b",
+    "haiku-gcp-medium-document-processing.dgm": "272750f91ff1ad4a2d0d9b06f1562d6c5200383a5d18d123ffdfaf4a5242884a",
+    "haiku-gcp-medium-webhook-event-pipeline.dgm": "a1f25ee9ce35c0a0170cc084b7669ff024b5480a7581b636c43e067dc0ea93ed",
+    "luna-aws-easy-static-website-delivery.dgm": "d33916ed7cb102f2c132da9d39ffc2e064dbd829bb4d180e3faba14db96d0ce7",
+    "luna-aws-medium-factory-iot-telemetry.dgm": "caeede85ed4b841f901227642aac882a7e75945755ef417c2a3ffe888e48951f",
+    "luna-aws-medium-image-thumbnail-pipeline.dgm": "866f50abfa240bd40551f06d13afe753c0aea184a433a14895c7ca8d53cf306e",
+    "luna-azure-easy-private-application-api.dgm": "16ca004908e8ab2ac9950525347528075d2de5bd358d22c456acc6a754fc2028",
+    "luna-azure-medium-asynchronous-order-processing.dgm": "2d82cd51e321690e84893dd023ae1504a7152a5ee1aee43be32b7988bbdd184f",
+    "luna-azure-medium-industrial-iot-telemetry.dgm": "3d056bdfdb1a7940158497df82cc4b867f79dfa640ad46ee74eed5406453ca42",
+    "luna-cloud-agnostic-easy-customer-record-api.dgm": "2302434c85788bb0442d42a28a99f810ffb2925925627efdbb257fc4dd023309",
+    "luna-cloud-agnostic-medium-team-project-portal.dgm": "9b0561faeb44f35584e38ae1d23683017eb8280bd40f1619407310bb004ad26a",
+    "luna-cloud-agnostic-medium-webhook-processing.dgm": "380b57e32400738f2dcd88f00c3bee69c23c53d973ba254e413793547b13a5bb",
+    "luna-gcp-easy-customer-record-api.dgm": "62d54cfd40f81692c0542d90f40b5a88905e95f5d2cd86bc123865bcf63d518d",
+    "luna-gcp-medium-document-processing.dgm": "aa10923cfb92d6c1ff6336028fe34f0897cb81614f21698e9b99924c805acbda",
+    "luna-gcp-medium-webhook-event-pipeline.dgm": "343cc25ce099f79859660bc7ecd32fe81a0f47286c3a44cab6f833bf045797e6",
+    "sonnet-aws-easy-static-website-delivery.dgm": "f6a26a6f3bb0d34ea8519f8f69faf7eac8bad06bb0a1e4330324cdce9340a11a",
+    "sonnet-aws-medium-factory-iot-telemetry.dgm": "911007ee7a8191e40181ca782cf4b904f759ec6b7bc0cdab1b0fd2d1540ea486",
+    "sonnet-aws-medium-image-thumbnail-pipeline.dgm": "a1510e25c25ba53caba71ad19e91f9188336d9f51b4b1c10318c908af55c320c",
+    "sonnet-azure-easy-private-application-api.dgm": "608b32333034538303ee9e753e732bf74113996c3338e551abd00736b017f4e7",
+    "sonnet-azure-medium-asynchronous-order-processing.dgm": "30bb239a1747f852c8e32349c6c85426c09a8923ca7f3a18f6558d0ac3748220",
+    "sonnet-azure-medium-industrial-iot-telemetry.dgm": "3b3018e3c260a8355c7ff5ed3b9b2f952ba3c81caaa79b43b00bbdad448418a3",
+    "sonnet-cloud-agnostic-easy-customer-record-api.dgm": "dd5d0d73805b83dc47d9ddee72c5f64114e2203db9cda3d3b5b5cfefa101dcf6",
+    "sonnet-cloud-agnostic-medium-team-project-portal.dgm": "7130f0e8fe12b9241b4535485b742070d483c725d21450a78b236a8f061dea21",
+    "sonnet-cloud-agnostic-medium-webhook-processing.dgm": "efd008da1aa91f840dd3d0679164c8dfcd82374d3fa6dfa03e11aa5a0c44172f",
+    "sonnet-gcp-easy-customer-record-api.dgm": "1352b82fa529643d78489dbb65f55820fc60b1a38d3b6d63573861594b4026b6",
+    "sonnet-gcp-medium-document-processing.dgm": "430860544813bccfc737472d77b21e0ebb332cdf792eb480b117f2dccaca7a7e",
+    "sonnet-gcp-medium-webhook-event-pipeline.dgm": "cfe8fbd549d7cc63c3f5bf0e2d87dbc24e6f311f65c4e2a91fca32053141cb20"
+  }
+}

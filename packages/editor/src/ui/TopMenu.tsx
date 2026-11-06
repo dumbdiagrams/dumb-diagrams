@@ -68,7 +68,7 @@ export function TopMenu({
 
   const focusSibling = (refs: Array<HTMLButtonElement | null>, index: number, direction: 1 | -1) => {
     const enabled = refs
-      .map((item, itemIndex) => item && !item.disabled ? itemIndex : -1)
+      .map((item, itemIndex) => (item && !item.disabled ? itemIndex : -1))
       .filter((itemIndex) => itemIndex >= 0);
     if (!enabled.length) return;
     const current = enabled.indexOf(index);
@@ -94,7 +94,10 @@ export function TopMenu({
       refs.find((candidate) => candidate && !candidate.disabled)?.focus();
     } else if (event.key === "End") {
       event.preventDefault();
-      [...refs].reverse().find((candidate) => candidate && !candidate.disabled)?.focus();
+      [...refs]
+        .reverse()
+        .find((candidate) => candidate && !candidate.disabled)
+        ?.focus();
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       if (item.submenu) return;
@@ -104,12 +107,14 @@ export function TopMenu({
       }
     } else if (event.key === "ArrowRight" && item.submenu) {
       event.preventDefault();
-      refsForMenu(item.id).find((candidate) => candidate && !candidate.disabled)?.focus();
+      refsForMenu(item.id)
+        .find((candidate) => candidate && !candidate.disabled)
+        ?.focus();
     } else if (event.key === "ArrowLeft" && submenuFor) {
       event.preventDefault();
-      menuRef.current?.querySelector<HTMLButtonElement>(
-        `[data-submenu-for="${CSS.escape(submenuFor)}"] > button`,
-      )?.focus();
+      menuRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-submenu-for="${CSS.escape(submenuFor)}"] > button`)
+        ?.focus();
     }
   };
 
@@ -117,54 +122,54 @@ export function TopMenu({
     const submenu = Boolean(submenuFor);
     const refs = refsForMenu(submenuFor);
     return (
-    <div
-      className={submenu ? "top-menu-submenu" : "top-menu-dropdown"}
-      role="menu"
-      aria-label={submenu ? `${label} ${menuItems[0]?.id ?? "submenu"}` : label}
-    >
-      {menuItems.map((item, index) => {
-        if (item.separator) {
-          return <div key={item.id} className="top-menu-separator" role="separator" />;
-        }
-        const hasSubmenu = Boolean(item.submenu?.length);
-        return (
-          <div
-            key={item.id}
-            className="top-menu-item-wrap"
-            data-submenu-for={hasSubmenu ? item.id : undefined}
-            onPointerEnter={(event) => {
-              if (!hasSubmenu) return;
-              const target = event.currentTarget.querySelector<HTMLButtonElement>("button");
-              target?.focus();
-            }}
-          >
-            <button
-              ref={(element) => {
-                refs[index] = element;
+      <div
+        className={submenu ? "top-menu-submenu" : "top-menu-dropdown"}
+        role="menu"
+        aria-label={submenu ? `${label} ${menuItems[0]?.id ?? "submenu"}` : label}
+      >
+        {menuItems.map((item, index) => {
+          if (item.separator) {
+            return <div key={item.id} className="top-menu-separator" role="separator" />;
+          }
+          const hasSubmenu = Boolean(item.submenu?.length);
+          return (
+            <div
+              key={item.id}
+              className="top-menu-item-wrap"
+              data-submenu-for={hasSubmenu ? item.id : undefined}
+              onPointerEnter={(event) => {
+                if (!hasSubmenu) return;
+                const target = event.currentTarget.querySelector<HTMLButtonElement>("button");
+                target?.focus();
               }}
-              type="button"
-              role="menuitem"
-              className={`top-menu-item${item.danger ? " is-danger" : ""}`}
-              disabled={item.disabled}
-              aria-label={item.label}
-              aria-keyshortcuts={item.shortcut}
-              aria-haspopup={hasSubmenu ? "menu" : undefined}
-              onClick={() => {
-                if (item.disabled || hasSubmenu) return;
-                item.onSelect?.();
-                close();
-              }}
-              onKeyDown={(event) => handleItemKeyDown(event, item, index, refs, submenuFor)}
             >
-              <span>{item.label}</span>
-              {item.shortcut && <kbd>{item.shortcut}</kbd>}
-              {hasSubmenu && <IconCaret className="top-menu-caret" />}
-            </button>
-            {hasSubmenu && renderItems(item.submenu!, item.id)}
-          </div>
-        );
-      })}
-    </div>
+              <button
+                ref={(element) => {
+                  refs[index] = element;
+                }}
+                type="button"
+                role="menuitem"
+                className={`top-menu-item${item.danger ? " is-danger" : ""}`}
+                disabled={item.disabled}
+                aria-label={item.label}
+                aria-keyshortcuts={item.shortcut}
+                aria-haspopup={hasSubmenu ? "menu" : undefined}
+                onClick={() => {
+                  if (item.disabled || hasSubmenu) return;
+                  item.onSelect?.();
+                  close();
+                }}
+                onKeyDown={(event) => handleItemKeyDown(event, item, index, refs, submenuFor)}
+              >
+                <span>{item.label}</span>
+                {item.shortcut && <kbd>{item.shortcut}</kbd>}
+                {hasSubmenu && <IconCaret className="top-menu-caret" />}
+              </button>
+              {hasSubmenu && renderItems(item.submenu!, item.id)}
+            </div>
+          );
+        })}
+      </div>
     );
   };
 

@@ -1,0 +1,35 @@
+{
+  "$comment": "Reviewed reference for aws-easy-static-website-delivery.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "aws",
+  "exclusive": false,
+  "roles": {
+    "visitor": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ]
+    },
+    "dns": {
+      "types": [
+        "aws.route-53"
+      ]
+    },
+    "cdn": {
+      "types": [
+        "aws.cloudfront"
+      ]
+    },
+    "bucket": {
+      "types": [
+        "aws.simple-storage-service",
+        "aws.simple-storage-service-bucket"
+      ]
+    }
+  },
+  "edges": [
+    "visitor -- dns",
+    "visitor ~> cdn",
+    "cdn -- bucket"
+  ]
+}

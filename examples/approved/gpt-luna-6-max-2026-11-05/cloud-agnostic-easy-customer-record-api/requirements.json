@@ -1,0 +1,258 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "application_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest a production account inside an application cloud."
+      }
+    },
+    {
+      "id": "production_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "A production account is inside the application cloud."
+      }
+    },
+    {
+      "id": "primary_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "The primary region is inside the production account."
+      }
+    },
+    {
+      "id": "web_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "An external web client sends HTTPS requests."
+      }
+    },
+    {
+      "id": "api_gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "Requests pass through an API gateway."
+      }
+    },
+    {
+      "id": "customer_api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "A customer API service handles requests."
+      }
+    },
+    {
+      "id": "customer_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API reads and writes customer records in a database."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "https_request",
+      "source": "web_client",
+      "target": "api_gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "The web client sends HTTPS requests through an API gateway."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "route_to_api",
+      "source": "api_gateway",
+      "target": "customer_api",
+      "basis": {
+        "kind": "explicit",
+        "text": "The gateway routes requests to the customer API."
+      },
+      "kind": "flow"
+    },
+    {
+      "id": "read_write_records",
+      "source": "customer_api",
+      "target": "customer_database",
+      "basis": {
+        "kind": "explicit",
+        "text": "The API reads and writes customer records in the database."
+      },
+      "kind": "flow"
+    }
+  ],
+  "counts": [
+    {
+      "id": "exactly_one_application_cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Application Cloud is specified."
+      }
+    },
+    {
+      "id": "exactly_one_production_account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Production Account is specified."
+      },
+      "within": "application_cloud"
+    },
+    {
+      "id": "exactly_one_primary_region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Primary Region is specified."
+      },
+      "within": "production_account"
+    },
+    {
+      "id": "exactly_one_web_client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Web Client is specified."
+      }
+    },
+    {
+      "id": "exactly_one_api_gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One API Gateway is specified."
+      },
+      "within": "primary_region"
+    },
+    {
+      "id": "exactly_one_customer_api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Customer API is specified."
+      },
+      "within": "primary_region"
+    },
+    {
+      "id": "exactly_one_customer_database",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "One Customer Database is specified."
+      },
+      "within": "primary_region"
+    }
+  ],
+  "placement": [
+    {
+      "id": "application_cloud_placement",
+      "component": "application_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "Application Cloud is at the diagram root."
+      }
+    },
+    {
+      "id": "production_account_placement",
+      "component": "production_account",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Production Account is directly inside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "primary_region_placement",
+      "component": "primary_region",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Region is directly inside Production Account."
+      },
+      "group": "production_account"
+    },
+    {
+      "id": "web_client_placement",
+      "component": "web_client",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Web Client is outside Application Cloud."
+      },
+      "group": "application_cloud"
+    },
+    {
+      "id": "api_gateway_placement",
+      "component": "api_gateway",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Gateway is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "customer_api_placement",
+      "component": "customer_api",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Customer API is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    },
+    {
+      "id": "customer_database_placement",
+      "component": "customer_database",
+      "relation": "parent",
+      "basis": {
+        "kind": "explicit",
+        "text": "Customer Database is directly inside Primary Region."
+      },
+      "group": "primary_region"
+    }
+  ],
+  "allowAdditionalResources": false
+}

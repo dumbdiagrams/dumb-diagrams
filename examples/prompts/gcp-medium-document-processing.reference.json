@@ -1,0 +1,77 @@
+{
+  "$comment": "Reviewed reference for gcp-medium-document-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "gcp",
+  "exclusive": true,
+  "roles": {
+    "partner": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "organization"
+    },
+    "organization": {
+      "types": [
+        "gcp.organization"
+      ]
+    },
+    "project": {
+      "types": [
+        "gcp.project"
+      ],
+      "within": "organization"
+    },
+    "region": {
+      "types": [
+        "gcp.region"
+      ],
+      "within": "project"
+    },
+    "intake": {
+      "types": [
+        "gcp.cloud-run"
+      ],
+      "within": "region"
+    },
+    "source": {
+      "types": [
+        "gcp.cloud-storage"
+      ],
+      "within": "region"
+    },
+    "topic": {
+      "types": [
+        "gcp.pub-sub"
+      ],
+      "within": "region"
+    },
+    "processor": {
+      "types": [
+        "gcp.cloud-run"
+      ],
+      "within": "region"
+    },
+    "output": {
+      "types": [
+        "gcp.cloud-storage"
+      ],
+      "within": "region"
+    },
+    "sql": {
+      "types": [
+        "gcp.cloud-sql"
+      ],
+      "within": "region"
+    }
+  },
+  "edges": [
+    "partner -> intake",
+    "intake -> source",
+    "source -> topic",
+    "topic -- processor",
+    "processor -- source",
+    "processor -> output",
+    "processor -> sql"
+  ]
+}

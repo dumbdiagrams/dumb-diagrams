@@ -1,46 +1,212 @@
-import { readFileSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import { relative } from "node:path";
 import { performance } from "node:perf_hooks";
+import { fileURLToPath } from "node:url";
 
-import { parseDgm } from "../packages/runtime/dist/dsl/index.js";
-import { compileDiagram } from "../packages/runtime/dist/render/index.js";
+import { repoRoot, performanceDiagrams, toPosixPath } from "./lib/example-manifest.mjs";
 
-const EXAMPLES = [
-  "examples/diagrams/async-docs.dgm",
-  "examples/diagrams/transfer-hub.dgm",
-  "examples/diagrams/azure-private-app-service.dgm",
-  "examples/curated/bedrock-claims-processing/diagram.dgm",
-  "examples/curated/aws-data-transfer-hub/diagram.dgm",
-  "examples/curated/aws-high-availability-web-app/diagram.dgm",
-  "examples/curated/simple-serverless-web-application/diagram.dgm",
-  "examples/curated/image-thumbnail-pipeline/diagram.dgm",
-  "examples/curated/asynchronous-report-generation/diagram.dgm",
-  "examples/curated/event-driven-order-fulfillment/diagram.dgm",
-];
-const ITERATIONS = 5;
-const PER_DIAGRAM_BUDGET_MS = 250;
-const failures = [];
+const BASELINE_URL = new URL("./performance-baseline.json", import.meta.url);
+const COUNTERS = ["scorePathCalls", "routeConflictChecks", "astarExpansions", "repairCandidates"];
+const ALLOWED_GROWTH = 1.25;
+// Curated fixtures use deterministic counters; isolated stress probes also
+// have a generous timeout so a synchronous regression cannot hang this gate.
+const STRESS_MAX_ELAPSED_MS = 30_000;
+const COMPILATION_LIMITS_TIMEOUT_MS = 10_000;
 
-for (const filename of EXAMPLES) {
-  const path = resolve(filename);
-  const doc = parseDgm(readFileSync(path, "utf8"));
-  compileDiagram(doc);
-  const samples = [];
-  for (let iteration = 0; iteration < ITERATIONS; iteration += 1) {
-    const start = performance.now();
-    const result = compileDiagram(doc);
-    samples.push(performance.now() - start);
-    if (!result.ok) throw new Error(`${filename} failed to compile during the performance check.`);
+const [
+  { createEmptyDocument, validateDocument },
+  { formatParseError, parseDgmResult },
+  { layoutDocument },
+  { routeEdges, routeConnectionPreview, attachRoutes },
+  { getCatalogMap },
+  { checkInvariants, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE },
+  { compileAutomaticLayout },
+] = await Promise.all([
+  import("../packages/runtime/dist/core/index.js"),
+  import("../packages/runtime/dist/dsl/index.js"),
+  import("../packages/runtime/dist/layout/index.js"),
+  import("../packages/runtime/dist/route/index.js"),
+  import("../packages/runtime/dist/catalog/index.js"),
+  import("../packages/runtime/dist/render/index.js"),
+  import("../packages/runtime/dist/render/automatic-layout.js"),
+]);
+
+function checkCompilationLimits() {
+  const ids = Array.from({ length: 44 }, (_, index) => `node${index}`);
+  const source = `dgm 1\ndiagram dense { grammar aws flow lr
+    aws.cloud cloud { aws.account account {
+      ${ids.map((id) => `cloud-agnostic.actor ${id}`).join("\n")}
+    } }
+    ${ids.flatMap((id, index) => ids.slice(index + 1).map((target) => `${id} -> ${target}`)).join("\n")}
+  }`;
+  const denseResult = parseDgmResult(source);
+  assert.equal(denseResult.isOk(), true, denseResult.isErr() ? formatParseError(denseResult.error) : "");
+  if (denseResult.isErr()) return;
+  const dense = denseResult.value;
+  assert.deepEqual(
+    validateDocument(dense, getCatalogMap()).filter((issue) => issue.level === "error"),
+    [],
+  );
+  const layout = layoutDocument(dense);
+  assert.equal(layout.nodes.length, 44);
+  assert.equal(new Set(layout.nodes.map((node) => node.id)).size, 44);
+  assert.deepEqual(layoutDocument(dense), layout);
+  const denseRouted = attachRoutes(layout, routeEdges(dense, layout));
+  const findings = checkInvariants(denseRouted, { maxFailures: 200 });
+  assert.equal(findings.length, 201);
+  assert.equal(findings.at(-1).code, INVARIANT_DIAGNOSTICS_TRUNCATED_CODE);
+  assert.ok(JSON.stringify(findings).length < 100_000, "Dense layout diagnostics must remain bounded");
+
+  // Intercept allocation before it happens: reverting the memory guard must
+  // fail safely rather than allocating the audited 15.6 GB grid on CI.
+  const NativeArray = globalThis.Uint8Array;
+  let allocatedCells = 0;
+  globalThis.Uint8Array = class extends NativeArray {
+    constructor(length, ...rest) {
+      if (typeof length === "number") {
+        assert.ok(length <= 1_000_000, `Unbounded routing allocation: ${length} cells`);
+        allocatedCells += length;
+      }
+      super(length, ...rest);
+    }
+  };
+  try {
+    const farResult = parseDgmResult(`diagram far { grammar cloud-agnostic
+      cloud-agnostic.actor a cloud-agnostic.actor b
+    } view default {
+      place a { x 0 y 0 pin } place b { x 1000000 y 1000000 pin }
+    }`);
+    assert.equal(farResult.isOk(), true, farResult.isErr() ? formatParseError(farResult.error) : "");
+    if (farResult.isErr()) return;
+    const far = farResult.value;
+    assert.deepEqual(validateDocument(far, getCatalogMap()), []);
+    const farLayout = layoutDocument(far);
+    let diagnostics;
+    assert.deepEqual(
+      routeEdges(far, farLayout, {
+        onDiagnostics: (result) => {
+          diagnostics = result;
+        },
+      }),
+      [],
+    );
+    assert.equal(diagnostics.exhausted, false);
+    assert.equal(allocatedCells, 0);
+    far.edges.push({ id: "edge", source: "a", target: "b", style: "solid", kind: "flow" });
+    const options = {
+      onDiagnostics: (result) => {
+        diagnostics = result;
+      },
+    };
+    const routes = routeEdges(far, farLayout, options);
+    assert.equal(routes.length, 1);
+    assert.ok(routes[0].points.length >= 2);
+    assert.equal(diagnostics.exhausted, true);
+    assert.deepEqual(routeEdges(far, farLayout, options), routes);
+    assert.ok(routeConnectionPreview(far, farLayout, "a", "b")?.length >= 2);
+    assert.equal(allocatedCells, 0);
+  } finally {
+    globalThis.Uint8Array = NativeArray;
   }
-  samples.sort((left, right) => left - right);
-  const median = samples[Math.floor(samples.length / 2)];
-  const outcome = median <= PER_DIAGRAM_BUDGET_MS ? "ok" : "over budget";
-  console.log(`${outcome.padEnd(11)} ${basename(path).padEnd(40)} ${median.toFixed(1)} ms median`);
-  if (median > PER_DIAGRAM_BUDGET_MS) failures.push(`${filename}: ${median.toFixed(1)} ms`);
+  console.log("Compilation limits: dense layout, bounded diagnostics, and million-coordinate routing verified");
 }
 
-if (failures.length) {
-  console.error(`\nCompilation performance exceeded the ${PER_DIAGRAM_BUDGET_MS} ms CI budget:`);
+if (process.argv.includes("--limits-probe")) {
+  checkCompilationLimits();
+  process.exit(0);
+}
+
+function routingWork(doc) {
+  let diagnostics;
+  const routes = routeEdges(doc, layoutDocument(doc), {
+    onDiagnostics: (result) => {
+      diagnostics = result;
+    },
+  });
+  return { routes, diagnostics };
+}
+
+const root = repoRoot();
+const failures = [];
+const measured = {};
+let compilationLimitsFailed = false;
+const baseline = JSON.parse(readFileSync(BASELINE_URL, "utf8")).fixtures ?? {};
+
+try {
+  process.stdout.write(
+    execFileSync(process.execPath, [fileURLToPath(import.meta.url), "--limits-probe"], {
+      encoding: "utf8",
+      timeout: COMPILATION_LIMITS_TIMEOUT_MS,
+    }),
+  );
+} catch (error) {
+  compilationLimitsFailed = true;
+  failures.push(`compilation limits: ${error.message}`);
+}
+
+for (const path of performanceDiagrams()) {
+  const key = toPosixPath(relative(root, path));
+  const parsed = parseDgmResult(readFileSync(path, "utf8"));
+  if (parsed.isErr()) {
+    failures.push(`${key}: parse failed: ${formatParseError(parsed.error)}`);
+    continue;
+  }
+  const doc = parsed.value;
+  // Measure the compile path users get: a discarded alternative may exhaust its
+  // budget, but the retained drawing must not.
+  const { layout, diagnostics, routingDegraded } = compileAutomaticLayout(doc);
+  measured[key] = Object.fromEntries(COUNTERS.map((counter) => [counter, diagnostics[counter]]));
+  if (layout.edges.length !== doc.edges.length) failures.push(`${key}: route count mismatch`);
+  if (routingDegraded) failures.push(`${key}: default routing work budget exhausted`);
+  const expected = baseline[key];
+  if (!expected) {
+    failures.push(`${key}: missing baseline; run with --update`);
+    continue;
+  }
+  for (const counter of COUNTERS) {
+    const limit = Math.ceil(expected[counter] * ALLOWED_GROWTH);
+    if (diagnostics[counter] > limit)
+      failures.push(`${key}: ${counter} ${diagnostics[counter]} exceeds ${limit} (baseline ${expected[counter]})`);
+  }
+  console.log(`${key.padEnd(70)} ${COUNTERS.map((counter) => `${counter}=${diagnostics[counter]}`).join(" ")}`);
+}
+
+const doc = createEmptyDocument("routing-budget-stress");
+doc.flow = "lr";
+doc.resources = Array.from({ length: 500 }, (_, index) => ({
+  id: `resource${index}`,
+  type: "cloud-agnostic.actor",
+  label: { service: `Resource ${index}` },
+  role: "primary",
+  props: {},
+}));
+doc.edges = Array.from({ length: 499 }, (_, index) => ({
+  id: `edge${index}`,
+  source: "resource0",
+  target: `resource${index + 1}`,
+  style: "solid",
+  kind: "flow",
+}));
+const start = performance.now();
+const first = routingWork(doc);
+const elapsedMs = performance.now() - start;
+const second = routingWork(doc);
+if (first.routes.length !== doc.edges.length || !first.diagnostics.exhausted) {
+  failures.push("synthetic fan-out: default routing budget did not retain every route and report bounded exhaustion");
+} else if (JSON.stringify(first.diagnostics) !== JSON.stringify(second.diagnostics)) {
+  failures.push("synthetic fan-out: routing diagnostics are nondeterministic");
+}
+if (elapsedMs > STRESS_MAX_ELAPSED_MS)
+  failures.push(`synthetic fan-out: ${elapsedMs.toFixed(0)} ms exceeds ${STRESS_MAX_ELAPSED_MS} ms`);
+console.log(`synthetic fan-out 500 resources / 499 edges: ${elapsedMs.toFixed(0)} ms, bounded fallback verified`);
+
+if (process.argv.includes("--update") && !compilationLimitsFailed) {
+  writeFileSync(BASELINE_URL, `${JSON.stringify({ fixtures: measured }, null, 2)}\n`);
+  console.log(`Updated ${relative(root, fileURLToPath(BASELINE_URL))}`);
+} else if (failures.length) {
+  console.error("Routing performance contract failed:");
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 }

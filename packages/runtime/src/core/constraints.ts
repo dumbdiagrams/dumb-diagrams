@@ -1,4 +1,4 @@
-import type { DiagramDocument, ValidationIssue } from "./types.js";
+import { type DiagramDocument, EDGE_COLOR_VALUES, type ValidationIssue } from "./types.js";
 
 export const DIAGRAM_LIMITS = Object.freeze({
   sourceBytes: 1024 * 1024,
@@ -58,6 +58,9 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
   checkCount(issues, "annotations", doc.annotations, DIAGRAM_LIMITS.annotations);
   checkCount(issues, "assets", doc.assets ?? [], DIAGRAM_LIMITS.assets);
   checkCount(issues, "views", doc.views, DIAGRAM_LIMITS.views);
+  if (doc.views.length === 0) {
+    issues.push(limitIssue("missing-view", "Diagram must contain at least one view"));
+  }
 
   checkText(issues, "diagram id", doc.id, DIAGRAM_LIMITS.idCharacters, doc.id, "invalid-id");
   if (doc.title !== undefined) {
@@ -68,44 +71,103 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
     checkText(issues, "group id", group.id, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
     checkText(issues, "group label", group.label, DIAGRAM_LIMITS.labelCharacters, group.id, "text-limit");
     if (group.labelPosition !== undefined && !isGroupLabelPosition(group.labelPosition)) {
-      issues.push({ level: "error", code: "invalid-label-position", message: `Invalid group label position: ${group.labelPosition}`, id: group.id });
+      issues.push({
+        level: "error",
+        code: "invalid-label-position",
+        message: `Invalid group label position: ${group.labelPosition}`,
+        id: group.id,
+      });
     }
     if (group.style !== undefined && group.style !== "solid" && group.style !== "dashed") {
-      issues.push({ level: "error", code: "invalid-boundary-style", message: `Invalid boundary style: ${group.style}`, id: group.id });
+      issues.push({
+        level: "error",
+        code: "invalid-boundary-style",
+        message: `Invalid boundary style: ${group.style}`,
+        id: group.id,
+      });
     }
     if (group.color !== undefined && !isDiagramColor(group.color)) {
-      issues.push({ level: "error", code: "invalid-boundary-color", message: `Invalid boundary color: ${group.color}`, id: group.id });
+      issues.push({
+        level: "error",
+        code: "invalid-boundary-color",
+        message: `Invalid boundary color: ${group.color}`,
+        id: group.id,
+      });
     }
     if (group.fill !== undefined && group.fill !== "subtle" && group.fill !== "none") {
-      issues.push({ level: "error", code: "invalid-boundary-fill", message: `Invalid boundary fill: ${group.fill}`, id: group.id });
+      issues.push({
+        level: "error",
+        code: "invalid-boundary-fill",
+        message: `Invalid boundary fill: ${group.fill}`,
+        id: group.id,
+      });
     }
     checkOptionalNumber(issues, group.step, "group step", group.id, 0, 99);
     if (group.parent) checkText(issues, "parent id", group.parent, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
-    for (const child of group.children) checkText(issues, "child id", child, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
+    for (const child of group.children)
+      checkText(issues, "child id", child, DIAGRAM_LIMITS.idCharacters, group.id, "invalid-id");
   }
   for (const resource of doc.resources) {
     checkText(issues, "resource id", resource.id, DIAGRAM_LIMITS.idCharacters, resource.id, "invalid-id");
     checkText(issues, "resource type", resource.type, DIAGRAM_LIMITS.idCharacters, resource.id, "invalid-id");
-    if (resource.parent) checkText(issues, "parent id", resource.parent, DIAGRAM_LIMITS.idCharacters, resource.id, "invalid-id");
-    if (resource.label.service !== undefined) checkText(issues, "service label", resource.label.service, DIAGRAM_LIMITS.labelCharacters, resource.id, "text-limit");
-    if (resource.label.role !== undefined) checkText(issues, "resource label", resource.label.role, DIAGRAM_LIMITS.labelCharacters, resource.id, "text-limit");
+    if (resource.parent)
+      checkText(issues, "parent id", resource.parent, DIAGRAM_LIMITS.idCharacters, resource.id, "invalid-id");
+    if (resource.label.service !== undefined)
+      checkText(
+        issues,
+        "service label",
+        resource.label.service,
+        DIAGRAM_LIMITS.labelCharacters,
+        resource.id,
+        "text-limit",
+      );
+    if (resource.label.role !== undefined)
+      checkText(
+        issues,
+        "resource label",
+        resource.label.role,
+        DIAGRAM_LIMITS.labelCharacters,
+        resource.id,
+        "text-limit",
+      );
     if (resource.label.position !== undefined && !isResourceLabelPosition(resource.label.position)) {
-      issues.push({ level: "error", code: "invalid-label-position", message: `Invalid resource label position: ${resource.label.position}`, id: resource.id });
+      issues.push({
+        level: "error",
+        code: "invalid-label-position",
+        message: `Invalid resource label position: ${resource.label.position}`,
+        id: resource.id,
+      });
     }
   }
   for (const edge of doc.edges) {
     checkText(issues, "edge id", edge.id, DIAGRAM_LIMITS.idCharacters, edge.id, "invalid-id");
     checkText(issues, "edge source", edge.source, DIAGRAM_LIMITS.idCharacters, edge.id, "invalid-id");
     checkText(issues, "edge target", edge.target, DIAGRAM_LIMITS.idCharacters, edge.id, "invalid-id");
-    if (edge.label !== undefined) checkText(issues, "edge label", edge.label, DIAGRAM_LIMITS.labelCharacters, edge.id, "text-limit");
+    if (edge.label !== undefined)
+      checkText(issues, "edge label", edge.label, DIAGRAM_LIMITS.labelCharacters, edge.id, "text-limit");
     checkOptionalNumber(issues, edge.step, "edge step", edge.id);
     checkOptionalNumber(issues, edge.sourcePortOffset, "source port offset", edge.id, 0, 1);
     checkOptionalNumber(issues, edge.targetPortOffset, "target port offset", edge.id, 0, 1);
   }
   for (const annotation of doc.annotations) {
     checkText(issues, "annotation id", annotation.id, DIAGRAM_LIMITS.idCharacters, annotation.id, "invalid-id");
-    checkText(issues, "annotation text", annotation.text, DIAGRAM_LIMITS.annotationCharacters, annotation.id, "text-limit");
-    if (annotation.anchor) checkText(issues, "annotation anchor", annotation.anchor, DIAGRAM_LIMITS.idCharacters, annotation.id, "invalid-id");
+    checkText(
+      issues,
+      "annotation text",
+      annotation.text,
+      DIAGRAM_LIMITS.annotationCharacters,
+      annotation.id,
+      "text-limit",
+    );
+    if (annotation.anchor)
+      checkText(
+        issues,
+        "annotation anchor",
+        annotation.anchor,
+        DIAGRAM_LIMITS.idCharacters,
+        annotation.id,
+        "invalid-id",
+      );
   }
 
   let totalAssetBytes = 0;
@@ -131,7 +193,14 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
       checkCoordinate(issues, place.y, "y", id);
       checkDimension(issues, place.w, "width", id, true);
       checkDimension(issues, place.h, "height", id, true);
-      checkOptionalNumber(issues, place.zIndex, "z-index", id, -DIAGRAM_LIMITS.coordinateMagnitude, DIAGRAM_LIMITS.coordinateMagnitude);
+      checkOptionalNumber(
+        issues,
+        place.zIndex,
+        "z-index",
+        id,
+        -DIAGRAM_LIMITS.coordinateMagnitude,
+        DIAGRAM_LIMITS.coordinateMagnitude,
+      );
     }
     for (const [id, route] of Object.entries(view.routes)) {
       const points = route.points ?? route.waypoints ?? [];
@@ -160,24 +229,47 @@ function isGroupLabelPosition(value: string): boolean {
 }
 
 function isDiagramColor(value: string): boolean {
-  return value === "graphite" || value === "blue" || value === "teal" || value === "purple" ||
-    value === "amber" || value === "red" || value === "green";
+  return Object.hasOwn(EDGE_COLOR_VALUES, value);
 }
 
 function checkCount(issues: ValidationIssue[], name: string, values: unknown[], limit: number): void {
-  if (values.length > limit) issues.push(limitIssue("object-count-limit", `Diagram exceeds the ${limit}-${name} limit`));
+  if (values.length > limit)
+    issues.push(limitIssue("object-count-limit", `Diagram exceeds the ${limit}-${name} limit`));
 }
 
-function checkText(issues: ValidationIssue[], name: string, value: unknown, limit: number, id: string, code: string): void {
+function checkText(
+  issues: ValidationIssue[],
+  name: string,
+  value: unknown,
+  limit: number,
+  id: string,
+  code: string,
+): void {
   const invalidId = code === "invalid-id" && typeof value === "string" && !/^[A-Za-z_./-][A-Za-z0-9_./-]*$/.test(value);
   const multilineOnly = name === "annotation text";
   const invalidLineBreak = !multilineOnly && typeof value === "string" && /[\r\n\t]/.test(value);
-  if (typeof value !== "string" || !value || characterLength(value) > limit || invalidId || invalidLineBreak || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/.test(value)) {
-    issues.push(limitIssue(code, `${name} must be non-empty, free of control characters, and at most ${limit} characters`, id));
+  if (
+    typeof value !== "string" ||
+    !value ||
+    characterLength(value) > limit ||
+    invalidId ||
+    invalidLineBreak ||
+    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/.test(value)
+  ) {
+    issues.push(
+      limitIssue(code, `${name} must be non-empty, free of control characters, and at most ${limit} characters`, id),
+    );
   }
 }
 
-function checkOptionalNumber(issues: ValidationIssue[], value: number | undefined, name: string, id: string, min: number = -DIAGRAM_LIMITS.coordinateMagnitude, max: number = DIAGRAM_LIMITS.coordinateMagnitude): void {
+function checkOptionalNumber(
+  issues: ValidationIssue[],
+  value: number | undefined,
+  name: string,
+  id: string,
+  min: number = -DIAGRAM_LIMITS.coordinateMagnitude,
+  max: number = DIAGRAM_LIMITS.coordinateMagnitude,
+): void {
   if (value !== undefined && (!Number.isFinite(value) || value < min || value > max)) {
     issues.push(limitIssue("numeric-range", `${name} for ${id} must be finite and between ${min} and ${max}`, id));
   }
@@ -187,10 +279,27 @@ function checkCoordinate(issues: ValidationIssue[], value: number | undefined, n
   checkOptionalNumber(issues, value, name, id);
 }
 
-function checkDimension(issues: ValidationIssue[], value: number | undefined, name: string, id: string, optional = false): void {
+function checkDimension(
+  issues: ValidationIssue[],
+  value: number | undefined,
+  name: string,
+  id: string,
+  optional = false,
+): void {
   if (value === undefined && optional) return;
-  if (value === undefined || !Number.isFinite(value) || value < DIAGRAM_LIMITS.minimumDimension || value > DIAGRAM_LIMITS.maximumDimension) {
-    issues.push(limitIssue("dimension-range", `${name} for ${id} must be between ${DIAGRAM_LIMITS.minimumDimension} and ${DIAGRAM_LIMITS.maximumDimension}`, id));
+  if (
+    value === undefined ||
+    !Number.isFinite(value) ||
+    value < DIAGRAM_LIMITS.minimumDimension ||
+    value > DIAGRAM_LIMITS.maximumDimension
+  ) {
+    issues.push(
+      limitIssue(
+        "dimension-range",
+        `${name} for ${id} must be between ${DIAGRAM_LIMITS.minimumDimension} and ${DIAGRAM_LIMITS.maximumDimension}`,
+        id,
+      ),
+    );
   }
 }
 
@@ -209,7 +318,13 @@ function validateHierarchy(doc: DiagramDocument, issues: ValidationIssue[]): voi
       seen.add(current);
       depth++;
       if (depth > DIAGRAM_LIMITS.hierarchyDepth && !depthReported) {
-        issues.push(limitIssue("hierarchy-depth-limit", `Group ${group.id} exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`, group.id));
+        issues.push(
+          limitIssue(
+            "hierarchy-depth-limit",
+            `Group ${group.id} exceeds the maximum hierarchy depth of ${DIAGRAM_LIMITS.hierarchyDepth}`,
+            group.id,
+          ),
+        );
         depthReported = true;
       }
       current = parents.get(current);

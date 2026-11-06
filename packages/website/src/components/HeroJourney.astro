@@ -1,23 +1,18 @@
 ---
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Image } from 'astro:assets';
 import Terminal from './Terminal.astro';
 import WindowControls from './WindowControls.astro';
 import logo from '../assets/logo_dumbdiagrams_highres.png';
 import { url } from '../lib/site';
+import { approvedRun } from '../lib/examples.mjs';
 import '../styles/hero-journey.css';
 
-function readExample(relativePath: string) {
-  const candidates = [resolve(relativePath), resolve('../..', relativePath)];
-  const match = candidates.find(path => existsSync(path));
-  if (!match) throw new Error(`Could not find ${relativePath}`);
-  return readFileSync(match, 'utf8').trimEnd();
-}
-
-const prompt = readExample('examples/curated/image-thumbnail-pipeline/user-prompt.md');
-const source = readExample('examples/curated/image-thumbnail-pipeline/diagram.dgm');
-const preview = readFileSync(resolve('public/diagrams/image-thumbnail-pipeline-preview.svg'), 'utf8');
+const heroBundle = resolve(approvedRun(), 'aws-medium-image-thumbnail-pipeline');
+const prompt = readFileSync(resolve(heroBundle, 'user-prompt.md'), 'utf8').trimEnd();
+const source = readFileSync(resolve(heroBundle, 'diagram.dgm'), 'utf8').trimEnd();
+const preview = readFileSync(resolve('public/diagrams/aws-medium-image-thumbnail-pipeline-preview.svg'), 'utf8');
 const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
 if (!dimensions) throw new Error('Missing Image thumbnail pipeline preview dimensions');
 const previewWidth = Number(dimensions[1]);
@@ -92,7 +87,7 @@ const previewHeight = Number(dimensions[2]);
           <span class="studio-tabs"><span>Async Docs</span><span class="studio-tab-active">Image thumbnail pipeline</span><span aria-hidden="true">＋</span></span>
           <span class="studio-title-actions" aria-hidden="true">☼ &nbsp;? Help</span>
         </div>
-        <div class="studio-toolbar"><strong>Image thumbnail pipeline</strong><span class="studio-file-name">image-thumbnail-pipeline.dgm</span><span class="studio-toolbar-spacer"></span><span class="studio-edit-tools"><span>⌁ Auto-fix</span><span>▦ Snap to grid</span></span><span class="studio-valid">● Valid</span><span class="studio-export">↓ Export</span></div>
+        <div class="studio-toolbar"><strong>Image thumbnail pipeline</strong><span class="studio-file-name">diagram.dgm</span><span class="studio-toolbar-spacer"></span><span class="studio-edit-tools"><span>⌁ Auto-fix</span><span>▦ Snap to grid</span></span><span class="studio-valid">● Valid</span><span class="studio-export">↓ Export</span></div>
         <div class="studio-body">
           <div class="studio-tools" aria-label="Studio editing tools"><span class="is-active" title="Select">↖</span><span title="Boundaries">▭</span><span title="Resources">▦</span><span title="Text">T</span><span title="Notes">▤</span><span title="Styles">⌁</span><span title="Layers">▱</span><i></i><span class="studio-source-tool" title="Source">‹›</span></div>
           <aside class="studio-source" aria-label="Diagram source">
@@ -103,7 +98,7 @@ const previewHeight = Number(dimensions[2]);
           <div class="studio-canvas" aria-label="Rendered image thumbnail pipeline diagram">
             <div class="studio-canvas-grid"></div>
             <div class="studio-canvas-label">Image thumbnail pipeline <span>·</span> automatic layout</div>
-            <img src={url('diagrams/image-thumbnail-pipeline-preview.svg')} alt="Rendered AWS image thumbnail pipeline diagram" width={previewWidth} height={previewHeight} loading="lazy" decoding="async" />
+            <img src={url('diagrams/aws-medium-image-thumbnail-pipeline-preview.svg')} alt="Rendered AWS image thumbnail pipeline diagram" width={previewWidth} height={previewHeight} loading="lazy" decoding="async" />
             <div class="studio-zoom" aria-hidden="true"><span>⌗</span><span>100%</span><span>−</span><span>＋</span></div>
           </div>
         </div>

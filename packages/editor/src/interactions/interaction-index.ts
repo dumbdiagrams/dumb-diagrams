@@ -17,16 +17,9 @@ type InteractionBucket = {
 
 const INTERACTION_CELL_SIZE = 160;
 const MAX_INDEXED_CELLS_PER_ITEM = 512;
-const entityVisibilityCache = new WeakMap<
-  DiagramDocument,
-  WeakMap<object, ReadonlyMap<string, boolean>>
->();
+const entityVisibilityCache = new WeakMap<DiagramDocument, WeakMap<object, ReadonlyMap<string, boolean>>>();
 
-export function isEntityVisible(
-  doc: DiagramDocument,
-  view: ReturnType<typeof getDefaultView>,
-  id: string,
-): boolean {
+export function isEntityVisible(doc: DiagramDocument, view: ReturnType<typeof getDefaultView>, id: string): boolean {
   if (view.places[id]?.visible === false || view.annotations?.[id]?.visible === false) return false;
   let byView = entityVisibilityCache.get(doc);
   if (!byView) {
@@ -88,23 +81,33 @@ export function createInteractionIndex(
     for (let index = 1; index < edge.points.length; index += 1) {
       const start = edge.points[index - 1]!;
       const end = edge.points[index]!;
-      addRect("edges", edge, {
-        x: Math.min(start.x, end.x),
-        y: Math.min(start.y, end.y),
-        w: Math.abs(end.x - start.x),
-        h: Math.abs(end.y - start.y),
-      }, 16);
+      addRect(
+        "edges",
+        edge,
+        {
+          x: Math.min(start.x, end.x),
+          y: Math.min(start.y, end.y),
+          w: Math.abs(end.x - start.x),
+          h: Math.abs(end.y - start.y),
+        },
+        16,
+      );
     }
     if (edge.labelRect) addRect("edges", edge, edge.labelRect, 0);
   }
   for (const annotation of doc.annotations) {
     const place = view.annotations?.[annotation.id];
-    addRect("annotations", annotation, {
-      x: place?.x ?? 48,
-      y: place?.y ?? 48,
-      w: place?.w ?? 160,
-      h: place?.h ?? 48,
-    }, 16);
+    addRect(
+      "annotations",
+      annotation,
+      {
+        x: place?.x ?? 48,
+        y: place?.y ?? 48,
+        w: place?.w ?? 160,
+        h: place?.h ?? 48,
+      },
+      16,
+    );
   }
 
   return {

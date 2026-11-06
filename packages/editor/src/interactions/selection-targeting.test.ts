@@ -156,9 +156,7 @@ describe("selection gestures", () => {
     const view = getDefaultView(doc);
     view.annotations = { note: { x: 135, y: 50, w: 40, h: 30 } };
 
-    expect(
-      marqueeSelectionCandidates(doc, layout, view, { x: 0, y: 0, w: 200, h: 180 }),
-    ).toEqual([
+    expect(marqueeSelectionCandidates(doc, layout, view, { x: 0, y: 0, w: 200, h: 180 })).toEqual([
       { kind: "resource", id: "child" },
       { kind: "annotation", id: "note" },
       { kind: "group", id: "outer" },

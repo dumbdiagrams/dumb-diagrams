@@ -1,0 +1,305 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS architecture and AWS services."
+      },
+      "type": "aws.cloud"
+    },
+    {
+      "id": "sensor_fleet",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "A factory sensor fleet sends readings into AWS."
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "iot_core",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS IoT Core receives and routes readings."
+      },
+      "type": "aws.aws-iot-core"
+    },
+    {
+      "id": "stream",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kinesis Data Streams carries readings to a Lambda consumer."
+      },
+      "type": "aws.kinesis-data-streams"
+    },
+    {
+      "id": "normalizer",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "The Lambda consumer normalizes each reading."
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "timestream",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon Timestream stores time-series data and serves dashboard reads."
+      },
+      "type": "aws.timestream"
+    },
+    {
+      "id": "sns",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon SNS receives threshold alerts."
+      },
+      "type": "aws.simple-notification-service"
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "An external operations dashboard reads telemetry."
+      },
+      "type": "cloud-agnostic.client"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "sensors_iot",
+      "source": "sensor_fleet",
+      "target": "iot_core",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "sensor readings"
+      }
+    },
+    {
+      "id": "iot_stream",
+      "source": "iot_core",
+      "target": "stream",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "route readings"
+      }
+    },
+    {
+      "id": "stream_lambda",
+      "source": "stream",
+      "target": "normalizer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "consume stream"
+      }
+    },
+    {
+      "id": "lambda_timestream",
+      "source": "normalizer",
+      "target": "timestream",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "normalized time-series"
+      }
+    },
+    {
+      "id": "lambda_sns",
+      "source": "normalizer",
+      "target": "sns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "threshold alerts"
+      }
+    },
+    {
+      "id": "timestream_dashboard",
+      "source": "timestream",
+      "target": "dashboard",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "returned telemetry"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "All AWS services are inside AWS Cloud."
+      }
+    },
+    {
+      "id": "one_iot_core",
+      "kind": "resource",
+      "type": "aws.aws-iot-core",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS IoT Core"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_stream",
+      "kind": "resource",
+      "type": "aws.kinesis-data-streams",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Kinesis Data Streams"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_normalizer",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "A Lambda consumer"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_timestream",
+      "kind": "resource",
+      "type": "aws.timestream",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon Timestream"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_sns",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon SNS"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "two_external_actors",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "A factory sensor fleet and an external operations dashboard."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "cloud_root",
+      "component": "aws_cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS Cloud."
+      }
+    },
+    {
+      "id": "fleet_external",
+      "component": "sensor_fleet",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the sensor fleet outside AWS Cloud."
+      }
+    },
+    {
+      "id": "iot_core_in_cloud",
+      "component": "iot_core",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "All AWS services are inside AWS Cloud."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "stream_in_cloud",
+      "component": "stream",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "All AWS services are inside AWS Cloud."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "normalizer_in_cloud",
+      "component": "normalizer",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "All AWS services are inside AWS Cloud."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "timestream_in_cloud",
+      "component": "timestream",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "All AWS services are inside AWS Cloud."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "sns_in_cloud",
+      "component": "sns",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "All AWS services are inside AWS Cloud."
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "dashboard_external",
+      "component": "dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the dashboard outside AWS Cloud."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

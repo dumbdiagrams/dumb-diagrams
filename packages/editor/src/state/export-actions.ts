@@ -1,23 +1,105 @@
 import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
-import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
+import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
+import { err, ok, ResultAsync, type Result } from "neverthrow";
 
-export type ExportFormat =
-  | "png"
-  | "jpeg"
-  | "webp"
-  | "gif"
-  | "svg"
-  | "pdf"
-  | "html"
-  | "xml"
-  | "url"
-  | "json"
-  | "dgm";
+export type ExportFormat = "png" | "jpeg" | "webp" | "gif" | "svg" | "pdf" | "html" | "xml" | "url" | "json" | "dgm";
 
 export type ExportScope = "all" | "selection";
 export type ExportSize = "diagram" | "selection" | "custom";
 export type ExportAppearance = "light" | "dark";
+
+/** Capabilities exposed by the export studio for each output format. */
+export type ExportFormatCapabilities = Readonly<{
+  visual: boolean;
+  sourceOption: boolean;
+}>;
+
+export type ExportErrorCode =
+  | "portable-svg-preparation"
+  | "raster-dimensions"
+  | "rasterization"
+  | "canvas-context"
+  | "encoding"
+  | "download"
+  | "url";
+
+export type ExportError = Readonly<{
+  code: ExportErrorCode;
+  message: string;
+  cause?: unknown;
+}>;
+
+export type ExportReceipt = Readonly<{
+  filename: string;
+  format: ExportFormat;
+}>;
+
+function exportError(code: ExportErrorCode, message: string, cause?: unknown): ExportError {
+  return cause === undefined ? { code, message } : { code, message, cause };
+}
+
+function captureExport<T>(code: ExportErrorCode, message: string, operation: () => T): Result<T, ExportError> {
+  try {
+    return ok(operation());
+  } catch (cause) {
+    return err(exportError(code, message, cause));
+  }
+}
+
+const DIAGRAM_URL_HASH_KEY = "diagram";
+const MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS = Math.ceil(DIAGRAM_LIMITS.sourceBytes / 3) * 4;
+
+export type DiagramUrlEncodeResult =
+  | { ok: true; payload: string }
+  | { ok: false; code: "empty" | "oversize"; message: string };
+
+export type DiagramUrlDecodeResult =
+  | { ok: true; source: string }
+  | { ok: false; code: "empty" | "malformed" | "oversize"; message: string };
+
+/** Encode source into the URL-safe payload used by the `#diagram=` format. */
+export function encodeDiagramUrlPayload(source: string): DiagramUrlEncodeResult {
+  if (!source) return { ok: false, code: "empty", message: "Diagram source cannot be empty." };
+  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
+    return { ok: false, code: "oversize", message: "Diagram source exceeds the 1 MiB URL limit." };
+  }
+  const bytes = new TextEncoder().encode(source);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return {
+    ok: true,
+    payload: btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, ""),
+  };
+}
+
+/** Decode and size-check a URL-safe `#diagram=` payload without parsing it. */
+export function decodeDiagramUrlPayload(payload: string): DiagramUrlDecodeResult {
+  if (!payload) return { ok: false, code: "empty", message: "Diagram URL does not contain source." };
+  if (payload.length > MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS) {
+    return { ok: false, code: "oversize", message: "Diagram URL source exceeds the 1 MiB limit." };
+  }
+  if (!/^[A-Za-z0-9_-]+$/.test(payload) || payload.length % 4 === 1) {
+    return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
+  }
+  try {
+    const padded = payload.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - (payload.length % 4)) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    if (bytes.byteLength > DIAGRAM_LIMITS.sourceBytes) {
+      return { ok: false, code: "oversize", message: "Diagram URL source exceeds the 1 MiB limit." };
+    }
+    const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    if (!source) return { ok: false, code: "empty", message: "Diagram URL does not contain source." };
+    return { ok: true, source };
+  } catch {
+    return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
+  }
+}
 
 export interface ExportSelectionItem {
   kind: "resource" | "group" | "edge" | "annotation";
@@ -36,9 +118,15 @@ export interface ExportOptions {
   height: number;
   dpi: number;
   borderWidth: number;
-  shadow: boolean;
   grid: boolean;
 }
+
+/** Safety limits applied to the final pixel-sized raster, before canvas allocation. */
+export const RASTER_EXPORT_LIMITS = Object.freeze({
+  maxAxisPixels: 16_384,
+  maxPixels: 16_777_216,
+  maxLogicalDimension: 16_384,
+});
 
 export const EXPORT_FORMATS: ReadonlyArray<{
   value: ExportFormat;
@@ -59,7 +147,46 @@ export const EXPORT_FORMATS: ReadonlyArray<{
   { value: "dgm", label: "DGM source", extension: "dgm", description: "Canonical source file" },
 ];
 
+/**
+ * Keep format-specific controls honest. `sourceOption` means the checkbox can
+ * change the resulting file; formats such as DGM, XML, and URL always carry
+ * source by definition and therefore do not expose that optional control.
+ */
+export const EXPORT_FORMAT_CAPABILITIES: Readonly<Record<ExportFormat, ExportFormatCapabilities>> = {
+  png: { visual: true, sourceOption: false },
+  jpeg: { visual: true, sourceOption: false },
+  webp: { visual: true, sourceOption: false },
+  gif: { visual: true, sourceOption: false },
+  svg: { visual: true, sourceOption: true },
+  pdf: { visual: true, sourceOption: false },
+  html: { visual: true, sourceOption: true },
+  xml: { visual: false, sourceOption: false },
+  url: { visual: false, sourceOption: false },
+  json: { visual: false, sourceOption: false },
+  dgm: { visual: false, sourceOption: false },
+};
+
+export function isRasterExportFormat(value: ExportFormat): boolean {
+  return value === "png" || value === "jpeg" || value === "webp" || value === "gif" || value === "pdf";
+}
+
+export function exportFormatCapabilities(value: ExportFormat): ExportFormatCapabilities {
+  return EXPORT_FORMAT_CAPABILITIES[value];
+}
+
+export function supportsExportSourceOption(value: ExportFormat): boolean {
+  return exportFormatCapabilities(value).sourceOption;
+}
+
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+const DARK_EXPORT_BACKGROUND = "#102033";
+const DARK_EXPORT_GRID_STROKE = "#ffffff";
+const DARK_EXPORT_BORDER_STROKE = "#b8c2ce";
+const DARK_EXPORT_INK = "#e6ebf0";
+const DARK_EXPORT_EDGE = "#b8c2ce";
+const DARK_EXPORT_BADGE_FILL = "#f7982c";
+const DARK_EXPORT_BADGE_TEXT = "#112d51";
 
 export function exportFormat(value: ExportFormat) {
   return EXPORT_FORMATS.find((format) => format.value === value) ?? EXPORT_FORMATS[0]!;
@@ -82,28 +209,82 @@ export function isExportFormatSupported(value: ExportFormat): boolean {
 }
 
 export function sanitizeFilename(value: string): string {
-  const clean = normalizeSingleLineText(value)
-    .replace(/[^\p{L}\p{N}_.-]+/gu, "-")
-    .replace(/^[._-]+|[._-]+$/g, "") || "diagram";
+  const clean =
+    normalizeSingleLineText(value)
+      .replace(/[^\p{L}\p{N}_.-]+/gu, "-")
+      .replace(/^[._-]+|[._-]+$/g, "") || "diagram";
   return Array.from(clean).slice(0, DIAGRAM_LIMITS.filenameCharacters).join("");
 }
 
-export function downloadBlob(blob: Blob, name: string): boolean {
+function blobResult(parts: BlobPart[], type: string, formatLabel: string): Result<Blob, ExportError> {
+  return captureExport("encoding", `Could not encode the ${formatLabel} export.`, () => new Blob(parts, { type }));
+}
+
+function bytesBlobResult(bytes: Uint8Array, type: string, formatLabel: string): Result<Blob, ExportError> {
+  return captureExport("encoding", `Could not encode the ${formatLabel} export.`, () => {
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    return buffer;
+  }).andThen((buffer) => blobResult([buffer], type, formatLabel));
+}
+
+function downloadPartsResult(
+  parts: BlobPart[],
+  type: string,
+  formatLabel: string,
+  name: string,
+): Result<void, ExportError> {
+  return blobResult(parts, type, formatLabel).andThen((blob) => downloadBlobResult(blob, name));
+}
+
+export function downloadBlobResult(blob: Blob, name: string): Result<void, ExportError> {
+  let objectUrl: string | null = null;
   try {
-    const url = URL.createObjectURL(blob);
+    objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
-    anchor.href = url;
+    anchor.href = objectUrl;
     anchor.download = name;
     anchor.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    return true;
-  } catch {
-    return false;
+    return ok(undefined);
+  } catch (cause) {
+    return err(exportError("download", "Your browser blocked the export download.", cause));
+  } finally {
+    if (objectUrl) {
+      const url = objectUrl;
+      const revoke = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // Cleanup failure must not mask the export outcome.
+        }
+      };
+      try {
+        window.setTimeout(revoke, 0);
+      } catch {
+        revoke();
+      }
+    }
   }
 }
 
-export function downloadText(text: string, name: string, mime = "text/plain"): boolean {
-  return downloadBlob(new Blob([text], { type: mime }), name);
+export function downloadTextResult(text: string, name: string, mime = "text/plain"): Result<void, ExportError> {
+  let blob: Blob;
+  try {
+    blob = new Blob([text], { type: mime });
+  } catch (cause) {
+    return err(exportError("encoding", `Could not encode the ${mime} export.`, cause));
+  }
+  return downloadBlobResult(blob, name);
+}
+
+export function createDiagramUrlResult(source: string): Result<string, ExportError> {
+  const encoded = encodeDiagramUrlPayload(source);
+  if (!encoded.ok) return err(exportError("url", encoded.message));
+  try {
+    return ok(`${window.location.origin}${window.location.pathname}#${DIAGRAM_URL_HASH_KEY}=${encoded.payload}`);
+  } catch (cause) {
+    return err(exportError("url", "The diagram URL could not be created.", cause));
+  }
 }
 
 export function filenameWithExtension(value: string, extension: string): string {
@@ -176,11 +357,16 @@ export function getExportBounds(
 
 function exportAnnotationDimensions(style: string | undefined): { w: number; h: number } {
   switch (style) {
-    case "text": return { w: 240, h: 48 };
-    case "code": return { w: 300, h: 160 };
-    case "callout": return { w: 280, h: 104 };
-    case "checklist": return { w: 260, h: 152 };
-    default: return { w: 220, h: 96 };
+    case "text":
+      return { w: 240, h: 48 };
+    case "code":
+      return { w: 300, h: 160 };
+    case "callout":
+      return { w: 280, h: 104 };
+    case "checklist":
+      return { w: 260, h: 152 };
+    default:
+      return { w: 220, h: 96 };
   }
 }
 
@@ -217,36 +403,57 @@ export function prepareExportSvg(
   }
 
   const bounds = getExportBounds(doc, layout, selection, options.scope);
-  const zoom = options.size === "custom"
-    ? 1
-    : Math.max(25, Math.min(400, Number.isFinite(options.zoom) ? options.zoom : 100)) / 100;
-  const outputWidth = options.size === "custom"
-    ? Math.max(1, Math.round(options.width))
-    : Math.max(1, Math.round(bounds.w * zoom));
-  const outputHeight = options.size === "custom"
-    ? Math.max(1, Math.round(options.height))
-    : Math.max(1, Math.round(bounds.h * zoom));
+  const zoom =
+    options.size === "custom"
+      ? 1
+      : Math.max(25, Math.min(400, Number.isFinite(options.zoom) ? options.zoom : 100)) / 100;
+  const outputWidth =
+    options.size === "custom" ? Math.max(1, Math.round(options.width)) : Math.max(1, Math.round(bounds.w * zoom));
+  const outputHeight =
+    options.size === "custom" ? Math.max(1, Math.round(options.height)) : Math.max(1, Math.round(bounds.h * zoom));
   root.setAttribute("width", String(outputWidth));
   root.setAttribute("height", String(outputHeight));
   root.setAttribute("viewBox", `${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}`);
 
   const dark = options.appearance === "dark";
-  const foreground = dark ? "#F4EDE5" : GRAMMAR.edgeColor;
-  const background = options.transparentBackground ? "none" : dark ? "#101E32" : "#FFFFFF";
-  const foregroundTokens = ["#232F3E", GRAMMAR.edgeColor];
-  for (const token of foregroundTokens) {
-    for (const element of [...root.querySelectorAll(`[stroke='${token}']`)]) {
-      element.setAttribute("stroke", foreground);
+  const background = options.transparentBackground ? "none" : dark ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
+  const gridStroke = dark ? DARK_EXPORT_GRID_STROKE : GRAMMAR.edgeColor;
+  const borderStroke = dark ? DARK_EXPORT_BORDER_STROKE : GRAMMAR.edgeColor;
+
+  if (dark) {
+    for (const style of [...root.querySelectorAll("style")]) {
+      style.textContent = (style.textContent ?? "")
+        .replaceAll(GRAMMAR.edgeColor, DARK_EXPORT_INK)
+        .replaceAll(GRAMMAR.badgeText, DARK_EXPORT_BADGE_TEXT);
     }
-    for (const element of [...root.querySelectorAll(`[fill='${token}']`)]) {
-      element.setAttribute("fill", foreground);
+    for (const path of [...root.querySelectorAll('path[stroke="#163964"]')]) {
+      path.setAttribute("stroke", DARK_EXPORT_EDGE);
     }
-  }
-  for (const style of [...root.querySelectorAll("style")]) {
-    style.textContent = foregroundTokens.reduce(
-      (value, token) => value.replaceAll(token, foreground),
-      style.textContent ?? "",
-    );
+    for (const path of [...root.querySelectorAll('path[fill="#163964"]')]) {
+      path.setAttribute("fill", DARK_EXPORT_EDGE);
+    }
+    for (const circle of [
+      ...root.querySelectorAll('circle[fill="#163964"]:not(.edge-badge-circle):not(.group-badge-circle)'),
+    ]) {
+      circle.setAttribute("fill", DARK_EXPORT_EDGE);
+    }
+    for (const text of [...root.querySelectorAll("text")]) {
+      if (text.classList.contains("edge-badge-text") || text.classList.contains("group-badge-text")) continue;
+      const fill = text.getAttribute("fill");
+      if (!fill || fill.toLowerCase() === GRAMMAR.edgeColor.toLowerCase()) {
+        text.setAttribute("fill", DARK_EXPORT_INK);
+      }
+    }
+    for (const circle of [...root.querySelectorAll(".edge-badge-circle, .group-badge-circle")]) {
+      circle.setAttribute("fill", DARK_EXPORT_BADGE_FILL);
+    }
+    for (const text of [...root.querySelectorAll(".edge-badge-text, .group-badge-text")]) {
+      text.setAttribute("fill", DARK_EXPORT_BADGE_TEXT);
+    }
+  } else {
+    for (const halo of [...root.querySelectorAll(".group-border-contrast")]) {
+      halo.remove();
+    }
   }
 
   const backgroundRect = [...root.children].find(
@@ -267,10 +474,17 @@ export function prepareExportSvg(
     pattern.setAttribute("width", "24");
     pattern.setAttribute("height", "24");
     pattern.setAttribute("patternUnits", "userSpaceOnUse");
+    if (background !== "none") {
+      const patternBackground = parsed.createElementNS(SVG_NS, "rect");
+      patternBackground.setAttribute("width", "24");
+      patternBackground.setAttribute("height", "24");
+      patternBackground.setAttribute("fill", background);
+      pattern.append(patternBackground);
+    }
     const gridPath = parsed.createElementNS(SVG_NS, "path");
     gridPath.setAttribute("d", "M 24 0 L 0 0 0 24");
     gridPath.setAttribute("fill", "none");
-    gridPath.setAttribute("stroke", foreground);
+    gridPath.setAttribute("stroke", gridStroke);
     gridPath.setAttribute("stroke-opacity", "0.12");
     gridPath.setAttribute("stroke-width", "1");
     pattern.append(gridPath);
@@ -285,23 +499,6 @@ export function prepareExportSvg(
     if (tag === "defs" || child === backgroundRect || tag === "metadata") continue;
     content.append(child);
   }
-  if (options.shadow) {
-    const filter = parsed.createElementNS(SVG_NS, "filter");
-    filter.setAttribute("id", "export-shadow");
-    filter.setAttribute("x", "-20%");
-    filter.setAttribute("y", "-20%");
-    filter.setAttribute("width", "140%");
-    filter.setAttribute("height", "140%");
-    const dropShadow = parsed.createElementNS(SVG_NS, "feDropShadow");
-    dropShadow.setAttribute("dx", "0");
-    dropShadow.setAttribute("dy", "8");
-    dropShadow.setAttribute("stdDeviation", "10");
-    dropShadow.setAttribute("flood-color", dark ? "#000000" : GRAMMAR.edgeColor);
-    dropShadow.setAttribute("flood-opacity", dark ? "0.42" : "0.18");
-    filter.append(dropShadow);
-    defs?.append(filter);
-    content.setAttribute("filter", "url(#export-shadow)");
-  }
   root.append(content);
 
   if (options.borderWidth > 0) {
@@ -311,13 +508,13 @@ export function prepareExportSvg(
     border.setAttribute("width", String(bounds.w));
     border.setAttribute("height", String(bounds.h));
     border.setAttribute("fill", "none");
-    border.setAttribute("stroke", foreground);
+    border.setAttribute("stroke", borderStroke);
     border.setAttribute("stroke-width", String(Math.max(0, options.borderWidth)));
     border.setAttribute("pointer-events", "none");
     root.append(border);
   }
 
-  if (options.includeSource) {
+  if (options.includeSource && supportsExportSourceOption(options.format)) {
     const metadata = parsed.createElementNS(SVG_NS, "metadata");
     metadata.setAttribute("id", "dumb-diagrams-source");
     metadata.textContent = "DumbDiagrams\n" + (source ?? serializeSourceForMetadata(doc));
@@ -338,10 +535,7 @@ interface SelectionEntities {
   annotations: Set<string>;
 }
 
-function collectSelectionEntities(
-  doc: DiagramDocument,
-  selection: ExportSelectionItem[],
-): SelectionEntities {
+function collectSelectionEntities(doc: DiagramDocument, selection: ExportSelectionItem[]): SelectionEntities {
   const groups = new Set<string>();
   const resources = new Set<string>();
   const edges = new Set<string>();
@@ -396,94 +590,223 @@ function collectSelectionEntities(
   return { groups, resources, edges, annotations };
 }
 
-export async function exportDiagramFile(args: {
+export function exportDiagramFile(args: {
   title: string;
   source: string;
   doc: DiagramDocument;
   layout: LayoutResult;
   selection: ExportSelectionItem[];
   options: ExportOptions;
-  getPortableSvg: () => Promise<string>;
-}): Promise<ExportResult> {
+  getPortableSvg: () => ResultAsync<string, PortableSvgError>;
+}): ResultAsync<ExportReceipt, ExportError> {
+  return ResultAsync.fromPromise(
+    Promise.resolve().then(() => exportDiagramFileResult(args)),
+    (cause) => exportError("encoding", "The export could not be prepared.", cause),
+  ).andThen((result) => result);
+}
+
+async function exportDiagramFileResult(args: {
+  title: string;
+  source: string;
+  doc: DiagramDocument;
+  layout: LayoutResult;
+  selection: ExportSelectionItem[];
+  options: ExportOptions;
+  getPortableSvg: () => ResultAsync<string, PortableSvgError>;
+}): Promise<Result<ExportReceipt, ExportError>> {
   const { title, source, doc, layout, selection, options, getPortableSvg } = args;
   const format = exportFormat(options.format);
   const filename = filenameWithExtension(title, format.extension);
-  try {
-    if (options.format === "dgm") {
-      return { ok: downloadText(source, filename), filename };
-    }
-    if (options.format === "json") {
-      return { ok: downloadText(JSON.stringify(doc, null, 2), filename, "application/json"), filename };
-    }
-    if (options.format === "xml") {
-      return { ok: downloadText(toDiagramXml(doc, source), filename, "application/xml"), filename };
-    }
-    if (options.format === "url") {
-      return { ok: downloadText(createDiagramUrl(source), filename, "text/plain"), filename };
-    }
-
-    const baseSvg = await getPortableSvg();
-    const svg = prepareExportSvg(baseSvg, doc, layout, selection, options, source);
-    if (options.format === "svg") {
-      return { ok: downloadBlob(new Blob([svg], { type: "image/svg+xml" }), filename), filename };
-    }
-    if (options.format === "html") {
-      return { ok: downloadText(toStandaloneHtml(title, svg, options.includeSource ? source : undefined), filename, "text/html"), filename };
-    }
-
-    const canvas = await rasterizeSvg(svg, options);
-    if (options.format === "pdf") {
-      const pdf = makeImagePdf(canvas, options.dpi);
-      return { ok: downloadBlob(bytesToBlob(pdf, "application/pdf"), filename), filename };
-    }
-    if (options.format === "gif") {
-      const gif = encodeGif(canvas);
-      return { ok: downloadBlob(bytesToBlob(gif, "image/gif"), filename), filename };
-    }
-    const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
-    const blob = await canvasToBlob(canvas, mime, options.format === "jpeg" ? 0.92 : 0.95);
-    return { ok: Boolean(blob?.type === mime && downloadBlob(blob, filename)), filename };
-  } catch {
-    return { ok: false, filename };
+  const receipt = (): ExportReceipt => ({ filename, format: options.format });
+  if (options.format === "dgm") {
+    return downloadPartsResult([source], "text/plain", "source", filename).map(receipt);
   }
+  if (options.format === "json") {
+    const json = captureExport("encoding", "Could not encode the JSON export.", () => JSON.stringify(doc, null, 2));
+    return json.isErr()
+      ? err(json.error)
+      : downloadPartsResult([json.value], "application/json", "JSON", filename).map(receipt);
+  }
+  if (options.format === "xml") {
+    const xml = captureExport("encoding", "Could not encode the XML export.", () => toDiagramXml(doc, source));
+    return xml.isErr()
+      ? err(xml.error)
+      : downloadPartsResult([xml.value], "application/xml", "XML", filename).map(receipt);
+  }
+  if (options.format === "url") {
+    return createDiagramUrlResult(source)
+      .andThen((diagramUrl) => downloadPartsResult([diagramUrl], "text/plain", "diagram URL", filename))
+      .map(receipt);
+  }
+
+  const portableSvgError = (cause: unknown) =>
+    exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
+  const baseSvg = await ResultAsync.fromPromise(
+    Promise.resolve().then(() => getPortableSvg()),
+    portableSvgError,
+  ).andThen((result) => result.mapErr(portableSvgError));
+  if (baseSvg.isErr()) return err(baseSvg.error);
+  const svg = captureExport("portable-svg-preparation", "The portable SVG could not be prepared.", () =>
+    prepareExportSvg(baseSvg.value, doc, layout, selection, options, source),
+  );
+  if (svg.isErr()) return err(svg.error);
+  if (options.format === "svg") {
+    return downloadPartsResult([svg.value], "image/svg+xml", "SVG", filename).map(receipt);
+  }
+  if (options.format === "html") {
+    const html = captureExport("encoding", "Could not encode the HTML export.", () =>
+      toStandaloneHtml(
+        title,
+        svg.value,
+        supportsExportSourceOption(options.format) && options.includeSource ? source : undefined,
+      ),
+    );
+    return html.isErr()
+      ? err(html.error)
+      : downloadPartsResult([html.value], "text/html", "HTML", filename).map(receipt);
+  }
+
+  const canvas = await rasterizeSvg(svg.value, options);
+  if (canvas.isErr()) return err(canvas.error);
+  if (options.format === "pdf") {
+    const pdf = captureExport("encoding", "Could not encode the PDF export.", () =>
+      makeImagePdf(canvas.value, options.dpi),
+    );
+    if (pdf.isErr()) return err(pdf.error);
+    const blob = bytesBlobResult(pdf.value, "application/pdf", "PDF");
+    return blob.isErr() ? err(blob.error) : downloadBlobResult(blob.value, filename).map(receipt);
+  }
+  if (options.format === "gif") {
+    const gif = encodeGif(canvas.value);
+    if (gif.isErr()) return err(gif.error);
+    const blob = bytesBlobResult(gif.value, "image/gif", "GIF");
+    return blob.isErr() ? err(blob.error) : downloadBlobResult(blob.value, filename).map(receipt);
+  }
+  const mime = options.format === "jpeg" ? "image/jpeg" : `image/${options.format}`;
+  const blob = await canvasToBlob(canvas.value, mime, options.format === "jpeg" ? 0.92 : 0.95);
+  return blob
+    .andThen((encoded) => {
+      if (encoded.type !== mime)
+        return err(exportError("encoding", `The browser could not encode the ${format.label} export.`));
+      return downloadBlobResult(encoded, filename);
+    })
+    .map(receipt);
 }
 
-function bytesToBlob(bytes: Uint8Array, type: string): Blob {
-  const buffer = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(buffer).set(bytes);
-  return new Blob([buffer], { type });
-}
+async function rasterizeSvg(svg: string, options: ExportOptions): Promise<Result<HTMLCanvasElement, ExportError>> {
+  const scale = Math.max(0.25, options.dpi / 96);
+  const requestedDimensions = validateRasterDimensions(
+    Math.round(options.width * scale),
+    Math.round(options.height * scale),
+  );
+  if (!requestedDimensions.ok) return err(exportError("raster-dimensions", requestedDimensions.message));
 
-async function rasterizeSvg(svg: string, options: ExportOptions): Promise<HTMLCanvasElement> {
-  const image = new Image();
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  const image = captureExport("rasterization", "The exported SVG image could not be loaded.", () => new Image());
+  if (image.isErr()) return err(image.error);
+  const sourceBlob = blobResult([svg], "image/svg+xml", "SVG rasterization");
+  if (sourceBlob.isErr())
+    return err(
+      exportError("rasterization", "The exported SVG could not be encoded for rasterization.", sourceBlob.error),
+    );
+  const objectUrl = captureExport("rasterization", "The exported SVG image URL could not be created.", () =>
+    URL.createObjectURL(sourceBlob.value),
+  );
+  if (objectUrl.isErr()) return err(objectUrl.error);
+  const url = objectUrl.value;
   try {
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("Unable to rasterize SVG"));
-      image.src = url;
+    const loaded = await ResultAsync.fromPromise(
+      Promise.resolve().then(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            image.value.onload = () => resolve();
+            image.value.onerror = () => reject(new Error("Unable to rasterize SVG"));
+            image.value.src = url;
+          }),
+      ),
+      (cause) => exportError("rasterization", "The exported SVG image could not be loaded.", cause),
+    );
+    if (loaded.isErr()) return err(loaded.error);
+    const logicalWidth = image.value.width || options.width;
+    const logicalHeight = image.value.height || options.height;
+    const pixelWidth = Math.round(logicalWidth * scale);
+    const pixelHeight = Math.round(logicalHeight * scale);
+    const dimensions = validateRasterDimensions(pixelWidth, pixelHeight);
+    if (!dimensions.ok) return err(exportError("raster-dimensions", dimensions.message));
+    const canvasResult = captureExport("rasterization", "The exported canvas could not be created.", () =>
+      document.createElement("canvas"),
+    );
+    if (canvasResult.isErr()) return err(canvasResult.error);
+    const canvas = canvasResult.value;
+    const sized = captureExport("rasterization", "The exported canvas could not be sized.", () => {
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      return canvas;
     });
-    const logicalWidth = image.width || options.width;
-    const logicalHeight = image.height || options.height;
-    const scale = Math.max(0.25, options.dpi / 96);
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(logicalWidth * scale));
-    canvas.height = Math.max(1, Math.round(logicalHeight * scale));
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas export is unavailable");
-    if (!options.transparentBackground || options.format === "jpeg") {
-      context.fillStyle = options.appearance === "dark" ? "#101E32" : "#FFFFFF";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas;
+    if (sized.isErr()) return err(sized.error);
+    const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () =>
+      canvas.getContext("2d"),
+    );
+    if (contextResult.isErr()) return err(contextResult.error);
+    const context = contextResult.value;
+    if (!context) return err(exportError("canvas-context", "Your browser could not create a 2D canvas context."));
+    const drawn = captureExport("rasterization", "The exported SVG image could not be rasterized.", () => {
+      if (!options.transparentBackground || options.format === "jpeg") {
+        context.fillStyle = options.appearance === "dark" ? DARK_EXPORT_BACKGROUND : "#FFFFFF";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      context.drawImage(image.value, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    });
+    return drawn;
   } finally {
-    URL.revokeObjectURL(url);
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // Cleanup failure must not mask a successful or classified export.
+    }
   }
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, mime, quality));
+export function validateRasterDimensions(
+  width: number,
+  height: number,
+): { ok: true; width: number; height: number } | { ok: false; message: string } {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) {
+    return { ok: false, message: "Raster export dimensions must be finite positive values." };
+  }
+  if (width > RASTER_EXPORT_LIMITS.maxAxisPixels || height > RASTER_EXPORT_LIMITS.maxAxisPixels) {
+    return {
+      ok: false,
+      message: `Raster export dimensions exceed the ${RASTER_EXPORT_LIMITS.maxAxisPixels}px per-axis limit.`,
+    };
+  }
+  if (width * height > RASTER_EXPORT_LIMITS.maxPixels) {
+    return {
+      ok: false,
+      message: `Raster export exceeds the ${RASTER_EXPORT_LIMITS.maxPixels.toLocaleString()} pixel limit.`,
+    };
+  }
+  return { ok: true, width, height };
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: number): ResultAsync<Blob, ExportError> {
+  return ResultAsync.fromPromise(
+    new Promise<Blob>((resolve, reject) => {
+      try {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error(`The browser could not encode the ${mime} export.`));
+          },
+          mime,
+          quality,
+        );
+      } catch (cause) {
+        reject(cause);
+      }
+    }),
+    (cause) => exportError("encoding", `The browser could not encode the ${mime} export.`, cause),
+  );
 }
 
 function toDiagramXml(doc: DiagramDocument, source: string): string {
@@ -497,13 +820,6 @@ function toStandaloneHtml(title: string, svg: string, source?: string): string {
     ? `<details><summary>Diagram source</summary><pre>${escapeHtml(source)}</pre></details>`
     : "";
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>html,body{margin:0;min-height:100%;background:#f4f7fb;color:#172033;font-family:system-ui,sans-serif}main{display:grid;gap:24px;justify-items:center;padding:32px}svg{max-width:100%;height:auto;box-shadow:0 18px 50px rgba(18,32,58,.14);border-radius:12px}details{width:min(1100px,100%);background:#fff;border:1px solid #dbe3ee;border-radius:12px;padding:14px 18px}pre{white-space:pre-wrap;overflow:auto;font:12px/1.5 ui-monospace,monospace}</style></head><body><main>${svg}${sourceBlock}</main></body></html>\n`;
-}
-
-function createDiagramUrl(source: string): string {
-  let binary = "";
-  for (const byte of new TextEncoder().encode(source)) binary += String.fromCharCode(byte);
-  const encoded = btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
-  return `${window.location.origin}${window.location.pathname}#diagram=${encoded}`;
 }
 
 function escapeHtml(value: string): string {
@@ -523,10 +839,19 @@ function writeU16(target: number[], value: number): void {
   target.push(value & 0xff, (value >> 8) & 0xff);
 }
 
-function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas export is unavailable");
-  const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+function encodeGif(canvas: HTMLCanvasElement): Result<Uint8Array, ExportError> {
+  const contextResult = captureExport("canvas-context", "Your browser could not create a 2D canvas context.", () =>
+    canvas.getContext("2d"),
+  );
+  if (contextResult.isErr()) return err(contextResult.error);
+  const context = contextResult.value;
+  if (!context) return err(exportError("canvas-context", "Your browser could not create a 2D canvas context."));
+  const pixels = captureExport(
+    "encoding",
+    "Could not encode the GIF export.",
+    () => context.getImageData(0, 0, canvas.width, canvas.height).data,
+  );
+  if (pixels.isErr()) return err(pixels.error);
   const bytes: number[] = [];
   for (const char of "GIF89a") bytes.push(char.charCodeAt(0));
   writeU16(bytes, canvas.width);
@@ -544,9 +869,9 @@ function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
   bytes.push(0, 8);
   const indices = new Uint8Array(canvas.width * canvas.height);
   for (let index = 0, pixel = 0; index < indices.length; index++, pixel += 4) {
-    const r = Math.max(0, Math.min(5, Math.round(pixels[pixel]! / 51)));
-    const g = Math.max(0, Math.min(5, Math.round(pixels[pixel + 1]! / 51)));
-    const b = Math.max(0, Math.min(5, Math.round(pixels[pixel + 2]! / 51)));
+    const r = Math.max(0, Math.min(5, Math.round(pixels.value[pixel]! / 51)));
+    const g = Math.max(0, Math.min(5, Math.round(pixels.value[pixel + 1]! / 51)));
+    const b = Math.max(0, Math.min(5, Math.round(pixels.value[pixel + 2]! / 51)));
     indices[index] = r * 36 + g * 6 + b;
   }
   const compressed = lzwEncode(indices, 8);
@@ -555,7 +880,7 @@ function encodeGif(canvas: HTMLCanvasElement): Uint8Array {
     bytes.push(length, ...compressed.slice(offset, offset + length));
   }
   bytes.push(0, 0x3b);
-  return Uint8Array.from(bytes);
+  return ok(Uint8Array.from(bytes));
 }
 
 function lzwEncode(values: Uint8Array, minimumCodeSize: number): number[] {
@@ -599,7 +924,7 @@ function lzwEncode(values: Uint8Array, minimumCodeSize: number): number[] {
     emit(prefix);
     if (nextCode < 4096) {
       dictionary.set(key, nextCode++);
-      if (nextCode === (1 << codeSize) && codeSize < 12) codeSize++;
+      if (nextCode === 1 << codeSize && codeSize < 12) codeSize++;
     } else {
       emit(clear);
       reset();
@@ -619,13 +944,17 @@ function makeImagePdf(canvas: HTMLCanvasElement, dpi: number): Uint8Array {
   const imageBytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   const pageWidth = (canvas.width * 72) / Math.max(1, dpi);
   const pageHeight = (canvas.height * 72) / Math.max(1, dpi);
-  const imageObject = ascii(`<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`);
+  const imageObject = ascii(
+    `<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`,
+  );
   const imageStream = concatBytes(imageObject, imageBytes, ascii("\nendstream"));
   const content = ascii(`q\n${pageWidth} 0 0 ${pageHeight} 0 0 cm\n/Im0 Do\nQ\n`);
   const objects = [
     ascii("<< /Type /Catalog /Pages 2 0 R >>"),
     ascii("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
-    ascii(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`),
+    ascii(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`,
+    ),
     imageStream,
     concatBytes(ascii(`<< /Length ${content.length} >>\nstream\n`), content, ascii("endstream")),
   ];
@@ -662,64 +991,7 @@ function concatBytes(...values: Uint8Array[]): Uint8Array {
   return output;
 }
 
-export interface ExportResult {
-  ok: boolean;
-  filename: string;
-}
-
-export async function exportSvgFile(
-  title: string,
-  getPortableSvg: () => Promise<string>,
-): Promise<ExportResult> {
-  const filename = filenameWithExtension(title, "svg");
-  try {
-    const svg = await getPortableSvg();
-    return {
-      ok: downloadBlob(new Blob([svg], { type: "image/svg+xml" }), filename),
-      filename,
-    };
-  } catch {
-    return { ok: false, filename };
-  }
-}
-
-export function exportDgmFile(source: string, title: string): ExportResult {
+export function exportDgmFileResult(source: string, title: string): Result<ExportReceipt, ExportError> {
   const filename = filenameWithExtension(title, "dgm");
-  return {
-    ok: downloadText(source, filename),
-    filename,
-  };
-}
-
-export async function exportPngFile(
-  title: string,
-  getPortableSvg: () => Promise<string>,
-): Promise<ExportResult> {
-  const filename = filenameWithExtension(title, "png");
-  let svg: string;
-  try {
-    svg = await getPortableSvg();
-  } catch {
-    return { ok: false, filename };
-  }
-
-  return new Promise((resolve) => {
-    const image = new Image();
-    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-      canvas.getContext("2d")?.drawImage(image, 0, 0);
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(url);
-        resolve({ ok: Boolean(blob && downloadBlob(blob, filename)), filename });
-      }, "image/png");
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({ ok: false, filename });
-    };
-    image.src = url;
-  });
+  return downloadTextResult(source, filename).map(() => ({ filename, format: "dgm" }));
 }

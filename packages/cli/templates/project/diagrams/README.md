@@ -5,22 +5,28 @@ Store new diagrams as a bundle:
 ```text
 diagrams/<descriptive-slug>/
 ├── diagram.dgm
-└── architecture-brief.md
+├── architecture-brief.md
+└── requirements.json
 ```
 
-`diagram.dgm` is the authoritative source. `architecture-brief.md` is the
-concise, enriched interpretation produced from the user's request before the
-diagram is authored. It follows the same format as the bundled examples.
-Create or update both files together for new diagrams and meaningful semantic
-revisions. Pure layout or style edits do not require a brief rewrite.
+`architecture-brief.md` records the interpretation of the user's request.
+`requirements.json` makes its component, relationship, count, and placement
+requirements checkable. Write both before `diagram.dgm`, which describes what
+is actually drawn. See `../.dumbdiagrams/requirements.md` for the contract.
+Update all three for semantic changes. Pure layout or style edits preserve
+the brief and contract.
 
 If a user explicitly names an existing or custom flat `.dgm` path, preserve it
-and place `<stem>.architecture-brief.md` beside it unless directed otherwise.
+and place `<stem>.architecture-brief.md` and `<stem>.requirements.json` beside it.
 Never store credentials, secrets, unrelated conversation, or chain-of-thought.
+
+Run `dumbdiagrams validate <source.dgm>` for validity and completeness, then
+`dumbdiagrams validate --strict <source.dgm>` for routing quality. Do not remove
+requirements to clear routing findings.
 
 ## Brief template
 
-Use this Markdown shape, matching the bundled examples:
+Use this Markdown shape:
 
 ```markdown
 # Architecture brief

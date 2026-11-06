@@ -1,26 +1,116 @@
 import { readFileSync } from "node:fs";
 
 import { describe, it, expect } from "vitest";
-import {
-  createAsyncDocsFixture,
-  createTransferHubFixture,
-  createEmptyDocument,
-  getDefaultView,
-} from "../core/index.js";
+import { createEmptyDocument, getDefaultView } from "../core/index.js";
+import { createAsyncDocsFixture, createTransferHubFixture } from "../../test-fixtures.js";
 import type { LayoutResult } from "../core/index.js";
-import { compileDiagram, renderSvg } from "../render/index.js";
+import { compileDiagram, compileDiagramResult, renderSvg } from "../render/index.js";
 import { layoutDocument } from "../layout/index.js";
-import { parseDgm } from "../dsl/index.js";
+import { parseDgmResult } from "../dsl/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 import {
+  anchorRouteEndpoints,
   eraseOrthogonalRouteLoops,
   normalizeOrthogonalRoute,
   routeEdges,
   attachRoutes,
+  ROUTING_BUDGET_WARNING_CODE,
+  ROUTING_BUDGET_WARNING_MESSAGE,
 } from "../route/index.js";
+
 import { checkInvariants } from "./invariants.js";
 
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
+
 describe("async-docs fixture", () => {
+  it("reports malformed embedded SVGs before rendering", () => {
+    const invalid = createEmptyDocument("invalid-asset-result");
+    invalid.assets = [
+      {
+        id: "unsafe",
+        kind: "svg",
+        content: "<svg><script>alert(1)</script></svg>",
+        intrinsicW: 64,
+        intrinsicH: 64,
+      },
+    ];
+
+    const result = compileDiagramResult(invalid);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error.code).toBe("validation");
+    expect(result.error.issues).toContainEqual({
+      level: "error",
+      code: "invalid-asset",
+      message: "Asset unsafe: SVG element <script> is not allowed",
+      id: "unsafe",
+    });
+  });
+
+  it("returns validation issues as a typed error while keeping warnings successful", () => {
+    const invalid = createEmptyDocument("invalid-result");
+    invalid.resources = [
+      {
+        id: "unknown",
+        type: "not-a-catalog-type",
+        label: { service: "Unknown" },
+        role: "primary",
+        props: {},
+      },
+    ];
+    const error = compileDiagramResult(invalid);
+    expect(error.isErr()).toBe(true);
+    if (error.isOk()) return;
+    expect(error.error.code).toBe("validation");
+    expect(error.error.message).toBe("Diagram failed validation");
+    expect(error.error.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "unknown-type", id: "unknown" })]),
+    );
+
+    const warningDoc = createEmptyDocument("warning-result");
+    warningDoc.groups = [
+      { id: "region", kind: "region", label: "Region", children: ["vpc"] },
+      { id: "vpc", kind: "vpc", parent: "region", label: "VPC", children: ["service"] },
+    ];
+    warningDoc.resources = [
+      {
+        id: "service",
+        type: "aws.api-gateway",
+        parent: "vpc",
+        label: { service: "API Gateway" },
+        role: "primary",
+        props: {},
+      },
+    ];
+    const success = compileDiagramResult(warningDoc);
+    expect(success.isOk()).toBe(true);
+    if (success.isErr()) return;
+    expect(success.value.ok).toBe(true);
+    expect(success.value.issues).toContainEqual(
+      expect.objectContaining({
+        level: "warning",
+        code: "managed-service-in-network",
+        id: "service",
+      }),
+    );
+  });
+
+  it("returns a typed validation error for documents without a view", () => {
+    const invalid = createEmptyDocument("missing-view-result");
+    invalid.views = [];
+
+    expect(() => compileDiagramResult(invalid)).not.toThrow();
+    const result = compileDiagramResult(invalid);
+    expect(result.isErr()).toBe(true);
+    if (result.isOk()) return;
+    expect(result.error.issues).toContainEqual({
+      level: "error",
+      code: "missing-view",
+      message: "Diagram must contain at least one view",
+    });
+  });
+
   it("compiles a top-level external boundary beside a provider cloud", () => {
     const doc = parseDgm(`diagram gcp-data-analytics {
   grammar gcp
@@ -43,11 +133,13 @@ describe("async-docs fixture", () => {
     expect(result.svg).toContain("<svg");
   });
 
-  it("renders Azure subscriptions with an amber default while honoring authored colors", () => {
-    const doc = parseDgm(`diagram azure-subscription {\n  grammar azure\n  azure.subscription subscription "Azure Subscription" {}\n}`);
+  it("renders Azure subscriptions with provider defaults while honoring authored colors", () => {
+    const doc = parseDgm(
+      `diagram azure-subscription {\n  grammar azure\n  azure.subscription subscription "Azure Subscription" {}\n}`,
+    );
     const defaultSvg = renderSvg(doc, layoutDocument(doc));
-    expect(defaultSvg).toContain('stroke="#f7982c"');
-    expect(defaultSvg).toContain('fill="rgba(247,152,44,0.04)"');
+    expect(defaultSvg).toContain('stroke="#FF9300"');
+    expect(defaultSvg).toContain('fill="rgba(255,147,0,0.04)"');
 
     doc.groups[0]!.color = "purple";
     const authoredSvg = renderSvg(doc, layoutDocument(doc));
@@ -59,6 +151,47 @@ describe("async-docs fixture", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);
     expect(result.svg).toContain("<svg");
+  });
+
+  it("warns when a connected canvas is too large for the routing grid", () => {
+    const doc = createEmptyDocument("oversized-routing-grid-compile");
+    doc.resources = [
+      {
+        id: "source",
+        type: "cloud-agnostic.actor",
+        label: { service: "Source" },
+        role: "primary",
+        props: {},
+      },
+      {
+        id: "target",
+        type: "cloud-agnostic.server",
+        label: { service: "Target" },
+        role: "primary",
+        props: {},
+      },
+    ];
+    doc.edges = [
+      {
+        id: "source_target",
+        source: "source",
+        target: "target",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
+    const view = getDefaultView(doc);
+    view.places.source = { x: 0, y: 0, pin: true, manual: true };
+    view.places.target = { x: 1_000_000, y: 1_000_000, pin: true, manual: true };
+
+    const result = compileDiagram(doc);
+
+    expect(result.ok).toBe(true);
+    expect(result.issues).toContainEqual({
+      level: "warning",
+      code: ROUTING_BUDGET_WARNING_CODE,
+      message: ROUTING_BUDGET_WARNING_MESSAGE,
+    });
   });
 
   it("renders authored boundary appearance and keeps the canonical boundary iconless", () => {
@@ -73,8 +206,19 @@ describe("async-docs fixture", () => {
     const renderedGroup = svg.match(new RegExp(`<g id="group-${group.id}">([\\s\\S]*?)</g>`))?.[1] ?? "";
     expect(renderedGroup).toContain('stroke="#7C3AED"');
     expect(renderedGroup).toContain('fill="transparent"');
-    expect(renderedGroup).toContain('stroke-dasharray=');
+    expect(renderedGroup).toContain("stroke-dasharray=");
     expect(renderedGroup).not.toContain("<image");
+  });
+
+  it("adds a contrast halo for dark structural group strokes without changing the canonical stroke", () => {
+    const doc = createEmptyDocument("cloud-contrast");
+    doc.groups = [{ id: "cloud", kind: "cloud", label: "AWS Cloud", children: [] }];
+
+    const svg = renderSvg(doc, layoutDocument(doc));
+    expect(svg).toContain('class="group-border-contrast"');
+    expect(svg).toContain('class="group-border"');
+    expect(svg).toContain('stroke="#2a3542"');
+    expect(svg).toContain('stroke="rgba(255,255,255,0.25)"');
   });
 
   it("renders connector labels without an opaque backing box", () => {
@@ -135,14 +279,20 @@ describe("async-docs fixture", () => {
           id: "horizontal",
           source: "a",
           target: "b",
-          points: [{ x: 0, y: 50 }, { x: 100, y: 50 }],
+          points: [
+            { x: 0, y: 50 },
+            { x: 100, y: 50 },
+          ],
           style: "solid",
         },
         {
           id: "vertical",
           source: "c",
           target: "d",
-          points: [{ x: 50, y: 0 }, { x: 50, y: 100 }],
+          points: [
+            { x: 50, y: 0 },
+            { x: 50, y: 100 },
+          ],
           style: "solid",
         },
       ],
@@ -158,22 +308,10 @@ describe("async-docs fixture", () => {
     });
   });
 
-  it("compiles the Azure reference flow without routing or decoration violations", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/diagrams/azure-private-app-service.dgm", import.meta.url),
-      "utf8",
-    ));
-    const result = compileDiagram(doc);
-
-    expect(result.ok).toBe(true);
-    expect(result.invariantFailures).toEqual([]);
-  });
-
   it("keeps curated Bedrock automatic routes inside the rendered canvas", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/bedrock-claims-processing/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(new URL("../../../../tests/fixtures/engine/bedrock-claims-processing.dgm", import.meta.url), "utf8"),
+    );
     const result = compileDiagram(doc);
 
     expect(result.ok).toBe(true);
@@ -192,18 +330,15 @@ describe("async-docs fixture", () => {
         expect(point.y, `${edge.id} y`).toBeLessThanOrEqual(bounds.y + bounds.h);
       }
     }
-    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining([
-          "workflow_to_state",
-          expect.stringMatching(/^(extractor|fraud_model)$/),
-        ]),
-      }),
-    ]));
-    expect(result.svg).toContain(
-      `viewBox="${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}"`,
+    expect(result.invariantFailures).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["workflow_to_state", expect.stringMatching(/^(extractor|fraud_model)$/)]),
+        }),
+      ]),
     );
+    expect(result.svg).toContain(`viewBox="${bounds.x} ${bounds.y} ${bounds.w} ${bounds.h}"`);
   });
 
   it("expands runtime canvas bounds for perimeter route points", () => {
@@ -226,8 +361,10 @@ describe("async-docs fixture", () => {
       x: -48 - padding,
       y: Math.min(0, first.points[0]!.y) - padding,
       w: layout.width + 96 + padding * 2,
-      h: Math.max(layout.height, first.points[0]!.y, first.points.at(-1)!.y) -
-        Math.min(0, first.points[0]!.y) + padding * 2,
+      h:
+        Math.max(layout.height, first.points[0]!.y, first.points.at(-1)!.y) -
+        Math.min(0, first.points[0]!.y) +
+        padding * 2,
     });
     expect(svg).toContain(
       `viewBox="${full.canvasBounds!.x} ${full.canvasBounds!.y} ${full.canvasBounds!.w} ${full.canvasBounds!.h}"`,
@@ -235,10 +372,9 @@ describe("async-docs fixture", () => {
   });
 
   it("keeps decorated cross-boundary labels clear in the thumbnail pipeline", () => {
-    const doc = parseDgm(readFileSync(
-      new URL("../../../../examples/curated/image-thumbnail-pipeline/diagram.dgm", import.meta.url),
-      "utf8",
-    ));
+    const doc = parseDgm(
+      readFileSync(new URL("../../../../tests/fixtures/engine/image-thumbnail-pipeline.dgm", import.meta.url), "utf8"),
+    );
     const result = compileDiagram(doc);
 
     expect(result.ok).toBe(true);
@@ -247,23 +383,28 @@ describe("async-docs fixture", () => {
 
   it("reports collisions among edge decorations, resources, and connectors", () => {
     const layout = {
-      nodes: [{
-        id: "service",
-        type: "resource",
-        icon: { x: 40, y: 40, w: 48, h: 48 },
-        label: { x: 20, y: 92, w: 88, h: 20 },
-        obstacle: { x: 20, y: 40, w: 88, h: 72 },
-        role: "primary",
-        resourceType: "generic.server",
-        serviceLabel: "Service",
-      }],
+      nodes: [
+        {
+          id: "service",
+          type: "resource",
+          icon: { x: 40, y: 40, w: 48, h: 48 },
+          label: { x: 20, y: 92, w: 88, h: 20 },
+          obstacle: { x: 20, y: 40, w: 88, h: 72 },
+          role: "primary",
+          resourceType: "cloud-agnostic.server",
+          serviceLabel: "Service",
+        },
+      ],
       groups: [],
       edges: [
         {
           id: "first",
           source: "a",
           target: "b",
-          points: [{ x: 0, y: 60 }, { x: 160, y: 60 }],
+          points: [
+            { x: 0, y: 60 },
+            { x: 160, y: 60 },
+          ],
           label: "first",
           labelRect: { x: 44, y: 48, w: 52, h: 14 },
           badge: { x: 52, y: 52 },
@@ -273,7 +414,10 @@ describe("async-docs fixture", () => {
           id: "second",
           source: "c",
           target: "d",
-          points: [{ x: 70, y: 0 }, { x: 70, y: 140 }],
+          points: [
+            { x: 70, y: 0 },
+            { x: 70, y: 140 },
+          ],
           label: "second",
           labelRect: { x: 48, y: 50, w: 60, h: 14 },
           badge: { x: 56, y: 54 },
@@ -291,14 +435,18 @@ describe("async-docs fixture", () => {
     expect(codes.has("edge-label-overlap")).toBe(true);
     expect(codes.has("edge-badge-overlap")).toBe(true);
     expect(failures.every((failure) => failure.elementIds.length > 0)).toBe(true);
-    expect(failures).toContainEqual(expect.objectContaining({
-      code: "edge-label-node-collision",
-      elementIds: ["first", "service"],
-    }));
-    expect(failures).toContainEqual(expect.objectContaining({
-      code: "edge-label-overlap",
-      elementIds: ["first", "second"],
-    }));
+    expect(failures).toContainEqual(
+      expect.objectContaining({
+        code: "edge-label-node-collision",
+        elementIds: ["first", "service"],
+      }),
+    );
+    expect(failures).toContainEqual(
+      expect.objectContaining({
+        code: "edge-label-overlap",
+        elementIds: ["first", "second"],
+      }),
+    );
   });
 
   it("equalizes AZ dimensions", () => {
@@ -336,9 +484,7 @@ describe("async-docs fixture", () => {
     const svg = renderSvg(doc, layout);
 
     expect(group.labelRect!.x + group.labelRect!.w).toBe(group.bounds.x + group.bounds.w);
-    expect(svg).toMatch(
-      new RegExp(`id="group-queues"[\\s\\S]*text-anchor="end"[\\s\\S]*>${queues.label}<\\/text>`),
-    );
+    expect(svg).toMatch(new RegExp(`id="group-queues"[\\s\\S]*text-anchor="end"[\\s\\S]*>${queues.label}<\\/text>`));
   });
 
   it("mirrors icon-bearing group labels flush against the right boundary", () => {
@@ -349,24 +495,22 @@ describe("async-docs fixture", () => {
     const layout = layoutDocument(doc);
     const group = layout.groups.find((candidate) => candidate.id === region.id)!;
     const svg = renderSvg(doc, layout);
-    const renderedGroup = svg.match(
-      new RegExp(`<g id="group-${region.id}">([\\s\\S]*?)<\\/g>`),
-    )?.[1] ?? "";
+    const renderedGroup = svg.match(new RegExp(`<g id="group-${region.id}">([\\s\\S]*?)<\\/g>`))?.[1] ?? "";
 
-    expect(renderedGroup).toContain(
-      `x="${group.bounds.x + group.bounds.w - GROUP_STYLES[group.kind].iconSize}"`,
-    );
+    expect(renderedGroup).toContain(`x="${group.bounds.x + group.bounds.w - GROUP_STYLES[group.kind].iconSize}"`);
     expect(renderedGroup).toContain('text-anchor="end"');
   });
 
   it("does not add a catalog icon to shorthand logical groups", () => {
     const doc = createEmptyDocument("iconless-group");
-    doc.groups = [{
-      id: "boundary",
-      kind: "logical",
-      label: "Logical boundary",
-      children: [],
-    }];
+    doc.groups = [
+      {
+        id: "boundary",
+        kind: "logical",
+        label: "Logical boundary",
+        children: [],
+      },
+    ];
 
     const svg = renderSvg(doc, layoutDocument(doc));
 
@@ -376,14 +520,16 @@ describe("async-docs fixture", () => {
 
   it("can hide the icon on a typed cloud-agnostic group", () => {
     const doc = createEmptyDocument("hidden-group-icon");
-    doc.groups = [{
-      id: "boundary",
-      kind: "logical",
-      type: "cloud-agnostic.boundary",
-      label: "Boundary",
-      hideIcon: true,
-      children: [],
-    }];
+    doc.groups = [
+      {
+        id: "boundary",
+        kind: "logical",
+        type: "cloud-agnostic.boundary",
+        label: "Boundary",
+        hideIcon: true,
+        children: [],
+      },
+    ];
 
     const svg = renderSvg(doc, layoutDocument(doc));
 
@@ -421,10 +567,7 @@ describe("async-docs fixture", () => {
     const worker = layout.nodes.find((n) => n.id === "workerA")!;
     const artifacts = layout.nodes.find((n) => n.id === "artifacts")!;
 
-    const inside = (
-      node: (typeof layout.nodes)[number],
-      group: (typeof layout.groups)[number],
-    ) =>
+    const inside = (node: (typeof layout.nodes)[number], group: (typeof layout.groups)[number]) =>
       node.icon.x >= group.bounds.x &&
       node.icon.y >= group.bounds.y &&
       node.icon.x + node.icon.w <= group.bounds.x + group.bounds.w &&
@@ -440,7 +583,7 @@ describe("async-docs fixture", () => {
     const result = compileDiagram(createAsyncDocsFixture());
     expect(result.ok).toBe(true);
     expect(result.svg).toMatch(
-      /id="group-main"[\s\S]*?<rect x="([^"]+)" y="([^"]+)"[\s\S]*?<image[^>]* x="\1" y="\2"/,
+      /id="group-main"[\s\S]*?<rect class="group-border" x="([^"]+)" y="([^"]+)"[\s\S]*?<image[^>]* x="\1" y="\2"/,
     );
   });
 
@@ -462,10 +605,32 @@ describe("async-docs fixture", () => {
     const jobs = layout.nodes.find((node) => node.id === "jobs")!.obstacle;
     const dlq = layout.nodes.find((node) => node.id === "jobs_dlq")!.obstacle;
     const overlaps = !(
-      jobs.x + jobs.w <= dlq.x || dlq.x + dlq.w <= jobs.x ||
-      jobs.y + jobs.h <= dlq.y || dlq.y + dlq.h <= jobs.y
+      jobs.x + jobs.w <= dlq.x ||
+      dlq.x + dlq.w <= jobs.x ||
+      jobs.y + jobs.h <= dlq.y ||
+      dlq.y + dlq.h <= jobs.y
     );
     expect(overlaps).toBe(false);
+  });
+
+  it("reports overlapping manually pinned root resources", () => {
+    const doc = parseDgm(`diagram overlapping_roots {
+  grammar aws
+  cloud-agnostic.server api "API"
+  cloud-agnostic.server db "Database"
+}`);
+    const view = getDefaultView(doc);
+    view.places.api = { x: 160, y: 160, pin: true, manual: true };
+    view.places.db = { x: 160, y: 160, pin: true, manual: true };
+
+    const result = compileDiagram(doc);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.invariantFailures).toContainEqual({
+      code: "resource-icon-overlap",
+      message: "Resources api and db icons overlap",
+      elementIds: ["api", "db"],
+    });
   });
 
   it("repacks pinned siblings that extend outside their group", () => {
@@ -479,12 +644,8 @@ describe("async-docs fixture", () => {
     expect(node).toBeDefined();
     expect(node!.obstacle.x).toBeGreaterThanOrEqual(group!.content.x);
     expect(node!.obstacle.y).toBeGreaterThanOrEqual(group!.content.y);
-    expect(node!.obstacle.x + node!.obstacle.w).toBeLessThanOrEqual(
-      group!.content.x + group!.content.w,
-    );
-    expect(node!.obstacle.y + node!.obstacle.h).toBeLessThanOrEqual(
-      group!.content.y + group!.content.h,
-    );
+    expect(node!.obstacle.x + node!.obstacle.w).toBeLessThanOrEqual(group!.content.x + group!.content.w);
+    expect(node!.obstacle.y + node!.obstacle.h).toBeLessThanOrEqual(group!.content.y + group!.content.h);
   });
 
   it("moves a pinned direct resource clear of nested child groups", () => {
@@ -518,18 +679,11 @@ describe("async-docs fixture", () => {
     const layout = layoutDocument(doc);
     const edges = routeEdges(doc, layout);
     const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
-    const onBorder = (
-      point: { x: number; y: number },
-      icon: { x: number; y: number; w: number; h: number },
-    ) => {
+    const onBorder = (point: { x: number; y: number }, icon: { x: number; y: number; w: number; h: number }) => {
       const onVertical =
-        (point.x === icon.x || point.x === icon.x + icon.w) &&
-        point.y >= icon.y &&
-        point.y <= icon.y + icon.h;
+        (point.x === icon.x || point.x === icon.x + icon.w) && point.y >= icon.y && point.y <= icon.y + icon.h;
       const onHorizontal =
-        (point.y === icon.y || point.y === icon.y + icon.h) &&
-        point.x >= icon.x &&
-        point.x <= icon.x + icon.w;
+        (point.y === icon.y || point.y === icon.y + icon.h) && point.x >= icon.x && point.x <= icon.x + icon.w;
       return onVertical || onHorizontal;
     };
 
@@ -537,22 +691,16 @@ describe("async-docs fixture", () => {
       expect(edge.points.length).toBeGreaterThanOrEqual(2);
       expect(edge.points.length).toBeLessThanOrEqual(6);
       expect(onBorder(edge.points[0]!, nodes.get(edge.source)!.icon)).toBe(true);
-      expect(
-        onBorder(edge.points[edge.points.length - 1]!, nodes.get(edge.target)!.icon),
-      ).toBe(true);
+      expect(onBorder(edge.points[edge.points.length - 1]!, nodes.get(edge.target)!.icon)).toBe(true);
     }
 
     const intoApi = edges.find((edge) => edge.id === "e2")!;
     const outOfApi = edges.find((edge) => edge.id === "e3")!;
-    expect(intoApi.points[intoApi.points.length - 1]!.y).not.toBe(
-      outOfApi.points[0]!.y,
-    );
+    expect(intoApi.points[intoApi.points.length - 1]!.y).not.toBe(outOfApi.points[0]!.y);
 
     const intoQueue = edges.find((edge) => edge.id === "e3")!;
     const outOfQueue = edges.find((edge) => edge.id === "e4")!;
-    expect(intoQueue.points[intoQueue.points.length - 1]!.y).not.toBe(
-      outOfQueue.points[0]!.y,
-    );
+    expect(intoQueue.points[intoQueue.points.length - 1]!.y).not.toBe(outOfQueue.points[0]!.y);
 
     const result = compileDiagram(doc);
     expect(result.svg).toMatch(/id="edge-e6"[\s\S]*marker-end="url\(#arrow-red\)"/);
@@ -610,23 +758,21 @@ describe("async-docs fixture", () => {
     const publicSubnet = layout.groups.find((group) => group.id === "pubA")!;
     expect(api.obstacle.x).toBeGreaterThanOrEqual(publicSubnet.content.x);
     expect(api.obstacle.y).toBeGreaterThanOrEqual(publicSubnet.content.y);
-    expect(api.obstacle.x + api.obstacle.w).toBeLessThanOrEqual(
-      publicSubnet.content.x + publicSubnet.content.w,
-    );
-    expect(api.obstacle.y + api.obstacle.h).toBeLessThanOrEqual(
-      publicSubnet.content.y + publicSubnet.content.h,
-    );
+    expect(api.obstacle.x + api.obstacle.w).toBeLessThanOrEqual(publicSubnet.content.x + publicSubnet.content.w);
+    expect(api.obstacle.y + api.obstacle.h).toBeLessThanOrEqual(publicSubnet.content.y + publicSubnet.content.h);
 
     const edges = routeEdges(doc, layout);
     const edge = edges.find((candidate) => candidate.id === "e2")!;
     expect(edge.points).toEqual(
-      eraseOrthogonalRouteLoops(normalizeOrthogonalRoute([
-        edge.points[0]!,
-        ...view.routes.e2!.waypoints!,
-        edge.points.at(-1)!,
-      ])),
+      anchorRouteEndpoints(
+        eraseOrthogonalRouteLoops(
+          normalizeOrthogonalRoute([edge.points[0]!, ...view.routes.e2!.waypoints!, edge.points.at(-1)!]),
+        ),
+        layout.nodes.find((node) => node.id === edge.source)!.icon,
+        layout.nodes.find((node) => node.id === edge.target)!.icon,
+      ),
     );
-    expect(edge.points.length).toBeLessThan(6);
+    expect(edge.points.length).toBeLessThan(10);
   });
 });
 

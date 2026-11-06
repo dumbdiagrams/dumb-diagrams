@@ -1,22 +1,1447 @@
 {
-  "description": "Reviewed routing warnings for checked-in examples. New or removed warnings fail check:routing and require a visual review before this file changes.",
+  "description": "Reviewed routing warnings for the approved example runs. New or removed warnings fail check:routing and require a visual review before this file changes.",
   "warnings": [
     {
-      "file": "aws-high-availability-web-app.dgm",
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
       "code": "edge-crossing",
-      "message": "Edges monitor_app_a and monitor_data_a cross"
+      "message": "Edges invoke and inspect_dlq cross"
     },
     {
-      "file": "event-driven-order-fulfillment.dgm",
-      "code": "edge-label-group-collision",
-      "message": "Label of edge authorize_payment overlaps boundary label event_backbone"
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges queue_job and dead_letter cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges queue_job and redrive cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_w1 and read_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and status_w1 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and status_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w1 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and status_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_w1 and status_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_w2 and done_w1 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_w2 and done_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges front and retry_limit cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges front and redrive cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges front and func_kv cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_access and enqueue cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_access and api_kv cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_access and api_mon cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and api_mon cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and func_mon cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume and sql_link cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume and storage_link cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges files and sql_link cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges files and storage_link cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status and sql_link cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status and func_mon cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_link and retry_limit cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_link and redrive cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_link and func_mon cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges storage_link and retry_limit cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges storage_link and redrive cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges retry_limit and redrive cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges redrive and func_kv cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-badge-connector-collision",
+      "message": "Number of edge order_status overlaps connector cache_resp"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges order and charge cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges order and failover cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_query and enqueue cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_query and retry cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_lookup and retry cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_lookup and order_status cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges charge and cache_resp cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges charge and failover cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_resp and enqueue cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_resp and retry cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_resp and order_status cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_resp and retry cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_resp and order_status cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_resp and failover cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and retry cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch and fulfill cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch and write_receipts cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch and replicate cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_w1 and redrive cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_w2 and read_w1 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w1 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and notify cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and db_w1 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and db_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and notify cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_w1 and done_w2 cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_w1 and notify cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_w1 and deliver cross"
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges done_w1 and done_w2 cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges client_api and ops_dynamo cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges client_api and sns_ops cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_intake and dlq_redrive cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges intake_jobs and dlq_redrive cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_worker_a and jobs_worker_b cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_worker_a and input_worker_b cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_a_status cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_a_sns cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_b_status cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_b_sns cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_status and ops_dynamo cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_sns and worker_b_status cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_b_output and worker_b_status cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_b_status and worker_b_sns cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_dlq and ops_redrive cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-medium-image-thumbnail-pipeline.dgm",
+      "code": "edge-badge-connector-collision",
+      "message": "Number of edge processor_thumbnail overlaps connector cdn_origin"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-medium-image-thumbnail-pipeline.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges handler_queue and cdn_origin share a corridor outside a fan-out stem"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges apim_to_api and ops_to_work_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_sql_endpoint and worker_to_sql_endpoint cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_sql_endpoint and worker_to_key_vault cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_sql_endpoint and api_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_storage_endpoint cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_sql_endpoint cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges api_to_work_queue and work_queue_to_dlq share a corridor outside a fan-out stem"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and ops_to_work_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_key_vault cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_worker and work_queue_to_dlq cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_worker and ops_to_work_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_worker and worker_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_storage_endpoint and worker_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_sql_endpoint and worker_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_endpoint_to_database and storage_endpoint_to_account cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_endpoint_to_database and worker_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_dlq and ops_to_work_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_key_vault and api_to_monitor cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-badge-connector-collision",
+      "message": "Number of edge recovery_read overlaps connector recovery_app_lb"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_db_request and db_api_response cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_db_request and api_to_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_db_request and queue_to_worker cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and api_cache_request cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and cache_api_response cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and api_to_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and queue_to_worker cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_cache_request and api_to_queue cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_cache_request and queue_to_worker cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_cache_request and worker_status cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_api_response and queue_to_worker cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_api_response and worker_status cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_retry and database_replication cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges database_replication and buyer_recovery cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges recovery_read and recovery_app_lb cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch_worker_b and read_input_a cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_output_a and publish_completion_b cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges update_status_a and publish_completion_b cross"
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dead_letter_failed and redrive_jobs cross"
     }
   ],
   "reviews": [
     {
-      "file": "event-driven-order-fulfillment.dgm",
-      "warning": "edge-label-group-collision: authorize_payment / event_backbone",
-      "decision": "Baselined after visual review. The rendered texts are horizontally and vertically separated; the invariant uses a conservatively clamped full-width group header rectangle. Shortening the edge label would violate the preserved reference specification, so the golden source remains unchanged."
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges invoke and inspect_dlq cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges queue_job and dead_letter cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges queue_job and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_w1 and read_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and status_w1 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and status_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w1 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and status_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_w1 and status_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_w2 and done_w1 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status_w2 and done_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges front and retry_limit cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges front and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges front and func_kv cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_access and enqueue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_access and api_kv cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_access and api_mon cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and api_mon cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and func_mon cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume and sql_link cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges consume and storage_link cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges files and sql_link cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges files and storage_link cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status and sql_link cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges status and func_mon cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_link and retry_limit cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_link and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_link and func_mon cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges storage_link and retry_limit cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges storage_link and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges retry_limit and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges redrive and func_kv cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-badge-connector-collision",
+      "message": "Number of edge order_status overlaps connector cache_resp",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges order and charge cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges order and failover cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_query and enqueue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_query and retry cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_lookup and retry cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_lookup and order_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges charge and cache_resp cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges charge and failover cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_resp and enqueue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_resp and retry cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_resp and order_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_resp and retry cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_resp and order_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges payment_resp and failover cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges enqueue and retry cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch and fulfill cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch and write_receipts cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch and replicate cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_w1 and redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_w2 and read_w1 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w1 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and done_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w1 and notify cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and db_w1 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and db_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges out_w2 and notify cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_w1 and done_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_w1 and notify cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_w1 and deliver cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "claude-sonnet-5-5-low-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges done_w1 and done_w2 cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the Claude Sonnet 5.5 (low) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges client_api and ops_dynamo cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges client_api and sns_ops cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_intake and dlq_redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges intake_jobs and dlq_redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_worker_a and jobs_worker_b cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_worker_a and input_worker_b cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_a_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_a_sns cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_b_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_output and worker_b_sns cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_status and ops_dynamo cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_a_sns and worker_b_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_b_output and worker_b_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_b_status and worker_b_sns cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-hard-document-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges jobs_dlq and ops_redrive cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-medium-image-thumbnail-pipeline.dgm",
+      "code": "edge-badge-connector-collision",
+      "message": "Number of edge processor_thumbnail overlaps connector cdn_origin",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/aws-medium-image-thumbnail-pipeline.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges handler_queue and cdn_origin share a corridor outside a fan-out stem",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges apim_to_api and ops_to_work_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_sql_endpoint and worker_to_sql_endpoint cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_sql_endpoint and worker_to_key_vault cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_sql_endpoint and api_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_storage_endpoint cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_sql_endpoint cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-corridor-overlap",
+      "message": "Edges api_to_work_queue and work_queue_to_dlq share a corridor outside a fan-out stem",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and ops_to_work_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_key_vault cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_to_work_queue and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_worker and work_queue_to_dlq cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_worker and ops_to_work_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_worker and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_storage_endpoint and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_sql_endpoint and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_endpoint_to_database and storage_endpoint_to_account cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges sql_endpoint_to_database and worker_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges work_queue_to_dlq and ops_to_work_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/azure-hard-private-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_to_key_vault and api_to_monitor cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-badge-connector-collision",
+      "message": "Number of edge recovery_read overlaps connector recovery_app_lb",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_db_request and db_api_response cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_db_request and api_to_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_db_request and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and api_cache_request cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and cache_api_response cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and api_to_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges db_api_response and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_cache_request and api_to_queue cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_cache_request and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges api_cache_request and worker_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_api_response and queue_to_worker cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges cache_api_response and worker_status cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges worker_retry and database_replication cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges database_replication and buyer_recovery cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/cloud-agnostic-hard-order-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges recovery_read and recovery_app_lb cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dispatch_worker_b and read_input_a cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges write_output_a and publish_completion_b cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges update_status_a and publish_completion_b cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
+    },
+    {
+      "file": "gpt-luna-6-max-2026-11-05/gcp-hard-media-processing.dgm",
+      "code": "edge-crossing",
+      "message": "Edges dead_letter_failed and redrive_jobs cross",
+      "status": "reviewed",
+      "decision": "Accepted in the v0.1.0 review of the GPT Luna 6 (max) one-shot run; hard prompts are deliberately dense, and these crossings follow from their required relationships."
     }
   ]
 }

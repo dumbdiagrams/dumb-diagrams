@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { parseDgm, printDgm } from "./parse.js";
+import { parseDgmResult, printDgm } from "./parse.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("assets round-trip", () => {
   it("preserves embedded svg assets and icon references", () => {
@@ -8,7 +10,7 @@ describe("assets round-trip", () => {
   grammar aws
   flow lr
 
-  generic.custom box "Custom" { icon logo1 }
+  cloud-agnostic.server box "Custom" { icon logo1 }
 }
 
 assets {

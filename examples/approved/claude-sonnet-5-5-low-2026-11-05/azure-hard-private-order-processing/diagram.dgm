@@ -1,0 +1,51 @@
+dgm 1
+diagram azure-hard-private-order-processing {
+  grammar azure
+  flow lr
+  title "Azure private order processing"
+
+  cloud-agnostic.client client "Public client"
+  cloud-agnostic.client ops "Operations client"
+  azure.subscription sub "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group rg "Resource group" {
+        azure.front-door-and-cdn-profiles fd "Front Door"
+        azure.api-management-services apim "API Management"
+        azure.vnet vnet "VNet" {
+          azure.subnet app_subnet "Application subnet" {
+            azure.app-services api "API"
+            azure.function-apps func "Function worker"
+          }
+          azure.subnet data_subnet "Data subnet" {
+            azure.private-endpoints sql_pe "SQL private endpoint"
+            azure.private-endpoints storage_pe "Storage private endpoint"
+          }
+        }
+        azure.sql-database sql "Azure SQL"
+        azure.storage-accounts storage "Storage"
+        azure.azure-service-bus work "Work queue"
+        azure.azure-service-bus dlq "Dead-letter queue"
+        azure.key-vaults kv "Key Vault"
+        azure.monitor monitor "Azure Monitor"
+      }
+    }
+  }
+
+  client -> fd { id enter step 1 label "HTTPS" kind flow }
+  fd -> apim { id front step 2 label "Forward" kind flow }
+  apim -> api { id route step 3 label "Route" kind flow }
+  api -> sql_pe { id sql_access step 4 label "Read/write" kind flow }
+  api -> work { id enqueue step 4 label "Enqueue work" kind flow }
+  work -> func { id consume step 5 label "Consume work" kind flow }
+  func -> storage_pe { id files step 6 label "Write files" kind flow }
+  func -> sql_pe { id status step 6 label "Order status" kind flow }
+  sql_pe -> sql { id sql_link step 7 label "Private link" kind flow }
+  storage_pe -> storage { id storage_link step 7 label "Private link" kind flow }
+  work -> dlq { id retry_limit label "Retry limit" kind fail }
+  ops -> dlq { id inspect label "Inspect" kind peer style dashed }
+  dlq -> work { id redrive label "Redrive" kind flow style dashed }
+  api -> kv { id api_kv label "Read secrets" kind peer style dashed }
+  func -> kv { id func_kv label "Read secrets" kind peer style dashed }
+  api -> monitor { id api_mon label "Telemetry" kind peer style dashed }
+  func -> monitor { id func_mon label "Telemetry" kind peer style dashed }
+}

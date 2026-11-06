@@ -1,0 +1,29 @@
+dgm 1
+diagram azure_async_order_processing {
+  grammar azure
+  flow lr
+  title "Azure asynchronous order processing"
+
+  cloud-agnostic.client storefront "Storefront"
+
+  azure.region region "Region" {
+    azure.api-management-services order_api "Order API"
+    azure.function-apps intake_function "Intake function"
+    azure.azure-service-bus order_queue "Order queue"
+    azure.storage-accounts request_archive "Request archive"
+    azure.function-apps processor "Order processor"
+    azure.azure-sql orders_db "Completed orders"
+    cloud-agnostic.boundary support "Support" {
+      azure.monitor monitor "Azure Monitor"
+    }
+  }
+
+  storefront -> order_api { id submit_order label "submit order" step 1 }
+  order_api -> intake_function { id invoke_intake label "invoke" step 2 }
+  intake_function -> order_queue { id queue_order label "queue order" step 3 }
+  intake_function -> request_archive { id archive_request label "archive request" step 3 }
+  order_queue -> processor { id deliver_order label "deliver order" step 4 }
+  request_archive -> processor { id archive_events label "archive events" step 4 }
+  processor -> orders_db { id save_order label "save completed order" step 5 }
+  processor -> monitor { id send_metrics kind peer style dashed label "processing metrics" }
+}

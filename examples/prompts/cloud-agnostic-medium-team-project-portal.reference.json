@@ -1,0 +1,57 @@
+{
+  "$comment": "Reviewed reference for cloud-agnostic-medium-team-project-portal.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "cloud-agnostic",
+  "exclusive": true,
+  "roles": {
+    "users": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "network"
+    },
+    "network": {
+      "types": [
+        "cloud-agnostic.network"
+      ]
+    },
+    "lb": {
+      "types": [
+        "cloud-agnostic.load-balancer"
+      ],
+      "outside": "network"
+    },
+    "server": {
+      "types": [
+        "cloud-agnostic.server"
+      ],
+      "within": "network"
+    },
+    "database": {
+      "types": [
+        "cloud-agnostic.database"
+      ],
+      "within": "network"
+    },
+    "cache": {
+      "types": [
+        "cloud-agnostic.cache"
+      ],
+      "within": "network"
+    },
+    "storage": {
+      "types": [
+        "cloud-agnostic.object-storage"
+      ],
+      "outside": "network"
+    }
+  },
+  "edges": [
+    "users -> lb",
+    "lb -> server",
+    "server -- database",
+    "server -- cache",
+    "server -- storage"
+  ]
+}

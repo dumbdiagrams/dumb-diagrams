@@ -1,13 +1,11 @@
-import { join } from "node:path";
-
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-const ROOT = join(import.meta.dirname, "..");
-const ASYNC_DOCS = `${ROOT}/examples/diagrams/async-docs.dgm`;
+import { ASYNC_DOCS, MOD, entityBox, waitForStudioReady } from "./support/helpers";
 
 async function openAsyncDocs(page: Page) {
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
+  await waitForStudioReady(page);
   await expect(page.locator('[data-entity-kind="edge"][data-entity-id="e1"]')).toHaveCount(1);
 }
 
@@ -74,18 +72,6 @@ async function selectEdge(page: Page, edgeId: string) {
 }
 
 type ScreenBox = { x: number; y: number; width: number; height: number };
-
-async function entityBox(
-  page: Page,
-  kind: "resource" | "group",
-  id: string,
-): Promise<ScreenBox> {
-  const entity = page.locator(`[data-entity-kind="${kind}"][data-entity-id="${id}"]`).first();
-  await expect(entity).toHaveCount(1);
-  const box = await entity.boundingBox();
-  expect(box, `${kind}:${id} should have a rendered box`).not.toBeNull();
-  return box!;
-}
 
 function boxCenter(box: ScreenBox): { x: number; y: number } {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -202,11 +188,10 @@ test("shows only the resolved connector hover when wide hit strokes overlap", as
       clientX: point.x,
       clientY: point.y,
     });
-    await page.waitForTimeout(20);
     if (await hover.count()) break;
   }
 
-  await expect(hover).toHaveCount(1);
+  await expect.poll(async () => hover.count()).toBe(1);
   const browserHitHighlights = await page.locator(".hit-edge").evaluateAll((elements) =>
     elements.filter((element) => {
       const stroke = getComputedStyle(element).stroke;
@@ -534,13 +519,15 @@ test("keeps the connector inspector open alongside a left drawer", async ({ page
   expect(groupsBox!.x + groupsBox!.width).toBeLessThanOrEqual(connectorBox!.x);
 });
 
-test("previews resource movement without rerouting the document until release", async ({ page }) => {
+test("moves a resource with live preview and undo", async ({ page }) => {
   await openAsyncDocs(page);
   const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
   const rendered = page.locator("#res-client");
-  const connectedEdges = page.locator(
-    '[data-entity-kind="edge"][data-entity-id="e1"]',
-  );
+  const connectedEdges = page.locator('[data-entity-kind="edge"][data-entity-id="e1"]');
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  const redo = page.getByRole("button", { name: "Redo", exact: true });
+  await expect(undo).toBeDisabled();
+
   const targetBox = await hitTarget.boundingBox();
   const beforeBox = await rendered.boundingBox();
   const beforeEdges = await connectedEdges.evaluateAll((elements) =>
@@ -570,45 +557,13 @@ test("previews resource movement without rerouting the document until release", 
   expect(afterBox).not.toBeNull();
   expect(afterBox!.x).toBeLessThan(beforeBox!.x - 80);
   expect(afterBox!.y).toBeGreaterThan(beforeBox!.y + 40);
-});
-
-test("records a resource movement in undo history and restores its source position", async ({ page }) => {
-  await openAsyncDocs(page);
-
-  const hitTarget = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
-  const rendered = page.locator("#res-client");
-  const undo = page.getByRole("button", { name: "Undo", exact: true });
-  const redo = page.getByRole("button", { name: "Redo", exact: true });
-  await expect(hitTarget).toHaveCount(1);
-  await expect(rendered).toHaveCount(1);
-  await expect(undo).toBeDisabled();
-
-  const before = await rendered.boundingBox();
-  const targetBox = await hitTarget.boundingBox();
-  expect(before).not.toBeNull();
-  expect(targetBox).not.toBeNull();
-
-  const startX = targetBox!.x + targetBox!.width / 2;
-  const startY = targetBox!.y + targetBox!.height / 2;
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
-  await page.mouse.move(startX - 96, startY + 54, { steps: 16 });
-  await page.mouse.up();
-
-  await expect.poll(async () => (await rendered.boundingBox())?.x ?? 0)
-    .toBeLessThan(before!.x - 80);
-  await expect.poll(async () => rendered.getAttribute("transform")).toBeNull();
-  const moved = await rendered.boundingBox();
-  expect(moved).not.toBeNull();
-  expect(moved!.x).toBeLessThan(before!.x - 80);
-  expect(moved!.y).toBeGreaterThan(before!.y + 40);
   await expect(undo).toBeEnabled();
 
   await undo.click();
   await expect.poll(async () => {
     const box = await rendered.boundingBox();
     return box ? { x: Math.round(box.x), y: Math.round(box.y) } : null;
-  }).toEqual({ x: Math.round(before!.x), y: Math.round(before!.y) });
+  }).toEqual({ x: Math.round(beforeBox!.x), y: Math.round(beforeBox!.y) });
   await expect(undo).toBeDisabled();
   await expect(redo).toBeEnabled();
 });
@@ -623,7 +578,7 @@ test("moves a group when dragging from its empty center", async ({ page }) => {
   flow lr
 
   aws.cloud cloud "Cloud" {
-    cloud-agnostic.boundary group "Group" { aws.s3 bucket "Bucket" }
+    cloud-agnostic.boundary group "Group" { aws.simple-storage-service bucket "Bucket" }
   }
 }
 
@@ -737,8 +692,8 @@ test("keeps a connected resource draggable from beneath its connector endpoint",
 
 test("moves the adjoining leg when a connector bend is dragged past its line", async ({ page }) => {
   await openAsyncDocs(page);
-  const edge = await selectEdge(page, "e1");
-  const bend = page.locator('[data-bend-handle="e1:2"]');
+  const edge = await selectEdge(page, "e2");
+  const bend = page.locator('[data-bend-handle="e2:2"]');
   await expect(bend).toHaveCount(1);
   const beforeBox = await bend.boundingBox();
   expect(beforeBox).not.toBeNull();
@@ -780,13 +735,13 @@ test("moves the adjoining leg when a connector bend is dragged past its line", a
 
 test("merges connector controls when a bend collapses onto its neighbor", async ({ page }) => {
   await openAsyncDocs(page);
-  await selectEdge(page, "e1");
-  const bendHandles = page.locator('[data-bend-handle^="e1:"]');
+  await selectEdge(page, "e2");
+  const bendHandles = page.locator('[data-bend-handle^="e2:"]');
   const beforeCount = await bendHandles.count();
   expect(beforeCount).toBeGreaterThan(1);
 
-  const moving = page.locator('[data-bend-handle="e1:2"]');
-  const neighbor = page.locator('[data-bend-handle="e1:1"]');
+  const moving = page.locator('[data-bend-handle="e2:1"]');
+  const neighbor = page.locator('[data-bend-handle="e2:2"]');
   const movingBox = await moving.boundingBox();
   const neighborBox = await neighbor.boundingBox();
   expect(movingBox).not.toBeNull();
@@ -919,7 +874,8 @@ test("keeps Layers open for selection and exposes grouping controls", async ({ p
 
   await ungroupButton.click();
   await expect(layersPanel).toBeVisible();
-  await expect(groupButton).toBeDisabled();
+  await expect(ungroupButton).toBeDisabled();
+  await expect(groupButton).toBeEnabled();
 });
 
 test("hides the legacy Connector dock button while retaining direct quick-connect", async ({ page }) => {
@@ -940,11 +896,16 @@ test("supports selection modifiers, regrouping, and undo round-trip", async ({ p
   const jobsBefore = await entityBox(page, "resource", "jobs");
   const dlqBefore = await entityBox(page, "resource", "jobs_dlq");
 
-  // Shift+Cmd/Ctrl+G removes only the boundary. Child geometry is expected
-  // to remain stable as the hierarchy is flattened.
-  await queues.click({ position: { x: queuesBefore.width / 2, y: 4 } });
-  await expect(queues).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("Control+Shift+g");
+  // Delete group removes only the boundary. Child geometry is expected to
+  // remain stable as the hierarchy is flattened.
+  await queues.click({
+    button: "right",
+    position: { x: 4, y: queuesBefore.height / 2 },
+    force: true,
+  });
+  const menu = page.getByRole("menu", { name: "Canvas context menu" });
+  await expect(menu).toBeVisible();
+  await menu.locator('[data-menu-item="delete-group"]').click();
   await expect(queues).toHaveCount(0);
   await expect(jobs).toHaveCount(1);
   await expect(dlq).toHaveCount(1);
@@ -975,7 +936,7 @@ test("supports selection modifiers, regrouping, and undo round-trip", async ({ p
   await expect(dlq).toHaveAttribute("aria-selected", "true");
   await expect(page.locator('[data-entity-kind="group"][aria-selected="true"]')).toHaveCount(0);
 
-  await page.keyboard.press("Control+g");
+  await page.keyboard.press(`${MOD}+G`);
   const regrouped = page.locator('[data-entity-kind="group"][aria-selected="true"]');
   await expect(regrouped).toHaveCount(1);
   const regroupedId = await regrouped.getAttribute("data-entity-id");
@@ -1031,7 +992,7 @@ view default {
   await dispatchPointerClick(cloud, { x: cloudBox.x + cloudBox.width / 2, y: cloudBox.y + 8 });
   await dispatchPointerClick(uploads, { x: uploadsBox.x + uploadsBox.width / 2, y: uploadsBox.y + 8 }, { shiftKey: true });
   await dispatchPointerClick(processing, { x: processingBox.x + processingBox.width / 2, y: processingBox.y + 8 }, { shiftKey: true });
-  await page.keyboard.press("Control+g");
+  await page.keyboard.press(`${MOD}+G`);
 
   await expect(page.locator('[data-entity-kind="group"]')).toHaveCount(3);
   await expect(page.locator('[data-entity-kind="group"][aria-label="Group Group"]')).toHaveCount(0);
@@ -1161,16 +1122,11 @@ test("applies the dark palette to the canvas and grid", async ({ page }) => {
   await expect(page.locator(".studio-tabbar-actions .theme-control")).toHaveCount(1);
   await expect(page.locator(".floating-topbar .theme-control")).toHaveCount(0);
   await theme.click();
-
-  await expect(page.getByRole("menuitem", { name: "System", exact: true })).toHaveCount(0);
-  const dark = page.getByRole("menuitem", { name: "Dark", exact: true });
-  await expect(dark).toHaveCount(1);
-  await dark.click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
   const colors = await page.locator('[data-testid="canvas-stage"]').evaluate((stage) => {
     const artboard = stage.querySelector<HTMLElement>(".diagram-svg");
-    const firstText = stage.querySelector<SVGTextElement>(".diagram-svg svg text");
+    const firstText = stage.querySelector<SVGTextElement>(".diagram-svg svg text:not(.edge-badge-text):not(.group-badge-text)");
     const stageStyle = getComputedStyle(stage);
     const artboardStyle = artboard ? getComputedStyle(artboard) : null;
     return {
@@ -1184,9 +1140,10 @@ test("applies the dark palette to the canvas and grid", async ({ page }) => {
 
   expect(colors.canvas).not.toBe("rgb(255, 255, 255)");
   expect(colors.atmosphere).toBe("none");
+  expect(colors.artboard).toBe("rgb(16, 32, 51)");
   expect(colors.artboard).not.toBe("rgb(255, 255, 255)");
   expect(colors.grid).toContain("linear-gradient");
-  expect(colors.text).not.toBe("rgb(35, 47, 62)");
+  expect(colors.text).toBe("rgb(230, 235, 240)");
 });
 
 test("shows a friendly editable diagram name", async ({ page }) => {
@@ -1232,6 +1189,16 @@ test("keeps the canvas zoom controls ordered and padded", async ({ page }) => {
 });
 
 test("supports copy, paste, cut, and keyboard deletion for canvas selections", async ({ page }) => {
+  // This scenario covers Studio's internal selection clipboard. Keep the
+  // browser permission result deterministic across CI and local runs.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: () => Promise.reject(new DOMException("Clipboard access denied", "NotAllowedError")),
+      },
+    });
+  });
   await openAsyncDocs(page);
 
   const resources = page.locator('[data-entity-kind="resource"]');
@@ -1241,11 +1208,11 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await client.click();
   await expect(client).toHaveAttribute("aria-selected", "true");
 
-  await page.keyboard.press("Control+c");
+  await page.keyboard.press(`${MOD}+c`);
   const status = page.getByRole("status");
   await expect(status).toContainText("Copied selection");
   await expect(status).toHaveCSS("animation-name", "toast-in-out");
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press(`${MOD}+v`);
   await expect(page.getByRole("status")).toContainText("Pasted selection");
   await expect(resources).toHaveCount(beforeCount + 1);
   await expect(page.locator('[role="alert"]')).toHaveCount(0);
@@ -1257,11 +1224,11 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await expect(client).toHaveCount(1);
   await client.click();
   await expect(client).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("Control+x");
+  await page.keyboard.press(`${MOD}+x`);
   await expect(page.getByRole("status")).toContainText("Cut selection");
   await expect(page.locator('[data-entity-kind="resource"][data-entity-id="client"]')).toHaveCount(0);
 
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press(`${MOD}+v`);
   await expect(page.getByRole("status")).toContainText("Pasted selection");
   await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(beforeCount);
 
@@ -1272,37 +1239,20 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(beforeCount - 1);
 });
 
-test("offers quick connector ports directly on a selected icon", async ({ page }) => {
-  await openAsyncDocs(page);
-
-  const edges = page.locator('[data-entity-kind="edge"]');
-  const beforeEdgeCount = await edges.count();
-  const client = page.locator('[data-entity-kind="resource"][data-entity-id="client"]');
-  await client.click();
-
-  const quickControls = page.locator('[data-quick-connect="client"]');
-  await expect(quickControls).toHaveCount(1);
-  await expect(quickControls.locator(".port-hit-area")).toHaveCount(12);
-  await expect(quickControls.locator("[data-port-visual]")).toHaveCount(12);
-  await expect(quickControls.locator('[data-port-side="e"]')).toHaveCount(3);
-  await expect(quickControls.locator('[data-port-side="e"][data-port-offset="0.5"]')).toHaveCount(1);
-
-  await quickControls.locator('[data-port-side="e"][data-port-offset="0.5"]').click();
-  await expect(page.locator('[data-node-id="api_alb"][data-port-side="w"]')).toHaveCount(3);
-  await page.locator('[data-node-id="api_alb"][data-port-side="w"][data-port-offset="0.5"]').click();
-
-  await expect(edges).toHaveCount(beforeEdgeCount + 1);
-  await expect(page.locator('[data-entity-kind="edge"][aria-selected="true"]')).toHaveCount(1);
-});
-
-test("previews the calculated route while dragging between ports", async ({ page }) => {
+test("creates a connector via quick-connect ports with a live route preview", async ({ page }) => {
   await openAsyncDocs(page);
 
   const edges = page.locator('[data-entity-kind="edge"]');
   const beforeEdgeCount = await edges.count();
   await page.locator('[data-entity-kind="resource"][data-entity-id="client"]').click();
 
-  const sourcePort = page.locator('[data-quick-connect="client"] [data-port-side="e"][data-port-offset="0.5"]');
+  const quickControls = page.locator('[data-quick-connect="client"]');
+  await expect(quickControls).toHaveCount(1);
+  await expect(quickControls.locator(".port-hit-area")).toHaveCount(12);
+  await expect(quickControls.locator("[data-port-visual]")).toHaveCount(12);
+  await expect(quickControls.locator('[data-port-side="e"]')).toHaveCount(3);
+
+  const sourcePort = quickControls.locator('[data-port-side="e"][data-port-offset="0.5"]');
   await expect(sourcePort).toHaveCount(1);
   const sourceBox = await sourcePort.boundingBox();
   expect(sourceBox).not.toBeNull();

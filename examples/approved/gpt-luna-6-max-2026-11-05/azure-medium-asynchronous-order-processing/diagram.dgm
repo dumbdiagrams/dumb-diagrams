@@ -1,0 +1,31 @@
+dgm 1
+diagram azure_order_processing {
+  grammar azure
+  flow lr
+  title "Asynchronous Order Processing"
+
+  cloud-agnostic.client storefront "Storefront"
+
+  azure.subscription subscription "Azure Subscription" {
+    azure.region region "Region" {
+      azure.api-management-services api "Order API"
+      azure.function-apps intake "Order Intake"
+      azure.azure-service-bus queue "Order Queue"
+      azure.storage-accounts archive "Request Archive"
+      azure.event-grid-subscriptions archive_events "Archive Events"
+      azure.function-apps processor "Order Processor"
+      azure.sql-database orders_db "Orders SQL"
+      azure.monitor monitor "Azure Monitor"
+    }
+  }
+
+  storefront -> api { id submit_order label "Submit order" step 1 }
+  api -> intake { id api_to_intake label "Order request" step 2 }
+  intake -> queue { id queue_order label "Validated order" step 3 }
+  intake -> archive { id archive_request label "Archive request" step 3 }
+  archive -> archive_events { id publish_archive_event label "Archive event" step 4 }
+  queue -> processor { id deliver_queued_order label "Queued order" step 4 }
+  archive_events -> processor { id deliver_archive_event label "Archive event" step 5 }
+  processor -> orders_db { id save_order label "Save completed order" step 6 }
+  processor -> monitor { id send_metrics label "Processing metrics" style dashed }
+}

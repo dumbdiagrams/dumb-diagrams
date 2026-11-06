@@ -1,0 +1,136 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "visitor",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a website visitor, DNS, a content delivery service, and the bucket that stores the website files."
+      }
+    },
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "dns",
+      "kind": "resource",
+      "type": "aws.route-53",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a website visitor, DNS, a content delivery service, and the bucket that stores the website files."
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a website visitor, DNS, a content delivery service, and the bucket that stores the website files."
+      }
+    },
+    {
+      "id": "bucket",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Show a website visitor, DNS, a content delivery service, and the bucket that stores the website files."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "lookup",
+      "source": "visitor",
+      "target": "dns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Resolve domain (visitor to dns) per the request."
+      }
+    },
+    {
+      "id": "alias",
+      "source": "dns",
+      "target": "cdn",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Alias to CDN (dns to cdn) per the request."
+      }
+    },
+    {
+      "id": "origin",
+      "source": "cdn",
+      "target": "bucket",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Fetch files (cdn to bucket) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "visitor_root",
+      "component": "visitor",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "aws_root",
+      "component": "aws",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "dns_in_aws",
+      "component": "dns",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "cdn_in_aws",
+      "component": "cdn",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "bucket_in_aws",
+      "component": "bucket",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

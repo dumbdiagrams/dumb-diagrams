@@ -1,0 +1,22 @@
+dgm 1
+diagram azure_easy_private_application_api {
+  grammar azure
+  flow lr
+  title "Azure private application API"
+
+  cloud-agnostic.client client "Client"
+
+  azure.region region "Region" {
+    azure.api-management-services apim "API Management"
+    azure.vnet app_network "Application network" {
+      azure.function-apps function_app "Function"
+      azure.private-endpoints sql_private_endpoint "SQL private endpoint"
+    }
+    azure.azure-sql sql_db "Azure SQL database"
+  }
+
+  client -> apim { id call_api label "call API" step 1 }
+  apim -> function_app { id route_request label "route requests" step 2 }
+  function_app -> sql_private_endpoint { id query_database label "query database" step 3 }
+  sql_private_endpoint -> sql_db { id private_link label "private link" style dashed }
+}

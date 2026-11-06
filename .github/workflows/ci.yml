@@ -16,21 +16,33 @@ concurrency:
 
 jobs:
   website:
-    runs-on: ubuntu-latest
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 24
+          persist-credentials: false
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Check website, links, documentation examples, and payload budget
         run: pnpm check:website
+      - name: Install website test browser
+        timeout-minutes: 10
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          pnpm exec playwright install chromium --with-deps
+      - name: Check documentation interactions in Chromium
+        run: pnpm --filter @dumb-diagrams/website test:e2e --project=chromium
       - name: Check static subdirectory deployment with consent-gated GA4 and Partytown
         run: pnpm build:website && pnpm --filter @dumb-diagrams/website test
         env:
@@ -42,103 +54,120 @@ jobs:
           PUBLIC_ANALYTICS_RETENTION_MONTHS: "2"
 
   verify:
-    runs-on: ubuntu-latest
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check synchronized package versions
-        run: pnpm check:versions
+      - name: Lint, build, and check every baseline
+        run: pnpm ci:checks
 
-      - name: Check dependency declarations
-        run: pnpm check:dependencies
+      - name: Ensure build left no uncommitted changes
+        run: git diff --exit-code
 
-      - name: Check catalog inventory
-        run: pnpm icons:check
-
-      - name: Build all packages and editor
-        run: pnpm build
-
-      - name: Run unit tests with coverage
-        run: pnpm test:coverage
-
-      - name: Typecheck editor
-        run: pnpm typecheck
-
-      - name: Validate examples
-        run: pnpm check
-
-      - name: Check reviewed routing warnings
-        run: pnpm check:routing
-
-      - name: Enforce compilation performance budget
-        run: pnpm check:performance
-
-      - name: Check editor asset budgets
-        run: pnpm check:assets
-
-      - name: Smoke test publishable CLI package
-        run: pnpm smoke:package
-
-  e2e:
-    runs-on: ubuntu-latest
+  test:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit and integration tests with coverage
+        run: pnpm ci:test
+
+  e2e:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium webkit --with-deps
+        timeout-minutes: 10
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          pnpm exec playwright install chromium --with-deps
 
-      - name: Build editor assets
-        run: pnpm build
+      - name: Build, run Playwright tests, and run the packed CLI Studio journey
+        run: pnpm ci:e2e
 
-      - name: Run Playwright tests
-        run: pnpm test:e2e
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-failures
+          path: .artifacts/playwright/
+          if-no-files-found: ignore
 
-      - name: Run packed CLI Studio journey
-        run: pnpm test:e2e:packed
-
-  cli-windows:
+  cli:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Check style and line endings
+        run: pnpm check:style
 
       - name: Build all packages and editor
         run: pnpm build
@@ -148,3 +177,27 @@ jobs:
 
       - name: Smoke test publishable CLI package
         run: pnpm smoke:package
+        env:
+          DUMB_DIAGRAMS_SMOKE_INSTALLER: pnpm
+
+  ci-required:
+    # GitHub accepts skipped jobs as passing required checks. This gate must
+    # run even when an upstream job is skipped, cancelled, or fails.
+    if: always()
+    needs: [verify, test, e2e, website, cli]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every CI job to succeed
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module <<'NODE'
+          const results = JSON.parse(process.env.JOB_RESULTS);
+          const required = ['verify', 'test', 'e2e', 'website', 'cli'];
+          const unsuccessful = required.filter((job) => results[job]?.result !== 'success');
+          for (const job of required) console.log(`${job}: ${results[job]?.result ?? 'missing'}`);
+          if (unsuccessful.length) {
+            console.error(`Required CI jobs did not succeed: ${unsuccessful.join(', ')}`);
+            process.exitCode = 1;
+          }
+          NODE

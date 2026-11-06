@@ -1,13 +1,52 @@
-import { useEffect, useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
+import { useEffect, useRef, useState } from "react";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { EditorView } from "@codemirror/view";
 import { searchKeymap } from "@codemirror/search";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { oneDark } from "@codemirror/theme-one-dark";
 
+export type SourceLocation = Readonly<{
+  offset: number;
+  line: number;
+  column: number;
+}>;
+
+export type SourceDiagnostic = Readonly<{
+  message: string;
+  location?: SourceLocation;
+}>;
+
+/** Accessibility attributes for CodeMirror's actual editable element. */
+export function sourceEditorAccessibilityAttributes(hasDiagnostics: boolean): Record<string, string> {
+  return {
+    "aria-label": "Diagram source",
+    ...(hasDiagnostics ? { "aria-describedby": "source-editor-diagnostics" } : {}),
+  };
+}
+
+export function sourceEditorAccessibilityExtension(hasDiagnostics: boolean) {
+  return EditorView.contentAttributes.of(sourceEditorAccessibilityAttributes(hasDiagnostics));
+}
+
+type SourceIssue = { message: string; location?: { line: number; column: number } };
+
+/** Resolve a parser line and column to an editor offset. */
+export function sourceDiagnostic(source: string, { message, location }: SourceIssue): SourceDiagnostic {
+  if (!location) return { message };
+  const lines = source.split("\n");
+  const line = Math.max(1, Math.min(lines.length, location.line));
+  const lineStart = lines.slice(0, line - 1).reduce((total, text) => total + text.length + 1, 0);
+  const column = Math.max(1, Math.min(lines[line - 1]!.length + 1, location.column));
+  return {
+    message: `Line ${line}, column ${column}: ${message}`,
+    location: { offset: lineStart + column - 1, line, column },
+  };
+}
+
 function useResolvedTheme(): "light" | "dark" {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "light";
     const attr = document.documentElement.dataset.theme;
     if (attr === "dark") return "dark";
     return "light";
@@ -55,34 +94,71 @@ export function SourceDrawer({
   issues,
   onChange,
   onCommit,
+  onCopy,
+  canFormat = true,
   onReset,
   onFormat,
 }: {
   source: string;
-  issues: Array<{ message: string }>;
+  issues: SourceIssue[];
   onChange: (source: string) => void;
   onCommit: () => void;
+  onCopy: () => void;
+  canFormat?: boolean;
   onReset?: () => void;
   onFormat: () => void;
 }) {
   const resolvedTheme = useResolvedTheme();
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
+  const diagnostics = issues.map((issue) => sourceDiagnostic(source, issue));
+
+  const focusDiagnostic = (location: SourceLocation) => {
+    const view = editorRef.current?.view;
+    if (!view) return;
+    view.dispatch({
+      selection: { anchor: location.offset },
+      effects: EditorView.scrollIntoView(location.offset, { y: "center" }),
+    });
+    view.focus();
+  };
 
   return (
     <div className="source-drawer">
       <div className="code-actions">
-        <button type="button" onClick={onFormat}>Format</button>
-        <button type="button" onClick={() => navigator.clipboard.writeText(source)}>
+        <button type="button" onClick={onFormat} disabled={!canFormat}>
+          Format
+        </button>
+        <button type="button" onClick={onCopy}>
           Copy
         </button>
-        {onReset && <button type="button" onClick={onReset}>Reset example</button>}
+        {onReset && (
+          <button type="button" onClick={onReset}>
+            Reset example
+          </button>
+        )}
       </div>
-      {issues.length > 0 && (
-        <div className="issues" role="status">
-          {issues.map((issue, index) => <div key={index}>{issue.message}</div>)}
+      {diagnostics.length > 0 && (
+        <div className="issues" role="status" aria-live="polite" id="source-editor-diagnostics">
+          {diagnostics.map((diagnostic, index) =>
+            diagnostic.location ? (
+              <button
+                type="button"
+                className="source-diagnostic"
+                key={index}
+                title={`Jump to line ${diagnostic.location.line}, column ${diagnostic.location.column}`}
+                onClick={() => focusDiagnostic(diagnostic.location!)}
+              >
+                {diagnostic.message}
+              </button>
+            ) : (
+              <div key={index}>{diagnostic.message}</div>
+            ),
+          )}
         </div>
       )}
       <div className="source-editor-shell">
         <CodeMirror
+          ref={editorRef}
           value={source}
           height="100%"
           theme={resolvedTheme === "dark" ? oneDark : lightEditorTheme}
@@ -94,6 +170,7 @@ export function SourceDrawer({
           }}
           extensions={[
             EditorView.lineWrapping,
+            sourceEditorAccessibilityExtension(diagnostics.length > 0),
             keymap.of([...defaultKeymap, ...searchKeymap]),
           ]}
           onChange={onChange}

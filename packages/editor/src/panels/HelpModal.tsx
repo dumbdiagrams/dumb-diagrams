@@ -22,18 +22,27 @@ export function HelpModal({
         <section>
           <h3>Source-first workflow</h3>
           <p>
-            The <code>.dgm</code> source is the portable source of truth. Edit it in the Source tool,
-            open it from anywhere on disk, or let an LLM update it and then reload the visual result.
+            The <code>.dgm</code> source is the portable source of truth. Edit it in the Source tool, open it from
+            anywhere on disk, or let an LLM update it and then reload the visual result.
           </p>
           <p>
             Start Studio with <code>dumbdiagrams studio</code>, then use Open to choose any
-            <code>.dgm</code> file. Modern browsers save directly to the selected file; other
-            browsers download a portable source file.
+            <code>.dgm</code> file. Chromium-based desktop browsers are the primary supported browsers. They can save
+            directly to the selected file; other browsers use a download fallback and receive best-effort compatibility.
           </p>
           <p>
-            Keep one diagram per file. Diagram files may live anywhere and can be edited by
-            agents, editors, or Studio without registration.
+            Keep one diagram per file. Diagram files may live anywhere and can be edited by agents, editors, or Studio
+            without registration.
           </p>
+        </section>
+        <section>
+          <h3>Refine your draft</h3>
+          <p>
+            Open an LLM-generated diagram and move items where you want them. Other items and connector paths stay in
+            place, while the arrows of a moved item redraw along the straightest clear path. Warnings help you spot
+            overlaps without changing your work.
+          </p>
+          <p>Auto-fix repairs overlaps and crossings in one step, and Undo restores the entire edit.</p>
         </section>
         <section>
           <h3>Keyboard shortcuts</h3>
@@ -57,16 +66,20 @@ export function HelpModal({
             <h3>Need a starting point?</h3>
             <p>Browse the bundled diagram examples and open one in a fresh tab.</p>
           </div>
-          <button type="button" className="text-button" onClick={onExamples}>Browse examples</button>
+          <button type="button" className="text-button" onClick={onExamples}>
+            Browse examples
+          </button>
         </section>
         <section className="help-about">
           <h3>About</h3>
           <p>Dumb Diagrams Studio · deterministic diagrams for people and LLMs.</p>
           <p>
-            Copyright © 2026 DumbDiagrams contributors. This program is free
-            software under the GNU AGPL v3 and comes without warranty. You may
-            redistribute and modify it under that license.{" "}
-            <a href="./LICENSE" target="_blank" rel="noreferrer">View license</a>.
+            Copyright © 2026 DumbDiagrams contributors. This program is free software under the GNU AGPL v3 and comes
+            without warranty. You may redistribute and modify it under that license.{" "}
+            <a href="./LICENSE" target="_blank" rel="noreferrer">
+              View license
+            </a>
+            .
           </p>
         </section>
       </div>

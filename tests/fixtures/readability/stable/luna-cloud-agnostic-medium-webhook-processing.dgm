@@ -1,0 +1,32 @@
+dgm 1
+diagram webhook-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Webhook Processing"
+  cloud-agnostic.actor partner "External Partner"
+  cloud-agnostic.cloud application-cloud "Application Cloud" {
+    cloud-agnostic.account production-account "Production Account" {
+      cloud-agnostic.region primary-region "Primary Region" {
+        cloud-agnostic.boundary webhook-edge "Webhook Edge" {
+          cloud-agnostic.gateway api-gateway "API Gateway"
+          cloud-agnostic.function webhook-ingress "Webhook Ingress"
+        }
+        cloud-agnostic.object-storage payload-archive "Payload Archive"
+        cloud-agnostic.network private-network "Private Network" {
+          cloud-agnostic.boundary event-processing "Event Processing" {
+            cloud-agnostic.queue event-queue "Event Queue"
+            cloud-agnostic.function event-processor "Event Processor"
+            cloud-agnostic.database event-database "Event Database"
+          }
+        }
+      }
+    }
+  }
+  partner -> api-gateway { id partner-to-gateway label "webhook" step 1 }
+  api-gateway -> webhook-ingress { id gateway-to-ingress label "deliver" step 2 }
+  webhook-ingress -> event-queue { id ingress-to-queue label "enqueue" step 3 }
+  webhook-ingress -> event-database { id ingress-to-database label "idempotency key" step 4 }
+  event-queue -> event-processor { id queue-to-processor label "consume" step 5 }
+  event-processor -> event-database { id processor-to-database label "processed status" step 6 }
+  event-processor -> payload-archive { id processor-to-archive label "archive payload" step 7 }
+}

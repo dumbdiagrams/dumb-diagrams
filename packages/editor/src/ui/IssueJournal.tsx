@@ -4,6 +4,7 @@ export type StudioIssue = {
   severity: "error" | "warning";
   message: string;
   elementIds?: string[];
+  location?: { line: number; column: number };
 };
 
 export function IssueJournal({
@@ -49,20 +50,25 @@ export function IssueJournal({
   const summary = [
     errorCount ? `${errorCount} error${errorCount === 1 ? "" : "s"}` : "",
     warningCount ? `${warningCount} warning${warningCount === 1 ? "" : "s"}` : "",
-  ].filter(Boolean).join(", ");
-  const countLabel = errorCount && warningCount ? summary : errorCount ? `${errorCount} error${errorCount === 1 ? "" : "s"}` : `${warningCount} warning${warningCount === 1 ? "" : "s"}`;
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const countLabel =
+    errorCount && warningCount
+      ? summary
+      : errorCount
+        ? `${errorCount} error${errorCount === 1 ? "" : "s"}`
+        : `${warningCount} warning${warningCount === 1 ? "" : "s"}`;
 
-  const handleIssueKeyDown = (
-    event: ReactKeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
+  const handleIssueKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
-    const nextIndex = event.key === "Home"
-      ? 0
-      : event.key === "End"
-        ? issues.length - 1
-        : (index + (event.key === "ArrowDown" ? 1 : -1) + issues.length) % issues.length;
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? issues.length - 1
+          : (index + (event.key === "ArrowDown" ? 1 : -1) + issues.length) % issues.length;
     itemRefs.current[nextIndex]?.focus();
   };
 
@@ -78,17 +84,23 @@ export function IssueJournal({
         title="Open diagram warnings and errors"
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="issue-journal-mark" aria-hidden="true">!</span>
+        <span className="issue-journal-mark" aria-hidden="true">
+          !
+        </span>
         {countLabel}
       </button>
       {open && (
         <div id={listId} className="issue-journal-popover" role="menu" aria-label="Diagram issues">
-          <div className="issue-journal-summary" role="status">{summary}</div>
+          <div className="issue-journal-summary" role="status">
+            {summary}
+          </div>
           <div className="issue-journal-list">
             {issues.map((issue, index) => (
               <button
                 key={`${issue.severity}-${issue.message}-${index}`}
-                ref={(element) => { itemRefs.current[index] = element; }}
+                ref={(element) => {
+                  itemRefs.current[index] = element;
+                }}
                 type="button"
                 role="menuitem"
                 className={`issue-journal-item is-${issue.severity}`}
@@ -98,9 +110,7 @@ export function IssueJournal({
                 }}
                 onKeyDown={(event) => handleIssueKeyDown(event, index)}
               >
-                <span className="issue-journal-item-kind">
-                  {issue.severity === "error" ? "Error" : "Warning"}
-                </span>
+                <span className="issue-journal-item-kind">{issue.severity === "error" ? "Error" : "Warning"}</span>
                 <span className="issue-journal-item-message">{issue.message}</span>
               </button>
             ))}

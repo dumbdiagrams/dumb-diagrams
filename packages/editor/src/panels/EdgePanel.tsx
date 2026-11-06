@@ -13,7 +13,8 @@ const COLOR_OPTIONS: Array<{ id: EdgeColor; label: string; description: string }
   { id: "teal", label: "Teal", description: "Systems" },
   { id: "purple", label: "Purple", description: "Platform" },
   { id: "amber", label: "Orange", description: "Brand highlight" },
-  { id: "red", label: "Coral", description: "Critical" },
+  { id: "coral", label: "Coral", description: "Warm highlight" },
+  { id: "red", label: "Red", description: "Error" },
   { id: "green", label: "Green", description: "Healthy" },
 ];
 
@@ -84,7 +85,9 @@ export function EdgePanel({
     <div className="edge-panel">
       <div className="edge-panel-intro">
         <div className="edge-panel-kicker">
-          <span className="edge-panel-kicker-icon"><IconConnector /></span>
+          <span className="edge-panel-kicker-icon">
+            <IconConnector />
+          </span>
           <span>Connection</span>
           <span className="edge-panel-id">{edge.id}</span>
         </div>
@@ -93,7 +96,9 @@ export function EdgePanel({
             <h3>{edge.label ?? edge.id}</h3>
             <p>
               <span>{edge.source}</span>
-              <span className="edge-panel-direction" aria-hidden="true">→</span>
+              <span className="edge-panel-direction" aria-hidden="true">
+                →
+              </span>
               <span>{edge.target}</span>
             </p>
           </div>
@@ -209,12 +214,16 @@ export function EdgePanel({
                   onUpdateEdge({ style: option.id });
                 }}
               >
-                <span className={`edge-style-sample is-${option.id}`} aria-hidden="true"><i /></span>
+                <span className={`edge-style-sample is-${option.id}`} aria-hidden="true">
+                  <i />
+                </span>
                 <span className="edge-option-copy">
                   <strong>{option.label}</strong>
                   <small>{option.description}</small>
                 </span>
-                <span className="edge-option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
+                <span className="edge-option-check" aria-hidden="true">
+                  {selected ? "✓" : ""}
+                </span>
               </button>
             );
           })}
@@ -229,7 +238,7 @@ export function EdgePanel({
           </div>
           <span className="edge-current-color">
             <i style={{ backgroundColor: effectiveColor }} aria-hidden="true" />
-            {colorDraft ? COLOR_OPTIONS.find((option) => option.id === colorDraft)?.label : "Auto"}
+            {colorDraft ? COLOR_OPTIONS.find((option) => option.id === colorDraft)?.label : "Default"}
           </span>
         </div>
         <div className="edge-color-options" role="radiogroup" aria-label="Connector color">
@@ -242,10 +251,10 @@ export function EdgePanel({
               setColorDraft(undefined);
               onUpdateColor(undefined);
             }}
-            title="Use the meaning-aware automatic color"
+            title="Use the meaning-aware default color"
           >
             <span className="edge-color-swatch is-auto" aria-hidden="true" />
-            <span>Auto</span>
+            <span>Default</span>
           </button>
           {COLOR_OPTIONS.map((option) => {
             const selected = colorDraft === option.id;
@@ -262,7 +271,11 @@ export function EdgePanel({
                 }}
                 title={`${option.label}: ${option.description}`}
               >
-                <span className="edge-color-swatch" style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }} aria-hidden="true" />
+                <span
+                  className="edge-color-swatch"
+                  style={{ backgroundColor: EDGE_COLOR_VALUES[option.id] }}
+                  aria-hidden="true"
+                />
                 <span>{option.label}</span>
               </button>
             );
@@ -300,7 +313,9 @@ export function EdgePanel({
                   <strong>{option.label}</strong>
                   <small>{option.description}</small>
                 </span>
-                <span className="edge-option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
+                <span className="edge-option-check" aria-hidden="true">
+                  {selected ? "✓" : ""}
+                </span>
               </button>
             );
           })}
@@ -311,10 +326,15 @@ export function EdgePanel({
         <div className="edge-section-heading">
           <div>
             <h4>Route</h4>
-            <p>{routePinnedDraft ? "This path stays where you placed it." : "The layout engine chooses the cleanest path."}</p>
+            <p>
+              {routePinnedDraft
+                ? "This path stays where you placed it."
+                : "The layout engine chooses the cleanest path."}
+            </p>
           </div>
           <span className={`edge-route-status${routePinnedDraft ? " is-pinned" : ""}`}>
-            <i aria-hidden="true" />{routePinnedDraft ? "Pinned" : "Automatic"}
+            <i aria-hidden="true" />
+            {routePinnedDraft ? "Pinned" : "Automatic"}
           </span>
         </div>
         <button
@@ -326,12 +346,18 @@ export function EdgePanel({
             else onPinRoute();
           }}
         >
-          <span className="edge-route-button-icon" aria-hidden="true">{routePinnedDraft ? "⌁" : "✦"}</span>
+          <span className="edge-route-button-icon" aria-hidden="true">
+            {routePinnedDraft ? "⌁" : "✦"}
+          </span>
           <span className="edge-option-copy">
             <strong>{routePinnedDraft ? "Use automatic route" : "Pin current route"}</strong>
-            <small>{routePinnedDraft ? "Let the diagram tidy this path again" : "Keep the current turns and bends"}</small>
+            <small>
+              {routePinnedDraft ? "Let the diagram tidy this path again" : "Keep the current turns and bends"}
+            </small>
           </span>
-          <span className="edge-route-button-arrow" aria-hidden="true">→</span>
+          <span className="edge-route-button-arrow" aria-hidden="true">
+            →
+          </span>
         </button>
       </section>
 
@@ -348,7 +374,15 @@ export function EdgePanel({
 function MeaningGlyph({ kind }: { kind: EdgeKind }) {
   if (kind === "peer") {
     return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        aria-hidden="true"
+      >
         <path d="M7 12H17" />
         <circle cx="5" cy="12" r="2.2" />
         <circle cx="19" cy="12" r="2.2" />

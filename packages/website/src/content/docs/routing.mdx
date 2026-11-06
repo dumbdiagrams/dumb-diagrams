@@ -1,0 +1,51 @@
+---
+title: Connections and routing
+description: How connections find a clear path, and how to guide them when needed.
+section: How it works
+order: 22
+---
+import RouteCandidates from '../../components/docs/RouteCandidates.astro';
+import RouteCostBreakdown from '../../components/docs/RouteCostBreakdown.astro';
+
+The router draws right-angle connections between the placed cards. It tries simple paths first, then uses A* grid search when it needs to find a way around obstacles. Later passes resolve conflicts and place labels.
+
+A short path is useful only if you can follow it. Select a candidate below to see why a clear detour can beat a direct line.
+
+<RouteCandidates />
+
+## How the costs add up
+
+Each bend and extra unit of distance adds to a route's cost. Crossings carry a much larger penalty, so the router usually prefers a longer, clearer path. This score helps choose a connection; it is separate from the [quality comparison](../quality-and-scoring/) for the whole drawing.
+
+<RouteCostBreakdown />
+
+The search has limits. If it cannot find a suitable route within its budget, it uses a fallback and reports a warning. Dense diagrams may still need an adjustment in Studio.
+
+## Default connector shape
+
+Clean and simple wins by default. A connection leaves its source through the side that points at the target, and it arrives through the side that faces back at the source.
+
+- **Straight when aligned.** If two stacked icons share part of a column, or two side-by-side icons sit on almost the same row, and nothing is in between, the connection is one straight line. It may pass over the two icons' own labels, because a detour around them would be harder to read.
+- **One turn when offset.** A dashed connection to a stacked icon that is not aligned makes a single turn and enters through the top or bottom that faces its source.
+- **Around, never through.** If another icon sits in the way, the connection goes around it instead.
+
+In Studio, moving an icon redraws only the connections attached to it, using these same rules. Everything else keeps its current path. If you move both ends of a connection together, it keeps its shape.
+
+## Guide a connection
+
+`from e` prefers the east side of a card, but lets the router choose another side if needed. Adding a fractional offset fixes the attachment point: `from e offset 0.25` attaches a quarter of the way down that side.
+
+```dgm
+diagram port_strength {
+  grammar aws
+  flow lr
+  cloud-agnostic.actor client "Client"
+  cloud-agnostic.server api "API"
+  client -> api { id preferred from e to w }
+  api -> client { id fixed from w offset 0.25 to e offset 0.75 style dashed }
+}
+```
+
+If a connection is hard to read, try clearer grouping, fewer relationships, or removing an old route override. Use a manual route in Studio when you want to keep a particular shape.
+
+Contributors can find the stage-specific penalties and rejection rules in `packages/runtime/ROUTING.md`.

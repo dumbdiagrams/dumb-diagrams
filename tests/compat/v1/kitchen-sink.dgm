@@ -1,0 +1,54 @@
+dgm 1
+diagram kitchen-sink {
+  grammar aws
+  flow lr
+  title "Every v1 keyword"
+
+  cloud-agnostic.actor customer "Customer" { label-position top }
+  cloud-agnostic.server custom "Custom icon" { icon logo }
+
+  aws.cloud cloud "AWS Cloud" {
+    step 1
+    label-position top-right
+    style solid
+    color blue
+    fill subtle
+    aws.region region "Region" {
+      label-position top-left
+      hide-icon
+      style dashed
+      color teal
+      fill none
+      aws.api-gateway api "API" { service "Amazon API Gateway" label-position bottom }
+      aws.aws-lambda worker "Worker" { role secondary }
+      aws.simple-queue-service queue "Queue" { role border }
+    }
+  }
+
+  annotation note_text "Text" { anchor api style text font sans size 12 align left }
+  annotation note_code "Code" { style code font mono size 14 align center }
+  annotation note_callout "Callout" { style callout font serif size 16 align right }
+  annotation note_checklist "Checklist" { style checklist }
+
+  customer -> api { id request label "request" step 1 color graphite from e to w }
+  api -> worker { id invoke step 2 style dashed kind flow color purple from s offset 0.25 to n offset 0.75 }
+  worker -> queue { id sync kind bidirectional color amber }
+  queue -> custom { id peer_link kind peer color red }
+  worker -> custom { id failure kind fail color green }
+  api -> queue { id highlight color coral }
+}
+
+assets {
+  asset logo {
+    svg "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><rect width=\"16\" height=\"16\"/></svg>"
+    w 16
+    h 16
+  }
+}
+
+view default {
+  place customer { x 40 y 48 w 120 h 96 pin manual locked z 2 }
+  place custom { visible false }
+  route request { point 100 120 point 200 120 mode manual pin badge 0.25 top label 0.75 bottom }
+  annotation note_text { x 300 y 80 w 160 h 48 pin }
+}

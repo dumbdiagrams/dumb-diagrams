@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { catalogIconUrl, type CatalogEntry } from "@dumb-diagrams/runtime/catalog";
 
-import {
-  CATALOG_DRAG_MIME,
-  serializeCatalogDragPayload,
-} from "../catalog-dnd";
+import { CATALOG_DRAG_MIME, serializeCatalogDragPayload } from "../catalog-dnd";
 import { ProviderMark } from "./ProviderMark";
 
 const ICON_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000] as const;
@@ -30,6 +27,8 @@ export function CatalogAssetCard({
   const retryTimer = useRef<number | undefined>(undefined);
   const iconSize = variant === "group" ? 52 : 40;
   const iconUrl = catalogIconUrl(entry.browserPath);
+  const iconRef = useRef<HTMLImageElement>(null);
+  const iconSrc = retryCount ? `${iconUrl}${iconUrl.includes("?") ? "&" : "?"}icon-retry=${retryCount}` : iconUrl;
 
   useEffect(() => {
     setStatus("loading");
@@ -39,9 +38,10 @@ export function CatalogAssetCard({
     };
   }, [entry.browserPath]);
 
-  const iconSrc = retryCount
-    ? `${iconUrl}${iconUrl.includes("?") ? "&" : "?"}icon-retry=${retryCount}`
-    : iconUrl;
+  useEffect(() => {
+    const image = iconRef.current;
+    if (image?.complete && image.naturalWidth > 0) setStatus("loaded");
+  }, [iconSrc]);
 
   const handleIconError = () => {
     if (retryCount >= ICON_RETRY_DELAYS_MS.length) {
@@ -71,10 +71,7 @@ export function CatalogAssetCard({
         draggable
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "copy";
-          event.dataTransfer.setData(
-            CATALOG_DRAG_MIME,
-            serializeCatalogDragPayload(entry),
-          );
+          event.dataTransfer.setData(CATALOG_DRAG_MIME, serializeCatalogDragPayload(entry));
           event.dataTransfer.setData("text/plain", entry.type);
         }}
         title={`${entry.name} · ${entry.type} · Click to add or drag to the canvas`}
@@ -92,6 +89,7 @@ export function CatalogAssetCard({
             </span>
           ) : (
             <img
+              ref={iconRef}
               src={iconSrc}
               alt=""
               width={iconSize}
@@ -107,7 +105,9 @@ export function CatalogAssetCard({
             />
           )}
         </span>
-        <span className="palette-label" title={entry.name}>{entry.name}</span>
+        <span className="palette-label" title={entry.name}>
+          {entry.name}
+        </span>
         {variant === "group" && entry.groupKind && (
           <span className="group-card-meta">
             <ProviderMark provider={entry.provider} />

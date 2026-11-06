@@ -1,5 +1,6 @@
 import { getGroup, getResource } from "./document.js";
 import { validateDocumentConstraints } from "./constraints.js";
+import { PROVIDER_RULES } from "./provider-rules.js";
 import type { DiagramDocument, ValidationIssue, CatalogRule } from "./types.js";
 
 export interface ValidationOptions {
@@ -43,6 +44,19 @@ export function validateDocument(
     ids.add(r.id);
   }
 
+  const edgeIds = new Set<string>();
+  for (const e of doc.edges) {
+    if (edgeIds.has(e.id)) {
+      issues.push({
+        level: "error",
+        code: "duplicate-id",
+        message: `Duplicate id: ${e.id}`,
+        id: e.id,
+      });
+    }
+    edgeIds.add(e.id);
+  }
+
   for (const r of doc.resources) {
     const rule = catalog.get(r.type);
     if (!rule) {
@@ -54,6 +68,9 @@ export function validateDocument(
       });
       continue;
     }
+
+    const providerIssue = validateProvider(doc.grammar, rule.provider, "Resource", r.id, r.type);
+    if (providerIssue) issues.push(providerIssue);
 
     if (!r.parent) {
       if (enforceCatalogRules && !rule.allowRoot) {
@@ -87,18 +104,26 @@ export function validateDocument(
       });
     }
 
-    if (rule.scope === "regional" && isInsideVpc(doc, r.parent)) {
+    const providerRules = PROVIDER_RULES[rule.provider ?? doc.grammar];
+    if (providerRules.outsideNetwork.has(r.type) && isInsideNetwork(doc, r.parent)) {
       issues.push({
         level: "warning",
-        code: "regional-in-vpc",
-        message: `${r.type} (${r.id}) is nested inside a VPC; regional services should be outside VPC`,
+        code: "managed-service-in-network",
+        message: `${r.type} (${r.id}) is a managed service; draw it outside the ${providerRules.network}`,
         id: r.id,
       });
     }
   }
 
   for (const e of doc.edges) {
-    if (!getResource(doc, e.source) && !getGroup(doc, e.source)) {
+    if (!getResource(doc, e.source) && getGroup(doc, e.source)) {
+      issues.push({
+        level: "error",
+        code: "invalid-edge-endpoint",
+        message: `Edge ${e.id} source ${e.source} must reference a resource, not a group`,
+        id: e.id,
+      });
+    } else if (!getResource(doc, e.source)) {
       issues.push({
         level: "error",
         code: "missing-source",
@@ -106,7 +131,14 @@ export function validateDocument(
         id: e.id,
       });
     }
-    if (!getResource(doc, e.target) && !getGroup(doc, e.target)) {
+    if (!getResource(doc, e.target) && getGroup(doc, e.target)) {
+      issues.push({
+        level: "error",
+        code: "invalid-edge-endpoint",
+        message: `Edge ${e.id} target ${e.target} must reference a resource, not a group`,
+        id: e.id,
+      });
+    } else if (!getResource(doc, e.target)) {
       issues.push({
         level: "error",
         code: "missing-target",
@@ -126,6 +158,19 @@ export function validateDocument(
       });
     }
     const rule = g.type ? catalog.get(g.type) : undefined;
+    if (g.type && rule) {
+      const providerIssue = validateProvider(doc.grammar, rule.provider, "Group", g.id, g.type);
+      if (providerIssue) issues.push(providerIssue);
+    }
+    const { rootBoundary } = PROVIDER_RULES[doc.grammar];
+    if (enforceCatalogRules && g.type === "cloud-agnostic.cloud" && rootBoundary !== g.type) {
+      issues.push({
+        level: "error",
+        code: "generic-cloud-boundary",
+        message: `Group ${g.id}: grammar ${doc.grammar} draws its outer boundary with ${rootBoundary}, not cloud-agnostic.cloud`,
+        id: g.id,
+      });
+    }
     if (enforceCatalogRules && g.type && !g.parent && rule && !rule.allowRoot) {
       issues.push({
         level: "error",
@@ -170,7 +215,26 @@ export function validateDocument(
   return issues;
 }
 
-function isInsideVpc(doc: DiagramDocument, groupId: string): boolean {
+function validateProvider(
+  grammar: DiagramDocument["grammar"],
+  provider: CatalogRule["provider"],
+  entityKind: "Resource" | "Group",
+  id: string,
+  type: string,
+): ValidationIssue | undefined {
+  if (!provider || provider === "cloud-agnostic") return undefined;
+  if (grammar !== provider) {
+    return {
+      level: "error",
+      code: "provider-mismatch",
+      message: `${entityKind} ${id} type ${type} belongs to ${provider}, but document grammar is ${grammar}`,
+      id,
+    };
+  }
+  return undefined;
+}
+
+function isInsideNetwork(doc: DiagramDocument, groupId: string): boolean {
   let current = getGroup(doc, groupId);
   const seen = new Set<string>();
   while (current && !seen.has(current.id)) {

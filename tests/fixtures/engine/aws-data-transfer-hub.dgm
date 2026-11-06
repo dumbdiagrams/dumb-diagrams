@@ -1,0 +1,61 @@
+dgm 1
+diagram aws-data-transfer-hub {
+  grammar aws
+  flow lr
+  title "AWS Data Transfer Hub"
+
+  cloud-agnostic.actor user "User"
+
+  aws.cloud cloud "AWS Cloud" {
+    aws.account customer "Customer's AWS Account" {
+      cloud-agnostic.boundary auth "Authentication" {
+        aws.cognito cognito "Amazon Cognito" { label-position top }
+        cloud-agnostic.identity oidc "OpenID Connect" { label-position top }
+      }
+
+      aws.dynamodb state "Data transfer task information"
+
+      cloud-agnostic.boundary frontend "Public web UI" {
+        label-position top-right
+        cloud-agnostic.client ui "Data Transfer Hub UI"
+        aws.cloudfront cloudfront "Amazon CloudFront"
+        aws.simple-storage-service ui_bucket "Static web assets"
+      }
+
+      aws.aws-appsync appsync "GraphQL backend API"
+      aws.aws-lambda api_lambda "API Lambda"
+
+      cloud-agnostic.boundary workflow "AWS Step Functions workflow" {
+        aws.aws-lambda workflow_lambda "Workflow Lambda"
+        aws.aws-cloudformation cloudformation "Plugin deployment"
+      }
+
+      cloud-agnostic.boundary workloads "Application workloads" {
+        aws.aws-fargate fargate "Plugin transfer tasks"
+      }
+    }
+
+    aws.account managed "AWS Managed Account" {
+      aws.aws-cloudformation-template s3_component "S3 replication component template"
+      aws.aws-cloudformation-template dynamodb_component "DynamoDB replication component template"
+      aws.simple-storage-service templates "Centralized plugin templates"
+      aws.aws-cloudformation-template ecr_component "ECR replication component template"
+      aws.elastic-container-registry ecr "Plugin container images"
+      aws.elastic-container-registry-image ecr_image "ECR replication Docker image"
+    }
+  }
+
+  user -> ui { from s to w }
+  ui -> cloudfront { step 1 }
+  cloudfront -> ui_bucket
+  ui -> appsync { step 2 from n to w }
+  ui -> cognito { step 3 style dashed kind peer from n to s }
+  ui -> oidc { style dashed kind peer from n to s }
+  appsync -> api_lambda { step 4 }
+  api_lambda -> workflow_lambda { step 5 }
+  workflow_lambda -> cloudformation
+  cloudformation -> fargate { from s to n }
+  templates -> cloudformation { step 6 }
+  ecr -> fargate { step 7 }
+  appsync -> state { step 8 }
+}

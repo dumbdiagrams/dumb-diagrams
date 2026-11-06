@@ -23,9 +23,7 @@ describe("catalogIconUrl", () => {
   it("falls back to a root-relative URL when the browser base is invalid", () => {
     vi.stubGlobal("document", { baseURI: "not a URL" });
     try {
-      expect(catalogIconUrl("catalog-icons/aws/example.svg")).toBe(
-        "/catalog-icons/aws/example.svg",
-      );
+      expect(catalogIconUrl("catalog-icons/aws/example.svg")).toBe("/catalog-icons/aws/example.svg");
     } finally {
       vi.unstubAllGlobals();
     }

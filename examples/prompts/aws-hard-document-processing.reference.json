@@ -1,0 +1,166 @@
+{
+  "$comment": "Reviewed reference for aws-hard-document-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "aws",
+  "exclusive": true,
+  "roles": {
+    "client": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "cloud"
+    },
+    "ops": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "cloud"
+    },
+    "cloud": {
+      "types": [
+        "aws.cloud"
+      ]
+    },
+    "region": {
+      "types": [
+        "aws.region"
+      ],
+      "within": "cloud"
+    },
+    "vpc": {
+      "types": [
+        "aws.vpc"
+      ],
+      "within": "region"
+    },
+    "az1": {
+      "types": [
+        "aws.az"
+      ],
+      "within": "vpc"
+    },
+    "az2": {
+      "types": [
+        "aws.az"
+      ],
+      "within": "vpc"
+    },
+    "subnet1": {
+      "types": [
+        "aws.subnet.private"
+      ],
+      "within": "az1"
+    },
+    "subnet2": {
+      "types": [
+        "aws.subnet.private"
+      ],
+      "within": "az2"
+    },
+    "w1": {
+      "types": [
+        "aws.aws-fargate"
+      ],
+      "within": "subnet1"
+    },
+    "w2": {
+      "types": [
+        "aws.aws-fargate"
+      ],
+      "within": "subnet2"
+    },
+    "api": {
+      "types": [
+        "aws.api-gateway"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "intake": {
+      "types": [
+        "aws.aws-lambda"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "input": {
+      "types": [
+        "aws.simple-storage-service",
+        "aws.simple-storage-service-bucket"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "output": {
+      "types": [
+        "aws.simple-storage-service",
+        "aws.simple-storage-service-bucket"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "jobs": {
+      "types": [
+        "aws.simple-queue-service",
+        "aws.simple-queue-service-queue"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "dlq": {
+      "types": [
+        "aws.simple-queue-service",
+        "aws.simple-queue-service-queue"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "ddb": {
+      "types": [
+        "aws.dynamodb"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "sns": {
+      "types": [
+        "aws.simple-notification-service"
+      ],
+      "within": "region",
+      "outside": "vpc"
+    },
+    "cdn": {
+      "types": [
+        "aws.cloudfront"
+      ],
+      "within": "cloud",
+      "outside": "vpc"
+    }
+  },
+  "edges": [
+    "client -> api",
+    "api -> intake",
+    "intake -> input",
+    "intake -> jobs",
+    "jobs -- w1",
+    "jobs -- w2",
+    "w1 -- input",
+    "w2 -- input",
+    "w1 -> output",
+    "w2 -> output",
+    "w1 -> ddb",
+    "w2 -> ddb",
+    "w1 -> sns",
+    "w2 -> sns",
+    "client -> cdn",
+    "cdn -> output",
+    "jobs -> dlq",
+    "ops -- dlq",
+    "ops -- ddb",
+    "dlq -> jobs",
+    "sns -> ops"
+  ]
+}

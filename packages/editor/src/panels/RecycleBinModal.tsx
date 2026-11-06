@@ -53,8 +53,12 @@ export function RecycleBinModal({
       ) : (
         <div className="recycle-bin-modal">
           <div className="recycle-bin-toolbar">
-            <span>{tabs.length} recoverable diagram{tabs.length === 1 ? "" : "s"}</span>
-            <button type="button" className="text-button" onClick={onClear}>Empty recycle bin</button>
+            <span>
+              {tabs.length} recoverable diagram{tabs.length === 1 ? "" : "s"}
+            </span>
+            <button type="button" className="text-button" onClick={onClear}>
+              Empty recycle bin
+            </button>
           </div>
           <div className="recycle-bin-list" role="list" aria-label="Recoverable diagrams">
             {tabs.map((tab) => (

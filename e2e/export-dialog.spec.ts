@@ -39,3 +39,18 @@ test("expanded advanced options restore laptop-height scrolling", async ({ page 
   await expect(body).toHaveCSS("overflow-y", "auto");
   await expect.poll(() => body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
 });
+
+test("oversized DPI-scaled raster exports fail visibly without closing the dialog", async ({ page }) => {
+  const dialog = await openExport(page);
+  await dialog.getByText("Advanced", { exact: true }).click();
+  await dialog.getByRole("combobox", { name: "Size" }).selectOption("custom");
+  await dialog.getByRole("spinbutton", { name: "Width px", exact: true }).fill("8192");
+  await dialog.getByRole("spinbutton", { name: "Height px", exact: true }).fill("8192");
+  await dialog.getByRole("combobox", { name: "DPI" }).selectOption("300");
+
+  await dialog.getByRole("button", { name: "Export PNG", exact: true }).click();
+
+  await expect(page.locator(".toast")).toContainText("Raster export dimensions exceed");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Export PNG", exact: true })).toBeEnabled();
+});

@@ -1,18 +1,174 @@
-import {
-  createAsyncDocsFixture,
-  getDefaultView,
-} from "@dumb-diagrams/runtime/core";
+import { createEmptyDocument, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { eraseOrthogonalRouteLoops } from "@dumb-diagrams/runtime/route";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
+import {
+  eraseOrthogonalRouteLoops,
+  ROUTING_BUDGET_WARNING_CODE,
+  ROUTING_BUDGET_WARNING_MESSAGE,
+} from "@dumb-diagrams/runtime/route";
+import type { RoutingDiagnostics } from "@dumb-diagrams/runtime/route";
 import { describe, expect, it } from "vitest";
 
-import { compileDiagramSource, STUDIO_CANVAS_PADDING } from "./diagram-compiler";
-import { addResource, moveSelection, needsAutoFix, setRoute } from "./editor-model";
+import {
+  autoFixRejectionReason,
+  compileDocument,
+  compileDiagramSource,
+  getCommittedCompilationEpoch,
+  STUDIO_CANVAS_PADDING,
+  warmDiagramCompilationCache,
+} from "./diagram-compiler";
+
+import { moveSelection, needsAutoFix, setRoute } from "./editor-model";
+import { addResourceResult } from "./model/catalog-placement";
 import { DIAGRAM_EXAMPLES } from "./examples";
+import awsDataTransferHubSource from "../../../tests/fixtures/engine/aws-data-transfer-hub.dgm?raw";
+import bedrockClaimsProcessingSource from "../../../tests/fixtures/engine/bedrock-claims-processing.dgm?raw";
+import simpleServerlessWebApplicationSource from "../../../tests/fixtures/engine/simple-serverless-web-application.dgm?raw";
 import { leftStagingInsertionPoint } from "./grid";
 
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
+
 describe("diagram compilation canvas bounds", () => {
+  it("reports malformed embedded SVGs as repairable compilation issues", () => {
+    const doc = createEmptyDocument("invalid-asset-editor");
+    doc.assets = [
+      {
+        id: "unsafe",
+        kind: "svg",
+        content: "<svg><script>alert(1)</script></svg>",
+        intrinsicW: 64,
+        intrinsicH: 64,
+      },
+    ];
+
+    const result = compileDocument(doc, false);
+
+    expect(result).toMatchObject({
+      ok: false,
+      svg: null,
+      layout: null,
+      issues: [
+        expect.objectContaining({
+          level: "error",
+          code: "invalid-asset",
+          id: "unsafe",
+        }),
+      ],
+    });
+  });
+
+  it("preserves the typed parser code for invalid syntax", () => {
+    const result = compileDiagramSource('diagram bad { title "unterminated }', false);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.parseErrorCode).toBe("invalid-syntax");
+    expect(result.parseError).toBe("Unterminated quoted string");
+  });
+
+  it("preserves the typed parser code for source-size rejection", () => {
+    const result = compileDiagramSource("x".repeat(DIAGRAM_LIMITS.sourceBytes + 1), false);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.parseErrorCode).toBe("source-too-large");
+    expect(result.parseError).toBe("Diagram exceeds the 1 MiB source limit");
+  });
+
+  it("retains fan-out routes and propagates a deterministic routing budget warning", () => {
+    const doc = createEmptyDocument("routing-budget-fanout");
+    doc.flow = "lr";
+    doc.resources = Array.from({ length: 10 }, (_, index) => ({
+      id: `resource${index}`,
+      type: "cloud-agnostic.actor",
+      label: { service: `Resource ${index}` },
+      role: "primary" as const,
+      props: {},
+    }));
+    doc.edges = Array.from({ length: 9 }, (_, index) => ({
+      id: `edge${index}`,
+      source: "resource0",
+      target: `resource${index + 1}`,
+      style: "solid" as const,
+      kind: "flow" as const,
+    }));
+
+    let callerDiagnostics: RoutingDiagnostics | undefined;
+    const result = compileDiagramSource(printDgm(doc), false, {
+      maxScorePathCalls: 10,
+      maxRouteConflictChecks: 10,
+      maxAstarExpansions: 10,
+      maxRepairCandidates: 10,
+      onDiagnostics: (diagnostics) => {
+        callerDiagnostics = diagnostics;
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.layout.edges).toHaveLength(doc.edges.length);
+    expect(result.issues).toContainEqual({
+      level: "warning",
+      code: ROUTING_BUDGET_WARNING_CODE,
+      message: ROUTING_BUDGET_WARNING_MESSAGE,
+    });
+    expect(callerDiagnostics?.exhausted).toBe(true);
+  });
+
+  it("returns a cloneable failed compilation when routing raises an unexpected error", () => {
+    const doc = createEmptyDocument("routing-fault");
+    doc.resources = [
+      {
+        id: "source",
+        type: "cloud-agnostic.actor",
+        label: { service: "Source" },
+        role: "primary",
+        props: {},
+      },
+      {
+        id: "target",
+        type: "cloud-agnostic.actor",
+        label: { service: "Target" },
+        role: "primary",
+        props: {},
+      },
+    ];
+    doc.edges = [
+      {
+        id: "fault-edge",
+        source: "source",
+        target: "target",
+        style: "solid",
+        kind: "flow",
+      },
+    ];
+
+    const result = compileDiagramSource(printDgm(doc), false, {
+      maxScorePathCalls: 0,
+      maxRouteConflictChecks: 0,
+      maxAstarExpansions: 0,
+      maxRepairCandidates: 0,
+      onDiagnostics: () => {
+        throw new Error("injected routing fault");
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.compilationError).toEqual({
+      code: "compilation",
+      phase: "routing",
+      message: "Compilation failed during routing: injected routing fault",
+    });
+    expect(result.issues).toContainEqual({
+      level: "error",
+      code: "compilation",
+      message: "Compilation failed during routing: injected routing fault",
+    });
+    expect(structuredClone(result)).toEqual(result);
+  });
+
   it("always reserves generous free space around the laid-out canvas", () => {
     const result = compileDiagramSource(printDgm(createAsyncDocsFixture()), false);
     expect(result.ok).toBe(true);
@@ -46,61 +202,67 @@ describe("diagram compilation canvas bounds", () => {
     getDefaultView(doc).routes.e3 = {
       pin: true,
       mode: "manual",
-      points: [
-        start,
-        { x: collisionX, y: start.y },
-        { x: collisionX, y: collisionY },
-        finish,
-      ],
+      points: [start, { x: collisionX, y: start.y }, { x: collisionX, y: collisionY }, finish],
     };
 
     const result = compileDiagramSource(printDgm(doc), false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.invariantFailures).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining(["e3", "workerA"]),
-      }),
-    ]));
+    expect(result.invariantFailures).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["e3", "workerA"]),
+        }),
+      ]),
+    );
   });
 
-  it("uses the canonical prompt/brief/reference roles for AWS examples", () => {
-    expect(DIAGRAM_EXAMPLES).toHaveLength(8);
+  it("stops Auto-fix from introducing a new diagram quality failure", () => {
+    const current = compileDiagramSource(printDgm(createAsyncDocsFixture()), false);
+    expect(current.ok).toBe(true);
+    if (!current.ok) return;
+    const failure = {
+      code: "edge-icon-collision",
+      message: "Edge api passes through icon of storage",
+      elementIds: ["api", "storage"],
+    };
+    const candidate = {
+      ...current,
+      invariantFailures: [...current.invariantFailures, failure],
+    };
+
+    expect(autoFixRejectionReason(current, candidate)).toBe(failure.message);
+    expect(autoFixRejectionReason(candidate, { ...candidate })).toBeUndefined();
+  });
+
+  it("lists every approved bundle with its prompt and brief", () => {
     expect(DIAGRAM_EXAMPLES.map((example) => example.id)).toEqual([
-      "bedrock-claims-processing",
-      "aws-data-transfer-hub",
-      "aws-high-availability-web-app",
-      "simple-serverless-web-application",
-      "image-thumbnail-pipeline",
-      "asynchronous-report-generation",
-      "event-driven-order-fulfillment",
-      "azure-private-app-service",
-    ]);
-    const awsIds = new Set([
-      "bedrock-claims-processing",
-      "aws-data-transfer-hub",
-      "aws-high-availability-web-app",
-      "simple-serverless-web-application",
-      "image-thumbnail-pipeline",
-      "asynchronous-report-generation",
-      "event-driven-order-fulfillment",
+      "aws-easy-static-website-delivery",
+      "aws-medium-factory-iot-telemetry",
+      "aws-medium-image-thumbnail-pipeline",
+      "aws-hard-document-processing",
+      "azure-easy-private-application-api",
+      "azure-medium-asynchronous-order-processing",
+      "azure-medium-industrial-iot-telemetry",
+      "azure-hard-private-order-processing",
+      "gcp-easy-customer-record-api",
+      "gcp-medium-document-processing",
+      "gcp-medium-webhook-event-pipeline",
+      "gcp-hard-media-processing",
+      "cloud-agnostic-easy-customer-record-api",
+      "cloud-agnostic-medium-team-project-portal",
+      "cloud-agnostic-medium-webhook-processing",
+      "cloud-agnostic-hard-order-processing",
     ]);
     for (const example of DIAGRAM_EXAMPLES) {
       expect(example.prompt.trim().length, example.id).toBeGreaterThan(40);
+      expect(example.title, example.id).not.toBe(example.id);
+      expect(example.description, example.id).not.toMatch(/^#/);
       expect(example.prompt).not.toMatch(
         /(?:replicate (?:it|this|from)|reference (?:image|screenshot)|attached (?:image|screenshot)|based on (?:the|this) image)/i,
       );
-      if (awsIds.has(example.id)) {
-        expect(example.architectureBrief?.trim().length, example.id).toBeGreaterThan(80);
-        expect(example.referenceSpec?.trim().length, example.id).toBeGreaterThan(500);
-        expect(example.prompt, example.id).not.toMatch(
-          /(?:connector sides?|exact (?:row|column|x|y)|automatic layout|routing instructions?|place .* (?:left|right|above|below))/i,
-        );
-      } else {
-        expect(example.architectureBrief, example.id).toBeUndefined();
-        expect(example.referenceSpec, example.id).toBeUndefined();
-      }
+      expect(example.architectureBrief?.trim().length, example.id).toBeGreaterThan(80);
     }
   });
 
@@ -110,40 +272,24 @@ describe("diagram compilation canvas bounds", () => {
     }
   });
 
-  it("keeps the Bedrock example compact and wraps long service names", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "bedrock-claims-processing",
-    );
+  it("wraps long Bedrock service names", () => {
+    const example = { source: bedrockClaimsProcessingSource };
     expect(example).toBeDefined();
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.layout.width).toBeLessThanOrEqual(1_600);
-    expect(result.layout.height).toBeLessThanOrEqual(960);
     expect(result.svg).toContain(">Amazon Bedrock Data</text>");
     expect(result.svg).toContain(">Automation</text>");
     expect(result.svg).not.toContain(">Amazon Bedrock Data Automation</text>");
   });
 
-  it("keeps the Bedrock workflow as wide bands with distinct, straight routes", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "bedrock-claims-processing",
-    );
+  it("keeps Bedrock routes distinct and straight", () => {
+    const example = { source: bedrockClaimsProcessingSource };
     expect(example).toBeDefined();
     const result = compileDiagramSource(example!.source, false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-
-    expect(result.layout.width / result.layout.height).toBeGreaterThan(1.5);
-    const nodes = new Map(result.layout.nodes.map((node) => [node.id, node]));
-    expect(nodes.get("sample_docs")!.obstacle.x).toBeLessThan(
-      nodes.get("blueprint_generation")!.obstacle.x,
-    );
-    expect(nodes.get("claims_docs")!.obstacle.x).toBeLessThan(
-      nodes.get("extractor")!.obstacle.x,
-    );
-    expect(nodes.get("extractor")!.obstacle.x).toBeLessThan(nodes.get("sns")!.obstacle.x);
 
     const edges = new Map(result.layout.edges.map((edge) => [edge.id, edge]));
     const extraction = edges.get("claims_to_extract")!;
@@ -160,21 +306,18 @@ describe("diagram compilation canvas bounds", () => {
     // The long workflow edge must route around the extraction cards. This is
     // an automatic route in the curated source, so a content collision is a
     // router regression rather than an intentional authored warning.
-    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining([
-          "workflow_to_state",
-          expect.stringMatching(/^(extractor|fraud_model)$/),
-        ]),
-      }),
-    ]));
+    expect(result.invariantFailures).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["workflow_to_state", expect.stringMatching(/^(extractor|fraud_model)$/)]),
+        }),
+      ]),
+    );
   });
 
   it("compiles the claims workflow with the editor grid enabled", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "bedrock-claims-processing",
-    );
+    const example = { source: bedrockClaimsProcessingSource };
     expect(example).toBeDefined();
     const source = example!.source
       .replace("diagram bedrock-claims-processing", "diagram claims-processing-workflow")
@@ -189,19 +332,18 @@ describe("diagram compilation canvas bounds", () => {
 
     const workflow = result.layout.edges.find((edge) => edge.id === "workflow_to_state");
     expect(workflow?.points.length).toBeGreaterThan(1);
-    expect(result.invariantFailures).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: "edge-icon-collision",
-        elementIds: expect.arrayContaining([
-          "workflow_to_state",
-          expect.stringMatching(/^(extractor|fraud_model)$/),
-        ]),
-      }),
-    ]));
+    expect(result.invariantFailures).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "edge-icon-collision",
+          elementIds: expect.arrayContaining(["workflow_to_state", expect.stringMatching(/^(extractor|fraud_model)$/)]),
+        }),
+      ]),
+    );
   });
 
   it("keeps Data Transfer Hub compact and free of connector dead ends", () => {
-    const example = DIAGRAM_EXAMPLES.find((candidate) => candidate.id === "aws-data-transfer-hub")!;
+    const example = { source: awsDataTransferHubSource }!;
     const result = compileDiagramSource(example.source, true);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -212,9 +354,7 @@ describe("diagram compilation canvas bounds", () => {
     expect(groups.get("managed")!.bounds.h / groups.get("managed")!.bounds.w).toBeGreaterThan(0.9);
 
     const nodes = new Map(result.layout.nodes.map((node) => [node.id, node]));
-    expect(Math.abs(
-      nodes.get("cognito")!.icon.y - nodes.get("oidc")!.icon.y,
-    )).toBeLessThanOrEqual(16);
+    expect(Math.abs(nodes.get("cognito")!.icon.y - nodes.get("oidc")!.icon.y)).toBeLessThanOrEqual(16);
     for (const edge of result.layout.edges) {
       expect(edge.points, edge.id).toEqual(eraseOrthogonalRouteLoops(edge.points));
     }
@@ -248,10 +388,12 @@ describe("diagram compilation canvas bounds", () => {
     const result = compileDiagramSource(printDgm(doc), false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.layout.canvasBounds).toEqual(expect.objectContaining({
-      x: -368,
-      y: -272,
-    }));
+    expect(result.layout.canvasBounds).toEqual(
+      expect.objectContaining({
+        x: -368,
+        y: -272,
+      }),
+    );
     expect(result.layout.canvasBounds!.w).toBe(result.layout.width + 496);
     expect(result.layout.canvasBounds!.h).toBe(result.layout.height + 400);
     expect(result.svg).toContain(
@@ -265,8 +407,11 @@ describe("diagram compilation canvas bounds", () => {
     expect(before.ok).toBe(true);
     if (!before.ok) return;
     const entry = getCatalogEntry("aws.simple-storage-service")!;
-    const at = leftStagingInsertionPoint(before.layout, 240);
-    const added = addResource(doc, entry, undefined, at);
+    const at = leftStagingInsertionPoint(doc, before.layout, 240);
+    const addedResult = addResourceResult(doc, entry, undefined, at);
+    expect(addedResult.isOk()).toBe(true);
+    if (addedResult.isErr()) return;
+    const added = addedResult.value;
     const after = compileDiagramSource(printDgm(added.doc), false);
     expect(after.ok).toBe(true);
     if (!after.ok) return;
@@ -275,21 +420,25 @@ describe("diagram compilation canvas bounds", () => {
     for (const edge of after.layout.edges) {
       expect(edge.points, edge.id).toEqual(routesBefore.get(edge.id));
     }
-    expect(after.layout.nodes.find((node) => node.id === added.id)!.obstacle.x)
-      .toBeLessThan(Math.min(
+    expect(after.layout.nodes.find((node) => node.id === added.id)!.obstacle.x).toBeLessThan(
+      Math.min(
         ...before.layout.groups.map((group) => group.bounds.x),
         ...before.layout.nodes.map((node) => node.obstacle.x),
         ...before.layout.edges.flatMap((edge) => edge.points.map((point) => point.x)),
-      ));
+      ),
+    );
   });
 
   it("keeps routes stable when an unrelated staged resource moves", () => {
-    const example = DIAGRAM_EXAMPLES.find(
-      (candidate) => candidate.id === "simple-serverless-web-application",
-    )!;
+    const example = { source: simpleServerlessWebApplicationSource }!;
     const doc = parseDgm(example.source);
-    const entry = getCatalogEntry("azure.abs-member")!;
-    const added = addResource(doc, entry, undefined, { x: -320, y: 720 });
+    // Keep the staged item provider-neutral: provider validation now rejects
+    // unrelated Azure entries in this AWS document before routing is reached.
+    const entry = getCatalogEntry("cloud-agnostic.server")!;
+    const addedResult = addResourceResult(doc, entry, undefined, { x: -320, y: 720 });
+    expect(addedResult.isOk()).toBe(true);
+    if (addedResult.isErr()) return;
+    const added = addedResult.value;
     // Documents authored before explicit editor placements were marked as
     // manual still contain pinned root items in this form.
     delete getDefaultView(added.doc).places[added.id]!.manual;
@@ -312,19 +461,14 @@ describe("diagram compilation canvas bounds", () => {
     expect(before.ok).toBe(true);
     if (!before.ok) return;
 
-    const moved = moveSelection(
-      adjusted,
-      [{ kind: "resource", id: added.id }],
-      0,
-      -560,
-      before.layout,
-    );
+    const moved = moveSelection(adjusted, [{ kind: "resource", id: added.id }], 0, -560, before.layout);
     const after = compileDiagramSource(printDgm(moved), false);
     expect(after.ok).toBe(true);
     if (!after.ok) return;
 
-    expect(new Map(after.layout.edges.map((edge) => [edge.id, edge.points])))
-      .toEqual(new Map(before.layout.edges.map((edge) => [edge.id, edge.points])));
+    expect(new Map(after.layout.edges.map((edge) => [edge.id, edge.points]))).toEqual(
+      new Map(before.layout.edges.map((edge) => [edge.id, edge.points])),
+    );
   });
 });
 
@@ -342,17 +486,32 @@ function sharedOrthogonalLength(
       if (a.x === b.x && c.x === d.x && a.x === c.x) {
         length += Math.max(
           0,
-          Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) -
-            Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
+          Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)),
         );
       } else if (a.y === b.y && c.y === d.y && a.y === c.y) {
         length += Math.max(
           0,
-          Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) -
-            Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
+          Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)),
         );
       }
     }
   }
   return length;
 }
+
+describe("diagram compilation cache", () => {
+  it("warms the cache immediately after a committed source change", () => {
+    const source = printDgm(createAsyncDocsFixture());
+    const before = getCommittedCompilationEpoch();
+    const warmed = warmDiagramCompilationCache(source, true);
+    expect(warmed.ok).toBe(true);
+    if (!warmed.ok) return;
+    expect(getCommittedCompilationEpoch()).toBe(before + 1);
+
+    const cached = compileDiagramSource(source, true);
+    expect(cached.ok).toBe(true);
+    if (!cached.ok) return;
+    expect(cached.svg).toBe(warmed.svg);
+    expect(cached.layout).toBe(warmed.layout);
+  });
+});

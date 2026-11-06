@@ -1,0 +1,41 @@
+dgm 1
+diagram cloud-agnostic-order-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Cloud-agnostic order processing platform"
+
+  cloud-agnostic.client client "Storefront clients"
+
+  cloud-agnostic.cloud cloud "Application cloud" {
+    cloud-agnostic.account account "Production account" {
+      cloud-agnostic.region region "Primary region" {
+        cloud-agnostic.network network "Private network" {
+          cloud-agnostic.boundary edge "Edge services" {
+            cloud-agnostic.gateway gateway "API gateway"
+            cloud-agnostic.firewall firewall "Web firewall"
+          }
+
+          cloud-agnostic.boundary processing "Order processing" {
+            cloud-agnostic.server order_service "Order service"
+            cloud-agnostic.queue queue "Order queue"
+            cloud-agnostic.function worker "Fulfillment worker"
+          }
+
+          cloud-agnostic.boundary data "Data services" {
+            cloud-agnostic.database database "Orders database"
+          }
+        }
+
+        cloud-agnostic.object-storage storage "Receipt storage"
+      }
+    }
+  }
+
+  client -> firewall { id requests label "HTTPS requests" step 1 kind flow }
+  firewall -> gateway { id screened step 2 kind flow }
+  gateway -> order_service { id orders label "Create order" step 3 kind flow }
+  order_service -> queue { id enqueue label "Enqueue order" step 4 kind flow }
+  queue -> worker { id consume label "Consume order" step 5 kind flow }
+  worker -> database { id persist label "Persist status" step 6 kind flow }
+  worker -> storage { id receipt label "Write receipt" step 7 kind flow }
+}

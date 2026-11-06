@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { okAsync, ResultAsync } from "neverthrow";
 
 import {
   closeWorkspaceTabs,
@@ -7,20 +8,303 @@ import {
   deserializeWorkspace,
   isTabDirty,
   isDisposableTab,
+  loadPersistedWorkspace,
   MAX_RECYCLED_PREVIEW_BYTES,
   MAX_RECENTLY_CLOSED,
   MAX_WORKSPACE_TABS,
   normalizeWorkspacePreview,
   normalizeWorkspaceState,
   restoreWorkspaceTab,
+  persistWorkspace,
+  persistWorkspaceJournal,
   serializeWorkspace,
+  type WorkspacePersistencePlatform,
+  type WorkspaceState,
+  type WorkspaceStorage,
 } from "./workspace";
 import { createEmptyDocument, DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 import { printDgm } from "@dumb-diagrams/runtime/dsl";
 
 const viewport = { panX: 12, panY: 24, zoom: 0.9 };
 
+function createStorage(
+  initial: Record<string, string> = {},
+  options: { set?: (key: string, value: string) => void } = {},
+) {
+  const values = new Map(Object.entries(initial));
+  const storage: WorkspaceStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      options.set?.(key, value);
+      values.set(key, value);
+    },
+    removeItem: (key) => values.delete(key),
+  };
+  return { storage, values };
+}
+
+function createPersistencePlatform(
+  overrides: Partial<WorkspacePersistencePlatform> = {},
+): WorkspacePersistencePlatform {
+  const journal = createStorage();
+  const fallback = createStorage();
+  return {
+    journal: journal.storage,
+    fallback: fallback.storage,
+    indexedDb: { read: () => okAsync(undefined), write: () => okAsync(undefined) },
+    ...overrides,
+  };
+}
+
+function sampleWorkspace(): WorkspaceState {
+  const source = printDgm(createEmptyDocument("recovery"));
+  return createWorkspaceState({ initialSource: source, initialViewport: viewport, blankSource: source });
+}
+
 describe("workspace state", () => {
+  it("loads no workspace successfully and preserves journal, IndexedDB, fallback order", async () => {
+    const calls: string[] = [];
+    const journal = createStorage({}, { set: () => undefined });
+    const fallback = createStorage();
+    const platform = createPersistencePlatform({
+      journal: {
+        getItem: (key) => {
+          calls.push(`journal.read:${key}`);
+          return journal.storage.getItem(key);
+        },
+        setItem: journal.storage.setItem,
+        removeItem: journal.storage.removeItem,
+      },
+      indexedDb: {
+        read: (key) => {
+          calls.push(`indexeddb.read:${key}`);
+          return okAsync(undefined);
+        },
+        write: () => okAsync(undefined),
+      },
+      fallback: {
+        getItem: (key) => {
+          calls.push(`fallback.read:${key}`);
+          return fallback.storage.getItem(key);
+        },
+        setItem: fallback.storage.setItem,
+        removeItem: fallback.storage.removeItem,
+      },
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap()).toMatchObject({ status: "ok", workspace: null });
+    expect(calls).toEqual([
+      "journal.read:dumb-diagrams:workspace-pending",
+      "indexeddb.read:current",
+      "fallback.read:dumb-diagrams:workspace",
+    ]);
+  });
+
+  it("recovers from a corrupt journal with a degraded warning and closed error cause", async () => {
+    const workspace = sampleWorkspace();
+    const platform = createPersistencePlatform({
+      journal: createStorage({ "dumb-diagrams:workspace-pending": "{broken" }).storage,
+      indexedDb: { read: () => okAsync(workspace), write: () => okAsync(undefined) },
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isOk()).toBe(true);
+    const outcome = result._unsafeUnwrap();
+    expect(outcome.status).toBe("degraded");
+    expect(outcome.workspace?.tabs).toHaveLength(1);
+    expect(outcome.errors?.[0]).toMatchObject({ code: "corrupt", layer: "journal", cause: "{broken" });
+  });
+
+  it("falls back to local storage after an IndexedDB transaction failure", async () => {
+    const workspace = sampleWorkspace();
+    const platform = createPersistencePlatform({
+      indexedDb: {
+        read: () => {
+          throw new Error("transaction aborted");
+        },
+        write: () => okAsync(undefined),
+      },
+      fallback: createStorage({ "dumb-diagrams:workspace": serializeWorkspace(workspace) }).storage,
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isOk()).toBe(true);
+    const outcome = result._unsafeUnwrap();
+    expect(outcome.status).toBe("degraded");
+    expect(outcome.workspace?.tabs[0]?.source).toBe(workspace.tabs[0]?.source);
+    expect(outcome.errors?.[0]?.code).toBe("transaction-failed");
+  });
+
+  it("restores bounded invalid source drafts without attempting to validate or render them", async () => {
+    const syntaxInvalid = createWorkspaceTab("diagram unfinished { grammar aws", {
+      id: "syntax-invalid",
+      viewport,
+    });
+    const semanticInvalid = createWorkspaceTab(
+      `diagram semantic-invalid {
+  grammar aws
+  cloud-agnostic.actor client
+  client -> missing { id e1 kind flow }
+}`,
+      {
+        id: "semantic-invalid",
+        viewport,
+      },
+    );
+    const unsafeSvg = createWorkspaceTab("diagram unsafe-svg { asset <script>alert(1)</script>", {
+      id: "unsafe-svg",
+      viewport,
+    });
+    const workspace: WorkspaceState = {
+      version: 1,
+      tabs: [syntaxInvalid, semanticInvalid, unsafeSvg],
+      activeTabId: unsafeSvg.id,
+      recentlyClosed: [],
+    };
+    const result = await loadPersistedWorkspace(
+      createPersistencePlatform({
+        indexedDb: { read: () => okAsync(workspace), write: () => okAsync(undefined) },
+      }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(result._unsafeUnwrap().workspace?.tabs.map((tab) => tab.source)).toEqual([
+      syntaxInvalid.source,
+      semanticInvalid.source,
+      unsafeSvg.source,
+    ]);
+    expect(result._unsafeUnwrap().workspace?.activeTabId).toBe(unsafeSvg.id);
+  });
+
+  it("returns an error when every storage source is unavailable", async () => {
+    const unavailable = () => {
+      throw new Error("storage unavailable");
+    };
+    const platform = createPersistencePlatform({
+      journal: { getItem: unavailable, setItem: unavailable, removeItem: unavailable },
+      indexedDb: { read: unavailable, write: unavailable },
+      fallback: { getItem: unavailable, setItem: unavailable, removeItem: unavailable },
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      code: "unavailable",
+      message: "All workspace storage sources failed.",
+    });
+    expect(result._unsafeUnwrapErr().relatedErrors).toHaveLength(2);
+  });
+
+  it("returns an error when every storage source is corrupt", async () => {
+    const platform = createPersistencePlatform({
+      journal: createStorage({ "dumb-diagrams:workspace-pending": "{broken" }).storage,
+      indexedDb: { read: () => okAsync({ broken: true }), write: () => okAsync(undefined) },
+      fallback: createStorage({ "dumb-diagrams:workspace": "{broken" }).storage,
+    });
+
+    const result = await loadPersistedWorkspace(platform);
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      code: "corrupt",
+      message: "All workspace storage sources failed.",
+    });
+    expect(result._unsafeUnwrapErr().relatedErrors).toHaveLength(2);
+  });
+
+  it("reports quota errors for the synchronous journal without blocking IndexedDB", async () => {
+    const journal: WorkspaceStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw Object.assign(new Error("quota exceeded"), { name: "QuotaExceededError" });
+      },
+      removeItem: () => undefined,
+    };
+    const platform = createPersistencePlatform({ journal });
+    const result = await persistWorkspaceJournal("snapshot", platform);
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toMatchObject({
+      code: "quota-exceeded",
+      layer: "journal",
+      cause: expect.any(Error),
+    });
+  });
+
+  it("writes the journal before the asynchronous IndexedDB operation starts", async () => {
+    const events: string[] = [];
+    let release: (() => void) | undefined;
+    const journal = createStorage({}, { set: () => events.push("journal") });
+    const workspace = sampleWorkspace();
+    const platform = createPersistencePlatform({
+      journal: journal.storage,
+      indexedDb: {
+        read: () => okAsync(undefined),
+        write: () =>
+          ResultAsync.fromSafePromise(
+            new Promise<void>((resolve) => {
+              events.push("indexeddb");
+              release = resolve;
+            }),
+          ),
+      },
+    });
+
+    const pending = persistWorkspace(workspace, "snapshot", platform);
+    expect(events).toEqual(["journal"]);
+    while (!release) await Promise.resolve();
+    expect(events).toEqual(["journal", "indexeddb"]);
+    release();
+    expect((await pending).isOk()).toBe(true);
+  });
+
+  it("writes fallback storage after an IndexedDB write failure", async () => {
+    const workspace = sampleWorkspace();
+    const fallback = createStorage();
+    const platform = createPersistencePlatform({
+      indexedDb: {
+        read: () => okAsync(undefined),
+        write: () => {
+          throw new Error("transaction failed");
+        },
+      },
+      fallback: fallback.storage,
+    });
+
+    const result = await persistWorkspace(workspace, serializeWorkspace(workspace), platform);
+    expect(result.isOk()).toBe(true);
+    const outcome = result._unsafeUnwrap();
+    expect(outcome.status).toBe("degraded");
+    expect(outcome.errors?.[0]?.code).toBe("transaction-failed");
+    expect(fallback.values.get("dumb-diagrams:workspace")).toBe(serializeWorkspace(workspace));
+  });
+
+  it("does not clear a newer journal when an older IndexedDB write finishes", async () => {
+    const oldWorkspace = sampleWorkspace();
+    const journal = createStorage({ "dumb-diagrams:workspace-pending": "old" });
+    let release: (() => void) | undefined;
+    const platform = createPersistencePlatform({
+      journal: journal.storage,
+      indexedDb: {
+        read: () => okAsync(undefined),
+        write: () =>
+          ResultAsync.fromSafePromise(
+            new Promise<void>((resolve) => {
+              release = resolve;
+            }),
+          ),
+      },
+    });
+
+    const pending = persistWorkspace(oldWorkspace, "old", platform);
+    while (!release) await Promise.resolve();
+    journal.storage.setItem("dumb-diagrams:workspace-pending", "new");
+    release?.();
+    const result = await pending;
+    expect(result.isOk()).toBe(true);
+    expect(journal.values.get("dumb-diagrams:workspace-pending")).toBe("new");
+  });
+
   it("creates a clean initial tab and detects source changes", () => {
     const workspace = createWorkspaceState({
       initialSource: "diagram initial",
@@ -60,13 +344,15 @@ describe("workspace state", () => {
     expect(normalizeWorkspaceState({ tabs: [] })).toBeNull();
     const valid = normalizeWorkspaceState({
       version: 99,
-      tabs: [{
-        id: "tab-1",
-        source: "source",
-        savedSource: "source",
-        origin: "import",
-        viewport,
-      }],
+      tabs: [
+        {
+          id: "tab-1",
+          source: "source",
+          savedSource: "source",
+          origin: "import",
+          viewport,
+        },
+      ],
       activeTabId: "missing",
       recentlyClosed: "not-an-array",
     });
@@ -80,13 +366,15 @@ describe("workspace state", () => {
   it("uses the last saved example source when migrating older tabs", () => {
     const restored = normalizeWorkspaceState({
       version: 1,
-      tabs: [{
-        id: "example-tab",
-        source: "changed source",
-        savedSource: "original source",
-        origin: "example",
-        viewport,
-      }],
+      tabs: [
+        {
+          id: "example-tab",
+          source: "changed source",
+          savedSource: "original source",
+          origin: "example",
+          viewport,
+        },
+      ],
       activeTabId: "example-tab",
       recentlyClosed: [],
     });
@@ -97,14 +385,16 @@ describe("workspace state", () => {
   it("migrates persisted source filenames to dgm", () => {
     const restored = normalizeWorkspaceState({
       version: 1,
-      tabs: [{
-        id: "tab-1",
-        source: "source",
-        savedSource: "source",
-        filename: "Async-Docs.source",
-        origin: "import",
-        viewport,
-      }],
+      tabs: [
+        {
+          id: "tab-1",
+          source: "source",
+          savedSource: "source",
+          filename: "Async-Docs.source",
+          origin: "import",
+          viewport,
+        },
+      ],
       activeTabId: "tab-1",
       recentlyClosed: [],
     });
@@ -113,10 +403,12 @@ describe("workspace state", () => {
   });
 
   it("caps restored workspaces at the open-tab limit", () => {
-    const tabs = Array.from({ length: MAX_WORKSPACE_TABS + 2 }, (_, index) => createWorkspaceTab(`source-${index}`, {
-      id: `tab-${index}`,
-      viewport,
-    }));
+    const tabs = Array.from({ length: MAX_WORKSPACE_TABS + 2 }, (_, index) =>
+      createWorkspaceTab(`source-${index}`, {
+        id: `tab-${index}`,
+        viewport,
+      }),
+    );
     const restored = normalizeWorkspaceState({
       version: 1,
       tabs,
@@ -131,12 +423,14 @@ describe("workspace state", () => {
 
   it("rejects oversized snapshots and unsafe viewport values", () => {
     expect(deserializeWorkspace("x".repeat(DIAGRAM_LIMITS.workspaceBytes + 1))).toBeNull();
-    expect(normalizeWorkspaceState({
-      version: 1,
-      tabs: [{ id: "bad", source: "source", viewport: { panX: Infinity, panY: 0, zoom: 1 } }],
-      activeTabId: "bad",
-      recentlyClosed: [],
-    })).toBeNull();
+    expect(
+      normalizeWorkspaceState({
+        version: 1,
+        tabs: [{ id: "bad", source: "source", viewport: { panX: Infinity, panY: 0, zoom: 1 } }],
+        activeTabId: "bad",
+        recentlyClosed: [],
+      }),
+    ).toBeNull();
   });
 
   it("keeps safe recycle-bin previews and drops unsafe or oversized markup", () => {
@@ -150,15 +444,17 @@ describe("workspace state", () => {
     });
 
     expect(normalized?.recentlyClosed[0]?.previewSvg).toBe(safe);
-    expect(normalizeWorkspacePreview('<svg><script>alert(1)</script></svg>')).toBeUndefined();
+    expect(normalizeWorkspacePreview("<svg><script>alert(1)</script></svg>")).toBeUndefined();
     expect(normalizeWorkspacePreview(`<svg>${"x".repeat(MAX_RECYCLED_PREVIEW_BYTES)}</svg>`)).toBeUndefined();
   });
 
   it("bulk closes tabs while keeping the requested tab active and archiving the closed tabs", () => {
-    const tabs = ["a", "b", "c", "d"].map((id) => createWorkspaceTab(id, {
-      id: `tab-${id}`,
-      viewport,
-    }));
+    const tabs = ["a", "b", "c", "d"].map((id) =>
+      createWorkspaceTab(id, {
+        id: `tab-${id}`,
+        viewport,
+      }),
+    );
     const workspace = {
       version: 1 as const,
       tabs,
@@ -181,17 +477,40 @@ describe("workspace state", () => {
     const state = { version: 1 as const, tabs: [blank], activeTabId: blank.id, recentlyClosed: [] };
     expect(closeWorkspaceTabs(state, [blank.id], { protectedBlankSource: "blank" }).closed).toHaveLength(0);
     const named = createWorkspaceTab("blank", { id: "named", origin: "new", filename: "x.dgm", viewport });
-    const result = closeWorkspaceTabs({ ...state, tabs: [named], activeTabId: named.id }, [named.id], { protectedBlankSource: "blank" });
+    const result = closeWorkspaceTabs({ ...state, tabs: [named], activeTabId: named.id }, [named.id], {
+      protectedBlankSource: "blank",
+    });
     expect(result.closed).toHaveLength(1);
   });
 
   it("keeps disposable tabs out of recovery while still removing them", () => {
-    const fixture = createWorkspaceTab("example", { id: "fixture", origin: "fixture", initialSource: "example", savedSource: "example", viewport });
+    const fixture = createWorkspaceTab("example", {
+      id: "fixture",
+      origin: "fixture",
+      initialSource: "example",
+      savedSource: "example",
+      viewport,
+    });
     const blank = createWorkspaceTab("blank", { id: "blank", origin: "new", viewport });
-    const changedExample = createWorkspaceTab("edited", { id: "edited", origin: "example", initialSource: "example", savedSource: "edited", viewport });
+    const changedExample = createWorkspaceTab("edited", {
+      id: "edited",
+      origin: "example",
+      initialSource: "example",
+      savedSource: "edited",
+      viewport,
+    });
     const namedBlank = createWorkspaceTab("blank", { id: "named", origin: "new", filename: "named.dgm", viewport });
-    const state = { version: 1 as const, tabs: [fixture, blank, changedExample, namedBlank], activeTabId: fixture.id, recentlyClosed: [] };
-    const result = closeWorkspaceTabs(state, state.tabs.map((tab) => tab.id), { protectedBlankSource: "blank" });
+    const state = {
+      version: 1 as const,
+      tabs: [fixture, blank, changedExample, namedBlank],
+      activeTabId: fixture.id,
+      recentlyClosed: [],
+    };
+    const result = closeWorkspaceTabs(
+      state,
+      state.tabs.map((tab) => tab.id),
+      { protectedBlankSource: "blank" },
+    );
     expect(result.closed.map((tab) => tab.id)).toEqual(["fixture", "blank", "edited", "named"]);
     expect(result.state.recentlyClosed.map((tab) => tab.id)).toEqual(["edited"]);
     expect(isDisposableTab(fixture, "blank")).toBe(true);
@@ -214,6 +533,9 @@ describe("workspace state", () => {
 
     expect(isDisposableTab(untitled, "different blank source")).toBe(true);
     expect(isDisposableTab(namedTab, "different blank source")).toBe(false);
+    expect(
+      isDisposableTab(createWorkspaceTab("diagram {", { origin: "new", viewport }), "different blank source"),
+    ).toBe(false);
   });
 
   it("attaches the latest render preview when tabs are archived", () => {
@@ -237,14 +559,18 @@ describe("workspace state", () => {
   });
 
   it("keeps a replacement tab after closing everything and caps the recycle bin", () => {
-    const tabs = ["a", "b", "c"].map((id) => createWorkspaceTab(id, {
-      id: `tab-${id}`,
-      viewport,
-    }));
-    const existing = Array.from({ length: MAX_RECENTLY_CLOSED - 1 }, (_, index) => createWorkspaceTab(`old-${index}`, {
-      id: `old-${index}`,
-      viewport,
-    }));
+    const tabs = ["a", "b", "c"].map((id) =>
+      createWorkspaceTab(id, {
+        id: `tab-${id}`,
+        viewport,
+      }),
+    );
+    const existing = Array.from({ length: MAX_RECENTLY_CLOSED - 1 }, (_, index) =>
+      createWorkspaceTab(`old-${index}`, {
+        id: `old-${index}`,
+        viewport,
+      }),
+    );
     const replacement = createWorkspaceTab("blank", { id: "blank", viewport });
     const workspace = {
       version: 1 as const,
@@ -253,7 +579,11 @@ describe("workspace state", () => {
       recentlyClosed: existing,
     };
 
-    const result = closeWorkspaceTabs(workspace, tabs.map((tab) => tab.id), { replacementTab: replacement });
+    const result = closeWorkspaceTabs(
+      workspace,
+      tabs.map((tab) => tab.id),
+      { replacementTab: replacement },
+    );
 
     expect(result.state.tabs.map((tab) => tab.id)).toEqual(["blank"]);
     expect(result.state.activeTabId).toBe("blank");
@@ -278,10 +608,12 @@ describe("workspace state", () => {
 
     const full = {
       ...workspace,
-      tabs: Array.from({ length: MAX_WORKSPACE_TABS }, (_, index) => createWorkspaceTab(`open-${index}`, {
-        id: `open-${index}`,
-        viewport,
-      })),
+      tabs: Array.from({ length: MAX_WORKSPACE_TABS }, (_, index) =>
+        createWorkspaceTab(`open-${index}`, {
+          id: `open-${index}`,
+          viewport,
+        }),
+      ),
     };
     expect(restoreWorkspaceTab(full, closed.id)).toBeNull();
   });

@@ -1,0 +1,233 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "uploader",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image through an API; the upload handler stores the original and queues a thumbnail job; a processor creates a thumbnail; a content de..."
+      }
+    },
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image through an API; the upload handler stores the original and queues a thumbnail job; a processor creates a thumbnail; a content de..."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image through an API; the upload handler stores the original and queues a thumbnail job; a processor creates a thumbnail; a content de..."
+      }
+    },
+    {
+      "id": "handler",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image through an API; the upload handler stores the original and queues a thumbnail job; a processor creates a thumbnail; a content de..."
+      }
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image through an API; the upload handler stores the original and queues a thumbnail job; a processor creates a thumbnail; a content de..."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "An uploader submits an image through an API; the upload handler stores the original and queues a thumbnail job; a processor creates a thumbnail; a content de..."
+      }
+    },
+    {
+      "id": "images",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "submit",
+      "source": "uploader",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Submit image (uploader to api) per the request."
+      }
+    },
+    {
+      "id": "invoke",
+      "source": "api",
+      "target": "handler",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Invoke (api to handler) per the request."
+      }
+    },
+    {
+      "id": "store_original",
+      "source": "handler",
+      "target": "images",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Store original (handler to images) per the request."
+      }
+    },
+    {
+      "id": "queue_job",
+      "source": "handler",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Queue job (handler to jobs) per the request."
+      }
+    },
+    {
+      "id": "run_job",
+      "source": "jobs",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Thumbnail job (jobs to processor) per the request."
+      }
+    },
+    {
+      "id": "thumbnail_io",
+      "source": "processor",
+      "target": "images",
+      "kind": "bidirectional",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read original, write thumbnail (processor to images) per the request."
+      }
+    },
+    {
+      "id": "serve",
+      "source": "cdn",
+      "target": "images",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Serve original and thumbnail (cdn to images) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "uploader_root",
+      "component": "uploader",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "aws_root",
+      "component": "aws",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "cdn_in_aws",
+      "component": "cdn",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "api_in_aws",
+      "component": "api",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "handler_in_aws",
+      "component": "handler",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "jobs_in_aws",
+      "component": "jobs",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "processor_in_aws",
+      "component": "processor",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "images_in_aws",
+      "component": "images",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

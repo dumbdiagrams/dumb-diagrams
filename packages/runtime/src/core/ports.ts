@@ -5,21 +5,14 @@ export const PORT_OFFSETS = [0.25, 0.5, 0.75] as const;
 export const DEFAULT_PORT_OFFSET = 0.5;
 
 export function normalizePortOffset(offset?: number): number {
-  const value = Number.isFinite(offset)
-    ? Math.max(0, Math.min(1, offset!))
-    : DEFAULT_PORT_OFFSET;
+  const value = Number.isFinite(offset) ? Math.max(0, Math.min(1, offset!)) : DEFAULT_PORT_OFFSET;
   return PORT_OFFSETS.reduce(
-    (closest, candidate) =>
-      Math.abs(candidate - value) < Math.abs(closest - value) ? candidate : closest,
+    (closest, candidate) => (Math.abs(candidate - value) < Math.abs(closest - value) ? candidate : closest),
     DEFAULT_PORT_OFFSET,
   );
 }
 
-export function portPoint(
-  rect: Rect,
-  side: Side,
-  offset = DEFAULT_PORT_OFFSET,
-): Point {
+export function portPoint(rect: Rect, side: Side, offset = DEFAULT_PORT_OFFSET): Point {
   const t = Math.max(0, Math.min(1, offset));
   switch (side) {
     case "n":
@@ -33,9 +26,7 @@ export function portPoint(
   }
 }
 
-export function portAnchors(
-  rect: Rect,
-): Array<PortAnchor & { offset: number; point: Point }> {
+export function portAnchors(rect: Rect): Array<PortAnchor & { offset: number; point: Point }> {
   const sides: Side[] = ["n", "e", "s", "w"];
   return sides.flatMap((side) =>
     PORT_OFFSETS.map((offset) => ({
@@ -46,10 +37,7 @@ export function portAnchors(
   );
 }
 
-export function nearestPortAnchor(
-  rect: Rect,
-  point: Point,
-): PortAnchor & { offset: number; point: Point } {
+export function nearestPortAnchor(rect: Rect, point: Point): PortAnchor & { offset: number; point: Point } {
   return portAnchors(rect).reduce((nearest, candidate) => {
     const candidateDistance = distanceSquared(candidate.point, point);
     const nearestDistance = distanceSquared(nearest.point, point);

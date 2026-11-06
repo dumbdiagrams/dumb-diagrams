@@ -1,0 +1,1 @@
+Create a simple Azure private application API. A client calls API Management, which routes requests to an Azure Function; the function accesses an Azure SQL database through a private endpoint in the application network.

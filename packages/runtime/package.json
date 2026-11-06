@@ -35,14 +35,21 @@
     "./render": {
       "types": "./dist/render/index.d.ts",
       "import": "./dist/render/index.js"
+    },
+    "./requirements": {
+      "types": "./dist/requirements/index.d.ts",
+      "import": "./dist/requirements/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run --root ../.. packages/runtime/src"
+  },
+  "dependencies": {
+    "neverthrow": "8.2.0"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }

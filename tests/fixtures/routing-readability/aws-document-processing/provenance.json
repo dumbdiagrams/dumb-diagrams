@@ -1,0 +1,10 @@
+{
+  "source": ".artifacts/review/aws-hard-v0.1.0-document-processing",
+  "sourceSet": "Fresh Luna review, authored 2026-11-05; source files copied from the review bundle; diagram.dgm canonically formatted.",
+  "files": [
+    "user-prompt.md",
+    "architecture-brief.md",
+    "requirements.json",
+    "diagram.dgm"
+  ]
+}

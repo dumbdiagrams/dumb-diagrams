@@ -1,0 +1,331 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Google Cloud organization"
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "event-processing project nested in organization"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "primary region nested in project"
+      }
+    },
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "partner sends webhook events"
+      }
+    },
+    {
+      "id": "load_balancer",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Load Balancing"
+      }
+    },
+    {
+      "id": "ingress",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Functions ingress handler"
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Pub/Sub topic"
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Dataflow processing"
+      }
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "basis": {
+        "kind": "explicit",
+        "text": "BigQuery processed records"
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Storage raw event files"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "webhook_events",
+      "source": "partner",
+      "target": "load_balancer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Webhook events"
+      }
+    },
+    {
+      "id": "forward_webhooks",
+      "source": "load_balancer",
+      "target": "ingress",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward webhook requests"
+      }
+    },
+    {
+      "id": "publish_events",
+      "source": "ingress",
+      "target": "events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish events"
+      }
+    },
+    {
+      "id": "consume_events",
+      "source": "events",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume events"
+      }
+    },
+    {
+      "id": "write_processed_records",
+      "source": "processor",
+      "target": "warehouse",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processed records"
+      }
+    },
+    {
+      "id": "write_raw_event_files",
+      "source": "processor",
+      "target": "archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Raw event files"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "load_balancer_count",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Load Balancing"
+      }
+    },
+    {
+      "id": "ingress_count",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "a Cloud Functions ingress handler"
+      }
+    },
+    {
+      "id": "events_count",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "a Pub/Sub topic"
+      }
+    },
+    {
+      "id": "processor_count",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Dataflow"
+      }
+    },
+    {
+      "id": "warehouse_count",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "BigQuery"
+      }
+    },
+    {
+      "id": "archive_count",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Storage"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Google Cloud organization"
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the event-processing project ... in the organization"
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "primary region"
+      }
+    },
+    {
+      "id": "partner_outside_org",
+      "component": "partner",
+      "relation": "outside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the partner outside the Google Cloud organization"
+      }
+    },
+    {
+      "id": "load_balancer_in_region",
+      "component": "load_balancer",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place all services in the region"
+      }
+    },
+    {
+      "id": "ingress_in_region",
+      "component": "ingress",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place all services in the region"
+      }
+    },
+    {
+      "id": "events_in_region",
+      "component": "events",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place all services in the region"
+      }
+    },
+    {
+      "id": "processor_in_region",
+      "component": "processor",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place all services in the region"
+      }
+    },
+    {
+      "id": "warehouse_in_region",
+      "component": "warehouse",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place all services in the region"
+      }
+    },
+    {
+      "id": "archive_in_region",
+      "component": "archive",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "place all services in the region"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

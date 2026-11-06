@@ -1,97 +1,72 @@
 ---
-title: LLM-first diagram workflow
-description: Prepare a repository for coding agents, draft portable .dgm source, and refine it locally in Studio.
+title: Work with an agent
+description: Give a coding agent context to draft a .dgm file, then refine it in Studio.
 section: Start here
 order: 2
 ---
-A coding agent can turn an architecture discussion into a structured file. It does not need to place hundreds of shapes on a canvas by hand.
+A coding agent can write `.dgm` source from an architecture description. The
+engine checks the diagram against a machine-readable requirements companion,
+handles placement and routing, and you review the result in Studio.
 
-That is what **LLM-first** means here: the large language model works with readable source and explicit constraints, while the diagram engine handles deterministic placement and routing. The workflow is diagrams as code, with a visual editor when you need one. You stay in control of both the source and the final result.
+## Set up
 
-Run `dumbdiagrams init` from the directory where you want the new project
-folder. It creates small agent entrypoints and shared instructions under
-`.dumbdiagrams/`, including catalog and example guidance. Leave the project
-name blank to create a timestamped folder. Use those files with a coding agent
-you already have. Dumb Diagrams does not include a hosted model or send your
-files anywhere automatically.
+`dumbdiagrams init` creates agent entrypoints (`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`) and shared guidance under `.dumbdiagrams/`: the workflow, the
+format, provider notes, the catalog, and examples. You do not need to edit
+these; set your diagram style in the root `preferences.json` instead (see
+[Preferences](../quick-start/#preferences)). Open the project in any
+coding agent: Codex, Claude Code, Cursor, Gemini, or an open-source tool.
+Dumb Diagrams does not provide model access and sends nothing anywhere; review
+your agent's own data settings before giving it a private project.
 
-## Use a coding agent
-
-The agent workflow requires a separate coding agent, such as **Codex, Claude Code, Cursor, Gemini**, or an **open-source alternative**. Choose a tool that can read repository instructions and edit local `.dgm` files. These are examples, not built-in integrations.
-
-Open the generated project folder in the agent's working environment. Configure
-its account, model access, or local model there. Dumb Diagrams provides the
-diagram language, reference files, and Studio. It does not install an agent or
-provide model access.
-
-The agent's settings determine which files it can access and whether it sends them to a model provider. Review those settings before giving it a private project.
-
-You can also [write the source yourself](../source-format/) or [edit in Studio](../studio/).
-
-## Start with the repository instructions
-
-Have the agent read `AGENTS.md`, then `.dumbdiagrams/instructions.md` and the closest example under `.dumbdiagrams/examples/`. The catalog is the reference for service types. A familiar service name is not always the identifier the engine expects.
-
-For example:
+## Ask for a diagram
 
 ```text
-Read AGENTS.md and the closest `.dumbdiagrams` instructions and example.
+Read AGENTS.md and the closest .dumbdiagrams instructions and example.
 
-Create diagrams/payments/diagram.dgm for our payments flow, and persist the
-interpreted architecture in diagrams/payments/architecture-brief.md.
-A customer calls an API Gateway endpoint. A Lambda handler
-processes the request and writes to a DynamoDB ledger.
-Keep the services inside an AWS Region and number the main
-request path. Use the catalog’s exact service types.
+First extract requirements into diagrams/payments/diagram.requirements.json,
+then create diagrams/payments/diagram.dgm and its architecture-brief.md.
+A customer calls an API Gateway endpoint. A Lambda handler processes the
+request and writes to a DynamoDB ledger. Keep the services inside an AWS
+Region and number the main request path. Use the catalog's exact types. Give
+each required component and relationship a stable ID, and record any required
+counts and containment in the requirements file before writing the diagram.
+Keep the requirements file open while laying out the diagram; preserve those
+IDs when rearranging it.
 
-Let the engine handle initial layout. Review the resulting source when you are done.
+Run `dumbdiagrams validate diagrams/payments/diagram.dgm` and then
+`dumbdiagrams validate --strict diagrams/payments/diagram.dgm`. If either run
+finds a fixable issue, make at most two focused repair passes, preserving the
+requirement IDs, and run both commands again. Then inspect the result in Studio.
 ```
 
-The architecture brief is the concise, reviewable interpretation of the
-request, using the same `Goal`, `Explicit requirements`, `Relationships and
-containment`, and `Inferred decisions and exclusions` sections as the bundled
-examples. It is not hidden model reasoning and it does not replace the `.dgm`
-source of truth. Agents update it when architecture semantics change; pure
-visual refinements do not require a rewrite.
+Describe meaning, not placement: the provider, services and boundaries, the
+main path in order, supporting relationships, counts, containment, and labels
+that must appear exactly. The agent turns that request into a requirements
+contract (`.requirements.json`) and an `architecture-brief.md` beside the
+source with `Goal`, `Explicit requirements`, `Relationships and containment`,
+and `Inferred decisions and exclusions`. Review both before the source; a
+complete check only proves that the source matches the written contract, not
+that the contract captures your request.
 
-## Choose a provider
+A file has one primary provider `grammar`. Without a named provider, the
+agent uses `cloud-agnostic`. Provider rules are checked per grammar, so a
+warning such as `managed-service-in-network` on an AWS diagram is about AWS.
 
-The initialized workflow maps explicit provider language to the matching diagram grammar. AWS is the first-class provider. Azure, GCP, and cloud-agnostic diagrams are experimental; for now they reuse the AWS composition, layout, and routing conventions while using their own provider icons.
-
-When a request does not name a provider, use the cloud-agnostic grammar without asking. When provider wording conflicts, or a multi-cloud request does not establish a clear primary provider, ask the user to choose or clarify the scope before writing the architecture brief or diagram. A source file has one primary provider grammar, so do not silently mix provider catalogs.
-
-## Describe meaning before placement
-
-Describe what the diagram needs to communicate:
-
-- The title and provider context.
-- The services and boundaries that actually exist.
-- The main request or event path, in order.
-- Supporting relationships that should be visually quieter.
-- Any labels that must appear exactly as written.
-
-Coordinates are usually unnecessary. Let the engine create an initial layout, then make visual decisions in Studio once you can see the result.
-
-## Refine an existing diagram
-
-Name the file explicitly. Ask the agent to preserve its saved view and keep unrelated services and connections intact.
+## Update a diagram
 
 ```text
-Update diagrams/payments/diagram.dgm to add a queue before the worker, and
-update diagrams/payments/architecture-brief.md with the semantic change.
-Preserve the current labels and saved view wherever possible.
-Do not change the other diagrams or the reference examples.
-Keep the `.dgm` source valid after the edit.
+Update diagrams/payments/diagram.requirements.json to require a queue before
+the worker, then update diagram.dgm and the architecture brief to match.
+Preserve existing component and relationship IDs, labels, and the saved view.
 ```
 
-The source and visual overrides share one file. An agent that rewrites the entire document carelessly can discard your manual work, so preservation should be part of the request.
+Stable IDs keep saved positions and routes attached. If you ask for a new
+orientation, the agent may need to drop saved placements that would fight the
+new layout. Studio does not live-reload files edited elsewhere, so reopen the
+file after the agent saves it.
 
-## Review the result
-
-Validation finds structural mistakes, but it cannot tell whether the diagram matches the real system. Check the boundaries, service choices, and direction of each connection yourself.
-
-Open the file in Studio, review the layout, and refine a dense connection if
-needed. Then commit the diagram with the implementation or proposal it
-explains.
-
-For automation, pin the CLI version you have tested instead of resolving `@latest` on every run.
+Validation checks completeness against the companion contract and reports
+provider and routing findings. It cannot prove that the contract reflects the
+real system. Check your requirements, boundaries, and connection directions
+yourself. For automation, pin the CLI version you have tested.

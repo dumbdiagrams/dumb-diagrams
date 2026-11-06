@@ -1,0 +1,130 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "package.json",
+      "packages/*/package.json",
+      "packages/*/src/**/*.ts",
+      "packages/*/src/**/*.tsx",
+      "!packages/runtime/src/catalog/generated/**",
+      "!!**/dist",
+      "!!.artifacts",
+      "scripts/**/*.mjs",
+      "scripts/**/*.js"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        "noUselessEmptyExport": "off",
+        "useOptionalChain": "off"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "off",
+        "noNoninteractiveTabindex": "off",
+        "noStaticElementInteractions": "off",
+        "noSvgWithoutTitle": "off",
+        "useAriaPropsForRole": "off",
+        "useAriaPropsSupportedByRole": "off",
+        "useFocusableInteractive": "off",
+        "useKeyWithClickEvents": "off",
+        "useSemanticElements": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off",
+        "noUnusedImports": "off",
+        "noUnusedVariables": "off",
+        "noUnusedFunctionParameters": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "noControlCharactersInRegex": "off",
+        "noImplicitAnyLet": "off",
+        "useIterableCallbackReturn": "off",
+        "noPrototypeBuiltins": "off",
+        "noDocumentCookie": "off",
+        "useBiomeIgnoreFolder": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useTemplate": "off",
+        "useImportType": "off",
+        "useConst": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "packages/editor/src/**/*.ts",
+        "packages/editor/src/**/*.tsx",
+        "packages/runtime/src/**/*.ts",
+        "packages/cli/src/**/*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedImports": "error",
+            "noUnusedVariables": "error",
+            "noUnusedFunctionParameters": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/editor/src/state/workspace.ts",
+        "packages/editor/src/state/use-file-actions.ts",
+        "packages/editor/src/state/use-document-commands.ts",
+        "packages/editor/src/ui/Modal.tsx",
+        "packages/editor/src/ui/FloatingPanel.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "error"
+          },
+          "a11y": {
+            "noLabelWithoutControl": "error",
+            "useAriaPropsForRole": "error",
+            "useAriaPropsSupportedByRole": "error",
+            "useKeyWithClickEvents": "error",
+            "useFocusableInteractive": "error",
+            "noStaticElementInteractions": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["package.json", "biome.json"],
+      "formatter": {
+        "enabled": true
+      }
+    }
+  ],
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "off"
+      }
+    }
+  }
+}

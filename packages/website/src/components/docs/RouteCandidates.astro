@@ -1,0 +1,31 @@
+---
+import { routePathBaseCost, ROUTE_PATH_COSTS } from '@dumb-diagrams/runtime/route';
+const clear = routePathBaseCost([{ x: 0, y: 0 }, { x: 0, y: -40 }, { x: 160, y: -40 }, { x: 160, y: 0 }]);
+const crossing = routePathBaseCost([{ x: 0, y: 0 }, { x: 160, y: 0 }]).score + ROUTE_PATH_COSTS.crossing;
+const candidates = [
+  ['blocked', 'Rejected', 'This path runs through the worker card.', 'Not usable'],
+  ['crossing', 'Costly', 'The direct path clears the cards but crosses another connection.', crossing.toLocaleString('en-US')],
+  ['clear', 'Preferred here', 'Two bends and a longer path avoid both obstacles.', clear.score.toLocaleString('en-US')],
+] as const;
+---
+<figure class="mechanic-figure route-explainer" data-explainer="routes" data-active="clear" aria-labelledby="route-title">
+  <div class="figure-heading"><div><h3 id="route-title">A clear path is worth a detour</h3></div><span class="figure-chip">simplified example</span></div>
+  <div class="route-controls" role="tablist" aria-label="Route candidates">{candidates.map(([id, label], index) => <button type="button" role="tab" id={`route-tab-${id}`} aria-controls={`route-panel-${id}`} aria-selected={id === 'clear' ? 'true' : 'false'} tabindex={id === 'clear' ? 0 : -1} data-explainer-control={id}><span>{String(index + 1).padStart(2, '0')}</span>{label}</button>)}</div>
+  <div class="route-panels">
+  {candidates.map(([id, label, description, score]) => <section class={`route-panel route-${id}`} role="tabpanel" id={`route-panel-${id}`} aria-labelledby={`route-tab-${id}`} data-explainer-panel={id}>
+    <svg viewBox="0 -15 480 235" role="img" aria-label={`${label}: ${description}`}>
+      <defs><marker id={`route-arrow-${id}`} markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" /></marker></defs>
+      <g class="diagram-node"><rect x="10" y="60" width="70" height="60" rx="5"/><text x="45" y="95">Client</text></g>
+      <g class="diagram-node obstacle-node"><rect x="205" y="140" width="70" height="60" rx="5"/><text x="240" y="175">Worker</text></g>
+      <g class="diagram-node"><rect x="400" y="60" width="70" height="60" rx="5"/><text x="435" y="95">Storage</text></g>
+      <path class="existing-path" d="M240 40V140"/>
+      {id === 'blocked' && <path class="candidate-path rejected-path" data-route-lane="170" d="M80 90L80 170L400 170L400 90" marker-end={`url(#route-arrow-${id})`}/>}
+      {id === 'crossing' && <><path class="candidate-path costly-path" data-route-lane="90" d="M80 90L80 90L400 90L400 90" marker-end={`url(#route-arrow-${id})`}/><circle class="crossing-mark" data-motion-content cx="240" cy="90" r="12"/></>}
+      {id === 'clear' && <path class="candidate-path clear-path" data-route-lane="10" d="M80 90L80 10L400 10L400 90" marker-end={`url(#route-arrow-${id})`}/>}
+    </svg>
+    <div class="route-verdict" data-motion-content><div><strong>{label}</strong><p>{description}</p></div><span><small>route cost</small>{score}</span></div>
+  </section>)}
+  </div>
+  <figcaption>The dashed line is an existing connection. Attachment preferences are held equal; the clear path's calculation is below.</figcaption>
+</figure>
+<script src="../../scripts/docs-explainers.ts"></script>

@@ -1,0 +1,620 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "ops",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "sub",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "rg",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "fd",
+      "kind": "resource",
+      "type": "azure.front-door-and-cdn-profiles",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "apim",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "vnet",
+      "kind": "group",
+      "type": "azure.vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "app_subnet",
+      "kind": "group",
+      "type": "azure.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "azure.app-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "func",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "data_subnet",
+      "kind": "group",
+      "type": "azure.subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "sql_pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "storage_pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "storage",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "work",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "dlq",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "kv",
+      "kind": "resource",
+      "type": "azure.key-vaults",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    },
+    {
+      "id": "monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client via Front Door and APIM to App Service API; SQL via private endpoint and Service Bus; Function worker writes Storage via private endpoint and S..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "enter",
+      "source": "client",
+      "target": "fd",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "HTTPS (client to fd) per the request."
+      }
+    },
+    {
+      "id": "front",
+      "source": "fd",
+      "target": "apim",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward (fd to apim) per the request."
+      }
+    },
+    {
+      "id": "route",
+      "source": "apim",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route (apim to api) per the request."
+      }
+    },
+    {
+      "id": "sql_access",
+      "source": "api",
+      "target": "sql_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read/write (api to sql_pe) per the request."
+      }
+    },
+    {
+      "id": "enqueue",
+      "source": "api",
+      "target": "work",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Enqueue work (api to work) per the request."
+      }
+    },
+    {
+      "id": "consume",
+      "source": "work",
+      "target": "func",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume work (work to func) per the request."
+      }
+    },
+    {
+      "id": "files",
+      "source": "func",
+      "target": "storage_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write files (func to storage_pe) per the request."
+      }
+    },
+    {
+      "id": "status",
+      "source": "func",
+      "target": "sql_pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Order status (func to sql_pe) per the request."
+      }
+    },
+    {
+      "id": "sql_link",
+      "source": "sql_pe",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private link (sql_pe to sql) per the request."
+      }
+    },
+    {
+      "id": "storage_link",
+      "source": "storage_pe",
+      "target": "storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private link (storage_pe to storage) per the request."
+      }
+    },
+    {
+      "id": "retry_limit",
+      "source": "work",
+      "target": "dlq",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "Retry limit (work to dlq) per the request."
+      }
+    },
+    {
+      "id": "inspect",
+      "source": "ops",
+      "target": "dlq",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Inspect (ops to dlq) per the request."
+      }
+    },
+    {
+      "id": "redrive",
+      "source": "dlq",
+      "target": "work",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Redrive (dlq to work) per the request."
+      }
+    },
+    {
+      "id": "api_kv",
+      "source": "api",
+      "target": "kv",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read secrets (api to kv) per the request."
+      }
+    },
+    {
+      "id": "func_kv",
+      "source": "func",
+      "target": "kv",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read secrets (func to kv) per the request."
+      }
+    },
+    {
+      "id": "api_mon",
+      "source": "api",
+      "target": "monitor",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Telemetry (api to monitor) per the request."
+      }
+    },
+    {
+      "id": "func_mon",
+      "source": "func",
+      "target": "monitor",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Telemetry (func to monitor) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "client_root",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "ops_root",
+      "component": "ops",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "sub_root",
+      "component": "sub",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "region_in_sub",
+      "component": "region",
+      "relation": "parent",
+      "group": "sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "rg_in_region",
+      "component": "rg",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "fd_in_rg",
+      "component": "fd",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "apim_in_rg",
+      "component": "apim",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "vnet_in_rg",
+      "component": "vnet",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "app_subnet_in_vnet",
+      "component": "app_subnet",
+      "relation": "parent",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "api_in_app_subnet",
+      "component": "api",
+      "relation": "parent",
+      "group": "app_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "func_in_app_subnet",
+      "component": "func",
+      "relation": "parent",
+      "group": "app_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "data_subnet_in_vnet",
+      "component": "data_subnet",
+      "relation": "parent",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sql_pe_in_data_subnet",
+      "component": "sql_pe",
+      "relation": "parent",
+      "group": "data_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "storage_pe_in_data_subnet",
+      "component": "storage_pe",
+      "relation": "parent",
+      "group": "data_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sql_in_rg",
+      "component": "sql",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "storage_in_rg",
+      "component": "storage",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "work_in_rg",
+      "component": "work",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "dlq_in_rg",
+      "component": "dlq",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "kv_in_rg",
+      "component": "kv",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "monitor_in_rg",
+      "component": "monitor",
+      "relation": "parent",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sql_outside_vnet",
+      "component": "sql",
+      "relation": "outside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "storage_outside_vnet",
+      "component": "storage",
+      "relation": "outside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "work_outside_vnet",
+      "component": "work",
+      "relation": "outside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "dlq_outside_vnet",
+      "component": "dlq",
+      "relation": "outside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "kv_outside_vnet",
+      "component": "kv",
+      "relation": "outside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "monitor_outside_vnet",
+      "component": "monitor",
+      "relation": "outside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

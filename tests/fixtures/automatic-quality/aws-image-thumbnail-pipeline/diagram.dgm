@@ -1,0 +1,29 @@
+dgm 1
+diagram aws_image_thumbnail_pipeline {
+  grammar aws
+  flow lr
+  title "AWS image thumbnail pipeline"
+
+  cloud-agnostic.client uploader "Image uploader"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary image_pipeline "Image processing pipeline" {
+      aws.api-gateway upload_api "Upload API"
+      aws.aws-lambda intake "Upload handler"
+      aws.simple-storage-service originals "Original images"
+      aws.simple-queue-service jobs "Thumbnail jobs"
+      aws.aws-lambda processor "Thumbnail processor"
+      aws.simple-storage-service thumbnails "Generated thumbnails"
+      aws.cloudfront delivery "Content delivery service"
+    }
+  }
+
+  uploader -> upload_api { id submit_upload label "submit image" }
+  upload_api -> intake { id accept_upload label "upload request" }
+  intake -> originals { id store_original label "store original" }
+  intake -> jobs { id enqueue_thumbnail label "queue thumbnail job" }
+  jobs -> processor { id process_job label "thumbnail job" }
+  processor -> thumbnails { id save_thumbnail label "write thumbnail" }
+  originals -> delivery { id serve_original label "original image" }
+  thumbnails -> delivery { id serve_thumbnail label "thumbnail image" }
+}

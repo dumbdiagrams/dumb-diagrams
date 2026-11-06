@@ -1,0 +1,55 @@
+dgm 1
+diagram azure-hard-private-order-processing {
+  grammar azure
+  flow lr
+  title "Private order processing"
+
+  cloud-agnostic.actor client "Public client"
+  cloud-agnostic.actor ops "Operations client"
+
+  azure.subscription subscription "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group rg "Resource group" {
+        azure.front-door-and-cdn-profiles frontdoor "Front Door"
+        azure.api-management-services apim "API Management"
+
+        azure.vnet vnet "Application VNet" {
+          azure.subnet app_subnet "Application subnet" {
+            azure.app-services api "App Service API"
+            azure.function-apps worker "Function worker"
+          }
+
+          azure.subnet data_subnet "Data subnet" {
+            azure.private-endpoints sqlpe "SQL private endpoint"
+            azure.private-endpoints storagepe "Storage private endpoint"
+          }
+        }
+
+        azure.sql-database sql "Azure SQL"
+        azure.storage-accounts storage "Storage"
+        azure.azure-service-bus bus "Work queue"
+        azure.azure-service-bus dlq "Dead-letter queue"
+        azure.key-vaults vault "Key Vault"
+        azure.monitor monitor "Azure Monitor"
+      }
+    }
+  }
+
+  client -> frontdoor { id client_frontdoor label "HTTPS" }
+  frontdoor -> apim { id frontdoor_apim label "Forward" }
+  apim -> api { id apim_api label "Route" }
+  api -> sqlpe { id api_sqlpe label "SQL access" }
+  sqlpe -> sql { id sqlpe_sql label "Private link" }
+  api -> bus { id api_bus label "Enqueue work" }
+  bus -> worker { id bus_worker label "Consume work" }
+  worker -> storagepe { id worker_storagepe label "Write files" }
+  storagepe -> storage { id storagepe_storage label "Private link" }
+  worker -> sqlpe { id worker_sqlpe label "Write status" }
+  api -> vault { id api_vault label "Read secrets" style dashed }
+  worker -> vault { id worker_vault label "Read secrets" style dashed }
+  api -> monitor { id api_monitor label "Telemetry" style dashed }
+  worker -> monitor { id worker_monitor label "Telemetry" style dashed }
+  bus -> dlq { id bus_dlq label "Retry limit" }
+  ops -> dlq { id ops_dlq label "Inspect DLQ" style dashed }
+  ops -> bus { id ops_redrive label "Redrive to work queue" style dashed }
+}

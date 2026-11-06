@@ -1,0 +1,54 @@
+dgm 1
+diagram order-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Order Processing with Recovery"
+  cloud-agnostic.actor buyer "Public Buyer"
+  cloud-agnostic.cloud-resource payment-service "Payment Service"
+  cloud-agnostic.cloud-resource warehouse "External Warehouse"
+  cloud-agnostic.cloud application-cloud "Application Cloud" {
+    cloud-agnostic.account application-account "Cloud Account" {
+      cloud-agnostic.region primary-region "Primary Region" {
+        cloud-agnostic.load-balancer primary-lb "Primary Load Balancer"
+        cloud-agnostic.network primary-network "Primary Private Application Network" {
+          cloud-agnostic.cluster primary-cluster "Application Cluster" {
+            cloud-agnostic.server api-server "API Server"
+            cloud-agnostic.server worker-server "Worker Server"
+          }
+          cloud-agnostic.database primary-database "Primary Database"
+          cloud-agnostic.cache cache "Cache"
+        }
+        cloud-agnostic.queue work-queue "Work Queue"
+        cloud-agnostic.object-storage receipts-storage "Receipts Storage"
+      }
+      cloud-agnostic.region recovery-region "Recovery Region" {
+        cloud-agnostic.load-balancer recovery-lb "Recovery Load Balancer"
+        cloud-agnostic.network recovery-network "Recovery Network" {
+          cloud-agnostic.server recovery-server "Recovery Application Server"
+          cloud-agnostic.database recovery-database "Recovery Database"
+        }
+      }
+    }
+  }
+  buyer -> primary-lb { id buyer-to-primary-lb label "request" step 1 }
+  primary-lb -> api-server { id primary-lb-to-api label "forward" step 2 from e to w }
+  api-server -> primary-database { id api-to-database label "read / write" step 3 from e to w }
+  primary-database -> api-server { id database-to-api label "database response" step 4 from w to e }
+  api-server -> cache { id api-to-cache label "lookup" step 5 from e to w }
+  cache -> api-server { id cache-to-api label "cache response" step 6 from w to e }
+  api-server -> payment-service { id api-to-payment label "payment request" step 7 from e to w }
+  payment-service -> api-server { id payment-to-api label "payment response" step 8 from w to e }
+  api-server -> work-queue { id api-to-queue label "enqueue work" step 9 from e to w }
+  work-queue -> worker-server { id queue-to-worker label "consume" step 10 from w to e }
+  worker-server -> warehouse { id worker-to-warehouse label "fulfillment" step 11 from e to w }
+  warehouse -> worker-server { id warehouse-to-worker label "acknowledgment" step 12 from w to e }
+  worker-server -> work-queue { id worker-to-queue label "retry" step 13 from e to w }
+  worker-server -> primary-database { id worker-to-database label "order status" step 14 }
+  worker-server -> receipts-storage { id worker-to-receipts label "receipt" step 15 }
+  primary-database -> recovery-database { id database-replication label "replication" style dashed kind peer }
+  buyer -> recovery-lb { id buyer-to-recovery-lb label "recovery request" step 16 }
+  recovery-lb -> recovery-server { id recovery-lb-to-server label "forward" step 17 }
+  recovery-server -> recovery-database { id server-to-replica label "read replica" step 18 }
+  recovery-server -> recovery-lb { id server-to-recovery-lb label "response" step 19 }
+  recovery-lb -> buyer { id recovery-lb-to-buyer label "serve buyer" step 20 }
+}

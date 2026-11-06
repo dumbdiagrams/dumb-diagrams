@@ -1,0 +1,19 @@
+dgm 1
+diagram cloud-agnostic-easy-customer-record-api {
+  grammar cloud-agnostic
+  flow lr
+  title "Customer Record API"
+  cloud-agnostic.cloud application_cloud "Application Cloud" {
+    cloud-agnostic.account production_account "Production Account" {
+      cloud-agnostic.region primary_region "Primary Region" {
+        cloud-agnostic.gateway api_gateway "API Gateway" {}
+        cloud-agnostic.server customer_api "Customer API" {}
+        cloud-agnostic.database customer_database "Customer Database" {}
+      }
+    }
+  }
+  cloud-agnostic.client web_client "Web Client" {}
+  web_client -> api_gateway { id https_request label "HTTPS request" step 1 kind flow }
+  api_gateway -> customer_api { id route_to_api label "route" step 2 kind flow }
+  customer_api -> customer_database { id read_write_records label "read / write" step 3 kind flow }
+}

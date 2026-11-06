@@ -1,0 +1,61 @@
+dgm 1
+diagram cloud-agnostic-hard-order-processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Order Processing"
+
+  cloud-agnostic.actor buyer "Buyer"
+  cloud-agnostic.actor payment "Payment Service"
+  cloud-agnostic.actor warehouse "Warehouse"
+
+  cloud-agnostic.cloud cloud "Cloud" {
+    cloud-agnostic.account account "Cloud Account" {
+      cloud-agnostic.region primary "Primary Region" {
+        cloud-agnostic.network pnet "Primary Application Network" {
+          cloud-agnostic.cluster cluster "Application Cluster" {
+            cloud-agnostic.server api "API Server"
+            cloud-agnostic.server worker "Worker Server"
+          }
+
+          cloud-agnostic.database db "Primary Database"
+          cloud-agnostic.cache cache "Cache"
+        }
+
+        cloud-agnostic.load-balancer plb "Primary Load Balancer"
+        cloud-agnostic.queue queue "Regional Queue"
+        cloud-agnostic.object-storage receipts "Receipt Storage"
+      }
+
+      cloud-agnostic.region recovery "Recovery Region" {
+        cloud-agnostic.network rnet "Recovery Network" {
+          cloud-agnostic.database rdb "Recovery Database"
+        }
+
+        cloud-agnostic.load-balancer rlb "Recovery Load Balancer"
+        cloud-agnostic.server rapp "Recovery Application Server"
+      }
+    }
+  }
+
+  buyer -> plb { id buyer_primary label "requests" }
+  plb -> api { id primary_api label "forwards" }
+  api -> db { id api_db label "database request" }
+  db -> api { id db_api label "database response" }
+  api -> cache { id api_cache label "cache request" }
+  cache -> api { id cache_api label "cache response" }
+  api -> payment { id api_payment label "payment request" }
+  payment -> api { id payment_api label "payment response" }
+  api -> queue { id api_queue label "enqueue work" }
+  queue -> worker { id queue_worker label "work" }
+  worker -> warehouse { id worker_wh label "fulfillment" }
+  warehouse -> worker { id wh_worker label "acknowledgment" }
+  worker -> queue { id worker_retry label "retry" }
+  worker -> db { id worker_db label "order status" }
+  worker -> receipts { id worker_receipt label "receipt" }
+  db -> rdb { id db_replica label "replication" }
+  rdb -> rapp { id rdb_app label "replica reads" }
+  buyer -> rlb { id buyer_recovery label "requests" }
+  rlb -> rapp { id recovery_api label "forwards" }
+  rapp -> rlb { id recovery_response label "response" }
+  rlb -> buyer { id recovery_delivery label "response" }
+}
