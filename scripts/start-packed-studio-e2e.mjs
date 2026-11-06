@@ -25,7 +25,7 @@ const child = spawn(npx, ["--yes", `--package=${tarball}`, "dumbdiagrams", "stud
   env: {
     ...process.env,
     DUMBDIAGRAMS_STUDIO_NO_OPEN: "1",
-    DUMBDIAGRAMS_STUDIO_PORT: "5175",
+    DUMBDIAGRAMS_STUDIO_PORT: process.env.PLAYWRIGHT_PACKED_PORT ?? "5175",
     npm_config_audit: "false",
     npm_config_fund: "false",
     npm_config_yes: "true",
