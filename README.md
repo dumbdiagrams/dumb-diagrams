@@ -4,11 +4,21 @@
 
 # Dumb Diagrams
 
+<p>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D24-5FA04E?logo=nodedotjs&logoColor=white" alt="Node.js 24 or newer" /></a>
+  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-11.23.0-F69220?logo=pnpm&logoColor=white" alt="pnpm 11.23.0" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue" alt="License: AGPL-3.0-only" /></a>
+</p>
+
+<a href="https://ko-fi.com/P5P31WH7UZ" target="_blank" rel="noopener noreferrer"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Support development with a tip on Ko-fi" /></a>
+
+Tips help maintain Dumb Diagrams and support building more useful tools for people.
+
 **A little opinionated. A lot clearer.**
 
-Architecture diagrams as code for AI-first teams. Describe the system in a
-readable `.dgm` file, let the engine handle layout and routing, then review and
-refine it in Studio on your machine.
+Architecture diagrams as code for LLM-augmented workflows. Describe the system
+in a readable `.dgm` file yourself or with a coding agent, let the engine handle
+layout and routing, then review and refine it in Studio on your machine.
 
 </div>
 
@@ -108,15 +118,6 @@ Clear issue reports and reproducible examples are welcome. Implementation is
 maintainer-led; please discuss a proposed change first. Unsolicited pull
 requests may not be accepted. For security concerns, see
 [SECURITY.md](SECURITY.md).
-
-## Support development
-
-If Dumb Diagrams makes your day easier, leave a tip on Ko-fi. Your tips help
-maintain the project and support building more useful tools for people.
-
-<div align="center">
-  <a href="https://ko-fi.com/P5P31WH7UZ" target="_blank" rel="noopener noreferrer"><img height="36" style="border:0px;height:36px;" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" border="0" alt="Support development with a tip on Ko-fi" /></a>
-</div>
 
 ## License
 
