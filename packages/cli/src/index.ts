@@ -92,9 +92,10 @@ function dispatchCommand(
 function printHelp(): void {
   console.log(`${ui.banner()}
 
-${ui.brand()}
+${ui.brand()} ${ui.muted(`v${VERSION}`)}
 
 ${ui.heading("Usage")}
+  ${ui.command("dumbdiagrams --version")}  Show the installed version
   ${ui.command("dumbdiagrams init")}       Create a project folder for agents
   ${ui.command("dumbdiagrams studio")}     Open the local diagram editor
   ${ui.command("dumbdiagrams validate")}   Validate .dgm source files
@@ -153,7 +154,7 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
       }),
     )
     .andThen((handle) => {
-      console.log(`\n${ui.brand()}\n`);
+      console.log(`\n${ui.brand()} ${ui.muted(`v${VERSION}`)}\n`);
       console.log(ui.heading("Studio is ready"));
       console.log(ui.info("local", ui.command(handle.url)));
       console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));

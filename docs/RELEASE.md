@@ -2,7 +2,7 @@
 
 ## Package versions
 
-The current workspace version is `0.1.0` (release tag `v0.1.0`).
+The current workspace version is `0.1.1` (release tag `v0.1.1`).
 
 All workspace packages share one version, bumped together, so the parser,
 renderer, CLI, and editor are always one compatibility line. Only
@@ -97,6 +97,24 @@ For a new version, the tag triggers the npm publishing workflow:
   publishing and provenance, and polls npm until the registry integrity
   matches. The job runs in the protected `npm-production` environment, and no
   npm token is stored.
+
+Registry verification polls the public npm registry directly for up to 15 minutes,
+with bounded requests and no local npm metadata cache. It retries propagation
+404s, rate limiting, network errors, and registry outages. A visible version with
+a different artifact integrity fails immediately.
+
+If npm accepts publication but verification exhausts that window, do not rerun
+publication or move the tag. Retry only verification from a checkout containing
+the verifier, using the expected SHA-512 integrity printed in the failed step:
+
+```bash
+PACKAGE_NAME=create-dumb-diagrams RELEASE_VERSION=0.1.0 \
+  EXPECTED_INTEGRITY='sha512-REPLACE_WITH_EXPECTED_VALUE_FROM_RELEASE_LOG' \
+  node scripts/verify-npm-release.mjs
+```
+
+This is read-only and does not publish anything. Use the integrity from the
+release artifact/log, not an independently rebuilt local tarball.
 
 The public landing page and documentation are a separate static Astro build at
 `packages/website/dist`, hosted on Cloudflare Pages. Connect the repository to

@@ -3,7 +3,20 @@
 All notable changes to DumbDiagrams are documented here. The project follows
 the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
-## [0.1.0] - Unreleased
+## [0.1.1] - 2026-11-06
+
+### Fixed
+
+- Allow up to 15 minutes for npm registry propagation, with bounded requests,
+  clear diagnostics, and verification-only recovery.
+- Fail immediately if the published artifact integrity does not match.
+
+### Added
+
+- Display the installed version in CLI help and Studio startup output.
+- Show a discreet version label in the Studio footer.
+
+## [0.1.0] - 2026-11-06
 
 First public release of the `create-dumb-diagrams` npm package.
 
