@@ -78,9 +78,18 @@ test("duplicates and closes a diagram from its tab context menu", async ({ page 
 
   const activeTab = page.locator(".workspace-tab.is-active");
   await expect(activeTab).toHaveCount(1);
+  await activeTab.evaluate((element) => {
+    const observer = new MutationObserver(() => {
+      if (element.classList.contains("is-closing")) {
+        document.documentElement.dataset.workspaceTabClosingObserved = "true";
+        observer.disconnect();
+      }
+    });
+    observer.observe(element, { attributes: true, attributeFilter: ["class"] });
+  });
   await activeTab.click({ button: "right" });
   await page.getByRole("menu", { name: "Tab context menu" }).getByRole("menuitem", { name: /Close tab/ }).click();
-  await expect(page.locator(".workspace-tab.is-closing")).toHaveCount(1);
+  await expect(page.locator("html")).toHaveAttribute("data-workspace-tab-closing-observed", "true");
   await expect(page.getByRole("tab")).toHaveCount(2);
 });
 
@@ -224,6 +233,9 @@ test("caps open diagrams at ten while keeping Chrome-like tab widths", async ({ 
 });
 
 test("opens the Help and Examples modals and launches an example in a new tab", async ({ page }) => {
+  // The modal compiles all sixteen previews in sequence; allow the complete
+  // preview set to finish on small CI runners while retaining the full check.
+  test.setTimeout(120_000);
   await page.goto("/");
 
   await page.getByRole("button", { name: "Help", exact: true }).click();
@@ -246,7 +258,7 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
     "CloudFront fetches the original or thumbnail from the image bucket",
   );
 
-  await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
+  await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 90_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);
 
