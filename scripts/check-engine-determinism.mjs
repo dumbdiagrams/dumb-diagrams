@@ -14,7 +14,9 @@ import { engineDiagrams, repoRoot } from "./lib/example-manifest.mjs";
 
 const ROOT = repoRoot();
 const SCRIPT = fileURLToPath(import.meta.url);
-const CHILD_TIMEOUT_MS = 30_000;
+// Each child compiles the entire regression corpus, rather than a single
+// diagram. Small CI runners need enough time for all fixtures to finish.
+const CHILD_TIMEOUT_MS = 120_000;
 const CHILD_PROCESSES = [
   { name: "en_US.UTF-8/UTC", locale: "en_US.UTF-8", timeZone: "UTC" },
   { name: "tr_TR.UTF-8/Pacific-Honolulu", locale: "tr_TR.UTF-8", timeZone: "Pacific/Honolulu" },

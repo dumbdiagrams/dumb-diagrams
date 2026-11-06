@@ -5,7 +5,7 @@ import { relative } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
-import { repoRoot, performanceDiagrams } from "./lib/example-manifest.mjs";
+import { repoRoot, performanceDiagrams, toPosixPath } from "./lib/example-manifest.mjs";
 
 const BASELINE_URL = new URL("./performance-baseline.json", import.meta.url);
 const COUNTERS = ["scorePathCalls", "routeConflictChecks", "astarExpansions", "repairCandidates"];
@@ -147,7 +147,7 @@ try {
 }
 
 for (const path of performanceDiagrams()) {
-  const key = relative(root, path);
+  const key = toPosixPath(relative(root, path));
   const parsed = parseDgmResult(readFileSync(path, "utf8"));
   if (parsed.isErr()) {
     failures.push(`${key}: parse failed: ${formatParseError(parsed.error)}`);

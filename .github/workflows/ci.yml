@@ -35,7 +35,12 @@ jobs:
       - name: Check website, links, documentation examples, and payload budget
         run: pnpm check:website
       - name: Install website test browser
-        run: pnpm exec playwright install chromium --with-deps
+        timeout-minutes: 10
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          pnpm exec playwright install chromium --with-deps
       - name: Check documentation interactions in Chromium
         run: pnpm --filter @dumb-diagrams/website test:e2e --project=chromium
       - name: Check static subdirectory deployment with consent-gated GA4 and Partytown
@@ -97,7 +102,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install chromium --with-deps
+        timeout-minutes: 10
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          pnpm exec playwright install chromium --with-deps
 
       - name: Build, run Playwright tests, and run the packed CLI Studio journey
         run: pnpm ci:e2e
