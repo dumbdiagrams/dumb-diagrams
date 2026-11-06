@@ -160,5 +160,5 @@ does not change the npm registry.
 - Dependabot opens grouped weekly npm and Actions updates.
 - `pnpm check:advisories` blocks high-severity advisories across production,
   development, and build dependencies.
-- The workspace pins Node and pnpm, enforces a 24-hour minimum release age for
+- The workspace pins Node and pnpm, enforces a 72-hour minimum release age for
   packages, and allows lifecycle scripts only for `esbuild`.

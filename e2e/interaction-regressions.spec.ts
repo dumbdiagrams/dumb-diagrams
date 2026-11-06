@@ -18,9 +18,15 @@ async function selectGroup(page: Page, id: string) {
 }
 
 async function renderedBox(page: Page, selector: string) {
-  const box = await page.locator(selector).boundingBox();
-  expect(box, `${selector} should have a rendered box`).not.toBeNull();
-  return box!;
+  // boundingBox is a snapshot: SVG replacement can briefly return null. Poll
+  // geometry directly, since horizontal SVG connectors can have zero height.
+  const locator = page.locator(selector);
+  let box: Awaited<ReturnType<typeof locator.boundingBox>> = null;
+  await expect.poll(async () => {
+    box = await locator.boundingBox();
+    return box;
+  }, { message: `${selector} should have a rendered box` }).not.toBeNull();
+  return box as NonNullable<Awaited<ReturnType<typeof locator.boundingBox>>>;
 }
 
 async function worldTransform(page: Page) {
