@@ -5,9 +5,9 @@ import { parseDgmResult } from '@dumb-diagrams/runtime/dsl';
 
 // Build-time only. Studio imports these same files in editor/src/examples.ts.
 export const exampleIds = [
-  'aws-medium-image-thumbnail-pipeline',
-  'aws-medium-factory-iot-telemetry',
   'aws-easy-static-website-delivery',
+  'aws-medium-factory-iot-telemetry',
+  'aws-medium-image-thumbnail-pipeline',
 ];
 const descriptions = {
   'aws-medium-image-thumbnail-pipeline': 'An upload API that stores originals, queues thumbnail jobs for a processor, and serves both images through a CDN.',

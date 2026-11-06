@@ -5,6 +5,7 @@ import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/req
 import { compileDiagram, inlineCatalogIcons } from '@dumb-diagrams/runtime/render';
 import { loadCatalogSvg } from './catalog-loader.mjs';
 import { loadExamples } from '../src/lib/examples.mjs';
+import { cropSvgToLayout } from '../src/lib/preview-crop.mjs';
 import './prepare-reviewed-examples.mjs';
 
 const root = new URL('../../../', import.meta.url);
@@ -53,20 +54,8 @@ for (const { id, source, prompt, requirements } of examples) {
   await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '.svg')}`, site), svg);
   // Fit the website preview to authored content; keep the downloadable engine
   // export intact. No resource or connector geometry is changed.
-  const rects = [
-    ...result.layout.nodes.map(node => node.obstacle),
-    ...result.layout.groups.map(group => group.bounds),
-    ...result.layout.edges.flatMap(edge => [
-      ...edge.points.map(point => ({ ...point, w: 0, h: 0 })),
-      ...(edge.badge ? [{ x: edge.badge.x - 12, y: edge.badge.y - 12, w: 24, h: 24 }] : []),
-    ]),
-  ];
-  const x = Math.floor(Math.min(...rects.map(rect => rect.x)) - 24);
-  const y = Math.floor(Math.min(...rects.map(rect => rect.y)) - 24);
-  const width = Math.ceil(Math.max(...rects.map(rect => rect.x + rect.w)) - x + 24);
-  const height = Math.ceil(Math.max(...rects.map(rect => rect.y + rect.h)) - y + 24);
-  const preview = svg.replace(/<svg\b[^>]*>/, `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}">`);
-  await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '-preview.svg')}`, site), preview);
+  const preview = cropSvgToLayout(svg, result.layout);
+  await writeFile(new URL(`public/diagrams/${filename.replace('.dgm', '-preview.svg')}`, site), preview.svg);
   await writeFile(new URL(`public/diagrams/${filename}`, site), source);
   await writeFile(new URL(`public/diagrams/${id}.requirements.json`, site), requirementsText);
   if (prompt) await writeFile(new URL(`public/diagrams/${id}-prompt.txt`, site), prompt);

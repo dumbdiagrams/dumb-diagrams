@@ -123,6 +123,16 @@ not per-change design documents or audit logs.
 
 ## Pull requests
 
+- Start with a GitHub issue describing the bug or proposed change. Wait for a
+  maintainer to acknowledge the issue before spending time on a pull request;
+  unrequested or unconnected pull requests may be closed without review.
+- Only invited contributors should submit code changes. A maintainer may invite
+  someone to work on an issue or open a pull request when their help is wanted.
+- The project owner must approve contributor-authored pull requests before
+  they are merged. Passing CI or receiving another review does not replace
+  that approval. For an owner-authored pull request, configure an explicit
+  exception, such as approval by a designated trusted reviewer or a narrow
+  owner bypass. Only the owner and explicitly designated maintainers may merge.
 - Keep each change focused, and describe the user-visible behavior and any
   compatibility impact.
 - A behavior change lands with its test. Parser, validation, rendering, CLI, and
@@ -139,6 +149,21 @@ not per-change design documents or audit logs.
 
 Only maintainers publish `create-dumb-diagrams`, through the tag-driven
 workflow in [docs/RELEASE.md](docs/RELEASE.md).
+
+### Workflow and merge settings
+
+Repository settings must match this policy: keep issues public and set pull
+request creation to **Collaborators only** under Settings → General → Features.
+Require approval for workflow runs
+from all outside contributors, then have a maintainer approve runs from invited
+trusted contributors; protect the default branch with required pull-request
+review and required CI checks. The `CODEOWNERS` rule assigns all files to
+`@AlexJohnSadowski`; enable required code-owner review. A broad list
+of code owners would let any listed person satisfy the review. Configure any
+owner-authored PR exception explicitly. Invite trusted contributors through
+repository access settings and grant merge permission only to the owner and
+designated maintainers. These controls live in GitHub settings; workflow files
+cannot enforce them. The code owner must retain write access to the repository.
 
 ## Project communication
 

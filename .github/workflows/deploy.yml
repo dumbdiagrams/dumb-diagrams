@@ -37,6 +37,7 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate exact release tag
         env:
@@ -55,7 +56,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check high-severity production advisories
+      - name: Check high-severity dependency advisories
         if: inputs.ref != ''
         run: pnpm check:advisories
 
@@ -88,7 +89,7 @@ jobs:
 
       - name: Validate examples and reviewed routing warnings
         if: github.event_name == 'push' || inputs.ref == ''
-        run: pnpm check && pnpm check:routing
+        run: pnpm check:readability && pnpm check:routing
 
       - name: Enforce compilation performance budget
         if: github.event_name == 'push' || inputs.ref == ''

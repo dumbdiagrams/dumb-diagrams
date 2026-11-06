@@ -44,6 +44,6 @@
     "@dumb-diagrams/runtime": "workspace:*",
     "@types/node": "^24.13.3",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }

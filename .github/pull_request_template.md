@@ -1,5 +1,7 @@
 ## What and why
 
+Issue: <!-- Link the issue acknowledged by a maintainer before implementation. -->
+
 ## Verification
 
 Commands/checks run and results:

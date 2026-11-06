@@ -4,44 +4,50 @@
 
 # Dumb Diagrams
 
-**Portable plain-text architecture diagrams for coding agents and people.**
+**A little opinionated. A lot clearer.**
 
-[![npm version](https://img.shields.io/npm/v/create-dumb-diagrams?color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/create-dumb-diagrams)
-[![Node.js](https://img.shields.io/node/v/create-dumb-diagrams?color=339933&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](./LICENSE)
+Architecture diagrams as code for AI-first teams. Describe the system in a
+readable `.dgm` file, let the engine handle layout and routing, then review and
+refine it in Studio on your machine.
 
 </div>
 
----
+## How it works
 
-An agent (or a person) writes a small `.dgm` file describing resources,
-boundaries, and connections. The engine validates it, lays it out, routes
-right-angle connectors, and renders deterministic SVG. Studio, a local browser
-editor, refines the result and saves visual decisions back into the same file.
+Keep the architecture in plain text that you can review in a diff and version
+with your project. The engine checks the source, places resources, routes
+right-angle connections, and renders repeatable SVG. Studio lets you move
+resources, adjust routes, and save those visual decisions back into the same
+`.dgm` file.
 
-- Readable, Git-friendly source with a versioned format (`dgm 1`).
-- The same source and view always produce the same geometry and SVG.
-- AWS, Azure, GCP, and cloud-agnostic catalogs, each with its own validation rules.
-- Exports: SVG, PNG, JPEG, WebP, GIF, PDF, standalone HTML, XML, JSON, URL, and `.dgm`.
+- AWS is the first-class provider. Azure, Google Cloud, and cloud-agnostic
+  diagrams are available, but remain experimental.
+- Studio runs locally and opens `.dgm` files from your machine. It targets
+  Chromium-based desktop browsers.
+- No model or AI service is built in. Use the coding agent of your choice, or
+  write and edit the source yourself.
+- Diagrams are architecture views, not live infrastructure inventories.
 
-AWS is the first-class provider. Azure, GCP, and cloud-agnostic are
-experimental and share AWS layout conventions. Studio targets Chromium-based
-desktop browsers.
-
-## Quick start
+## Get started
 
 Requires Node.js 24 or newer.
 
 ```bash
 npm install -g create-dumb-diagrams
-dumbdiagrams init          # creates a project folder with agent guidance
+dumbdiagrams init
 cd <project-folder>
-dumbdiagrams studio        # opens the local editor
+dumbdiagrams studio
 ```
 
-`dgm` is a shorthand alias for `dumbdiagrams`.
+`init` creates a project folder with agent guidance and a diagrams workspace.
+`studio` starts the local editor; use **Open** to choose a `.dgm` file. Keep
+the command running while you work. The `dgm` command is a short alias for
+`dumbdiagrams`.
 
-## A diagram
+## A small example
+
+An agent or person can describe services and connections without assigning
+canvas coordinates:
 
 ```dgm
 dgm 1
@@ -64,40 +70,47 @@ diagram payments {
 }
 ```
 
-Check and render it from a terminal or CI:
+Every diagram needs a companion requirements contract. For a file named
+`diagram.dgm`, put `requirements.json` beside it; for other names, use the
+same stem, such as `payments.requirements.json`. The contract records what the
+diagram must contain. Validation checks the source against that contract, so
+review the contract itself against the architecture you intended. Initialized
+projects include a schema and authoring guidance.
 
 ```bash
-dumbdiagrams validate diagrams/*/*.dgm             # source validity and requirements
-dumbdiagrams validate --strict diagrams/*/*.dgm    # also fail on routing findings
-dumbdiagrams format --check diagram.dgm            # canonical formatting
-dumbdiagrams render diagram.dgm -o diagram.svg
+dumbdiagrams validate diagrams/payments/diagram.dgm
+dumbdiagrams validate --strict diagrams/payments/diagram.dgm
+dumbdiagrams format --check diagrams/payments/diagram.dgm
+dumbdiagrams render diagrams/payments/diagram.dgm -o payments.svg
 ```
 
-The full syntax reference is on the website under **Source format**.
-Validation requires a companion requirements contract extracted before authoring:
-`requirements.json` beside `diagram.dgm`, or `<stem>.requirements.json` for a flat
-file. Initialized projects include its schema and authoring instructions.
+Normal validation checks source, requirements, and provider findings.
+`--strict` also fails on routing findings. See the
+[quick start](packages/website/src/content/docs/quick-start.md),
+[agent workflow](packages/website/src/content/docs/agent-workflow.md), and
+[`.dgm` format reference](packages/website/src/content/docs/source-format.md)
+for the full workflow and syntax.
 
-## Developing
+## Development and contributions
 
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
-pnpm dev          # Studio with hot reload
+pnpm dev
 ```
 
-[CONTRIBUTING.md](./CONTRIBUTING.md) covers development and baseline policy.
-See [Testing](./docs/TESTING.md) for golden cases and the packed CLI workflow.
-[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) explains the pipeline and
-package boundaries, and [docs/RELEASE.md](./docs/RELEASE.md) covers
-versioning, the format policy, and publishing.
+`pnpm dev` runs Studio with hot reload. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for setup and project guidance, [Testing](docs/TESTING.md) for validation
+workflows, and [Architecture](docs/ARCHITECTURE.md) for the engine and package
+boundaries.
 
-GitHub Issues are the primary place for bugs, feature ideas, documentation
-corrections, and project questions. See [SECURITY.md](./SECURITY.md) for private
-vulnerability reports.
+Clear issue reports and reproducible examples are welcome. Implementation is
+maintainer-led; please discuss a proposed change first. Unsolicited pull
+requests may not be accepted. For security concerns, see
+[SECURITY.md](SECURITY.md).
 
 ## License
 
-Copyright © 2026 DumbDiagrams contributors. Licensed under the
-[GNU Affero General Public License v3.0 only](./LICENSE). Provider catalog
-icons keep their upstream terms; see [ICON-NOTICES.md](./ICON-NOTICES.md).
+Licensed under the [GNU Affero General Public License v3.0 only](LICENSE).
+Provider catalog icons retain their upstream terms; see
+[ICON-NOTICES.md](ICON-NOTICES.md).

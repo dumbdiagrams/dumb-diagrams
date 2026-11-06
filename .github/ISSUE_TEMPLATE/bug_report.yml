@@ -40,6 +40,12 @@ body:
       description: Include OS, Node.js version for CLI use, and browser/version for Studio.
     validations:
       required: true
+  - type: input
+    id: generation_context
+    attributes:
+      label: Generation model and reasoning or agent (optional)
+      description: If an AI tool produced the diagram or report, share its model and reasoning setting or agent name if known.
+      placeholder: e.g. model name, reasoning effort, agent/tool
   - type: textarea
     id: error
     attributes:

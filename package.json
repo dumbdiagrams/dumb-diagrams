@@ -24,7 +24,7 @@
     "typecheck": "pnpm --filter @dumb-diagrams/editor typecheck",
     "check:versions": "node scripts/check-versions.mjs",
     "check:dependencies": "node scripts/check-dependencies.mjs",
-    "check:advisories": "pnpm audit --prod --audit-level high",
+    "check:advisories": "pnpm audit --audit-level high",
     "prepare": "node scripts/setup-git-hooks.mjs",
     "fix:style": "biome check --write",
     "check:style": "biome ci",
@@ -68,11 +68,12 @@
     "@ninoseki/eslint-plugin-neverthrow": "0.3.1",
     "@playwright/test": "^1.62.1",
     "@typescript-eslint/parser": "8.70.0",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "esbuild": "^0.25.12",
     "eslint": "10.10.0",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.11"
+    "vite": "^6.4.5",
+    "vitest": "^4.1.12"
   },
   "packageManager": "pnpm@11.23.0",
   "description": "LLM-first architecture diagrams that are hard to get wrong: deterministic layout, validated source, local Studio.",

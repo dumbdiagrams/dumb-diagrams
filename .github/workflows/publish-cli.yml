@@ -35,6 +35,7 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
@@ -44,6 +45,22 @@ jobs:
         with:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
+
+      - name: Check npm trusted publishing support
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+
+          const npmVersion = execFileSync("npm", ["--version"], { encoding: "utf8" }).trim();
+          const [major, minor, patch] = npmVersion.split(".").map(Number);
+          if ([major, minor, patch].some((part) => !Number.isInteger(part))) {
+            throw new Error(`Could not parse npm version: ${npmVersion}`);
+          }
+          if (major < 11 || (major === 11 && minor < 5) || (major === 11 && minor === 5 && patch < 1)) {
+            throw new Error(`npm ${npmVersion} is too old for trusted publishing; require npm 11.5.1 or later`);
+          }
+          console.log(`npm ${npmVersion} supports trusted publishing`);
+          NODE
 
       - name: Verify release tag and package version
         id: release-version

@@ -71,7 +71,13 @@ test('complete documentation and homepage examples compile through the actual ru
       checked++;
     }
   }
-  for (const example of loadExamples()) {
+  const landingExamples = loadExamples();
+  assert.deepEqual(landingExamples.map(example => example.id), [
+    'aws-easy-static-website-delivery',
+    'aws-medium-factory-iot-telemetry',
+    'aws-medium-image-thumbnail-pipeline',
+  ], 'homepage examples follow the requested static, factory, thumbnail order');
+  for (const example of landingExamples) {
     assert.ok(example.prompt.trim(), `${example.id}: natural prompt`);
     assert.ok(example.interpretation.trim(), `${example.id}: architecture interpretation`);
     const parsed = parseDgmResult(example.source);
@@ -145,6 +151,13 @@ test('approved examples are copied byte-for-byte and expose provenance in the do
       assert.deepEqual(copied, await readFile(example.paths[key]), `${example.id}: ${key} copied byte-for-byte`);
       assert.ok(html.includes(`/reviewed-examples/${example.files[key]}`), `${example.id}: ${key} is linked from the gallery`);
     }
+    const compactPreviewPath = `reviewed-examples/${example.run}/${example.id}-preview.svg`;
+    const compactPreview = await readFile(join(dist, compactPreviewPath), 'utf8');
+    assert.match(compactPreview, /viewBox="[^\"]+"/, `${example.id}: compact display preview has a layout-derived viewBox`);
+    assert.ok(html.includes(`${base}${compactPreviewPath}`), `${example.id}: compact display preview is shown in the gallery`);
+    assert.equal(example.previewWidth, Number(compactPreview.match(/<svg\b[^>]*\bwidth="([\d.]+)"/)?.[1]));
+    assert.equal(example.previewHeight, Number(compactPreview.match(/<svg\b[^>]*\bheight="([\d.]+)"/)?.[1]));
+    assert.ok(html.includes(`href="${base}reviewed-examples/${example.files.svg}" download`), `${example.id}: original SVG remains downloadable`);
     const sourceParsed = parseDgmResult(await readFile(example.paths.source, 'utf8'));
     const requirementsParsed = parseRequirements(await readFile(example.paths.requirements, 'utf8'));
     assert.equal(sourceParsed.isOk() && requirementsParsed.isOk(), true, `${example.id}: source and requirements parse`);

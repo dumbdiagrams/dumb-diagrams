@@ -31,5 +31,10 @@ dependency compromise, or release-workflow credentials are in scope. Do not
 attempt denial-of-service testing against shared infrastructure.
 
 Release publishing uses npm trusted publishing and GitHub Actions OIDC; npm
-tokens must not be added to repository or CI secrets. See
+tokens must not be added to repository or CI secrets. Before enabling releases,
+the package owner must configure the trusted publisher for this repository,
+`publish-cli.yml`, and the `npm-production` environment, with direct `npm
+publish` permission enabled. New npm trusted-publisher configurations may allow
+staged publishing only by default. The `npm-production` GitHub environment and
+release-tag permissions also need owner-controlled protection. See
 [`docs/RELEASE.md`](docs/RELEASE.md) for the release controls.
