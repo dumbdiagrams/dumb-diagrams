@@ -1,4 +1,6 @@
 * text=auto eol=lf
+# Vendor assets are checksum-locked; preserve upstream bytes, including line endings.
+assets/catalog/sources/** -text whitespace=cr-at-eol
 *.png binary
 *.jpg binary
 *.jpeg binary

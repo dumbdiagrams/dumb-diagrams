@@ -694,8 +694,17 @@ test("aligns left drawers with the tool rail and animates closed", async ({ page
   expect(drawerBox!.y).toBe(toolBox!.y);
   expect(drawerBox!.x).toBe(toolBox!.x + toolBox!.width);
 
+  await drawer.evaluate((element) => {
+    const observer = new MutationObserver(() => {
+      if (element.classList.contains("is-closing")) {
+        document.documentElement.dataset.drawerClosingObserved = "true";
+        observer.disconnect();
+      }
+    });
+    observer.observe(element, { attributes: true, attributeFilter: ["class"] });
+  });
   await drawer.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(drawer).toHaveClass(/is-closing/);
+  await expect(page.locator("html")).toHaveAttribute("data-drawer-closing-observed", "true");
   await expect(drawer).toHaveCount(0);
 });
 

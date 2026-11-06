@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 
 import { repoRoot } from "./lib/example-manifest.mjs";
 import { collectSourceManifestFiles } from "./lib/source-manifest.mjs";
@@ -27,8 +27,16 @@ const tarballPath = requestedArtifact
     ? requestedArtifact
     : resolve(root, requestedArtifact)
   : join(artifactsDir, tarballName);
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+const isWindows = process.platform === "win32";
+const nodeCommand = process.env.npm_node_execpath || process.execPath;
+const pnpmCliPath = isWindows ? process.env.npm_execpath : undefined;
+const npxCliPath = isWindows ? join(dirname(nodeCommand), "node_modules/npm/bin/npx-cli.js") : undefined;
+if (isWindows && (!pnpmCliPath || !existsSync(pnpmCliPath))) {
+  throw new Error("Windows package smoke must run through pnpm so npm_execpath points to the pnpm JavaScript CLI");
+}
+if (isWindows && !existsSync(npxCliPath)) {
+  throw new Error(`Could not locate npm's npx-cli.js beside Node at ${npxCliPath}`);
+}
 // Matches the initialized `.dumbdiagrams/requirements.example.json` and the default preferences.
 const smokeSource = `dgm 1
 diagram smoke {
@@ -47,7 +55,7 @@ diagram smoke {
 mkdirSync(artifactsDir, { recursive: true });
 
 if (!requestedArtifact) {
-  execFileSync(pnpmCommand, ["--dir", cliPackageRoot, "pack", "--pack-destination", artifactsDir], {
+  execCommand("pnpm", ["--dir", cliPackageRoot, "pack", "--pack-destination", artifactsDir], {
     cwd: root,
     stdio: "inherit",
   });
@@ -191,7 +199,7 @@ try {
   const defaultPreferences = readFileSync(preferencesFile, "utf8");
   writeFileSync(preferencesFile, `${JSON.stringify({ resourceLabels: false })}\n`);
   const iconsOnly = JSON.parse(
-    spawnSync(npxCommand, ["--yes", `--package=${tarballPath}`, "dumbdiagrams", "validate", "--json", smokeDiagram], {
+    spawnCommand("npx", ["--yes", `--package=${tarballPath}`, "dumbdiagrams", "validate", "--json", smokeDiagram], {
       cwd: root,
       encoding: "utf8",
       env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
@@ -243,6 +251,22 @@ function listTarballEntries(tarballPath) {
   return listing.trim().split("\n").filter(Boolean);
 }
 
+function commandInvocation(command, args) {
+  if (!isWindows) return { command, args };
+  const cliPath = command === "pnpm" ? pnpmCliPath : npxCliPath;
+  return { command: nodeCommand, args: [cliPath, ...args] };
+}
+
+function execCommand(command, args, options) {
+  const invocation = commandInvocation(command, args);
+  return execFileSync(invocation.command, invocation.args, options);
+}
+
+function spawnCommand(command, args, options) {
+  const invocation = commandInvocation(command, args);
+  return spawnSync(invocation.command, invocation.args, options);
+}
+
 function verifyCorrespondingSource(tarballPath) {
   const extracted = mkdtempSync(join(tmpdir(), "dumbdiagrams-source-"));
   try {
@@ -273,7 +297,7 @@ function verifyCorrespondingSource(tarballPath) {
       ["exec", "playwright", "test", "--project=chromium", "--list"],
     ];
     for (const args of commands) {
-      execFileSync(pnpmCommand, args, { cwd: sourceRoot, stdio: "inherit" });
+      execCommand("pnpm", args, { cwd: sourceRoot, stdio: "inherit" });
     }
   } finally {
     rmSync(extracted, { recursive: true, force: true });
@@ -282,7 +306,7 @@ function verifyCorrespondingSource(tarballPath) {
 
 function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
   try {
-    execFileSync(npxCommand, ["--yes", `--package=${tarballPath}`, bin, ...args], {
+    execCommand("npx", ["--yes", `--package=${tarballPath}`, bin, ...args], {
       cwd,
       stdio: ["ignore", "inherit", "inherit"],
       env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
@@ -295,7 +319,7 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
 }
 
 function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
-  return execFileSync(npxCommand, ["--yes", `--package=${tarballPath}`, bin, ...args], {
+  return execCommand("npx", ["--yes", `--package=${tarballPath}`, bin, ...args], {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],

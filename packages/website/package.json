@@ -11,6 +11,7 @@
     "prebuild": "pnpm prepare:assets",
     "build": "astro build && pagefind --site dist --glob 'docs/**/*.html'",
     "preview": "astro preview --host 127.0.0.1",
+    "precheck": "pnpm --filter @dumb-diagrams/runtime build",
     "check": "astro check",
     "test": "node --test scripts/site.test.mjs scripts/analytics.test.mjs",
     "test:e2e": "playwright test --config playwright.config.ts"

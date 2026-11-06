@@ -235,14 +235,16 @@ test("opens the Help and Examples modals and launches an example in a new tab", 
   await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(16);
   await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(16);
   await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(16);
-  await expect(examples.getByText("Azure Private Order Processing", { exact: true })).toBeVisible();
+  await expect(examples.getByText("Private Azure Order Processing", { exact: true })).toBeVisible();
   await expect(examples.getByText("GCP Media Processing", { exact: true })).toBeVisible();
   await expect(examples.getByText("Order Processing with Recovery Region", { exact: true })).toBeVisible();
 
   const thumbnails = examples.locator(".example-card").filter({ hasText: "Image thumbnail pipeline" });
   await expect(thumbnails.locator(".example-prompt pre").first()).toContainText("Create an AWS image thumbnail pipeline");
   await thumbnails.getByText("How DumbDiagrams interprets it", { exact: true }).click();
-  await expect(thumbnails.locator(".example-prompt pre").nth(1)).toContainText("a CDN serves originals and thumbnails");
+  await expect(thumbnails.locator(".example-prompt pre").nth(1)).toContainText(
+    "CloudFront fetches the original or thumbnail from the image bucket",
+  );
 
   await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();

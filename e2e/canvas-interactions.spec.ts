@@ -1189,6 +1189,16 @@ test("keeps the canvas zoom controls ordered and padded", async ({ page }) => {
 });
 
 test("supports copy, paste, cut, and keyboard deletion for canvas selections", async ({ page }) => {
+  // This scenario covers Studio's internal selection clipboard. Keep the
+  // browser permission result deterministic across CI and local runs.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: () => Promise.reject(new DOMException("Clipboard access denied", "NotAllowedError")),
+      },
+    });
+  });
   await openAsyncDocs(page);
 
   const resources = page.locator('[data-entity-kind="resource"]');
@@ -1198,11 +1208,11 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await client.click();
   await expect(client).toHaveAttribute("aria-selected", "true");
 
-  await page.keyboard.press("Control+c");
+  await page.keyboard.press(`${MOD}+c`);
   const status = page.getByRole("status");
   await expect(status).toContainText("Copied selection");
   await expect(status).toHaveCSS("animation-name", "toast-in-out");
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press(`${MOD}+v`);
   await expect(page.getByRole("status")).toContainText("Pasted selection");
   await expect(resources).toHaveCount(beforeCount + 1);
   await expect(page.locator('[role="alert"]')).toHaveCount(0);
@@ -1214,11 +1224,11 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await expect(client).toHaveCount(1);
   await client.click();
   await expect(client).toHaveAttribute("aria-selected", "true");
-  await page.keyboard.press("Control+x");
+  await page.keyboard.press(`${MOD}+x`);
   await expect(page.getByRole("status")).toContainText("Cut selection");
   await expect(page.locator('[data-entity-kind="resource"][data-entity-id="client"]')).toHaveCount(0);
 
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press(`${MOD}+v`);
   await expect(page.getByRole("status")).toContainText("Pasted selection");
   await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(beforeCount);
 

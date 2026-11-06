@@ -18,6 +18,10 @@ function denseDiagram(label: string): string {
 }
 
 test("bounds retained memory and diagnostic DOM during dense source edits", async ({ page, browserName }) => {
+  // CI's four-worker run can spend most of the default 45 seconds compiling
+  // the 44-node/946-edge diagram 20 times; retain every iteration while
+  // leaving enough time for the full stress contract to finish.
+  test.setTimeout(90_000);
   // CDP exposes post-GC heap usage in Chromium. Other engines exercise source
   // editing in the shared interaction suite.
   test.skip(browserName !== "chromium", "Chromium memory profiling requires CDP");
