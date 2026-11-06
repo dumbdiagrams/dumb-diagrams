@@ -28,15 +28,16 @@ const tarballPath = requestedArtifact
     ? requestedArtifact
     : resolve(root, requestedArtifact)
   : join(artifactsDir, tarballName);
+let installedRoot;
 const isWindows = process.platform === "win32";
 const nodeCommand = process.env.npm_node_execpath || process.execPath;
 const pnpmCliPath = isWindows ? process.env.npm_execpath : undefined;
-const npxCliPath = isWindows ? join(dirname(nodeCommand), "node_modules/npm/bin/npx-cli.js") : undefined;
+const npmCliPath = isWindows ? join(dirname(nodeCommand), "node_modules/npm/bin/npm-cli.js") : undefined;
 if (isWindows && (!pnpmCliPath || !existsSync(pnpmCliPath))) {
   throw new Error("Windows package smoke must run through pnpm so npm_execpath points to the pnpm JavaScript CLI");
 }
-if (isWindows && !existsSync(npxCliPath)) {
-  throw new Error(`Could not locate npm's npx-cli.js beside Node at ${npxCliPath}`);
+if (isWindows && !existsSync(npmCliPath)) {
+  throw new Error(`Could not locate npm's npm-cli.js beside Node at ${npmCliPath}`);
 }
 // Matches the initialized `.dumbdiagrams/requirements.example.json` and the default preferences.
 const smokeSource = `dgm 1
@@ -139,6 +140,7 @@ const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-smoke-"));
 const projectDir = join(workRoot, "smoke-project");
 try {
   mkdirSync(projectDir);
+  installPackedCli(tarballPath, join(workRoot, "installed"));
 
   const helpOut = runNpxCapture(tarballPath, ["help"], "dumbdiagrams");
   if (!helpOut.includes("studio")) {
@@ -200,7 +202,7 @@ try {
   const defaultPreferences = readFileSync(preferencesFile, "utf8");
   writeFileSync(preferencesFile, `${JSON.stringify({ resourceLabels: false })}\n`);
   const iconsOnly = JSON.parse(
-    spawnCommand("npx", ["--yes", `--package=${tarballPath}`, "dumbdiagrams", "validate", "--json", smokeDiagram], {
+    spawnSync(nodeCommand, [installedBin("dumbdiagrams"), "validate", "--json", smokeDiagram], {
       cwd: root,
       encoding: "utf8",
       env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
@@ -254,7 +256,7 @@ function listTarballEntries(tarballPath) {
 
 function commandInvocation(command, args) {
   if (!isWindows) return { command, args };
-  const cliPath = command === "pnpm" ? pnpmCliPath : npxCliPath;
+  const cliPath = command === "pnpm" ? pnpmCliPath : npmCliPath;
   return { command: nodeCommand, args: [cliPath, ...args] };
 }
 
@@ -305,9 +307,26 @@ function verifyCorrespondingSource(tarballPath) {
   }
 }
 
+// Install the tarball once: every `npx --package=<tgz>` call re-extracts the
+// whole package, which took ~5 minutes per call on Windows runners.
+function installPackedCli(tarballPath, prefix) {
+  mkdirSync(prefix);
+  writeFileSync(join(prefix, "package.json"), "{}\n");
+  execCommand("npm", ["install", "--no-audit", "--no-fund", "--prefix", prefix, tarballPath], {
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+  installedRoot = join(prefix, "node_modules", cliManifest.name);
+}
+
+function installedBin(bin) {
+  const manifest = JSON.parse(readFileSync(join(installedRoot, "package.json"), "utf8"));
+  if (!manifest.bin?.[bin]) throw new Error(`Installed package does not declare the ${bin} binary`);
+  return join(installedRoot, manifest.bin[bin]);
+}
+
 function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
   try {
-    execCommand("npx", ["--yes", `--package=${tarballPath}`, bin, ...args], {
+    execFileSync(nodeCommand, [installedBin(bin), ...args], {
       cwd,
       stdio: ["ignore", "inherit", "inherit"],
       env: { ...process.env, npm_config_audit: "false", npm_config_fund: "false", npm_config_yes: "true" },
@@ -320,7 +339,7 @@ function runNpx(tarballPath, args, bin = "dumbdiagrams", cwd = root) {
 }
 
 function runNpxCapture(tarballPath, args, bin = "dumbdiagrams") {
-  return execCommand("npx", ["--yes", `--package=${tarballPath}`, bin, ...args], {
+  return execFileSync(nodeCommand, [installedBin(bin), ...args], {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
