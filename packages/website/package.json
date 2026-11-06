@@ -23,7 +23,7 @@
     "@dumb-diagrams/runtime": "workspace:*",
     "astro": "7.4.5",
     "neverthrow": "8.2.0",
-    "sharp": "0.35.4"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
