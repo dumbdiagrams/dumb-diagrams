@@ -2338,6 +2338,7 @@ function App() {
           title="Your diagrams stay on this device. DumbDiagrams does not upload or store them on our servers."
         >
           <span className="privacy-footer-brand">© 2026 DumbDiagrams</span>
+          <span aria-label={`Studio version ${__DUMB_DIAGRAMS_VERSION__}`}>v{__DUMB_DIAGRAMS_VERSION__}</span>
           <span className="privacy-footer-divider" aria-hidden="true">
             |
           </span>
