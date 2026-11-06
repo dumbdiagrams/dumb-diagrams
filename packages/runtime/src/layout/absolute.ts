@@ -1,15 +1,10 @@
 import { getDefaultView, getGroup, getResource } from "../core/index.js";
-import type {
-  DiagramDocument,
-  GroupGeom,
-  ID,
-  LayoutResult,
-  NodeGeom,
-} from "../core/index.js";
-import { GROUP_STYLES } from "../grammar-aws/index.js";
+import type { DiagramDocument, GroupGeom, ID, LayoutResult, NodeGeom, Rect } from "../core/index.js";
+import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
 
 import type { LayoutState } from "./internal.js";
 import { LAYOUT_METRICS } from "./metrics.js";
+import { findDiagramRoots, orderRootsForFlow } from "./roots.js";
 
 export function finalizeAbsoluteLayout(
   doc: DiagramDocument,
@@ -20,7 +15,7 @@ export function finalizeAbsoluteLayout(
   const nodes: NodeGeom[] = [];
   const groups: GroupGeom[] = [];
 
-  const roots = findPositionRoots(doc);
+  const roots = orderRootsForFlow(doc, findDiagramRoots(doc), state.compoundFlow);
   const view = getDefaultView(doc);
   const flowingRoots = roots.filter((id) => {
     const place = view.places[id];
@@ -33,20 +28,24 @@ export function finalizeAbsoluteLayout(
       const group = getGroup(doc, rootId);
       if (group) return state.groupGeoms.get(group.id)?.bounds.h ?? 0;
       const resource = getResource(doc, rootId);
-      return resource ? state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0 : 0;
+      return resource ? (state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0) : 0;
     }),
   );
   let cursorX = canvasX;
+  let previousNodes = 0;
+  let previousRoot: ID | undefined;
 
   for (const rootId of flowingRoots) {
     const group = getGroup(doc, rootId);
     const resource = getResource(doc, rootId);
     const height = group
-      ? state.groupGeoms.get(group.id)?.bounds.h ?? 0
+      ? (state.groupGeoms.get(group.id)?.bounds.h ?? 0)
       : resource
-        ? state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0
+        ? (state.nodeGeoms.get(resource.id)?.obstacle.h ?? 0)
         : 0;
     const rootY = canvasY + Math.max(0, (rootHeight - height) / 2);
+    const firstNode = nodes.length;
+    const firstGroup = groups.length;
     if (group) {
       const w = positionGroupTree(doc, state, group.id, cursorX, rootY, nodes, groups);
       cursorX += w + LAYOUT_METRICS.rootGap;
@@ -58,6 +57,24 @@ export function finalizeAbsoluteLayout(
         cursorX += abs.obstacle.w + LAYOUT_METRICS.rootGap;
       }
     }
+    const extra =
+      doc.flow === "lr"
+        ? labelRunShortfall(
+            doc,
+            nodes.slice(previousNodes, firstNode),
+            nodes.slice(firstNode),
+            groups.find((item) => item.id === previousRoot)?.bounds,
+            groups.find((item) => item.id === rootId)?.bounds,
+          )
+        : 0;
+    if (extra > 0) {
+      for (let index = firstNode; index < nodes.length; index++) nodes[index] = translateNode(nodes[index]!, extra, 0);
+      for (let index = firstGroup; index < groups.length; index++)
+        groups[index] = translateGroup(groups[index]!, extra);
+      cursorX += extra;
+    }
+    previousNodes = firstNode;
+    previousRoot = rootId;
   }
 
   // Authored root objects already have explicit absolute coordinates. Measure
@@ -74,26 +91,84 @@ export function finalizeAbsoluteLayout(
     }
   }
 
-  const allRects = [
-    ...nodes.map((n) => n.obstacle),
-    ...groups.map((g) => g.bounds),
-  ];
+  alignUnpinnedFlowRoots(doc, roots, nodes, groups, canvasX, canvasY);
+
+  const allRects = [...nodes.map((n) => n.obstacle), ...groups.map((g) => g.bounds)];
   const bounds = union(allRects);
 
   return {
     nodes,
     groups,
     edges: [],
-    width: Math.max(
-      Math.ceil(bounds.x + bounds.w + LAYOUT_METRICS.canvasPadding),
-      LAYOUT_METRICS.minCanvasWidth,
-    ),
-    height: Math.max(
-      Math.ceil(bounds.y + bounds.h + LAYOUT_METRICS.canvasPadding),
-      LAYOUT_METRICS.minCanvasHeight,
-    ),
+    width: Math.max(Math.ceil(bounds.x + bounds.w + LAYOUT_METRICS.canvasPadding), LAYOUT_METRICS.minCanvasWidth),
+    height: Math.max(Math.ceil(bounds.y + bounds.h + LAYOUT_METRICS.canvasPadding), LAYOUT_METRICS.minCanvasHeight),
     symmetries: [],
   };
+}
+
+/**
+ * Align an external resource with its main connected flow. Root cards
+ * are ordinarily centered against the full height of the provider boundary;
+ * that can leave a simple ingress connector bending to reach the first icon.
+ */
+function alignUnpinnedFlowRoots(
+  doc: DiagramDocument,
+  roots: ID[],
+  nodes: NodeGeom[],
+  groups: GroupGeom[],
+  canvasX: number,
+  canvasY: number,
+): void {
+  const horizontal = doc.flow === "lr";
+  const rootSet = new Set(roots);
+  const view = getDefaultView(doc);
+  for (const rootId of roots) {
+    const resource = getResource(doc, rootId);
+    if (!resource || view.places[rootId]?.pin) continue;
+
+    const incident = doc.edges.filter((edge) => edge.source === rootId || edge.target === rootId);
+    const edge =
+      incident.length === 1
+        ? incident[0]
+        : incident.find((candidate) => {
+            if (candidate.style === "dashed" || candidate.kind === "fail" || candidate.kind === "peer") return false;
+            const neighborId = candidate.source === rootId ? candidate.target : candidate.source;
+            return doc.edges.some(
+              (continuation) =>
+                continuation.source === neighborId &&
+                continuation.target !== rootId &&
+                continuation.style !== "dashed" &&
+                continuation.kind !== "fail",
+            );
+          });
+    if (!edge) continue;
+    const neighborId = edge.source === rootId ? edge.target : edge.source;
+    const neighbor = nodes.find((node) => node.id === neighborId);
+    const root = nodes.find((node) => node.id === rootId);
+    if (!root || !neighbor || rootSet.has(neighborId)) continue;
+
+    const targetCenter = horizontal ? neighbor.icon.y + neighbor.icon.h / 2 : neighbor.icon.x + neighbor.icon.w / 2;
+    const rootCenter = horizontal ? root.icon.y + root.icon.h / 2 : root.icon.x + root.icon.w / 2;
+    const delta = targetCenter - rootCenter;
+    if (Math.abs(delta) < 0.5) continue;
+
+    const candidate = translateNode(root, horizontal ? 0 : delta, horizontal ? delta : 0);
+    const crossStart = horizontal ? candidate.obstacle.y : candidate.obstacle.x;
+    const canvasStart = horizontal ? canvasY : canvasX;
+    if (crossStart < canvasStart) continue;
+
+    const overlapsNode = nodes.some((other) => other.id !== rootId && rectsOverlap(candidate.obstacle, other.obstacle));
+    const overlapsGroup = groups.some((group) => rectsOverlap(candidate.obstacle, group.bounds));
+    if (overlapsNode || overlapsGroup) continue;
+    Object.assign(root, candidate);
+  }
+}
+
+function rectsOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 function positionGroupTree(
@@ -140,20 +215,11 @@ function positionGroupTree(
     labelPosition,
   });
 
-  if (
-    group.kind === "region" ||
-    group.kind === "vpc" ||
-    group.kind === "az" ||
-    group.kind === "logical"
-  ) {
+  if (group.kind === "region" || group.kind === "vpc" || group.kind === "az" || group.kind === "logical") {
     positionMixedChildren(doc, state, group, content, nodes, groups);
     return w;
   }
-  if (
-    group.kind === "subnet" ||
-    group.kind === "subnet-public" ||
-    group.kind === "subnet-private"
-  ) {
+  if (group.kind === "subnet" || group.kind === "subnet-public" || group.kind === "subnet-private") {
     positionSubnetChildren(doc, state, group, content, nodes, groups);
     return w;
   }
@@ -174,13 +240,7 @@ function positionGroupTree(
     } else if (childRes) {
       const node = state.nodeGeoms.get(childRes.id);
       if (node) {
-        nodes.push(
-          moveNodeTo(
-            node,
-            content.x + node.obstacle.x,
-            content.y + node.obstacle.y,
-          ),
-        );
+        nodes.push(moveNodeTo(node, content.x + node.obstacle.x, content.y + node.obstacle.y));
       }
     }
   }
@@ -202,13 +262,7 @@ function positionSubnetChildren(
     if (!r) continue;
     const node = state.nodeGeoms.get(r.id);
     if (!node) continue;
-    nodes.push(
-      moveNodeTo(
-        node,
-        content.x + node.obstacle.x,
-        content.y + node.obstacle.y,
-      ),
-    );
+    nodes.push(moveNodeTo(node, content.x + node.obstacle.x, content.y + node.obstacle.y));
     maxW = Math.max(maxW, node.obstacle.x + node.obstacle.w);
   }
   return maxW;
@@ -265,19 +319,43 @@ function translateNode(node: NodeGeom, dx: number, dy: number): NodeGeom {
   };
 }
 
-function findPositionRoots(doc: DiagramDocument): ID[] {
-  const referenced = new Set<ID>();
-  for (const g of doc.groups) {
-    for (const c of g.children) referenced.add(c);
+function translateGroup(group: GroupGeom, dx: number): GroupGeom {
+  const shift = <T extends { x: number }>(rect: T): T => ({ ...rect, x: rect.x + dx });
+  return {
+    ...group,
+    bounds: shift(group.bounds),
+    header: shift(group.header),
+    content: shift(group.content),
+    ...(group.labelRect ? { labelRect: shift(group.labelRect) } : {}),
+  };
+}
+
+/**
+ * Root cards sit one fixed gap apart, which can leave a labelled connector
+ * from an outside actor into the first boundary shorter than its own copy.
+ * The run is measured to the boundary frames so the copy sits clear of them.
+ */
+function labelRunShortfall(
+  doc: DiagramDocument,
+  left: NodeGeom[],
+  right: NodeGeom[],
+  leftFrame?: Rect,
+  rightFrame?: Rect,
+): number {
+  let extra = 0;
+  for (const edge of doc.edges) {
+    if (!edge.label && edge.step === undefined) continue;
+    const from = left.find((node) => node.id === edge.source || node.id === edge.target);
+    const to = right.find((node) => node.id === edge.source || node.id === edge.target);
+    if (!from || !to || from.id === to.id) continue;
+    const labelWidth = edge.label ? Math.max(16, edge.label.length * 11 * 0.55) : 0;
+    const badgeWidth = edge.step === undefined ? 0 : GRAMMAR.badgeRadius * 2 + 16;
+    const start = leftFrame ? leftFrame.x + leftFrame.w : from.icon.x + from.icon.w;
+    const end = rightFrame ? rightFrame.x : to.icon.x;
+    // Icon and frame clearances plus one placement step.
+    extra = Math.max(extra, labelWidth + badgeWidth + 32 - (end - start));
   }
-  const roots: ID[] = [];
-  for (const r of doc.resources) {
-    if (!referenced.has(r.id) && !r.parent) roots.push(r.id);
-  }
-  for (const g of doc.groups) {
-    if (!referenced.has(g.id) && !g.parent) roots.push(g.id);
-  }
-  return roots;
+  return Math.ceil(extra / GRAMMAR.grid) * GRAMMAR.grid;
 }
 
 function union(rects: Array<{ x: number; y: number; w: number; h: number }>) {

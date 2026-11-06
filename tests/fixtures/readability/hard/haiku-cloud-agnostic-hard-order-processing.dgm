@@ -1,0 +1,54 @@
+dgm 1
+diagram cloud_agnostic_order_processing {
+  grammar cloud-agnostic
+  flow lr
+  title "Order processing with recovery region"
+
+  cloud-agnostic.actor buyer "Public buyer"
+  cloud-agnostic.server payment_service "External payment service"
+  cloud-agnostic.server warehouse "External warehouse"
+
+  cloud-agnostic.account cloud_account "Cloud account" {
+    cloud-agnostic.region primary_region "Primary region" {
+      cloud-agnostic.load-balancer load_balancer "Regional load balancer"
+      cloud-agnostic.network primary_network "Primary private network" {
+        cloud-agnostic.cluster app_cluster "Application cluster" {
+          cloud-agnostic.server api_server "API server"
+          cloud-agnostic.server worker_server "Worker server"
+        }
+        cloud-agnostic.cache order_cache "Cache"
+        cloud-agnostic.database primary_db "Primary database"
+      }
+      cloud-agnostic.queue work_queue "Regional work queue"
+      cloud-agnostic.object-storage receipt_storage "Receipt storage"
+    }
+    cloud-agnostic.region recovery_region "Recovery region" {
+      cloud-agnostic.load-balancer recovery_lb "Recovery load balancer"
+      cloud-agnostic.network recovery_network "Recovery network" {
+        cloud-agnostic.database recovery_db "Recovery database"
+        cloud-agnostic.server recovery_app "Recovery application server"
+      }
+    }
+  }
+
+  buyer -> load_balancer { id buyer_requests label "HTTPS requests" step 1 }
+  load_balancer -> api_server { id forward_requests label "forward requests" step 2 }
+  api_server -> order_cache { id cache_lookup label "cache lookup" step 3 }
+  order_cache -> api_server { id cache_response label "cache response" style dashed }
+  api_server -> primary_db { id read_write_orders label "read and write orders" step 4 }
+  primary_db -> api_server { id db_response label "query result" style dashed }
+  api_server -> payment_service { id charge_payment label "charge payment" step 5 }
+  payment_service -> api_server { id payment_response label "payment response" style dashed }
+  api_server -> work_queue { id enqueue_work label "enqueue work" step 6 }
+  work_queue -> worker_server { id deliver_work label "deliver work" step 7 }
+  worker_server -> warehouse { id send_fulfillment label "send fulfillment" step 8 }
+  warehouse -> worker_server { id fulfillment_ack label "acknowledgment" style dashed }
+  worker_server -> work_queue { id retry_work kind fail label "retry work" }
+  worker_server -> primary_db { id write_order_status label "write order status" step 9 }
+  worker_server -> receipt_storage { id store_receipts label "store receipts" step 9 }
+  primary_db -> recovery_db { id replicate_database label "replicate" step 10 }
+  recovery_app -> recovery_db { id read_replica label "read replica" step 11 }
+  recovery_db -> recovery_app { id replica_response label "replica response" style dashed }
+  recovery_lb -> recovery_app { id forward_recovery_requests label "forward requests" step 12 }
+  buyer -> recovery_lb { id failover_requests label "failover requests" style dashed }
+}

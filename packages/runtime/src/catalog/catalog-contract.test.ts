@@ -3,12 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import manifest from "./generated/manifest.json" with { type: "json" };
-import {
-  CATALOG,
-  getCatalogEntry,
-  listCategories,
-  listProviders,
-} from "./catalog.js";
+import { CATALOG, getCatalogEntry, listCategories, listProviders } from "./catalog.js";
 
 const ROOT = join(import.meta.dirname, "../../../..");
 
@@ -20,10 +15,11 @@ describe("canonical catalog contract", () => {
     expect(manifest.entries.filter((entry) => entry.provider === "azure")).toHaveLength(720);
   });
 
-  it("exposes four libraries and keeps legacy provider names as lookup aliases", () => {
+  it("exposes four libraries and no pre-release type names", () => {
     expect(listProviders()).toEqual(["aws", "azure", "gcp", "cloud-agnostic"]);
-    expect(getCatalogEntry("generic.user")?.provider).toBe("cloud-agnostic");
-    expect(getCatalogEntry("neutral.region")?.groupKind).toBe("region");
+    for (const legacy of ["generic.user", "neutral.region", "aws.lambda", "cloud-agnostic.logical"]) {
+      expect(getCatalogEntry(legacy)).toBeUndefined();
+    }
   });
 
   it("keeps cloud-agnostic groups distinct from similarly named resources", () => {
@@ -52,16 +48,29 @@ describe("canonical catalog contract", () => {
       "cloud-agnostic.cluster": "#879196",
       "cloud-agnostic.datacenter": "#879196",
       "cloud-agnostic.boundary": "#879196",
-      "cloud-agnostic.logical": "#879196",
       "cloud-agnostic.trust-boundary": "#E7157B",
     };
 
     for (const [type, color] of Object.entries(expectedColors)) {
       const entry = getCatalogEntry(type)!;
       expect(entry.assetKind, type).toBe("group");
-      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(
-        `fill="${color}"`,
-      );
+      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(`fill="${color}"`);
+    }
+  });
+
+  it("uses official AWS service colors for compute and workflow group tiles", () => {
+    const expectedColors: Record<string, string> = {
+      "aws.auto-scaling-group": "#ED7100",
+      "aws.ec2-instance-contents": "#ED7100",
+      "aws.elastic-beanstalk-container": "#ED7100",
+      "aws.spot-fleet": "#ED7100",
+      "aws.step-functions-workflow": "#E7157B",
+    };
+
+    for (const [type, color] of Object.entries(expectedColors)) {
+      const entry = getCatalogEntry(type)!;
+      expect(entry.assetKind, type).toBe("group");
+      expect(readFileSync(join(ROOT, entry.icon.sourcePath), "utf8"), type).toContain(`fill="${color}"`);
     }
   });
 
@@ -77,7 +86,10 @@ describe("canonical catalog contract", () => {
       const source = join(ROOT, asset.sourcePath);
       expect(existsSync(source), asset.sourcePath).toBe(true);
       expect(readFileSync(source, "utf8")).toMatch(/<svg[\s>]/i);
-      expect(CATALOG[manifest.entries.find((entry) => entry.icon.sourceId === asset.sourceId)?.type ?? ""] || asset.browsable === false).toBeTruthy();
+      expect(
+        CATALOG[manifest.entries.find((entry) => entry.icon.sourceId === asset.sourceId)?.type ?? ""] ||
+          asset.browsable === false,
+      ).toBeTruthy();
     }
   });
 });

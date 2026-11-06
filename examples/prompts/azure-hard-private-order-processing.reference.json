@@ -1,0 +1,155 @@
+{
+  "$comment": "Reviewed reference for azure-hard-private-order-processing.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "azure",
+  "exclusive": true,
+  "roles": {
+    "client": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "subscription"
+    },
+    "ops": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "subscription"
+    },
+    "subscription": {
+      "types": [
+        "azure.subscription"
+      ]
+    },
+    "region": {
+      "types": [
+        "azure.region"
+      ],
+      "within": "subscription"
+    },
+    "rg": {
+      "types": [
+        "azure.resource-group"
+      ],
+      "within": "region"
+    },
+    "vnet": {
+      "types": [
+        "azure.vnet"
+      ],
+      "within": "rg"
+    },
+    "appsubnet": {
+      "types": [
+        "azure.subnet"
+      ],
+      "within": "vnet"
+    },
+    "datasubnet": {
+      "types": [
+        "azure.subnet"
+      ],
+      "within": "vnet"
+    },
+    "frontdoor": {
+      "types": [
+        "azure.front-door-and-cdn-profiles"
+      ]
+    },
+    "apim": {
+      "types": [
+        "azure.api-management-services"
+      ]
+    },
+    "api": {
+      "types": [
+        "azure.app-services"
+      ],
+      "within": "appsubnet"
+    },
+    "worker": {
+      "types": [
+        "azure.function-apps"
+      ],
+      "within": "appsubnet"
+    },
+    "sqlendpoint": {
+      "types": [
+        "azure.private-endpoints"
+      ],
+      "within": "datasubnet"
+    },
+    "storageendpoint": {
+      "types": [
+        "azure.private-endpoints"
+      ],
+      "within": "datasubnet"
+    },
+    "sql": {
+      "types": [
+        "azure.sql-database",
+        "azure.azure-sql"
+      ],
+      "within": "rg",
+      "outside": "vnet"
+    },
+    "storage": {
+      "types": [
+        "azure.storage-accounts"
+      ],
+      "within": "rg",
+      "outside": "vnet"
+    },
+    "bus": {
+      "types": [
+        "azure.azure-service-bus"
+      ],
+      "within": "rg",
+      "outside": "vnet"
+    },
+    "dlq": {
+      "types": [
+        "azure.azure-service-bus",
+        "azure.storage-queue",
+        "cloud-agnostic.queue"
+      ],
+      "outside": "vnet"
+    },
+    "keyvault": {
+      "types": [
+        "azure.key-vaults"
+      ],
+      "within": "rg",
+      "outside": "vnet"
+    },
+    "monitor": {
+      "types": [
+        "azure.monitor"
+      ],
+      "within": "rg",
+      "outside": "vnet"
+    }
+  },
+  "edges": [
+    "client -> frontdoor",
+    "frontdoor -> apim",
+    "apim -> api",
+    "api -> sqlendpoint",
+    "sqlendpoint -> sql",
+    "api -> bus",
+    "bus -- worker",
+    "worker -> storageendpoint",
+    "storageendpoint -> storage",
+    "worker -> sqlendpoint",
+    "api -- keyvault",
+    "worker -- keyvault",
+    "api -> monitor",
+    "worker -> monitor",
+    "bus -> dlq",
+    "ops -- dlq",
+    "dlq -> bus | ops -> bus"
+  ]
+}

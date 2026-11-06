@@ -1,0 +1,62 @@
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { parseDgmResult, formatParseError } from '@dumb-diagrams/runtime/dsl';
+import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/requirements';
+import { compileDiagram, inlineCatalogIcons, qualityFindings, assessQuality } from '@dumb-diagrams/runtime/render';
+import { loadCatalogSvg } from './catalog-loader.mjs';
+
+const site = new URL('../', import.meta.url);
+const input = new URL('src/examples/mechanics/', site);
+const output = new URL('public/docs-explainers/', site);
+await rm(output, { recursive: true, force: true });
+await mkdir(output, { recursive: true });
+
+const diagrams = {};
+for (const filename of (await readdir(input)).filter(name => name.endsWith('.dgm')).sort()) {
+  const id = filename.slice(0, -4);
+  const source = await readFile(new URL(filename, input), 'utf8');
+  const requirementsText = await readFile(new URL(`${id}.requirements.json`, input), 'utf8');
+  const parsed = parseDgmResult(source);
+  if (parsed.isErr()) {
+    console.error(`${filename}: ${formatParseError(parsed.error)}`);
+    process.exit(1);
+  }
+  const requirements = parseRequirements(requirementsText);
+  if (requirements.isErr()) {
+    console.error(`${id}.requirements.json: ${requirements.error.message}`);
+    process.exit(1);
+  }
+  const requirementIssues = checkRequirements(parsed.value, requirements.value);
+  if (requirementIssues.length) {
+    console.error(`${filename}: requirements are incomplete: ${JSON.stringify(requirementIssues)}`);
+    process.exit(1);
+  }
+  const result = compileDiagram(parsed.value);
+  if (!result.ok) {
+    console.error(`${filename}: ${JSON.stringify(result.issues)}`);
+    process.exit(1);
+  }
+  const inlined = await inlineCatalogIcons(result.svg, {
+    loadCatalogSvg,
+  });
+  if (inlined.isErr()) {
+    console.error(`${filename}: ${inlined.error.message}`);
+    process.exit(1);
+  }
+  const svg = inlined.value;
+  const findings = qualityFindings(result.issues, result.invariantFailures);
+  await writeFile(new URL(`${id}.dgm`, output), source);
+  await writeFile(new URL(`${id}.requirements.json`, output), requirementsText);
+  await writeFile(new URL(`${id}.svg`, output), svg);
+  diagrams[id] = {
+    provenance: 'runtime-compiled',
+    sourceHref: `docs-explainers/${id}.dgm`,
+    requirementsHref: `docs-explainers/${id}.requirements.json`,
+    svgHref: `docs-explainers/${id}.svg`,
+    issues: result.issues.map(issue => ({ level: issue.level, code: issue.code, message: issue.message })),
+    invariants: result.invariantFailures,
+    quality: assessQuality(findings),
+  };
+}
+
+await writeFile(new URL('manifest.json', output), `${JSON.stringify({ schemaVersion: 1, diagrams }, null, 2)}\n`);
+console.log(`Prepared ${Object.keys(diagrams).length} docs explainer diagram`);

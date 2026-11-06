@@ -1,0 +1,58 @@
+{
+  "$comment": "Reviewed reference for cloud-agnostic-easy-customer-record-api.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "cloud-agnostic",
+  "exclusive": true,
+  "roles": {
+    "client": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "cloud"
+    },
+    "cloud": {
+      "types": [
+        "cloud-agnostic.cloud"
+      ]
+    },
+    "account": {
+      "types": [
+        "cloud-agnostic.account"
+      ],
+      "within": "cloud"
+    },
+    "region": {
+      "types": [
+        "cloud-agnostic.region"
+      ],
+      "within": "account"
+    },
+    "gateway": {
+      "types": [
+        "cloud-agnostic.gateway",
+        "cloud-agnostic.load-balancer"
+      ],
+      "within": "region"
+    },
+    "api": {
+      "types": [
+        "cloud-agnostic.server",
+        "cloud-agnostic.container",
+        "cloud-agnostic.function"
+      ],
+      "within": "region"
+    },
+    "database": {
+      "types": [
+        "cloud-agnostic.database"
+      ],
+      "within": "region"
+    }
+  },
+  "edges": [
+    "client -> gateway",
+    "gateway -> api",
+    "api -- database"
+  ]
+}

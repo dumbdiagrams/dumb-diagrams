@@ -1,57 +1,68 @@
 import type { Point, Rect } from "@dumb-diagrams/runtime/core";
 
 import { nearestPortAnchor } from "@dumb-diagrams/runtime/core";
-import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+import { anchorRouteEndpoints, normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+
+import { GRID_SIZE } from "../grid.js";
+
+/** Screen-space imprecision and grid snap can stop an exact coordinate match. */
+export const BEND_MERGE_SNAP_PX = GRID_SIZE;
 
 /**
- * Move an orthogonal turn without leaving either adjoining segment behind.
- *
- * A corner belongs to one horizontal and one vertical leg. Moving only the
- * corner creates a diagonal which normalization can turn into a 180-degree
- * hairpin. Instead, shift the complete horizontal run on Y and the complete
- * vertical run on X, matching the behavior of the segment handles.
+ * Move an orthogonal turn with both adjoining legs (horizontal run on Y,
+ * vertical run on X); moving the corner alone creates a diagonal that
+ * normalization can turn into a hairpin.
  */
-export function moveOrthogonalBend(
+export function snapBendMergeTarget(
   points: Point[],
   index: number,
   target: Point,
-): Point[] {
+  threshold = BEND_MERGE_SNAP_PX,
+): Point {
+  for (const neighborIndex of [index - 1, index + 1]) {
+    if (neighborIndex <= 0 || neighborIndex >= points.length - 1) continue;
+    const neighbor = points[neighborIndex]!;
+    if (Math.abs(target.x - neighbor.x) <= threshold && Math.abs(target.y - neighbor.y) <= threshold) {
+      return { ...neighbor };
+    }
+  }
+  return target;
+}
+
+export function moveOrthogonalBend(points: Point[], index: number, target: Point): Point[] {
   const origin = points.map((point) => ({ ...point }));
   if (index <= 0 || index >= origin.length - 1) return origin;
 
+  const mergedTarget = snapBendMergeTarget(origin, index, target);
   const updated = origin.map((point) => ({ ...point }));
   const horizontal = runContaining(origin, index, "horizontal");
   const vertical = runContaining(origin, index, "vertical");
 
   if (horizontal) {
     for (let cursor = horizontal.start; cursor <= horizontal.end; cursor++) {
-      updated[cursor]!.y = target.y;
+      updated[cursor]!.y = mergedTarget.y;
     }
   } else {
-    updated[index]!.y = target.y;
+    updated[index]!.y = mergedTarget.y;
   }
 
   if (vertical) {
     for (let cursor = vertical.start; cursor <= vertical.end; cursor++) {
-      updated[cursor]!.x = target.x;
+      updated[cursor]!.x = mergedTarget.x;
     }
   } else {
-    updated[index]!.x = target.x;
+    updated[index]!.x = mergedTarget.x;
   }
 
   return collapseOrthogonalRoute(updated);
 }
 
 /**
- * Reattach a manually edited route without discarding the orientation of its
- * first and last legs. If an edit moved an endpoint with its segment, retain
- * that endpoint as an orthogonal stub before snapping back to the icon.
+ * Reattach a manually edited route while preserving its interior bends. If an
+ * edit moved an endpoint with its segment, bridge it back to the icon, then
+ * enforce perpendicular departure and arrival at the attached faces.
  */
-export function anchorOrthogonalRouteEndpoints(
-  points: Point[],
-  sourceIcon: Rect,
-  targetIcon: Rect,
-): Point[] {
+export function anchorOrthogonalRouteEndpoints(points: Point[], sourceIcon: Rect, targetIcon: Rect): Point[] {
   if (points.length < 2) return points.map((point) => ({ ...point }));
 
   const sourceAnchor = nearestPortAnchor(sourceIcon, points[0]!).point;
@@ -60,30 +71,18 @@ export function anchorOrthogonalRouteEndpoints(
   const targetNeighbor = points.at(-2)!;
   const out: Point[] = [{ ...sourceAnchor }];
 
-  const departure = endpointBridge(
-    sourceAnchor,
-    sourceNeighbor,
-    points[0]!,
-    sourceNeighbor,
-    "departure",
-  );
+  const departure = endpointBridge(sourceAnchor, sourceNeighbor, points[0]!, sourceNeighbor, "departure");
   if (departure) out.push(departure);
   out.push(...points.slice(1, -1).map((point) => ({ ...point })));
 
-  const approach = endpointBridge(
-    targetNeighbor,
-    targetAnchor,
-    targetNeighbor,
-    points.at(-1)!,
-    "approach",
-  );
+  const approach = endpointBridge(targetNeighbor, targetAnchor, targetNeighbor, points.at(-1)!, "approach");
   if (approach) out.push(approach);
   out.push({ ...targetAnchor });
 
-  return collapseOrthogonalRoute(out);
+  return anchorRouteEndpoints(collapseOrthogonalRoute(out), sourceIcon, targetIcon);
 }
 
-function collapseOrthogonalRoute(points: Point[]): Point[] {
+export function collapseOrthogonalRoute(points: Point[]): Point[] {
   const normalized = normalizeOrthogonalRoute(points);
   if (normalized.length <= 2) return normalized;
 
@@ -95,8 +94,7 @@ function collapseOrthogonalRoute(points: Point[]): Point[] {
       const before = out.at(-2)!;
       const current = out.at(-1)!;
       const collinear =
-        (before.x === current.x && current.x === point.x) ||
-        (before.y === current.y && current.y === point.y);
+        (before.x === current.x && current.x === point.x) || (before.y === current.y && current.y === point.y);
       if (!collinear) break;
       out.pop();
     }
@@ -114,14 +112,10 @@ function endpointBridge(
 ): Point | null {
   if (start.x === end.x || start.y === end.y) return null;
   if (originalStart.y === originalEnd.y) {
-    return kind === "departure"
-      ? { x: start.x, y: end.y }
-      : { x: end.x, y: start.y };
+    return kind === "departure" ? { x: start.x, y: end.y } : { x: end.x, y: start.y };
   }
   if (originalStart.x === originalEnd.x) {
-    return kind === "departure"
-      ? { x: end.x, y: start.y }
-      : { x: start.x, y: end.y };
+    return kind === "departure" ? { x: end.x, y: start.y } : { x: start.x, y: end.y };
   }
   return null;
 }
@@ -131,8 +125,7 @@ function runContaining(
   index: number,
   orientation: "horizontal" | "vertical",
 ): { start: number; end: number } | null {
-  const aligned = (a: Point, b: Point) =>
-    orientation === "horizontal" ? a.y === b.y : a.x === b.x;
+  const aligned = (a: Point, b: Point) => (orientation === "horizontal" ? a.y === b.y : a.x === b.x);
   const touchesPrevious = aligned(points[index - 1]!, points[index]!);
   const touchesNext = aligned(points[index]!, points[index + 1]!);
   if (!touchesPrevious && !touchesNext) return null;

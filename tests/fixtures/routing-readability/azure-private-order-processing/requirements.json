@@ -1,0 +1,605 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "Named actor in the request"
+      }
+    },
+    {
+      "id": "frontdoor",
+      "kind": "resource",
+      "type": "azure.front-door-and-cdn-profiles",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "apim",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "azure.app-services",
+      "basis": {
+        "kind": "inferred",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "sqlpe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "storagepe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "storage",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "bus",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "dlq",
+      "kind": "resource",
+      "type": "azure.azure-service-bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "vault",
+      "kind": "resource",
+      "type": "azure.key-vaults",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Public client enters through Front Door and API Management to App Service API."
+      }
+    },
+    {
+      "id": "ops",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "Named actor in the request"
+      }
+    },
+    {
+      "id": "subscription",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "rg",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "vnet",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "app_subnet",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "data_subnet",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client_frontdoor",
+      "source": "client",
+      "target": "frontdoor",
+      "basis": {
+        "kind": "explicit",
+        "text": "HTTPS"
+      }
+    },
+    {
+      "id": "frontdoor_apim",
+      "source": "frontdoor",
+      "target": "apim",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward"
+      }
+    },
+    {
+      "id": "apim_api",
+      "source": "apim",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route"
+      }
+    },
+    {
+      "id": "api_sqlpe",
+      "source": "api",
+      "target": "sqlpe",
+      "basis": {
+        "kind": "explicit",
+        "text": "SQL access"
+      }
+    },
+    {
+      "id": "sqlpe_sql",
+      "source": "sqlpe",
+      "target": "sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private link"
+      }
+    },
+    {
+      "id": "api_bus",
+      "source": "api",
+      "target": "bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "Enqueue work"
+      }
+    },
+    {
+      "id": "bus_worker",
+      "source": "bus",
+      "target": "worker",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume work"
+      }
+    },
+    {
+      "id": "worker_storagepe",
+      "source": "worker",
+      "target": "storagepe",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write files"
+      }
+    },
+    {
+      "id": "storagepe_storage",
+      "source": "storagepe",
+      "target": "storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private link"
+      }
+    },
+    {
+      "id": "worker_sqlpe",
+      "source": "worker",
+      "target": "sqlpe",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write status"
+      }
+    },
+    {
+      "id": "api_vault",
+      "source": "api",
+      "target": "vault",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read secrets"
+      }
+    },
+    {
+      "id": "worker_vault",
+      "source": "worker",
+      "target": "vault",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read secrets"
+      }
+    },
+    {
+      "id": "api_monitor",
+      "source": "api",
+      "target": "monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Telemetry"
+      }
+    },
+    {
+      "id": "worker_monitor",
+      "source": "worker",
+      "target": "monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Telemetry"
+      }
+    },
+    {
+      "id": "bus_dlq",
+      "source": "bus",
+      "target": "dlq",
+      "basis": {
+        "kind": "explicit",
+        "text": "Retry limit"
+      }
+    },
+    {
+      "id": "ops_dlq",
+      "source": "ops",
+      "target": "dlq",
+      "basis": {
+        "kind": "explicit",
+        "text": "Inspect DLQ"
+      }
+    },
+    {
+      "id": "ops_redrive",
+      "source": "ops",
+      "target": "bus",
+      "basis": {
+        "kind": "explicit",
+        "text": "Redrive to work queue"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "exactly_one_subscription",
+      "kind": "group",
+      "type": "azure.subscription",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_region",
+      "kind": "group",
+      "type": "azure.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_resource_group",
+      "kind": "group",
+      "type": "azure.resource-group",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_vnet",
+      "kind": "group",
+      "type": "azure.vnet",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_two_subnets",
+      "kind": "group",
+      "type": "azure.subnet",
+      "min": 2,
+      "max": 2,
+      "within": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_two_private_endpoints",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "min": 2,
+      "max": 2,
+      "within": "data_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_subscription",
+      "component": "subscription",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "subscription placement from prompt"
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "region placement from prompt"
+      }
+    },
+    {
+      "id": "place_rg",
+      "component": "rg",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "rg placement from prompt"
+      }
+    },
+    {
+      "id": "place_vnet",
+      "component": "vnet",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "vnet placement from prompt"
+      }
+    },
+    {
+      "id": "place_app_subnet",
+      "component": "app_subnet",
+      "relation": "inside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "app_subnet placement from prompt"
+      }
+    },
+    {
+      "id": "place_data_subnet",
+      "component": "data_subnet",
+      "relation": "inside",
+      "group": "vnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "data_subnet placement from prompt"
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "app_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "api placement from prompt"
+      }
+    },
+    {
+      "id": "place_worker",
+      "component": "worker",
+      "relation": "inside",
+      "group": "app_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "worker placement from prompt"
+      }
+    },
+    {
+      "id": "place_sqlpe",
+      "component": "sqlpe",
+      "relation": "inside",
+      "group": "data_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "sqlpe placement from prompt"
+      }
+    },
+    {
+      "id": "place_storagepe",
+      "component": "storagepe",
+      "relation": "inside",
+      "group": "data_subnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "storagepe placement from prompt"
+      }
+    },
+    {
+      "id": "place_sql",
+      "component": "sql",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "sql placement from prompt"
+      }
+    },
+    {
+      "id": "place_storage",
+      "component": "storage",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "storage placement from prompt"
+      }
+    },
+    {
+      "id": "place_bus",
+      "component": "bus",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "bus placement from prompt"
+      }
+    },
+    {
+      "id": "place_dlq",
+      "component": "dlq",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "dlq placement from prompt"
+      }
+    },
+    {
+      "id": "place_vault",
+      "component": "vault",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "vault placement from prompt"
+      }
+    },
+    {
+      "id": "place_monitor",
+      "component": "monitor",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "monitor placement from prompt"
+      }
+    },
+    {
+      "id": "place_client",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "client placement from prompt"
+      }
+    },
+    {
+      "id": "place_frontdoor",
+      "component": "frontdoor",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "frontdoor placement from prompt"
+      }
+    },
+    {
+      "id": "place_apim",
+      "component": "apim",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "apim placement from prompt"
+      }
+    },
+    {
+      "id": "place_ops",
+      "component": "ops",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "ops placement from prompt"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

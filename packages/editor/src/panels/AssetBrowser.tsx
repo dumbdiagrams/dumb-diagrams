@@ -31,7 +31,9 @@ function readIds(key: string): string[] {
     const raw = localStorage.getItem(key);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed)
-      ? parsed.filter((value): value is string => typeof value === "string" && value.length <= DIAGRAM_LIMITS.idCharacters).slice(0, 24)
+      ? parsed
+          .filter((value): value is string => typeof value === "string" && value.length <= DIAGRAM_LIMITS.idCharacters)
+          .slice(0, 24)
       : [];
   } catch {
     return [];
@@ -53,9 +55,7 @@ function rememberRecent(type: string) {
 
 function toggleFavorite(type: string) {
   const current = readIds(FAVORITE_KEY);
-  const next = current.includes(type)
-    ? current.filter((id) => id !== type)
-    : [type, ...current];
+  const next = current.includes(type) ? current.filter((id) => id !== type) : [type, ...current];
   writeIds(FAVORITE_KEY, next);
   return next;
 }
@@ -129,14 +129,12 @@ export function AssetBrowser({
   const categoryTypeahead = useRef("");
   const categoryTypeaheadTimer = useRef<number | undefined>(undefined);
 
-  const categories = useMemo(
-    () => listCategories(provider, mode),
-    [provider, mode],
-  );
+  const categories = useMemo(() => listCategories(provider, mode), [provider, mode]);
   const allEntries = useMemo(
-    () => listBrowsableAssets(provider, mode).filter(
-      (entry) => mode !== "groups" || entry.type !== "cloud-agnostic.boundary",
-    ),
+    () =>
+      listBrowsableAssets(provider, mode).filter(
+        (entry) => mode !== "groups" || entry.type !== "cloud-agnostic.boundary",
+      ),
     [provider, mode],
   );
 
@@ -148,7 +146,7 @@ export function AssetBrowser({
   const filteredEntries = useMemo(() => {
     let entries: CatalogEntry[];
     if (query.trim()) {
-        entries = searchAssets(query, provider)
+      entries = searchAssets(query, provider)
         .filter((entry) =>
           mode === "groups"
             ? entry.assetKind === "group" && entry.type !== "cloud-agnostic.boundary"
@@ -156,9 +154,8 @@ export function AssetBrowser({
         )
         .sort((a, b) => a.serviceName.localeCompare(b.serviceName));
     } else {
-      entries = mode === "groups" || !category
-        ? allEntries
-        : allEntries.filter((entry) => entry.categories.includes(category));
+      entries =
+        mode === "groups" || !category ? allEntries : allEntries.filter((entry) => entry.categories.includes(category));
     }
     if (filter === "favorites") entries = entries.filter((entry) => favorites.includes(entry.type));
     if (filter === "recent") entries = entries.filter((entry) => recents.includes(entry.type));
@@ -180,11 +177,14 @@ export function AssetBrowser({
     return () => window.removeEventListener("pointerdown", close);
   }, [categoryOpen]);
 
-  useEffect(() => () => {
-    if (categoryTypeaheadTimer.current !== undefined) {
-      window.clearTimeout(categoryTypeaheadTimer.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (categoryTypeaheadTimer.current !== undefined) {
+        window.clearTimeout(categoryTypeaheadTimer.current);
+      }
+    },
+    [],
+  );
 
   const selectCategoryByTyping = (key: string) => {
     if (key.length !== 1 || !/[\p{L}\p{N}]/u.test(key)) return false;
@@ -196,8 +196,9 @@ export function AssetBrowser({
       categoryTypeahead.current = "";
     }, 700);
     const typed = categoryTypeahead.current;
-    const match = categories.find((item) => item.toLocaleLowerCase().startsWith(typed))
-      ?? categories.find((item) => item.toLocaleLowerCase().startsWith(key.toLocaleLowerCase()));
+    const match =
+      categories.find((item) => item.toLocaleLowerCase().startsWith(typed)) ??
+      categories.find((item) => item.toLocaleLowerCase().startsWith(key.toLocaleLowerCase()));
     if (match) setCategory(match);
     return true;
   };
@@ -233,11 +234,7 @@ export function AssetBrowser({
           maxLength={DIAGRAM_LIMITS.searchCharacters}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => event.stopPropagation()}
-          placeholder={
-            mode === "groups"
-              ? "Search boundaries across providers"
-              : "Search services across providers"
-          }
+          placeholder={mode === "groups" ? "Search boundaries across providers" : "Search services across providers"}
           aria-label="Search catalog"
         />
         {mode === "resources" && (
@@ -273,7 +270,7 @@ export function AssetBrowser({
 
       <div className="asset-browser-controls">
         <div className="provider-tabs" role="tablist">
-          {(["all" as const, ...listProviders()]).map((item) => (
+          {["all" as const, ...listProviders()].map((item) => (
             <button
               key={item}
               type="button"
@@ -331,9 +328,13 @@ export function AssetBrowser({
                     role="option"
                     aria-selected={!category}
                     className={!category ? "is-selected" : ""}
-                    onClick={() => { setCategory(""); setCategoryOpen(false); }}
+                    onClick={() => {
+                      setCategory("");
+                      setCategoryOpen(false);
+                    }}
                   >
-                    <span>All categories</span><small>{allEntries.length}</small>
+                    <span>All categories</span>
+                    <small>{allEntries.length}</small>
                   </button>
                 )}
                 {categories.map((item) => (
@@ -343,7 +344,10 @@ export function AssetBrowser({
                     role="option"
                     aria-selected={category === item}
                     className={category === item ? "is-selected" : ""}
-                    onClick={() => { setCategory(item); setCategoryOpen(false); }}
+                    onClick={() => {
+                      setCategory(item);
+                      setCategoryOpen(false);
+                    }}
                   >
                     <span>{item}</span>
                     <small>{allEntries.filter((entry) => entry.categories.includes(item)).length}</small>
@@ -354,16 +358,30 @@ export function AssetBrowser({
           </div>
         )}
 
-        {mode === "groups" && (
-          <p className="asset-browser-count">
-            {allEntries.length + 1} boundaries available
-          </p>
-        )}
+        {mode === "groups" && <p className="asset-browser-count">{allEntries.length + 1} boundaries available</p>}
         {(favorites.length > 0 || recents.length > 0) && (
           <div className="asset-filters" role="group" aria-label="Catalog filters">
-            <button type="button" className={filter === "all" ? "is-active" : ""} onClick={() => setFilter("all")}>All</button>
-            {favorites.length > 0 && <button type="button" className={filter === "favorites" ? "is-active" : ""} onClick={() => setFilter("favorites")}>Favorites</button>}
-            {recents.length > 0 && <button type="button" className={filter === "recent" ? "is-active" : ""} onClick={() => setFilter("recent")}>Recent</button>}
+            <button type="button" className={filter === "all" ? "is-active" : ""} onClick={() => setFilter("all")}>
+              All
+            </button>
+            {favorites.length > 0 && (
+              <button
+                type="button"
+                className={filter === "favorites" ? "is-active" : ""}
+                onClick={() => setFilter("favorites")}
+              >
+                Favorites
+              </button>
+            )}
+            {recents.length > 0 && (
+              <button
+                type="button"
+                className={filter === "recent" ? "is-active" : ""}
+                onClick={() => setFilter("recent")}
+              >
+                Recent
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -376,9 +394,9 @@ export function AssetBrowser({
           onActivate={activate}
           onToggleFavorite={(type) => setFavorites(toggleFavorite(type))}
           onNearEnd={() => {
-            if (hasMore) {
-              setVisibleCount((current) => Math.min(current + ASSET_PAGE_SIZE, filteredEntries.length));
-            }
+            setVisibleCount((current) =>
+              current === visibleCount ? Math.min(current + ASSET_PAGE_SIZE, filteredEntries.length) : current,
+            );
           }}
         />
         {filteredEntries.length > ASSET_PAGE_SIZE && (

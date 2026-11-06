@@ -26,9 +26,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <div className="crash-recovery-card">
           <p className="crash-recovery-eyebrow">Studio recovery</p>
           <h1>The editor hit an unexpected error</h1>
-          <p>
-            Reload Studio to try restoring your last locally saved workspace and continue.
-          </p>
+          <p>Reload Studio to try restoring your last locally saved workspace and continue.</p>
           <details>
             <summary>Technical details</summary>
             <pre>{this.state.error.message || this.state.error.name}</pre>

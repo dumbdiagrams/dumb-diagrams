@@ -47,18 +47,18 @@ export function createCliUi(options: CliUiOptions = {}) {
   const columns = options.columns ?? process.stdout.columns ?? (Number(process.env.COLUMNS) || 80);
   const paint = (value: string, rgb: readonly [number, number, number]) =>
     color ? `${foreground(rgb, truecolor)}${value}${RESET}` : value;
-  const bold = (value: string) => color ? `${BOLD}${value}${RESET}` : value;
-  const dim = (value: string) => color ? `${DIM}${value}${RESET}` : value;
+  const bold = (value: string) => (color ? `${BOLD}${value}${RESET}` : value);
+  const dim = (value: string) => (color ? `${DIM}${value}${RESET}` : value);
 
   return {
     banner(): string {
       const lines = columns >= 72 ? WIDE_LOGO : COMPACT_LOGO;
       return lines
-        .map((line) => color && line ? gradient(line, PALETTE.amber, PALETTE.navy, truecolor) : line)
+        .map((line) => (color && line ? gradient(line, PALETTE.amber, PALETTE.navy, truecolor) : line))
         .join("\n");
     },
     brand(): string {
-      return `${bold(paint("DUMB DIAGRAMS", PALETTE.orange))} ${dim("— LLM-first architecture diagrams that are hard to get wrong")}`;
+      return `${bold(paint("DUMB DIAGRAMS", PALETTE.orange))} ${dim(": LLM-first architecture diagrams that are hard to get wrong")}`;
     },
     heading(value: string): string {
       return bold(paint(value, PALETTE.orange));
@@ -97,11 +97,11 @@ function supportsColor(stream: WriteStream): boolean {
   // Legacy Windows consoles may not process ANSI sequences. These variables
   // identify Windows hosts with virtual-terminal support enabled.
   return Boolean(
-    process.env.WT_SESSION
-      || process.env.TERM_PROGRAM === "vscode"
-      || process.env.ConEmuANSI === "ON"
-      || process.env.ANSICON
-      || process.env.TERM,
+    process.env.WT_SESSION ||
+      process.env.TERM_PROGRAM === "vscode" ||
+      process.env.ConEmuANSI === "ON" ||
+      process.env.ANSICON ||
+      process.env.TERM,
   );
 }
 
@@ -120,26 +120,31 @@ function gradient(
 ): string {
   const visible = [...value];
   const denominator = Math.max(1, visible.length - 1);
-  return visible.map((character, index) => {
-    if (character === " ") return character;
-    const t = index / denominator;
-    const r = Math.round(from[0] + (to[0] - from[0]) * t);
-    const g = Math.round(from[1] + (to[1] - from[1]) * t);
-    const b = Math.round(from[2] + (to[2] - from[2]) * t);
-    return `${foreground([r, g, b], truecolor)}${character}`;
-  }).join("") + RESET;
+  return (
+    visible
+      .map((character, index) => {
+        if (character === " ") return character;
+        const t = index / denominator;
+        const r = Math.round(from[0] + (to[0] - from[0]) * t);
+        const g = Math.round(from[1] + (to[1] - from[1]) * t);
+        const b = Math.round(from[2] + (to[2] - from[2]) * t);
+        return `${foreground([r, g, b], truecolor)}${character}`;
+      })
+      .join("") + RESET
+  );
 }
 
 function foreground(rgb: readonly [number, number, number], truecolor: boolean): string {
-  return truecolor
-    ? `\u001B[38;2;${rgb[0]};${rgb[1]};${rgb[2]}m`
-    : `\u001B[38;5;${ansi256(rgb)}m`;
+  return truecolor ? `\u001B[38;2;${rgb[0]};${rgb[1]};${rgb[2]}m` : `\u001B[38;5;${ansi256(rgb)}m`;
 }
 
 function ansi256([red, green, blue]: readonly [number, number, number]): number {
   const levels = [0, 95, 135, 175, 215, 255];
-  const nearest = (value: number) => levels.reduce((best, level, index) =>
-    Math.abs(level - value) < Math.abs(levels[best]! - value) ? index : best, 0);
+  const nearest = (value: number) =>
+    levels.reduce(
+      (best, level, index) => (Math.abs(level - value) < Math.abs(levels[best]! - value) ? index : best),
+      0,
+    );
   // The nearest RGB cube swatch for the brand navy is [0, 95, 95], which
   // reads cyan in terminals without truecolor. Preserve the blue hue by
   // nudging blue-dominant colors toward the next blue cube level.

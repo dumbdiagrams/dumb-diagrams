@@ -1,0 +1,59 @@
+dgm 1
+diagram document_processing {
+  grammar aws
+  flow lr
+  title "Document Processing"
+
+  cloud-agnostic.client client "Client"
+  cloud-agnostic.client ops "Operations"
+
+  aws.cloud aws "aws" {
+    aws.region region "Region" {
+      aws.vpc vpc "VPC" {
+        aws.az az_a "AZ A" {
+          aws.subnet.private subnet_a "Private Subnet A" {
+            aws.aws-fargate worker_a "Fargate Worker A"
+          }
+        }
+
+        aws.az az_b "AZ B" {
+          aws.subnet.private subnet_b "Private Subnet B" {
+            aws.aws-fargate worker_b "Fargate Worker B"
+          }
+        }
+      }
+
+      aws.api-gateway api "API Gateway"
+      aws.aws-lambda intake "Intake Handler"
+      aws.simple-storage-service-bucket input "Input S3"
+      aws.simple-queue-service jobs "Jobs Queue"
+      aws.simple-queue-service dlq "Dead Letter Queue"
+      aws.simple-storage-service-bucket output "Output S3"
+      aws.dynamodb ddb "DynamoDB Status"
+      aws.simple-notification-service sns "SNS Completion"
+      aws.cloudfront cdn "CloudFront"
+    }
+  }
+
+  client -> api { id client_api label "submit" }
+  api -> intake { id api_intake label "intake" }
+  intake -> input { id intake_input label "originals" }
+  intake -> jobs { id intake_jobs label "enqueue" }
+  jobs -> worker_a { id jobs_worker_a label "consume" }
+  jobs -> worker_b { id jobs_worker_b label "consume" }
+  worker_a -> input { id worker_a_input label "read" }
+  worker_b -> input { id worker_b_input label "read" }
+  worker_a -> output { id worker_a_output label "processed files" }
+  worker_b -> output { id worker_b_output label "processed files" }
+  worker_a -> ddb { id worker_a_ddb label "status" }
+  worker_b -> ddb { id worker_b_ddb label "status" }
+  worker_a -> sns { id worker_a_sns label "completion" }
+  worker_b -> sns { id worker_b_sns label "completion" }
+  client -> cdn { id client_cdn label "download" }
+  cdn -> output { id cdn_output label "origin" }
+  jobs -> dlq { id jobs_dlq label "max attempts" style dashed kind fail }
+  ops -> dlq { id ops_dlq label "inspect" style dashed }
+  ops -> ddb { id ops_ddb label "inspect" style dashed }
+  dlq -> jobs { id dlq_jobs label "redrive" style dashed }
+  sns -> ops { id sns_ops label "notify" style dashed }
+}

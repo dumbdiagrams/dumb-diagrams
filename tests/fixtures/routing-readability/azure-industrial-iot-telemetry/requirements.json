@@ -1,0 +1,311 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "sensors",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "Named actor in the request"
+      }
+    },
+    {
+      "id": "hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Industrial sensor fleet sends readings to IoT Hub."
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "basis": {
+        "kind": "explicit",
+        "text": "Industrial sensor fleet sends readings to IoT Hub."
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "explicit",
+        "text": "Industrial sensor fleet sends readings to IoT Hub."
+      }
+    },
+    {
+      "id": "fn",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "Industrial sensor fleet sends readings to IoT Hub."
+      }
+    },
+    {
+      "id": "cosmos",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "Industrial sensor fleet sends readings to IoT Hub."
+      }
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "inferred",
+        "text": "Named actor in the request"
+      }
+    },
+    {
+      "id": "subscription",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    },
+    {
+      "id": "rg",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly named containment or application network"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "sensors_hub",
+      "source": "sensors",
+      "target": "hub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Readings"
+      }
+    },
+    {
+      "id": "hub_events",
+      "source": "hub",
+      "target": "events",
+      "basis": {
+        "kind": "explicit",
+        "text": "Route"
+      }
+    },
+    {
+      "id": "hub_archive",
+      "source": "hub",
+      "target": "archive",
+      "basis": {
+        "kind": "explicit",
+        "text": "Archive"
+      }
+    },
+    {
+      "id": "events_fn",
+      "source": "events",
+      "target": "fn",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume"
+      }
+    },
+    {
+      "id": "fn_cosmos",
+      "source": "fn",
+      "target": "cosmos",
+      "basis": {
+        "kind": "explicit",
+        "text": "Update status"
+      }
+    },
+    {
+      "id": "dashboard_cosmos",
+      "source": "dashboard",
+      "target": "cosmos",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read status"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "exactly_one_iot_hub",
+      "kind": "resource",
+      "type": "azure.iot-hub",
+      "min": 1,
+      "max": 1,
+      "within": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_event_hubs",
+      "kind": "resource",
+      "type": "azure.event-hubs",
+      "min": 1,
+      "max": 1,
+      "within": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_storage",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "min": 1,
+      "max": 1,
+      "within": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_function_app",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "min": 1,
+      "max": 1,
+      "within": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    },
+    {
+      "id": "exactly_one_cosmos",
+      "kind": "resource",
+      "type": "azure.azure-cosmos-db",
+      "min": 1,
+      "max": 1,
+      "within": "rg",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt specifies one instance / containment"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "place_subscription",
+      "component": "subscription",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "subscription placement from prompt"
+      }
+    },
+    {
+      "id": "place_region",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "explicit",
+        "text": "region placement from prompt"
+      }
+    },
+    {
+      "id": "place_rg",
+      "component": "rg",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "rg placement from prompt"
+      }
+    },
+    {
+      "id": "place_hub",
+      "component": "hub",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "hub placement from prompt"
+      }
+    },
+    {
+      "id": "place_events",
+      "component": "events",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "events placement from prompt"
+      }
+    },
+    {
+      "id": "place_archive",
+      "component": "archive",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "archive placement from prompt"
+      }
+    },
+    {
+      "id": "place_fn",
+      "component": "fn",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "fn placement from prompt"
+      }
+    },
+    {
+      "id": "place_cosmos",
+      "component": "cosmos",
+      "relation": "inside",
+      "group": "rg",
+      "basis": {
+        "kind": "inferred",
+        "text": "cosmos placement from prompt"
+      }
+    },
+    {
+      "id": "place_sensors",
+      "component": "sensors",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "sensors placement from prompt"
+      }
+    },
+    {
+      "id": "place_dashboard",
+      "component": "dashboard",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "dashboard placement from prompt"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

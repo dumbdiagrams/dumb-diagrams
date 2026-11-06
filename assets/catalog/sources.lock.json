@@ -40,7 +40,7 @@
       "reviewedAt": "2026-08-20",
       "termsUrl": "https://cloud.google.com/terms",
       "expectedStructure": ["Unique Icons", "Category Icons"],
-      "minimumCanonicalCount": 19
+      "minimumCanonicalCount": 27
     },
     {
       "provider": "cloud-agnostic",

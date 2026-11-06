@@ -13,7 +13,8 @@ Automatic routing applies these rules in priority order:
 9. Treat a face-only `from` or `to` declaration as a preference. A face pointing away from the other endpoint pays a backtracking penalty, and the router may select a cleaner face to avoid a crossing, collision, shared corridor, or large detour. Fractional dragged-port offsets remain exact.
 10. Place automatic edge numbers first, clear of resource icons, resource labels, boundary labels, and unrelated connectors. Then place edge labels globally so they also avoid every number and previously placed label.
 11. Reserve a connector-decoration lane inside horizontal logical groups when an internal edge carries a label or sequence number.
-12. After satisfying the clearance rules, prefer fewer bends, shorter paths, and less backtracking.
-13. Keep routing deterministic. Long, constrained edges claim corridors before shorter flexible edges, while rendered edges retain document order.
+12. Face the other endpoint. A connector leaves through the side that points at its target and arrives through the side that looks back at its source. When stacked icons share any part of a column, or side-by-side icons are within one grid cell of the same row, and nothing sits between them, draw one straight connector, even across the endpoints' own labels. A dashed connector to a stacked target that cannot go straight makes one turn and enters through the target's top or bottom face that looks back at the source.
+13. After satisfying the clearance rules, prefer fewer bends, shorter paths, and less backtracking.
+14. Keep routing deterministic. Long, constrained edges claim corridors before shorter flexible edges, while rendered edges retain document order.
 
 Crossing, junction, overlap, clearance, endpoint, bend, and detour costs are all evaluated by the same path scorer. Template routing, grid fallback routing, and shortcut smoothing use that scorer so a later cleanup step cannot reintroduce a conflict that candidate selection avoided.

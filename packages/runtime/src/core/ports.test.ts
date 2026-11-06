@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  DEFAULT_PORT_OFFSET,
-  PORT_OFFSETS,
-  nearestPortAnchor,
-  portAnchors,
-  portPoint,
-} from "./ports.js";
+import { DEFAULT_PORT_OFFSET, PORT_OFFSETS, nearestPortAnchor, portAnchors, portPoint } from "./ports.js";
 
 describe("icon port anchors", () => {
   const rect = { x: 10, y: 20, w: 80, h: 40 };
@@ -15,9 +9,7 @@ describe("icon port anchors", () => {
     const anchors = portAnchors(rect);
 
     expect(anchors).toHaveLength(12);
-    expect(anchors.map((anchor) => anchor.side)).toEqual([
-      "n", "n", "n", "e", "e", "e", "s", "s", "s", "w", "w", "w",
-    ]);
+    expect(anchors.map((anchor) => anchor.side)).toEqual(["n", "n", "n", "e", "e", "e", "s", "s", "s", "w", "w", "w"]);
     expect(anchors.map((anchor) => anchor.offset)).toEqual([
       ...PORT_OFFSETS,
       ...PORT_OFFSETS,

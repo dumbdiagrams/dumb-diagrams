@@ -1,0 +1,391 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2068.4" height="684" viewBox="8 8 2068.4 684">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-external_parties">
+  <rect class="group-border" x="32" y="148" width="148.9" height="404"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="40" y="163.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">External Parties</text>
+  
+</g>
+
+<g id="group-application_cloud">
+  <rect class="group-border-contrast" x="412.9" y="32" width="1639.5" height="636"
+    fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3.5"  rx="0"/>
+  <rect class="group-border" x="412.9" y="32" width="1639.5" height="636"
+    fill="rgba(42,53,66,0.03)" stroke="#2a3542" stroke-width="1.5"  rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23163964%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%228%22%20width%3D%2226%22%20height%3D%2218%22%20rx%3D%223%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%2014h16M8%2019h12%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="412.9" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="444.9" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Application Cloud</text>
+  
+</g>
+
+<g id="group-cloud_account">
+  <rect class="group-border" x="428.9" y="64" width="1607.5" height="580"
+    fill="rgba(231,21,123,0.04)" stroke="#E7157B" stroke-width="1.5"  rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23E7157B%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%226%22%20width%3D%2224%22%20height%3D%2220%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%2012h16M8%2017h10%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="428.9" y="64" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="460.9" y="80.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Cloud Account</text>
+  
+</g>
+
+<g id="group-primary_region">
+  <rect class="group-border" x="446.9" y="97" width="980.2" height="520"
+    fill="rgba(0,164,166,0.05)" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%2300A4A6%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2210%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M16%2010v12M10%2016h12%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="446.9" y="97" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="478.9" y="113.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Primary Region</text>
+  
+</g>
+
+<g id="group-primary_network">
+  <rect class="group-border" x="658.9" y="179" width="570.2" height="409"
+    fill="rgba(140,79,255,0.05)" stroke="#8C4FFF" stroke-width="1.5"  rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%238C4FFF%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2210%22%20width%3D%2226%22%20height%3D%2214%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2217%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2217%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M12%2017h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="658.9" y="179" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="690.9" y="195.55"
+    font-size="13" font-weight="600" dominant-baseline="alphabetic">Primary Private Network</text>
+  
+</g>
+
+<g id="group-primary_cluster">
+  <rect class="group-border" x="674.9" y="283" width="177.4" height="278"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23879196%22%2F%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%3E%3Crect%20x%3D%225%22%20y%3D%226%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%221%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%226%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%221%22%2F%3E%3Crect%20x%3D%225%22%20y%3D%2218%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%221%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2218%22%20width%3D%229%22%20height%3D%229%22%20rx%3D%221%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E%0A" x="674.9" y="283" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="706.9" y="299.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Application Cluster</text>
+  
+</g>
+
+<g id="group-recovery_region">
+  <rect class="group-border" x="1454.9" y="145" width="567.3000000000001" height="226"
+    fill="rgba(0,164,166,0.05)" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%2300A4A6%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2210%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M16%2010v12M10%2016h12%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="1454.9" y="145" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="1486.9" y="161.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Recovery Region</text>
+  
+</g>
+
+<g id="group-recovery_network">
+  <rect class="group-border" x="1650.9" y="179" width="354.20000000000005" height="162"
+    fill="rgba(140,79,255,0.05)" stroke="#8C4FFF" stroke-width="1.5"  rx="0"/>
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%238C4FFF%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2210%22%20width%3D%2226%22%20height%3D%2214%22%20rx%3D%222%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3Ccircle%20cx%3D%2210%22%20cy%3D%2217%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2222%22%20cy%3D%2217%22%20r%3D%222%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M12%2017h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="1650.9" y="179" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="1682.9" y="195.55"
+    font-size="13" font-weight="600" dominant-baseline="alphabetic">Recovery Network</text>
+  
+</g>
+
+<g id="edge-buyer_primary" class="edge edge-flow edge-solid">
+  <path d="M 128 200 L 442.4 200 L 442.4 227 L 514.9 227" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="285.2" cy="216" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="285.2" y="220" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="buyer_primary" x="340" y="220" text-anchor="middle" font-size="11" fill="#163964">order request</text>
+</g>
+
+<g id="edge-primary_lb_api" class="edge edge-flow edge-solid">
+  <path d="M 562.9 227 L 624 227 L 624 323 L 740.9 323" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="653.225" cy="307" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="653.225" y="311" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="primary_lb_api" x="681.375" y="267" text-anchor="middle" font-size="11" fill="#163964">forward request</text>
+</g>
+
+<g id="edge-api_db_request" class="edge edge-flow edge-solid">
+  <path d="M 788.9 323 L 952 323 L 952 223 L 1130.9 223" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1076.81" cy="207" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1076.81" y="211" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="api_db_request" x="974.3625" y="215" text-anchor="middle" font-size="11" fill="#163964">database request</text>
+</g>
+
+<g id="edge-db_api_response" class="edge edge-flow edge-dashed">
+  <path d="M 1142.9 211 L 1142.9 184 L 940 184 L 940 355 L 788.9 355" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 1142.9 211 L 1142.9 184 L 940 184 L 940 355 L 788.9 355" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="db_api_response" x="876.575" y="240" text-anchor="middle" font-size="11" fill="#163964">database response</text>
+</g>
+
+<g id="edge-api_cache_request" class="edge edge-flow edge-solid">
+  <path d="M 788.9 335 L 1153.9 335 L 1153.9 363" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="971.4000000000001" cy="319" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="971.4000000000001" y="323" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="api_cache_request" x="1128.9" y="327" text-anchor="middle" font-size="11" fill="#163964">cache lookup</text>
+</g>
+
+<g id="edge-cache_api_response" class="edge edge-flow edge-solid">
+  <path d="M 1141.9 363 L 1141.9 353 L 859.4 353 L 859.4 430 L 710.9 430 L 710.9 347 L 740.9 347" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1000.6500000000001" cy="369" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1000.6500000000001" y="373" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="cache_api_response" x="765.25" y="430" text-anchor="middle" font-size="11" fill="#163964">cache response</text>
+</g>
+
+<g id="edge-api_payment_request" class="edge edge-flow edge-solid">
+  <path d="M 740.9 335 L 129 335" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="434.95" cy="319" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="434.95" y="323" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="api_payment_request" x="504.9" y="327" text-anchor="middle" font-size="11" fill="#163964">payment request</text>
+</g>
+
+<g id="edge-payment_api_response" class="edge edge-flow edge-solid">
+  <path d="M 129 344 L 712 344 L 712 340 L 740.9 340" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="420.5" cy="360" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="420.5" y="364" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
+  <text class="edge-label" data-edge-label="payment_api_response" x="349" y="364" text-anchor="middle" font-size="11" fill="#163964">payment response</text>
+</g>
+
+<g id="edge-api_to_queue" class="edge edge-flow edge-solid">
+  <path d="M 788.9 347 L 1040 347 L 1040 143 L 1315.9 143" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1024" cy="245" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1024" y="249" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">8</text>
+  <text class="edge-label" data-edge-label="api_to_queue" x="1044" y="163" text-anchor="middle" font-size="11" fill="#163964">enqueue work</text>
+</g>
+
+<g id="edge-queue_to_worker" class="edge edge-flow edge-solid">
+  <path d="M 1315.9 155 L 1048 155 L 1048 451 L 789.9 451" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1181.95" cy="171" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1181.95" y="175" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">9</text>
+  <text class="edge-label" data-edge-label="queue_to_worker" x="1012" y="443" text-anchor="middle" font-size="11" fill="#163964">queued order</text>
+</g>
+
+<g id="edge-worker_to_warehouse" class="edge edge-flow edge-solid">
+  <path d="M 741.9 463 L 130 463" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="435.95" cy="479" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="435.95" y="483" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">10</text>
+  <text class="edge-label" data-edge-label="worker_to_warehouse" x="497.9" y="483" text-anchor="middle" font-size="11" fill="#163964">fulfillment</text>
+</g>
+
+<g id="edge-warehouse_ack" class="edge edge-flow edge-solid">
+  <path d="M 130 451 L 741.9 451" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="435.95" cy="435" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="435.95" y="439" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">11</text>
+  <text class="edge-label" data-edge-label="warehouse_ack" x="542" y="443" text-anchor="middle" font-size="11" fill="#163964">fulfillment acknowledgment</text>
+</g>
+
+<g id="edge-worker_status" class="edge edge-flow edge-solid">
+  <path d="M 789.9 463 L 1080 463 L 1080 235 L 1130.9 235" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1064" cy="434.49999999999994" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1064" y="438.49999999999994" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">12</text>
+  <text class="edge-label" data-edge-label="worker_status" x="1013.55" y="463" text-anchor="middle" font-size="11" fill="#163964">write order status</text>
+</g>
+
+<g id="edge-worker_receipt" class="edge edge-flow edge-solid">
+  <path d="M 789.9 475 L 832 475 L 832 480 L 1272 480 L 1272 307 L 1320.9 307" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1217" cy="464" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1217" y="468" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">12</text>
+  <text class="edge-label" data-edge-label="worker_receipt" x="1323.325" y="432" text-anchor="middle" font-size="11" fill="#163964">write receipt</text>
+</g>
+
+<g id="edge-worker_retry" class="edge edge-fail edge-dashed">
+  <path d="M 789.9 483 L 823.4 483 L 823.4 489 L 1409.3000000000002 489 L 1409.3000000000002 257 L 1264 257 L 1264 167 L 1315.9 167" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow-red)"/>
+  <path d="M 789.9 483 L 823.4 483 L 823.4 489 L 1409.3000000000002 489 L 1409.3000000000002 257 L 1264 257 L 1264 167 L 1315.9 167" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  
+  <text class="edge-label" data-edge-label="worker_retry" x="1307.4" y="481" text-anchor="middle" font-size="11" fill="#D92D20">retry work</text>
+</g>
+
+<g id="edge-database_replication" class="edge edge-flow edge-solid">
+  <path d="M 1178.9 247 L 1448 247 L 1448 198 L 1638.9 198 L 1638.9 235 L 1701.9 235" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1212.5375000000001" cy="231" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1212.5375000000001" y="235" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">13</text>
+  <text class="edge-label" data-edge-label="database_replication" x="1393.65" y="247" text-anchor="middle" font-size="11" fill="#163964">replicate data</text>
+</g>
+
+<g id="edge-recovery_read" class="edge edge-flow edge-solid">
+  <path d="M 1749.9 235 L 1876.9 235" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1845.15" cy="219" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1845.15" y="223" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">14</text>
+  <text class="edge-label" data-edge-label="recovery_read" x="1876.9" y="195" text-anchor="middle" font-size="11" fill="#163964">replica read</text>
+</g>
+
+<g id="edge-buyer_recovery" class="edge edge-flow edge-solid">
+  <path d="M 128 188 L 656.9 188 L 656.9 121 L 1452.9 121 L 1452.9 223 L 1525.9 223" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1054.9" cy="105" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1054.9" y="109" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="buyer_recovery" x="596" y="180" text-anchor="middle" font-size="11" fill="#163964">recovery request</text>
+</g>
+
+<g id="edge-recovery_lb_app" class="edge edge-flow edge-solid">
+  <path d="M 1573.9 235 L 1640 235 L 1640 176 L 1900.9 176 L 1900.9 211" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1770.45" cy="160" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1770.45" y="164" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="recovery_lb_app" x="1860" y="168" text-anchor="middle" font-size="11" fill="#163964">forward recovery request</text>
+</g>
+
+<g id="edge-recovery_app_lb" class="edge edge-flow edge-solid">
+  <path d="M 1876.9 223 L 1800.9 223 L 1800.9 337 L 1634 337 L 1634 247 L 1573.9 247" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1717.45" cy="353" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1717.45" y="357" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">15</text>
+  <text class="edge-label" data-edge-label="recovery_app_lb" x="1570.575" y="337" text-anchor="middle" font-size="11" fill="#163964">recovery response</text>
+</g>
+
+<g id="edge-recovery_to_buyer" class="edge edge-flow edge-solid">
+  <path d="M 1525.9 235 L 1464.9 235 L 1464.9 565 L 34 565 L 34 291 L 158.60000000000002 291 L 158.60000000000002 212 L 128 212" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="749.45" cy="581" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="749.45" y="585" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">16</text>
+  <text class="edge-label" data-edge-label="recovery_to_buyer" x="612.9" y="557" text-anchor="middle" font-size="11" fill="#163964">serve buyer</text>
+</g>
+
+<g id="res-buyer">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%225%22%20y%3D%224%22%20width%3D%2222%22%20height%3D%2216%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M12%2027h8M16%2020v7M9%2027h14%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="80" y="176" width="48" height="48"/>
+  <text x="104.30000000000001" y="240" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="104.30000000000001" y="258" text-anchor="middle" font-size="11" font-style="italic">Public Buyer</text>
+</g>
+
+<g id="res-payment_service">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2210%22%20r%3D%225%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M7%2027c.8-6%204-9%209-9s8.2%203%209%209%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="81" y="304" width="48" height="48"/>
+  <text x="105.375" y="368" text-anchor="middle" font-size="12" font-weight="500">Actor</text>
+  <text x="105.375" y="386" text-anchor="middle" font-size="11" font-style="italic">Payment Service</text>
+</g>
+
+<g id="res-warehouse">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2210%22%20r%3D%225%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M7%2027c.8-6%204-9%209-9s8.2%203%209%209%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="82" y="432" width="48" height="48"/>
+  <text x="106.45" y="496" text-anchor="middle" font-size="12" font-weight="500">Actor</text>
+  <text x="106.45" y="514" text-anchor="middle" font-size="11" font-style="italic">External Warehouse</text>
+</g>
+
+<g id="res-api_server">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%224%22%20y%3D%225%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2219%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%209h.1M8%2023h.1M12%209h11M12%2023h11%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="740.9" y="311" width="48" height="48"/>
+  <text x="765.15" y="375" text-anchor="middle" font-size="12" font-weight="500">Server</text>
+  <text x="765.15" y="393" text-anchor="middle" font-size="11" font-style="italic">API Server</text>
+</g>
+
+<g id="res-worker_server">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%224%22%20y%3D%225%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2219%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%209h.1M8%2023h.1M12%209h11M12%2023h11%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="741.9" y="439" width="48" height="48"/>
+  <text x="766.225" y="503" text-anchor="middle" font-size="12" font-weight="500">Server</text>
+  <text x="766.225" y="521" text-anchor="middle" font-size="11" font-style="italic">Worker Server</text>
+</g>
+
+<g id="res-primary_database">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%228%22%20rx%3D%2210%22%20ry%3D%224%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M6%208v8c0%202%204.5%204%2010%204s10-2%2010-4V8M6%2016v8c0%202%204.5%204%2010%204s10-2%2010-4v-8%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="1130.9" y="211" width="48" height="48"/>
+  <text x="1155.3000000000002" y="275" text-anchor="middle" font-size="12" font-weight="500">Database</text>
+  <text x="1155.3000000000002" y="293" text-anchor="middle" font-size="11" font-style="italic">Primary Database</text>
+</g>
+
+<g id="res-primary_cache">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M8%208h16v16H8z%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M12%2012h8M12%2016h8M12%2020h5%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="1129.9" y="363" width="48" height="48"/>
+  <text x="1154.2250000000001" y="427" text-anchor="middle" font-size="12" font-weight="500">Cache</text>
+  <text x="1154.2250000000001" y="445" text-anchor="middle" font-size="11" font-style="italic">Primary Cache</text>
+</g>
+
+<g id="res-primary_lb">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%2211%22%20y%3D%2211%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M5%207h6v4M27%207h-6v4M5%2025h6v-4M27%2025h-6v-4M11%2016H5M21%2016h6%22%20fill%3D%22none%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="514.9" y="203" width="48" height="48"/>
+  <text x="538.425" y="267" text-anchor="middle" font-size="12" font-weight="500">Load Balancer</text>
+  <text x="538.425" y="285" text-anchor="middle" font-size="11" font-style="italic">Primary Load Balancer</text>
+</g>
+
+<g id="res-work_queue">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M7%208h18v16H7z%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M11%2012h10M11%2016h10M11%2020h6%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="1315.9" y="131" width="48" height="48"/>
+  <text x="1340.375" y="195" text-anchor="middle" font-size="12" font-weight="500">Queue</text>
+  <text x="1340.375" y="213" text-anchor="middle" font-size="11" font-style="italic">Regional Work Queue</text>
+</g>
+
+<g id="res-receipt_storage">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M6%209h20v16H6z%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M6%209l3-4h14l3%204M11%2014h10M11%2019h6%22%20fill%3D%22none%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="1320.9" y="283" width="48" height="48"/>
+  <text x="1345.1000000000001" y="347" text-anchor="middle" font-size="12" font-weight="500">Object Storage</text>
+  <text x="1345.1000000000001" y="365" text-anchor="middle" font-size="11" font-style="italic">Receipt Storage</text>
+</g>
+
+<g id="res-recovery_database">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cellipse%20cx%3D%2216%22%20cy%3D%228%22%20rx%3D%2210%22%20ry%3D%224%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M6%208v8c0%202%204.5%204%2010%204s10-2%2010-4V8M6%2016v8c0%202%204.5%204%2010%204s10-2%2010-4v-8%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E%0A" x="1701.9" y="211" width="48" height="48"/>
+  <text x="1726.325" y="275" text-anchor="middle" font-size="12" font-weight="500">Database</text>
+  <text x="1726.325" y="293" text-anchor="middle" font-size="11" font-style="italic">Recovery Database</text>
+</g>
+
+<g id="res-recovery_app">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%224%22%20y%3D%225%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2219%22%20width%3D%2224%22%20height%3D%228%22%20rx%3D%222%22%20fill%3D%22%23dfe5ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M8%209h.1M8%2023h.1M12%209h11M12%2023h11%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="1876.9" y="211" width="48" height="48"/>
+  <text x="1900.575" y="275" text-anchor="middle" font-size="12" font-weight="500">Server</text>
+  <text x="1900.575" y="293" text-anchor="middle" font-size="11" font-style="italic">Recovery Application Server</text>
+</g>
+
+<g id="res-recovery_lb">
+  <image href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%2211%22%20y%3D%2211%22%20width%3D%2210%22%20height%3D%2210%22%20rx%3D%222%22%20fill%3D%22%23eef1ff%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M5%207h6v4M27%207h-6v4M5%2025h6v-4M27%2025h-6v-4M11%2016H5M21%2016h6%22%20fill%3D%22none%22%20stroke%3D%22%233154d4%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E%0A" x="1525.9" y="211" width="48" height="48"/>
+  <text x="1549.45" y="275" text-anchor="middle" font-size="12" font-weight="500">Load Balancer</text>
+  <text x="1549.45" y="293" text-anchor="middle" font-size="11" font-style="italic">Recovery Load Balancer</text>
+</g>
+</svg>

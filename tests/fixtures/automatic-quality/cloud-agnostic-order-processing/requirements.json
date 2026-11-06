@@ -1,0 +1,577 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "production-account",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: one cloud account"
+      }
+    },
+    {
+      "id": "primary-region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary region"
+      }
+    },
+    {
+      "id": "recovery-region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery region"
+      }
+    },
+    {
+      "id": "primary-network",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary private application network"
+      }
+    },
+    {
+      "id": "application-cluster",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: application cluster"
+      }
+    },
+    {
+      "id": "recovery-network",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery network"
+      }
+    },
+    {
+      "id": "buyer",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: public buyer"
+      },
+      "type": "cloud-agnostic.actor"
+    },
+    {
+      "id": "primary-lb",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: regional load balancer"
+      },
+      "type": "cloud-agnostic.load-balancer"
+    },
+    {
+      "id": "api-server",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: API server"
+      },
+      "type": "cloud-agnostic.server"
+    },
+    {
+      "id": "primary-db",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: database"
+      },
+      "type": "cloud-agnostic.database"
+    },
+    {
+      "id": "primary-cache",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: cache"
+      },
+      "type": "cloud-agnostic.cache"
+    },
+    {
+      "id": "payment-service",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external payment service"
+      },
+      "type": "cloud-agnostic.server"
+    },
+    {
+      "id": "regional-queue",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: regional queue"
+      },
+      "type": "cloud-agnostic.queue"
+    },
+    {
+      "id": "worker-server",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: worker server"
+      },
+      "type": "cloud-agnostic.server"
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external warehouse"
+      },
+      "type": "cloud-agnostic.server"
+    },
+    {
+      "id": "receipts-storage",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: object storage"
+      },
+      "type": "cloud-agnostic.object-storage"
+    },
+    {
+      "id": "recovery-db",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery database"
+      },
+      "type": "cloud-agnostic.database"
+    },
+    {
+      "id": "recovery-server",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery application server"
+      },
+      "type": "cloud-agnostic.server"
+    },
+    {
+      "id": "recovery-lb",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery load balancer"
+      },
+      "type": "cloud-agnostic.load-balancer"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "buyer-primary-lb",
+      "source": "buyer",
+      "target": "primary-lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: A public buyer reaches a regional load balancer"
+      }
+    },
+    {
+      "id": "primary-lb-api",
+      "source": "primary-lb",
+      "target": "api-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: forwards requests to an API server"
+      }
+    },
+    {
+      "id": "api-primary-db-request",
+      "source": "api-server",
+      "target": "primary-db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: The API uses [database]"
+      }
+    },
+    {
+      "id": "primary-db-api-response",
+      "source": "primary-db",
+      "target": "api-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: separate database ... response arrows back to the API"
+      }
+    },
+    {
+      "id": "api-cache-request",
+      "source": "api-server",
+      "target": "primary-cache",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: The API uses [cache]"
+      }
+    },
+    {
+      "id": "cache-api-response",
+      "source": "primary-cache",
+      "target": "api-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: separate ... cache ... response arrows back to the API"
+      }
+    },
+    {
+      "id": "api-payment-request",
+      "source": "api-server",
+      "target": "payment-service",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: calls an external payment service"
+      }
+    },
+    {
+      "id": "payment-api-response",
+      "source": "payment-service",
+      "target": "api-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: separate ... payment response arrows back to the API"
+      }
+    },
+    {
+      "id": "api-enqueue",
+      "source": "api-server",
+      "target": "regional-queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: enqueues work in a regional queue"
+      }
+    },
+    {
+      "id": "queue-worker",
+      "source": "regional-queue",
+      "target": "worker-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: The queue feeds a worker server"
+      }
+    },
+    {
+      "id": "worker-fulfill",
+      "source": "worker-server",
+      "target": "warehouse",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: The worker sends fulfillment to an external warehouse"
+      }
+    },
+    {
+      "id": "warehouse-ack",
+      "source": "warehouse",
+      "target": "worker-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: receives its acknowledgment back"
+      }
+    },
+    {
+      "id": "worker-retry",
+      "source": "worker-server",
+      "target": "regional-queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: It retries by sending work back to the queue"
+      }
+    },
+    {
+      "id": "worker-status",
+      "source": "worker-server",
+      "target": "primary-db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: writes order status to the primary database"
+      }
+    },
+    {
+      "id": "worker-receipt",
+      "source": "worker-server",
+      "target": "receipts-storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: writes ... receipts to object storage"
+      }
+    },
+    {
+      "id": "primary-replication",
+      "source": "primary-db",
+      "target": "recovery-db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: The primary database replicates to a recovery database"
+      }
+    },
+    {
+      "id": "recovery-db-read",
+      "source": "recovery-db",
+      "target": "recovery-server",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: A recovery application server reads that replica"
+      }
+    },
+    {
+      "id": "recovery-server-to-lb",
+      "source": "recovery-server",
+      "target": "recovery-lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: can serve the buyer through a recovery load balancer"
+      }
+    },
+    {
+      "id": "recovery-lb-to-buyer",
+      "source": "recovery-lb",
+      "target": "buyer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: can serve the buyer through a recovery load balancer"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "account-count",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: one cloud account"
+      }
+    },
+    {
+      "id": "regions-in-account",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "min": 2,
+      "max": 2,
+      "within": "production-account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary and recovery regions"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "account-root",
+      "component": "production-account",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: one cloud account"
+      }
+    },
+    {
+      "id": "primary-in-account",
+      "component": "primary-region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary region in one cloud account"
+      },
+      "group": "production-account"
+    },
+    {
+      "id": "recovery-in-account",
+      "component": "recovery-region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery region in one cloud account"
+      },
+      "group": "production-account"
+    },
+    {
+      "id": "primary-network-in-region",
+      "component": "primary-network",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: primary private application network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "cluster-in-network",
+      "component": "application-cluster",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: API server inside the primary private application network and cluster"
+      },
+      "group": "primary-network"
+    },
+    {
+      "id": "recovery-network-in-region",
+      "component": "recovery-network",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery database inside a recovery network"
+      },
+      "group": "recovery-region"
+    },
+    {
+      "id": "buyer-root",
+      "component": "buyer",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: public buyer"
+      }
+    },
+    {
+      "id": "primary-lb-in-region",
+      "component": "primary-lb",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: regional load balancer; API is inside the network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "api-in-cluster",
+      "component": "api-server",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: API server ... inside the primary private application network and cluster"
+      },
+      "group": "application-cluster"
+    },
+    {
+      "id": "db-in-network",
+      "component": "primary-db",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: database ... in the same private network"
+      },
+      "group": "primary-network"
+    },
+    {
+      "id": "cache-in-network",
+      "component": "primary-cache",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: cache ... in the same private network"
+      },
+      "group": "primary-network"
+    },
+    {
+      "id": "payment-root",
+      "component": "payment-service",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external payment service"
+      }
+    },
+    {
+      "id": "queue-in-region",
+      "component": "regional-queue",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: regional queue outside the network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "worker-in-cluster",
+      "component": "worker-server",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: worker server in the application cluster"
+      },
+      "group": "application-cluster"
+    },
+    {
+      "id": "warehouse-root",
+      "component": "warehouse",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: external warehouse"
+      }
+    },
+    {
+      "id": "receipts-in-region",
+      "component": "receipts-storage",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: object storage outside the network"
+      },
+      "group": "primary-region"
+    },
+    {
+      "id": "recovery-db-in-network",
+      "component": "recovery-db",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery database inside a recovery network"
+      },
+      "group": "recovery-network"
+    },
+    {
+      "id": "recovery-app-in-network",
+      "component": "recovery-server",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery application server reads that replica"
+      },
+      "group": "recovery-network"
+    },
+    {
+      "id": "recovery-lb-in-region",
+      "component": "recovery-lb",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Prompt: recovery load balancer"
+      },
+      "group": "recovery-region"
+    }
+  ],
+  "allowAdditionalResources": true
+}

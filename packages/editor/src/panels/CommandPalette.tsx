@@ -27,9 +27,10 @@ export function CommandPalette({
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return commands.filter((command) => !command.disabled && (
-      !needle || `${command.label} ${command.section ?? ""}`.toLowerCase().includes(needle)
-    ));
+    return commands.filter(
+      (command) =>
+        !command.disabled && (!needle || `${command.label} ${command.section ?? ""}`.toLowerCase().includes(needle)),
+    );
   }, [commands, query]);
 
   useEffect(() => {
@@ -82,26 +83,28 @@ export function CommandPalette({
           }}
         />
         <div className="command-list" role="listbox" aria-label="Commands">
-          {filtered.length ? filtered.map((command, index) => (
-            <button
-              key={command.id}
-              type="button"
-              role="option"
-              aria-selected={index === selectedIndex}
-              className={index === selectedIndex ? "is-selected" : ""}
-              onMouseEnter={() => setSelectedIndex(index)}
-              onClick={() => {
-                command.onSelect();
-                onClose();
-              }}
-            >
-              <span>
-                <strong>{command.label}</strong>
-                {command.section && <small>{command.section}</small>}
-              </span>
-              {command.shortcut && <kbd>{command.shortcut}</kbd>}
-            </button>
-          )) : (
+          {filtered.length ? (
+            filtered.map((command, index) => (
+              <button
+                key={command.id}
+                type="button"
+                role="option"
+                aria-selected={index === selectedIndex}
+                className={index === selectedIndex ? "is-selected" : ""}
+                onMouseEnter={() => setSelectedIndex(index)}
+                onClick={() => {
+                  command.onSelect();
+                  onClose();
+                }}
+              >
+                <span>
+                  <strong>{command.label}</strong>
+                  {command.section && <small>{command.section}</small>}
+                </span>
+                {command.shortcut && <kbd>{command.shortcut}</kbd>}
+              </button>
+            ))
+          ) : (
             <div className="command-empty">No matching commands.</div>
           )}
         </div>

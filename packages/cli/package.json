@@ -2,7 +2,7 @@
   "name": "create-dumb-diagrams",
   "version": "0.1.0",
   "license": "AGPL-3.0-only",
-  "description": "LLM-first architecture diagrams that are hard to get wrong: local CLI and Studio for .dgm source files",
+  "description": "LLM-first architecture diagrams that are hard to get wrong: validated .dgm source, deterministic SVG rendering, local CLI, and Studio",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -13,7 +13,9 @@
     "aws",
     "cli",
     "dgm",
-    "studio"
+    "studio",
+    "svg",
+    "headless"
   ],
   "files": [
     "dist",
@@ -30,15 +32,18 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm --filter @dumb-diagrams/runtime build && tsc -p tsconfig.json",
     "prepare:standalone": "node ../../scripts/prepare-cli-package.mjs",
     "prepack": "node ../../scripts/prepare-cli-package.mjs",
-    "test": "vitest run"
+    "test": "vitest run --root ../.. packages/cli/src"
+  },
+  "dependencies": {
+    "neverthrow": "8.2.0"
   },
   "devDependencies": {
     "@dumb-diagrams/runtime": "workspace:*",
     "@types/node": "^24.13.3",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }

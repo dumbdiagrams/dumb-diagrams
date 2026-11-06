@@ -1,0 +1,27 @@
+dgm 1
+diagram azure_easy_private_application_api { grammar azure flow lr title "Azure Private Application API"
+  cloud-agnostic.client client "Client" {
+  }
+  azure.subscription sub "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group rg "Resource Group" {
+        azure.vnet vnet "Application VNet" {
+          azure.subnet appsubnet "Application subnet" {
+            azure.function-apps function "Azure Function" {
+            }
+            azure.private-endpoints sqlpe "SQL private endpoint" {
+            }
+          }
+        }
+        azure.api-management-services apim "API Management" {
+        }
+        azure.sql-database sql "Azure SQL" {
+        }
+      }
+    }
+  }
+  client -> apim { id client_api label "request" kind flow step 1 }
+  apim -> function { id api_function label "request" kind flow step 2 }
+  function -> sqlpe { id function_sql_pe label "SQL access" kind flow step 3 }
+  sqlpe -> sql { id sql_pe_sql label "private endpoint to SQL" kind flow step 4 }
+}

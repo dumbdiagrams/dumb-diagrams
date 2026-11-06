@@ -1,0 +1,570 @@
+{
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "buyer",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "payment",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "primary",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "plb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "pnet",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "cluster",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "receipts",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "recovery",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "rnet",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "rdb",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "rapp",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    },
+    {
+      "id": "rlb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "requested component"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "buyer_primary",
+      "source": "buyer",
+      "target": "plb",
+      "basis": {
+        "kind": "explicit",
+        "text": "requests"
+      }
+    },
+    {
+      "id": "primary_api",
+      "source": "plb",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "forwards"
+      }
+    },
+    {
+      "id": "api_db",
+      "source": "api",
+      "target": "db",
+      "basis": {
+        "kind": "explicit",
+        "text": "database request"
+      }
+    },
+    {
+      "id": "db_api",
+      "source": "db",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "database response"
+      }
+    },
+    {
+      "id": "api_cache",
+      "source": "api",
+      "target": "cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "cache request"
+      }
+    },
+    {
+      "id": "cache_api",
+      "source": "cache",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "cache response"
+      }
+    },
+    {
+      "id": "api_payment",
+      "source": "api",
+      "target": "payment",
+      "basis": {
+        "kind": "explicit",
+        "text": "payment request"
+      }
+    },
+    {
+      "id": "payment_api",
+      "source": "payment",
+      "target": "api",
+      "basis": {
+        "kind": "explicit",
+        "text": "payment response"
+      }
+    },
+    {
+      "id": "api_queue",
+      "source": "api",
+      "target": "queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "enqueue work"
+      }
+    },
+    {
+      "id": "queue_worker",
+      "source": "queue",
+      "target": "worker",
+      "basis": {
+        "kind": "explicit",
+        "text": "work"
+      }
+    },
+    {
+      "id": "worker_wh",
+      "source": "worker",
+      "target": "warehouse",
+      "basis": {
+        "kind": "explicit",
+        "text": "fulfillment"
+      }
+    },
+    {
+      "id": "wh_worker",
+      "source": "warehouse",
+      "target": "worker",
+      "basis": {
+        "kind": "explicit",
+        "text": "acknowledgment"
+      }
+    },
+    {
+      "id": "worker_retry",
+      "source": "worker",
+      "target": "queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "retry"
+      }
+    },
+    {
+      "id": "worker_db",
+      "source": "worker",
+      "target": "db",
+      "basis": {
+        "kind": "explicit",
+        "text": "order status"
+      }
+    },
+    {
+      "id": "worker_receipt",
+      "source": "worker",
+      "target": "receipts",
+      "basis": {
+        "kind": "explicit",
+        "text": "receipt"
+      }
+    },
+    {
+      "id": "db_replica",
+      "source": "db",
+      "target": "rdb",
+      "basis": {
+        "kind": "explicit",
+        "text": "replication"
+      }
+    },
+    {
+      "id": "rdb_app",
+      "source": "rdb",
+      "target": "rapp",
+      "basis": {
+        "kind": "explicit",
+        "text": "replica reads"
+      }
+    },
+    {
+      "id": "buyer_recovery",
+      "source": "buyer",
+      "target": "rlb",
+      "basis": {
+        "kind": "explicit",
+        "text": "recovery requests"
+      }
+    },
+    {
+      "id": "recovery_api",
+      "source": "rlb",
+      "target": "rapp",
+      "basis": {
+        "kind": "explicit",
+        "text": "forwards"
+      }
+    },
+    {
+      "id": "recovery_response",
+      "source": "rapp",
+      "target": "rlb",
+      "basis": {
+        "kind": "explicit",
+        "text": "serve the buyer through a recovery load balancer"
+      }
+    },
+    {
+      "id": "recovery_delivery",
+      "source": "rlb",
+      "target": "buyer",
+      "basis": {
+        "kind": "explicit",
+        "text": "serve the buyer through a recovery load balancer"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "place_buyer",
+      "component": "buyer",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer outside named boundary"
+      }
+    },
+    {
+      "id": "place_payment",
+      "component": "payment",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Payment Service outside named boundary"
+      }
+    },
+    {
+      "id": "place_warehouse",
+      "component": "warehouse",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Warehouse outside named boundary"
+      }
+    },
+    {
+      "id": "place_cloud",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud outside named boundary"
+      }
+    },
+    {
+      "id": "place_account",
+      "component": "account",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Account inside Cloud"
+      }
+    },
+    {
+      "id": "place_primary",
+      "component": "primary",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Region inside Cloud Account"
+      }
+    },
+    {
+      "id": "place_plb",
+      "component": "plb",
+      "relation": "inside",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Load Balancer inside Primary Region"
+      }
+    },
+    {
+      "id": "place_pnet",
+      "component": "pnet",
+      "relation": "inside",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Application Network inside Primary Region"
+      }
+    },
+    {
+      "id": "place_cluster",
+      "component": "cluster",
+      "relation": "inside",
+      "group": "pnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Application Cluster inside Primary Application Network"
+      }
+    },
+    {
+      "id": "place_api",
+      "component": "api",
+      "relation": "inside",
+      "group": "cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Server inside Application Cluster"
+      }
+    },
+    {
+      "id": "place_db",
+      "component": "db",
+      "relation": "inside",
+      "group": "pnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Primary Database inside Primary Application Network"
+      }
+    },
+    {
+      "id": "place_cache",
+      "component": "cache",
+      "relation": "inside",
+      "group": "pnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cache inside Primary Application Network"
+      }
+    },
+    {
+      "id": "place_queue",
+      "component": "queue",
+      "relation": "inside",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Regional Queue inside Primary Region"
+      }
+    },
+    {
+      "id": "place_worker",
+      "component": "worker",
+      "relation": "inside",
+      "group": "cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker Server inside Application Cluster"
+      }
+    },
+    {
+      "id": "place_receipts",
+      "component": "receipts",
+      "relation": "inside",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Receipt Storage inside Primary Region"
+      }
+    },
+    {
+      "id": "place_recovery",
+      "component": "recovery",
+      "relation": "inside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Region inside Cloud Account"
+      }
+    },
+    {
+      "id": "place_rnet",
+      "component": "rnet",
+      "relation": "inside",
+      "group": "recovery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Network inside Recovery Region"
+      }
+    },
+    {
+      "id": "place_rdb",
+      "component": "rdb",
+      "relation": "inside",
+      "group": "rnet",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Database inside Recovery Network"
+      }
+    },
+    {
+      "id": "place_rapp",
+      "component": "rapp",
+      "relation": "inside",
+      "group": "recovery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Application Server inside Recovery Region"
+      }
+    },
+    {
+      "id": "place_rlb",
+      "component": "rlb",
+      "relation": "inside",
+      "group": "recovery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Recovery Load Balancer inside Recovery Region"
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}

@@ -1,6 +1,8 @@
 import { defineConfig } from 'astro/config';
 import partytown from '@astrojs/partytown';
 import sitemap from '@astrojs/sitemap';
+import mdx from '@astrojs/mdx';
+import { unified } from '@astrojs/markdown-remark';
 import { dgmLanguage } from './src/lib/dgm-language.mjs';
 import { analyticsConfig } from './src/lib/analytics-config.mjs';
 import { privacyConfig } from './src/lib/privacy-config.mjs';
@@ -19,6 +21,7 @@ export default defineConfig({
   // duplicating them inline in every HTML response.
   vite: { build: { assetsInlineLimit: 0 } },
   integrations: [
+    mdx(),
     ...(site ? [sitemap({ filter: page => privacyConfig().ready || !page.endsWith('/privacy/') })] : []),
     // Let the integration derive the public base URL and copy files to the
     // dist root; overriding `lib` also changes its on-disk destination.
@@ -27,6 +30,7 @@ export default defineConfig({
       : []),
   ],
   markdown: {
+    processor: unified(),
     shikiConfig: {
       theme: 'github-light',
       langs: [dgmLanguage],

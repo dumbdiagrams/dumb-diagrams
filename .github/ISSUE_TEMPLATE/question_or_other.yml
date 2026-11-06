@@ -1,0 +1,21 @@
+name: Question, documentation, or other
+description: Ask a project question or raise something that does not fit the other forms
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search existing issues first. Issues are public. Do not include
+        credentials, customer data, or private infrastructure details.
+        Do not post an unpatched security vulnerability here. Use this repository's
+        Security tab and choose "Report a vulnerability" to report it privately on GitHub.
+  - type: textarea
+    id: topic
+    attributes:
+      label: What would you like to ask or report?
+      placeholder: Describe the question, documentation correction, or other project topic.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Relevant context or links (optional)

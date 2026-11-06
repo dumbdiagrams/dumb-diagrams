@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "subscription",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure resources require a subscription scope"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A region is the minimal deployment scope for the Azure resources"
+      }
+    },
+    {
+      "id": "resource-group",
+      "kind": "group",
+      "basis": {
+        "kind": "inferred",
+        "text": "A resource group provides the Azure resource container"
+      }
+    },
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management"
+      }
+    },
+    {
+      "id": "apim",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Management"
+      }
+    },
+    {
+      "id": "function",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "an Azure Function"
+      }
+    },
+    {
+      "id": "app-network",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "in the application network"
+      }
+    },
+    {
+      "id": "sql-pe",
+      "kind": "resource",
+      "type": "azure.private-endpoints",
+      "basis": {
+        "kind": "explicit",
+        "text": "through a private endpoint"
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Azure SQL database"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "client-apim",
+      "source": "client",
+      "target": "apim",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "A client calls API Management"
+      }
+    },
+    {
+      "id": "apim-function",
+      "source": "apim",
+      "target": "function",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Management ... routes requests to an Azure Function"
+      }
+    },
+    {
+      "id": "function-sql-pe",
+      "source": "function",
+      "target": "sql-pe",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "the function accesses an Azure SQL database through a private endpoint"
+      }
+    },
+    {
+      "id": "sql-pe-sql",
+      "source": "sql-pe",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "private endpoint ... [to] Azure SQL database"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "pe-in-network",
+      "component": "sql-pe",
+      "relation": "inside",
+      "group": "app-network",
+      "basis": {
+        "kind": "explicit",
+        "text": "private endpoint in the application network"
+      }
+    },
+    {
+      "id": "sql-outside-network",
+      "component": "sql",
+      "relation": "outside",
+      "group": "app-network",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure SQL is accessed through a private endpoint in the network; the managed database remains outside the VNet"
+      }
+    },
+    {
+      "id": "region-in-subscription",
+      "component": "region",
+      "relation": "inside",
+      "group": "subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure deployment scope under a subscription"
+      }
+    },
+    {
+      "id": "rg-in-region",
+      "component": "resource-group",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "inferred",
+        "text": "Azure resources are contained in a resource group"
+      }
+    },
+    {
+      "id": "network-in-rg",
+      "component": "app-network",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "The application network is scoped with the Azure resources"
+      }
+    },
+    {
+      "id": "sql-in-rg",
+      "component": "sql",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "SQL is an Azure resource in the application deployment scope"
+      }
+    },
+    {
+      "id": "client-root",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "inferred",
+        "text": "The client is external to Azure resource boundaries"
+      }
+    },
+    {
+      "id": "apim-in-rg",
+      "component": "apim",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "API Management is in the Azure resource group"
+      }
+    },
+    {
+      "id": "function-in-rg",
+      "component": "function",
+      "relation": "inside",
+      "group": "resource-group",
+      "basis": {
+        "kind": "inferred",
+        "text": "The Function is in the Azure resource group"
+      }
+    }
+  ]
+}

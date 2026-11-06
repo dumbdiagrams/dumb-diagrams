@@ -1,0 +1,140 @@
+name: Publish CLI package
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Semver release tag to publish (for example v0.1.0)"
+        required: true
+        type: string
+
+# Configure the npm trusted publisher for this workflow file and the
+# npm-production environment before enabling a release.
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' && (github.event_name == 'push' || startsWith(inputs.ref, 'v'))
+    runs-on: ubuntu-24.04
+    environment:
+      name: npm-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out release ref
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+
+      - name: Check npm trusted publishing support
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+
+          const npmVersion = execFileSync("npm", ["--version"], { encoding: "utf8" }).trim();
+          const [major, minor, patch] = npmVersion.split(".").map(Number);
+          if ([major, minor, patch].some((part) => !Number.isInteger(part))) {
+            throw new Error(`Could not parse npm version: ${npmVersion}`);
+          }
+          if (major < 11 || (major === 11 && minor < 5) || (major === 11 && minor === 5 && patch < 1)) {
+            throw new Error(`npm ${npmVersion} is too old for trusted publishing; require npm 11.5.1 or later`);
+          }
+          console.log(`npm ${npmVersion} supports trusted publishing`);
+          NODE
+
+      - name: Verify release tag and package version
+        id: release-version
+        env:
+          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          node scripts/validate-release-ref.mjs
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          const ref = process.env.RELEASE_REF;
+          const version = JSON.parse(readFileSync("packages/cli/package.json", "utf8")).version;
+          if (version !== ref.slice(1)) throw new Error(`Tag ${ref} does not match CLI package version ${version}`);
+          NODE
+          printf 'version=%s\n' "$(node -p "require('./packages/cli/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run exact release gate
+        run: pnpm check:release
+
+      - name: Set npm metadata from repository identity
+        run: pnpm publish:metadata
+
+      - name: Prepare standalone package
+        run: pnpm --filter create-dumb-diagrams run prepare:standalone
+
+      - name: Pack release artifact
+        run: pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
+
+      - name: Select and verify release artifact
+        id: artifact
+        env:
+          RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
+        run: |
+          artifact="$GITHUB_WORKSPACE/.artifacts/packages/create-dumb-diagrams-${RELEASE_VERSION}.tgz"
+          test -f "$artifact" || {
+            echo "Expected exact release artifact at $artifact" >&2
+            exit 2
+          }
+          printf 'path=%s\n' "$artifact" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce prepared artifact budgets
+        run: pnpm check:assets
+
+      - name: Smoke test metadata-bearing artifact
+        env:
+          DUMB_DIAGRAMS_ARTIFACT: ${{ steps.artifact.outputs.path }}
+        run: pnpm smoke:package && pnpm check:assets
+
+      # npm trusted publishing supplies short-lived OIDC credentials and
+      # automatically records provenance; no npm token is stored in Actions.
+      - name: Publish release artifact
+        env:
+          ARTIFACT: ${{ steps.artifact.outputs.path }}
+        run: npm publish "$ARTIFACT" --access public --provenance --registry=https://registry.npmjs.org/
+
+      - name: Verify published package on npm
+        env:
+          ARTIFACT: ${{ steps.artifact.outputs.path }}
+          PACKAGE_NAME: create-dumb-diagrams
+          RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
+        run: |
+          expected_integrity="sha512-$(openssl dgst -sha512 -binary "$ARTIFACT" | openssl base64 -A)"
+          for attempt in $(seq 1 12); do
+            published_version="$(npm view "${PACKAGE_NAME}@${RELEASE_VERSION}" version --json 2>/dev/null || true)"
+            published_integrity="$(npm view "${PACKAGE_NAME}@${RELEASE_VERSION}" dist.integrity --json 2>/dev/null || true)"
+            if [ "$published_version" = "\"$RELEASE_VERSION\"" ] && [ "$published_integrity" = "\"$expected_integrity\"" ]; then
+              echo "Verified ${PACKAGE_NAME}@${RELEASE_VERSION} and exact artifact integrity on npm"
+              exit 0
+            fi
+            echo "Waiting for ${PACKAGE_NAME}@${RELEASE_VERSION} to become visible on npm (attempt ${attempt}/12)"
+            sleep 10
+          done
+          echo "Published package could not be verified on npm" >&2
+          exit 1

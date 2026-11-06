@@ -1,0 +1,359 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1573" height="813" viewBox="0 0 1573 813">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-subscription">
+  <rect class="group-border" x="405.5" y="32" width="1134.6000000000001" height="749"
+    fill="rgba(255,147,0,0.04)" stroke="#FF9300" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-subscription-d69843a7-07a65830.svg" x="405.5" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="437.5" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Azure subscription</text>
+  
+</g>
+
+<g id="group-region">
+  <rect class="group-border" x="423.5" y="65" width="1098.6000000000001" height="689"
+    fill="rgba(239,113,0,0.05)" stroke="#EF7100" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/azure/azure-group-region-a31366e6-e15fe4de.svg" x="423.5" y="65" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="455.5" y="81.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Region</text>
+  
+</g>
+
+<g id="group-resource_group">
+  <rect class="group-border" x="443.5" y="99" width="1058.6000000000001" height="625"
+    fill="rgba(148,148,148,0.03)" stroke="#949494" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  <image href="catalog-icons/azure/azure-group-resource-group-4d2b2eac-3774e891.svg" x="443.5" y="99" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="475.5" y="115.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Order processing resource group</text>
+  
+</g>
+
+<g id="group-app_vnet">
+  <rect class="group-border" x="871.5" y="239" width="392" height="372"
+    fill="rgba(80,230,255,0.05)" stroke="#50E6FF" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-virtual-network-64a5e75e-fe793ef1.svg" x="871.5" y="239" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="903.5" y="255.55"
+    font-size="13" font-weight="600" dominant-baseline="alphabetic">Application VNet</text>
+  
+</g>
+
+<g id="group-application_subnet">
+  <rect class="group-border" x="887.5" y="271" width="245.95000000000002" height="148"
+    fill="rgba(20,144,223,0.03)" stroke="#1490DF" stroke-width="1"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-subnet-f36f2049-0d53215a.svg" x="887.5" y="271" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="913.5" y="283.85"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Application subnet</text>
+  
+</g>
+
+<g id="group-data_subnet">
+  <rect class="group-border" x="887.5" y="439" width="342.20000000000005" height="148"
+    fill="rgba(20,144,223,0.03)" stroke="#1490DF" stroke-width="1"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-subnet-f36f2049-0d53215a.svg" x="887.5" y="439" width="18" height="18" preserveAspectRatio="none"/>
+  <text x="913.5" y="451.85"
+    font-size="11" font-weight="500" dominant-baseline="alphabetic">Data subnet</text>
+  
+</g>
+
+<g id="group-service_bus_scope">
+  <rect class="group-border" x="1335.5" y="127" width="152.2" height="278"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="1343.5" y="142.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Service Bus queues</text>
+  
+</g>
+
+<g id="group-data_services_scope">
+  <rect class="group-border" x="1343.5" y="447" width="145.60000000000002" height="256"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="1351.5" y="462.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">SQL and Storage</text>
+  
+</g>
+
+<g id="group-support_scope">
+  <rect class="group-border" x="455.5" y="343" width="154.60000000000002" height="256"
+    fill="rgba(135,145,150,0.03)" stroke="#879196" stroke-width="1" stroke-dasharray="4 4" rx="0"/>
+  
+  <text x="463.5" y="358.2"
+    font-size="12" font-weight="500" dominant-baseline="alphabetic">Secrets and telemetry</text>
+  
+</g>
+
+<g id="edge-client_to_front_door" class="edge edge-flow edge-solid">
+  <path d="M 253.85000000000002 207 L 506.5 207" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="380.175" cy="191" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="380.175" y="195" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="client_to_front_door" x="321.85" y="199" text-anchor="middle" font-size="11" fill="#163964">Order request</text>
+</g>
+
+<g id="edge-front_door_to_apim" class="edge edge-flow edge-solid">
+  <path d="M 554.5 207 L 640 207 L 640 151 L 715.5 151" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="597.25" cy="191" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="597.25" y="195" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="front_door_to_apim" x="582.625" y="169" text-anchor="middle" font-size="11" fill="#163964">Forward request</text>
+</g>
+
+<g id="edge-apim_to_api" class="edge edge-flow edge-solid">
+  <path d="M 763.5 151 L 852 151 L 852 307 L 923.5 307" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="807.75" cy="135" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="807.75" y="139" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="apim_to_api" x="815.5" y="171" text-anchor="middle" font-size="11" fill="#163964">Route request</text>
+</g>
+
+<g id="edge-api_to_sql_endpoint" class="edge edge-flow edge-solid">
+  <path d="M 923.5 339 L 865.5 339 L 865.5 475 L 944.5 475" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="849.5" cy="441" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="849.5" y="445" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="api_to_sql_endpoint" x="811.15" y="475" text-anchor="middle" font-size="11" fill="#163964">SQL read/write</text>
+</g>
+
+<g id="edge-api_to_work_queue" class="edge edge-flow edge-solid">
+  <path d="M 947.5 343 L 947.5 424 L 1328 424 L 1328 179 L 1387.5 179" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1199.03" cy="408" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1199.03" y="412" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="api_to_work_queue" x="1303.5" y="444" text-anchor="middle" font-size="11" fill="#163964">Enqueue work</text>
+</g>
+
+<g id="edge-work_queue_to_worker" class="edge edge-flow edge-solid">
+  <path d="M 1387.5 167 L 1136 167 L 1136 307 L 1088.5 307" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1261.75" cy="151" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1261.75" y="155" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="work_queue_to_worker" x="1207.5" y="159" text-anchor="middle" font-size="11" fill="#163964">Dequeue work</text>
+</g>
+
+<g id="edge-worker_to_storage_endpoint" class="edge edge-flow edge-solid">
+  <path d="M 1088.5 319 L 1240 319 L 1240 487 L 1164.5 487" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1180.25" cy="303" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1180.25" y="307" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="worker_to_storage_endpoint" x="1212.25" y="339" text-anchor="middle" font-size="11" fill="#163964">Write files</text>
+</g>
+
+<g id="edge-worker_to_sql_endpoint" class="edge edge-flow edge-solid">
+  <path d="M 1088.5 331 L 1172 331 L 1172 432 L 880 432 L 880 499 L 944.5 499" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1188" cy="381.5" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1188" y="385.5" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">6</text>
+  <text class="edge-label" data-edge-label="worker_to_sql_endpoint" x="1073.55" y="434.14" text-anchor="middle" font-size="11" fill="#163964">Write order status</text>
+</g>
+
+<g id="edge-sql_endpoint_to_database" class="edge edge-flow edge-solid">
+  <path d="M 944.5 507 L 889.5 507 L 889.5 608 L 1344 608 L 1344 511 L 1395.5 511" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1116.75" cy="592" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1116.75" y="596" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
+  <text class="edge-label" data-edge-label="sql_endpoint_to_database" x="1116.75" y="628" text-anchor="middle" font-size="11" fill="#163964">Private endpoint to SQL</text>
+</g>
+
+<g id="edge-storage_endpoint_to_account" class="edge edge-flow edge-solid">
+  <path d="M 1164.5 499 L 1336 499 L 1336 591 L 1392.5 591" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1250.25" cy="515" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1250.25" y="519" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">7</text>
+  <text class="edge-label" data-edge-label="storage_endpoint_to_account" x="1256.5" y="491" text-anchor="middle" font-size="11" fill="#163964">Private endpoint to Storage</text>
+</g>
+
+<g id="edge-work_queue_to_dlq" class="edge edge-fail edge-dashed">
+  <path d="M 1387.5 199 L 1328 199 L 1328 8 L 1488 8 L 1488 295 L 1435.5 295" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow-red)"/>
+  <path d="M 1387.5 199 L 1328 199 L 1328 8 L 1488 8 L 1488 295 L 1435.5 295" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  
+  <text class="edge-label" data-edge-label="work_queue_to_dlq" x="1408" y="0" text-anchor="middle" font-size="11" fill="#D92D20">Retry limit reached</text>
+</g>
+
+<g id="edge-ops_to_dlq" class="edge edge-flow edge-dashed">
+  <path d="M 115 389.5 L 160.85000000000002 389.5 L 160.85000000000002 705 L 1499.7 705 L 1499.7 399 L 1337.5 399 L 1337.5 295 L 1387.5 295" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 115 389.5 L 160.85000000000002 389.5 L 160.85000000000002 705 L 1499.7 705 L 1499.7 399 L 1337.5 399 L 1337.5 295 L 1387.5 295" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="ops_to_dlq" x="830.2750000000001" y="697" text-anchor="middle" font-size="11" fill="#163964">Inspect DLQ</text>
+</g>
+
+<g id="edge-ops_to_work_queue" class="edge edge-flow edge-dashed">
+  <path d="M 115 377.5 L 160.85000000000002 377.5 L 160.85000000000002 315 L 843.3 315 L 843.3 191 L 1387.5 191" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 115 377.5 L 160.85000000000002 377.5 L 160.85000000000002 315 L 843.3 315 L 843.3 191 L 1387.5 191" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="ops_to_work_queue" x="636.85" y="307" text-anchor="middle" font-size="11" fill="#163964">Redrive work</text>
+</g>
+
+<g id="edge-api_to_key_vault" class="edge edge-flow edge-dashed">
+  <path d="M 923.5 331 L 453.5 331 L 453.5 487 L 583.5 487 L 583.5 395 L 556.5 395" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 923.5 331 L 453.5 331 L 453.5 487 L 583.5 487 L 583.5 395 L 556.5 395" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="api_to_key_vault" x="688.5" y="351" text-anchor="middle" font-size="11" fill="#163964">Read secrets</text>
+</g>
+
+<g id="edge-worker_to_key_vault" class="edge edge-flow edge-dashed">
+  <path d="M 1088.5 339 L 1128.25 339 L 1128.25 416 L 889.5 416 L 889.5 383 L 556.5 383" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 1088.5 339 L 1128.25 339 L 1128.25 416 L 889.5 416 L 889.5 383 L 556.5 383" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="worker_to_key_vault" x="723" y="375" text-anchor="middle" font-size="11" fill="#163964">Read secrets</text>
+</g>
+
+<g id="edge-api_to_monitor" class="edge edge-flow edge-dashed">
+  <path d="M 935.5 343 L 935.5 411 L 593.5 411 L 593.5 511 L 555.5 511" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 935.5 343 L 935.5 411 L 593.5 411 L 593.5 511 L 555.5 511" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="api_to_monitor" x="764.5" y="403" text-anchor="middle" font-size="11" fill="#163964">Telemetry</text>
+</g>
+
+<g id="edge-worker_to_monitor" class="edge edge-flow edge-dashed">
+  <path d="M 1088.5 299 L 1152.25 299 L 1152.25 445 L 1046.5 445 L 1046.5 592 L 573.5 592 L 573.5 523 L 555.5 523" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <path d="M 1088.5 299 L 1152.25 299 L 1152.25 445 L 1046.5 445 L 1046.5 592 L 573.5 592 L 573.5 523 L 555.5 523" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow)"/>
+  
+  <text class="edge-label" data-edge-label="worker_to_monitor" x="810" y="584" text-anchor="middle" font-size="11" fill="#163964">Telemetry</text>
+</g>
+
+<g id="res-operations_client">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="67" y="353.5" width="48" height="48"/>
+  <text x="91.42500000000001" y="417.5" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="91.42500000000001" y="435.5" text-anchor="middle" font-size="11" font-style="italic">Operations client</text>
+</g>
+
+<g id="res-public_client">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="205.85000000000002" y="183" width="48" height="48"/>
+  <text x="230.175" y="247" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="230.175" y="265" text-anchor="middle" font-size="11" font-style="italic">Public client</text>
+</g>
+
+<g id="res-front_door">
+  <image href="catalog-icons/azure/azure-resource-front-door-and-cdn-profiles-b2e9c9a8-3fb2c60e.svg" x="506.5" y="183" width="48" height="48"/>
+  <text x="530.9" y="247" text-anchor="middle" font-size="12" font-weight="500">Front Door and CDN</text>
+  <text x="530.9" y="263" text-anchor="middle" font-size="12" font-weight="500">Profiles</text>
+  <text x="530.9" y="281" text-anchor="middle" font-size="11" font-style="italic">Front Door</text>
+</g>
+
+<g id="res-api_management">
+  <image href="catalog-icons/azure/azure-resource-api-management-services-cf794288-596432f0.svg" x="715.5" y="127" width="48" height="48"/>
+  <text x="739.4" y="191" text-anchor="middle" font-size="12" font-weight="500">API Management Services</text>
+  <text x="739.4" y="209" text-anchor="middle" font-size="11" font-style="italic">API Management</text>
+</g>
+
+<g id="res-api">
+  <image href="catalog-icons/azure/azure-resource-app-services-529d83fc-e90e1cb1.svg" x="923.5" y="295" width="48" height="48"/>
+  <text x="947.1" y="359" text-anchor="middle" font-size="12" font-weight="500">App Services</text>
+  <text x="947.1" y="377" text-anchor="middle" font-size="11" font-style="italic">Order API</text>
+</g>
+
+<g id="res-worker">
+  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="1040.5" y="295" width="48" height="48"/>
+  <text x="1064.875" y="359" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
+  <text x="1064.875" y="377" text-anchor="middle" font-size="11" font-style="italic">Function worker</text>
+</g>
+
+<g id="res-sql_private_endpoint">
+  <image href="catalog-icons/azure/azure-resource-private-endpoints-96de0bb7-ac008ab2.svg" x="944.5" y="463" width="48" height="48"/>
+  <text x="968" y="527" text-anchor="middle" font-size="12" font-weight="500">Private Endpoints</text>
+  <text x="968" y="545" text-anchor="middle" font-size="11" font-style="italic">SQL private endpoint</text>
+</g>
+
+<g id="res-storage_private_endpoint">
+  <image href="catalog-icons/azure/azure-resource-private-endpoints-96de0bb7-ac008ab2.svg" x="1116.5" y="463" width="48" height="48"/>
+  <text x="1140.1" y="527" text-anchor="middle" font-size="12" font-weight="500">Private Endpoints</text>
+  <text x="1140.1" y="545" text-anchor="middle" font-size="11" font-style="italic">Storage private endpoint</text>
+</g>
+
+<g id="res-work_queue">
+  <image href="catalog-icons/azure/azure-resource-azure-service-bus-eaf42cb8-c6271a29.svg" x="1387.5" y="155" width="48" height="48"/>
+  <text x="1411.6" y="219" text-anchor="middle" font-size="12" font-weight="500">Azure Service Bus</text>
+  <text x="1411.6" y="237" text-anchor="middle" font-size="11" font-style="italic">Work queue</text>
+</g>
+
+<g id="res-dead_letter_queue">
+  <image href="catalog-icons/azure/azure-resource-azure-service-bus-eaf42cb8-c6271a29.svg" x="1387.5" y="283" width="48" height="48"/>
+  <text x="1411.6" y="347" text-anchor="middle" font-size="12" font-weight="500">Azure Service Bus</text>
+  <text x="1411.6" y="365" text-anchor="middle" font-size="11" font-style="italic">Dead-letter queue</text>
+</g>
+
+<g id="res-sql_database">
+  <image href="catalog-icons/azure/azure-resource-sql-database-a26124a2-d605a666.svg" x="1395.5" y="475" width="48" height="48"/>
+  <text x="1419.1" y="539" text-anchor="middle" font-size="12" font-weight="500">SQL Database</text>
+  
+</g>
+
+<g id="res-storage_account">
+  <image href="catalog-icons/azure/azure-resource-storage-accounts-7190d3bb-a0819274.svg" x="1392.5" y="579" width="48" height="48"/>
+  <text x="1416.3" y="643" text-anchor="middle" font-size="12" font-weight="500">Storage Accounts</text>
+  <text x="1416.3" y="661" text-anchor="middle" font-size="11" font-style="italic">Storage Account</text>
+</g>
+
+<g id="res-key_vault">
+  <image href="catalog-icons/azure/azure-resource-key-vaults-712b426f-137f972f.svg" x="508.5" y="371" width="48" height="48"/>
+  <text x="532.5" y="435" text-anchor="middle" font-size="12" font-weight="500">Key Vaults</text>
+  <text x="532.5" y="453" text-anchor="middle" font-size="11" font-style="italic">Key Vault</text>
+</g>
+
+<g id="res-monitor">
+  <image href="catalog-icons/azure/azure-resource-monitor-1396f59a-015c1312.svg" x="507.5" y="499" width="48" height="48"/>
+  <text x="531.5" y="563" text-anchor="middle" font-size="12" font-weight="500">Monitor</text>
+  
+</g>
+</svg>

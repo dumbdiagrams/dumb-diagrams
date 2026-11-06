@@ -1,0 +1,25 @@
+dgm 1
+diagram azure-private-application-api {
+  grammar azure
+  flow lr
+  title "Azure Private Application API"
+
+  cloud-agnostic.actor client "Client" {}
+  azure.subscription subscription "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group resource-group "Resource Group" {
+        azure.api-management-services apim "API Management" {}
+        azure.function-apps function "Azure Function" {}
+        azure.vnet app-network "Application Network" {
+          azure.private-endpoints sql-pe "SQL Private Endpoint" {}
+        }
+        azure.sql-database sql "Azure SQL Database" {}
+      }
+    }
+  }
+
+  client -> apim { id client-apim label "request" }
+  apim -> function { id apim-function label "route" }
+  function -> sql-pe { id function-sql-pe label "private SQL access" }
+  sql-pe -> sql { id sql-pe-sql label "private endpoint to database" }
+}

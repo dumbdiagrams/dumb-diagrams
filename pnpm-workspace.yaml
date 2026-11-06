@@ -2,6 +2,7 @@ packages:
   - "packages/*"
 
 nodeLinker: isolated
+enableGlobalVirtualStore: false
 linkWorkspacePackages: true
 preferWorkspacePackages: true
 autoInstallPeers: false
@@ -13,3 +14,9 @@ minimumReleaseAge: 1440
 strictDepBuilds: true
 allowBuilds:
   esbuild: true
+overrides:
+  brace-expansion@5: 5.0.12
+  fast-uri: 3.1.9
+  sharp: ^0.35.5
+  source-map-js: ^1.2.2
+  zod: ^4.6.6

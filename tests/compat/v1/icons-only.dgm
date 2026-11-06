@@ -1,0 +1,14 @@
+dgm 1
+diagram icons-only {
+  grammar cloud-agnostic
+  flow lr
+  title "Icons only"
+  hide-resource-labels
+
+  cloud-agnostic.client user "User"
+  cloud-agnostic.server api "API"
+  cloud-agnostic.database db "Records"
+
+  user -> api { id user_api label "request" step 1 }
+  api -> db { id api_db label "store" step 2 }
+}

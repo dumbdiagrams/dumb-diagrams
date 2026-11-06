@@ -14,27 +14,23 @@ const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 mkdirSync(packagesRoot, { recursive: true });
 execFileSync(pnpm, ["--dir", cliRoot, "pack", "--pack-destination", packagesRoot], {
   cwd: root,
-  stdio: "inherit",
+  // pnpm prints every file in this source-bearing package (thousands of
+  // entries). Sending that through Playwright's web-server capture can fill
+  // its output pipe before the Studio process starts.
+  stdio: ["ignore", "ignore", "inherit"],
 });
-const child = spawn(
-  npx,
-  [
-    "--yes",
-    `--package=${tarball}`,
-    "dumbdiagrams",
-    "studio",
-  ],
-  {
-    cwd: root,
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      DUMBDIAGRAMS_STUDIO_NO_OPEN: "1",
-      DUMBDIAGRAMS_STUDIO_PORT: "5175",
-      npm_config_yes: "true",
-    },
+const child = spawn(npx, ["--yes", `--package=${tarball}`, "dumbdiagrams", "studio"], {
+  cwd: root,
+  stdio: "inherit",
+  env: {
+    ...process.env,
+    DUMBDIAGRAMS_STUDIO_NO_OPEN: "1",
+    DUMBDIAGRAMS_STUDIO_PORT: process.env.PLAYWRIGHT_PACKED_PORT ?? "5175",
+    npm_config_audit: "false",
+    npm_config_fund: "false",
+    npm_config_yes: "true",
   },
-);
+});
 
 const stop = (signal) => {
   if (!child.killed) child.kill(signal);

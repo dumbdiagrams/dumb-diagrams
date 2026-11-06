@@ -18,8 +18,8 @@ const rest = lines.slice(13);
   <div class="terminal-viewport" role="region" tabindex="0" aria-label="Recorded CLI output. Scroll to read the transcript." data-terminal-viewport>
     <div class="terminal-log" aria-hidden="true">
       <div class="terminal-command"><span class="shell-prompt">you@MacBook projects %</span> <code data-terminal-command>{demo.command}</code><b class="terminal-cursor"></b></div>
-      <pre class="terminal-banner" data-terminal-row data-at="1300" set:html={ansiToHtml(banner)} />
-      {rest.map((line, index) => <div class="terminal-row" data-terminal-row data-at={1700 + index * 100} data-terminal-final={index === rest.length - 1 ? 'true' : undefined} set:html={ansiToHtml(line) || '&#8203;'} />)}
+      <pre class="terminal-banner" data-terminal-row data-at="700" set:html={ansiToHtml(banner)} />
+      {rest.map((line, index) => <div class="terminal-row" data-terminal-row data-at={900 + index * 45} data-terminal-final={index === rest.length - 1 ? 'true' : undefined} set:html={ansiToHtml(line) || '&#8203;'} />)}
     </div>
   </div>
   <div class="terminal-caption"><span>CAPTURED FROM THE CLI · EXAMPLE PATH</span></div>

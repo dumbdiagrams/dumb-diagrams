@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-const ROOT = join(import.meta.dirname, "..");
+import { ASYNC_DOCS, ROOT, SIMPLE_SERVERLESS, entityBox } from "./support/helpers";
 
 const PROVIDER_SAMPLES = [
   { provider: "aws", type: "aws.elastic-container-registry", search: "Elastic Container Registry" },
@@ -20,7 +20,7 @@ const PROVIDER_GROUP_SAMPLES = [
 async function openResources(page: Page, parentGroupId?: string) {
   await page.goto("/");
   if (parentGroupId) {
-    await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
+    await page.locator('input[type="file"]').setInputFiles(ASYNC_DOCS);
     const parentGroup = page.locator(
       `[data-entity-kind="group"][data-entity-id="${parentGroupId}"]`,
     );
@@ -260,12 +260,13 @@ test("ungroups a selected group without deleting its contents", async ({ page })
   await expect(menu.getByRole("menuitem", { name: "Delete group and contents", exact: true })).toHaveCount(1);
   await menu.locator('[data-menu-item="ungroup"]').click();
 
-  await expect(parent).toHaveCount(0);
+  await expect(parent).toHaveCount(1);
   await expect(child).toHaveCount(1);
+  await expect(child).toHaveAttribute("aria-selected", "true");
 });
 
 test("ungroups a curated aws cloud example while preserving children, geometry, and selection", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/simple-serverless-web-application/diagram.dgm");
+  const example = SIMPLE_SERVERLESS;
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -328,8 +329,131 @@ test("ungroups a curated aws cloud example while preserving children, geometry, 
   await expect(frontend).toHaveAttribute("aria-selected", "true");
 });
 
+test("moving a detached aws cloud after ungroup does not move promoted children", async ({ page }) => {
+  const example = SIMPLE_SERVERLESS;
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
+  await expect(cloud).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+  await expect(cloud).toHaveCount(1);
+
+  const frontendBefore = await entityBox(page, "group", "frontend");
+  const cloudBefore = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBefore.x + 12, cloudBefore.y + 12);
+  await page.mouse.move(cloudBefore.x + 12, cloudBefore.y + 12);
+  await page.mouse.down();
+  await page.mouse.move(cloudBefore.x + 120, cloudBefore.y + 80);
+  await page.mouse.up();
+
+  const frontendAfter = await entityBox(page, "group", "frontend");
+  expect(Math.abs(frontendAfter.x - frontendBefore.x)).toBeLessThan(8);
+  expect(Math.abs(frontendAfter.y - frontendBefore.y)).toBeLessThan(8);
+});
+
+test("delete removes an empty detached aws cloud after ungroup", async ({ page }) => {
+  const example = SIMPLE_SERVERLESS;
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  const frontend = page.locator('[data-entity-kind="group"][data-entity-id="frontend"]');
+  await expect(cloud).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+  await expect(frontend).toHaveAttribute("aria-selected", "true");
+
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press("Delete");
+
+  await expect(cloud).toHaveCount(0);
+  await expect(frontend).toHaveCount(1);
+});
+
+test("auto-fix leaves an already clean diagram unchanged", async ({ page }) => {
+  const example = SIMPLE_SERVERLESS;
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const frontendBefore = await entityBox(page, "group", "frontend");
+  await page.getByRole("button", { name: "Auto-fix" }).click();
+  await expect(page.getByText("Diagram already passes Auto-fix checks")).toBeVisible();
+
+  const frontendAfter = await entityBox(page, "group", "frontend");
+  expect(Math.abs(frontendAfter.x - frontendBefore.x)).toBeLessThan(8);
+  expect(Math.abs(frontendAfter.y - frontendBefore.y)).toBeLessThan(8);
+});
+
+test("auto-fix after grouping mixed roots preserves left-to-right architecture flow", async ({ page }) => {
+  const example = SIMPLE_SERVERLESS;
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloud = page.locator('[data-entity-kind="group"][data-entity-id="aws_cloud"]');
+  await expect(cloud).toHaveCount(1);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+
+  const clientBox = await entityBox(page, "resource", "web_client");
+  await page.mouse.click(clientBox.x + 12, clientBox.y + 12);
+  for (const target of [
+    ["group", "frontend"],
+    ["resource", "gateway"],
+  ] as const) {
+    const box = await entityBox(page, target[0], target[1]);
+    await page.keyboard.down("Shift");
+    await page.mouse.click(box.x + 12, box.y + 12);
+    await page.keyboard.up("Shift");
+  }
+
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+G" : "Control+G");
+  await page.getByRole("button", { name: "Auto-fix" }).click();
+  await expect(page.getByRole("button", { name: "Auto-fix" })).toHaveAttribute("aria-busy", "false");
+
+  const ordered = [
+    await entityBox(page, "resource", "web_client"),
+    await entityBox(page, "resource", "gateway"),
+    await entityBox(page, "resource", "handler"),
+    await entityBox(page, "resource", "app_data"),
+  ];
+  for (let index = 1; index < ordered.length; index++) {
+    expect(ordered[index - 1]!.x).toBeLessThan(ordered[index]!.x);
+  }
+});
+
+test("auto-fix after ungroup keeps the detached aws cloud fixed and preserves architecture order", async ({ page }) => {
+  const example = SIMPLE_SERVERLESS;
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(example);
+
+  const cloudBox = await entityBox(page, "group", "aws_cloud");
+  await page.mouse.click(cloudBox.x + 12, cloudBox.y + 12);
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+G" : "Control+Shift+G");
+
+  const cloudAfterUngroup = await entityBox(page, "group", "aws_cloud");
+  const clientBefore = await entityBox(page, "resource", "web_client");
+  const gatewayBefore = await entityBox(page, "resource", "gateway");
+
+  await page.getByRole("button", { name: "Auto-fix" }).click();
+  await expect(page.getByRole("button", { name: "Auto-fix" })).toHaveAttribute("aria-busy", "false");
+
+  const cloudAfterAutoFix = await entityBox(page, "group", "aws_cloud");
+  expect(Math.abs(cloudAfterAutoFix.x - cloudAfterUngroup.x)).toBeLessThan(12);
+  expect(Math.abs(cloudAfterAutoFix.y - cloudAfterUngroup.y)).toBeLessThan(12);
+  expect(clientBefore.x).toBeLessThan(gatewayBefore.x);
+});
+
 test("ungroups image thumbnail pipeline aws cloud while preserving nested content", async ({ page }) => {
-  const example = join(ROOT, "examples/curated/image-thumbnail-pipeline/diagram.dgm");
+  const example = join(ROOT, "tests/fixtures/engine/image-thumbnail-pipeline.dgm");
   await page.goto("/");
   await page.locator('input[type="file"]').setInputFiles(example);
 
@@ -358,18 +482,6 @@ test("ungroups image thumbnail pipeline aws cloud while preserving nested conten
   await expect(page.locator('[data-entity-kind="group"][data-entity-id="processing"]')).toHaveAttribute("aria-selected", "true");
   await expect(page.locator('[data-entity-kind="group"][data-entity-id="processed_assets"]')).toHaveAttribute("aria-selected", "true");
 });
-
-async function entityBox(
-  page: Page,
-  kind: "resource" | "group",
-  id: string,
-) {
-  const entity = page.locator(`[data-entity-kind="${kind}"][data-entity-id="${id}"]`).first();
-  await expect(entity).toHaveCount(1);
-  const box = await entity.boundingBox();
-  expect(box, `${kind}:${id} should have a rendered box`).not.toBeNull();
-  return box!;
-}
 
 test("Delete group and contents explicitly removes the complete subtree", async ({ page }) => {
   await page.goto("/");
@@ -435,7 +547,7 @@ test("creates and customizes an iconless boundary and hides icons on semantic bo
   const boundaryInspector = page.getByRole("dialog", { name: "Boundary", exact: true });
   await boundaryInspector.locator(".boundary-color-options").getByRole("radio", { name: "Purple" }).click();
   await boundaryInspector.getByRole("radio", { name: "None" }).click();
-  const renderedBoundary = page.locator(`#group-${boundaryId} rect`).first();
+  const renderedBoundary = page.locator(`#group-${boundaryId} rect.group-border`);
   await expect(renderedBoundary).toHaveAttribute("stroke", "#7C3AED");
   await expect(renderedBoundary).toHaveAttribute("fill", "transparent");
 
@@ -471,7 +583,7 @@ test("changes and restores authored colors for every provider group", async ({ p
     const purple = inspector.locator(".boundary-color-options").getByRole("radio", { name: "Purple" });
     await purple.click();
     await expect(purple).toHaveAttribute("aria-checked", "true");
-    const renderedBoundary = page.locator(`#group-${sample.id} rect`).first();
+    const renderedBoundary = page.locator(`#group-${sample.id} rect.group-border`);
     await expect(renderedBoundary).toHaveAttribute("stroke", "#7C3AED");
     const selectionOutline = page.locator(
       `[data-drag-overlay-kind="group"][data-drag-overlay-id="${sample.id}"] .selection-group`,
@@ -481,9 +593,9 @@ test("changes and restores authored colors for every provider group", async ({ p
       Number(await renderedBoundary.getAttribute("x")),
     );
 
-    await inspector.locator(".boundary-color-options").getByRole("radio", { name: "Auto" }).click();
+    await inspector.locator(".boundary-color-options").getByRole("radio", { name: "Default" }).click();
     await expect(purple).toHaveAttribute("aria-checked", "false");
-    await expect(page.locator(`#group-${sample.id} rect`).first()).not.toHaveAttribute("stroke", "#7C3AED");
+    await expect(page.locator(`#group-${sample.id} rect.group-border`)).not.toHaveAttribute("stroke", "#7C3AED");
   }
 });
 
@@ -566,6 +678,36 @@ test("places a new root group outside the tiled canvas with resize controls", as
   await expect.poll(async () => Number(await newGroup.getAttribute("width"))).toBeGreaterThan(beforeWidth);
 });
 
+test("aligns left drawers with the tool rail and animates closed", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Resources", exact: true });
+  const toolDock = page.locator(".tool-dock");
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toHaveCSS("transform", "none");
+
+  const toolBox = await toolDock.boundingBox();
+  const drawerBox = await drawer.boundingBox();
+  expect(toolBox).not.toBeNull();
+  expect(drawerBox).not.toBeNull();
+  expect(drawerBox!.y).toBe(toolBox!.y);
+  expect(drawerBox!.x).toBe(toolBox!.x + toolBox!.width);
+
+  await drawer.evaluate((element) => {
+    const observer = new MutationObserver(() => {
+      if (element.classList.contains("is-closing")) {
+        document.documentElement.dataset.drawerClosingObserved = "true";
+        observer.disconnect();
+      }
+    });
+    observer.observe(element, { attributes: true, attributeFilter: ["class"] });
+  });
+  await drawer.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-drawer-closing-observed", "true");
+  await expect(drawer).toHaveCount(0);
+});
+
 test("supports paper, code, callout, and checklist note styles", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Add note", exact: true }).click();
@@ -575,8 +717,18 @@ test("supports paper, code, callout, and checklist note styles", async ({ page }
   expect(stageBox).not.toBeNull();
   const composer = page.getByRole("dialog", { name: "Choose note style", exact: true });
   await expect(composer).toHaveCount(1);
+  await expect(composer).toHaveClass(/drawer-sheet/);
+  await expect(composer).toHaveCSS("transform", "none");
+  const drawerLayer = await composer.evaluate((element) => Number(getComputedStyle(element).zIndex));
+  const toolDockLayer = await page
+    .locator(".tool-dock")
+    .evaluate((element) => Number(getComputedStyle(element).zIndex));
+  expect(drawerLayer).toBeLessThan(toolDockLayer);
   const composerBox = await composer.boundingBox();
   expect(composerBox).not.toBeNull();
+  expect(composerBox!.x).toBe(48);
+  expect(composerBox!.y).toBe(96);
+  expect(composerBox!.width).toBe(420);
   expect(composerBox!.x).toBeLessThan(stageBox!.x + stageBox!.width / 2);
   await expect(composer.locator(".note-style-grid-with-previews [data-note-style-preview]")).toHaveCount(4);
   const selectedNote = page.locator('[data-entity-kind="annotation"][aria-selected="true"]');

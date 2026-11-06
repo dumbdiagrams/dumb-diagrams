@@ -1,0 +1,21 @@
+dgm 1
+diagram aws-medium-factory-iot-telemetry {
+  grammar aws
+  flow lr
+  title "Factory IoT telemetry"
+  cloud-agnostic.actor sensors "Factory sensor fleet"
+  cloud-agnostic.actor dashboard "Operations dashboard"
+  aws.cloud cloud "AWS Cloud" {
+    aws.aws-iot-core iot "AWS IoT Core"
+    aws.kinesis-data-streams stream "Kinesis Data Streams"
+    aws.aws-lambda lambda "Lambda consumer"
+    aws.timestream ts "Amazon Timestream"
+    aws.simple-notification-service sns "Amazon SNS"
+  }
+  sensors -> iot { id sensor_iot label "readings" kind flow step 1 }
+  iot -> stream { id iot_stream label "telemetry" kind flow step 2 }
+  stream -> lambda { id stream_lambda label "consume readings" kind flow step 3 }
+  lambda -> ts { id lambda_ts label "normalized time-series data" kind flow step 4 }
+  lambda -> sns { id lambda_sns label "threshold alerts" kind flow step 5 }
+  ts -> dashboard { id ts_dashboard label "telemetry response" kind flow step 6 }
+}

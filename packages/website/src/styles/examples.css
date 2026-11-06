@@ -14,14 +14,14 @@
      reserves the same space before a tab is selected. Inactive panels remain
      invisible and inert, but still contribute their natural size to the grid. */
   .example-panels { display: grid; grid-template-rows: auto auto; }
-  .example-panel { grid-area: 1 / 1 / span 2 / 2; display: grid; grid-template-rows: subgrid; min-width: 0; }
+  .example-panel { --diagram-viewport-height: 455px; grid-area: 1 / 1 / span 2 / 2; display: grid; grid-template-rows: subgrid; min-width: 0; }
   .example-panel[hidden] { visibility: hidden; pointer-events: none; }
   .example-description { display: flex; justify-content: space-between; align-items: center; gap: 28px; padding: 22px 0; }
   .example-description p { max-width: 660px; font-size: 12px; color: var(--muted); }
   .example-description > .mono { flex-shrink: 0; font-size: 8px; letter-spacing: .04em; }
   .example-description > .mono > span { padding: 0 12px; color: var(--orange); }
   .example-workspace { display: grid; grid-template-columns: minmax(0, .72fr) minmax(0, 2.15fr); gap: 18px; }
-  .example-input { min-width: 0; border: 1px solid var(--brand-navy); border-radius: 10px; overflow: hidden; background: var(--brand-navy-deep); color: #eff3fa; display: flex; flex-direction: column; transition: background-color 200ms ease, border-color 200ms ease; }
+  .example-input { height: calc(var(--diagram-viewport-height) + 91px); min-width: 0; border: 1px solid var(--brand-navy); border-radius: 10px; overflow: hidden; background: var(--brand-navy-deep); color: #eff3fa; display: flex; flex-direction: column; transition: background-color 200ms ease, border-color 200ms ease; }
   .example-input:has([data-mode='source'][aria-selected='true']) { background: #0c0c0c; border-color: #373739; }
   .input-tabs { display: flex; gap: 16px; align-items: stretch; height: 45px; padding: 0 18px; border-bottom: 1px solid #ffffff20; flex-shrink: 0; }
   .input-tabs button { background: transparent; color: #bccbe0; border: 0; border-bottom: 2px solid transparent; padding: 0; font-size: 11px; }
@@ -31,17 +31,13 @@
   .input-caption { padding: 0 18px; height: 43px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font: 7px var(--mono); color: #b9cbe3; }
   .input-caption button, .source-copy { border: 0; padding: 8px 0; background: transparent; color: inherit; font: 9px var(--mono); }
   .input-caption button, .source-copy { min-width: 11ch; text-align: right; flex-shrink: 0; }
-  .prompt-text { white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; flex: 1; height: 412px; max-height: 412px; margin: 0; padding: 5px 18px 22px; font: 12px/1.85 var(--sans); scrollbar-color: #5c7391 transparent; }
-  .input-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 44px; padding: 12px 18px; font: 7px var(--mono); color: #a9bdd8; border-top: 1px solid #ffffff18; }
+  .prompt-text { min-height: 0; white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; flex: 1; height: 412px; max-height: 412px; margin: 0; padding: 5px 18px 22px; font: 12px/1.85 var(--sans); scrollbar-color: #5c7391 transparent; }
+  .input-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 44px; margin-top: auto; padding: 12px 18px; font: 7px var(--mono); color: #a9bdd8; border-top: 1px solid #ffffff18; }
   .input-footer a:hover { color: white; }
-  .reference-spec { margin-top: auto; border-top: 1px solid #ffffff18; color: #b9cbe3; font-size: 10px; }
-  .reference-spec summary { cursor: pointer; padding: 13px 18px; color: #d5e0ee; font: 8px var(--mono); letter-spacing: .03em; }
-  .reference-spec p { margin: 0; padding: 0 18px 10px; color: #9db0c7; font-size: 10px; line-height: 1.5; }
-  .reference-spec a { display: block; padding: 0 18px 14px; color: #fff; font: 9px var(--mono); }
   .source-pane .mac-titlebar { height: 43px; flex-shrink: 0; padding: 0 13px; }
   .source-pane .mac-window-title { font-size: 8px; max-width: calc(100% - 180px); }
   .source-copy { margin-left: auto; color: #c7c7cd; z-index: 1; }
-  .source-code { overflow: auto; height: 412px; max-height: 412px; flex: 1; scrollbar-color: #56565a transparent; }
+  .source-code { min-height: 0; overflow: auto; height: 412px; max-height: 412px; flex: 1; scrollbar-color: #56565a transparent; }
   .source-code pre { margin: 0; padding: 16px; background: transparent !important; font: 10px/1.8 var(--mono); width: max-content; min-width: 100%; }
   .example-output { min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fffefa; }
   .output-bar { height: 45px; display: flex; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line); }
@@ -51,7 +47,7 @@
   .preview-controls button { background: transparent; border: 1px solid var(--line); color: var(--ink); min-width: 27px; height: 25px; padding: 0 7px; font: 10px var(--mono); border-radius: 3px; }
   .preview-controls [data-zoom='fit'] { min-width: 5.5ch; }
   .preview-controls button:disabled { opacity: .4; cursor: default; }
-  .diagram-viewport { height: 455px; padding: 10px; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; background: radial-gradient(#becbd8 .6px,transparent .6px) 0 0 / 16px 16px, #fffefa; }
+  .diagram-viewport { height: var(--diagram-viewport-height); padding: 10px; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; background: radial-gradient(#becbd8 .6px,transparent .6px) 0 0 / 16px 16px, #fffefa; }
   .diagram-viewport img { width: calc(100% * var(--diagram-zoom, 1)); max-width: none; height: auto; flex-shrink: 0; margin: auto 0; mix-blend-mode: multiply; }
   .output-footer { min-height: 44px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); font-size: 9px; color: var(--muted); }
   .output-footer a { color: var(--ink); }
@@ -61,6 +57,6 @@
 }
 @layer responsive {
   @media (max-width: 1100px) { .example-workspace { grid-template-columns: minmax(0,1fr) minmax(0,1.8fr); gap: 12px; } .example-tabs button { padding: 16px 12px; gap: 10px; font-size: 11px; } .example-description > .mono { display: none; } }
-  @media (max-width: 800px) { .examples-heading { display: block; } .examples-heading > p { margin-top: 22px; max-width: 460px; } .example-workspace { grid-template-columns: 1fr; gap: 16px; } .prompt-text, .source-code { height: 240px; max-height: 240px; } .diagram-viewport { height: 400px; } .examples-footnote { flex-direction: column; gap: 12px; } }
-  @media (max-width: 540px) { .example-tabs { display: flex; overflow-x: auto; } .example-tabs button { min-width: 185px; flex: 1 0 185px; } .example-description { padding: 18px 0; } .example-description p { font-size: 11px; } .prompt-text { font-size: 12px; } .diagram-viewport { height: 320px; padding: 6px; } .output-bar { padding: 0 12px; gap: 8px; } .output-footer { padding: 12px; font-size: 8px; } .output-footer > span { max-width: 55%; } }
+  @media (max-width: 800px) { .example-panel { --diagram-viewport-height: 400px; } .examples-heading { display: block; } .examples-heading > p { margin-top: 22px; max-width: 460px; } .example-workspace { grid-template-columns: 1fr; gap: 16px; } .prompt-text, .source-code { height: 240px; max-height: 240px; } .examples-footnote { flex-direction: column; gap: 12px; } }
+  @media (max-width: 540px) { .example-panel { --diagram-viewport-height: 320px; } .example-tabs { display: flex; overflow-x: auto; } .example-tabs button { min-width: 185px; flex: 1 0 185px; } .example-description { padding: 18px 0; } .example-description p { font-size: 11px; } .prompt-text { font-size: 12px; } .diagram-viewport { padding: 6px; } .output-bar { padding: 0 12px; gap: 8px; } .output-footer { padding: 12px; font-size: 8px; } .output-footer > span { max-width: 55%; } }
 }

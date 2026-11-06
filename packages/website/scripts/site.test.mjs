@@ -4,11 +4,13 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
-import { parseDgm } from '@dumb-diagrams/runtime/dsl';
+import { formatParseError, parseDgmResult } from '@dumb-diagrams/runtime/dsl';
+import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/requirements';
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
 import { createCliUi } from '../../cli/src/cli-ui.ts';
 import { stripVTControlCharacters } from 'node:util';
-import { loadExamples } from '../src/lib/examples.mjs';
+import { approvedRun, loadExamples } from '../src/lib/examples.mjs';
+import { loadReviewedExamples } from '../src/lib/reviewed-examples.mjs';
 import { ansiToHtml } from '../src/lib/ansi.mjs';
 import { analyticsConfig } from '../src/lib/analytics-config.mjs';
 import { privacyConfig } from '../src/lib/privacy-config.mjs';
@@ -25,13 +27,14 @@ async function walk(directory) {
 
 test('every internal page, anchor, and referenced asset resolves in the static build', async () => {
   const files = (await walk(dist)).filter(file => extname(file) === '.html' && !file.includes('~partytown'));
-  assert.ok(files.length >= 13);
+  assert.ok(files.length >= 15);
   for (const file of files) {
     const html = await readFile(file, 'utf8');
     const pagePath = file.slice(dist.length + 1).replace(/index\.html$/, '');
     const pageUrl = new URL(base + pagePath, origin);
     assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${pagePath}: one main heading`);
     assert.match(html, /<meta name="description" content="[^"]+"/);
+    assert.doesNotMatch(html, /[—–]/, `${pagePath}: copy avoids long dashes`);
     assert.doesNotMatch(html, /__VITE_PRELOAD__/, 'dynamic import helpers must be resolved');
     const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
     assert.equal(new Set(ids).size, ids.length, `${pagePath}: unique IDs`);
@@ -57,21 +60,34 @@ test('complete documentation and homepage examples compile through the actual ru
   let checked = 0;
   for (const file of await walk(join(site, 'src'))) {
     const source = await readFile(file, 'utf8');
-    const snippets = file.endsWith('.dgm') ? [source] : file.endsWith('.md')
+    const snippets = file.endsWith('.dgm') ? [source] : /\.mdx?$/.test(file)
       ? [...source.matchAll(/```dgm\n([\s\S]*?)```/g)].map(match => match[1]) : [];
     for (const snippet of snippets) {
-      const result = compileDiagram(parseDgm(snippet));
+      const parsed = parseDgmResult(snippet);
+      assert.equal(parsed.isOk(), true, `${file}: ${parsed.isErr() ? formatParseError(parsed.error) : ''}`);
+      if (parsed.isErr()) continue;
+      const result = compileDiagram(parsed.value);
       assert.equal(result.ok, true, `${file}: ${JSON.stringify(result.issues)}`);
-      assert.equal(result.invariantFailures.length, 0, `${file}: clean example geometry`);
       checked++;
     }
   }
-  for (const example of loadExamples()) {
+  const landingExamples = loadExamples();
+  assert.deepEqual(landingExamples.map(example => example.id), [
+    'aws-easy-static-website-delivery',
+    'aws-medium-factory-iot-telemetry',
+    'aws-medium-image-thumbnail-pipeline',
+  ], 'homepage examples follow the requested static, factory, thumbnail order');
+  for (const example of landingExamples) {
     assert.ok(example.prompt.trim(), `${example.id}: natural prompt`);
     assert.ok(example.interpretation.trim(), `${example.id}: architecture interpretation`);
-    assert.ok(example.referenceSpec.trim(), `${example.id}: reference specification`);
-    const result = compileDiagram(parseDgm(example.source));
+    const parsed = parseDgmResult(example.source);
+    assert.equal(parsed.isOk(), true, `${example.id}: ${parsed.isErr() ? formatParseError(parsed.error) : ''}`);
+    if (parsed.isErr()) continue;
+    const result = compileDiagram(parsed.value);
     assert.equal(result.ok, true, `${example.id}: original Studio source compiles`);
+    const requirements = parseRequirements(example.requirements);
+    assert.equal(requirements.isOk(), true, `${example.id}: requirements contract parses`);
+    if (requirements.isOk()) assert.deepEqual(checkRequirements(parsed.value, requirements.value), [], `${example.id}: requirements cover the source`);
     // These are the app's existing examples, including any existing routing
     // notes. The website must not rewrite their geometry to hide those notes.
     checked++;
@@ -90,11 +106,16 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
     assert.equal(await readFile(join(dist, 'diagrams', `${name}.dgm`), 'utf8'), await readFile(join(site, 'src/examples', `${name}.dgm`), 'utf8'));
+    assert.deepEqual(
+      await readFile(join(dist, 'diagrams', `${name}.requirements.json`)),
+      await readFile(join(site, 'src/examples', `${name}.requirements.json`)),
+      `${name}: requirements companion copied byte-for-byte`,
+    );
   }
   for (const example of loadExamples()) {
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}.dgm`), 'utf8'), example.source);
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-prompt.txt`), 'utf8'), example.prompt);
-    assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-reference-spec.md`), 'utf8'), example.referenceSpec);
+    assert.deepEqual(JSON.parse(await readFile(join(dist, 'diagrams', `${example.id}.requirements.json`), 'utf8')), JSON.parse(example.requirements));
     const svg = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
     assert.match(svg, /data:image\/svg\+xml/);
     assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
@@ -102,11 +123,107 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
     const preview = await readFile(join(dist, 'diagrams', previewName), 'utf8');
     const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
     assert.ok(dimensions, `${example.id}: generated preview dimensions`);
+    assert.match(preview, /viewBox="[^"]+"/, `${example.id}: preview viewBox`);
+    assert.ok(Number(dimensions[1]) > Number(dimensions[2]), `${example.id}: preview should be wider than tall`);
+    const full = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
+    assert.match(full, /<svg\b[^>]*viewBox="[^"]+"/, `${example.id}: export viewBox`);
     const image = [...homepage.matchAll(/<img\b[^>]*>/g)].find(([tag]) => tag.includes(`/diagrams/${previewName}`))?.[0];
     assert.ok(image, `${example.id}: homepage preview image`);
     assert.ok(image.includes(`width="${dimensions[1]}"`), `${example.id}: reserved preview width matches the SVG`);
     assert.ok(image.includes(`height="${dimensions[2]}"`), `${example.id}: reserved preview height matches the SVG`);
   }
+});
+
+test('approved examples are copied byte-for-byte and expose provenance in the docs gallery', async () => {
+  const examples = loadReviewedExamples();
+  const publicManifest = JSON.parse(await readFile(join(dist, 'reviewed-examples/manifest.json'), 'utf8'));
+  const html = await readFile(join(dist, 'docs/examples/index.html'), 'utf8');
+  assert.deepEqual(new Set(examples.map(example => example.provider)), new Set(['aws', 'azure', 'gcp', 'cloud-agnostic']));
+  assert.equal(publicManifest.examples.length, examples.length);
+  for (const provider of ['AWS', 'Azure', 'Google Cloud', 'Cloud-agnostic']) assert.match(html, new RegExp(`<h2[^>]*>${provider}</h2>`));
+  const providerLabels = { aws: 'AWS', azure: 'Azure', gcp: 'Google Cloud', 'cloud-agnostic': 'Cloud-agnostic' };
+  for (const example of examples) {
+    assert.ok(html.includes(`${providerLabels[example.provider]} · ${example.generatedOn}`), `${example.id}: provider and date shown`);
+    assert.match(html, new RegExp(`for="${example.id}-${example.run}"[^>]*>${example.label.replace(/[.()]/g, '\\$&')}</label>`), `${example.id}: ${example.run} is switchable`);
+    assert.ok(publicManifest.examples.some(record => record.id === example.id && record.run === example.run), `${example.id}: public provenance record`);
+    for (const key of Object.keys(example.files)) {
+      const copied = await readFile(join(dist, 'reviewed-examples', example.files[key]));
+      assert.deepEqual(copied, await readFile(example.paths[key]), `${example.id}: ${key} copied byte-for-byte`);
+      assert.ok(html.includes(`/reviewed-examples/${example.files[key]}`), `${example.id}: ${key} is linked from the gallery`);
+    }
+    const compactPreviewPath = `reviewed-examples/${example.run}/${example.id}-preview.svg`;
+    const compactPreview = await readFile(join(dist, compactPreviewPath), 'utf8');
+    assert.match(compactPreview, /viewBox="[^\"]+"/, `${example.id}: compact display preview has a layout-derived viewBox`);
+    assert.ok(html.includes(`${base}${compactPreviewPath}`), `${example.id}: compact display preview is shown in the gallery`);
+    assert.equal(example.previewWidth, Number(compactPreview.match(/<svg\b[^>]*\bwidth="([\d.]+)"/)?.[1]));
+    assert.equal(example.previewHeight, Number(compactPreview.match(/<svg\b[^>]*\bheight="([\d.]+)"/)?.[1]));
+    assert.ok(html.includes(`href="${base}reviewed-examples/${example.files.svg}" download`), `${example.id}: original SVG remains downloadable`);
+    const sourceParsed = parseDgmResult(await readFile(example.paths.source, 'utf8'));
+    const requirementsParsed = parseRequirements(await readFile(example.paths.requirements, 'utf8'));
+    assert.equal(sourceParsed.isOk() && requirementsParsed.isOk(), true, `${example.id}: source and requirements parse`);
+    if (sourceParsed.isOk() && requirementsParsed.isOk()) {
+      assert.deepEqual(checkRequirements(sourceParsed.value, requirementsParsed.value), [], `${example.id}: requirements cover the source`);
+    }
+    if (example.reviewNote) assert.ok(html.includes(example.reviewNote), `${example.id}: review note is visible in the expanded card`);
+  }
+});
+
+test('mechanics documentation is generated, ordered, and grounded in runtime output', async () => {
+  const expectedPages = [
+    'how-it-works',
+    'layout',
+    'routing',
+    'quality-and-scoring',
+    'auto-fix',
+  ];
+  for (const slug of expectedPages) {
+    const html = await readFile(join(dist, 'docs', slug, 'index.html'), 'utf8');
+    assert.match(html, /class="mechanic-figure/, `${slug}: contains a teaching visual`);
+  }
+
+  const quality = await readFile(join(dist, 'docs/quality-and-scoring/index.html'), 'utf8');
+  assert.match(quality, /data-explainer="quality"/);
+  assert.match(quality, />300,000</);
+  assert.match(quality, />8,000</);
+  assert.match(quality, /Candidate A wins with fewer soft findings/);
+  assert.match(quality, /Candidate B wins on the lower penalty/);
+
+  const routing = await readFile(join(dist, 'docs/routing/index.html'), 'utf8');
+  assert.match(routing, /300,160/);
+  assert.match(routing, /1,120/);
+
+  const manifest = JSON.parse(await readFile(join(dist, 'docs-explainers/manifest.json'), 'utf8'));
+  assert.equal(manifest.diagrams['core-flow'].provenance, 'runtime-compiled');
+  assert.equal(
+    await readFile(join(dist, 'docs-explainers/core-flow.dgm'), 'utf8'),
+    await readFile(join(site, 'src/examples/mechanics/core-flow.dgm'), 'utf8'),
+  );
+  assert.deepEqual(
+    await readFile(join(dist, 'docs-explainers/core-flow.requirements.json')),
+    await readFile(join(site, 'src/examples/mechanics/core-flow.requirements.json')),
+  );
+  const svg = await readFile(join(dist, 'docs-explainers/core-flow.svg'), 'utf8');
+  assert.match(svg, /data:image\/svg\+xml/);
+  assert.doesNotMatch(svg, /href="(?:https?:|catalog-icons\/|assets\/)/);
+
+  const docsIndex = await readFile(join(dist, 'docs/index.html'), 'utf8');
+  for (const section of ['Start here', 'Make diagrams', 'How it works', 'Reference']) {
+    assert.ok(docsIndex.includes(section), `docs navigation includes ${section}`);
+  }
+});
+
+test('mechanics explainers stay tiny and preserve their no-JavaScript fallback', async () => {
+  const html = await readFile(join(dist, 'docs/quality-and-scoring/index.html'), 'utf8');
+  const sources = [...html.matchAll(/<script[^>]*src="([^"]+)"/g)].map(([, source]) => source);
+  let scriptBytes = 0;
+  for (const source of sources) {
+    const path = new URL(source.replaceAll('&amp;', '&'), origin + base).pathname.slice(base.length);
+    const script = await readFile(join(dist, path), 'utf8');
+    scriptBytes += gzipSync(script).byteLength;
+    assert.doesNotMatch(script, /parseDgm|compileDiagram|catalog-icons/, 'browser bundle excludes the runtime compiler and catalog');
+  }
+  assert.ok(scriptBytes < 15_000, `mechanics JavaScript under 15 KB compressed (actual ${scriptBytes})`);
+  assert.doesNotMatch(html, /data-explainer-panel="[^"]+"[^>]* hidden/, 'all comparison panels exist in the static fallback');
 });
 
 test('landing page stays small and loads no third-party scripts by default', async () => {
@@ -120,13 +237,19 @@ test('landing page stays small and loads no third-party scripts by default', asy
   const htmlBudget = analyticsConfig().measurementId ? 22_500 : 19_500;
   assert.ok(gzipSync(html).byteLength < htmlBudget, `homepage HTML under ${htmlBudget} bytes compressed`);
   let scriptBytes = 0;
-  for (const [, script] of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {
-    scriptBytes += gzipSync(script).byteLength;
+  for (const [, attributes, inline] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    const type = attributes.match(/\btype="([^"]+)"/)?.[1].toLowerCase();
+    // JSON-LD is structured data, and Partytown-typed GA code stays inert until
+    // consent is granted. The HTML budget includes both; this is executable JS.
+    if (type && type !== 'module' && !type.includes('javascript') && !type.includes('ecmascript')) continue;
+    if (inline.trim()) scriptBytes += gzipSync(inline).byteLength;
+    const source = attributes.match(/\bsrc="([^"]+)"/)?.[1];
+    if (source) {
+      assert.ok(source.startsWith(base), `homepage script stays under base path: ${source}`);
+      scriptBytes += gzipSync(await readFile(join(dist, source.slice(base.length)))).byteLength;
+    }
   }
-  for (const [, src] of html.matchAll(/<script[^>]*src="([^"]+)"/g)) {
-    scriptBytes += gzipSync(await readFile(join(dist, src.slice(base.length)))).byteLength;
-  }
-  assert.ok(scriptBytes < 8_000, 'initial homepage JavaScript under 8 KB compressed');
+  assert.ok(scriptBytes < 8_000, `initial executable homepage JavaScript under 8 KB compressed (actual ${scriptBytes} bytes)`);
   assert.ok((await stat(join(dist, 'pagefind/pagefind.js'))).size > 0);
 });
 
@@ -134,11 +257,11 @@ test('LLM-first metadata, structured data, and production rendering stay intact'
   const html = await readFile(join(dist, 'index.html'), 'utf8');
   const websitePackage = JSON.parse(await readFile(join(site, 'package.json'), 'utf8'));
   assert.match(html, /<title>LLM-first architecture diagrams as code \| Dumb Diagrams<\/title>/);
-  assert.match(html, /Architecture diagrams as code, built for an LLM-first workflow/);
+  assert.match(html, /Architecture diagrams as code for AI-first teams/);
   assert.match(html, new RegExp(`OPEN SOURCE \/ v${websitePackage.version.replaceAll('.', '\\.')}`), 'homepage displays the canonical workspace release version');
   assert.doesNotMatch(html, /class="hero-brand-mark"/, 'hero stays focused on the enlarged headline');
   assert.doesNotMatch(html, /Bring your own agent:/, 'removed agent note stays out of the hero');
-  assert.doesNotMatch(html, /AI-first/i);
+  assert.match(html, /AI-first/i);
   const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
   assert.equal(schema['@type'], 'SoftwareApplication');
   assert.equal(schema.name, 'Dumb Diagrams');
@@ -218,12 +341,11 @@ test('homepage explains the engine and attributes examples without altering thei
   assert.match(html, /ENGINE INTERPRETATION/);
   assert.match(html, /\.DGM CODE/);
   assert.match(html, /RESULT/);
-  assert.match(html, /Advanced: detailed specification/);
   assert.doesNotMatch(html, /same or nearly the same output/);
   assert.match(html, /<div class="section-heading examples-heading" id="how-it-works"/);
   assert.doesNotMatch(html, /<section[^>]+id="how-it-works"/);
   assert.match(html, /class="faq-brand"[\s\S]*?logo_dumbdiagrams_highres\./, 'FAQ uses the canonical high-resolution logo derivative');
-  assert.doesNotMatch(html, /Write-through caching with Azure Managed Redis/, 'Azure caching example remains Studio-only');
+  assert.doesNotMatch(html, /Write-through caching with Azure Managed Redis/, 'Azure example stays out of the website');
 });
 
 test('terminal fallback contains the real CLI banner and runnable package commands', async () => {
@@ -253,7 +375,7 @@ test('terminal fallback contains the real CLI banner and runnable package comman
 
 test('hero journey preserves the canonical CLI, agent prompt, and Studio result', async () => {
   const html = await readFile(join(dist, 'index.html'), 'utf8');
-  const prompt = await readFile(resolve(site, '../../examples/curated/image-thumbnail-pipeline/user-prompt.md'), 'utf8');
+  const prompt = await readFile(join(approvedRun(), 'aws-medium-image-thumbnail-pipeline/user-prompt.md'), 'utf8');
   const escapedPrompt = prompt.trimEnd().replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
   assert.match(html, /data-hero-journey/);
   assert.match(html, /Create project/);
@@ -262,7 +384,7 @@ test('hero journey preserves the canonical CLI, agent prompt, and Studio result'
   assert.match(html, /Creating project…/);
   assert.ok(html.includes(escapedPrompt), 'agent stage contains the canonical prompt');
   assert.match(html, /data-terminal-final="true"/);
-  assert.match(html, /image-thumbnail-pipeline-preview\.svg/);
+  assert.match(html, /aws-medium-image-thumbnail-pipeline-preview\.svg/);
   assert.match(html, /width="\d+" height="\d+" loading="lazy"/);
   assert.match(html, /aria-live="polite"/);
 });

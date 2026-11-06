@@ -42,7 +42,6 @@ describe("document validation modes", () => {
       {
         type: "example.service",
         allowedParents: ["vpc"],
-        scope: "any",
         allowRoot: false,
       },
     ],
@@ -80,6 +79,20 @@ describe("document validation modes", () => {
     expect(codes).toContain("route-point-limit");
   });
 
+  it("rejects duplicate edge IDs without conflating edge and node namespaces", () => {
+    const doc = stagedDocument();
+    doc.edges = [
+      { id: "connection", source: "service", target: "service", style: "solid" },
+      { id: "connection", source: "service", target: "service", style: "dashed" },
+      { id: "service", source: "service", target: "service", style: "solid" },
+    ];
+
+    const duplicateIds = validateDocument(doc, catalog, { enforceCatalogRules: false })
+      .filter((issue) => issue.code === "duplicate-id")
+      .map((issue) => issue.id);
+    expect(duplicateIds).toEqual(["connection"]);
+  });
+
   it("accepts text at the boundary and rejects object and asset size overflow", () => {
     const doc = createEmptyDocument("limits");
     doc.title = "x".repeat(DIAGRAM_LIMITS.titleCharacters);
@@ -92,16 +105,29 @@ describe("document validation modes", () => {
       role: "primary" as const,
       props: {},
     }));
-    doc.assets = [{
-      id: "large-asset",
-      kind: "svg",
-      content: "x".repeat(DIAGRAM_LIMITS.svgBytes + 1),
-      intrinsicW: 64,
-      intrinsicH: 64,
-    }];
+    doc.assets = [
+      {
+        id: "large-asset",
+        kind: "svg",
+        content: "x".repeat(DIAGRAM_LIMITS.svgBytes + 1),
+        intrinsicW: 64,
+        intrinsicH: 64,
+      },
+    ];
     const codes = validateDocument(doc, new Map(), { enforceCatalogRules: false }).map((issue) => issue.code);
     expect(codes).toContain("object-count-limit");
     expect(codes).toContain("asset-size-limit");
+  });
+
+  it("rejects documents without a view", () => {
+    const doc = createEmptyDocument("missing-view");
+    doc.views = [];
+
+    expect(validateDocument(doc, new Map(), { enforceCatalogRules: false })).toContainEqual({
+      level: "error",
+      code: "missing-view",
+      message: "Diagram must contain at least one view",
+    });
   });
 
   it("limits every display label to 120 characters", () => {
@@ -128,5 +154,62 @@ describe("document validation modes", () => {
     doc.groups[0]!.parent = doc.groups.at(-1)!.id;
     codes = validateDocument(doc, new Map(), { enforceCatalogRules: false }).map((issue) => issue.code);
     expect(codes).toContain("hierarchy-cycle");
+  });
+
+  it("rejects group edge endpoints with a stable error", () => {
+    const doc = createEmptyDocument("group-edges");
+    doc.groups = [
+      { id: "source-group", kind: "logical", label: "Source", children: [] },
+      { id: "target-group", kind: "logical", label: "Target", children: [] },
+    ];
+    doc.edges = [{ id: "edge", source: "source-group", target: "target-group", style: "solid" }];
+
+    expect(validateDocument(doc, new Map(), { enforceCatalogRules: false })).toEqual([
+      expect.objectContaining({ code: "invalid-edge-endpoint", id: "edge" }),
+      expect.objectContaining({ code: "invalid-edge-endpoint", id: "edge" }),
+    ]);
+  });
+
+  it("enforces provider grammar while allowing neutral entries in provider documents", () => {
+    const doc = createEmptyDocument("providers");
+    doc.grammar = "aws";
+    doc.groups = [
+      { id: "region", kind: "region", label: "Region", children: ["neutral-group", "azure-resource", "azure-group"] },
+      { id: "neutral-group", kind: "logical", label: "Neutral", children: [] },
+      { id: "azure-group", kind: "logical", label: "Azure group", children: [] },
+    ];
+    doc.resources = [
+      { id: "neutral", type: "cloud-agnostic.service", parent: "region", label: {}, role: "primary", props: {} },
+      { id: "azure-resource", type: "azure.service", parent: "region", label: {}, role: "primary", props: {} },
+    ];
+    const catalog = new Map<string, CatalogRule>([
+      [
+        "cloud-agnostic.service",
+        { type: "cloud-agnostic.service", provider: "cloud-agnostic", allowedParents: ["region"] },
+      ],
+      ["azure.service", { type: "azure.service", provider: "azure", allowedParents: ["region"] }],
+      ["azure.group", { type: "azure.group", provider: "azure", allowedParents: ["region"] }],
+    ]);
+    doc.groups[2]!.type = "azure.group";
+    doc.groups[2]!.parent = "region";
+
+    const issues = validateDocument(doc, catalog, { enforceCatalogRules: false });
+    expect(issues.filter((issue) => issue.code === "provider-mismatch")).toEqual([
+      expect.objectContaining({ id: "azure-resource" }),
+      expect.objectContaining({ id: "azure-group" }),
+    ]);
+    expect(issues.some((issue) => issue.id === "neutral" && issue.code === "provider-mismatch")).toBe(false);
+  });
+
+  it("enforces that a cloud-agnostic document contains only neutral catalog entries", () => {
+    const doc = createEmptyDocument("neutral-only");
+    doc.grammar = "cloud-agnostic";
+    doc.resources = [{ id: "aws-resource", type: "aws.service", label: {}, role: "primary", props: {} }];
+    const catalog = new Map<string, CatalogRule>([
+      ["aws.service", { type: "aws.service", provider: "aws", allowedParents: [], allowRoot: true }],
+    ]);
+    expect(validateDocument(doc, catalog, { enforceCatalogRules: false })).toContainEqual(
+      expect.objectContaining({ code: "provider-mismatch", id: "aws-resource" }),
+    );
   });
 });

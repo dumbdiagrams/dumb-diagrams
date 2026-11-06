@@ -1,16 +1,27 @@
+import { createServer, type AddressInfo } from "node:net";
+import { availableParallelism } from "node:os";
 import { defineConfig, devices } from "@playwright/test";
 
-const port = Number(process.env.PLAYWRIGHT_PORT ?? 5174);
+// Pick a free port once; Playwright workers re-load this config and inherit the env.
+process.env.PLAYWRIGHT_PORT ??= String(
+  await new Promise<number>((resolve) => {
+    const server = createServer().listen(0, "127.0.0.1", () => {
+      const { port } = server.address() as AddressInfo;
+      server.close(() => resolve(port));
+    });
+  }),
+);
+const port = Number(process.env.PLAYWRIGHT_PORT);
 const baseURL = `http://127.0.0.1:${port}`;
+// Browser contexts and the Studio compiler compete for CPU on small CI
+// runners. Reserve one core for Vite/browser orchestration, with a local cap.
+const workers = Math.min(4, Math.max(1, availableParallelism() - 1));
 
 export default defineConfig({
   testDir: "./e2e",
   outputDir: ".artifacts/playwright/test-results",
   timeout: 45_000,
-  // Catalog rendering and two browser engines are intentionally heavy. Keep
-  // enough parallelism for speed without starving the compilation workers and
-  // turning interaction coverage into timeout noise on developer machines.
-  workers: 4,
+  workers,
   expect: {
     timeout: 10_000,
   },
@@ -24,6 +35,7 @@ export default defineConfig({
     baseURL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    reducedMotion: "reduce",
   },
   webServer: {
     command: `pnpm catalog:stage && pnpm --dir packages/editor exec vite --host 127.0.0.1 --port ${port}`,

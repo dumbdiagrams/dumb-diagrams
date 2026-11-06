@@ -1,0 +1,610 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "buyer",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "payment",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "warehouse",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "primary",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "lb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "cluster",
+      "kind": "group",
+      "type": "cloud-agnostic.cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "worker",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "cache",
+      "kind": "resource",
+      "type": "cloud-agnostic.cache",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "receipts",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "recovery",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "rlb",
+      "kind": "resource",
+      "type": "cloud-agnostic.load-balancer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "rnetwork",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "rapp",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    },
+    {
+      "id": "rdb",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Buyer reaches regional load balancer to API server in primary private network and cluster; database and cache in network; API calls external payment and enqu..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "order",
+      "source": "buyer",
+      "target": "lb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Orders (buyer to lb) per the request."
+      }
+    },
+    {
+      "id": "forward",
+      "source": "lb",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward (lb to api) per the request."
+      }
+    },
+    {
+      "id": "db_query",
+      "source": "api",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Query (api to db) per the request."
+      }
+    },
+    {
+      "id": "cache_lookup",
+      "source": "api",
+      "target": "cache",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lookup (api to cache) per the request."
+      }
+    },
+    {
+      "id": "charge",
+      "source": "api",
+      "target": "payment",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Charge (api to payment) per the request."
+      }
+    },
+    {
+      "id": "db_resp",
+      "source": "db",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Database response (db to api) per the request."
+      }
+    },
+    {
+      "id": "cache_resp",
+      "source": "cache",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cache response (cache to api) per the request."
+      }
+    },
+    {
+      "id": "payment_resp",
+      "source": "payment",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Payment response (payment to api) per the request."
+      }
+    },
+    {
+      "id": "enqueue",
+      "source": "api",
+      "target": "queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Enqueue work (api to queue) per the request."
+      }
+    },
+    {
+      "id": "dispatch",
+      "source": "queue",
+      "target": "worker",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Work (queue to worker) per the request."
+      }
+    },
+    {
+      "id": "fulfill",
+      "source": "worker",
+      "target": "warehouse",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Fulfillment (worker to warehouse) per the request."
+      }
+    },
+    {
+      "id": "ack",
+      "source": "warehouse",
+      "target": "worker",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Acknowledgment (warehouse to worker) per the request."
+      }
+    },
+    {
+      "id": "retry",
+      "source": "worker",
+      "target": "queue",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "Retry (worker to queue) per the request."
+      }
+    },
+    {
+      "id": "order_status",
+      "source": "worker",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Order status (worker to db) per the request."
+      }
+    },
+    {
+      "id": "write_receipts",
+      "source": "worker",
+      "target": "receipts",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Receipts (worker to receipts) per the request."
+      }
+    },
+    {
+      "id": "replicate",
+      "source": "db",
+      "target": "rdb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Replication (db to rdb) per the request."
+      }
+    },
+    {
+      "id": "read_replica",
+      "source": "rdb",
+      "target": "rapp",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read replica (rdb to rapp) per the request."
+      }
+    },
+    {
+      "id": "failover",
+      "source": "buyer",
+      "target": "rlb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Failover requests (buyer to rlb) per the request."
+      }
+    },
+    {
+      "id": "failover_fwd",
+      "source": "rlb",
+      "target": "rapp",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Forward (rlb to rapp) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "buyer_root",
+      "component": "buyer",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "payment_root",
+      "component": "payment",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "warehouse_root",
+      "component": "warehouse",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "account_root",
+      "component": "account",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "primary_in_account",
+      "component": "primary",
+      "relation": "parent",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_in_primary",
+      "component": "lb",
+      "relation": "parent",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "network_in_primary",
+      "component": "network",
+      "relation": "parent",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "cluster_in_network",
+      "component": "cluster",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "api_in_cluster",
+      "component": "api",
+      "relation": "parent",
+      "group": "cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "worker_in_cluster",
+      "component": "worker",
+      "relation": "parent",
+      "group": "cluster",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "db_in_network",
+      "component": "db",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "cache_in_network",
+      "component": "cache",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "queue_in_primary",
+      "component": "queue",
+      "relation": "parent",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "receipts_in_primary",
+      "component": "receipts",
+      "relation": "parent",
+      "group": "primary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "recovery_in_account",
+      "component": "recovery",
+      "relation": "parent",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "rlb_in_recovery",
+      "component": "rlb",
+      "relation": "parent",
+      "group": "recovery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "rnetwork_in_recovery",
+      "component": "rnetwork",
+      "relation": "parent",
+      "group": "recovery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "rapp_in_rnetwork",
+      "component": "rapp",
+      "relation": "parent",
+      "group": "rnetwork",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "rdb_in_rnetwork",
+      "component": "rdb",
+      "relation": "parent",
+      "group": "rnetwork",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "lb_outside_network",
+      "component": "lb",
+      "relation": "outside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "queue_outside_network",
+      "component": "queue",
+      "relation": "outside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "receipts_outside_network",
+      "component": "receipts",
+      "relation": "outside",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "payment_outside_account",
+      "component": "payment",
+      "relation": "outside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "warehouse_outside_account",
+      "component": "warehouse",
+      "relation": "outside",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

@@ -1,0 +1,23 @@
+dgm 1
+diagram cloud-agnostic-medium-team-project-portal {
+  grammar cloud-agnostic
+  flow lr
+  title "Team project portal (cloud-neutral)"
+
+  cloud-agnostic.client users "Users"
+  cloud-agnostic.cloud cloud "Application cloud" {
+    cloud-agnostic.load-balancer lb "Load balancer"
+    cloud-agnostic.network network "Private network" {
+      cloud-agnostic.server portal "Portal server"
+      cloud-agnostic.cache cache "Cache"
+      cloud-agnostic.database db "Project database"
+    }
+    cloud-agnostic.object-storage attachments "Attachment storage"
+  }
+
+  users -> lb { id visit step 1 label "Requests" kind flow }
+  lb -> portal { id forward step 2 label "Forward" kind flow }
+  portal -> db { id projects step 3 label "Project data" kind flow }
+  portal -> cache { id lookups step 3 label "Frequent lookups" kind flow }
+  portal -> attachments { id files step 3 label "Fetch attachments" kind flow }
+}

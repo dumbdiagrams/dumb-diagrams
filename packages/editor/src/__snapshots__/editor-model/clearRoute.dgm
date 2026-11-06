@@ -1,0 +1,35 @@
+dgm 1
+diagram image-thumbnail-pipeline {
+  grammar aws
+  flow lr
+  title "Image thumbnail pipeline"
+
+  cloud-agnostic.client image_uploader "Image uploader"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary upload_experience "Upload experience" {
+      aws.cloudfront cdn "Web delivery"
+      aws.simple-storage-service upload_ui "Upload UI"
+    }
+
+    cloud-agnostic.boundary upload_storage "Upload storage" {
+      aws.simple-storage-service original_images "Original images"
+    }
+
+    cloud-agnostic.boundary processing "Processing" {
+      aws.aws-lambda thumbnail_processor "Thumbnail processor"
+    }
+
+    cloud-agnostic.boundary processed_assets "Processed assets" {
+      aws.simple-storage-service thumbnail_images "Thumbnail images"
+      aws.dynamodb image_metadata "Image metadata"
+    }
+  }
+
+  image_uploader -> cdn { id uploader_to_cdn step 1 }
+  cdn -> upload_ui { id cdn_to_upload_ui label "static content" }
+  image_uploader -> original_images { id uploader_to_originals label "direct multipart upload" }
+  original_images -> thumbnail_processor { id originals_to_processor label "object-created event" step 2 style dashed }
+  thumbnail_processor -> thumbnail_images { id processor_to_thumbnails step 3 }
+  thumbnail_processor -> image_metadata { id processor_to_metadata step 4 }
+}

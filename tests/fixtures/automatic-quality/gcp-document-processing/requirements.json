@@ -1,0 +1,317 @@
+{
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Google Cloud organization"
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "project nested in organization"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "primary region nested in project"
+      }
+    },
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "partner uploads documents"
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Run intake service"
+      }
+    },
+    {
+      "id": "source",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud Storage source bucket"
+      }
+    },
+    {
+      "id": "events",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Pub/Sub topic"
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "basis": {
+        "kind": "explicit",
+        "text": "second Cloud Run service"
+      }
+    },
+    {
+      "id": "normalized",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "separate Cloud Storage output bucket"
+      }
+    },
+    {
+      "id": "metadata",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud SQL status and metadata"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "upload_documents",
+      "source": "partner",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Document uploads"
+      }
+    },
+    {
+      "id": "store_original",
+      "source": "intake",
+      "target": "source",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Store original files"
+      }
+    },
+    {
+      "id": "publish_object_notification",
+      "source": "source",
+      "target": "events",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Object notifications"
+      }
+    },
+    {
+      "id": "consume_object_notification",
+      "source": "events",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume event"
+      }
+    },
+    {
+      "id": "read_original",
+      "source": "source",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read original file"
+      }
+    },
+    {
+      "id": "write_normalized",
+      "source": "processor",
+      "target": "normalized",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Store normalized output"
+      }
+    },
+    {
+      "id": "write_status_metadata",
+      "source": "processor",
+      "target": "metadata",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write processing status and metadata"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "gcp_cloud-run_count_region",
+      "kind": "resource",
+      "type": "gcp.cloud-run",
+      "min": 2,
+      "max": 2,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "One Cloud Run intake service and a second Cloud Run service."
+      }
+    },
+    {
+      "id": "gcp_cloud-storage_count_region",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 2,
+      "max": 2,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "A source bucket and a separate normalized-output bucket."
+      }
+    },
+    {
+      "id": "events_count",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "a Pub/Sub topic"
+      }
+    },
+    {
+      "id": "metadata_count",
+      "kind": "resource",
+      "type": "gcp.cloud-sql",
+      "min": 1,
+      "max": 1,
+      "within": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Cloud SQL"
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Google Cloud organization"
+      }
+    },
+    {
+      "id": "project_in_org",
+      "component": "project",
+      "relation": "inside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the project ... inside a Google Cloud organization"
+      }
+    },
+    {
+      "id": "region_in_project",
+      "component": "region",
+      "relation": "inside",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "primary region nested in project"
+      }
+    },
+    {
+      "id": "partner_outside_org",
+      "component": "partner",
+      "relation": "outside",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the partner outside the organization"
+      }
+    },
+    {
+      "id": "intake_in_region",
+      "component": "intake",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "all Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "source_in_region",
+      "component": "source",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "all Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "events_in_region",
+      "component": "events",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "all Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "processor_in_region",
+      "component": "processor",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "all Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "normalized_in_region",
+      "component": "normalized",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "all Google Cloud services in the region"
+      }
+    },
+    {
+      "id": "metadata_in_region",
+      "component": "metadata",
+      "relation": "inside",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "all Google Cloud services in the region"
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

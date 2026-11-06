@@ -15,12 +15,15 @@ fixtures/golden/
 /packages/editor/public/.catalog-icons-*/
 /packages/editor/public/FONT-LICENSES.txt
 .astro/
-/packages/website/.env
-/packages/website/.env.local
+.env
+.env.*
+!.env.example
 /packages/website/public/diagrams/
+/packages/website/public/reviewed-examples/
 /packages/website/public/logo.png
 /packages/website/public/favicon.png
 /packages/website/public/LICENSE.txt
 /packages/website/public/ICON-NOTICES.txt
 /packages/website/public/FONT-LICENSES.txt
 /packages/website/public/cli-transcript.txt
+/packages/website/public/docs-explainers/

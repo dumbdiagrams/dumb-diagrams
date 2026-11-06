@@ -2,23 +2,43 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { err, Result } from "neverthrow";
+
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 
 export interface InitTemplateVars {
   projectName: string;
 }
 
-export function renderInitTemplate(fileName: string, vars: InitTemplateVars): string {
-  const template = readInitTemplate(fileName);
-  return template.replaceAll("{{projectName}}", vars.projectName);
+export type InitTemplateError =
+  | { readonly code: "missing-template"; readonly message: string; readonly fileName: string }
+  | {
+      readonly code: "template-read-failed";
+      readonly message: string;
+      readonly fileName: string;
+      readonly path: string;
+      readonly cause: unknown;
+    };
+
+export function renderInitTemplate(fileName: string, vars: InitTemplateVars): Result<string, InitTemplateError> {
+  return readInitTemplate(fileName).map((template) => template.replaceAll("{{projectName}}", vars.projectName));
 }
 
-function readInitTemplate(fileName: string): string {
+function readInitTemplate(fileName: string): Result<string, InitTemplateError> {
   const path = resolveInitTemplate(fileName);
   if (!path) {
-    throw new Error(`Missing init template: ${fileName}`);
+    return err({ code: "missing-template", message: `Missing init template: ${fileName}`, fileName });
   }
-  return readFileSync(path, "utf8");
+  return Result.fromThrowable(
+    () => readFileSync(path, "utf8"),
+    (cause): InitTemplateError => ({
+      code: "template-read-failed",
+      message: `Unable to read init template ${fileName}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      fileName,
+      path,
+      cause,
+    }),
+  )();
 }
 
 function resolveInitTemplate(fileName: string): string | undefined {

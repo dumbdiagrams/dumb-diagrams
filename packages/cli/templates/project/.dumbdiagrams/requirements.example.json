@@ -1,0 +1,61 @@
+{
+  "$schema": "./requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": { "kind": "explicit", "text": "An API server inside one cloud." }
+    },
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": { "kind": "explicit", "text": "An external client calls the API." }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": { "kind": "explicit", "text": "An API server inside one cloud." }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "request",
+      "source": "client",
+      "target": "api",
+      "kind": "flow",
+      "basis": { "kind": "explicit", "text": "The external client calls the API." }
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_api",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "min": 1,
+      "max": 1,
+      "within": "cloud",
+      "basis": { "kind": "explicit", "text": "One API server." }
+    }
+  ],
+  "placement": [
+    {
+      "id": "api_in_cloud",
+      "component": "api",
+      "relation": "inside",
+      "group": "cloud",
+      "basis": { "kind": "explicit", "text": "The API server is inside the cloud." }
+    },
+    {
+      "id": "client_external",
+      "component": "client",
+      "relation": "root",
+      "basis": { "kind": "explicit", "text": "An external client." }
+    }
+  ],
+  "allowAdditionalResources": false
+}

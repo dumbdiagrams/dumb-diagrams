@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  getCatalogEntry,
-  listAssets,
-  listCategories,
-  listProviders,
-  searchAssets,
-} from "./catalog.js";
+import { getCatalogEntry, listAssets, listCategories, listProviders, searchAssets } from "./catalog.js";
 
 describe("generated catalog", () => {
   it("includes database services", () => {
@@ -23,11 +17,9 @@ describe("generated catalog", () => {
   });
 
   it("lists providers and categories", () => {
-    expect(listProviders()).toEqual(
-      ["aws", "azure", "gcp", "cloud-agnostic"],
-    );
+    expect(listProviders()).toEqual(["aws", "azure", "gcp", "cloud-agnostic"]);
     expect(listCategories("aws")).toContain("Databases");
-    expect(listCategories("generic", "resources")).toContain("Actors");
+    expect(listCategories("cloud-agnostic", "resources")).toContain("Actors");
   });
 
   it("searches across providers", () => {
@@ -48,5 +40,43 @@ describe("generated catalog", () => {
     expect(getCatalogEntry("aws.neptune")).toBeDefined();
     expect(getCatalogEntry("azure.sql-database")).toBeDefined();
     expect(getCatalogEntry("gcp.bigquery")).toBeDefined();
+  });
+
+  it("maps curated GCP services to reviewed shared category glyphs", () => {
+    const expected = [
+      ["gcp.cloud-functions", "Serverless Computing", "compute"],
+      ["gcp.pub-sub", "Integration Services", "queue"],
+      ["gcp.dataflow", "Data Analytics", "data"],
+      ["gcp.cloud-logging", "Observability", "observability"],
+      ["gcp.cloud-monitoring", "Observability", "observability"],
+      ["gcp.iam", "Security Identity", "auth"],
+      ["gcp.cloud-load-balancing", "Networking", "ingress"],
+      ["gcp.secret-manager", "Security Identity", "auth"],
+    ] as const;
+    for (const [type, category, column] of expected) {
+      const entry = getCatalogEntry(type);
+      expect(entry, type).toMatchObject({
+        provider: "gcp",
+        category,
+        column,
+        specificity: "shared-category",
+        browsable: true,
+      });
+    }
+  });
+
+  it("retains the reviewed unique glyphs for core GCP compute services", () => {
+    expect(getCatalogEntry("gcp.compute-engine")).toMatchObject({
+      provider: "gcp",
+      name: "Compute Engine",
+      category: "Compute",
+      specificity: "unique",
+    });
+    expect(getCatalogEntry("gcp.gke")).toMatchObject({
+      provider: "gcp",
+      name: "GKE",
+      category: "Containers",
+      specificity: "unique",
+    });
   });
 });

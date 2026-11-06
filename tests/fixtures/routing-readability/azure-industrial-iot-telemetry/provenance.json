@@ -1,0 +1,10 @@
+{
+  "source": ".artifacts/review/azure-medium-v0.1.0-industrial-iot-telemetry",
+  "sourceSet": "Fresh Luna review, authored 2026-11-05; source files copied from the review bundle; diagram.dgm canonically formatted.",
+  "files": [
+    "user-prompt.md",
+    "architecture-brief.md",
+    "requirements.json",
+    "diagram.dgm"
+  ]
+}

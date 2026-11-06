@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "sensors",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet"
+      },
+      "type": "cloud-agnostic.actor"
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Operations dashboard"
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS Cloud"
+      }
+    },
+    {
+      "id": "iot_core",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS IoT Core"
+      },
+      "type": "aws.aws-iot-core"
+    },
+    {
+      "id": "telemetry_stream",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kinesis Data Streams"
+      },
+      "type": "aws.kinesis-data-streams"
+    },
+    {
+      "id": "consumer",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda telemetry consumer"
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "time_series",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon Timestream"
+      },
+      "type": "aws.timestream"
+    },
+    {
+      "id": "alerts",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon SNS"
+      },
+      "type": "aws.simple-notification-service"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "send_readings",
+      "source": "sensors",
+      "target": "iot_core",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Factory sensor fleet sends readings"
+      }
+    },
+    {
+      "id": "route_readings",
+      "source": "iot_core",
+      "target": "telemetry_stream",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Routes readings"
+      }
+    },
+    {
+      "id": "consume_readings",
+      "source": "telemetry_stream",
+      "target": "consumer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda consumes stream"
+      }
+    },
+    {
+      "id": "write_time_series",
+      "source": "consumer",
+      "target": "time_series",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Writes normalized readings"
+      }
+    },
+    {
+      "id": "publish_alerts",
+      "source": "consumer",
+      "target": "alerts",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publishes threshold alerts"
+      }
+    },
+    {
+      "id": "read_time_series",
+      "source": "time_series",
+      "target": "dashboard",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Dashboard reads telemetry"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [],
+  "allowAdditionalResources": false
+}

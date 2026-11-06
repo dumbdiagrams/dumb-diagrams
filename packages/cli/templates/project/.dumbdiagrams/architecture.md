@@ -47,6 +47,13 @@ backup, cache, queue, or other best-practice services merely because they could
 exist. “Highly available” may justify relevant multiplicity or multi-zone
 placement; it does not imply every production-hardening service.
 
+Use only minimal provider-required boundaries around a simple chain; avoid
+decorative wrappers. Keep its primary path in clean reading order and use compact
+resource and edge labels without repeating service names. Preserve required
+response, feedback, and operations relationships explicitly, even when secondary.
+During layout repair, keep requirements frozen and do not add manual coordinates
+to compensate for engine behavior.
+
 ## Conceptual architecture brief
 
 Before authoring, normalize the request into these semantics:
@@ -70,3 +77,10 @@ syntax. Never persist credentials, secrets, or unrelated conversation.
 
 Once the brief is stable, apply provider and layout conventions. Layout may
 clarify semantics but must not invent, remove, or redirect architecture.
+
+Before writing `.dgm`, follow `requirements.md` to capture the normalized
+components, counts, relationships, and placement in a requirements contract.
+Use separate stable IDs for repeated resources and each requested interaction.
+Check extraction against the prompt; do not infer the contract from a repaired
+diagram. A green completeness check means the source matches this contract,
+not that every fact in the original prompt was extracted correctly.

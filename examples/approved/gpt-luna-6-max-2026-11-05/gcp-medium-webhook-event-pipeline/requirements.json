@@ -1,0 +1,380 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "gcp",
+  "components": [
+    {
+      "id": "organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the project and primary region in the organization."
+      }
+    },
+    {
+      "id": "project",
+      "kind": "group",
+      "type": "gcp.project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the event-processing project in the organization."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "gcp.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the primary region in the project."
+      }
+    },
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the partner outside the organization."
+      }
+    },
+    {
+      "id": "load_balancing",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "ingress",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "topic",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "dataflow",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "bigquery",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "raw_storage",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "send_webhook",
+      "source": "partner",
+      "target": "load_balancing",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "forward_to_ingress",
+      "source": "load_balancing",
+      "target": "ingress",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "publish_event",
+      "source": "ingress",
+      "target": "topic",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "stream_to_dataflow",
+      "source": "topic",
+      "target": "dataflow",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "write_records",
+      "source": "dataflow",
+      "target": "bigquery",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    },
+    {
+      "id": "write_raw_files",
+      "source": "dataflow",
+      "target": "raw_storage",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Explicitly requested relationship."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "count_gcp_organization",
+      "kind": "group",
+      "type": "gcp.organization",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.organization component(s) as requested."
+      }
+    },
+    {
+      "id": "count_gcp_project_in_organization",
+      "kind": "group",
+      "type": "gcp.project",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.project component(s) as requested."
+      },
+      "within": "organization"
+    },
+    {
+      "id": "count_gcp_region_in_project",
+      "kind": "group",
+      "type": "gcp.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.region component(s) as requested."
+      },
+      "within": "project"
+    },
+    {
+      "id": "count_cloud-agnostic_actor",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 cloud-agnostic.actor component(s) as requested."
+      }
+    },
+    {
+      "id": "count_gcp_cloud-load-balancing_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-load-balancing",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.cloud-load-balancing component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_cloud-functions_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-functions",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.cloud-functions component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_pub-sub_in_region",
+      "kind": "resource",
+      "type": "gcp.pub-sub",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.pub-sub component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_dataflow_in_region",
+      "kind": "resource",
+      "type": "gcp.dataflow",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.dataflow component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_bigquery_in_region",
+      "kind": "resource",
+      "type": "gcp.bigquery",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.bigquery component(s) as requested."
+      },
+      "within": "region"
+    },
+    {
+      "id": "count_gcp_cloud-storage_in_region",
+      "kind": "resource",
+      "type": "gcp.cloud-storage",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "1 gcp.cloud-storage component(s) as requested."
+      },
+      "within": "region"
+    }
+  ],
+  "placement": [
+    {
+      "id": "organization_root",
+      "component": "organization",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the project and primary region in the organization."
+      }
+    },
+    {
+      "id": "project_parent",
+      "component": "project",
+      "relation": "parent",
+      "group": "organization",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the event-processing project in the organization."
+      }
+    },
+    {
+      "id": "region_parent",
+      "component": "region",
+      "relation": "parent",
+      "group": "project",
+      "basis": {
+        "kind": "explicit",
+        "text": "Nest the primary region in the project."
+      }
+    },
+    {
+      "id": "partner_root",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep the partner outside the organization."
+      }
+    },
+    {
+      "id": "load_balancing_parent",
+      "component": "load_balancing",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "ingress_parent",
+      "component": "ingress",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "topic_parent",
+      "component": "topic",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "dataflow_parent",
+      "component": "dataflow",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "bigquery_parent",
+      "component": "bigquery",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    },
+    {
+      "id": "raw_storage_parent",
+      "component": "raw_storage",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Place all services in the primary region."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

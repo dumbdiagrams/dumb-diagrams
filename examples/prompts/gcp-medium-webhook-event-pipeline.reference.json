@@ -1,0 +1,76 @@
+{
+  "$comment": "Reviewed reference for gcp-medium-webhook-event-pipeline.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "gcp",
+  "exclusive": true,
+  "roles": {
+    "partner": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "organization"
+    },
+    "organization": {
+      "types": [
+        "gcp.organization"
+      ]
+    },
+    "project": {
+      "types": [
+        "gcp.project"
+      ],
+      "within": "organization"
+    },
+    "region": {
+      "types": [
+        "gcp.region"
+      ],
+      "within": "project"
+    },
+    "lb": {
+      "types": [
+        "gcp.cloud-load-balancing"
+      ],
+      "within": "region"
+    },
+    "handler": {
+      "types": [
+        "gcp.cloud-functions"
+      ],
+      "within": "region"
+    },
+    "topic": {
+      "types": [
+        "gcp.pub-sub"
+      ],
+      "within": "region"
+    },
+    "dataflow": {
+      "types": [
+        "gcp.dataflow"
+      ],
+      "within": "region"
+    },
+    "bigquery": {
+      "types": [
+        "gcp.bigquery"
+      ],
+      "within": "region"
+    },
+    "storage": {
+      "types": [
+        "gcp.cloud-storage"
+      ],
+      "within": "region"
+    }
+  },
+  "edges": [
+    "partner -> lb",
+    "lb -> handler",
+    "handler -> topic",
+    "topic -- dataflow",
+    "dataflow -> bigquery",
+    "dataflow -> storage"
+  ]
+}

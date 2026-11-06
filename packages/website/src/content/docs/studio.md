@@ -1,50 +1,29 @@
 ---
 title: Using Studio
-description: Edit any portable .dgm file locally, independent of the directory where Studio starts.
+description: Edit source and fine-tune a diagram visually in the local Studio.
 section: Make diagrams
-order: 4
+order: 10
 ---
-Studio is the generic visual editor around the diagram engine. You can pan and
-zoom, move and resize items, change source, adjust connectors, work with tabs
-and recent files, and export the result.
+Studio is where you review a generated diagram and make it yours. Edit the `.dgm` source, move and resize items on the canvas, add resources or notes, organise layers, adjust connectors, and export the result. Source and visual changes stay together in the same file.
 
-The diagram you see is the runtime’s SVG. The editor adds interaction around it; it does not maintain a separate drawing format.
+Chromium-based desktop browsers are the first-class Studio target. WebKit and
+Firefox are best-effort compatibility targets, and native Safari is not a
+release target.
 
-## Start Studio and open a file
+## Open and edit a file
 
-```bash
-npm install -g create-dumb-diagrams
-dumbdiagrams studio
-```
+Run `dumbdiagrams studio` and choose **Open** to select any `.dgm` file. Keep the terminal running while you work. Studio listens on `127.0.0.1`, port 4788, or a free port if that one is taken.
 
-Studio is independent of the directory where it was launched. Choose **Open**
-to select any `.dgm` file from anywhere on disk. Keep the terminal process
-running while Studio is connected.
+Moving an item never rearranges the rest of the diagram. Other items and connector paths stay where they are, and the moved item's connections redraw along the [straightest clear path](../routing/#default-connector-shape). **Auto-fix** repairs overlaps and crossings in one step. The button shows a spinner while it works, and Undo restores the previous layout.
 
-## Edit the picture or the source
+A partially typed source edit may be temporarily invalid. Studio keeps the last valid compilation visible while you fix it. If the picture seems unchanged, check the validation feedback before assuming the edit was saved.
 
-The canvas gives you pan, zoom, fit-to-content, selection, and visual adjustments. The source editor lets you change the architecture directly. Both work with the same document.
+For a keyboard-friendly overview of the diagram, open **Canvas items**. It lists boundaries, resources, connectors, and annotations and lets you focus or safely delete the selected item.
 
-A partially typed source edit may be temporarily invalid. Studio can keep the last valid compilation visible while you fix the source. If the picture seems unchanged after an edit, check the validation feedback before assuming the change was saved successfully.
+## Fine-tune the details
 
-Start with automatic layout, then move the items that need attention. For dense connections, use a manual route rather than trying to trick the layout with unrelated changes.
+Select a boundary, resource, or connector to edit it on the right: line and fill, label position, icon size, step numbers, connector meaning, and route. The defaults work without changes, so these are optional refinements. Clicking a warning in the validation panel selects the item it refers to.
 
-## Understand where saves go
+## Save and work with other editors
 
-In browsers with the File System Access API, Open keeps a handle to the selected
-file and Save writes back to it. Save As asks for a new destination. File handles
-are not retained across a page reload, so reopen the file when needed.
-
-Other browsers use a standard file chooser and download the updated `.dgm` when
-you save. In either case the source remains an ordinary portable file; Studio
-does not register it with a project or upload it to a Dumb Diagrams service.
-
-## Work alongside an editor or agent
-
-Studio does not watch selected files for changes made by another editor. Reopen
-the file before saving if an agent or editor has changed it on disk, otherwise a
-direct save can replace those external changes.
-
-Studio binds to `127.0.0.1` and is intended for local use. It is not a hosted service or a public server.
-
-Studio is designed for desktop use. The site works on a phone, but detailed diagram editing is more comfortable in a wide window.
+In browsers with the File System Access API, **Save** writes back to the opened file and **Save As** picks a new one. Before writing, Studio checks whether another editor changed or deleted the file and asks you to reload or overwrite. Other browsers download the updated `.dgm` instead, without that check. Saved source is canonical, so diffs stay small. Nothing is uploaded.

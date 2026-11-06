@@ -1,0 +1,657 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Document intake client"
+      },
+      "type": "cloud-agnostic.client"
+    },
+    {
+      "id": "ops",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Operations user"
+      },
+      "type": "cloud-agnostic.actor"
+    },
+    {
+      "id": "aws_cloud",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS Cloud"
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS Region"
+      }
+    },
+    {
+      "id": "vpc",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "VPC"
+      }
+    },
+    {
+      "id": "az_a",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Availability Zone A"
+      }
+    },
+    {
+      "id": "az_b",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Availability Zone B"
+      }
+    },
+    {
+      "id": "subnet_a",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private subnet group A"
+      }
+    },
+    {
+      "id": "subnet_b",
+      "kind": "group",
+      "basis": {
+        "kind": "explicit",
+        "text": "Private subnet group B"
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Gateway"
+      },
+      "type": "aws.api-gateway"
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda intake handler"
+      },
+      "type": "aws.aws-lambda"
+    },
+    {
+      "id": "input",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Input S3 bucket"
+      },
+      "type": "aws.simple-storage-service"
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs queue"
+      },
+      "type": "aws.simple-queue-service"
+    },
+    {
+      "id": "worker_a",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Fargate worker A"
+      },
+      "type": "aws.aws-fargate"
+    },
+    {
+      "id": "worker_b",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Fargate worker B"
+      },
+      "type": "aws.aws-fargate"
+    },
+    {
+      "id": "output",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Output S3 bucket"
+      },
+      "type": "aws.simple-storage-service"
+    },
+    {
+      "id": "ddb",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "DynamoDB status"
+      },
+      "type": "aws.dynamodb"
+    },
+    {
+      "id": "sns",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "SNS completion notifications"
+      },
+      "type": "aws.simple-notification-service"
+    },
+    {
+      "id": "cloudfront",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "CloudFront"
+      },
+      "type": "aws.cloudfront"
+    },
+    {
+      "id": "dlq",
+      "kind": "resource",
+      "basis": {
+        "kind": "explicit",
+        "text": "Dead-letter queue"
+      },
+      "type": "aws.simple-queue-service"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "submit_document",
+      "source": "client",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits documents through API Gateway"
+      }
+    },
+    {
+      "id": "invoke_intake",
+      "source": "api",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "API Gateway invokes intake handler"
+      }
+    },
+    {
+      "id": "store_original",
+      "source": "intake",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Intake stores originals"
+      }
+    },
+    {
+      "id": "enqueue_job",
+      "source": "intake",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Intake queues jobs"
+      }
+    },
+    {
+      "id": "consume_job_a",
+      "source": "jobs",
+      "target": "worker_a",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs queue is consumed by worker A"
+      }
+    },
+    {
+      "id": "consume_job_b",
+      "source": "jobs",
+      "target": "worker_b",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs queue is consumed by worker B"
+      }
+    },
+    {
+      "id": "read_input_a",
+      "source": "worker_a",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker A reads input S3"
+      }
+    },
+    {
+      "id": "read_input_b",
+      "source": "worker_b",
+      "target": "input",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker B reads input S3"
+      }
+    },
+    {
+      "id": "write_output_a",
+      "source": "worker_a",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker A writes processed files to output S3"
+      }
+    },
+    {
+      "id": "write_output_b",
+      "source": "worker_b",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker B writes processed files to output S3"
+      }
+    },
+    {
+      "id": "update_status_a",
+      "source": "worker_a",
+      "target": "ddb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker A updates DynamoDB status"
+      }
+    },
+    {
+      "id": "update_status_b",
+      "source": "worker_b",
+      "target": "ddb",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker B updates DynamoDB status"
+      }
+    },
+    {
+      "id": "publish_completion_a",
+      "source": "worker_a",
+      "target": "sns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker A publishes completion"
+      }
+    },
+    {
+      "id": "publish_completion_b",
+      "source": "worker_b",
+      "target": "sns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker B publishes completion"
+      }
+    },
+    {
+      "id": "download_request",
+      "source": "client",
+      "target": "cloudfront",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client downloads outputs through CloudFront"
+      }
+    },
+    {
+      "id": "fetch_output_origin",
+      "source": "cloudfront",
+      "target": "output",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "CloudFront requests output S3 origin"
+      }
+    },
+    {
+      "id": "failed_jobs_to_dlq",
+      "source": "jobs",
+      "target": "dlq",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "Failed jobs move to DLQ after maximum attempts"
+      }
+    },
+    {
+      "id": "inspect_dlq",
+      "source": "ops",
+      "target": "dlq",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Operations inspects dead-letter queue"
+      }
+    },
+    {
+      "id": "inspect_status",
+      "source": "ops",
+      "target": "ddb",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Operations inspects DynamoDB"
+      }
+    },
+    {
+      "id": "redrive_jobs",
+      "source": "dlq",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Operations redrives messages from DLQ to jobs queue"
+      }
+    },
+    {
+      "id": "notify_ops",
+      "source": "sns",
+      "target": "ops",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "SNS sends completion notifications to operations"
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "one_cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "one cloud"
+      }
+    },
+    {
+      "id": "one_region",
+      "kind": "group",
+      "type": "aws.region",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "one region"
+      },
+      "within": "aws_cloud"
+    },
+    {
+      "id": "one_vpc",
+      "kind": "group",
+      "type": "aws.vpc",
+      "min": 1,
+      "max": 1,
+      "basis": {
+        "kind": "explicit",
+        "text": "one VPC"
+      },
+      "within": "region"
+    },
+    {
+      "id": "two_azs",
+      "kind": "group",
+      "type": "aws.az",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "two AZs"
+      },
+      "within": "vpc"
+    },
+    {
+      "id": "two_private_subnet_groups",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group per AZ"
+      },
+      "within": "vpc"
+    },
+    {
+      "id": "two_fargate_workers",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "two Fargate workers"
+      },
+      "within": "vpc"
+    }
+  ],
+  "placement": [
+    {
+      "id": "region_in_cloud",
+      "component": "region",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one region inside one cloud"
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "vpc_in_region",
+      "component": "vpc",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one VPC in one region"
+      },
+      "group": "region"
+    },
+    {
+      "id": "az_a_in_vpc",
+      "component": "az_a",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AZ A in the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "az_b_in_vpc",
+      "component": "az_b",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "AZ B in the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "subnet_a_in_az_a",
+      "component": "subnet_a",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group in AZ A"
+      },
+      "group": "az_a"
+    },
+    {
+      "id": "subnet_b_in_az_b",
+      "component": "subnet_b",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "one private subnet group in AZ B"
+      },
+      "group": "az_b"
+    },
+    {
+      "id": "worker_a_in_subnet_a",
+      "component": "worker_a",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker A in private subnet group A"
+      },
+      "group": "subnet_a"
+    },
+    {
+      "id": "worker_b_in_subnet_b",
+      "component": "worker_b",
+      "relation": "inside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Worker B in private subnet group B"
+      },
+      "group": "subnet_b"
+    },
+    {
+      "id": "client_outside_cloud",
+      "component": "client",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Keep clients outside AWS"
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "ops_outside_cloud",
+      "component": "ops",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Operations is an external user"
+      },
+      "group": "aws_cloud"
+    },
+    {
+      "id": "api_outside_vpc",
+      "component": "api",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "intake_outside_vpc",
+      "component": "intake",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "input_outside_vpc",
+      "component": "input",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "jobs_outside_vpc",
+      "component": "jobs",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "dlq_outside_vpc",
+      "component": "dlq",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "output_outside_vpc",
+      "component": "output",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "ddb_outside_vpc",
+      "component": "ddb",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "sns_outside_vpc",
+      "component": "sns",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    },
+    {
+      "id": "cloudfront_outside_vpc",
+      "component": "cloudfront",
+      "relation": "outside",
+      "basis": {
+        "kind": "explicit",
+        "text": "Managed services outside the VPC"
+      },
+      "group": "vpc"
+    }
+  ],
+  "allowAdditionalResources": false
+}

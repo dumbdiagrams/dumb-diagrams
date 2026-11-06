@@ -1,8 +1,12 @@
-import { join } from "node:path";
+import { expect, test, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
-import { expect, test } from "@playwright/test";
+import { parseDgmResult, printDgm } from "../packages/runtime/dist/dsl/index.js";
+import { validateDocument } from "../packages/runtime/dist/core/index.js";
+import { getCatalogMap } from "../packages/runtime/dist/catalog/index.js";
+import { ROOT, MOD, SIMPLE_SERVERLESS, entityBox, waitForStudioReady } from "./support/helpers";
 
-const ROOT = join(import.meta.dirname, "..");
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 test("opens File actions and creates a fresh document tab", async ({ page }) => {
   await page.goto("/");
@@ -74,9 +78,18 @@ test("duplicates and closes a diagram from its tab context menu", async ({ page 
 
   const activeTab = page.locator(".workspace-tab.is-active");
   await expect(activeTab).toHaveCount(1);
+  await activeTab.evaluate((element) => {
+    const observer = new MutationObserver(() => {
+      if (element.classList.contains("is-closing")) {
+        document.documentElement.dataset.workspaceTabClosingObserved = "true";
+        observer.disconnect();
+      }
+    });
+    observer.observe(element, { attributes: true, attributeFilter: ["class"] });
+  });
   await activeTab.click({ button: "right" });
   await page.getByRole("menu", { name: "Tab context menu" }).getByRole("menuitem", { name: /Close tab/ }).click();
-  await expect(page.locator(".workspace-tab.is-closing")).toHaveCount(1);
+  await expect(page.locator("html")).toHaveAttribute("data-workspace-tab-closing-observed", "true");
   await expect(page.getByRole("tab")).toHaveCount(2);
 });
 
@@ -93,11 +106,14 @@ test("bulk closes tabs with visible progress without recovering empty drafts", a
     .click();
   const confirmation = page.getByRole("dialog", { name: "Close tabs to the right?" });
   await expect(confirmation).toContainText("4 tabs will be closed");
+  const sawProgress = page.waitForFunction(() => {
+    const status = document.querySelector(".operation-status");
+    const progress = status?.querySelector("progress");
+    return progress?.getAttribute("max") === "4"
+      && (status?.textContent ?? "").includes("Closing diagrams");
+  });
   await confirmation.getByRole("button", { name: "Close tabs", exact: true }).click();
-
-  const progress = page.locator(".operation-status");
-  await expect(progress.locator("progress")).toHaveAttribute("max", "4");
-  await expect(progress).toContainText("Closing diagrams…");
+  await sawProgress;
   await expect(page.getByRole("tab")).toHaveCount(1);
 
   await page.getByRole("button", { name: "File", exact: true }).click();
@@ -217,36 +233,32 @@ test("caps open diagrams at ten while keeping Chrome-like tab widths", async ({ 
 });
 
 test("opens the Help and Examples modals and launches an example in a new tab", async ({ page }) => {
+  // The modal compiles all sixteen previews in sequence; allow the complete
+  // preview set to finish on small CI runners while retaining the full check.
+  test.setTimeout(120_000);
   await page.goto("/");
 
   await page.getByRole("button", { name: "Help", exact: true }).click();
   await page.getByRole("menuitem", { name: "Browse examples", exact: true }).click();
   const examples = page.getByRole("dialog", { name: "Browse examples" });
   await expect(examples).toBeVisible();
-  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d of 8…|Previews ready/);
-  await expect(examples.locator(".example-card")).toHaveCount(8);
-  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(8);
-  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(7);
-  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(8);
-  await expect(examples.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(7);
+  await expect(examples.locator(".examples-progress")).toHaveText(/Preparing previews \d+ of 16…|Previews ready/);
+  await expect(examples.locator(".example-card")).toHaveCount(16);
+  await expect(examples.getByText("Prompt · Try this with your agent", { exact: true })).toHaveCount(16);
+  await expect(examples.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(16);
+  await expect(examples.getByText(".dgm code", { exact: true })).toHaveCount(16);
+  await expect(examples.getByText("Private Azure Order Processing", { exact: true })).toBeVisible();
+  await expect(examples.getByText("GCP Media Processing", { exact: true })).toBeVisible();
+  await expect(examples.getByText("Order Processing with Recovery Region", { exact: true })).toBeVisible();
 
-  const claims = examples.locator(".example-card").filter({ hasText: "Claims processing with Amazon Bedrock" });
-  await expect(claims.locator(".example-prompt pre").first()).toContainText(
-    "Design an AWS claims-processing workflow for a web application",
-  );
-  await claims.getByText("How DumbDiagrams interprets it", { exact: true }).click();
-  await expect(claims.locator(".example-prompt pre").nth(1)).toContainText(
-    "separate blueprint-creation path",
-  );
-  await claims.getByText("Advanced · Detailed specification", { exact: true }).click();
-  await expect(claims.locator(".example-prompt pre").last()).toContainText(
-    'Create a diagram titled "Claims processing with Amazon Bedrock"',
+  const thumbnails = examples.locator(".example-card").filter({ hasText: "Image thumbnail pipeline" });
+  await expect(thumbnails.locator(".example-prompt pre").first()).toContainText("Create an AWS image thumbnail pipeline");
+  await thumbnails.getByText("How DumbDiagrams interprets it", { exact: true }).click();
+  await expect(thumbnails.locator(".example-prompt pre").nth(1)).toContainText(
+    "CloudFront fetches the original or thumbnail from the image bucket",
   );
 
-  const azure = examples.locator(".example-card").filter({ hasText: "Write-through caching with Azure Managed Redis" });
-  await expect(azure.getByText("How DumbDiagrams interprets it", { exact: true })).toHaveCount(0);
-  await expect(azure.getByText("Advanced · Detailed specification", { exact: true })).toHaveCount(0);
-  await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 30_000 });
+  await expect(examples.locator(".examples-progress")).toHaveText("Previews ready", { timeout: 90_000 });
   await examples.getByRole("button", { name: "Open", exact: true }).first().click();
   await expect(page.getByRole("tab")).toHaveCount(2);
 
@@ -310,8 +322,8 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
   await page.goto("/");
   const input = page.locator('input[type="file"]');
   await input.setInputFiles([
-    `${ROOT}/examples/diagrams/async-docs.dgm`,
-    `${ROOT}/examples/diagrams/transfer-hub.dgm`,
+    `${ROOT}/tests/fixtures/engine/async-docs.dgm`,
+    `${ROOT}/tests/fixtures/engine/transfer-hub.dgm`,
   ]);
 
   await expect(page.getByRole("tab")).toHaveCount(3);
@@ -333,7 +345,7 @@ test("covers the empty canvas with progress feedback while importing a diagram",
   });
 
   const opening = page.locator('input[type="file"]').setInputFiles(
-    `${ROOT}/examples/diagrams/async-docs.dgm`,
+    `${ROOT}/tests/fixtures/engine/async-docs.dgm`,
   );
   const loading = page.locator(".workspace-loading.operation-loading");
   await expect(loading).toContainText("Opening 1 diagram…");
@@ -350,7 +362,7 @@ test("covers the empty canvas with progress feedback while importing a diagram",
 
 test("updates an imported filename when the diagram is renamed", async ({ page }) => {
   await page.goto("/");
-  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/examples/diagrams/async-docs.dgm`);
+  await page.locator('input[type="file"]').setInputFiles(`${ROOT}/tests/fixtures/engine/async-docs.dgm`);
 
   const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
   await expect(title).toHaveValue("Async Docs");
@@ -375,11 +387,19 @@ test("prompts before discarding a dirty tab", async ({ page }) => {
   const title = page.getByRole("textbox", { name: "Diagram name" });
   await title.fill("Changed diagram");
   await title.press("Enter");
+  await expect(page.locator(".dirty-pill")).toHaveCount(1);
 
   await page.locator(".workspace-tab.is-active .workspace-tab-close").click();
   const dialog = page.getByRole("dialog", { name: "Unsaved changes" });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Discard", exact: true }).click();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Changed diagram");
+  await expect(page.locator(".dirty-pill")).toHaveCount(1);
+
+  await page.locator(".workspace-tab.is-active .workspace-tab-close").click();
+  await page.getByRole("dialog", { name: "Unsaved changes" }).getByRole("button", { name: "Discard", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(1);
 });
 
@@ -394,7 +414,8 @@ test("reopens the most recently closed tab", async ({ page }) => {
   await page.getByRole("dialog", { name: "Unsaved changes" }).getByRole("button", { name: "Discard", exact: true }).click();
   await expect(page.getByRole("tab")).toHaveCount(1);
 
-  await page.keyboard.press("Control+KeyK");
+  await waitForStudioReady(page);
+  await page.keyboard.press(`${MOD}+KeyK`);
   const palette = page.getByRole("dialog", { name: "Command palette" });
   await expect(palette).toBeVisible();
   const search = palette.getByRole("searchbox", { name: "Search commands" });
@@ -443,6 +464,97 @@ test("downloads the canonical source from Save and clears the dirty marker", asy
   await expect(page.locator(".dirty-pill")).toHaveCount(0);
 });
 
+async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 10 });
+  await page.mouse.up();
+}
+
+test("saves a Studio-edited curated example as canonical, valid source that keeps every id", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(SIMPLE_SERVERLESS);
+  await waitForStudioReady(page);
+  const original = parseDgm(await readFile(SIMPLE_SERVERLESS, "utf8"));
+
+  const handler = await entityBox(page, "resource", "handler");
+  const center = { x: handler.x + handler.width / 2, y: handler.y + handler.height / 2 };
+  await drag(page, center, { x: center.x, y: center.y + 64 });
+
+  await page.locator('[data-entity-kind="resource"][data-entity-id="gateway"]').click();
+  const label = page.getByRole("textbox", { name: "Display label", exact: true });
+  await label.fill("Public API");
+  await label.press("Enter");
+
+  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  const layers = page.getByRole("dialog", { name: "Layers", exact: true });
+  await layers.locator(".layer-select").filter({ hasText: "api_to_handler" }).click();
+  const segment = page.locator('[data-segment-handle^="api_to_handler:"]').first();
+  const segmentBox = (await segment.boundingBox())!;
+  const horizontal = (await segment.getAttribute("class"))?.includes("is-horizontal");
+  const segmentCenter = { x: segmentBox.x + segmentBox.width / 2, y: segmentBox.y + segmentBox.height / 2 };
+  await drag(page, segmentCenter, horizontal
+    ? { x: segmentCenter.x, y: segmentCenter.y + 24 }
+    : { x: segmentCenter.x + 24, y: segmentCenter.y });
+
+  await layers.locator(".layer-select").filter({ hasText: "Request handler" }).click();
+  await layers.locator(".layer-select").filter({ hasText: "Application data" }).click({ modifiers: ["Shift"] });
+  await layers.getByRole("button", { name: "Group", exact: true }).click();
+
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: "Save", exact: true }).click();
+  const saved = await readFile((await (await downloadPromise).path())!, "utf8");
+
+  const doc = parseDgm(saved);
+  expect(printDgm(doc)).toBe(saved);
+  expect(validateDocument(doc, getCatalogMap()).filter((issue) => issue.severity === "error")).toEqual([]);
+  expect(doc.edges.map((edge) => edge.id)).toEqual(original.edges.map((edge) => edge.id));
+  expect(doc.resources.map((resource) => resource.id)).toEqual(original.resources.map((resource) => resource.id));
+  expect(doc.groups.map((group) => group.id)).toEqual(expect.arrayContaining(original.groups.map((group) => group.id)));
+  expect(doc.groups).toHaveLength(original.groups.length + 1);
+  expect(saved).toContain('aws.api-gateway gateway "Public API"');
+  expect(saved).toMatch(/place handler \{[^}]*\by \d/);
+  expect(saved).toMatch(/route api_to_handler \{/);
+  expect(saved).toMatch(/\{\n\s+aws\.aws-lambda handler "Request handler"\n\s+aws\.dynamodb app_data "Application data"\n\s+\}/);
+});
+
+test("keeps undo history isolated per tab", async ({ page }) => {
+  await page.goto("/");
+  await waitForStudioReady(page);
+  const title = page.getByRole("textbox", { name: "Diagram name", exact: true });
+  await title.fill("First tab edit");
+  await title.press("Enter");
+
+  await page.getByRole("button", { name: "New diagram", exact: true }).click();
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await waitForStudioReady(page);
+  await title.fill("Second tab edit");
+  await title.press("Enter");
+
+  await page.getByRole("tab").first().click();
+  await expect(title).toHaveValue("First tab edit");
+  await page.locator(".canvas-artboard").click({ position: { x: 4, y: 4 } });
+  await page.keyboard.press(`${MOD}+KeyZ`);
+  await expect(title).toHaveValue("Untitled Diagram");
+
+  await page.getByRole("tab").nth(1).click();
+  await expect(title).toHaveValue("Second tab edit");
+});
+
+test("imports a real-world SVG export that declares SVG namespaces", async ({ page }) => {
+  await page.goto("/");
+  await waitForStudioReady(page);
+  await page.getByRole("button", { name: "Resources", exact: true }).click();
+  await page.locator('input[type="file"][accept=".svg,image/svg+xml"]').setInputFiles({
+    name: "inkscape-icon.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from('<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 24 24"><path d="M2 2h20v20H2z" fill="#36c"/></svg>'),
+  });
+  await expect(page.getByText("Imported inkscape-icon.svg")).toBeVisible();
+  await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(1);
+});
+
 test("restores open tabs after a reload", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "New diagram", exact: true }).click();
@@ -453,7 +565,8 @@ test("restores open tabs after a reload", async ({ page }) => {
 
 test("opens the command palette with the keyboard shortcut", async ({ page }) => {
   await page.goto("/");
-  await page.keyboard.press("Control+KeyK");
+  await waitForStudioReady(page);
+  await page.keyboard.press(`${MOD}+KeyK`);
   const palette = page.getByRole("dialog", { name: "Command palette" });
   await expect(palette).toBeVisible();
   expect(await palette.getByRole("option").count()).toBeGreaterThanOrEqual(18);
@@ -483,4 +596,27 @@ test("contains long unbroken diagram names inside the top bar", async ({ page })
   expect(metrics.fileInside).toBe(true);
   expect(metrics.fileWidth).toBeLessThanOrEqual(320);
   expect(metrics.fileScrollWidth).toBeGreaterThanOrEqual(metrics.fileWidth);
+});
+
+test("selects the warned resource when a provider warning is clicked", async ({ page }) => {
+  await page.goto("/");
+  // Keep the warning fixture deliberately invalid while curated examples stay valid.
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "provider-warning.dgm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`dgm 1
+diagram provider-warning {
+  grammar aws
+  aws.cloud cloud "AWS Cloud" {
+    aws.vpc network "VPC" {
+      aws.dynamodb table_one "Orders"
+    }
+  }
+}
+`),
+  });
+  await waitForStudioReady(page);
+  await page.locator(".issue-journal-trigger").click();
+  await page.locator(".issue-journal-item").filter({ hasText: "(table_one)" }).click();
+  await expect(page.locator('[data-entity-kind="resource"][data-entity-id="table_one"]').first()).toHaveAttribute("aria-selected", "true");
 });

@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1392" height="600" viewBox="0 0 1392 600">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#163964"/>
+  </marker>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-blue-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#526B8D"/>
+  </marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-teal-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#0F766E"/>
+  </marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-purple-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#7C3AED"/>
+  </marker>
+  <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-amber-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f7982c"/>
+  </marker>
+  <marker id="arrow-coral" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-coral-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#f0531e"/>
+  </marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-red-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#D92D20"/>
+  </marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <marker id="arrow-green-start" markerWidth="10" markerHeight="10" refX="9.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="userSpaceOnUse" overflow="visible">
+    <path d="M0,0 L10,5 L0,10 Z" fill="#2F855A"/>
+  </marker>
+  <style>text{font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;fill:#163964}.group-badge-text,.edge-badge-text{fill:#FFFFFF} g[data-annotation-style="text"] text{font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:14px}</style>
+</defs>
+
+<g id="group-sub">
+  <rect class="group-border" x="236.5" y="32" width="1122.95" height="246"
+    fill="rgba(255,147,0,0.04)" stroke="#FF9300" stroke-width="1.5"  rx="0"/>
+  <image href="catalog-icons/azure/azure-group-subscription-d69843a7-07a65830.svg" x="236.5" y="32" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="268.5" y="48.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Azure subscription</text>
+  
+</g>
+
+<g id="group-region">
+  <rect class="group-border" x="254.5" y="65" width="1086.95" height="186"
+    fill="rgba(239,113,0,0.05)" stroke="#EF7100" stroke-width="1.5" stroke-dasharray="6 4" rx="0"/>
+  <image href="catalog-icons/azure/azure-group-region-a31366e6-e15fe4de.svg" x="254.5" y="65" width="24" height="24" preserveAspectRatio="none"/>
+  <text x="286.5" y="81.9"
+    font-size="14" font-weight="600" dominant-baseline="alphabetic">Azure region</text>
+  
+</g>
+
+<g id="edge-submit" class="edge edge-flow edge-solid">
+  <path d="M 94 139 L 334.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="214.25" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="214.25" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">1</text>
+  <text class="edge-label" data-edge-label="submit" x="162" y="131" text-anchor="middle" font-size="11" fill="#163964">Submit order</text>
+</g>
+
+<g id="edge-invoke" class="edge edge-flow edge-solid">
+  <path d="M 382.5 139 L 495.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="439" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="439" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
+  <text class="edge-label" data-edge-label="invoke" x="439" y="159" text-anchor="middle" font-size="11" fill="#163964">Validate</text>
+</g>
+
+<g id="edge-enqueue" class="edge edge-flow edge-solid">
+  <path d="M 543.5 139 L 661.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="602.5" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="602.5" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="enqueue" x="617.25" y="159" text-anchor="middle" font-size="11" fill="#163964">Queue order</text>
+</g>
+
+<g id="edge-archive_req" class="edge edge-flow edge-solid">
+  <path d="M 543.5 151 L 592 151 L 592 232 L 904 232 L 904 139 L 847.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="748" cy="216" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="748" y="220" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">3</text>
+  <text class="edge-label" data-edge-label="archive_req" x="961.375" y="232" text-anchor="middle" font-size="11" fill="#163964">Archive request</text>
+</g>
+
+<g id="edge-consume_orders" class="edge edge-flow edge-solid">
+  <path d="M 709.5 139 L 752 139 L 752 88 L 944 88 L 944 139 L 989.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="848" cy="72" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="848" y="76" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="consume_orders" x="995.325" y="96" text-anchor="middle" font-size="11" fill="#163964">Queued orders</text>
+</g>
+
+<g id="edge-archive_events" class="edge edge-flow edge-solid">
+  <path d="M 847.5 127 L 928 127 L 928 151 L 989.5 151" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="887.75" cy="111" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="887.75" y="115" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">4</text>
+  <text class="edge-label" data-edge-label="archive_events" x="932" y="143" text-anchor="middle" font-size="11" fill="#163964">Archive events</text>
+</g>
+
+<g id="edge-save" class="edge edge-flow edge-solid">
+  <path d="M 1037.5 139 L 1162.5 139" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1100" cy="123" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1100" y="127" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="save" x="1100" y="159" text-anchor="middle" font-size="11" fill="#163964">Save orders</text>
+</g>
+
+<g id="edge-metrics" class="edge edge-flow edge-solid">
+  <path d="M 1037.5 127 L 1080 127 L 1080 96 L 1290.5 96 L 1290.5 115" fill="none" stroke="#163964" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+  
+  
+  <circle class="edge-badge-circle" cx="1185.25" cy="80" r="10" fill="#163964"/>
+  <text class="edge-badge-text" x="1185.25" y="84" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">5</text>
+  <text class="edge-label" data-edge-label="metrics" x="1148" y="88" text-anchor="middle" font-size="11" fill="#163964">Metrics</text>
+</g>
+
+<g id="res-storefront">
+  <image href="catalog-icons/cloud-agnostic/cloud-agnostic-resource-client-b8165bb8-a411ae42.svg" x="46" y="115" width="48" height="48"/>
+  <text x="70.25" y="179" text-anchor="middle" font-size="12" font-weight="500">Client</text>
+  <text x="70.25" y="197" text-anchor="middle" font-size="11" font-style="italic">Storefront</text>
+</g>
+
+<g id="res-api">
+  <image href="catalog-icons/azure/azure-resource-api-management-services-cf794288-596432f0.svg" x="334.5" y="115" width="48" height="48"/>
+  <text x="358.4" y="179" text-anchor="middle" font-size="12" font-weight="500">API Management Services</text>
+  <text x="358.4" y="197" text-anchor="middle" font-size="11" font-style="italic">Order API</text>
+</g>
+
+<g id="res-intake">
+  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="495.5" y="115" width="48" height="48"/>
+  <text x="519.875" y="179" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
+  <text x="519.875" y="197" text-anchor="middle" font-size="11" font-style="italic">Intake function</text>
+</g>
+
+<g id="res-queue">
+  <image href="catalog-icons/azure/azure-resource-storage-queue-1f37dad7-0dbcfbba.svg" x="661.5" y="115" width="48" height="48"/>
+  <text x="685.4" y="179" text-anchor="middle" font-size="12" font-weight="500">Storage Queue</text>
+  <text x="685.4" y="197" text-anchor="middle" font-size="11" font-style="italic">Order queue</text>
+</g>
+
+<g id="res-archive">
+  <image href="catalog-icons/azure/azure-resource-storage-accounts-7190d3bb-a0819274.svg" x="799.5" y="115" width="48" height="48"/>
+  <text x="823.3" y="179" text-anchor="middle" font-size="12" font-weight="500">Storage Accounts</text>
+  <text x="823.3" y="197" text-anchor="middle" font-size="11" font-style="italic">Request archive</text>
+</g>
+
+<g id="res-processor">
+  <image href="catalog-icons/azure/azure-resource-function-apps-1a6c9c10-dbeadb17.svg" x="989.5" y="115" width="48" height="48"/>
+  <text x="1013.4" y="179" text-anchor="middle" font-size="12" font-weight="500">Function Apps</text>
+  <text x="1013.4" y="197" text-anchor="middle" font-size="11" font-style="italic">Processor</text>
+</g>
+
+<g id="res-sql">
+  <image href="catalog-icons/azure/azure-resource-sql-database-a26124a2-d605a666.svg" x="1162.5" y="115" width="48" height="48"/>
+  <text x="1186.1" y="179" text-anchor="middle" font-size="12" font-weight="500">SQL Database</text>
+  <text x="1186.1" y="197" text-anchor="middle" font-size="11" font-style="italic">Orders SQL</text>
+</g>
+
+<g id="res-monitor">
+  <image href="catalog-icons/azure/azure-resource-monitor-1396f59a-015c1312.svg" x="1266.5" y="115" width="48" height="48"/>
+  <text x="1290.5" y="179" text-anchor="middle" font-size="12" font-weight="500">Monitor</text>
+  
+</g>
+</svg>

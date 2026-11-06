@@ -1,0 +1,703 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "client",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "ops",
+      "kind": "resource",
+      "type": "cloud-agnostic.actor",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "aws.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "apigw",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "s3_in",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "jobs",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "dlq",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "vpc",
+      "kind": "group",
+      "type": "aws.vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "az1",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "sub1",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "worker1",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "az2",
+      "kind": "group",
+      "type": "aws.az",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "sub2",
+      "kind": "group",
+      "type": "aws.subnet.private",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "worker2",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "s3_out",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "status",
+      "kind": "resource",
+      "type": "aws.dynamodb",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "done",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    },
+    {
+      "id": "cdn",
+      "kind": "resource",
+      "type": "aws.cloudfront",
+      "basis": {
+        "kind": "explicit",
+        "text": "Client submits via API Gateway to Lambda intake handler -> input S3 and SQS jobs; two Fargate workers in two AZs/private subnets of one VPC read input S3, wr..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "submit",
+      "source": "client",
+      "target": "apigw",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Submit documents (client to apigw) per the request."
+      }
+    },
+    {
+      "id": "invoke",
+      "source": "apigw",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Invoke (apigw to intake) per the request."
+      }
+    },
+    {
+      "id": "store_input",
+      "source": "intake",
+      "target": "s3_in",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Store originals (intake to s3_in) per the request."
+      }
+    },
+    {
+      "id": "queue_job",
+      "source": "intake",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Queue jobs (intake to jobs) per the request."
+      }
+    },
+    {
+      "id": "jobs_w1",
+      "source": "jobs",
+      "target": "worker1",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs (jobs to worker1) per the request."
+      }
+    },
+    {
+      "id": "jobs_w2",
+      "source": "jobs",
+      "target": "worker2",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Jobs (jobs to worker2) per the request."
+      }
+    },
+    {
+      "id": "read_w1",
+      "source": "s3_in",
+      "target": "worker1",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read input (s3_in to worker1) per the request."
+      }
+    },
+    {
+      "id": "read_w2",
+      "source": "s3_in",
+      "target": "worker2",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read input (s3_in to worker2) per the request."
+      }
+    },
+    {
+      "id": "out_w1",
+      "source": "worker1",
+      "target": "s3_out",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write output (worker1 to s3_out) per the request."
+      }
+    },
+    {
+      "id": "out_w2",
+      "source": "worker2",
+      "target": "s3_out",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Write output (worker2 to s3_out) per the request."
+      }
+    },
+    {
+      "id": "status_w1",
+      "source": "worker1",
+      "target": "status",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Update status (worker1 to status) per the request."
+      }
+    },
+    {
+      "id": "status_w2",
+      "source": "worker2",
+      "target": "status",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Update status (worker2 to status) per the request."
+      }
+    },
+    {
+      "id": "done_w1",
+      "source": "worker1",
+      "target": "done",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish completion (worker1 to done) per the request."
+      }
+    },
+    {
+      "id": "done_w2",
+      "source": "worker2",
+      "target": "done",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish completion (worker2 to done) per the request."
+      }
+    },
+    {
+      "id": "notify",
+      "source": "done",
+      "target": "ops",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Completion notice (done to ops) per the request."
+      }
+    },
+    {
+      "id": "download",
+      "source": "client",
+      "target": "cdn",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Download (client to cdn) per the request."
+      }
+    },
+    {
+      "id": "origin",
+      "source": "cdn",
+      "target": "s3_out",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Origin fetch (cdn to s3_out) per the request."
+      }
+    },
+    {
+      "id": "dead_letter",
+      "source": "jobs",
+      "target": "dlq",
+      "kind": "fail",
+      "basis": {
+        "kind": "explicit",
+        "text": "Max attempts (jobs to dlq) per the request."
+      }
+    },
+    {
+      "id": "inspect_dlq",
+      "source": "ops",
+      "target": "dlq",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Inspect (ops to dlq) per the request."
+      }
+    },
+    {
+      "id": "inspect_status",
+      "source": "ops",
+      "target": "status",
+      "kind": "peer",
+      "basis": {
+        "kind": "explicit",
+        "text": "Inspect (ops to status) per the request."
+      }
+    },
+    {
+      "id": "redrive",
+      "source": "dlq",
+      "target": "jobs",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Redrive (dlq to jobs) per the request."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "workers",
+      "kind": "resource",
+      "type": "aws.aws-fargate",
+      "min": 2,
+      "max": 2,
+      "within": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Two workers requested."
+      }
+    }
+  ],
+  "placement": [
+    {
+      "id": "client_root",
+      "component": "client",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "ops_root",
+      "component": "ops",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "aws_root",
+      "component": "aws",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "region_in_aws",
+      "component": "region",
+      "relation": "parent",
+      "group": "aws",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "apigw_in_region",
+      "component": "apigw",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "intake_in_region",
+      "component": "intake",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "s3_in_in_region",
+      "component": "s3_in",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "jobs_in_region",
+      "component": "jobs",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "dlq_in_region",
+      "component": "dlq",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "vpc_in_region",
+      "component": "vpc",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "az1_in_vpc",
+      "component": "az1",
+      "relation": "parent",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sub1_in_az1",
+      "component": "sub1",
+      "relation": "parent",
+      "group": "az1",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "worker1_in_sub1",
+      "component": "worker1",
+      "relation": "parent",
+      "group": "sub1",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "az2_in_vpc",
+      "component": "az2",
+      "relation": "parent",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sub2_in_az2",
+      "component": "sub2",
+      "relation": "parent",
+      "group": "az2",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "worker2_in_sub2",
+      "component": "worker2",
+      "relation": "parent",
+      "group": "sub2",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "s3_out_in_region",
+      "component": "s3_out",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "status_in_region",
+      "component": "status",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "done_in_region",
+      "component": "done",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "cdn_in_region",
+      "component": "cdn",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "apigw_outside_vpc",
+      "component": "apigw",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "intake_outside_vpc",
+      "component": "intake",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "s3_in_outside_vpc",
+      "component": "s3_in",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "jobs_outside_vpc",
+      "component": "jobs",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "dlq_outside_vpc",
+      "component": "dlq",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "s3_out_outside_vpc",
+      "component": "s3_out",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "status_outside_vpc",
+      "component": "status",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "done_outside_vpc",
+      "component": "done",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    },
+    {
+      "id": "cdn_outside_vpc",
+      "component": "cdn",
+      "relation": "outside",
+      "group": "vpc",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kept outside the network boundary per the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

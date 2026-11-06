@@ -1,0 +1,144 @@
+{
+  "$schema": "../../dumb-diagrams-2026-11-05-10-52-49/.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "aws",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "all AWS services inside AWS Cloud"
+      }
+    },
+    {
+      "id": "sensors",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "factory sensor fleet"
+      }
+    },
+    {
+      "id": "iot",
+      "kind": "resource",
+      "type": "aws.aws-iot-core",
+      "basis": {
+        "kind": "explicit",
+        "text": "AWS IoT Core"
+      }
+    },
+    {
+      "id": "stream",
+      "kind": "resource",
+      "type": "aws.kinesis-data-streams",
+      "basis": {
+        "kind": "explicit",
+        "text": "Kinesis Data Streams"
+      }
+    },
+    {
+      "id": "consumer",
+      "kind": "resource",
+      "type": "aws.aws-lambda",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda consumer"
+      }
+    },
+    {
+      "id": "ts",
+      "kind": "resource",
+      "type": "aws.timestream",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon Timestream"
+      }
+    },
+    {
+      "id": "sns",
+      "kind": "resource",
+      "type": "aws.simple-notification-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon SNS"
+      }
+    },
+    {
+      "id": "dashboard",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "external operations dashboard"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "sensor_iot",
+      "source": "sensors",
+      "target": "iot",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "sensor fleet sends readings to AWS IoT Core"
+      }
+    },
+    {
+      "id": "iot_stream",
+      "source": "iot",
+      "target": "stream",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "IoT Core routes readings to Kinesis Data Streams"
+      }
+    },
+    {
+      "id": "stream_consumer",
+      "source": "stream",
+      "target": "consumer",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda consumer processes stream readings"
+      }
+    },
+    {
+      "id": "consumer_ts",
+      "source": "consumer",
+      "target": "ts",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda normalizes readings and writes time-series data to Timestream"
+      }
+    },
+    {
+      "id": "consumer_sns",
+      "source": "consumer",
+      "target": "sns",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Lambda sends threshold alerts to SNS"
+      }
+    },
+    {
+      "id": "ts_dashboard",
+      "source": "ts",
+      "target": "dashboard",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "external operations dashboard reads telemetry from Timestream"
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [],
+  "allowAdditionalResources": false
+}

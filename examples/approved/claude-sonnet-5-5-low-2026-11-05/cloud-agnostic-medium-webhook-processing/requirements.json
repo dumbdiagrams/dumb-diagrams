@@ -1,0 +1,328 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "cloud-agnostic",
+  "components": [
+    {
+      "id": "partner",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "cloud",
+      "kind": "group",
+      "type": "cloud-agnostic.cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "account",
+      "kind": "group",
+      "type": "cloud-agnostic.account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "cloud-agnostic.region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "edge",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "gateway",
+      "kind": "resource",
+      "type": "cloud-agnostic.gateway",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "ingress",
+      "kind": "resource",
+      "type": "cloud-agnostic.function",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "network",
+      "kind": "group",
+      "type": "cloud-agnostic.network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "processing",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "queue",
+      "kind": "resource",
+      "type": "cloud-agnostic.queue",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "cloud-agnostic.server",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "db",
+      "kind": "resource",
+      "type": "cloud-agnostic.database",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "cloud-agnostic.object-storage",
+      "basis": {
+        "kind": "explicit",
+        "text": "Partner sends webhooks to API gateway and ingress function, which queues events and writes idempotency key to event database; processor consumes queue, store..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "webhook",
+      "source": "partner",
+      "target": "gateway",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Webhook events (partner to gateway) per the request."
+      }
+    },
+    {
+      "id": "invoke",
+      "source": "gateway",
+      "target": "ingress",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Invoke (gateway to ingress) per the request."
+      }
+    },
+    {
+      "id": "enqueue",
+      "source": "ingress",
+      "target": "queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Queue events (ingress to queue) per the request."
+      }
+    },
+    {
+      "id": "idempotency",
+      "source": "ingress",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Idempotency key (ingress to db) per the request."
+      }
+    },
+    {
+      "id": "consume",
+      "source": "queue",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume (queue to processor) per the request."
+      }
+    },
+    {
+      "id": "status",
+      "source": "processor",
+      "target": "db",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Processed status (processor to db) per the request."
+      }
+    },
+    {
+      "id": "archive_payload",
+      "source": "processor",
+      "target": "archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Archive payload (processor to archive) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "partner_root",
+      "component": "partner",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "cloud_root",
+      "component": "cloud",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "account_in_cloud",
+      "component": "account",
+      "relation": "parent",
+      "group": "cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "region_in_account",
+      "component": "region",
+      "relation": "parent",
+      "group": "account",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "edge_in_region",
+      "component": "edge",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "gateway_in_edge",
+      "component": "gateway",
+      "relation": "parent",
+      "group": "edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "ingress_in_edge",
+      "component": "ingress",
+      "relation": "parent",
+      "group": "edge",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "network_in_region",
+      "component": "network",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "processing_in_network",
+      "component": "processing",
+      "relation": "parent",
+      "group": "network",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "queue_in_processing",
+      "component": "queue",
+      "relation": "parent",
+      "group": "processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "processor_in_processing",
+      "component": "processor",
+      "relation": "parent",
+      "group": "processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "db_in_processing",
+      "component": "db",
+      "relation": "parent",
+      "group": "processing",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "archive_in_region",
+      "component": "archive",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": false
+}

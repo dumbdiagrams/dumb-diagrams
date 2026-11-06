@@ -1,0 +1,13 @@
+dgm 1
+diagram azure-top-to-bottom {
+  grammar azure
+  flow tb
+
+  cloud-agnostic.client client "Client"
+
+  azure.subscription subscription "Subscription" {
+    azure.app-services app_service "App Service"
+  }
+
+  client -> app_service
+}

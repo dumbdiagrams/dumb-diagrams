@@ -1,0 +1,66 @@
+{
+  "$comment": "Reviewed reference for aws-medium-factory-iot-telemetry.md. Roles match by catalog type, containment, and edge direction; see scripts/lib/reference-contract.mjs.",
+  "grammar": "aws",
+  "exclusive": true,
+  "roles": {
+    "sensors": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "cloud"
+    },
+    "dashboard": {
+      "types": [
+        "cloud-agnostic.actor",
+        "cloud-agnostic.client",
+        "cloud-agnostic.device"
+      ],
+      "outside": "cloud"
+    },
+    "cloud": {
+      "types": [
+        "aws.cloud"
+      ]
+    },
+    "iot": {
+      "types": [
+        "aws.aws-iot-core"
+      ],
+      "within": "cloud"
+    },
+    "stream": {
+      "types": [
+        "aws.kinesis-data-streams"
+      ],
+      "within": "cloud"
+    },
+    "consumer": {
+      "types": [
+        "aws.aws-lambda"
+      ],
+      "within": "cloud"
+    },
+    "timestream": {
+      "types": [
+        "aws.timestream"
+      ],
+      "within": "cloud"
+    },
+    "alerts": {
+      "types": [
+        "aws.simple-notification-service"
+      ],
+      "within": "cloud"
+    }
+  },
+  "edges": [
+    "sensors -> iot",
+    "iot -> stream",
+    "stream -- consumer",
+    "consumer -> timestream",
+    "consumer -> alerts",
+    "timestream -> dashboard"
+  ]
+}

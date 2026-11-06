@@ -1,0 +1,52 @@
+dgm 1
+diagram gcp-hard-media-processing {
+  grammar gcp
+  flow lr
+  title "Google Cloud media processing"
+
+  cloud-agnostic.client producer "Media producer"
+  cloud-agnostic.client ops "Operations client"
+  gcp.organization org "Google Cloud organization" {
+    gcp.project project "Project" {
+      gcp.cloud-load-balancing lb "Load balancer"
+      gcp.pub-sub jobs "Jobs topic"
+      gcp.pub-sub completion "Completion topic"
+      gcp.pub-sub dead "Dead-letter topic"
+      gcp.region region "Region" {
+        gcp.cloud-run ingest "Ingest service"
+        gcp.cloud-storage input "Input bucket"
+        gcp.cloud-storage output "Output bucket"
+        gcp.vpc vpc "VPC" {
+          gcp.subnet subnet_a "Subnet A" {
+            gcp.compute-engine worker1 "Worker 1"
+          }
+          gcp.subnet subnet_b "Subnet B" {
+            gcp.compute-engine worker2 "Worker 2"
+          }
+        }
+        gcp.cloud-sql db "Job status"
+        gcp.cloud-run notifier "Notification service"
+      }
+    }
+  }
+
+  producer -> lb { id upload step 1 label "Upload" kind flow }
+  lb -> ingest { id route step 2 label "Route" kind flow }
+  ingest -> input { id write_input step 3 label "Write input" kind flow }
+  ingest -> jobs { id publish_job step 3 label "Publish job" kind flow }
+  jobs -> worker1 { id jobs_w1 step 4 label "Jobs" kind flow }
+  jobs -> worker2 { id jobs_w2 step 4 label "Jobs" kind flow }
+  input -> worker1 { id read_w1 step 4 label "Read input" kind flow }
+  input -> worker2 { id read_w2 step 4 label "Read input" kind flow }
+  worker1 -> output { id out_w1 step 5 label "Processed objects" kind flow }
+  worker2 -> output { id out_w2 step 5 label "Processed objects" kind flow }
+  worker1 -> db { id db_w1 step 5 label "Job status" kind flow }
+  worker2 -> db { id db_w2 step 5 label "Job status" kind flow }
+  worker1 -> completion { id done_w1 step 5 label "Completion" kind flow }
+  worker2 -> completion { id done_w2 step 5 label "Completion" kind flow }
+  completion -> notifier { id notify step 6 label "Completion events" kind flow }
+  notifier -> ops { id deliver step 7 label "Deliver notice" kind flow }
+  jobs -> dead { id dead_letter label "Dead-letter" kind fail }
+  ops -> dead { id inspect label "Inspect" kind peer style dashed }
+  dead -> jobs { id redrive label "Redrive" kind flow style dashed }
+}

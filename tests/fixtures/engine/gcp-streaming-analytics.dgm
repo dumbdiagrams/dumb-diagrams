@@ -1,0 +1,46 @@
+dgm 1
+diagram gcp-streaming-analytics {
+  grammar gcp
+  flow lr
+  title "Google Cloud streaming analytics platform"
+
+  cloud-agnostic.client client "Analyst and producer clients"
+
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Streaming analytics project" {
+      gcp.region region "Analytics region" {
+        gcp.vpc vpc "Analytics VPC" {
+          cloud-agnostic.boundary ingress "Ingress and compute" {
+            gcp.cloud-load-balancing load_balancer "Cloud Load Balancing"
+            gcp.cloud-functions functions "Cloud Functions ingestion"
+            gcp.compute-engine compute "Compute Engine analytics workers"
+            gcp.gke gke "GKE stream operators"
+          }
+
+          cloud-agnostic.boundary pipeline "Streaming pipeline" {
+            gcp.dataflow dataflow "Dataflow processing"
+          }
+        }
+
+        gcp.bigquery warehouse "BigQuery warehouse"
+        gcp.cloud-storage archive "Cloud Storage archive"
+      }
+
+      gcp.pub-sub events "Pub/Sub events"
+
+      cloud-agnostic.boundary governance "Governance and operations" {
+        gcp.iam iam "IAM"
+        gcp.secret-manager secrets "Secret Manager"
+        gcp.cloud-monitoring monitoring "Cloud Monitoring"
+        gcp.cloud-logging logging "Cloud Logging"
+      }
+    }
+  }
+
+  client -> load_balancer { id ingest label "HTTPS events" step 1 kind flow }
+  load_balancer -> functions { id dispatch step 2 kind flow }
+  functions -> events { id publish label "Publish events" step 3 kind flow }
+  events -> dataflow { id process label "Stream processing" step 4 kind flow }
+  dataflow -> warehouse { id load label "Analytics rows" step 5 kind flow }
+  dataflow -> archive { id archive label "Raw event archive" step 6 kind flow }
+}

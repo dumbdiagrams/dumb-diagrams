@@ -10,7 +10,7 @@ if (packageInfo.status === 0) {
   if (identity.status !== 0) {
     fail(
       `${packageName} already exists, but npm authentication could not be checked.\n` +
-      `Run: npm login --registry=${registry}`,
+        `Run: npm login --registry=${registry}`,
     );
   }
   const username = identity.stdout.trim();
@@ -18,7 +18,7 @@ if (packageInfo.status === 0) {
   if (!maintainers.includes(username)) {
     fail(
       `${packageName} already exists and is not maintained by ${username}. ` +
-      "Choose another package name before publishing.",
+        "Choose another package name before publishing.",
     );
   }
   console.log(`OK ${username} is a maintainer of existing package ${packageName}`);
@@ -29,30 +29,25 @@ if (packageInfo.status === 0) {
 }
 
 if (identity.status !== 0) {
-  fail(
-    "Not authenticated to the public npm registry.\n" +
-    `Run: npm login --registry=${registry}`,
-  );
+  fail("Not authenticated to the public npm registry.\n" + `Run: npm login --registry=${registry}`);
 }
 const username = identity.stdout.trim();
 console.log(`OK authenticated to ${registry} as ${username}`);
 console.log("Preflight passed. No package was published.");
 
 function npm(args) {
-  return spawnSync(
-    "npm",
-    [...args, `--registry=${registry}`],
-    { encoding: "utf8" },
-  );
+  return spawnSync("npm", [...args, `--registry=${registry}`], { encoding: "utf8" });
 }
 
 function parseMaintainers(output) {
   const parsed = JSON.parse(output);
   const entries = Array.isArray(parsed) ? parsed : [parsed];
-  return entries.map((entry) => {
-    if (typeof entry === "string") return entry.split("<", 1)[0].trim();
-    return entry?.name ?? "";
-  }).filter(Boolean);
+  return entries
+    .map((entry) => {
+      if (typeof entry === "string") return entry.split("<", 1)[0].trim();
+      return entry?.name ?? "";
+    })
+    .filter(Boolean);
 }
 
 function isNotFound(result) {

@@ -5,9 +5,7 @@ import { IssueJournal } from "./IssueJournal";
 
 describe("Studio issue journal", () => {
   it("renders a Valid status when there are no issues", () => {
-    const html = renderToStaticMarkup(
-      <IssueJournal issues={[]} onIssueSelect={vi.fn()} />,
-    );
+    const html = renderToStaticMarkup(<IssueJournal issues={[]} onIssueSelect={vi.fn()} />);
 
     expect(html).toContain('class="status-pill"');
     expect(html).toContain(">Valid</span>");
@@ -34,7 +32,9 @@ describe("Studio issue journal", () => {
   });
 
   it("uses severity labels for homogeneous journals", () => {
-    const html = renderToStaticMarkup(<IssueJournal issues={[{ severity: "warning", message: "Crossing" }]} onIssueSelect={vi.fn()} />);
+    const html = renderToStaticMarkup(
+      <IssueJournal issues={[{ severity: "warning", message: "Crossing" }]} onIssueSelect={vi.fn()} />,
+    );
     expect(html).toContain('aria-label="1 warning"');
     expect(html).toContain(">1 warning</button>");
   });

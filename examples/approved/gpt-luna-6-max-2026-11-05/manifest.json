@@ -1,0 +1,122 @@
+{
+  "formatVersion": 1,
+  "model": "GPT Luna 6",
+  "reasoning": "max",
+  "featured": true,
+  "generatedOn": "2026-11-05",
+  "cli": "create-dumb-diagrams 0.1.0",
+  "bundles": [
+    {
+      "id": "aws-easy-static-website-delivery",
+      "provider": "aws",
+      "difficulty": "easy",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "aws-hard-document-processing",
+      "provider": "aws",
+      "difficulty": "hard",
+      "strictPass": false,
+      "routingWarnings": 15
+    },
+    {
+      "id": "aws-medium-factory-iot-telemetry",
+      "provider": "aws",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "aws-medium-image-thumbnail-pipeline",
+      "provider": "aws",
+      "difficulty": "medium",
+      "strictPass": false,
+      "routingWarnings": 2
+    },
+    {
+      "id": "azure-easy-private-application-api",
+      "provider": "azure",
+      "difficulty": "easy",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "azure-hard-private-order-processing",
+      "provider": "azure",
+      "difficulty": "hard",
+      "strictPass": false,
+      "routingWarnings": 19
+    },
+    {
+      "id": "azure-medium-asynchronous-order-processing",
+      "provider": "azure",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "azure-medium-industrial-iot-telemetry",
+      "provider": "azure",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "cloud-agnostic-easy-customer-record-api",
+      "provider": "cloud-agnostic",
+      "difficulty": "easy",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "cloud-agnostic-hard-order-processing",
+      "provider": "cloud-agnostic",
+      "difficulty": "hard",
+      "strictPass": false,
+      "routingWarnings": 16
+    },
+    {
+      "id": "cloud-agnostic-medium-team-project-portal",
+      "provider": "cloud-agnostic",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "cloud-agnostic-medium-webhook-processing",
+      "provider": "cloud-agnostic",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "gcp-easy-customer-record-api",
+      "provider": "gcp",
+      "difficulty": "easy",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "gcp-hard-media-processing",
+      "provider": "gcp",
+      "difficulty": "hard",
+      "strictPass": false,
+      "routingWarnings": 4
+    },
+    {
+      "id": "gcp-medium-document-processing",
+      "provider": "gcp",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    },
+    {
+      "id": "gcp-medium-webhook-event-pipeline",
+      "provider": "gcp",
+      "difficulty": "medium",
+      "strictPass": true,
+      "routingWarnings": 0
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+dgm 1
+diagram gcp-easy-customer-record-api {
+  grammar gcp
+  flow lr
+  title "Google Cloud customer-record API"
+
+  cloud-agnostic.client client "Web client"
+  gcp.organization org "Google Cloud organization" {
+    gcp.project project "Project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing lb "Load balancer"
+        gcp.cloud-run api "Customer API"
+        gcp.cloud-sql db "Customer records"
+      }
+    }
+  }
+
+  client -> lb { id https step 1 label "HTTPS" kind flow }
+  lb -> api { id route step 2 label "Route" kind flow }
+  api -> db { id records step 3 label "Read/write records" kind flow }
+}

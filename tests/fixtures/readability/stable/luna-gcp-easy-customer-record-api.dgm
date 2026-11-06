@@ -1,0 +1,20 @@
+dgm 1
+diagram gcp_easy_customer_record_api {
+  grammar gcp
+  flow lr
+  title "GCP customer record API"
+  gcp.organization organization "Google Cloud organization" {
+    gcp.project project "Customer records project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing lb "Cloud Load Balancing"
+        gcp.cloud-run api "Cloud Run API"
+        gcp.cloud-sql sql "Cloud SQL"
+      }
+    }
+  }
+  cloud-agnostic.client client "Web client"
+  client -> lb { id https_request label "HTTPS request" kind flow step 1 }
+  lb -> api { id route_api label "Route request" kind flow step 2 }
+  api -> sql { id record_read_write label "Read / write records" kind flow step 3 }
+  sql -> api { id records_return label "Return records" kind flow step 4 }
+}

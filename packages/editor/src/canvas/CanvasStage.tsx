@@ -1,12 +1,6 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type DragEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
+
+import type { Viewport } from "../model/types";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
@@ -22,11 +16,7 @@ export const DEFAULT_VIEWPORT_BOTTOM_MARGIN = 96;
 export const DEFAULT_EMPTY_CANVAS_WIDTH = 480;
 export const DEFAULT_EMPTY_CANVAS_HEIGHT = 240;
 
-export interface Viewport {
-  panX: number;
-  panY: number;
-  zoom: number;
-}
+export type { Viewport } from "../model/types";
 
 export interface ViewportChangeOptions {
   userInitiated?: boolean;
@@ -43,11 +33,7 @@ export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
 
-export function normalizedWheelDelta(
-  value: number,
-  deltaMode: number,
-  pageSize: number,
-): number {
+export function normalizedWheelDelta(value: number, deltaMode: number, pageSize: number): number {
   if (deltaMode === 1) return value * 16;
   if (deltaMode === 2) return value * pageSize;
   return value;
@@ -66,12 +52,14 @@ export function defaultViewportForContent(
 ): Viewport {
   const width = Math.max(0, contentWidth) || DEFAULT_EMPTY_CANVAS_WIDTH;
   const height = Math.max(0, contentHeight) || DEFAULT_EMPTY_CANVAS_HEIGHT;
-  const horizontalFit = stageWidth > 0
-    ? (stageWidth - DEFAULT_VIEWPORT_LEFT_MARGIN - DEFAULT_VIEWPORT_RIGHT_MARGIN) / width
-    : Number.POSITIVE_INFINITY;
-  const verticalFit = stageHeight > 0
-    ? (stageHeight - DEFAULT_VIEWPORT_TOP_MARGIN - DEFAULT_VIEWPORT_BOTTOM_MARGIN) / height
-    : Number.POSITIVE_INFINITY;
+  const horizontalFit =
+    stageWidth > 0
+      ? (stageWidth - DEFAULT_VIEWPORT_LEFT_MARGIN - DEFAULT_VIEWPORT_RIGHT_MARGIN) / width
+      : Number.POSITIVE_INFINITY;
+  const verticalFit =
+    stageHeight > 0
+      ? (stageHeight - DEFAULT_VIEWPORT_TOP_MARGIN - DEFAULT_VIEWPORT_BOTTOM_MARGIN) / height
+      : Number.POSITIVE_INFINITY;
   const zoom = clampZoom(Math.min(DEFAULT_VIEWPORT_ZOOM, horizontalFit, verticalFit));
   const scaledWidth = width * zoom;
   const scaledHeight = height * zoom;
@@ -79,18 +67,21 @@ export function defaultViewportForContent(
   const centeredY = (stageHeight - scaledHeight) / 2;
 
   return {
-    panX: stageWidth > 0
-      ? Math.max(DEFAULT_VIEWPORT_LEFT_MARGIN, Math.min(centeredX, stageWidth - scaledWidth - DEFAULT_VIEWPORT_RIGHT_MARGIN))
-      : DEFAULT_VIEWPORT_LEFT_MARGIN,
-    panY: stageHeight > 0
-      ? Math.max(DEFAULT_VIEWPORT_TOP_MARGIN, centeredY)
-      : DEFAULT_VIEWPORT_TOP_MARGIN,
+    panX:
+      stageWidth > 0
+        ? Math.max(
+            DEFAULT_VIEWPORT_LEFT_MARGIN,
+            Math.min(centeredX, stageWidth - scaledWidth - DEFAULT_VIEWPORT_RIGHT_MARGIN),
+          )
+        : DEFAULT_VIEWPORT_LEFT_MARGIN,
+    panY: stageHeight > 0 ? Math.max(DEFAULT_VIEWPORT_TOP_MARGIN, centeredY) : DEFAULT_VIEWPORT_TOP_MARGIN,
     zoom,
   };
 }
 
 export function CanvasStage({
   children,
+  id,
   viewport,
   onViewportChange,
   onBackgroundClick,
@@ -105,6 +96,7 @@ export function CanvasStage({
   defaultFrameKey = 0,
 }: {
   children: ReactNode;
+  id?: string;
   viewport: Viewport;
   onViewportChange: (next: Viewport, options?: ViewportChangeOptions) => void;
   onBackgroundClick: () => void;
@@ -136,8 +128,7 @@ export function CanvasStage({
   const applyViewport = useCallback((next: Viewport) => {
     viewportRef.current = next;
     if (worldRef.current) {
-      worldRef.current.style.transform =
-        `translate3d(${next.panX}px, ${next.panY}px, 0) scale(${next.zoom})`;
+      worldRef.current.style.transform = `translate3d(${next.panX}px, ${next.panY}px, 0) scale(${next.zoom})`;
     }
   }, []);
 
@@ -154,22 +145,25 @@ export function CanvasStage({
     onViewportChangeRef.current(next, options);
   }, []);
 
-  const previewViewportChange = useCallback((next: Viewport, options?: ViewportChangeOptions) => {
-    applyViewport(next);
-    pendingViewportRef.current = next;
-    pendingViewportOptionsRef.current = options;
-  }, [applyViewport]);
+  const previewViewportChange = useCallback(
+    (next: Viewport, options?: ViewportChangeOptions) => {
+      applyViewport(next);
+      pendingViewportRef.current = next;
+      pendingViewportOptionsRef.current = options;
+    },
+    [applyViewport],
+  );
 
-  const enqueueViewportChange = useCallback((next: Viewport, options?: ViewportChangeOptions) => {
-    previewViewportChange(next, options);
-    if (viewportCommitTimerRef.current !== null) {
-      window.clearTimeout(viewportCommitTimerRef.current);
-    }
-    viewportCommitTimerRef.current = window.setTimeout(
-      flushViewportChange,
-      VIEWPORT_COMMIT_DELAY_MS,
-    );
-  }, [flushViewportChange, previewViewportChange]);
+  const enqueueViewportChange = useCallback(
+    (next: Viewport, options?: ViewportChangeOptions) => {
+      previewViewportChange(next, options);
+      if (viewportCommitTimerRef.current !== null) {
+        window.clearTimeout(viewportCommitTimerRef.current);
+      }
+      viewportCommitTimerRef.current = window.setTimeout(flushViewportChange, VIEWPORT_COMMIT_DELAY_MS);
+    },
+    [flushViewportChange, previewViewportChange],
+  );
 
   useLayoutEffect(() => {
     // During a wheel or pan gesture the DOM transform is intentionally ahead
@@ -177,17 +171,20 @@ export function CanvasStage({
     if (pendingViewportRef.current === null) applyViewport(viewport);
   }, [applyViewport, viewport]);
 
-  useEffect(() => () => {
-    if (viewportCommitTimerRef.current !== null) {
-      window.clearTimeout(viewportCommitTimerRef.current);
-    }
-    viewportCommitTimerRef.current = null;
-    pendingViewportRef.current = null;
-    pendingViewportOptionsRef.current = undefined;
-    if (wheelFrameRef.current !== null) window.cancelAnimationFrame(wheelFrameRef.current);
-    wheelFrameRef.current = null;
-    wheelTargetRef.current = null;
-  }, []);
+  useEffect(
+    () => () => {
+      if (viewportCommitTimerRef.current !== null) {
+        window.clearTimeout(viewportCommitTimerRef.current);
+      }
+      viewportCommitTimerRef.current = null;
+      pendingViewportRef.current = null;
+      pendingViewportOptionsRef.current = undefined;
+      if (wheelFrameRef.current !== null) window.cancelAnimationFrame(wheelFrameRef.current);
+      wheelFrameRef.current = null;
+      wheelTargetRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -220,11 +217,14 @@ export function CanvasStage({
         el.getBoundingClientRect().height,
         contentSize.height,
       );
-      onViewportChange({
-        ...framed,
-        panX: framed.panX - (contentSize.x ?? 0) * framed.zoom,
-        panY: framed.panY - (contentSize.y ?? 0) * framed.zoom,
-      }, { userInitiated: false });
+      onViewportChange(
+        {
+          ...framed,
+          panX: framed.panX - (contentSize.x ?? 0) * framed.zoom,
+          panY: framed.panY - (contentSize.y ?? 0) * framed.zoom,
+        },
+        { userInitiated: false },
+      );
     };
 
     frameIfNeeded();
@@ -246,9 +246,7 @@ export function CanvasStage({
       const cw = content.scrollWidth || parseInt(content.getAttribute("width") ?? "800", 10);
       const ch = content.scrollHeight || parseInt(content.getAttribute("height") ?? "600", 10);
       const padding = 48;
-      const scale = clampZoom(
-        Math.min((rect.width - padding * 2) / cw, (rect.height - padding * 2) / ch),
-      );
+      const scale = clampZoom(Math.min((rect.width - padding * 2) / cw, (rect.height - padding * 2) / ch));
       onViewportChange({
         panX: (rect.width - cw * scale) / 2 - content.offsetLeft * scale,
         panY: (rect.height - ch * scale) / 2 - content.offsetTop * scale,
@@ -310,8 +308,12 @@ export function CanvasStage({
   return (
     <div
       ref={ref}
+      id={id}
       className={`canvas-stage${panning ? " is-panning" : ""}`}
       data-testid="canvas-stage"
+      role="tabpanel"
+      tabIndex={0}
+      aria-label="Diagram canvas"
       data-marquee-enabled={marqueeEnabled ? "true" : "false"}
       onDragOver={onCatalogDragOver}
       onDrop={(event) => {
@@ -336,21 +338,16 @@ export function CanvasStage({
         event.preventDefault();
         const rect = event.currentTarget.getBoundingClientRect();
         const current = viewportRef.current;
-        onContextMenu?.(
-          event.clientX,
-          event.clientY,
-          {
-            x: (event.clientX - rect.left - current.panX) / current.zoom,
-            y: (event.clientY - rect.top - current.panY) / current.zoom,
-          },
-        );
+        onContextMenu?.(event.clientX, event.clientY, {
+          x: (event.clientX - rect.left - current.panX) / current.zoom,
+          y: (event.clientY - rect.top - current.panY) / current.zoom,
+        });
       }}
       onPointerDownCapture={(event) => {
         // Keep this through the corresponding click. Some engines dispatch
         // click after zero-delay timers, and selection can replace its target.
-        interactivePointerRef.current = Boolean(
-          (event.target as Element).closest("[data-interactive]"),
-        );
+        interactivePointerRef.current = Boolean((event.target as Element).closest("[data-interactive]"));
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       }}
       onPointerDown={(e) => {
         const shouldPan = e.button === 1 || (e.button === 0 && spaceRef.current);
@@ -413,11 +410,7 @@ export function CanvasStage({
           return;
         }
 
-        if (
-          e.button !== 0 ||
-          !marqueeEnabled ||
-          (e.target as Element).closest("[data-interactive]")
-        ) return;
+        if (e.button !== 0 || !marqueeEnabled || (e.target as Element).closest("[data-interactive]")) return;
         e.preventDefault();
         const stageRect = e.currentTarget.getBoundingClientRect();
         const toWorld = (clientX: number, clientY: number) => {
@@ -429,11 +422,7 @@ export function CanvasStage({
         };
         const startClient = { x: e.clientX, y: e.clientY };
         const start = toWorld(e.clientX, e.clientY);
-        const mode: CanvasSelectionMode = e.metaKey || e.ctrlKey
-          ? "toggle"
-          : e.shiftKey
-            ? "add"
-            : "replace";
+        const mode: CanvasSelectionMode = e.metaKey || e.ctrlKey ? "toggle" : e.shiftKey ? "add" : "replace";
         let dragged = false;
         const gestureAt = (clientX: number, clientY: number): CanvasMarqueeGesture => {
           const current = toWorld(clientX, clientY);
@@ -448,10 +437,7 @@ export function CanvasStage({
           };
         };
         const move = (event: PointerEvent) => {
-          if (
-            !dragged &&
-            Math.hypot(event.clientX - startClient.x, event.clientY - startClient.y) <= 4
-          ) return;
+          if (!dragged && Math.hypot(event.clientX - startClient.x, event.clientY - startClient.y) <= 4) return;
           dragged = true;
           interactivePointerRef.current = true;
           onMarqueePreview?.(gestureAt(event.clientX, event.clientY));

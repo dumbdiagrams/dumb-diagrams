@@ -1,0 +1,52 @@
+dgm 1
+diagram azure_private_order_processing {
+  grammar azure
+  flow lr
+  title "Azure private order processing"
+
+  cloud-agnostic.client public_client "Public client"
+  cloud-agnostic.client ops_client "Operations client"
+
+  azure.subscription subscription "Subscription" {
+    azure.region region "Region" {
+      azure.resource-group resource_group "Resource group" {
+        azure.front-door-and-cdn-profiles front_door "Front Door"
+        azure.api-management-services api_management "API Management"
+        azure.vnet app_network "Application VNet" {
+          azure.subnet app_subnet "Application subnet" {
+            azure.app-services app_api "App Service API"
+            azure.function-apps order_worker "Function worker"
+          }
+          azure.subnet data_subnet "Data subnet" {
+            azure.private-endpoints sql_private_endpoint "SQL private endpoint"
+            azure.private-endpoints storage_private_endpoint "Storage private endpoint"
+          }
+        }
+        azure.azure-service-bus work_queue "Work queue"
+        azure.azure-service-bus dead_letter_queue "Dead-letter queue"
+        azure.azure-sql order_db "Order database"
+        azure.storage-accounts file_storage "File storage"
+        azure.key-vaults key_vault "Key Vault"
+        azure.monitor monitor "Azure Monitor"
+      }
+    }
+  }
+
+  public_client -> front_door { id submit_order label "submit order" step 1 }
+  front_door -> api_management { id route_to_api label "route request" step 2 }
+  api_management -> app_api { id forward_request label "forward request" step 3 }
+  app_api -> sql_private_endpoint { id read_write_orders label "read and write orders" step 4 }
+  sql_private_endpoint -> order_db { id sql_private_link label "private link" style dashed }
+  app_api -> work_queue { id enqueue_work label "enqueue work" step 5 }
+  work_queue -> order_worker { id deliver_work label "deliver work" step 6 }
+  order_worker -> sql_private_endpoint { id write_order_status label "write order status" step 7 }
+  order_worker -> storage_private_endpoint { id write_files label "write files" step 7 }
+  storage_private_endpoint -> file_storage { id storage_private_link label "private link" style dashed }
+  work_queue -> dead_letter_queue { id failed_work_to_dlq kind fail label "after retry limit" }
+  ops_client -> dead_letter_queue { id inspect_dlq kind peer style dashed label "inspect and trigger redrive" }
+  dead_letter_queue -> work_queue { id redrive_work label "redrive to work queue" style dashed }
+  app_api -> key_vault { id read_api_secrets kind peer style dashed label "read secrets" }
+  order_worker -> key_vault { id read_worker_secrets kind peer style dashed label "read secrets" }
+  app_api -> monitor { id api_telemetry kind peer style dashed label "emit telemetry" }
+  order_worker -> monitor { id worker_telemetry kind peer style dashed label "emit telemetry" }
+}

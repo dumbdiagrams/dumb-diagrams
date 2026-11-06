@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createAsyncDocsFixture, DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView } from "@dumb-diagrams/runtime/core";
+import { createAsyncDocsFixture } from "@dumb-diagrams/runtime/test-fixtures";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
-import { parseDgm, printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
@@ -12,26 +13,20 @@ import { compileDiagramSource } from "./diagram-compiler.js";
 import {
   addAnnotation,
   addText,
-  addGroup,
-  addResource,
   alignSelection,
   annotationSize,
   annotationStyle,
-  canPlaceCatalogEntry,
   clearView,
   deleteSelection,
-  importSvgAsset,
   isSelected,
   MAX_EDGE_STEP,
   moveSelection,
   needsAutoFix,
   nudgeSelection,
   primarySelection,
-  pasteClipboard,
   reconnectEdge,
   renameResource,
   resourceIconSize,
-  serializeClipboard,
   sendToBack,
   sendToFront,
   setEdgeBadgePosition,
@@ -48,10 +43,6 @@ import {
   setGroupPlace,
   setGroupBounds,
   fitGroupToContents,
-  canGroupSelection,
-  groupSelection,
-  reparentPreservingAbsolutePosition,
-  ungroup,
   removeSelectionPreservingGroupContents,
   setRoute,
   setResourceIconSize,
@@ -60,6 +51,12 @@ import {
   updateEdge,
   updateEdgePreservingLayout,
 } from "./editor-model.js";
+import { addGroupResult, addResourceResult, canPlaceCatalogEntry } from "./model/catalog-placement.js";
+import { importSvgAssetResult } from "./model/asset-import.js";
+import { pasteClipboardResult, serializeClipboardResult } from "./model/clipboard.js";
+import { canGroupSelection, groupSelection, reparentPreservingAbsolutePosition, ungroup } from "./model/grouping.js";
+
+const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("editor commands", () => {
   it("keeps selection helpers and missing-target edits predictable", () => {
@@ -103,8 +100,9 @@ describe("editor commands", () => {
   it("limits arrow numbers to the supported 0-99 range", () => {
     const doc = createAsyncDocsFixture();
 
-    expect(updateEdge(doc, "e1", { step: MAX_EDGE_STEP }).edges.find((edge) => edge.id === "e1")?.step)
-      .toBe(MAX_EDGE_STEP);
+    expect(updateEdge(doc, "e1", { step: MAX_EDGE_STEP }).edges.find((edge) => edge.id === "e1")?.step).toBe(
+      MAX_EDGE_STEP,
+    );
     expect(updateEdge(doc, "e1", { step: MAX_EDGE_STEP + 1 })).toBe(doc);
     expect(updateEdge(doc, "e1", { step: -1 })).toBe(doc);
   });
@@ -138,7 +136,10 @@ describe("editor commands", () => {
 
     expect(service.allowedParents).not.toContain("region");
     expect(canPlaceCatalogEntry(doc, service, "use1")).toEqual({ ok: true });
-    const placedService = addResource(doc, service, "use1", { x: 2_000, y: 48 });
+    const placedServiceResult = addResourceResult(doc, service, "use1", { x: 2_000, y: 48 });
+    expect(placedServiceResult.isOk()).toBe(true);
+    if (placedServiceResult.isErr()) return;
+    const placedService = placedServiceResult.value;
     expect(placedService.doc.resources.find((resource) => resource.id === placedService.id)).toMatchObject({
       type: service.type,
       parent: "use1",
@@ -146,7 +147,7 @@ describe("editor commands", () => {
 
     expect(boundary.allowRoot).toBe(false);
     expect(canPlaceCatalogEntry(doc, boundary)).toEqual({ ok: true });
-    const placedBoundary = addGroup(
+    const placedBoundaryResult = addGroupResult(
       doc,
       "vpc",
       boundary.name,
@@ -154,18 +155,47 @@ describe("editor commands", () => {
       { x: 2_000, y: 48 },
       boundary.type,
     );
+    expect(placedBoundaryResult.isOk()).toBe(true);
+    if (placedBoundaryResult.isErr()) return;
+    const placedBoundary = placedBoundaryResult.value;
     expect(placedBoundary.doc.groups.find((group) => group.id === placedBoundary.id)).toMatchObject({
       type: boundary.type,
       parent: undefined,
     });
   });
 
+  it("returns catalog placement failures without mutating the document", () => {
+    const doc = createAsyncDocsFixture();
+    const service = getCatalogEntry("aws.elastic-container-service")!;
+    const group = getCatalogEntry("aws.vpc")!;
+
+    const missingResourceParent = addResourceResult(doc, service, "missing", { x: 40, y: 80 });
+    expect(missingResourceParent.isErr()).toBe(true);
+    if (missingResourceParent.isOk()) return;
+    expect(missingResourceParent.error).toEqual({
+      code: "parent-not-found",
+      message: "The selected parent group no longer exists.",
+    });
+
+    const missingGroupParent = addGroupResult(doc, "vpc", group.name, "missing", { x: 40, y: 80 }, group.type);
+    expect(missingGroupParent.isErr()).toBe(true);
+    if (missingGroupParent.isOk()) return;
+    expect(missingGroupParent.error.code).toBe("parent-not-found");
+
+    const resourceAsGroup = addGroupResult(doc, "logical", service.name, undefined, { x: 40, y: 80 }, service.type);
+    expect(resourceAsGroup.isErr()).toBe(true);
+    if (resourceAsGroup.isOk()) return;
+    expect(resourceAsGroup.error).toEqual({
+      code: "not-a-group",
+      message: `${service.name} is not a group.`,
+    });
+    expect(doc.groups.some((candidate) => candidate.type === service.type)).toBe(false);
+  });
+
   it("renames resources without changing ids", () => {
     const doc = createAsyncDocsFixture();
     const next = renameResource(doc, "client", "Browser");
-    expect(next.resources.find((resource) => resource.id === "client")?.label.role).toBe(
-      "Browser",
-    );
+    expect(next.resources.find((resource) => resource.id === "client")?.label.role).toBe("Browser");
   });
 
   it("persists resource and group display-label positions", () => {
@@ -260,13 +290,7 @@ describe("editor commands", () => {
     const doc = createAsyncDocsFixture();
     const view = getDefaultView(doc);
     view.places.client = { x: 40, y: 40, pin: true };
-    const next = nudgeSelection(
-      doc,
-      [{ kind: "resource", id: "client" }],
-      1,
-      1,
-      { snapToGrid: true },
-    );
+    const next = nudgeSelection(doc, [{ kind: "resource", id: "client" }], 1, 1, { snapToGrid: true });
     expect(getDefaultView(next).places.client).toMatchObject({ x: 48, y: 48, pin: true });
   });
 
@@ -275,7 +299,13 @@ describe("editor commands", () => {
     const view = getDefaultView(doc);
     view.places.main = { x: 12, y: 18, pin: true };
     view.places.api_alb = { x: 24, y: 30, pin: true };
-    view.routes.e1 = { pin: true, points: [{ x: 1, y: 1 }, { x: 2, y: 2 }] };
+    view.routes.e1 = {
+      pin: true,
+      points: [
+        { x: 1, y: 1 },
+        { x: 2, y: 2 },
+      ],
+    };
 
     expect(needsAutoFix(doc)).toBe(true);
     const fixed = clearView(doc);
@@ -310,13 +340,7 @@ describe("editor commands", () => {
     view.places.appA = { x: 200, y: 200, pin: true };
     view.places.apiA = { x: 240, y: 240, pin: true };
     view.places.workerA = { x: 280, y: 240, pin: true };
-    const next = moveSelection(
-      doc,
-      [{ kind: "group", id: "appA" }],
-      8,
-      16,
-      layoutDocument(doc),
-    );
+    const next = moveSelection(doc, [{ kind: "group", id: "appA" }], 8, 16, layoutDocument(doc));
     expect(getDefaultView(next).places.appA).toMatchObject({ x: 208, y: 216 });
     expect(getDefaultView(next).places.apiA).toMatchObject({ x: 248, y: 256 });
     expect(getDefaultView(next).places.workerA).toMatchObject({ x: 288, y: 256 });
@@ -325,14 +349,7 @@ describe("editor commands", () => {
   it("keeps a dragged resource at its pinned drop position", () => {
     const doc = createAsyncDocsFixture();
     const before = layoutDocument(doc);
-    const beforeNode = before.nodes.find((node) => node.id === "apiA")!;
-    const next = moveSelection(
-      doc,
-      [{ kind: "resource", id: "apiA" }],
-      112,
-      64,
-      before,
-    );
+    const next = moveSelection(doc, [{ kind: "resource", id: "apiA" }], 112, 64, before);
     const afterNode = layoutDocument(next).nodes.find((node) => node.id === "apiA")!;
     const place = getDefaultView(next).places.apiA!;
 
@@ -345,13 +362,7 @@ describe("editor commands", () => {
     getDefaultView(doc).places.apiA = { x: 8, y: 8, pin: false };
     const before = layoutDocument(doc);
     const beforeNode = before.nodes.find((node) => node.id === "apiA")!;
-    const next = moveSelection(
-      doc,
-      [{ kind: "resource", id: "apiA" }],
-      48,
-      24,
-      before,
-    );
+    const next = moveSelection(doc, [{ kind: "resource", id: "apiA" }], 48, 24, before);
 
     expect(getDefaultView(next).places.apiA).toMatchObject({
       x: Math.round(beforeNode.obstacle.x + 48),
@@ -388,8 +399,13 @@ describe("editor commands", () => {
 
   it("pastes nested groups without duplicating child ids", () => {
     const doc = createAsyncDocsFixture();
-    const payload = serializeClipboard(doc, [{ kind: "group", id: "appA" }]);
-    const result = pasteClipboard(doc, payload, { x: 600, y: 600 });
+    const serialized = serializeClipboardResult(doc, [{ kind: "group", id: "appA" }]);
+    expect(serialized.isOk()).toBe(true);
+    if (serialized.isErr()) return;
+    const pasted = pasteClipboardResult(doc, serialized.value, { x: 600, y: 600 });
+    expect(pasted.isOk()).toBe(true);
+    if (pasted.isErr()) return;
+    const result = pasted.value;
     const pastedGroupId = result.selection.find((item) => item.kind === "group")?.id;
     const pastedGroup = result.doc.groups.find((group) => group.id === pastedGroupId);
     expect(pastedGroup).toBeTruthy();
@@ -399,8 +415,13 @@ describe("editor commands", () => {
 
   it("keeps a copied nested resource inside copied ancestor groups", () => {
     const doc = createAsyncDocsFixture();
-    const payload = serializeClipboard(doc, [{ kind: "resource", id: "artifacts" }]);
-    const result = pasteClipboard(doc, payload, { x: 600, y: 600 });
+    const serialized = serializeClipboardResult(doc, [{ kind: "resource", id: "artifacts" }]);
+    expect(serialized.isOk()).toBe(true);
+    if (serialized.isErr()) return;
+    const pasted = pasteClipboardResult(doc, serialized.value, { x: 600, y: 600 });
+    expect(pasted.isOk()).toBe(true);
+    if (pasted.isErr()) return;
+    const result = pasted.value;
     const pastedResourceId = result.selection.find((item) => item.kind === "resource")?.id;
     const pastedResource = result.doc.resources.find((resource) => resource.id === pastedResourceId);
     const pastedParent = result.doc.groups.find((group) => group.id === pastedResource?.parent);
@@ -423,10 +444,14 @@ describe("editor commands", () => {
   it("imports sanitized svg assets with deduplication", () => {
     const doc = createAsyncDocsFixture();
     const svg = '<svg viewBox="0 0 32 32"><rect width="32" height="32"/></svg>';
-    const first = importSvgAsset(doc, svg);
-    const second = importSvgAsset(first.doc, svg);
-    expect(first.assetId).toBe(second.assetId);
-    expect(first.doc.assets).toHaveLength(1);
+    const first = importSvgAssetResult(doc, svg);
+    expect(first.isOk()).toBe(true);
+    if (first.isErr()) return;
+    const second = importSvgAssetResult(first.value.doc, svg);
+    expect(second.isOk()).toBe(true);
+    if (second.isErr()) return;
+    expect(first.value.assetId).toBe(second.value.assetId);
+    expect(first.value.doc.assets).toHaveLength(1);
   });
 
   it("aligns selection to a shared edge", () => {
@@ -443,7 +468,7 @@ describe("editor commands", () => {
           label: { x: 10, y: 74, w: 64, h: 24 },
           obstacle: { x: 10, y: 10, w: 64, h: 88 },
           role: "primary" as const,
-          resourceType: "generic.user",
+          resourceType: "cloud-agnostic.actor",
           serviceLabel: "Client",
         },
         {
@@ -453,7 +478,7 @@ describe("editor commands", () => {
           label: { x: 80, y: 104, w: 64, h: 24 },
           obstacle: { x: 80, y: 40, w: 64, h: 88 },
           role: "primary" as const,
-          resourceType: "aws.alb",
+          resourceType: "aws.elastic-load-balancing",
           serviceLabel: "ALB",
         },
       ],
@@ -545,7 +570,13 @@ describe("editor commands", () => {
   it("reparents groups and resources without changing absolute places or routes", () => {
     const doc = createAsyncDocsFixture();
     getDefaultView(doc).places.apiA = { x: 120, y: 140, pin: true };
-    getDefaultView(doc).routes.e2 = { pin: true, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
+    getDefaultView(doc).routes.e2 = {
+      pin: true,
+      points: [
+        { x: 1, y: 2 },
+        { x: 3, y: 4 },
+      ],
+    };
     const beforePlace = structuredClone(getDefaultView(doc).places.apiA);
     const beforeRoute = structuredClone(getDefaultView(doc).routes.e2);
     const next = reparentPreservingAbsolutePosition(doc, { kind: "resource", id: "apiA" }, "appB");
@@ -567,10 +598,15 @@ describe("editor commands", () => {
       ...before.groups.map((group) => [group.id, group.bounds] as const),
     ]);
     const beforeEdges = structuredClone(doc.edges);
-    const result = groupSelection(doc, [
-      { kind: "resource", id: "jobs_dlq" },
-      { kind: "resource", id: "jobs" },
-    ], before, "Processing");
+    const result = groupSelection(
+      doc,
+      [
+        { kind: "resource", id: "jobs_dlq" },
+        { kind: "resource", id: "jobs" },
+      ],
+      before,
+      "Processing",
+    );
 
     expect(result).toBeTruthy();
     const next = result!.doc;
@@ -589,7 +625,8 @@ describe("editor commands", () => {
     const style = GROUP_STYLES.logical;
     const expected = {
       x: Math.min(beforeGeometry.get("jobs")!.x, beforeGeometry.get("jobs_dlq")!.x) - style.padding,
-      y: Math.min(beforeGeometry.get("jobs")!.y, beforeGeometry.get("jobs_dlq")!.y) - style.headerHeight - style.padding,
+      y:
+        Math.min(beforeGeometry.get("jobs")!.y, beforeGeometry.get("jobs_dlq")!.y) - style.headerHeight - style.padding,
     };
     expect(getDefaultView(next).places[result!.id]).toMatchObject(expected);
   });
@@ -623,19 +660,19 @@ describe("editor commands", () => {
     };
 
     const beforeGroupCount = doc.groups.length;
-    const result = groupSelection(doc, [
-      { kind: "group", id: "cloud" },
-      { kind: "group", id: "use1" },
-      { kind: "resource", id: "client" },
-    ], layout);
+    const result = groupSelection(
+      doc,
+      [
+        { kind: "group", id: "cloud" },
+        { kind: "group", id: "use1" },
+        { kind: "resource", id: "client" },
+      ],
+      layout,
+    );
 
     expect(result?.id).toBe("cloud");
     expect(result?.doc.groups).toHaveLength(beforeGroupCount);
-    expect(result?.doc.groups.find((group) => group.id === "cloud")).toMatchObject({
-      kind: "cloud",
-      label: "AWS Cloud",
-      children: ["use1", "client"],
-    });
+    expect(result?.doc.groups.find((group) => group.id === "cloud")?.children.sort()).toEqual(["client", "use1"]);
     expect(result?.doc.groups.find((group) => group.id === "use1")?.parent).toBe("cloud");
     expect(result?.doc.resources.find((resource) => resource.id === "client")?.parent).toBe("cloud");
     expect(result?.doc.groups.some((group) => group.label === "Group")).toBe(false);
@@ -657,72 +694,133 @@ describe("editor commands", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);
 
-    const nested = groupSelection(doc, [
-      { kind: "group", id: "queues" },
-      { kind: "group", id: "storage" },
-    ], layout);
+    const nested = groupSelection(
+      doc,
+      [
+        { kind: "group", id: "queues" },
+        { kind: "group", id: "storage" },
+      ],
+      layout,
+    );
     expect(nested).toBeTruthy();
     expect(nested!.doc.groups.find((group) => group.id === nested!.id)?.children).toEqual(["queues", "storage"]);
     expect(nested!.doc.groups.find((group) => group.id === "use1")?.children).toEqual(["main", nested!.id]);
-    expect(groupSelection(doc, [{ kind: "edge", id: "e1" }, { kind: "resource", id: "apiA" }], layout)).toBeNull();
-    expect(groupSelection(doc, [{ kind: "resource", id: "apiA" }, { kind: "resource", id: "missing" }], layout)).toBeNull();
-    expect(groupSelection(doc, [{ kind: "resource", id: "apiA" }, { kind: "resource", id: "apiB" }], layout)).toBeNull();
-    expect(groupSelection(doc, [{ kind: "group", id: "azA" }, { kind: "group", id: "appA" }], layout)).toBeNull();
+    expect(
+      groupSelection(
+        doc,
+        [
+          { kind: "edge", id: "e1" },
+          { kind: "resource", id: "apiA" },
+        ],
+        layout,
+      ),
+    ).toBeNull();
+    expect(
+      groupSelection(
+        doc,
+        [
+          { kind: "resource", id: "apiA" },
+          { kind: "resource", id: "missing" },
+        ],
+        layout,
+      ),
+    ).toBeNull();
+    expect(
+      groupSelection(
+        doc,
+        [
+          { kind: "resource", id: "apiA" },
+          { kind: "resource", id: "apiB" },
+        ],
+        layout,
+      ),
+    ).toBeNull();
+    expect(
+      groupSelection(
+        doc,
+        [
+          { kind: "group", id: "azA" },
+          { kind: "group", id: "appA" },
+        ],
+        layout,
+      ),
+    ).toBeNull();
     expect(groupSelection(doc, [{ kind: "resource", id: "apiA" }], layout)).toBeNull();
   });
 
   it("centralizes group eligibility for sibling resources and groups", () => {
     const doc = createAsyncDocsFixture();
 
-    expect(canGroupSelection(doc, [
-      { kind: "resource", id: "jobs" },
-      { kind: "resource", id: "jobs_dlq" },
-    ])).toBe(true);
-    expect(canGroupSelection(doc, [
-      { kind: "resource", id: "apiA" },
-      { kind: "resource", id: "apiB" },
-    ])).toBe(false);
-    expect(canGroupSelection(doc, [
-      { kind: "group", id: "appA" },
-      { kind: "resource", id: "apiA" },
-    ])).toBe(false);
-    expect(canGroupSelection(doc, [
-      { kind: "resource", id: "jobs" },
-      { kind: "edge", id: "e1" },
-    ])).toBe(false);
-    expect(canGroupSelection(doc, [
-      { kind: "resource", id: "jobs" },
-      { kind: "resource", id: "jobs_dlq" },
-      { kind: "edge", id: "e6" },
-    ])).toBe(true);
-    expect(canGroupSelection(doc, [
-      { kind: "group", id: "queues" },
-      { kind: "group", id: "storage" },
-      { kind: "edge", id: "e1" },
-    ])).toBe(true);
-    expect(canGroupSelection(doc, [
-      { kind: "resource", id: "missing" },
-      { kind: "resource", id: "jobs" },
-    ])).toBe(false);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "resource", id: "jobs" },
+        { kind: "resource", id: "jobs_dlq" },
+      ]),
+    ).toBe(true);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "resource", id: "apiA" },
+        { kind: "resource", id: "apiB" },
+      ]),
+    ).toBe(false);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "group", id: "appA" },
+        { kind: "resource", id: "apiA" },
+      ]),
+    ).toBe(false);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "resource", id: "jobs" },
+        { kind: "edge", id: "e1" },
+      ]),
+    ).toBe(false);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "resource", id: "jobs" },
+        { kind: "resource", id: "jobs_dlq" },
+        { kind: "edge", id: "e6" },
+      ]),
+    ).toBe(true);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "group", id: "queues" },
+        { kind: "group", id: "storage" },
+        { kind: "edge", id: "e1" },
+      ]),
+    ).toBe(true);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "resource", id: "missing" },
+        { kind: "resource", id: "jobs" },
+      ]),
+    ).toBe(false);
   });
 
   it("ungroups while promoting direct children and preserving connections", () => {
     const doc = createAsyncDocsFixture();
     getDefaultView(doc).places.appA = { x: 12, y: 18, w: 200, h: 160, pin: true, manual: true };
-    getDefaultView(doc).routes.e2 = { pin: true, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] };
+    getDefaultView(doc).routes.e2 = {
+      pin: true,
+      points: [
+        { x: 1, y: 2 },
+        { x: 3, y: 4 },
+      ],
+    };
     const { doc: next, selection } = ungroup(doc, "appA");
 
     expect(selection).toEqual([
       { kind: "resource", id: "apiA" },
       { kind: "resource", id: "workerA" },
     ]);
-    expect(next.groups.some((group) => group.id === "appA")).toBe(false);
+    expect(next.groups.some((group) => group.id === "appA")).toBe(true);
+    expect(next.groups.find((group) => group.id === "appA")?.children).toEqual([]);
     expect(next.groups.find((group) => group.id === "azA")?.children).toEqual(
-      expect.arrayContaining(["pubA", "appA"].filter((id) => id !== "appA").concat(["apiA", "workerA"])),
+      expect.arrayContaining(["pubA", "appA", "apiA", "workerA"]),
     );
     expect(next.resources.find((resource) => resource.id === "apiA")?.parent).toBe("azA");
     expect(next.resources.find((resource) => resource.id === "workerA")?.parent).toBe("azA");
-    expect(getDefaultView(next).places.appA).toBeUndefined();
+    expect(getDefaultView(next).places.appA).toMatchObject(getDefaultView(doc).places.appA!);
     expect(getDefaultView(next).routes.e2).toEqual(getDefaultView(doc).routes.e2);
     expect(next.edges.find((edge) => edge.id === "e2")).toEqual(doc.edges.find((edge) => edge.id === "e2"));
   });
@@ -742,7 +840,9 @@ describe("editor commands", () => {
     expect(next.resources.some((resource) => resource.id === "workerA")).toBe(true);
     expect(removeSelectionPreservingGroupContents(doc, selection)).toEqual(next);
     expect(deleteSelection(doc, [{ kind: "group", id: "appA" }])).not.toEqual(doc);
-    expect(deleteSelection(doc, [{ kind: "group", id: "appA" }]).resources.some((resource) => resource.id === "apiA")).toBe(false);
+    expect(
+      deleteSelection(doc, [{ kind: "group", id: "appA" }]).resources.some((resource) => resource.id === "apiA"),
+    ).toBe(false);
   });
 
   it("groups mixed selections by projecting eligible sibling roots", () => {
@@ -766,15 +866,19 @@ describe("editor commands", () => {
 
   it("rejects projected grouping candidates with fewer than two roots or different parents", () => {
     const doc = createAsyncDocsFixture();
-    expect(canGroupSelection(doc, [
-      { kind: "group", id: "queues" },
-      { kind: "resource", id: "jobs" },
-      { kind: "edge", id: "e6" },
-    ])).toBe(false);
-    expect(canGroupSelection(doc, [
-      { kind: "resource", id: "client" },
-      { kind: "group", id: "queues" },
-    ])).toBe(false);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "group", id: "queues" },
+        { kind: "resource", id: "jobs" },
+        { kind: "edge", id: "e6" },
+      ]),
+    ).toBe(false);
+    expect(
+      canGroupSelection(doc, [
+        { kind: "resource", id: "client" },
+        { kind: "group", id: "queues" },
+      ]),
+    ).toBe(false);
   });
 
   it("ungroups a parsed curated aws cloud while preserving descendants, edges, and geometry", () => {
@@ -783,7 +887,7 @@ describe("editor commands", () => {
   flow lr
   title "Simple serverless web application"
 
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
 
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {
@@ -804,9 +908,7 @@ describe("editor commands", () => {
 }
 `);
     const beforeLayout = layoutDocument(doc);
-    const beforePositions = new Map(
-      beforeLayout.nodes.map((node) => [node.id, node.obstacle]),
-    );
+    const beforePositions = new Map(beforeLayout.nodes.map((node) => [node.id, node.obstacle]));
     for (const group of beforeLayout.groups) beforePositions.set(group.id, group.bounds);
     const edgeCount = doc.edges.length;
 
@@ -821,9 +923,7 @@ describe("editor commands", () => {
     expect(next.resources.some((resource) => resource.id === "app_data")).toBe(true);
     expect(next.resources.some((resource) => resource.id === "web_client")).toBe(true);
     expect(next.edges).toHaveLength(edgeCount);
-    expect(selection.map((item) => item.id).sort()).toEqual(
-      ["app_data", "aws_cloud", "frontend", "gateway", "handler"].sort(),
-    );
+    expect(selection.map((item) => item.id).sort()).toEqual(["app_data", "frontend", "gateway", "handler"].sort());
 
     const afterLayout = layoutDocument(next);
     const view = getDefaultView(next);
@@ -842,7 +942,7 @@ describe("editor commands", () => {
     const doc = parseDgm(`diagram simple-serverless-web-application {
   grammar aws
   flow lr
-  generic.client web_client "Web client"
+  cloud-agnostic.client web_client "Web client"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary frontend "Frontend services" {
       aws.cloudfront cdn "Web delivery"
@@ -879,8 +979,7 @@ describe("editor commands", () => {
     if (!compiled.ok) return;
     for (const id of ["frontend", "gateway", "handler", "app_data", "cdn", "static_assets", "web_client"]) {
       expect(
-        compiled.layout.nodes.some((node) => node.id === id) ||
-          compiled.layout.groups.some((group) => group.id === id),
+        compiled.layout.nodes.some((node) => node.id === id) || compiled.layout.groups.some((group) => group.id === id),
         id,
       ).toBe(true);
     }
@@ -893,7 +992,7 @@ describe("editor commands", () => {
   grammar aws
   flow lr
   title "Image thumbnail pipeline"
-  generic.client image_uploader "Image uploader"
+  cloud-agnostic.client image_uploader "Image uploader"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary upload_experience "Upload experience" {
       aws.cloudfront cdn "Web delivery"
@@ -925,7 +1024,7 @@ describe("editor commands", () => {
     const { doc: next, selection } = ungroup(doc, "aws_cloud", compiledBefore.layout);
     expect(next.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
     expect(selection.map((item) => item.id).sort()).toEqual(
-      ["aws_cloud", "processed_assets", "processing", "upload_experience", "upload_storage"].sort(),
+      ["processed_assets", "processing", "upload_experience", "upload_storage"].sort(),
     );
     for (const id of ["upload_experience", "upload_storage", "processing", "processed_assets"]) {
       expect(next.groups.find((group) => group.id === id)?.parent).toBeUndefined();
@@ -933,7 +1032,7 @@ describe("editor commands", () => {
     const source = printDgm(next);
     expect(source).toContain("aws.cloud aws_cloud");
     expect(source).toContain('boundary upload_experience "Upload experience"');
-    expect(source).toContain('aws.aws-lambda thumbnail_processor');
+    expect(source).toContain("aws.aws-lambda thumbnail_processor");
     const reparsed = parseDgm(source);
     expect(reparsed.groups.some((group) => group.id === "upload_experience")).toBe(true);
     expect(reparsed.resources.some((resource) => resource.id === "thumbnail_processor")).toBe(true);
@@ -941,13 +1040,20 @@ describe("editor commands", () => {
     expect(compiled.ok).toBe(true);
     if (!compiled.ok) return;
     for (const id of [
-      "image_uploader", "cdn", "upload_ui", "original_images", "thumbnail_processor",
-      "thumbnail_images", "image_metadata", "upload_experience", "upload_storage",
-      "processing", "processed_assets",
+      "image_uploader",
+      "cdn",
+      "upload_ui",
+      "original_images",
+      "thumbnail_processor",
+      "thumbnail_images",
+      "image_metadata",
+      "upload_experience",
+      "upload_storage",
+      "processing",
+      "processed_assets",
     ]) {
       expect(
-        compiled.layout.nodes.some((node) => node.id === id) ||
-          compiled.layout.groups.some((group) => group.id === id),
+        compiled.layout.nodes.some((node) => node.id === id) || compiled.layout.groups.some((group) => group.id === id),
         id,
       ).toBe(true);
     }
@@ -959,7 +1065,7 @@ describe("editor commands", () => {
     const initialSource = `diagram image-thumbnail-pipeline {
   grammar aws
   flow lr
-  generic.client image_uploader "Image uploader"
+  cloud-agnostic.client image_uploader "Image uploader"
   aws.cloud aws_cloud "AWS Cloud" {
     cloud-agnostic.boundary upload_experience "Upload experience" {
       aws.cloudfront cdn "Web delivery"
@@ -997,11 +1103,135 @@ describe("editor commands", () => {
     expect(once.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
     expect(afterOnce.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
     expect(printDgm(once.doc)).toContain('cloud-agnostic.boundary upload_experience "Upload experience"');
-    expect(printDgm(once.doc)).toContain('aws.cloud aws_cloud "AWS Cloud" {');
+    expect(printDgm(once.doc)).toContain('  aws.cloud aws_cloud "AWS Cloud"\n');
 
     const twice = ungroup(afterOnce.doc, "aws_cloud", afterOnce.layout);
     expect(twice.doc.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
     expect(twice.doc.groups.find((group) => group.id === "upload_experience")?.parent).toBeUndefined();
+  });
+
+  it("removeSelectionPreservingGroupContents deletes a retained empty boundary shell", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  cloud-agnostic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+    }
+    aws.api-gateway gateway
+  }
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> gateway { id cdn_to_api step 2 }
+}
+`);
+    const { doc: ungrouped } = ungroup(doc, "aws_cloud", layoutDocument(doc));
+    expect(ungrouped.groups.find((group) => group.id === "aws_cloud")?.children).toEqual([]);
+
+    const next = removeSelectionPreservingGroupContents(ungrouped, [{ kind: "group", id: "aws_cloud" }]);
+    expect(next.groups.some((group) => group.id === "aws_cloud")).toBe(false);
+    expect(next.groups.some((group) => group.id === "frontend")).toBe(true);
+    expect(next.resources.some((resource) => resource.id === "gateway")).toBe(true);
+  });
+
+  it("clearView after ungroup preserves detached empty boundary geometry", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  cloud-agnostic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.api-gateway gateway
+  }
+  web_client -> gateway { id client_to_api step 1 }
+}
+`);
+    const layout = layoutDocument(doc);
+    const { doc: ungrouped } = ungroup(doc, "aws_cloud", layout);
+    const cloudPlace = getDefaultView(ungrouped).places.aws_cloud;
+    expect(cloudPlace?.x).toBeDefined();
+
+    const fixed = clearView(ungrouped);
+    expect(getDefaultView(fixed).places.aws_cloud).toMatchObject({
+      x: cloudPlace!.x,
+      y: cloudPlace!.y,
+      w: cloudPlace!.w,
+      h: cloudPlace!.h,
+    });
+
+    const afterLayout = layoutDocument(fixed);
+    const cloudBounds = afterLayout.groups.find((group) => group.id === "aws_cloud")!.bounds;
+    expect(Math.abs(cloudBounds.x - cloudPlace!.x!)).toBeLessThan(4);
+    expect(Math.abs(cloudBounds.y - cloudPlace!.y!)).toBeLessThan(4);
+  });
+
+  it("clearView after grouping mixed siblings preserves left-to-right architecture order", () => {
+    const doc = createAsyncDocsFixture();
+    doc.groups.unshift({
+      id: "cloud",
+      kind: "cloud",
+      type: "aws.cloud",
+      label: "AWS Cloud",
+      children: [],
+    });
+    const layout = layoutDocument(doc);
+    const cloud = layout.groups.find((group) => group.id === "cloud")!;
+    const region = layout.groups.find((group) => group.id === "use1")!.bounds;
+    const client = layout.nodes.find((node) => node.id === "client")!.obstacle;
+    cloud.bounds = {
+      x: Math.min(region.x, client.x) - 64,
+      y: Math.min(region.y, client.y) - 64,
+      w: Math.max(region.x + region.w, client.x + client.w) - Math.min(region.x, client.x) + 128,
+      h: Math.max(region.y + region.h, client.y + client.h) - Math.min(region.y, client.y) + 128,
+    };
+
+    const grouped = groupSelection(
+      doc,
+      [
+        { kind: "group", id: "cloud" },
+        { kind: "group", id: "use1" },
+        { kind: "resource", id: "client" },
+      ],
+      layout,
+    );
+    expect(grouped?.doc.groups.find((group) => group.id === "cloud")?.children).toEqual(["client", "use1"]);
+
+    const fixed = clearView(grouped!.doc);
+    const after = layoutDocument(fixed);
+    const clientNode = after.nodes.find((node) => node.id === "client")!;
+    const regionGroup = after.groups.find((group) => group.id === "use1")!;
+    expect(clientNode.obstacle.x).toBeLessThan(regionGroup.bounds.x);
+  });
+
+  it("clearView after ungroup keeps promoted architecture in causal flow order", () => {
+    const doc = parseDgm(`diagram simple-serverless-web-application {
+  grammar aws
+  flow lr
+  cloud-agnostic.client web_client "Web client"
+  aws.cloud aws_cloud "AWS Cloud" {
+    cloud-agnostic.boundary frontend "Frontend services" {
+      aws.cloudfront cdn "Web delivery"
+    }
+    aws.api-gateway gateway
+    aws.aws-lambda handler "Request handler"
+    aws.dynamodb app_data "Application data"
+  }
+  web_client -> cdn { id client_to_cdn step 1 }
+  cdn -> gateway { id cdn_to_api step 2 }
+  gateway -> handler { id api_to_handler step 3 }
+  handler -> app_data { id handler_to_data step 4 }
+}
+`);
+    const { doc: ungrouped } = ungroup(doc, "aws_cloud", layoutDocument(doc));
+    const fixed = clearView(ungrouped);
+    const layout = layoutDocument(fixed);
+    const positions = new Map<string, number>();
+    for (const node of layout.nodes) positions.set(node.id, node.obstacle.x);
+    for (const group of layout.groups) {
+      if (group.id !== "aws_cloud") positions.set(group.id, group.bounds.x);
+    }
+    expect(positions.get("web_client")!).toBeLessThan(positions.get("gateway")!);
+    expect(positions.get("gateway")!).toBeLessThan(positions.get("handler")!);
+    expect(positions.get("handler")!).toBeLessThan(positions.get("app_data")!);
   });
 
   it("infers parent-pointer-only direct children when ungrouping", () => {
@@ -1013,7 +1243,8 @@ describe("editor commands", () => {
     const layout = layoutDocument(doc);
     const { doc: next, selection } = ungroup(doc, "queues", layout);
 
-    expect(next.groups.some((candidate) => candidate.id === "queues")).toBe(false);
+    expect(next.groups.some((candidate) => candidate.id === "queues")).toBe(true);
+    expect(next.groups.find((candidate) => candidate.id === "queues")?.children).toEqual([]);
     expect(next.resources.some((resource) => resource.id === "jobs")).toBe(true);
     expect(next.resources.some((resource) => resource.id === "jobs_dlq")).toBe(true);
     expect(selection.map((item) => item.id).sort()).toEqual(["jobs", "jobs_dlq"]);
@@ -1022,10 +1253,14 @@ describe("editor commands", () => {
   it("round-trips group and ungroup without losing document members", () => {
     const doc = createAsyncDocsFixture();
     const layout = layoutDocument(doc);
-    const grouped = groupSelection(doc, [
-      { kind: "resource", id: "jobs" },
-      { kind: "resource", id: "jobs_dlq" },
-    ], layout);
+    const grouped = groupSelection(
+      doc,
+      [
+        { kind: "resource", id: "jobs" },
+        { kind: "resource", id: "jobs_dlq" },
+      ],
+      layout,
+    );
     expect(grouped).toBeTruthy();
 
     const regroupedLayout = layoutDocument(grouped!.doc);
@@ -1111,9 +1346,7 @@ describe("editor commands", () => {
       { x: 240, y: 288 },
       { x: 432, y: 288 },
     ];
-    const moved = points.map((point, index) =>
-      index === 1 ? { x: point.x + 32, y: point.y + 16 } : point,
-    );
+    const moved = points.map((point, index) => (index === 1 ? { x: point.x + 32, y: point.y + 16 } : point));
     const next = setRoute(doc, "e3", moved);
     const normalized = normalizeOrthogonalRoute(moved);
     expect(getDefaultView(next).routes.e3).toMatchObject({
@@ -1133,30 +1366,37 @@ describe("editor commands", () => {
     expect(resource?.role).toBe("secondary");
     expect(getDefaultView(small).places.client?.w).toBeUndefined();
     const normal = setResourceIconSize(small, "client", "normal");
-    expect(normal.resources.find((candidate) => candidate.id === "client")?.role).toBe(
-      "primary",
-    );
+    expect(normal.resources.find((candidate) => candidate.id === "client")?.role).toBe("primary");
     expect(resourceIconSize(normal.resources.find((c) => c.id === "client")!)).toBe("normal");
   });
 
   it("rejects oversized and structurally invalid clipboard payloads", () => {
     const doc = createAsyncDocsFixture();
-    expect(() => pasteClipboard(doc, "x".repeat(DIAGRAM_LIMITS.clipboardBytes + 1), { x: 0, y: 0 })).toThrow(/512 KiB/);
-    expect(() => pasteClipboard(doc, JSON.stringify({
-      type: "dumb-diagrams/clipboard",
-      resources: [{ resource: { id: 42 } }],
-    }), { x: 0, y: 0 })).toThrow(/invalid resource/);
+    const oversized = pasteClipboardResult(doc, "x".repeat(DIAGRAM_LIMITS.clipboardBytes + 1), { x: 0, y: 0 });
+    expect(oversized.isErr() && oversized.error.code).toBe("clipboard-too-large");
+    const malformed = pasteClipboardResult(
+      doc,
+      JSON.stringify({
+        type: "dumb-diagrams/clipboard",
+        resources: [{ resource: { id: 42 } }],
+      }),
+      { x: 0, y: 0 },
+    );
+    expect(malformed.isErr() && malformed.error.code).toBe("clipboard-invalid-resource");
   });
 
   it("rejects a paste when the merged document would exceed an object limit", () => {
     const doc = createAsyncDocsFixture();
     while (doc.resources.length < DIAGRAM_LIMITS.resources) {
       const id = `extra-${doc.resources.length}`;
-      doc.resources.push({ id, type: "generic.user", label: { role: id }, role: "primary", props: {} });
+      doc.resources.push({ id, type: "cloud-agnostic.actor", label: { role: id }, role: "primary", props: {} });
     }
     const source = createAsyncDocsFixture();
-    const payload = serializeClipboard(source, [{ kind: "resource", id: source.resources[0]!.id }]);
-    expect(() => pasteClipboard(doc, payload, { x: 0, y: 0 })).toThrow(/500-resources/);
+    const serialized = serializeClipboardResult(source, [{ kind: "resource", id: source.resources[0]!.id }]);
+    expect(serialized.isOk()).toBe(true);
+    if (serialized.isErr()) return;
+    const pasted = pasteClipboardResult(doc, serialized.value, { x: 0, y: 0 });
+    expect(pasted.isErr() && pasted.error.code).toBe("clipboard-document-invalid");
     expect(doc.resources).toHaveLength(DIAGRAM_LIMITS.resources);
   });
 });

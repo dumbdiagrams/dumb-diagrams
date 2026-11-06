@@ -1,0 +1,26 @@
+---
+const stages = [
+  ['parse', '01', 'Parse', '.dgm text', 'Parsed document', 'Syntax errors'],
+  ['validate', '02', 'Validate', 'Parsed document', 'Validated document', 'Unknown IDs or invalid groups'],
+  ['layout', '03', 'Layout', 'Groups and resources', 'Placed cards and groups', 'Space needed for labels'],
+  ['route', '04', 'Route', 'Cards and connections', 'Right-angle paths', 'Warnings if search limits are reached'],
+  ['inspect', '05', 'Inspect', 'Finished drawing', 'Drawing quality report', 'Collisions and crossings'],
+  ['render', '06', 'Render', 'Finished drawing', 'Portable SVG', 'Rejected unsafe assets'],
+] as const;
+const symbols = { parse: '{ }', validate: '✓', layout: '▦', route: '↳', inspect: '◎', render: '</>' };
+---
+<figure class="mechanic-figure pipeline-explainer" data-explainer="pipeline" data-active="parse" aria-labelledby="pipeline-title">
+  <div class="figure-heading"><div><h3 id="pipeline-title">From text to a drawing</h3></div><span class="figure-chip">deterministic</span></div>
+  <div class="pipeline-controls" role="tablist" aria-label="Engine stages">
+    {stages.map(([id, number, label], index) => <button type="button" role="tab" id={`pipeline-tab-${id}`} aria-controls={`pipeline-panel-${id}`} aria-selected={index === 0 ? 'true' : 'false'} data-explainer-control={id}><span>{number}</span>{label}</button>)}
+  </div>
+  <div class="pipeline-panels">
+    {stages.map(([id, number, label, input, output, failure]) => <section role="tabpanel" id={`pipeline-panel-${id}`} aria-labelledby={`pipeline-tab-${id}`} data-explainer-panel={id} class="pipeline-panel">
+      <h4 class="panel-context" data-motion-content>{number} / {label}</h4>
+      <div class="pipeline-sketch" aria-hidden="true"><span class="source-sheet"><span data-motion-content>{input}</span></span><span class="pipeline-arrow">→</span><span class="stage-machine"><span data-motion-content>{number}</span><b data-motion-content>{label}</b><span class="stage-symbol" data-motion-content>{symbols[id]}</span></span><span class="pipeline-arrow">→</span><span class="output-sheet"><span data-motion-content>{output}</span></span></div>
+      <dl class="figure-facts"><div><dt>Starts with</dt><dd data-motion-content>{input}</dd></div><div><dt>Produces</dt><dd data-motion-content>{output}</dd></div><div><dt>Looks at</dt><dd data-motion-content>{failure}</dd></div></dl>
+    </section>)}
+  </div>
+  <figcaption>Select a step to follow what happens to your diagram.</figcaption>
+</figure>
+<script src="../../scripts/docs-explainers.ts"></script>

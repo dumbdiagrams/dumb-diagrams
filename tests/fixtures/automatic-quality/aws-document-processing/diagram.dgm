@@ -1,0 +1,57 @@
+dgm 1
+diagram aws_document_processing {
+  grammar aws
+  flow lr
+  title "AWS document processing"
+
+  cloud-agnostic.client client "Document intake client"
+  cloud-agnostic.actor ops "Operations user"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.region region "AWS Region" {
+      aws.vpc vpc "VPC" {
+        aws.az az_a "Availability Zone A" {
+          aws.subnet.private subnet_a "Private subnet group A" {
+            aws.aws-fargate worker_a "Fargate worker A"
+          }
+        }
+        aws.az az_b "Availability Zone B" {
+          aws.subnet.private subnet_b "Private subnet group B" {
+            aws.aws-fargate worker_b "Fargate worker B"
+          }
+        }
+      }
+      aws.api-gateway api "API Gateway"
+      aws.aws-lambda intake "Lambda intake handler"
+      aws.simple-storage-service input "Input S3 bucket"
+      aws.simple-queue-service jobs "Jobs queue"
+      aws.simple-queue-service dlq "Dead-letter queue"
+      aws.simple-storage-service output "Output S3 bucket"
+      aws.dynamodb ddb "DynamoDB status"
+      aws.simple-notification-service sns "SNS completion notifications"
+      aws.cloudfront cloudfront "CloudFront"
+    }
+  }
+
+  client -> api { id submit_document label "submit documents" }
+  api -> intake { id invoke_intake label "invoke intake handler" }
+  intake -> input { id store_original label "store originals" }
+  intake -> jobs { id enqueue_job label "queue processing job" }
+  jobs -> worker_a { id consume_job_a label "consume job" }
+  jobs -> worker_b { id consume_job_b label "consume job" }
+  worker_a -> input { id read_input_a label "read input" }
+  worker_b -> input { id read_input_b label "read input" }
+  worker_a -> output { id write_output_a label "write processed file" }
+  worker_b -> output { id write_output_b label "write processed file" }
+  worker_a -> ddb { id update_status_a label "update status" }
+  worker_b -> ddb { id update_status_b label "update status" }
+  worker_a -> sns { id publish_completion_a label "publish completion" }
+  worker_b -> sns { id publish_completion_b label "publish completion" }
+  client -> cloudfront { id download_request label "download output" }
+  cloudfront -> output { id fetch_output_origin label "output S3 origin" }
+  jobs -> dlq { id failed_jobs_to_dlq kind fail label "after maximum attempts" }
+  ops -> dlq { id inspect_dlq kind peer label "inspect messages" style dashed }
+  ops -> ddb { id inspect_status kind peer label "inspect status" style dashed }
+  dlq -> jobs { id redrive_jobs label "redrive messages" }
+  sns -> ops { id notify_ops label "completion notifications" }
+}

@@ -1,0 +1,25 @@
+dgm 1
+diagram aws-factory-iot-telemetry {
+  grammar aws
+  flow lr
+  title "Factory IoT Telemetry"
+
+  cloud-agnostic.device sensors "Sensor fleet"
+  cloud-agnostic.client dashboard "Operations dashboard"
+
+  aws.cloud aws_cloud "AWS Cloud" {
+    aws.aws-iot-core iot_core "IoT Core"
+    aws.kinesis-data-streams stream "Telemetry stream"
+    aws.aws-lambda consumer "Normalizer"
+    aws.timestream timestream "Time series"
+    aws.simple-notification-service alerts "Alerts"
+  }
+
+  sensors -> iot_core { id send_readings label "readings" }
+  iot_core -> stream { id route_readings label "route" }
+  stream -> consumer { id consume_readings label "consume" }
+  consumer -> timestream { id write_series label "write" }
+  consumer -> alerts { id send_alerts label "alerts" }
+  dashboard -> timestream { id dashboard_read label "query" }
+  timestream -> dashboard { id return_telemetry label "telemetry" }
+}

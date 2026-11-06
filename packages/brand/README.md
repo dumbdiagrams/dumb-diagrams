@@ -1,19 +1,16 @@
 # Shared brand identity
 
-CSS and self-hosted fonts shared by Studio and the website. Import
-`@dumb-diagrams/brand/styles.css` once in a consumer entry point.
+`@dumb-diagrams/brand` owns the shared CSS tokens, wordmark styles, and
+self-hosted UI fonts used by Studio and the website. Import the stylesheet once
+from each consumer entry point:
 
-The approved wordmark is **dumbdiagrams.** Use the markup below without spaces
-between its text segments. Product prose can still say **Dumb Diagrams**.
-
-```html
-<span class="dd-wordmark" role="img" aria-label="Dumb Diagrams">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span>
+```css
+@import '@dumb-diagrams/brand/styles.css';
 ```
 
-Scale it with `--wordmark-size`. Do not independently override its weights,
-tracking, or font in a consumer. The symbol is optional; keep it separate from
-the text, as a sibling, and use an empty `alt` when the wordmark names the brand.
+Use the `.dd-wordmark` classes and set `--wordmark-size` when rendering the
+wordmark. Keep markup, typography, palette, accessibility, theme, and reuse
+decisions aligned with the [style guide](../../docs/STYLE_GUIDE.md).
 
-See [the style guide](../../docs/STYLE_GUIDE.md) for typography, palette,
-components, motion, accessibility, and the boundary between UI and diagram fonts.
-Font licenses are included in `FONT-LICENSES.txt` and copied into both builds.
+Font licenses are included in [FONT-LICENSES.txt](FONT-LICENSES.txt) and copied
+into both builds.

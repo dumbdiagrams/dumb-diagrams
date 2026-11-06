@@ -1,7 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
+import { err, errAsync, ok, Result, ResultAsync } from "neverthrow";
 
 const STUDIO_HOST = "127.0.0.1";
 
@@ -15,40 +16,92 @@ export interface StudioServerHandle {
   url: string;
 }
 
+export type StudioServerError =
+  | { code: "missing-assets"; message: string; editorRoot: string }
+  | { code: "start-failed"; message: string; cause: unknown };
+
 /**
  * Start the local Studio bridge. The bridge only serves the static editor
  * bundle; files are opened and saved directly by the browser.
  */
-export async function startStudioServer(
-  options: StudioServerOptions = {},
-): Promise<StudioServerHandle> {
-  const editorRoot = resolveStudioEditorRoot(options.editorRoot);
-  if (!existsSync(join(editorRoot, "index.html"))) {
-    throw new Error(
-      `Studio assets are missing at ${editorRoot}. Build the editor first with ` +
-      "pnpm --filter @dumb-diagrams/editor build.",
-    );
-  }
+export const DEFAULT_STUDIO_PORT = 4788;
 
-  const server = createServer((request, response) => {
-    applySecurityHeaders(response);
-    serveEditorAsset(editorRoot, request, response);
+export function startStudioServer(
+  options: StudioServerOptions = {},
+): ResultAsync<StudioServerHandle, StudioServerError> {
+  const configuredRoot = Result.fromThrowable(
+    () => {
+      const editorRoot = resolveStudioEditorRoot(options.editorRoot);
+      return { editorRoot, hasAssets: existsSync(join(editorRoot, "index.html")) };
+    },
+    (cause): StudioServerError => startupError(cause),
+  )()
+    .andThen(({ editorRoot, hasAssets }) =>
+      hasAssets
+        ? ok(editorRoot)
+        : err<never, StudioServerError>({
+            code: "missing-assets",
+            message: `Studio assets are missing at ${editorRoot}. Build the editor first with pnpm --filter @dumb-diagrams/editor build.`,
+            editorRoot,
+          }),
+    )
+    .andThen((configuredEditorRoot) =>
+      Result.fromThrowable(
+        () => {
+          // Resolve the bundle root once so a symlinked editor directory is supported
+          // while every request is checked against the directory actually served.
+          const editorRoot = realpathSync(configuredEditorRoot);
+          const server = createServer((request, response) => {
+            applySecurityHeaders(response);
+            serveEditorAsset(editorRoot, request, response);
+          });
+          return { server };
+        },
+        (cause): StudioServerError => startupError(cause),
+      )(),
+    );
+
+  return configuredRoot.asyncAndThen(({ server }) => {
+    const listenResult = (port: number) =>
+      ResultAsync.fromPromise(listen(server, port), (cause): StudioServerError => startupError(cause));
+    const address =
+      options.port === undefined
+        ? listenResult(DEFAULT_STUDIO_PORT).orElse((error) =>
+            isAddressInUse(error) ? listenResult(0) : errAsync(error),
+          )
+        : listenResult(options.port);
+    return address.map((boundAddress) => {
+      const resolvedPort =
+        typeof boundAddress === "object" && boundAddress ? boundAddress.port : (options.port ?? DEFAULT_STUDIO_PORT);
+      return { server, url: `http://${STUDIO_HOST}:${resolvedPort}/` };
+    });
   });
-  const address = await listen(server, options.port ?? 4788);
-  const resolvedPort = typeof address === "object" && address ? address.port : options.port ?? 4788;
+}
+
+function startupError(cause: unknown): StudioServerError {
   return {
-    server,
-    url: `http://${STUDIO_HOST}:${resolvedPort}/`,
+    code: "start-failed",
+    message: cause instanceof Error ? cause.message : String(cause),
+    cause,
   };
 }
 
+function isAddressInUse(error: StudioServerError): boolean {
+  return (
+    error.code === "start-failed" &&
+    typeof error.cause === "object" &&
+    error.cause !== null &&
+    "code" in error.cause &&
+    error.cause.code === "EADDRINUSE"
+  );
+}
+
 export function resolveStudioEditorRoot(explicitRoot?: string): string {
+  if (explicitRoot) return explicitRoot;
   const moduleRoot = resolve(fileURLToPath(new URL(".", import.meta.url)));
-  const candidates = [
-    explicitRoot,
-    resolve(moduleRoot, "studio"),
-    resolve(moduleRoot, "../../editor/dist"),
-  ].filter((candidate): candidate is string => Boolean(candidate));
+  const candidates = [resolve(moduleRoot, "studio"), resolve(moduleRoot, "../../editor/dist")].filter(
+    (candidate): candidate is string => Boolean(candidate),
+  );
   return candidates.find((candidate) => existsSync(join(candidate, "index.html"))) ?? candidates[0]!;
 }
 
@@ -75,9 +128,7 @@ function serveEditorAsset(editorRoot: string, request: IncomingMessage, response
   }
   const relativePath = decodedPath === "/" ? "index.html" : decodedPath.replace(/^\/+/, "");
   const candidate = resolve(editorRoot, relativePath);
-  const rootPrefix = `${editorRoot.endsWith("/") ? editorRoot : `${editorRoot}/`}`;
-  const isInsideRoot = candidate === editorRoot || candidate.startsWith(rootPrefix);
-  if (!isInsideRoot) {
+  if (!isPathInsideRoot(editorRoot, candidate)) {
     response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Forbidden");
     return;
@@ -85,7 +136,19 @@ function serveEditorAsset(editorRoot: string, request: IncomingMessage, response
 
   // Vite history fallback keeps client-side routes useful without exposing
   // any filesystem outside the bundled editor root.
-  const target = existsSync(candidate) ? candidate : join(editorRoot, "index.html");
+  let target: string;
+  try {
+    target = realpathSync(existsSync(candidate) ? candidate : join(editorRoot, "index.html"));
+  } catch {
+    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Not found");
+    return;
+  }
+  if (!isPathInsideRoot(editorRoot, target)) {
+    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Forbidden");
+    return;
+  }
   try {
     const body = readFileSync(target);
     response.writeHead(200, {
@@ -101,17 +164,31 @@ function serveEditorAsset(editorRoot: string, request: IncomingMessage, response
   }
 }
 
+function isPathInsideRoot(root: string, candidate: string): boolean {
+  const path = relative(root, candidate);
+  return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path));
+}
+
 function contentTypeFor(filePath: string): string {
   switch (extname(filePath).toLowerCase()) {
-    case ".html": return "text/html; charset=utf-8";
-    case ".js": return "text/javascript; charset=utf-8";
-    case ".css": return "text/css; charset=utf-8";
-    case ".svg": return "image/svg+xml";
-    case ".png": return "image/png";
-    case ".json": return "application/json; charset=utf-8";
-    case ".woff": return "font/woff";
-    case ".woff2": return "font/woff2";
-    default: return "application/octet-stream";
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+      return "text/javascript; charset=utf-8";
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".svg":
+      return "image/svg+xml";
+    case ".png":
+      return "image/png";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".woff":
+      return "font/woff";
+    case ".woff2":
+      return "font/woff2";
+    default:
+      return "application/octet-stream";
   }
 }
 

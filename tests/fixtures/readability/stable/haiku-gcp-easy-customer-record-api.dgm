@@ -1,0 +1,22 @@
+dgm 1
+diagram gcp_easy_customer_record_api {
+  grammar gcp
+  flow lr
+  title "Google Cloud customer-record API"
+
+  cloud-agnostic.client web_client "Web client"
+
+  gcp.organization org "Organization" {
+    gcp.project project "Project" {
+      gcp.region region "Primary region" {
+        gcp.cloud-load-balancing load_balancer "HTTPS entry"
+        gcp.cloud-run customer_api "Customer API"
+        gcp.cloud-sql customer_records "Customer records"
+      }
+    }
+  }
+
+  web_client -> load_balancer { id send_https_requests label "HTTPS requests" step 1 }
+  load_balancer -> customer_api { id forward_requests label "forward requests" step 2 }
+  customer_api -> customer_records { id read_write_records kind bidirectional label "read and write records" step 3 }
+}

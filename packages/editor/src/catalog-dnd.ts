@@ -20,11 +20,8 @@ export function parseCatalogDragPayload(value: string): CatalogDragPayload | nul
     if (!parsed || typeof parsed !== "object") return null;
     const payload = parsed as Partial<CatalogDragPayload>;
     if (typeof payload.type !== "string" || !payload.type) return null;
-    if (
-      payload.assetKind !== undefined &&
-      payload.assetKind !== "resource" &&
-      payload.assetKind !== "group"
-    ) return null;
+    if (payload.assetKind !== undefined && payload.assetKind !== "resource" && payload.assetKind !== "group")
+      return null;
     return {
       type: payload.type,
       assetKind: payload.assetKind,

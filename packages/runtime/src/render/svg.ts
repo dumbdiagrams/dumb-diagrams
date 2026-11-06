@@ -2,8 +2,16 @@ import { getCatalogEntry } from "../catalog/index.js";
 import type { AnnotationStyle, DiagramDocument, LayoutResult } from "../core/index.js";
 import { EDGE_COLOR_VALUES, getDefaultView, resolveEdgeColor } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
-
-import { embedAssetsInSvg, inlineCatalogIcons, resolveResourceIcon } from "./assets.js";
+import { darkContrastStrokeMarkup, needsDarkContrastAid } from "./contrast.js";
+import { resolveProviderGroupColors } from "./provider-group-colors.js";
+import type { ResultAsync } from "neverthrow";
+import {
+  embedAssetsInSvg,
+  inlineCatalogIcons,
+  resolveResourceIcon,
+  type PortableSvgError,
+  type PortableSvgOptions,
+} from "./assets.js";
 
 export interface RenderOptions {
   resolveIconHref?: (browserPath: string) => string;
@@ -11,11 +19,7 @@ export interface RenderOptions {
 
 const defaultResolve = (p: string) => p;
 
-export function renderSvg(
-  doc: DiagramDocument,
-  layout: LayoutResult,
-  options: RenderOptions = {},
-): string {
+export function renderSvg(doc: DiagramDocument, layout: LayoutResult, options: RenderOptions = {}): string {
   const resolveHref = options.resolveIconHref ?? defaultResolve;
   const canvas = layout.canvasBounds ?? {
     x: 0,
@@ -27,9 +31,7 @@ export function renderSvg(
   parts.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.w}" height="${canvas.h}" viewBox="${canvas.x} ${canvas.y} ${canvas.w} ${canvas.h}">`,
   );
-  parts.push(
-    `<rect width="100%" height="100%" fill="${GRAMMAR.canvasFill}"/>`,
-  );
+  parts.push(`<rect width="100%" height="100%" fill="${GRAMMAR.canvasFill}"/>`);
   const arrowMarkers = Object.entries(EDGE_COLOR_VALUES)
     .map(([name, color]) => {
       const markerId = name === "graphite" ? "arrow" : `arrow-${name}`;
@@ -80,11 +82,11 @@ export function renderSvg(
   return embedAssetsInSvg(parts.join("\n"), doc);
 }
 
-export async function renderPortableSvg(
+export function renderPortableSvg(
   doc: DiagramDocument,
   layout: LayoutResult,
-  options: { loadCatalogSvg?: (browserPath: string) => Promise<string> } = {},
-): Promise<string> {
+  options: PortableSvgOptions = {},
+): ResultAsync<string, PortableSvgError> {
   const liveSvg = renderSvg(doc, layout, { resolveIconHref: (path) => path });
   return inlineCatalogIcons(liveSvg, options);
 }
@@ -96,26 +98,17 @@ function renderGroup(
 ): string {
   const model = doc.groups.find((candidate) => candidate.id === group.id);
   const baseStyle = GROUP_STYLES[group.kind];
-  // Azure subscriptions use the provider's amber boundary treatment. Keep
-  // the generic account style for all other providers/types.
-  const style = doc.grammar === "azure" && model?.type === "azure.subscription"
-    ? { ...baseStyle, stroke: "#f7982c", fill: "rgba(247,152,44,0.04)" }
-    : baseStyle;
+  const providerColors = resolveProviderGroupColors(doc.grammar, model?.type);
+  const style = providerColors ? { ...baseStyle, stroke: providerColors.stroke, fill: providerColors.fill } : baseStyle;
   const stroke = model?.color ? EDGE_COLOR_VALUES[model.color] : style.stroke;
-  const fill = model?.fill === "none"
-    ? "transparent"
-    : model?.color
-      ? colorWithAlpha(stroke, 0.045)
-      : style.fill;
+  const fill = model?.fill === "none" ? "transparent" : model?.color ? colorWithAlpha(stroke, 0.045) : style.fill;
   const dashed = model?.style ? model.style === "dashed" : Boolean(style.dash);
   const dash = dashed ? `stroke-dasharray="${style.dash ?? GRAMMAR.edgeDash}"` : "";
   const iconPath = groupIconPath(doc, group);
   const labelRect = group.labelRect ?? group.header;
   const labelPosition = group.labelPosition ?? "top-left";
   const onRight = labelPosition.endsWith("right");
-  const iconX = onRight
-    ? group.bounds.x + group.bounds.w - style.iconSize
-    : labelRect.x;
+  const iconX = onRight ? group.bounds.x + group.bounds.w - style.iconSize : labelRect.x;
   const iconY = group.bounds.y;
   const iconTag = iconPath
     ? `<image href="${escapeAttr(resolveHref(iconPath))}" x="${iconX}" y="${iconY}" width="${style.iconSize}" height="${style.iconSize}" preserveAspectRatio="none"/>`
@@ -126,18 +119,36 @@ function renderGroup(
   // to the left, just as the default puts the icon flush to the left edge.
   const textOnRight = onRight;
   const textX = textOnRight
-    ? iconPath ? iconX - 8 : group.bounds.x + group.bounds.w - 8
-    : iconPath ? iconX + style.iconSize + 8 : labelRect.x + 8;
+    ? iconPath
+      ? iconX - 8
+      : group.bounds.x + group.bounds.w - 8
+    : iconPath
+      ? iconX + style.iconSize + 8
+      : labelRect.x + 8;
   const textY = iconY + (iconPath ? style.iconSize / 2 : style.headerHeight / 2) + style.fontSize * 0.35;
   const badgeOnLeft = (group.labelPosition ?? model?.labelPosition ?? "top-left").endsWith("right");
   const badgeX = badgeOnLeft ? group.bounds.x + 14 : group.bounds.x + group.bounds.w - 14;
-  const badge = model?.step === undefined ? "" : `
+  const badge =
+    model?.step === undefined
+      ? ""
+      : `
   <circle class="group-badge-circle" cx="${badgeX}" cy="${group.bounds.y + 12}" r="10" fill="${GRAMMAR.badgeFill}"/>
   <text class="group-badge-text" x="${badgeX}" y="${group.bounds.y + 16}" text-anchor="middle" font-size="12" fill="${GRAMMAR.badgeText}" font-weight="700">${model.step}</text>`;
+  const contrastStroke = needsDarkContrastAid(stroke)
+    ? darkContrastStrokeMarkup(
+        group.bounds.x,
+        group.bounds.y,
+        group.bounds.w,
+        group.bounds.h,
+        style.strokeWidth,
+        dash,
+        style.cornerRadius,
+      )
+    : "";
 
   return `
-<g id="group-${group.id}">
-  <rect x="${group.bounds.x}" y="${group.bounds.y}" width="${group.bounds.w}" height="${group.bounds.h}"
+<g id="group-${group.id}">${contrastStroke}
+  <rect class="group-border" x="${group.bounds.x}" y="${group.bounds.y}" width="${group.bounds.w}" height="${group.bounds.h}"
     fill="${fill}" stroke="${stroke}" stroke-width="${style.strokeWidth}" ${dash} rx="${style.cornerRadius}"/>
   ${iconTag}
   <text x="${textX}" y="${textY}"
@@ -152,11 +163,7 @@ function renderNode(
   resolveHref: (p: string) => string,
 ): string {
   const resource = doc.resources.find((candidate) => candidate.id === node.id);
-  const resolved = resolveResourceIcon(
-    doc,
-    node.resourceType,
-    resource?.props ?? {},
-  );
+  const resolved = resolveResourceIcon(doc, node.resourceType, resource?.props ?? {});
   let iconTag = "";
   if (resolved.kind === "asset" && resolved.assetId) {
     iconTag = `<use href="#asset-${resolved.assetId}" x="${node.icon.x}" y="${node.icon.y}" width="${node.icon.w}" height="${node.icon.h}"/>`;
@@ -167,25 +174,31 @@ function renderNode(
   }
 
   const serviceLines = node.serviceLines?.length ? node.serviceLines : [node.serviceLabel];
-  const roleLines = node.roleLines?.length
-    ? node.roleLines
-    : node.roleLabel
-      ? [node.roleLabel]
-      : [];
+  const roleLines = node.roleLines?.length ? node.roleLines : node.roleLabel ? [node.roleLabel] : [];
   const labelX = node.label.x + node.label.w / 2;
   const labelFirstY = node.label.y + GRAMMAR.labelLineHeight - 4;
   const serviceText = serviceLines
-    .map((line, index) =>
-      `<text x="${labelX}" y="${labelFirstY + GRAMMAR.labelLineHeight * index}" text-anchor="middle" font-size="${GRAMMAR.serviceFontSize}" font-weight="500">${escapeXml(line)}</text>`
+    .map(
+      (line, index) =>
+        `<text x="${labelX}" y="${labelFirstY + GRAMMAR.labelLineHeight * index}" text-anchor="middle" font-size="${GRAMMAR.serviceFontSize}" font-weight="500">${escapeXml(line)}</text>`,
     )
     .join("\n  ");
   const roleStartY = labelFirstY + serviceLines.length * GRAMMAR.labelLineHeight + 2;
   const roleText = roleLines
-    .map((line, index) =>
-      `<text x="${labelX}" y="${roleStartY + index * GRAMMAR.labelLineHeight}" text-anchor="middle" font-size="${GRAMMAR.roleFontSize}" font-style="italic">${escapeXml(line)}</text>`
+    .map(
+      (line, index) =>
+        `<text x="${labelX}" y="${roleStartY + index * GRAMMAR.labelLineHeight}" text-anchor="middle" font-size="${GRAMMAR.roleFontSize}" font-style="italic">${escapeXml(line)}</text>`,
     )
     .join("\n  ");
 
+  if (doc.hideResourceLabels) {
+    const title = [node.serviceLabel, node.roleLabel].filter(Boolean).join(": ");
+    return `
+<g id="res-${node.id}">
+  <title>${escapeXml(title)}</title>
+  ${iconTag}
+</g>`;
+  }
   return `
 <g id="res-${node.id}">
   ${iconTag}
@@ -196,20 +209,19 @@ function renderNode(
 
 function renderEdge(edge: LayoutResult["edges"][number]): string {
   if (edge.points.length < 2) return "";
-  const d = edge.points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-    .join(" ");
+  const d = edge.points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const color = resolveEdgeColor(edge.color, edge.kind);
   const colorName = edge.color ?? (edge.kind === "fail" ? "red" : "graphite");
   const markerId = colorName === "graphite" ? "arrow" : `arrow-${colorName}`;
   const hasArrow = edge.kind !== "peer";
   const isBidirectional = edge.kind === "bidirectional";
-  const dash =
-    edge.style === "dashed" ? `stroke-dasharray="${GRAMMAR.edgeDash}"` : "";
+  const dash = edge.style === "dashed" ? `stroke-dasharray="${GRAMMAR.edgeDash}"` : "";
   const marker = [
     isBidirectional ? `marker-start="url(#${markerId}-start)"` : "",
     hasArrow ? `marker-end="url(#${markerId})"` : "",
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   const markerOverlay =
     edge.style === "dashed" && hasArrow
       ? `<path d="${d}" fill="none" stroke="transparent" stroke-width="${GRAMMAR.edgeStroke}" ${marker}/>`
@@ -251,11 +263,12 @@ function renderAnnotation(
   if (style === "text") {
     const fontSize = annotation.fontSize ?? 14;
     const lineHeight = Math.round(fontSize * 1.42);
-    const fontFamily = annotation.font === "serif"
-      ? "Georgia, Cambria, Times New Roman, serif"
-      : annotation.font === "mono"
-        ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-        : GRAMMAR.textFontFamily;
+    const fontFamily =
+      annotation.font === "serif"
+        ? "Georgia, Cambria, Times New Roman, serif"
+        : annotation.font === "mono"
+          ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+          : GRAMMAR.textFontFamily;
     const align = annotation.align ?? "left";
     const textX = align === "center" ? x + w / 2 : align === "right" ? x + w - 2 : x + 2;
     const maxChars = Math.max(8, Math.floor(Math.max(24, w - 4) / (fontSize * 0.56)));
@@ -360,10 +373,7 @@ function renderAnnotationLines(
     .join("")}</text>`;
 }
 
-function groupIconPath(
-  doc: DiagramDocument,
-  group: LayoutResult["groups"][number],
-): string | null {
+function groupIconPath(doc: DiagramDocument, group: LayoutResult["groups"][number]): string | null {
   const model = doc.groups.find((candidate) => candidate.id === group.id);
   if (model?.type === "cloud-agnostic.boundary") return null;
   if (model?.hideIcon) return null;
@@ -385,13 +395,9 @@ function colorWithAlpha(color: string, alpha: number): string {
   return `rgba(${Number.parseInt(match[1]!, 16)},${Number.parseInt(match[2]!, 16)},${Number.parseInt(match[3]!, 16)},${alpha})`;
 }
 
-function isEntityVisible(
-  doc: DiagramDocument,
-  view: ReturnType<typeof getDefaultView>,
-  id: string,
-): boolean {
-  let parent = doc.resources.find((resource) => resource.id === id)?.parent
-    ?? doc.groups.find((group) => group.id === id)?.parent;
+function isEntityVisible(doc: DiagramDocument, view: ReturnType<typeof getDefaultView>, id: string): boolean {
+  let parent =
+    doc.resources.find((resource) => resource.id === id)?.parent ?? doc.groups.find((group) => group.id === id)?.parent;
   while (parent) {
     if (view.places[parent]?.visible === false) return false;
     parent = doc.groups.find((group) => group.id === parent)?.parent;
@@ -400,11 +406,7 @@ function isEntityVisible(
 }
 
 function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function escapeAttr(s: string): string {

@@ -1,0 +1,281 @@
+{
+  "$schema": "../../.dumbdiagrams/requirements.schema.json",
+  "version": 1,
+  "grammar": "azure",
+  "components": [
+    {
+      "id": "storefront",
+      "kind": "resource",
+      "type": "cloud-agnostic.client",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates, queues, and archives the request. A processor consumes queued orders and archive ev..."
+      }
+    },
+    {
+      "id": "sub",
+      "kind": "group",
+      "type": "azure.subscription",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "region",
+      "kind": "group",
+      "type": "azure.region",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "api",
+      "kind": "resource",
+      "type": "azure.api-management-services",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates, queues, and archives the request. A processor consumes queued orders and archive ev..."
+      }
+    },
+    {
+      "id": "intake",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates, queues, and archives the request. A processor consumes queued orders and archive ev..."
+      }
+    },
+    {
+      "id": "queue",
+      "kind": "resource",
+      "type": "azure.storage-queue",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "archive",
+      "kind": "resource",
+      "type": "azure.storage-accounts",
+      "basis": {
+        "kind": "inferred",
+        "text": "Structurally required to place or group the named resources."
+      }
+    },
+    {
+      "id": "processor",
+      "kind": "resource",
+      "type": "azure.function-apps",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates, queues, and archives the request. A processor consumes queued orders and archive ev..."
+      }
+    },
+    {
+      "id": "sql",
+      "kind": "resource",
+      "type": "azure.sql-database",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates, queues, and archives the request. A processor consumes queued orders and archive ev..."
+      }
+    },
+    {
+      "id": "monitor",
+      "kind": "resource",
+      "type": "azure.monitor",
+      "basis": {
+        "kind": "explicit",
+        "text": "A storefront submits orders through an API; an intake function validates, queues, and archives the request. A processor consumes queued orders and archive ev..."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "submit",
+      "source": "storefront",
+      "target": "api",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Submit order (storefront to api) per the request."
+      }
+    },
+    {
+      "id": "invoke",
+      "source": "api",
+      "target": "intake",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Validate (api to intake) per the request."
+      }
+    },
+    {
+      "id": "enqueue",
+      "source": "intake",
+      "target": "queue",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Queue order (intake to queue) per the request."
+      }
+    },
+    {
+      "id": "archive_req",
+      "source": "intake",
+      "target": "archive",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Archive request (intake to archive) per the request."
+      }
+    },
+    {
+      "id": "consume_orders",
+      "source": "queue",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Queued orders (queue to processor) per the request."
+      }
+    },
+    {
+      "id": "archive_events",
+      "source": "archive",
+      "target": "processor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Archive events (archive to processor) per the request."
+      }
+    },
+    {
+      "id": "save",
+      "source": "processor",
+      "target": "sql",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Save orders (processor to sql) per the request."
+      }
+    },
+    {
+      "id": "metrics",
+      "source": "processor",
+      "target": "monitor",
+      "kind": "flow",
+      "basis": {
+        "kind": "explicit",
+        "text": "Metrics (processor to monitor) per the request."
+      }
+    }
+  ],
+  "counts": [],
+  "placement": [
+    {
+      "id": "storefront_root",
+      "component": "storefront",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "sub_root",
+      "component": "sub",
+      "relation": "root",
+      "basis": {
+        "kind": "explicit",
+        "text": "Placed outside any cloud boundary."
+      }
+    },
+    {
+      "id": "region_in_sub",
+      "component": "region",
+      "relation": "parent",
+      "group": "sub",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "api_in_region",
+      "component": "api",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "intake_in_region",
+      "component": "intake",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "queue_in_region",
+      "component": "queue",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "archive_in_region",
+      "component": "archive",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "processor_in_region",
+      "component": "processor",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "sql_in_region",
+      "component": "sql",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    },
+    {
+      "id": "monitor_in_region",
+      "component": "monitor",
+      "relation": "parent",
+      "group": "region",
+      "basis": {
+        "kind": "explicit",
+        "text": "Containment described in the request."
+      }
+    }
+  ],
+  "allowAdditionalResources": true
+}
