@@ -89,7 +89,7 @@ belong to the fetched remote default branch's history (`origin/HEAD`, with
 branch is available. Keep `fetch-depth: 0` in release checkouts. Restrict release
 tag creation in GitHub as well; source-level checks do not replace that rule.
 
-For a new version, the tag triggers two workflows:
+For a new version, the tag triggers the npm publishing workflow:
 
 - `.github/workflows/publish-cli.yml` checks that the tag matches
   `packages/cli/package.json` and reruns `pnpm check:release`. It then packs
@@ -97,14 +97,14 @@ For a new version, the tag triggers two workflows:
   publishing and provenance, and polls npm until the registry integrity
   matches. The job runs in the protected `npm-production` environment, and no
   npm token is stored.
-- `.github/workflows/deploy.yml` reruns the gate against the tag and publishes
-  `packages/editor/dist` to GitHub Pages.
 
-The public landing page and documentation are a separate Astro build at
-`packages/website/dist`. The editor Pages workflow does not deploy them. See
-the [website hosting instructions](../packages/website/README.md) for Cloudflare
-Pages. Disable the editor deployment workflow in GitHub if a hosted standalone
-Studio is not part of the launch.
+The public landing page and documentation are a separate static Astro build at
+`packages/website/dist`, hosted on Cloudflare Pages. Connect the repository to
+Pages and use `main` as the production branch; website deployments follow branch
+updates independently of npm release tags. See the
+[website hosting instructions](../packages/website/README.md) for build settings.
+GitHub Pages deployment and rollback workflows have been removed. Studio remains
+available locally through the npm CLI.
 
 ## First publish and trusted publisher setup
 
@@ -149,10 +149,9 @@ References: [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
 
 ## Rollback
 
-Run **Rollback editor deployment** in GitHub Actions with a known-good tag. It
-rebuilds and redeploys that ref through the same Pages environment, without
-changing the repository. A bad npm version is handled separately with
-`npm deprecate`; a site rollback does not touch the registry.
+Roll back the website to a known-good deployment in the Cloudflare Pages dashboard.
+A bad npm version is handled separately with `npm deprecate`; a website rollback
+does not change the npm registry.
 
 ## Workflow maintenance
 

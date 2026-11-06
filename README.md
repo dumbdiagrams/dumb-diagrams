@@ -109,6 +109,15 @@ maintainer-led; please discuss a proposed change first. Unsolicited pull
 requests may not be accepted. For security concerns, see
 [SECURITY.md](SECURITY.md).
 
+## Support development
+
+If Dumb Diagrams makes your day easier, leave a tip on Ko-fi. Your tips help
+maintain the project and support building more useful tools for people.
+
+<div align="center">
+  <a href="https://ko-fi.com/P5P31WH7UZ" target="_blank" rel="noopener noreferrer"><img height="36" style="border:0px;height:36px;" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" border="0" alt="Support development with a tip on Ko-fi" /></a>
+</div>
+
 ## License
 
 Licensed under the [GNU Affero General Public License v3.0 only](LICENSE).
