@@ -751,7 +751,9 @@ function writeInitProject(
       }
 
       console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
-      console.log(ui.info("next", ui.command(`cd ${relativeForLog(projectRoot)} && dumbdiagrams studio`)));
+      console.log(ui.info("step 1", ui.command(`cd ${relativeForLog(projectRoot)}`)));
+      console.log(ui.info("step 2", "open it in your LLM-enabled IDE and tell the LLM what to draw"));
+      console.log(ui.info("step 3", ui.command("dumbdiagrams studio")));
       return 0;
     },
     (cause): CliError => ({ code: "init-failed", message: errorMessage(cause), cause }),
