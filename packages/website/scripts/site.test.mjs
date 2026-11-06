@@ -237,13 +237,19 @@ test('landing page stays small and loads no third-party scripts by default', asy
   const htmlBudget = analyticsConfig().measurementId ? 22_500 : 19_500;
   assert.ok(gzipSync(html).byteLength < htmlBudget, `homepage HTML under ${htmlBudget} bytes compressed`);
   let scriptBytes = 0;
-  for (const [, script] of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) {
-    scriptBytes += gzipSync(script).byteLength;
+  for (const [, attributes, inline] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    const type = attributes.match(/\btype="([^"]+)"/)?.[1].toLowerCase();
+    // JSON-LD is structured data, and Partytown-typed GA code stays inert until
+    // consent is granted. The HTML budget includes both; this is executable JS.
+    if (type && type !== 'module' && !type.includes('javascript') && !type.includes('ecmascript')) continue;
+    if (inline.trim()) scriptBytes += gzipSync(inline).byteLength;
+    const source = attributes.match(/\bsrc="([^"]+)"/)?.[1];
+    if (source) {
+      assert.ok(source.startsWith(base), `homepage script stays under base path: ${source}`);
+      scriptBytes += gzipSync(await readFile(join(dist, source.slice(base.length)))).byteLength;
+    }
   }
-  for (const [, src] of html.matchAll(/<script[^>]*src="([^"]+)"/g)) {
-    scriptBytes += gzipSync(await readFile(join(dist, src.slice(base.length)))).byteLength;
-  }
-  assert.ok(scriptBytes < 8_000, 'initial homepage JavaScript under 8 KB compressed');
+  assert.ok(scriptBytes < 8_000, `initial executable homepage JavaScript under 8 KB compressed (actual ${scriptBytes} bytes)`);
   assert.ok((await stat(join(dist, 'pagefind/pagefind.js'))).size > 0);
 });
 
