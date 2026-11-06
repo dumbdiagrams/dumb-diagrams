@@ -27,7 +27,7 @@ concurrency:
 jobs:
   build:
     if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     env:
@@ -127,7 +127,7 @@ jobs:
   deploy:
     if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski'
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write

@@ -1,5 +1,10 @@
+import { availableParallelism } from "node:os";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+
+// Coverage makes the fixture-heavy layout tests CPU bound. Reserve one core
+// for the Vitest coordinator and coverage work on small CI runners.
+const maxWorkers = Math.min(4, Math.max(1, availableParallelism() - 1));
 
 export default defineConfig({
   resolve: {
@@ -13,9 +18,7 @@ export default defineConfig({
     },
   },
   test: {
-    // Routing and coverage instrumentation compete for CPU during parallel runs;
-    // full compiles of the hard fixtures exceed the 5s default when instrumented.
-    maxWorkers: 4,
+    maxWorkers,
     testTimeout: 30_000,
     include: [
       "packages/**/src/**/*.test.{ts,tsx}",
