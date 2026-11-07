@@ -25,6 +25,10 @@ newer. There is no account and no hosted workspace.
 | Put a diagram in a document | [Export and share](./exports/) |
 | Understand the engine | [How the engine works](./how-it-works/) |
 
+## Reference
+
+For the official wordmark, color palette, and typography, see [Brand and interface](./design-system/). The repository implementation rules are in `docs/STYLE_GUIDE.md`.
+
 AWS is the most mature provider. Azure, Google Cloud, and cloud-agnostic
 diagrams work but are still experimental. Dumb Diagrams is an architecture
 diagram tool, not a freeform whiteboard or a live cloud inventory.

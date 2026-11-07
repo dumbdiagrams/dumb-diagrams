@@ -333,11 +333,11 @@ test('architecture-as-code metadata, structured data, and production rendering s
   const html = await readFile(join(dist, 'index.html'), 'utf8');
   const websitePackage = JSON.parse(await readFile(join(site, 'package.json'), 'utf8'));
   assert.match(html, /<title>Architecture Diagrams as Code for AI Agents \| Dumb Diagrams<\/title>/);
-  assert.match(html, /<meta name="description" content="Create architecture diagrams as code with AI coding agents\. Open-source and deterministic, with a firm commitment to keep your diagrams on your device\."/);
+  assert.match(html, /<meta name="description" content="Create architecture diagrams as code with your coding agent\. Automatic layout, local visual editing, and SVG, PNG or PDF exports\. Free and open source\."/);
   assert.match(html, /<h1 id="hero-title">A little opinionated\.<br\s*\/?><span>A lot clearer<span class="hero-period">\.<\/span><\/span><\/h1>/);
   assert.match(html, /Architecture diagrams as code for AI coding agents\. Let an LLM write reviewable source/);
   assert.match(html, /LLM-FIRST ARCHITECTURE DIAGRAMS/);
-  assert.match(html, /Dumb<span class="dd-wordmark__light"> Diagrams<\/span>/);
+  assert.match(html, /dumb<span class="dd-wordmark__light">diagrams<\/span>/);
   assert.match(html, /Let an LLM write reviewable source/);
   assert.match(html, /Yes, in practice\. We recommend using a coding agent/);
   assert.match(html, /Use any capable model, including open-source models/);

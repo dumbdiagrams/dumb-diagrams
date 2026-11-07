@@ -37,7 +37,7 @@
 }
 @layer components {
   .site-header { height: 96px; display: flex; align-items: center; justify-content: space-between; gap: 32px; border-bottom: 1px solid var(--line); }
-  .brand { display: inline-flex; align-items: center; --wordmark-size: 23px; white-space: nowrap; }
+  .brand { display: inline-flex; align-items: center; --wordmark-size: 20px; white-space: nowrap; }
   .brand > img { width: 52px; height: 31px; margin-right: 14px; }
   .desktop-nav { display: flex; gap: 32px; margin-left: auto; font-size: 12px; font-weight: 550; }
   .desktop-nav [aria-current] { color: var(--orange-dark); }
@@ -202,7 +202,7 @@
   }
   @media (max-width: 540px) {
     .page-shell { padding: 0 20px; }
-    .brand { --wordmark-size: 21px; }
+    .brand { --wordmark-size: 18px; }
     .brand > img { width: 38px; height: 23px; margin-right: 10px; }
     .github-link { padding: 7px 9px; }
     .github-link__label { display: none; }

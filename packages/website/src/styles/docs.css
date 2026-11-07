@@ -1,10 +1,10 @@
 @layer pages {
   .brand-specimen { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; padding: 35px 26px; margin-bottom: 25px; border: 1px solid var(--line); background: var(--white); --wordmark-size: clamp(32px, 4vw, 56px); }
-  .brand-specimen > .mono { font-size: 8px; color: var(--muted); letter-spacing: .1em; }
+  .brand-specimen > .mono { font-size: 10px; color: var(--muted); letter-spacing: .1em; }
   .brand-swatches { display: grid; grid-template-columns: repeat(4,1fr); margin-bottom: 24px; }
   .swatch { min-height: 105px; padding: 15px 10px; display: flex; flex-direction: column; justify-content: space-between; }
-  .prose .swatch strong { font-size: 11px; color: inherit; }
-  .prose .swatch code { color: inherit; background: transparent; padding: 0; font-size: 9px; }
+  .prose .swatch strong { font-size: 13px; color: inherit; }
+  .prose .swatch code { color: inherit; background: transparent; padding: 0; font-size: 11px; }
   .swatch-navy { background: var(--brand-navy); color: white; }
   .swatch-deep { background: var(--brand-navy-deep); color: white; }
   .swatch-orange-dark { background: var(--brand-coral); color: #fff; }
@@ -108,6 +108,7 @@
     .doc-header h1 { font-size: 41px; }
     .doc-header > p { font-size: 15px; }
     .prose { font-size: 14px; }
+    .brand-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .prose pre { font-size: 10px; padding-left: 12px; }
     .doc-pagination { gap: 12px; }
     .doc-pagination > a { padding: 13px; }
