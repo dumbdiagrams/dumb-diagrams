@@ -9,7 +9,7 @@ export function orderDocs<T extends { id: string; data: { section: string; order
 }
 export const createCommand = "npm install -g create-dumb-diagrams";
 export const installCommand = "dumbdiagrams init";
-export const repository = import.meta.env.PUBLIC_REPOSITORY_URL || "";
+export const repository = import.meta.env.PUBLIC_REPOSITORY_URL || "https://github.com/dumbdiagrams/dumb-diagrams";
 export const npmUrl = "https://www.npmjs.com/package/create-dumb-diagrams";
 export function url(path = "") {
   return `${import.meta.env.BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;

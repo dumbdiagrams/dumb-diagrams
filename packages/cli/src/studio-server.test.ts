@@ -99,6 +99,20 @@ describe("local Studio server", () => {
     }
   });
 
+  it("rejects requests that try to upload diagram contents", async () => {
+    const { handle } = await createTestServer();
+    const privateSource = "diagram private-upload-sentinel { flow lr }";
+
+    const apiResponse = await fetch(`${handle.url}api/document`, { method: "POST", body: privateSource });
+    expect(apiResponse.status).toBe(404);
+    expect(await apiResponse.text()).not.toContain(privateSource);
+
+    const rootResponse = await fetch(handle.url, { method: "POST", body: privateSource });
+    expect(rootResponse.status).toBe(405);
+    expect(rootResponse.headers.get("allow")).toBe("GET, HEAD");
+    expect(await rootResponse.text()).not.toContain(privateSource);
+  });
+
   it("keeps traversal outside the editor root forbidden", async () => {
     const { handle } = await createTestServer();
     const response = await fetch(`${handle.url}%2e%2e%2fsecret.txt`);

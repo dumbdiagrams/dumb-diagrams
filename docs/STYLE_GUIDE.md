@@ -5,7 +5,7 @@ The product should feel precise, approachable, and calm: navy gives it structure
 
 ## Brand identity
 
-The official wordmark is **dumbdiagrams.**: lowercase, no space, with an orange full stop. In prose, page titles, and accessible names, write **Dumb Diagrams**. The editor is **Dumb Diagrams Studio**, or Studio when the context is clear. Package names and CLI commands stay unchanged.
+The official wordmark is **dumbdiagrams.**: lowercase, no space, with an orange full stop. Keep its spelling, casing, spacing, and treatment; do not replace it with a title-case or spaced logo unless the user requests a brand change. In prose, page titles, and accessible names, write **Dumb Diagrams**. The editor is **Dumb Diagrams Studio**, or Studio when the context is clear. Package names and CLI commands stay unchanged.
 
 Use the supplied illustrated logo beside the wordmark where space allows. The transparent source is `packages/brand/assets/logo-dumb-diagrams-source.png`; public-directory PNGs are derivatives. Do not stretch derivatives, recolor provider icons, or replace them with UI-library icons. Leave half the wordmark's height clear around the lockup; decorative logo images use an empty `alt`.
 

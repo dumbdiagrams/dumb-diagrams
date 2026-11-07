@@ -1,6 +1,7 @@
 {
   "name": "create-dumb-diagrams",
   "version": "0.1.1",
+  "homepage": "https://dumbdiagrams.com",
   "license": "AGPL-3.0-only",
   "description": "LLM-first architecture diagrams that are hard to get wrong: validated .dgm source, deterministic SVG rendering, local CLI, and Studio",
   "type": "module",

@@ -9,12 +9,13 @@ import Analytics from '../components/Analytics.astro';
 import { analyticsConfig } from '../lib/analytics-config.mjs';
 import { url } from '../lib/site';
 interface Props { title?: string; description?: string; docs?: boolean; noindex?: boolean; structuredData?: Record<string, unknown> }
-const { title = 'LLM-first architecture diagrams as code', description = 'A local architecture diagram tool for LLM-first diagrams as code. Let coding agents edit portable .dgm source, review changes in Git, and refine the result in Studio.', docs = false, noindex = false, structuredData } = Astro.props;
+const { title = 'Architecture diagrams as code for AI coding agents', description = 'Create architecture diagrams as code with your coding agent. Automatic layout, local visual editing, and SVG, PNG or PDF exports. Free and open source.', docs = false, noindex = false, structuredData } = Astro.props;
 const { measurementId } = analyticsConfig();
 const analyticsEnabled = Boolean(import.meta.env.PROD && measurementId);
 const consentPreview = Boolean(import.meta.env.DEV && !analyticsEnabled);
 const pageTitle = `${title} | Dumb Diagrams`;
 const canonical = Astro.site && !noindex ? new URL(Astro.url.pathname, Astro.site) : undefined;
+const socialImage = Astro.site ? new URL(url('social-card.png'), Astro.site) : undefined;
 ---
 <!doctype html>
 <html lang="en">
@@ -34,9 +35,20 @@ const canonical = Astro.site && !noindex ? new URL(Astro.url.pathname, Astro.sit
     <meta property="og:description" content={description} />
     <meta property="og:locale" content="en_US" />
     {canonical && <meta property="og:url" content={canonical} />}
-    <meta name="twitter:card" content="summary" />
+    {socialImage && <>
+      <meta property="og:image" content={socialImage.href} />
+      <meta property="og:image:type" content="image/png" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="Dumb Diagrams social card: A little opinionated. A lot clearer., alongside a rendered factory IoT telemetry diagram using AWS services." />
+    </>}
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
+    {socialImage && <>
+      <meta name="twitter:image" content={socialImage.href} />
+      <meta name="twitter:image:alt" content="Dumb Diagrams social card: A little opinionated. A lot clearer., alongside a rendered factory IoT telemetry diagram using AWS services." />
+    </>}
     <link rel="icon" type="image/png" href={url('favicon.png')} />
     <link rel="alternate" type="text/plain" title="Documentation for agents" href={url('llms.txt')} />
     {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData).replaceAll('<', '\\u003c')} />}
