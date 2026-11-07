@@ -20,6 +20,8 @@ Architecture diagrams as code for LLM-augmented workflows. Describe the system
 in a readable `.dgm` file yourself or with a coding agent, let the engine handle
 layout and routing, then review and refine it in Studio on your machine.
 
+<a href="https://dumbdiagrams.com">Official website</a> · <a href="https://dumbdiagrams.com/docs/">Documentation</a>
+
 </div>
 
 ## How it works

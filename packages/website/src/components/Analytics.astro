@@ -12,7 +12,7 @@ const { measurementId, enabled, preview = false } = Astro.props;
   <div>
     <span class="consent-eyebrow">{preview ? 'LOCAL PREVIEW · ANALYTICS IS DISABLED' : 'YOUR PRIVACY, YOUR CHOICE'}</span>
     <h2 id="analytics-title">Cookies, on your terms.</h2>
-    <p id="analytics-description">We use optional Google Analytics cookies to understand visits and make Dumb Diagrams better. No advertising cookies and no diagram content.</p>
+    <p id="analytics-description">We use optional Google Analytics to understand website visits. We never send your diagram files or <code>.dgm</code> source to Google Analytics. We don’t use advertising cookies.</p>
     <p class="consent-detail">Your choice is honoured for 180 days and can be changed at any time. <a href={url('privacy/')}>Privacy &amp; cookie details</a>.</p>
   </div>
   <div class="analytics-actions"><button class="consent-reject" type="button" data-analytics-choice="denied">Reject</button><button class="consent-secondary" type="button" data-analytics-choice="denied">Necessary only</button><button class="consent-primary" type="button" data-analytics-choice="granted">Accept all</button></div>

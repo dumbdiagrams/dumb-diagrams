@@ -1,6 +1,8 @@
 ---
 title: Welcome to Dumb Diagrams
 description: Create portable architecture diagrams as .dgm files and refine them in local Studio.
+seoTitle: Architecture Diagrams as Code Documentation
+seoDescription: Learn how to create, validate, and refine portable architecture diagrams written as .dgm files.
 section: Start here
 order: 0
 ---

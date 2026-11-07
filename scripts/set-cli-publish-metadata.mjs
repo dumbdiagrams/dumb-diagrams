@@ -25,7 +25,7 @@ packageJson.repository = {
   url: `git+${repositoryUrl}.git`,
   directory: "packages/cli",
 };
-packageJson.homepage = repositoryUrl;
+packageJson.homepage = "https://dumbdiagrams.com";
 packageJson.bugs = { url: `${repositoryUrl}/issues` };
 
 writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);

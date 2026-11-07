@@ -56,6 +56,82 @@ test('every internal page, anchor, and referenced asset resolves in the static b
   }
 });
 
+test('indexable pages expose unique SEO metadata, valid schema, canonicals, and sitemap entries', async () => {
+  const files = (await walk(dist)).filter(file => extname(file) === '.html' && !file.includes('~partytown'));
+  const titles = new Set();
+  const canonicals = new Set();
+  const indexablePages = [];
+  const siteOrigin = process.env.SITE_URL ? new URL(process.env.SITE_URL).origin : undefined;
+  for (const file of files) {
+    const html = await readFile(file, 'utf8');
+    const pagePath = file.slice(dist.length + 1).replace(/index\.html$/, '');
+    const title = html.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim();
+    assert.ok(title, `${pagePath}: title`);
+    assert.ok(!titles.has(title), `${pagePath}: title is unique (${title})`);
+    titles.add(title);
+    assert.match(html, /<meta name="description" content="[^"]{20,}"/, `${pagePath}: descriptive meta description`);
+
+    const noindex = /<meta name="robots" content="noindex"/.test(html);
+    const expectedNoindex = pagePath === '404.html' || (pagePath === 'privacy/' && !privacyConfig().ready);
+    assert.equal(noindex, expectedNoindex, `${pagePath}: indexability is intentional`);
+    const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
+    if (noindex || !siteOrigin) {
+      assert.equal(canonical, undefined, `${pagePath}: no canonical without indexing or SITE_URL`);
+    } else {
+      assert.ok(canonical, `${pagePath}: canonical URL`);
+      const canonicalUrl = new URL(canonical);
+      assert.equal(canonicalUrl.origin, siteOrigin, `${pagePath}: canonical stays on the configured site origin`);
+      assert.ok(canonicalUrl.pathname.startsWith(base), `${pagePath}: canonical stays under ${base}`);
+      assert.equal(canonicalUrl.search, '', `${pagePath}: canonical excludes query strings`);
+      assert.equal(canonicalUrl.hash, '', `${pagePath}: canonical excludes fragments`);
+      assert.ok(!canonicals.has(canonical), `${pagePath}: canonical is unique`);
+      canonicals.add(canonical);
+      indexablePages.push(canonical);
+    }
+
+    const schemas = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+      .map(([, json]) => JSON.parse(json));
+    for (const schema of schemas) assert.equal(schema['@context'], 'https://schema.org', `${pagePath}: valid Schema.org context`);
+    if (pagePath.startsWith('docs/') && siteOrigin) {
+      assert.ok(schemas.some(schema => schema['@type'] === 'BreadcrumbList'), `${pagePath}: breadcrumb structured data`);
+    }
+
+    const image = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+    if (siteOrigin) {
+      assert.ok(image, `${pagePath}: Open Graph image`);
+      assert.equal(new URL(image).origin, siteOrigin, `${pagePath}: Open Graph image uses the configured origin`);
+      const imageUrl = new URL(image);
+      assert.ok(imageUrl.pathname.startsWith(base), `${pagePath}: Open Graph image stays under ${base}`);
+      const imagePath = resolve(dist, decodeURIComponent(imageUrl.pathname.slice(base.length)));
+      assert.ok(imagePath === dist || imagePath.startsWith(dist + '/'));
+      assert.ok((await stat(imagePath)).isFile(), `${pagePath}: Open Graph image resolves`);
+      assert.match(html, /<meta property="og:image:type" content="image\/png"/);
+      assert.match(html, /<meta property="og:image:width" content="1200"/);
+      assert.match(html, /<meta property="og:image:height" content="630"/);
+      assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
+      assert.ok(html.includes(`<meta name="twitter:image" content="${image}">`));
+    }
+  }
+
+  const homepage = await readFile(join(dist, 'index.html'), 'utf8');
+  const homeSchemas = [...homepage.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map(([, json]) => JSON.parse(json));
+  const software = homeSchemas.find(schema => schema['@type'] === 'SoftwareApplication');
+  assert.ok(software, 'homepage exposes SoftwareApplication structured data');
+  assert.match(software.description, /open-source architecture diagrams as code/i);
+  assert.match(software.description, /deterministic rendering/i);
+  if (siteOrigin) {
+    const sitemap = await readFile(join(dist, 'sitemap-0.xml'), 'utf8');
+    const sitemapUrls = new Set([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, url]) => url));
+    for (const canonical of indexablePages) assert.ok(sitemapUrls.has(canonical), `${canonical}: sitemap entry`);
+    assert.ok(![...sitemapUrls].some(url => url.includes('/404')));
+    const robots = await readFile(join(dist, 'robots.txt'), 'utf8');
+    assert.match(robots, /User-agent: \*/);
+    assert.match(robots, /Allow: \//);
+    assert.ok(robots.includes(`${new URL(base, siteOrigin).href}sitemap-index.xml`));
+  }
+});
+
 test('complete documentation and homepage examples compile through the actual runtime', async () => {
   let checked = 0;
   for (const file of await walk(join(site, 'src'))) {
@@ -253,12 +329,18 @@ test('landing page stays small and loads no third-party scripts by default', asy
   assert.ok((await stat(join(dist, 'pagefind/pagefind.js'))).size > 0);
 });
 
-test('LLM-first metadata, structured data, and production rendering stay intact', async () => {
+test('architecture-as-code metadata, structured data, and production rendering stay intact', async () => {
   const html = await readFile(join(dist, 'index.html'), 'utf8');
   const websitePackage = JSON.parse(await readFile(join(site, 'package.json'), 'utf8'));
-  assert.match(html, /<title>LLM-first architecture diagrams as code \| Dumb Diagrams<\/title>/);
-  assert.match(html, /Architecture diagrams as code for AI-first teams/);
-  assert.match(html, new RegExp(`OPEN SOURCE \/ v${websitePackage.version.replaceAll('.', '\\.')}`), 'homepage displays the canonical workspace release version');
+  assert.match(html, /<title>Architecture Diagrams as Code for AI Agents \| DumbDiagrams<\/title>/);
+  assert.match(html, /<meta name="description" content="Create architecture diagrams as code with AI coding agents\. Open-source, deterministic, and private: your diagrams never reach our servers\."/);
+  assert.match(html, /<h1 id="hero-title">Architecture<br\s*\/?><span>diagrams as code/);
+  assert.match(html, /OPEN SOURCE · AI-FIRST DIAGRAMMING/);
+  assert.match(html, /Turn architecture descriptions into reviewable diagrams/);
+  assert.match(html, /Yes, in practice\. We recommend using a coding agent/);
+  assert.match(html, /Use any capable model, including open-source models/);
+  assert.match(html, /lower-cost frontier models from the GPT and Claude families/);
+  assert.match(html, new RegExp(`v${websitePackage.version.replaceAll('.', '\\.')}<\/span>`), 'homepage displays the canonical workspace release version');
   assert.doesNotMatch(html, /class="hero-brand-mark"/, 'hero stays focused on the enlarged headline');
   assert.doesNotMatch(html, /Bring your own agent:/, 'removed agent note stays out of the hero');
   assert.match(html, /AI-first/i);
@@ -290,6 +372,9 @@ test('GA4 is opt-in and Partytown worker files resolve at the configured base', 
     assert.ok(html.includes(`data-analytics-id="${measurementId}"`));
     assert.match(html, /data-analytics-choice="denied"/);
     assert.match(html, /data-analytics-choice="granted"/);
+    assert.match(html, /We use optional Google Analytics to understand website visits/);
+    assert.match(html, /We never send your diagram files or <code\b[^>]*>\.dgm<\/code> source to Google Analytics/);
+    assert.match(html, /We don’t use advertising cookies/);
     assert.match(html, /Reject/);
     assert.match(html, /type="text\/partytown"/);
   } else {
@@ -325,6 +410,9 @@ test('privacy notice and footer controls are available with and without analytic
   assert.match(html, /<strong>A little opinionated\.<\/strong><br\s*\/?><strong>A lot clearer\.<\/strong>/);
   assert.match(privacy, /id="cookie-settings"/);
   assert.match(privacy, /does not automatically delete data already sent to Google/);
+  assert.match(privacy, /does not provide an API for diagram contents/);
+  assert.match(privacy, /external coding-agent providers/);
+  assert.match(privacy, /blob\/main\/packages\/cli\/src\/studio-server\.ts/);
   if (!privacyConfig().ready) assert.match(privacy, /Pre-launch notice/);
   if (analyticsConfig().measurementId) {
     assert.match(html, /Reject/);

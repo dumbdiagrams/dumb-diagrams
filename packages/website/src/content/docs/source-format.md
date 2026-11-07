@@ -1,6 +1,8 @@
 ---
 title: The .dgm format
 description: The complete syntax reference for .dgm format 1.
+seoTitle: Diagram as Code Syntax and DSL Reference
+seoDescription: Reference for the .dgm format 1 syntax, including resources, connections, layout, and requirements.
 section: Reference
 order: 30
 ---

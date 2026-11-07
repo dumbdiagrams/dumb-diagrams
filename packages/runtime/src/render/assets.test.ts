@@ -135,6 +135,7 @@ describe("render assets", () => {
       const output = (await inlineCatalogIcons(`<svg><image href="/${entry.browserPath}"/></svg>`))._unsafeUnwrap();
       expect(output).toContain("data:image/svg+xml;charset=utf-8");
       expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(`https://example.test/${entry.browserPath}`);
     } finally {
       vi.unstubAllGlobals();
     }
