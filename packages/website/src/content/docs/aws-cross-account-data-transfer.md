@@ -1,6 +1,8 @@
 ---
 title: "AWS example: Cross-account data transfer platform"
 description: A real agent-assisted session from dumbdiagrams init to a reviewed cross-account AWS diagram.
+seoTitle: AWS Cross-Account Architecture Diagram Tutorial
+seoDescription: Follow an agent-assisted workflow for modeling cross-account AWS data transfer in a reviewable diagram.
 section: Make diagrams
 order: 12
 ---

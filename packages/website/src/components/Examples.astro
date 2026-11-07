@@ -18,7 +18,7 @@ const examples = loadExamples().map(example => {
 });
 ---
 <section class="examples section" aria-labelledby="examples-title">
-  <div class="section-heading examples-heading" id="how-it-works"><div><span class="eyebrow">01 / FROM REQUEST TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">See how it becomes a diagram.</span></h2></div><p>Write a normal technical request. The agent interprets the architecture, produces reviewable .dgm code, and Dumb Diagrams renders the result.</p></div>
+  <div class="section-heading examples-heading" id="how-it-works"><div><span class="eyebrow">01 / FROM REQUEST TO DIAGRAM</span><h2 id="examples-title">Describe the system.<br /><span class="muted">See how it becomes a diagram.</span></h2></div><p>Write a normal technical request. The agent interprets the architecture, produces reviewable&nbsp;<code>.dgm</code> code, and Dumb Diagrams renders the result.</p></div>
   <div class="example-tabs" role="tablist" aria-label="Example diagram" data-tabs>
     {examples.map((example, index) => <button id={`tab-${example.id}`} type="button" role="tab" aria-selected={index === 0 ? 'true' : 'false'} aria-controls={`example-${example.id}`} tabindex={index === 0 ? 0 : -1}><span class="mono">0{index + 1}</span>{example.title}</button>)}
   </div>
@@ -57,5 +57,5 @@ const examples = loadExamples().map(example => {
     </div>
   </div>)}
   </div>
-  <div class="examples-footnote"><span>Turn a plain-English request into a clear, reviewable diagram. Follow the architecture brief, inspect the final <code>.dgm</code> source, then open it in Studio to refine and ship it.</span><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a></div>
+  <div class="examples-footnote"><span>Turn a plain-English request into a clear, reviewable diagram. Follow the architecture brief, inspect the final&nbsp;<code>.dgm</code> source, then open it in Studio to refine and ship it.</span><div class="examples-footnote-links"><a href={url('docs/agent-workflow/')}>Create one with an agent ↗</a><a href={url('docs/aws-cross-account-data-transfer/')}>AWS cross-account tutorial ↗</a><a class="button examples-cloud-link" href={url('docs/examples/')}>Browse examples for other clouds <span aria-hidden="true">↗</span></a></div></div>
 </section>

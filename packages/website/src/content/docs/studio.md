@@ -1,6 +1,8 @@
 ---
 title: Using Studio
 description: Edit source and fine-tune a diagram visually in the local Studio.
+seoTitle: Architecture Diagram Editor and Studio
+seoDescription: Learn to edit .dgm source, refine layouts on the canvas, and export diagrams in local Studio.
 section: Make diagrams
 order: 10
 ---

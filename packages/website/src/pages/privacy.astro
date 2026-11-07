@@ -2,12 +2,14 @@
 import Base from '../layouts/Base.astro';
 import { analyticsConfig } from '../lib/analytics-config.mjs';
 import { privacyConfig } from '../lib/privacy-config.mjs';
+import { repository } from '../lib/site';
 import '../styles/docs.css';
 const privacy = privacyConfig();
 const { measurementId } = analyticsConfig();
 const enabled = Boolean(import.meta.env.PROD && measurementId);
+const sourceRepository = repository.replace(/\/$/, '');
 ---
-<Base title="Privacy & cookies" description="How Dumb Diagrams handles website analytics, cookie choices, local diagram files, and privacy requests." noindex={!privacy.ready}>
+<Base title="Privacy-First Architecture Diagrams and Data Handling" description="Learn how Dumb Diagrams handles website analytics and cookies, and how local Studio and the browser editor keep diagram contents on your device." noindex={!privacy.ready}>
   <main id="main" class="privacy-page">
     <header class="doc-header"><span class="eyebrow">YOUR DATA, YOUR CHOICE</span><h1>Privacy &amp; cookies.</h1><p>A local-first tool. Optional website analytics. Controls you can come back to.</p></header>
     <article class="prose">
@@ -31,11 +33,13 @@ const enabled = Boolean(import.meta.env.PROD && measurementId);
       <h2>Website delivery</h2>
       <p>Delivering and securing the website involves processing request information such as IP addresses, URLs, and browser headers. Optional analytics consent does not control the network processing needed to serve a page. The operator must confirm production logging, retention, and any applicable transfer safeguards before launch.</p>
       <p>Following an external link opens a service with its own privacy practices.</p>
-      <h2>Your diagrams stay separate</h2>
-      <p>This website does not upload your diagram files, prompts, or source code to Google Analytics. The local CLI and Studio workflow is separate from website analytics. If you choose a coding agent, its handling of the context you provide is governed by that agent’s settings and terms.</p>
+      <h2>We commit to keeping your diagrams on your device</h2>
+      <p>Your diagrams are processed and stored on your device. Local Studio opens and saves the selected file directly on your machine; its server runs at localhost and has no API for sending diagram contents elsewhere. The standalone browser editor keeps workspace data in browser storage until you download a copy. We commit that Dumb Diagrams servers will never receive or store your diagrams. That commitment also applies to the planned in-browser Studio: diagram processing will stay on your device. This website does not send diagram files, prompts, or source code to Google Analytics.</p>
+      <p>Review the open-source implementation: <a href={`${sourceRepository}/blob/main/packages/cli/src/studio-server.ts`}>local Studio server</a>, <a href={`${sourceRepository}/blob/main/packages/editor/src/state/file-save.ts`}>direct file saving</a>, and <a href={`${sourceRepository}/blob/main/packages/editor/src/state/workspace-persistence.ts`}>browser workspace storage</a>.</p>
+      <p>This commitment covers Dumb Diagrams-operated services. It cannot control external coding-agent providers; if you choose to give an agent diagram context, that provider’s settings and terms govern its handling.</p>
       <h2>Your rights and requests</h2>
       <p>Depending on applicable law, you may have rights to access, correct, erase, or obtain a copy of personal data, restrict processing, or object to certain processing. You may withdraw analytics consent at any time and lodge a complaint with a data-protection authority. Contact the operator using the details above; some requests depend on whether the relevant data can be identified.</p>
-      <p>Last updated: 26 August 2026.</p>
+      <p>Last updated: 7 November 2026.</p>
     </article>
   </main>
 </Base>

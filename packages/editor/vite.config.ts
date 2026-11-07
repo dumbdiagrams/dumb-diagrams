@@ -1,11 +1,14 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
+import { readFileSync } from "node:fs";
 
 const editorDir = import.meta.dirname;
+const { version } = JSON.parse(readFileSync(resolve(editorDir, "../cli/package.json"), "utf8"));
 
 export default defineConfig({
   plugins: [react()],
+  define: { __DUMB_DIAGRAMS_VERSION__: JSON.stringify(version) },
   // Relative URLs keep the same asset paths on `/` and `/dumb-diagrams/`.
   base: "./",
   publicDir: resolve(editorDir, "public"),

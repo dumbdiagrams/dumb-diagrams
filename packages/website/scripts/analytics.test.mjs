@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm';
 import { initAnalytics } from '../src/scripts/analytics.ts';
 
 const key = 'dumb-diagrams:analytics-consent:v1';
-function harness(t, saved, blocked = false) {
+function harness(t, saved, blocked = false, workspaceContent) {
   const appended = [], events = [], storage = new Map(), windowEvents = new Map();
   let reloads = 0;
   const element = (dataset = {}) => ({
@@ -31,6 +31,7 @@ function harness(t, saved, blocked = false) {
   const cookiesRemoved = [];
   Object.defineProperty(doc, 'cookie', { get: () => '_ga=visitor; _ga_TEST12345=session; unrelated=keep', set: value => cookiesRemoved.push(value) });
   if (saved !== undefined) storage.set(key, typeof saved === 'string' ? saved : JSON.stringify(saved));
+  if (workspaceContent !== undefined) storage.set('dumb-diagrams:workspace', workspaceContent);
   const globals = {
     document: doc,
     window: { location: { reload: () => reloads++ }, addEventListener: (name, fn) => windowEvents.set(name, fn), dispatchEvent: event => events.push(event.type) },
@@ -92,7 +93,17 @@ test('accepting configures GA4 in the worker once, with advertising denied', t =
   assert.equal(commands[2][2].allow_google_signals, false);
   assert.equal(commands[2][2].cookie_domain, 'none');
   assert.equal(commands[2][2].cookie_update, false);
+  assert.equal(commands.length, 3, 'analytics initialization adds no diagram-specific events');
   assert.equal(app.revoke.hidden, false);
+});
+
+test('analytics initialization never includes locally stored diagram content', t => {
+  const privateSource = 'diagram private-analytics-sentinel { flow lr }';
+  const app = harness(t, undefined, false, privateSource);
+  app.allow.click();
+  const worker = { window: {} };
+  runInNewContext(app.appended[0].textContent, worker);
+  assert.equal(JSON.stringify(worker.window.dataLayer).includes(privateSource), false);
 });
 
 for (const choice of ['granted', 'denied']) {

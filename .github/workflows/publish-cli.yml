@@ -77,6 +77,9 @@ jobs:
           NODE
           printf 'version=%s\n' "$(node -p "require('./packages/cli/package.json').version")" >> "$GITHUB_OUTPUT"
 
+      - name: Test registry verification
+        run: node --test scripts/verify-npm-release.test.mjs
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -124,17 +127,5 @@ jobs:
           ARTIFACT: ${{ steps.artifact.outputs.path }}
           PACKAGE_NAME: create-dumb-diagrams
           RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
-        run: |
-          expected_integrity="sha512-$(openssl dgst -sha512 -binary "$ARTIFACT" | openssl base64 -A)"
-          for attempt in $(seq 1 12); do
-            published_version="$(npm view "${PACKAGE_NAME}@${RELEASE_VERSION}" version --json 2>/dev/null || true)"
-            published_integrity="$(npm view "${PACKAGE_NAME}@${RELEASE_VERSION}" dist.integrity --json 2>/dev/null || true)"
-            if [ "$published_version" = "\"$RELEASE_VERSION\"" ] && [ "$published_integrity" = "\"$expected_integrity\"" ]; then
-              echo "Verified ${PACKAGE_NAME}@${RELEASE_VERSION} and exact artifact integrity on npm"
-              exit 0
-            fi
-            echo "Waiting for ${PACKAGE_NAME}@${RELEASE_VERSION} to become visible on npm (attempt ${attempt}/12)"
-            sleep 10
-          done
-          echo "Published package could not be verified on npm" >&2
-          exit 1
+        timeout-minutes: 17
+        run: node scripts/verify-npm-release.mjs

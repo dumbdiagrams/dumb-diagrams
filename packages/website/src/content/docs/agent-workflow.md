@@ -1,6 +1,8 @@
 ---
 title: Work with an agent
 description: Give a coding agent context to draft a .dgm file, then refine it in Studio.
+seoTitle: AI Architecture Diagrams with Coding Agents
+seoDescription: Give a coding agent project context, generate a .dgm diagram, and review the result in Studio.
 section: Start here
 order: 2
 ---
