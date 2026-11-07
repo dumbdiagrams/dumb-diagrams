@@ -52,16 +52,16 @@
   .mobile-nav { display: none; }
   .install { width: 480px; max-width: 100%; border: 1px solid var(--line); background: #fcfbf7; }
   .install-tabs { display: flex; align-items: stretch; gap: 19px; padding: 0 17px; border-bottom: 1px solid var(--line); height: 36px; }
-  .install-tabs button { border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--muted); font-size: 10px; padding: 0; margin-bottom: -1px; }
+  .install-tabs button { border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--muted); font-size: 11px; padding: 0; margin-bottom: -1px; }
   .install-tabs button[aria-pressed="true"] { border-color: var(--orange); color: var(--ink); }
-  .install-tabs > span { margin-left: auto; color: var(--muted); font-size: 9px; align-self: center; letter-spacing: .04em; }
+  .install-tabs > span { margin-left: auto; color: var(--muted); font-size: 10px; align-self: center; letter-spacing: .04em; }
   .install-command { padding: 17px; display: flex; align-items: center; gap: 11px; }
   .install-command code { min-width: 0; flex: 1; white-space: nowrap; overflow-x: auto; scrollbar-width: none; font-size: 13px; letter-spacing: -.035em; }
   .install-command code::-webkit-scrollbar { display: none; }
   .prompt { color: var(--orange); font-family: var(--mono); }
   .copy-button { background: transparent; border: 0; width: 28px; min-width: 28px; min-height: 30px; flex-shrink: 0; font-size: 20px; margin-left: auto; padding: 0; }
   .copy-button:hover { color: var(--orange); }
-  .install-caption { display: flex; justify-content: space-between; gap: 10px; font-size: 9px; color: var(--muted); padding: 0 17px 12px; }
+  .install-caption { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; color: var(--muted); padding: 0 17px 12px; }
   .install-caption span span { padding: 0 5px; }
   .install-caption a { color: var(--ink); }
   .site-footer { padding: 45px 0 72px; }
@@ -84,7 +84,7 @@
 @layer pages {
   .hero { --hero-window-height: clamp(390px, 56svh, 500px); padding: clamp(24px, 4svh, 40px) 0 24px; }
   .hero-eyebrow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 24px; }
-  .version { color: var(--muted); font-size: 9px; letter-spacing: .035em; }
+  .version { color: var(--muted); font-size: 10px; letter-spacing: .035em; }
   .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr); align-items: center; gap: clamp(28px, 2.5vw, 36px); }
   .hero-copy, .hero-terminal { min-width: 0; }
   .hero h1 { font-size: clamp(60px, 6.2vw, 88px); font-weight: 500; line-height: 1.08; }
@@ -92,7 +92,6 @@
   .hero-period { color: var(--brand-coral); }
   .hero-description { max-width: 390px; margin-top: 22px; }
   .hero-description p { font-size: 15px; color: var(--muted); line-height: 1.8; letter-spacing: -.025em; }
-  .hero-motto { display: block; margin-bottom: 14px; color: var(--ink); font-size: 20px; line-height: 1.3; letter-spacing: -.04em; }
   .hero-start { margin-top: 28px; max-width: 100%; }
   .hero .install { width: 100%; }
   .provider-strip { padding: 18px 0 40px; }
@@ -109,17 +108,17 @@
   .section-heading .eyebrow { color: var(--muted); margin-bottom: 24px; }
   .section-heading h2 { font-size: 53px; line-height: 1.12; }
   .section-heading > p { color: var(--muted); max-width: 370px; margin-top: 23px; font-size: 14px; }
-  .manifesto { margin: 0 -64px; padding: 78px 64px; color: #f1f5fb; background: var(--brand-navy-deep); display: grid; grid-template-columns: 1.7fr 1fr; gap: 110px; }
-  .manifesto .eyebrow { color: #c2cfe1; }
-  .manifesto h2 { font-size: 49px; line-height: 1.15; margin: 30px 0 24px; }
+  .manifesto { margin: 0 -64px; padding: 78px 64px; color: #f1f5fb; background: var(--brand-navy-deep); display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.15fr); gap: clamp(56px, 6vw, 88px); }
+  .manifesto .eyebrow { color: #c2cfe1; font-size: 12px; }
+  .manifesto h2 { font-size: 47px; line-height: 1.15; margin: 30px 0 24px; }
   .manifesto h2 em { display: block; font-family: Georgia, serif; font-weight: 400; color: var(--brand-orange); letter-spacing: -.05em; }
-  .manifesto-main > p { color: #bdcde0; font-size: 13px; line-height: 1.9; max-width: 400px; margin-bottom: 30px; }
+  .manifesto-main > p { color: #bdcde0; font-size: 14px; line-height: 1.75; max-width: 430px; margin-bottom: 30px; }
   .manifesto-notes article { padding: 23px 0; border-bottom: 1px solid #3a5371; }
   .manifesto-notes article:first-child { padding-top: 0; }
   .manifesto-notes article:last-child { border: 0; padding-bottom: 0; }
-  .manifesto-notes .mono { font-size: 11px; color: var(--brand-orange); }
-  .manifesto-notes h3 { font-size: 18px; margin: 10px 0; }
-  .manifesto-notes p { font-size: 12px; color: #bdcde0; }
+  .manifesto-notes .mono { font-size: 13px; color: var(--brand-orange); }
+  .manifesto-notes h3 { font-size: 19px; margin: 10px 0; }
+  .manifesto-notes p { font-size: 13px; line-height: 1.7; color: #bdcde0; }
   .faq { display: grid; grid-template-columns: 1fr 1.3fr; gap: 90px; }
   /* The canonical artwork has transparent padding; offset it so its visible
      footprint matches the former FAQ derivative at the same alignment. */
@@ -149,7 +148,7 @@
     .install-command code { font-size: 11px; }
     .section-heading h2 { font-size: 44px; }
     .manifesto { margin: 0 -36px; padding: 64px 36px; gap: 60px; }
-    .manifesto h2 { font-size: 43px; }
+    .manifesto h2 { font-size: 41px; }
     .faq { gap: 45px; }
     .closing { padding: 35px; }
     .closing h2 { font-size: 40px; }
@@ -168,7 +167,7 @@
     .hero h1 { grid-column: 1 / -1; }
     .hero h1 { font-size: clamp(52px, 8.4vw, 76px); }
     .hero-description, .hero-start { margin-top: 0; }
-    .hero .install-command code { font-size: 10px; }
+    .hero .install-command code { font-size: 12px; }
   }
   @media (max-width: 800px) {
     .page-shell { padding: 0 24px; }
@@ -213,26 +212,32 @@
     .mobile-nav nav { position: absolute; top: 77px; left: 0; right: 0; z-index: 10; padding: 20px; display: grid; gap: 15px; border-bottom: 1px solid var(--line); background: var(--paper); }
     .hero { --hero-window-height: 355px; }
     .hero-eyebrow { margin-bottom: 22px; }
-    .hero-eyebrow .eyebrow { font-size: 8px; letter-spacing: .045em; }
+    .hero-eyebrow .eyebrow { font-size: 10px; letter-spacing: .045em; }
     .version { display: none; }
     .hero h1 { font-size: clamp(34px, 9.2vw, 49px); line-height: 1.13; letter-spacing: -.065em; }
     .hero-description p { font-size: 14px; }
     .text-link { font-size: 11px; gap: 16px; }
     .install-tabs { gap: 18px; padding: 0 12px; }
-    .install-tabs > span { font-size: 8px; }
+    .install-tabs button { font-size: 11px; }
+    .install-tabs > span { font-size: 10px; }
     .install-command { padding: 15px 12px; gap: 7px; }
-    .install-command code, .hero .install-command code { font-size: 10.5px; }
-    .install-caption { padding: 0 12px 12px; font-size: 8px; }
+    .install-command code, .hero .install-command code { font-size: 11.5px; }
+    .install-caption { padding: 0 12px 12px; font-size: 10px; }
     .copy-button { font-size: 16px; min-width: 26px; }
     .provider-strip { padding: 14px 0 24px; }
     .provider-strip-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
     .provider-strip-list li { font-size: 15px; }
     .provider-strip-list li:nth-child(2n)::after { width: calc(100% - 6px); background: linear-gradient(90deg, var(--line), transparent); }
     .section-heading h2 { font-size: 37px; }
-    .eyebrow { font-size: 8px; }
+    .eyebrow { font-size: 9px; }
+    .manifesto .eyebrow { font-size: 11px; }
     .manifesto { margin: 0 -20px; padding: 48px 20px; grid-template-columns: 1fr; gap: 38px; }
-    .manifesto h2 { font-size: 40px; }
+    .manifesto h2 { font-size: 38px; }
     .manifesto-notes article { padding: 20px 0; }
+    .manifesto-main > p { font-size: 14px; }
+    .manifesto-notes .mono { font-size: 13px; }
+    .manifesto-notes h3 { font-size: 19px; }
+    .manifesto-notes p { font-size: 13px; }
     .faq-list summary { font-size: 13px; }
     .closing { padding: 30px 22px; }
     .closing h2 { font-size: 34px; }

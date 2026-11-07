@@ -11,14 +11,14 @@
   <rect width="1200" height="630" fill="url(#grid)"/>
   <circle cx="1040" cy="80" r="170" fill="#f7982c" fill-opacity=".08"/>
   <g font-family="Arial, Helvetica, sans-serif" fill="#163964">
-    <text x="72" y="84" font-size="32" font-weight="700" letter-spacing="-1.2">dumb<tspan font-weight="400">diagrams</tspan><tspan fill="#f7982c">.</tspan></text>
+    <text x="72" y="84" font-size="32" font-weight="700" letter-spacing="-1.2">Dumb<tspan font-weight="400" dx="12">Diagrams</tspan><tspan fill="#f7982c">.</tspan></text>
     <path d="M72 111H137" stroke="#f7982c" stroke-width="4"/>
     <text x="72" y="157" font-family="Menlo, Consolas, monospace" font-size="13" letter-spacing="1.2" fill="#586a7f">OPEN SOURCE · AI-FIRST DIAGRAMMING</text>
-    <text x="72" y="260" font-size="55" font-weight="700" letter-spacing="-2.8">Architecture diagrams</text>
-    <text x="72" y="325" font-size="55" font-weight="700" letter-spacing="-2.8">as code<tspan fill="#f7982c">.</tspan></text>
-    <text x="72" y="382" font-size="22" font-weight="600">A little opinionated. A lot clearer.</text>
-    <text x="72" y="432" font-size="17" fill="#586a7f">Portable source. Deterministic rendering.</text>
-    <text x="72" y="460" font-size="17" fill="#586a7f">Private by design.</text>
+    <text x="72" y="250" font-size="46" font-weight="700" letter-spacing="-2.2">Architecture diagrams</text>
+    <text x="72" y="306" font-size="46" font-weight="700" letter-spacing="-2.2">as code<tspan fill="#f7982c">.</tspan></text>
+    <text x="72" y="370" font-size="27" font-weight="600">A little opinionated. A lot clearer.</text>
+    <text x="72" y="422" font-size="17" fill="#586a7f">Portable source. Deterministic rendering.</text>
+    <text x="72" y="450" font-size="17" fill="#586a7f">Private by design.</text>
   </g>
   <g transform="translate(656 72)">
     <rect width="472" height="486" rx="22" fill="#fffefa" stroke="#d3dbe3" stroke-width="2"/>

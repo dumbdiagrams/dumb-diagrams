@@ -7,7 +7,7 @@ import '../styles/docs.css';
 const privacy = privacyConfig();
 const { measurementId } = analyticsConfig();
 const enabled = Boolean(import.meta.env.PROD && measurementId);
-const sourceRepository = (repository || 'https://github.com/dumbdiagrams/dumb-diagrams').replace(/\/$/, '');
+const sourceRepository = repository.replace(/\/$/, '');
 ---
 <Base title="Privacy-First Architecture Diagrams and Data Handling" description="Learn how Dumb Diagrams handles website analytics and cookies, and how local Studio and the browser editor keep diagram contents on your device." noindex={!privacy.ready}>
   <main id="main" class="privacy-page">
@@ -33,10 +33,10 @@ const sourceRepository = (repository || 'https://github.com/dumbdiagrams/dumb-di
       <h2>Website delivery</h2>
       <p>Delivering and securing the website involves processing request information such as IP addresses, URLs, and browser headers. Optional analytics consent does not control the network processing needed to serve a page. The operator must confirm production logging, retention, and any applicable transfer safeguards before launch.</p>
       <p>Following an external link opens a service with its own privacy practices.</p>
-      <h2>Your diagrams stay on your device</h2>
-      <p>In local Studio, the browser opens and saves the selected diagram file directly on your machine. The Studio server serves the editor bundle on your computer and does not provide an API for diagram contents. In the standalone browser editor, workspace data is stored in your browser until you download a copy. Dumb Diagrams-operated services do not receive diagram contents through these workflows, and this website does not send diagram files, prompts, or source code to Google Analytics.</p>
+      <h2>We commit to keeping your diagrams on your device</h2>
+      <p>Your diagrams are processed and stored on your device. Local Studio opens and saves the selected file directly on your machine; its server runs at localhost and has no API for sending diagram contents elsewhere. The standalone browser editor keeps workspace data in browser storage until you download a copy. We commit that Dumb Diagrams servers will never receive or store your diagrams. That commitment also applies to the planned in-browser Studio: diagram processing will stay on your device. This website does not send diagram files, prompts, or source code to Google Analytics.</p>
       <p>Review the open-source implementation: <a href={`${sourceRepository}/blob/main/packages/cli/src/studio-server.ts`}>local Studio server</a>, <a href={`${sourceRepository}/blob/main/packages/editor/src/state/file-save.ts`}>direct file saving</a>, and <a href={`${sourceRepository}/blob/main/packages/editor/src/state/workspace-persistence.ts`}>browser workspace storage</a>.</p>
-      <p>This guarantee covers Dumb Diagrams-operated services, not external coding-agent providers. If you give an agent diagram context, that provider’s settings and terms govern its handling.</p>
+      <p>This commitment covers Dumb Diagrams-operated services. It cannot control external coding-agent providers; if you choose to give an agent diagram context, that provider’s settings and terms govern its handling.</p>
       <h2>Your rights and requests</h2>
       <p>Depending on applicable law, you may have rights to access, correct, erase, or obtain a copy of personal data, restrict processing, or object to certain processing. You may withdraw analytics consent at any time and lodge a complaint with a data-protection authority. Contact the operator using the details above; some requests depend on whether the relevant data can be identified.</p>
       <p>Last updated: 7 November 2026.</p>

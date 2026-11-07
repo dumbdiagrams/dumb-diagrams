@@ -1,5 +1,5 @@
 ---
-import { url, npmUrl, repository } from '../lib/site';
+import { url, repository } from '../lib/site';
 import { Image } from 'astro:assets';
 import logo from '../../../editor/public/logo_dumbdiagrams.png';
 const { docs = false } = Astro.props;
@@ -7,12 +7,11 @@ const { docs = false } = Astro.props;
 <header class="site-header">
   <a class="brand" href={url()} aria-label="Dumb Diagrams home">
     <Image src={logo} width={52} height={31} widths={[52, 104]} sizes="52px" format="webp" alt="" loading="eager" />
-    <span class="dd-wordmark">dumb<span class="dd-wordmark__light">diagrams</span><span class="dd-wordmark__dot">.</span></span>
+    <span class="dd-wordmark">Dumb<span class="dd-wordmark__light"> Diagrams</span><span class="dd-wordmark__dot">.</span></span>
   </a>
   <nav class="desktop-nav" aria-label="Main navigation">
     <a href={url('#how-it-works')}>How it works</a>
     <a href={url('docs/')} aria-current={docs ? 'page' : undefined}>Documentation</a>
-    <a href={repository || npmUrl}>{repository ? 'Source code' : 'npm'} <span aria-hidden="true">↗</span></a>
   </nav>
   <a
     class="github-link"
@@ -33,7 +32,6 @@ const { docs = false } = Astro.props;
     <nav aria-label="Mobile navigation">
       <a href={url('#how-it-works')}>How it works</a>
       <a href={url('docs/')}>Documentation</a>
-      <a href={repository || npmUrl}>{repository ? 'Source code' : 'npm package'} ↗</a>
       <a href={url('docs/quick-start/')}>Get started ↗</a>
     </nav>
   </details>

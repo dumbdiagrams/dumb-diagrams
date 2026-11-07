@@ -2,7 +2,7 @@
 title: Quick start
 description: Install the CLI, create a project, and open your first diagram in Studio.
 seoTitle: Getting Started with Diagrams as Code
-seoDescription: Install the DumbDiagrams CLI, create a diagram project, and open your first diagram in Studio.
+seoDescription: Install the Dumb Diagrams CLI, create a diagram project, and open your first diagram in Studio.
 section: Start here
 order: 1
 ---
