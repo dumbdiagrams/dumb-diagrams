@@ -10,10 +10,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue" alt="License: AGPL-3.0-only" /></a>
 </p>
 
-<a href="https://ko-fi.com/P5P31WH7UZ" target="_blank" rel="noopener noreferrer"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Support development with a tip on Ko-fi" /></a>
-
-Tips help maintain Dumb Diagrams and support building more useful tools for people.
-
 **A little opinionated. A lot clearer.**
 
 Architecture diagrams as code for LLM-augmented workflows. Describe the system
@@ -21,6 +17,10 @@ in a readable `.dgm` file yourself or with a coding agent, let the engine handle
 layout and routing, then review and refine it in Studio on your machine.
 
 <a href="https://dumbdiagrams.com">Official website</a> · <a href="https://dumbdiagrams.com/docs/">Documentation</a>
+
+<a href="https://ko-fi.com/P5P31WH7UZ" target="_blank" rel="noopener noreferrer"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Support development with a tip on Ko-fi" /></a>
+
+Tips help maintain Dumb Diagrams and support building more useful tools for people.
 
 </div>
 
