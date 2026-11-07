@@ -40,12 +40,15 @@ const socialImage = Astro.site ? new URL(url('social-card.png'), Astro.site) : u
       <meta property="og:image:type" content="image/png" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content="Dumb Diagrams architecture diagrams as code, shown as a connected service diagram." />
+      <meta property="og:image:alt" content="Dumb Diagrams social card: A little opinionated. A lot clearer., alongside a rendered factory IoT telemetry diagram using AWS services." />
     </>}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
-    {socialImage && <meta name="twitter:image" content={socialImage.href} />}
+    {socialImage && <>
+      <meta name="twitter:image" content={socialImage.href} />
+      <meta name="twitter:image:alt" content="Dumb Diagrams social card: A little opinionated. A lot clearer., alongside a rendered factory IoT telemetry diagram using AWS services." />
+    </>}
     <link rel="icon" type="image/png" href={url('favicon.png')} />
     <link rel="alternate" type="text/plain" title="Documentation for agents" href={url('llms.txt')} />
     {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData).replaceAll('<', '\\u003c')} />}
