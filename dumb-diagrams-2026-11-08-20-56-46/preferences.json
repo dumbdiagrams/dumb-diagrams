@@ -1,6 +1,0 @@
-{
-  "$schema": "./.dumbdiagrams/preferences.schema.json",
-  "numberedSteps": true,
-  "edgeLabels": true,
-  "resourceLabels": true
-}
