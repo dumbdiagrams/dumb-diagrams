@@ -5,17 +5,16 @@
   "type": "module",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "prepare:assets": "pnpm --filter @dumb-diagrams/runtime build && pnpm --filter create-dumb-diagrams build && node scripts/capture-cli.mjs && node scripts/prepare-assets.mjs && node scripts/prepare-docs-explainers.mjs",
-    "generate:social-card": "node scripts/generate-social-card.mjs",
-    "predev": "pnpm prepare:assets && pnpm generate:social-card",
+    "predev": "pnpm prepare:assets && node scripts/generate-social-card.mjs",
     "dev": "node ../../scripts/start-website-dev.mjs",
-    "prebuild": "pnpm prepare:assets && pnpm generate:social-card",
+    "prebuild": "pnpm prepare:assets && node scripts/generate-social-card.mjs",
     "build": "astro build && pagefind --site dist --glob 'docs/**/*.html' && pnpm --dir ../.. build:studio:hosted",
     "preview": "node ../../scripts/start-website-preview.mjs",
     "precheck": "pnpm --filter @dumb-diagrams/runtime build",
     "check": "astro check",
     "test": "node --test scripts/site.test.mjs scripts/analytics.test.mjs",
-    "test:e2e": "playwright test --config playwright.config.ts"
+    "test:e2e": "playwright test --config playwright.config.ts",
+    "prepare:assets": "pnpm --filter @dumb-diagrams/runtime build && pnpm --filter create-dumb-diagrams build && node scripts/capture-cli.mjs && node scripts/prepare-assets.mjs && node scripts/prepare-docs-explainers.mjs"
   },
   "dependencies": {
     "@astrojs/partytown": "2.1.9",
