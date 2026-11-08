@@ -22,6 +22,22 @@ pnpm uses a local isolated package store in both development and CI.
 Editor tests import the built runtime, so run
 `pnpm --filter @dumb-diagrams/runtime build` after changing runtime code.
 
+## Common commands
+
+The root scripts are ordered around these everyday workflows:
+
+| Workflow | Command |
+| --- | --- |
+| Run local Studio with hot reload | `pnpm dev` |
+| Run the website and local Studio | `pnpm dev:website` |
+| Run the built CLI's Studio server | `pnpm build && pnpm dev:cli` |
+| Run all unit and integration tests | `pnpm test` |
+| Run Studio browser tests | `pnpm build && pnpm test:e2e` |
+| Run the full release and website gate | `pnpm check:release` |
+
+For only the website's diagnostics, production build, and site tests, use
+`pnpm check:website`.
+
 ## Tests
 
 | Command | Runs |
