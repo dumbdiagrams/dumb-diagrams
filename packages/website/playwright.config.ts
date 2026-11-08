@@ -19,7 +19,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "node scripts/serve-dist.mjs",
+    command: "pnpm --dir ../.. check:studio:hosted && node scripts/serve-dist-with-studio.mjs",
     cwd: import.meta.dirname,
     env: { WEBSITE_PREVIEW_PORT: String(port) },
     url: `${baseURL}/docs/quality-and-scoring/`,

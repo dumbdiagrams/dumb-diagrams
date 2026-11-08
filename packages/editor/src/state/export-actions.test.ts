@@ -5,9 +5,6 @@ import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
 import { errAsync, okAsync } from "neverthrow";
 
 import {
-  decodeDiagramUrlPayload,
-  encodeDiagramUrlPayload,
-  createDiagramUrlResult,
   downloadTextResult,
   exportDgmFileResult,
   exportDiagramFile,
@@ -25,7 +22,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function exportArgs(format: "dgm" | "url" | "svg" | "png" = "dgm") {
+function exportArgs(format: "dgm" | "svg" | "png" = "dgm") {
   return {
     title: "diagram",
     source: "diagram demo {\n  grammar aws\n}\n",
@@ -166,27 +163,6 @@ describe("export filenames", () => {
   });
 });
 
-describe("diagram URL payloads", () => {
-  it("round-trips UTF-8 source through a URL-safe payload", () => {
-    const source = "diagram résumé {\n  grammar aws\n}\n";
-    const encoded = encodeDiagramUrlPayload(source);
-    expect(encoded.ok).toBe(true);
-    if (!encoded.ok) return;
-    expect(encoded.payload).not.toMatch(/[+/=]/);
-    expect(decodeDiagramUrlPayload(encoded.payload)).toEqual({ ok: true, source });
-  });
-
-  it("rejects malformed and oversized URL payloads", () => {
-    expect(decodeDiagramUrlPayload("not valid!")).toMatchObject({ ok: false, code: "malformed" });
-    expect(decodeDiagramUrlPayload("A".repeat(Math.ceil((1024 * 1024) / 3) * 4 + 1))).toMatchObject({
-      ok: false,
-      code: "oversize",
-    });
-    const oversized = encodeDiagramUrlPayload("x".repeat(1024 * 1024 + 1));
-    expect(oversized).toMatchObject({ ok: false, code: "oversize" });
-  });
-});
-
 describe("typed diagram exports", () => {
   it("accepts the raster limits at the boundary and rejects excess pixels", () => {
     expect(validateRasterDimensions(RASTER_EXPORT_LIMITS.maxAxisPixels, 1)).toEqual({
@@ -263,13 +239,6 @@ describe("typed diagram exports", () => {
 
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("download");
-  });
-
-  it("returns a typed URL failure for an oversized source", () => {
-    const result = createDiagramUrlResult("x".repeat(1024 * 1024 + 1));
-
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error.code).toBe("url");
   });
 
   it("returns a typed receipt for the source export fallback", () => {
@@ -411,15 +380,5 @@ describe("typed diagram exports", () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) expect(result.error.code).toBe("download");
     expect(download.revokeObjectURL).toHaveBeenCalledWith("blob:export");
-  });
-
-  it("classifies URL encoding failures", async () => {
-    const args = exportArgs("url");
-    args.source = "x".repeat(1024 * 1024 + 1);
-
-    const result = await exportDiagramFile(args);
-
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) expect(result.error.code).toBe("url");
   });
 });
