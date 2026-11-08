@@ -2,7 +2,7 @@
 
 ## Package versions
 
-The current workspace version is `0.1.1` (release tag `v0.1.1`).
+The current workspace version is `0.2.1` (release tag `v0.2.1`).
 
 All workspace packages share one version, bumped together, so the parser,
 renderer, CLI, and editor are always one compatibility line. Only
@@ -121,8 +121,9 @@ The public landing page and documentation are a separate static Astro build at
 Pages and use `main` as the production branch; website deployments follow branch
 updates independently of npm release tags. See the
 [website hosting instructions](../packages/website/README.md) for build settings.
-GitHub Pages deployment and rollback workflows have been removed. Studio remains
-available locally through the npm CLI.
+GitHub Pages deployment and rollback workflows have been removed. The hosted
+Studio is served as a separate static app at `studio.dumbdiagrams.com`; local
+Studio remains bundled in the npm CLI.
 
 ## First publish and trusted publisher setup
 

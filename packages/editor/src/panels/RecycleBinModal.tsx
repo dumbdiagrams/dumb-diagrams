@@ -61,35 +61,38 @@ export function RecycleBinModal({
             </button>
           </div>
           <div className="recycle-bin-list" role="list" aria-label="Recoverable diagrams">
-            {tabs.map((tab) => (
-              <div key={tab.id} className="recycle-bin-item" role="listitem">
-                {tab.previewSvg ? (
-                  <div
-                    className="recycle-bin-preview"
-                    role="img"
-                    aria-label={`Preview of ${getLabel(tab)}`}
-                    dangerouslySetInnerHTML={{ __html: tab.previewSvg }}
-                  />
-                ) : (
-                  <div className="recycle-bin-preview recycle-bin-preview-empty" aria-hidden="true">
-                    No preview
+            {tabs.map((tab) => {
+              const label = getLabel(tab);
+              return (
+                <div key={tab.id} className="recycle-bin-item" role="listitem">
+                  {tab.previewSvg ? (
+                    <div
+                      className="recycle-bin-preview"
+                      role="img"
+                      aria-label={`Preview of ${label}`}
+                      dangerouslySetInnerHTML={{ __html: tab.previewSvg }}
+                    />
+                  ) : (
+                    <div className="recycle-bin-preview recycle-bin-preview-empty" aria-hidden="true">
+                      No preview
+                    </div>
+                  )}
+                  <div className="recycle-bin-item-copy">
+                    <strong>{label}</strong>
+                    <span>
+                      {tab.filename ?? "Untitled diagram"}
+                      {isTabDirty(tab) ? " · Unsaved changes" : " · Saved"}
+                    </span>
                   </div>
-                )}
-                <div className="recycle-bin-item-copy">
-                  <strong>{getLabel(tab)}</strong>
-                  <span>
-                    {tab.filename ?? "Untitled diagram"}
-                    {isTabDirty(tab) ? " · Unsaved changes" : " · Saved"}
-                  </span>
+                  <button type="button" className="primary-button" onClick={() => onRestore(tab.id)}>
+                    Restore
+                  </button>
+                  <button type="button" className="text-button" onClick={() => onRemove(tab.id)}>
+                    Delete
+                  </button>
                 </div>
-                <button type="button" className="primary-button" onClick={() => onRestore(tab.id)}>
-                  Restore
-                </button>
-                <button type="button" className="text-button" onClick={() => onRemove(tab.id)}>
-                  Delete
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

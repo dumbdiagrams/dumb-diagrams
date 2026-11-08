@@ -104,18 +104,18 @@ export function Inspector({
   const resourceServiceLabel = resource
     ? layout.nodes.find((candidate) => candidate.id === resource.id)?.serviceLabel
     : undefined;
-  const title =
-    resource?.label.role ??
-    resource?.label.service ??
-    resourceServiceLabel ??
-    group?.label ??
-    edge?.label ??
-    annotation?.text ??
-    edge?.id ??
-    item?.id ??
-    `${selection.length} selected`;
+  const isCustomResource = Boolean(resource?.props.iconAsset);
+  const title = resource
+    ? isCustomResource
+      ? (resource.label.service ?? resource.label.role ?? "Custom")
+      : (resource.label.role ?? resource.label.service ?? resourceServiceLabel ?? resource.id)
+    : (group?.label ?? edge?.label ?? annotation?.text ?? edge?.id ?? item?.id ?? `${selection.length} selected`);
 
-  const editableLabel = resource ? (resource.label.role ?? "") : title;
+  const editableLabel = resource
+    ? isCustomResource
+      ? (resource.label.service ?? resource.label.role ?? "")
+      : (resource.label.role ?? "")
+    : title;
   const [labelDraft, setLabelDraft] = useState(editableLabel);
   useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
   const authoredResourceLabelPosition: ResourceLabelPosition = resource?.label.position === "top" ? "top" : "bottom";
@@ -189,7 +189,9 @@ export function Inspector({
       )}
       {(resource || group || edge || annotation) && (
         <div className="property-section">
-          <label htmlFor="inspector-label">{annotation ? "Content" : "Display label"}</label>
+          <label htmlFor="inspector-label">
+            {annotation ? "Content" : isCustomResource ? "Main title" : "Display label"}
+          </label>
           {annotation ? (
             <textarea
               id="inspector-label"
@@ -209,7 +211,7 @@ export function Inspector({
             <input
               id="inspector-label"
               value={labelDraft}
-              placeholder={resource ? "Optional label" : undefined}
+              placeholder={resource ? (isCustomResource ? "Custom" : "Optional label") : undefined}
               maxLength={DIAGRAM_LIMITS.labelCharacters}
               onChange={(event) => setLabelDraft(event.target.value)}
               onPaste={(event) =>

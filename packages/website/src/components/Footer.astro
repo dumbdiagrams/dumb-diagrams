@@ -9,9 +9,10 @@ import { url, npmUrl } from '../lib/site';
   </div>
   <div class="footer-bottom">
     <span>© {new Date().getFullYear()} Dumb Diagrams contributors</span>
-    <div><a href={url('LICENSE.txt')}>AGPL-3.0</a><a href={url('ICON-NOTICES.txt')}>Icon credits</a><a href={url('FONT-LICENSES.txt')}>Font credits</a><a href={npmUrl}>npm ↗</a></div>
+    <div><a href={url('LICENSE.txt')}>AGPL-3.0</a><a href={url('ICON-NOTICES.txt')}>Icon credits</a><a href={url('FONT-LICENSES.txt')}>Font credits</a><a href={npmUrl} target="_blank" rel="noopener noreferrer">npm ↗</a></div>
     <span class="local-note"><span></span> Local files. Yours to keep.</span>
   </div>
+  <p class="footer-license-note">Dumb Diagrams source code is licensed under AGPL-3.0-only, except where otherwise indicated. AWS, Microsoft Azure, and Google Cloud architecture artwork remains subject to the respective providers’ terms and trademark rights. Inclusion in this repository does not grant additional rights to those assets.</p>
   <div class="footer-privacy">
     <nav aria-label="Privacy controls"><a href={url('privacy/')}>Privacy &amp; cookies</a><a class="footer-cookie-settings" href={url('privacy/#cookie-settings')} data-analytics-settings>Cookie preferences</a><button class="footer-cookie-revoke" type="button" data-analytics-revoke hidden>Revoke analytics consent</button></nav>
   </div>

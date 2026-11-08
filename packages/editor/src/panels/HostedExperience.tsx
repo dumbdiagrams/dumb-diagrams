@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { CreditsNotice } from "./CreditsNotice";
 import { Modal } from "../ui/Modal";
 
 type PreferenceState = {
@@ -10,6 +11,7 @@ type PreferenceState = {
 const PREFERENCES_KEY = "dumb-diagrams:hosted-preferences:v1";
 const REPOSITORY_URL = "https://github.com/dumbdiagrams/dumb-diagrams";
 const DOCS_URL = "https://dumbdiagrams.com/docs/quick-start/";
+const DOCS_HOME_URL = "https://dumbdiagrams.com/docs/";
 
 const TOUR_STEPS = [
   {
@@ -281,6 +283,17 @@ export function HostedExperience({
             />{" "}
             Don’t offer the quick tour again
           </label>
+          <section className="hosted-settings-docs" aria-labelledby="hosted-settings-docs-title">
+            <h3 id="hosted-settings-docs-title">Studio documentation</h3>
+            <p>Guides for getting started, opening diagrams, and working with .dgm files.</p>
+            <a href={DOCS_HOME_URL} target="_blank" rel="noopener noreferrer">
+              Browse documentation <span aria-hidden="true">↗</span>
+            </a>
+          </section>
+          <section className="hosted-settings-credits" aria-labelledby="hosted-settings-credits-title">
+            <h3 id="hosted-settings-credits-title">Credits and licenses</h3>
+            <CreditsNotice />
+          </section>
           <div className="modal-actions">
             <button
               type="button"

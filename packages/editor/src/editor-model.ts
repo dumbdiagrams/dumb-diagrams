@@ -678,6 +678,10 @@ export function renameResource(doc: DiagramDocument, id: string, label: string):
   const next = cloneDocument(doc);
   const resource = next.resources.find((candidate) => candidate.id === id);
   if (!resource) return doc;
+  if (resource.props.iconAsset) {
+    resource.label = { ...resource.label, service: label || undefined, role: undefined };
+    return next;
+  }
   resource.label = { ...resource.label, role: label || undefined };
   return next;
 }

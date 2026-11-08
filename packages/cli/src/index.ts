@@ -45,6 +45,7 @@ import { startStudioServer } from "./studio-server.js";
 import { readCliVersion } from "./version.js";
 
 const VERSION = readCliVersion();
+const HOSTED_STUDIO_URL = "https://studio.dumbdiagrams.com/";
 const ui = createCliUi();
 
 interface ParsedArgs {
@@ -115,6 +116,12 @@ ${ui.heading("Quick start")}
   ${ui.command("dumbdiagrams render diagrams/example/diagram.dgm -o diagram.svg")}
   ${ui.command("dumbdiagrams studio")}
 
+${ui.heading("Studio")}
+${ui.info("hosted", `${ui.command(HOSTED_STUDIO_URL)} (recommended)`)}
+${ui.info("local", `${ui.command("dumbdiagrams studio")} (bundled with the CLI)`)}
+${ui.info("privacy", "Whichever Studio you choose, your diagrams stay on your device.")}
+${ui.info("storage", "In browser storage or files you choose; we never upload or store their contents on our servers.")}
+
 ${ui.muted("validate uses sibling requirements.json for diagram.dgm, or <stem>.requirements.json otherwise. Use --requirements <file> for a custom contract or stdin; --json prints a machine-readable report, and --strict fails on routing warnings.")}
 
 ${ui.muted("Tip: dgm is a shorthand alias for dumbdiagrams.")}
@@ -156,8 +163,16 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
     .andThen((handle) => {
       console.log(`\n${ui.brand()} ${ui.muted(`v${VERSION}`)}\n`);
       console.log(ui.heading("Studio is ready"));
+      console.log(ui.info("hosted", `${ui.command(HOSTED_STUDIO_URL)} (recommended)`));
       console.log(ui.info("local", ui.command(handle.url)));
       console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
+      console.log(ui.info("privacy", "Whichever Studio you choose, your diagrams stay on your device."));
+      console.log(
+        ui.info(
+          "storage",
+          "In browser storage or files you choose; we never upload or store their contents on our servers.",
+        ),
+      );
       console.log(ui.info("stop", "Ctrl+C"));
       if (process.env.DUMBDIAGRAMS_STUDIO_NO_OPEN !== "1") launchBrowser(handle.url);
       return ResultAsync.fromPromise(

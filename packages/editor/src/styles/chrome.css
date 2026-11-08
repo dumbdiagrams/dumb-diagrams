@@ -149,6 +149,25 @@
   color: var(--danger);
 }
 
+.diagram-context-pill {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  padding: 3px 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.diagram-context-pill.is-empty {
+  border-style: dashed;
+  background: transparent;
+}
+
 .issue-journal {
   position: relative;
 }

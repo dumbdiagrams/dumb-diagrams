@@ -198,6 +198,20 @@ describe("editor commands", () => {
     expect(next.resources.find((resource) => resource.id === "client")?.label.role).toBe("Browser");
   });
 
+  it("renames custom-icon resources through their service label and removes the fallback role", () => {
+    const doc = createAsyncDocsFixture();
+    const resource = doc.resources.find((candidate) => candidate.id === "client")!;
+    resource.props.iconAsset = "icon-1";
+    resource.label = { service: "Pasted image", role: "Pasted image" };
+
+    const next = renameResource(doc, "client", "Company logo");
+
+    expect(next.resources.find((candidate) => candidate.id === "client")?.label).toMatchObject({
+      service: "Company logo",
+      role: undefined,
+    });
+  });
+
   it("persists resource and group display-label positions", () => {
     const doc = createAsyncDocsFixture();
     const resource = setResourceLabelPosition(doc, "client", "top");

@@ -50,6 +50,63 @@
   outline-offset: -3px;
 }
 
+.canvas-file-drop-overlay {
+  position: absolute;
+  z-index: 15;
+  inset: 14px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-solid) 66%, transparent);
+  pointer-events: none;
+  backdrop-filter: blur(2px);
+}
+
+.canvas-file-drop-prompt {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 48px));
+  padding: 24px 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.canvas-file-drop-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+}
+
+.canvas-file-drop-prompt strong {
+  font-size: 15px;
+}
+
+.canvas-file-drop-prompt span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .canvas-file-drop-overlay {
+    animation: canvas-file-drop-appear 120ms ease-out;
+  }
+}
+
+@keyframes canvas-file-drop-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ── Interaction overlay ─────────────────────────────────────────── */
 .interaction-overlay {
   position: absolute;

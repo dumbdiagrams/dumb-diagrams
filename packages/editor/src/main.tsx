@@ -28,6 +28,7 @@ import {
   normalizeMultilineText,
   normalizeSingleLineText,
 } from "@dumb-diagrams/runtime/core";
+import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { renderPortableSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
@@ -97,6 +98,7 @@ import { ContextMenu, type ContextMenuItem } from "./panels/ContextMenu";
 import { EdgePanel } from "./panels/EdgePanel";
 import { EntityNavigator, type NavigableEntity } from "./panels/EntityNavigator";
 import { ExportDialog } from "./panels/ExportDialog";
+import { SaveAsDialog, type SaveAsDialogHandle } from "./panels/SaveAsDialog";
 import { ExportMenu } from "./panels/ExportMenu";
 import { HelpModal } from "./panels/HelpModal";
 import { HostedExperience, HostedPrivacyTrigger } from "./panels/HostedExperience";
@@ -144,6 +146,11 @@ import "./styles.css";
 initTheme();
 
 const BLANK_SOURCE = printDgm(createEmptyDocument("untitled-diagram"));
+const PROVIDER_LABELS: Record<"aws" | "azure" | "gcp", string> = {
+  aws: "AWS",
+  azure: "Azure",
+  gcp: "GCP",
+};
 const INITIAL_VIEWPORT = defaultViewportForContent(0, 0);
 const TAB_CLOSE_FALLBACK_MS = 500;
 const LEFT_DRAWER_CLOSE_FALLBACK_MS = 220;
@@ -156,6 +163,21 @@ const LEFT_DRAWER_TOOLS = new Set<ToolId>(["note", "text", "resources", "groups"
 function isLeftDrawerTool(tool: ToolId): boolean {
   return LEFT_DRAWER_TOOLS.has(tool);
 }
+
+function providersOnCanvas(doc: DiagramDocument): Array<keyof typeof PROVIDER_LABELS> {
+  const providers = new Set<keyof typeof PROVIDER_LABELS>();
+  const collectProvider = (type: string | undefined) => {
+    if (!type) return;
+    const provider = getCatalogEntry(type)?.provider;
+    if (provider && provider !== "cloud-agnostic") providers.add(provider);
+  };
+
+  for (const resource of doc.resources) collectProvider(resource.type);
+  for (const group of doc.groups) collectProvider(group.type);
+
+  return (["aws", "azure", "gcp"] as const).filter((provider) => providers.has(provider));
+}
+
 const RenderedDiagram = memo(function RenderedDiagram({ svg }: { svg: string }) {
   return <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
 });
@@ -296,8 +318,8 @@ function App() {
   const [openingExampleId, setOpeningExampleId] = useState<string | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [exportDialogFormat, setExportDialogFormat] = useState<ExportFormat | null>(null);
-  const [saveAsOpen, setSaveAsOpen] = useState(false);
-  const [saveAsDraft, setSaveAsDraft] = useState("");
+  const saveAsDialogRef = useRef<SaveAsDialogHandle>(null);
+  const saveAsActionRef = useRef<(filename: string) => Promise<boolean>>(async () => false);
   const [fileConflictRequest, setFileConflictRequest] = useState<{
     tabId: string;
     filename: string;
@@ -356,7 +378,8 @@ function App() {
       : tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
   }, []);
 
-  const sourceIsValid = (candidate: string): boolean => validateImportedSource(candidate, false).isOk();
+  const sourceIsValid = (candidate: string): boolean =>
+    validateImportedSource(candidate, { enforceCatalogRules: false }).isOk();
 
   const { saveTabSource, attachFileHandle } = useFileActions({
     tabs,
@@ -366,6 +389,21 @@ function App() {
     onSaved: markTabSaved,
     onConflict: setFileConflictRequest,
   });
+
+  saveAsActionRef.current = async (draft) => {
+    const filename = normalizeSingleLineText(draft);
+    if (!filename) {
+      setToast("Filename cannot be empty");
+      return false;
+    }
+    const result = await saveTabSource(activeTab.id, filename);
+    return result.status === "saved";
+  };
+  const saveAs = useCallback((filename: string) => saveAsActionRef.current(filename), []);
+  const notifySaveAsLimit = useCallback(
+    () => setToast(`Filenames are limited to ${DIAGRAM_LIMITS.filenameCharacters} characters`),
+    [],
+  );
 
   const saveActive = () => {
     if (!currentSourceValid) return;
@@ -383,22 +421,10 @@ function App() {
     if (!currentSourceValid) return;
     const picker = (window as FilePickerWindow).showSaveFilePicker;
     if (!picker) {
-      setSaveAsDraft(activeTab.filename || filenameWithExtension(tabLabel(activeTab), "dgm"));
-      setSaveAsOpen(true);
+      saveAsDialogRef.current?.open(activeTab.filename || filenameWithExtension(tabLabel(activeTab), "dgm"));
       return;
     }
     void saveTabSource(activeTab.id, activeTab.filename || filenameWithExtension(tabLabel(activeTab), "dgm"));
-  };
-
-  const confirmSaveAs = async () => {
-    const filename = normalizeSingleLineText(saveAsDraft);
-    if (!filename) {
-      setToast("Filename cannot be empty");
-      return;
-    }
-    setSaveAsDraft(filename);
-    const result = await saveTabSource(activeTab.id, filename);
-    if (result.status === "saved") setSaveAsOpen(false);
   };
 
   const resetTransientState = () => {
@@ -835,6 +861,13 @@ function App() {
   // that require the current source to be valid.
   const currentCompilation = compiledFromCache.ok ? compiledFromCache : null;
   const currentSourceValid = currentCompilation !== null;
+  const canvasProviders = useMemo(() => (parsedDoc ? providersOnCanvas(parsedDoc) : []), [parsedDoc]);
+  const canvasIsEmpty =
+    parsedDoc !== null &&
+    parsedDoc.resources.length === 0 &&
+    parsedDoc.groups.length === 0 &&
+    parsedDoc.edges.length === 0 &&
+    parsedDoc.annotations.length === 0;
 
   useEffect(() => {
     if (
@@ -1656,6 +1689,9 @@ function App() {
           }}
           onCatalogDragOver={handleCatalogDragOver}
           onCatalogDrop={handleCatalogDrop}
+          onFileDrop={(files) => {
+            void handleOpenFiles(files);
+          }}
           onContextMenu={(clientX, clientY, point) => {
             const canvasPoint =
               Number.isFinite(point.x) && Number.isFinite(point.y)
@@ -1847,6 +1883,24 @@ function App() {
               onFocusCanvas={focusCanvas}
             />
             <IssueJournal issues={journalIssues} onIssueSelect={handleIssueSelect} />
+            {parsedDoc && (
+              <>
+                {canvasProviders.map((provider) => (
+                  <span
+                    key={provider}
+                    className="diagram-context-pill"
+                    title={`${PROVIDER_LABELS[provider]} items on canvas`}
+                  >
+                    {PROVIDER_LABELS[provider]}
+                  </span>
+                ))}
+                {canvasIsEmpty && (
+                  <span className="diagram-context-pill is-empty" title="The canvas has no diagram elements">
+                    Empty
+                  </span>
+                )}
+              </>
+            )}
             {persistenceWarning && (
               <button
                 type="button"
@@ -2431,48 +2485,7 @@ function App() {
           />
         )}
 
-        <Modal
-          open={saveAsOpen}
-          title="Save diagram as"
-          subtitle="Choose the filename for the new .dgm source."
-          onClose={() => setSaveAsOpen(false)}
-          width={440}
-        >
-          <form
-            className="save-as-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void confirmSaveAs();
-            }}
-          >
-            <label htmlFor="save-as-filename">Filename</label>
-            <input
-              id="save-as-filename"
-              data-autofocus
-              value={saveAsDraft}
-              maxLength={DIAGRAM_LIMITS.filenameCharacters}
-              onChange={(event) => setSaveAsDraft(event.target.value)}
-              onPaste={(event) =>
-                rejectOversizedPaste(event, DIAGRAM_LIMITS.filenameCharacters, () =>
-                  setToast(`Filenames are limited to ${DIAGRAM_LIMITS.filenameCharacters} characters`),
-                )
-              }
-              placeholder="diagram.dgm"
-              aria-describedby="save-as-limit"
-            />
-            <span id="save-as-limit" className="input-limit" aria-live="polite">
-              {characterLength(saveAsDraft)} / {DIAGRAM_LIMITS.filenameCharacters}
-            </span>
-            <div className="modal-actions">
-              <button type="button" className="text-button" onClick={() => setSaveAsOpen(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="primary-button" disabled={!saveAsDraft.trim()}>
-                Save .dgm
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <SaveAsDialog ref={saveAsDialogRef} onSave={saveAs} onLimitExceeded={notifySaveAsLimit} />
 
         <Modal
           open={Boolean(requestedCloseTab)}

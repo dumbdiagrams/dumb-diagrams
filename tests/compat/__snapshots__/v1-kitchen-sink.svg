@@ -88,8 +88,8 @@
 </g>
 
 <g id="edge-invoke" class="edge edge-flow edge-dashed">
-  <path d="M 123 202 L 123 280 L 216 280 L 216 72 L 353 72 L 353 98" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow-purple)"/>
-  <path d="M 123 202 L 123 280 L 216 280 L 216 72 L 353 72 L 353 98" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+  <path d="M 123 202 L 123 272 L 216 272 L 216 72 L 353 72 L 353 98" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#arrow-purple)"/>
+  <path d="M 123 202 L 123 272 L 216 272 L 216 72 L 353 72 L 353 98" fill="none" stroke="transparent" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
   
   <circle class="edge-badge-circle" cx="284.5" cy="88" r="10" fill="#7C3AED"/>
   <text class="edge-badge-text" x="284.5" y="92" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="700">2</text>
@@ -104,14 +104,14 @@
 </g>
 
 <g id="edge-peer_link" class="edge edge-peer edge-solid">
-  <path d="M 326 234 L 424 234 L 424 173 L 459.8 173" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  />
+  <path d="M 326 234 L 424 234 L 424 184 L 462.8 184" fill="none" stroke="#D92D20" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  />
   
   
   
 </g>
 
 <g id="edge-failure" class="edge edge-fail edge-solid">
-  <path d="M 362 116 L 424 116 L 424 161 L 459.8 161" fill="none" stroke="#2F855A" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow-green)"/>
+  <path d="M 362 116 L 424 116 L 424 172 L 462.8 172" fill="none" stroke="#2F855A" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="round"  marker-end="url(#arrow-green)"/>
   
   
   
