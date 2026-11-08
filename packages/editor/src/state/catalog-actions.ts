@@ -37,9 +37,7 @@ function documentForCatalogEntry(doc: DiagramDocument, entry: CatalogEntry): Dia
       return provider !== undefined && provider !== "cloud-agnostic";
     });
 
-  // New documents default to AWS for backwards compatibility. Once no
-  // provider-specific items remain, the next provider-specific catalog item
-  // should establish the document grammar instead of inheriting that default.
+  // An empty canvas adopts the first provider added.
   return hasProviderSpecificItems || doc.grammar === entry.provider ? doc : { ...doc, grammar: entry.provider };
 }
 
