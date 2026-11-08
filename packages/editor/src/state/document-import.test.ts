@@ -29,6 +29,20 @@ view default {
     expect(parseDgmResult(read.value.source).isOk()).toBe(true);
   });
 
+  it("rejects an ungrouped catalog resource without a manual canvas placement", async () => {
+    const invalid = file(
+      "invalid-containment.dgm",
+      `diagram invalid-containment {
+  grammar aws
+  aws.aws-lambda orphan "Orphan" {}
+}`,
+    );
+    const result = await readDiagramFile(invalid);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error.message).toContain("no parent group");
+  });
+
   it("preserves partial success when one file is invalid or unreadable", async () => {
     const broken = file("broken.dgm");
     vi.spyOn(broken, "text").mockRejectedValue(new Error("read failed"));

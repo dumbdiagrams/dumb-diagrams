@@ -22,19 +22,42 @@ export type DocumentImportBatchResult = {
   limitReached: boolean;
 };
 
+type ImportedSourceValidationOptions = {
+  enforceCatalogRules?: boolean;
+  allowManualRootResources?: boolean;
+};
+
 export function documentHasUnsafeAssets(doc: DiagramDocument): boolean {
   return (doc.assets ?? []).some((asset) => sanitizeSvgResult(asset.content).isErr());
 }
 
 export function validateImportedSource(
   source: string,
-  enforceCatalogRules = true,
+  options: ImportedSourceValidationOptions = {},
 ): Result<string, DocumentImportError> {
   const parsed = parseDgmResult(source);
   if (parsed.isErr()) return err({ code: "source", message: parsed.error.message });
-  const issues = validateDocument(parsed.value, getCatalogMap(), { enforceCatalogRules });
-  if (hasErrors(issues))
-    return err({ code: "source", message: issues.find((issue) => issue.level === "error")!.message });
+  const issues = validateDocument(parsed.value, getCatalogMap(), {
+    enforceCatalogRules: options.enforceCatalogRules,
+  });
+  const resources = new Map(parsed.value.resources.map((resource) => [resource.id, resource]));
+  const manuallyPlacedRootResources = options.allowManualRootResources
+    ? new Set(
+        parsed.value.views.flatMap((view) =>
+          Object.entries(view.places)
+            .filter(([id, place]) => {
+              const resource = resources.get(id);
+              return resource !== undefined && resource.parent === undefined && place.manual;
+            })
+            .map(([id]) => id),
+        ),
+      )
+    : undefined;
+  const invalidIssues = issues.filter(
+    (issue) => !(issue.code === "missing-parent" && issue.id && manuallyPlacedRootResources?.has(issue.id)),
+  );
+  if (hasErrors(invalidIssues))
+    return err({ code: "source", message: invalidIssues.find((issue) => issue.level === "error")!.message });
   if (documentHasUnsafeAssets(parsed.value))
     return err({ code: "asset", message: "Diagram contains unsafe SVG assets." });
   return ok(source);
@@ -54,8 +77,7 @@ export function readDiagramFile(file: File): ResultAsync<ImportedSource, Documen
   ).andThen((source) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
-        // Studio allows root-level resources, so match its catalog rules here.
-        validateImportedSource(source, false).map((validatedSource) => ({
+        validateImportedSource(source, { allowManualRootResources: true }).map((validatedSource) => ({
           source: validatedSource,
           filename: normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters),
         })),

@@ -378,7 +378,8 @@ function App() {
       : tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
   }, []);
 
-  const sourceIsValid = (candidate: string): boolean => validateImportedSource(candidate, false).isOk();
+  const sourceIsValid = (candidate: string): boolean =>
+    validateImportedSource(candidate, { enforceCatalogRules: false }).isOk();
 
   const { saveTabSource, attachFileHandle } = useFileActions({
     tabs,
