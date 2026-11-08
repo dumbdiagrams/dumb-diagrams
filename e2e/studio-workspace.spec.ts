@@ -298,7 +298,18 @@ test("opens the format picker and export studio with auto-filled canvas options"
   await page.getByRole("button", { name: "More export formats", exact: true }).click();
   const picker = page.getByRole("menu", { name: "Export as", exact: true });
   await expect(picker).toBeVisible();
-  await expect(picker.locator(".export-format-option")).toHaveCount(supportsWebp ? 11 : 10);
+  await expect(picker.locator(".export-format-name")).toHaveText([
+    "PNG",
+    "JPEG",
+    ...(supportsWebp ? ["WebP"] : []),
+    "Animated GIF",
+    "SVG",
+    "PDF",
+    "HTML",
+    "XML",
+    "JSON",
+    "DGM source",
+  ]);
   await picker.locator(".export-format-option").filter({ hasText: "PNG" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Export PNG" });
