@@ -7,6 +7,7 @@
   "scripts": {
     "prebuild": "pnpm --dir ../.. catalog:stage",
     "build": "vite build",
+    "build:hosted": "vite build --mode hosted --outDir dist-hosted",
     "predev": "pnpm --dir ../.. catalog:stage",
     "dev": "vite",
     "preview": "vite preview",

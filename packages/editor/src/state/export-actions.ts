@@ -1,10 +1,10 @@
 import type { DiagramDocument, LayoutResult, Rect } from "@dumb-diagrams/runtime/core";
-import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText, utf8ByteLength } from "@dumb-diagrams/runtime/core";
+import { DIAGRAM_LIMITS, getDefaultView, normalizeSingleLineText } from "@dumb-diagrams/runtime/core";
 import { GRAMMAR } from "@dumb-diagrams/runtime/grammar-aws";
 import type { PortableSvgError } from "@dumb-diagrams/runtime/render";
 import { err, ok, ResultAsync, type Result } from "neverthrow";
 
-export type ExportFormat = "png" | "jpeg" | "webp" | "gif" | "svg" | "pdf" | "html" | "xml" | "url" | "json" | "dgm";
+export type ExportFormat = "png" | "jpeg" | "webp" | "gif" | "svg" | "pdf" | "html" | "xml" | "json" | "dgm";
 
 export type ExportScope = "all" | "selection";
 export type ExportSize = "diagram" | "selection" | "custom";
@@ -22,8 +22,7 @@ export type ExportErrorCode =
   | "rasterization"
   | "canvas-context"
   | "encoding"
-  | "download"
-  | "url";
+  | "download";
 
 export type ExportError = Readonly<{
   code: ExportErrorCode;
@@ -45,59 +44,6 @@ function captureExport<T>(code: ExportErrorCode, message: string, operation: () 
     return ok(operation());
   } catch (cause) {
     return err(exportError(code, message, cause));
-  }
-}
-
-const DIAGRAM_URL_HASH_KEY = "diagram";
-const MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS = Math.ceil(DIAGRAM_LIMITS.sourceBytes / 3) * 4;
-
-export type DiagramUrlEncodeResult =
-  | { ok: true; payload: string }
-  | { ok: false; code: "empty" | "oversize"; message: string };
-
-export type DiagramUrlDecodeResult =
-  | { ok: true; source: string }
-  | { ok: false; code: "empty" | "malformed" | "oversize"; message: string };
-
-/** Encode source into the URL-safe payload used by the `#diagram=` format. */
-export function encodeDiagramUrlPayload(source: string): DiagramUrlEncodeResult {
-  if (!source) return { ok: false, code: "empty", message: "Diagram source cannot be empty." };
-  if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) {
-    return { ok: false, code: "oversize", message: "Diagram source exceeds the 1 MiB URL limit." };
-  }
-  const bytes = new TextEncoder().encode(source);
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-  }
-  return {
-    ok: true,
-    payload: btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, ""),
-  };
-}
-
-/** Decode and size-check a URL-safe `#diagram=` payload without parsing it. */
-export function decodeDiagramUrlPayload(payload: string): DiagramUrlDecodeResult {
-  if (!payload) return { ok: false, code: "empty", message: "Diagram URL does not contain source." };
-  if (payload.length > MAX_DIAGRAM_URL_PAYLOAD_CHARACTERS) {
-    return { ok: false, code: "oversize", message: "Diagram URL source exceeds the 1 MiB limit." };
-  }
-  if (!/^[A-Za-z0-9_-]+$/.test(payload) || payload.length % 4 === 1) {
-    return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
-  }
-  try {
-    const padded = payload.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - (payload.length % 4)) % 4);
-    const binary = atob(padded);
-    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-    if (bytes.byteLength > DIAGRAM_LIMITS.sourceBytes) {
-      return { ok: false, code: "oversize", message: "Diagram URL source exceeds the 1 MiB limit." };
-    }
-    const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    if (!source) return { ok: false, code: "empty", message: "Diagram URL does not contain source." };
-    return { ok: true, source };
-  } catch {
-    return { ok: false, code: "malformed", message: "Diagram URL contains a malformed source payload." };
   }
 }
 
@@ -142,14 +88,13 @@ export const EXPORT_FORMATS: ReadonlyArray<{
   { value: "pdf", label: "PDF", extension: "pdf", description: "Print-ready document" },
   { value: "html", label: "HTML", extension: "html", description: "Standalone web page" },
   { value: "xml", label: "XML", extension: "xml", description: "Portable diagram wrapper" },
-  { value: "url", label: "URL", extension: "url.txt", description: "Shareable local link" },
   { value: "json", label: "JSON", extension: "json", description: "Structured document data" },
   { value: "dgm", label: "DGM source", extension: "dgm", description: "Canonical source file" },
 ];
 
 /**
  * Keep format-specific controls honest. `sourceOption` means the checkbox can
- * change the resulting file; formats such as DGM, XML, and URL always carry
+ * change the resulting file; formats such as DGM and XML always carry
  * source by definition and therefore do not expose that optional control.
  */
 export const EXPORT_FORMAT_CAPABILITIES: Readonly<Record<ExportFormat, ExportFormatCapabilities>> = {
@@ -161,7 +106,6 @@ export const EXPORT_FORMAT_CAPABILITIES: Readonly<Record<ExportFormat, ExportFor
   pdf: { visual: true, sourceOption: false },
   html: { visual: true, sourceOption: true },
   xml: { visual: false, sourceOption: false },
-  url: { visual: false, sourceOption: false },
   json: { visual: false, sourceOption: false },
   dgm: { visual: false, sourceOption: false },
 };
@@ -275,16 +219,6 @@ export function downloadTextResult(text: string, name: string, mime = "text/plai
     return err(exportError("encoding", `Could not encode the ${mime} export.`, cause));
   }
   return downloadBlobResult(blob, name);
-}
-
-export function createDiagramUrlResult(source: string): Result<string, ExportError> {
-  const encoded = encodeDiagramUrlPayload(source);
-  if (!encoded.ok) return err(exportError("url", encoded.message));
-  try {
-    return ok(`${window.location.origin}${window.location.pathname}#${DIAGRAM_URL_HASH_KEY}=${encoded.payload}`);
-  } catch (cause) {
-    return err(exportError("url", "The diagram URL could not be created.", cause));
-  }
 }
 
 export function filenameWithExtension(value: string, extension: string): string {
@@ -633,12 +567,6 @@ async function exportDiagramFileResult(args: {
       ? err(xml.error)
       : downloadPartsResult([xml.value], "application/xml", "XML", filename).map(receipt);
   }
-  if (options.format === "url") {
-    return createDiagramUrlResult(source)
-      .andThen((diagramUrl) => downloadPartsResult([diagramUrl], "text/plain", "diagram URL", filename))
-      .map(receipt);
-  }
-
   const portableSvgError = (cause: unknown) =>
     exportError("portable-svg-preparation", "The portable SVG could not be prepared.", cause);
   const baseSvg = await ResultAsync.fromPromise(

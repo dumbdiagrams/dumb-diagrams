@@ -7,10 +7,14 @@ search index.
 ## Work locally
 
 ```bash
-pnpm dev:website       # http://localhost:4321
+pnpm dev:website       # website at http://127.0.0.1:4321; local Studio at http://127.0.0.1:49323
 pnpm check:website     # diagnostics, production build, and site tests
-pnpm preview:website   # production preview; search only works here
+pnpm preview:website   # production preview at http://127.0.0.1:4321, with local Studio; search only works here
 ```
+
+The local website's Studio link targets the loopback hosted build so browser
+storage and the Studio security policy can be tested independently. Production
+builds keep the link pointed at `https://studio.dumbdiagrams.com`.
 
 Asset preparation builds the runtime and CLI, renders `src/examples/*.dgm`
 and the curated examples, and captures a real `dumbdiagrams init` log for the
@@ -42,6 +46,28 @@ missing pages. Canonical URLs and the sitemap need `SITE_URL`. Set
 the repository root: the build command is `pnpm build:website`, the output is
 `packages/website/dist`, and `NODE_VERSION` and `PNPM_VERSION` must match the
 pinned toolchain.
+
+## Hosted Studio deployment
+
+Hosted Studio is deployed as a separate static Cloudflare Pages project so its
+browser storage and security policy are isolated from the documentation site.
+Create a second Pages project from this repository, use `main` as the
+production branch, choose the **None** framework preset, and set the repository
+root as the build root. Use `pnpm build:studio:hosted` as the build command and
+`packages/editor/dist-hosted` as the output directory. The website build also
+builds the hosted Studio, so `pnpm build:website` produces both outputs while
+keeping them separate for deployment to their respective hostnames. Match the repository's
+pinned Node and pnpm versions (`.nvmrc` and `package.json`), and do not add the
+website analytics environment variables to this project.
+
+In the Pages project, open **Custom domains** and add
+`studio.dumbdiagrams.com`. If Cloudflare manages the `dumbdiagrams.com` zone,
+it can create the DNS record; otherwise add the CNAME target Cloudflare gives
+you at your DNS provider after registering the custom domain in Pages. Verify
+the HTTPS certificate, response security headers, and hosted Studio smoke
+checks before publishing the Studio link. Merges to `main` then deploy the
+website and hosted Studio independently; no npm release or version bump is
+required.
 
 ## Analytics
 

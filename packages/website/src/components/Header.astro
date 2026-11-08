@@ -12,6 +12,7 @@ const { docs = false } = Astro.props;
   <nav class="desktop-nav" aria-label="Main navigation">
     <a href={url('#how-it-works')}>How it works</a>
     <a href={url('docs/')} aria-current={docs ? 'page' : undefined}>Documentation</a>
+    <a href="https://studio.dumbdiagrams.com" data-studio-link target="_blank" rel="noopener noreferrer">Studio <span aria-hidden="true">↗</span></a>
   </nav>
   <a
     class="github-link"
@@ -32,6 +33,7 @@ const { docs = false } = Astro.props;
     <nav aria-label="Mobile navigation">
       <a href={url('#how-it-works')}>How it works</a>
       <a href={url('docs/')}>Documentation</a>
+      <a href="https://studio.dumbdiagrams.com" data-studio-link target="_blank" rel="noopener noreferrer">Open Studio ↗</a>
       <a href={url('docs/quick-start/')}>Get started ↗</a>
     </nav>
   </details>

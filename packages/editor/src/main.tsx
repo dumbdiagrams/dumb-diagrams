@@ -36,7 +36,6 @@ import { serializeClipboardResult, duplicateSelectionResult } from "./model/clip
 import type { Selection, SelectionItem } from "./model/types";
 import { readClipboardSelection, writeClipboardText } from "./state/clipboard-actions";
 import { importDocumentFiles, importSvgFile, validateImportedSource } from "./state/document-import";
-import { clearDiagramHash, readDiagramUrlImport } from "./state/diagram-url-bootstrap";
 import { useDocumentCommands } from "./state/use-document-commands";
 import { createCatalogActions, insertionPoint } from "./state/catalog-actions";
 import { useEditorSelection } from "./state/use-editor-selection";
@@ -100,6 +99,7 @@ import { EntityNavigator, type NavigableEntity } from "./panels/EntityNavigator"
 import { ExportDialog } from "./panels/ExportDialog";
 import { ExportMenu } from "./panels/ExportMenu";
 import { HelpModal } from "./panels/HelpModal";
+import { HostedExperience, HostedPrivacyTrigger } from "./panels/HostedExperience";
 import { CommandPalette, type Command } from "./panels/CommandPalette";
 import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
@@ -149,6 +149,8 @@ const TAB_CLOSE_FALLBACK_MS = 500;
 const LEFT_DRAWER_CLOSE_FALLBACK_MS = 220;
 const LEFT_DRAWER_WIDTH = 420;
 
+const HOSTED_STUDIO = typeof __DUMB_DIAGRAMS_HOSTED__ !== "undefined" && __DUMB_DIAGRAMS_HOSTED__;
+
 const LEFT_DRAWER_TOOLS = new Set<ToolId>(["note", "text", "resources", "groups", "connector", "code", "layers"]);
 
 function isLeftDrawerTool(tool: ToolId): boolean {
@@ -168,8 +170,6 @@ const ExamplesModal = lazy(() =>
     default: module.ExamplesModal,
   })),
 );
-const INITIAL_URL_IMPORT = typeof window === "undefined" ? {} : readDiagramUrlImport(window.location.hash);
-
 type Tool = ToolId;
 type PendingPort = { nodeId: string; side: Side; offset: number } | null;
 type ContextMenuState = { x: number; y: number; selection: Selection; canvasPoint?: Point } | null;
@@ -249,9 +249,9 @@ function App() {
     setTabFilename,
     persistenceWarning,
   } = useWorkspace({
-    initialSource: INITIAL_URL_IMPORT.source ?? BLANK_SOURCE,
-    initialSavedSource: INITIAL_URL_IMPORT.source ? "" : BLANK_SOURCE,
-    initialOrigin: INITIAL_URL_IMPORT.source ? "import" : "new",
+    initialSource: BLANK_SOURCE,
+    initialSavedSource: BLANK_SOURCE,
+    initialOrigin: "new",
     initialViewport: INITIAL_VIEWPORT,
     blankSource: BLANK_SOURCE,
   });
@@ -289,6 +289,9 @@ function App() {
   const internalClipboardRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [hostedWelcomeOpen, setHostedWelcomeOpen] = useState(false);
+  const [hostedPrivacyOpen, setHostedPrivacyOpen] = useState(false);
+  const [hostedSettingsOpen, setHostedSettingsOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [openingExampleId, setOpeningExampleId] = useState<string | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -308,7 +311,6 @@ function App() {
   const drawerCloseAnimationTimerRef = useRef<number | null>(null);
   const pendingClosePreviewsRef = useRef<WorkspacePreviewMap>({});
   const [operation, setOperation] = useState<OperationState>(null);
-  const initialUrlHandledRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -863,28 +865,6 @@ function App() {
     if (persistenceWarning) setToast(persistenceWarning);
   }, [persistenceWarning]);
 
-  useEffect(() => {
-    if (!workspaceReady || initialUrlHandledRef.current) return;
-    initialUrlHandledRef.current = true;
-    if (INITIAL_URL_IMPORT.source) {
-      const existingTab = tabs.find((tab) => tab.source === INITIAL_URL_IMPORT.source);
-      const alreadyOpen = Boolean(existingTab);
-      if (!alreadyOpen && tabs.length >= MAX_WORKSPACE_TABS) {
-        setToast(tabLimitMessage);
-      } else {
-        if (!alreadyOpen) {
-          openTab(INITIAL_URL_IMPORT.source, { origin: "import" });
-        } else if (existingTab) {
-          setActiveTab(existingTab.id);
-        }
-        setToast(alreadyOpen ? "Opened diagram URL" : "Opened diagram from URL");
-      }
-    } else if (INITIAL_URL_IMPORT.error) {
-      setToast(INITIAL_URL_IMPORT.error);
-    }
-    clearDiagramHash();
-  }, [openTab, setActiveTab, tabs, workspaceReady]);
-
   const displayCanvas = displayCompiled
     ? (displayCompiled.layout.canvasBounds ?? {
         x: 0,
@@ -1354,6 +1334,9 @@ function App() {
     { id: "shortcuts", label: "Keyboard shortcuts", onSelect: () => setHelpOpen(true) },
     { id: "help-guide", label: "Source and LLM workflow", onSelect: () => setHelpOpen(true) },
     { id: "help-divider", label: "", separator: true },
+    ...(HOSTED_STUDIO
+      ? [{ id: "hosted-settings", label: "Settings", onSelect: () => setHostedSettingsOpen(true) }]
+      : []),
     { id: "about", label: "About DumbDiagrams", onSelect: () => setHelpOpen(true) },
   ];
 
@@ -1948,6 +1931,7 @@ function App() {
           />
           <nav className="studio-tabbar-actions" aria-label="Studio menu">
             <ThemeControl />
+            {HOSTED_STUDIO && <HostedPrivacyTrigger onOpen={() => setHostedPrivacyOpen(true)} />}
             <TopMenu label="Help" Icon={IconHelp} items={helpMenuItems} />
           </nav>
         </div>
@@ -2417,6 +2401,18 @@ function App() {
             setExamplesOpen(true);
           }}
         />
+
+        {HOSTED_STUDIO && (
+          <HostedExperience
+            workspaceReady={workspaceReady}
+            welcomeOpen={hostedWelcomeOpen}
+            onWelcomeOpenChange={setHostedWelcomeOpen}
+            privacyOpen={hostedPrivacyOpen}
+            onPrivacyOpenChange={setHostedPrivacyOpen}
+            settingsOpen={hostedSettingsOpen}
+            onSettingsOpenChange={setHostedSettingsOpen}
+          />
+        )}
 
         <CommandPalette open={commandPaletteOpen} commands={commands} onClose={() => setCommandPaletteOpen(false)} />
 

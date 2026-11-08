@@ -15,10 +15,10 @@ Visual exports share the compiled geometry; changing image formats does not chan
 | JPEG, WebP, GIF | Workflows that specifically need those image formats |
 | PDF | Reviews, printing, and sharing a document |
 | Standalone HTML | A portable page containing the diagram |
-| XML, JSON, URL payload | Structured output or a supported data-sharing workflow |
+| XML, JSON | Structured output or a supported data-sharing workflow |
 | .dgm | Editing, version control, and a durable source of truth |
 
-Studio exposes the formats the browser supports. WebP, for example, is hidden when that browser cannot encode it. A URL payload does not provide a hosted sharing service, and XML is not necessarily an editable draw.io document.
+Studio exposes the formats the browser supports. WebP, for example, is hidden when that browser cannot encode it. XML is not necessarily an editable draw.io document.
 
 ## Export from Studio
 

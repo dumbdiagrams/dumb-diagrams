@@ -1,5 +1,33 @@
 /* Dialogs, export, examples, and modal surfaces */
 
+.hosted-privacy-trigger {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hosted-privacy-trigger:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface-muted); }
+.hosted-privacy-copy { display: grid; gap: 12px; line-height: 1.55; }
+.hosted-privacy-copy p { margin: 0; }
+.hosted-privacy-lead { font-size: 18px; font-weight: 750; color: var(--ink); }
+.hosted-setup-note { padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--surface-muted); }
+.hosted-links { font-size: 12px; }
+.hosted-links a { color: var(--accent); font-weight: 650; }
+.hosted-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.4; }
+.hosted-check input { margin-top: 2px; accent-color: var(--accent); }
+.hosted-settings { display: grid; gap: 18px; }
+.hosted-tour-layer { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+.hosted-tour-layer::before { content: ""; position: absolute; inset: 0; background: rgba(12, 18, 28, 0.38); pointer-events: auto; }
+.hosted-tour-spotlight { position: fixed; z-index: 1; border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 0 0 9999px rgba(12, 18, 28, 0.38), 0 0 0 6px color-mix(in srgb, var(--accent) 28%, transparent); pointer-events: none; }
+.hosted-tour-tooltip { position: fixed; z-index: 2; padding: 16px; border: 1px solid var(--panel-border); border-radius: 14px; background: var(--panel-bg); box-shadow: var(--shadow-lg); pointer-events: auto; }
+.hosted-tour-tooltip h2 { margin: 5px 0 6px; font-size: 17px; }
+.hosted-tour-tooltip p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.hosted-tour-progress { color: var(--accent); font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) { .hosted-tour-spotlight, .hosted-tour-tooltip { transition: none; } }
+
 .crash-recovery {
   min-height: 100vh;
   display: grid;

@@ -53,6 +53,31 @@ jobs:
           PUBLIC_PRIVACY_EMAIL: privacy@example.test
           PUBLIC_ANALYTICS_RETENTION_MONTHS: "2"
 
+  hosted-studio:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build and verify hosted Studio output
+        run: pnpm check:studio:hosted
+      - name: Install hosted Studio test browser
+        timeout-minutes: 10
+        run: pnpm exec playwright install chromium --with-deps
+      - name: Exercise hosted Studio onboarding
+        run: pnpm test:e2e:hosted
+
   verify:
     if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
     runs-on: ubuntu-24.04
@@ -184,7 +209,7 @@ jobs:
     # GitHub accepts skipped jobs as passing required checks. This gate must
     # run even when an upstream job is skipped, cancelled, or fails.
     if: always()
-    needs: [verify, test, e2e, website, cli]
+    needs: [verify, test, e2e, website, hosted-studio, cli]
     runs-on: ubuntu-24.04
     steps:
       - name: Require every CI job to succeed
@@ -193,7 +218,7 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           const results = JSON.parse(process.env.JOB_RESULTS);
-          const required = ['verify', 'test', 'e2e', 'website', 'cli'];
+          const required = ['verify', 'test', 'e2e', 'website', 'hosted-studio', 'cli'];
           const unsuccessful = required.filter((job) => results[job]?.result !== 'success');
           for (const job of required) console.log(`${job}: ${results[job]?.result ?? 'missing'}`);
           if (unsuccessful.length) {

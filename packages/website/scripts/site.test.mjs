@@ -421,7 +421,7 @@ test('privacy notice and footer controls are available with and without analytic
   assert.match(privacy, /id="cookie-settings"/);
   assert.match(privacy, /does not automatically delete data already sent to Google/);
   assert.match(privacy, /Dumb Diagrams servers will never receive or store your diagrams/);
-  assert.match(privacy, /planned in-browser Studio/);
+  assert.match(privacy, /hosted Studio is served from an isolated origin/);
   assert.match(privacy, /external coding-agent providers/);
   assert.match(privacy, /blob\/main\/packages\/cli\/src\/studio-server\.ts/);
   if (!privacyConfig().ready) assert.match(privacy, /Pre-launch notice/);
