@@ -1239,10 +1239,13 @@ function measureResource(resource: Resource, state: LayoutState): Measured {
 
   const entry = getCatalogEntry(resource.type);
   const iconSize = resource.role === "secondary" ? GRAMMAR.iconSecondary : GRAMMAR.iconPrimary;
-  const serviceLabel = resource.label.service ?? entry?.serviceName ?? resource.type;
-  const roleLabel = isDuplicateCatalogLabel(resource.label.role, serviceLabel, entry?.aliases)
-    ? undefined
-    : resource.label.role;
+  const customIcon = Boolean(resource.props.iconAsset);
+  const serviceLabel =
+    resource.label.service ?? (customIcon ? (resource.label.role ?? "Custom") : (entry?.serviceName ?? resource.type));
+  const roleLabel =
+    customIcon || isDuplicateCatalogLabel(resource.label.role, serviceLabel, entry?.aliases)
+      ? undefined
+      : resource.label.role;
   const hidden = state.hideResourceLabels;
   const serviceLines = hidden ? [] : wrapResourceLabel(serviceLabel, GRAMMAR.serviceFontSize, RESOURCE_LABEL_MAX_WIDTH);
   const roleLines =

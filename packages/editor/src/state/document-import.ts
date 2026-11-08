@@ -54,7 +54,10 @@ export function readDiagramFile(file: File): ResultAsync<ImportedSource, Documen
   ).andThen((source) =>
     ResultAsync.fromPromise(
       Promise.resolve().then(() =>
-        validateImportedSource(source).map((validatedSource) => ({
+        // Match the interactive editor compiler: users can intentionally keep
+        // resources at the diagram root, so reopening a Studio-authored file
+        // must not reject it for catalog containment preferences.
+        validateImportedSource(source, false).map((validatedSource) => ({
           source: validatedSource,
           filename: normalizeSingleLineText(file.name).slice(0, DIAGRAM_LIMITS.filenameCharacters),
         })),

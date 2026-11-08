@@ -33,7 +33,9 @@ export function addCustomResourceResult(
     id,
     type: getCatalogEntry("cloud-agnostic.server")?.type ?? "cloud-agnostic.server",
     parent,
-    label: { role: label },
+    // A custom icon is itself the service identity. Putting the name in the
+    // role field causes the fallback catalog type (Server) to appear above it.
+    label: { service: label },
     role: "primary",
     props: { iconAsset: assetId },
   });

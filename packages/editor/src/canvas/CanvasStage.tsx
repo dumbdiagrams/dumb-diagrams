@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 
 import type { Viewport } from "../model/types";
+import { IconFolderOpen } from "../ui/icons";
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 2.5;
@@ -37,6 +38,14 @@ export function normalizedWheelDelta(value: number, deltaMode: number, pageSize:
   if (deltaMode === 1) return value * 16;
   if (deltaMode === 2) return value * pageSize;
   return value;
+}
+
+function isFileDrag(dataTransfer: DataTransfer): boolean {
+  return (
+    Array.from(dataTransfer.types).includes("Files") ||
+    Array.from(dataTransfer.items).some((item) => item.kind === "file") ||
+    dataTransfer.files.length > 0
+  );
 }
 
 /**
@@ -88,6 +97,7 @@ export function CanvasStage({
   onFitRequest,
   onCatalogDragOver,
   onCatalogDrop,
+  onFileDrop,
   onContextMenu,
   marqueeEnabled = false,
   onMarqueePreview,
@@ -103,6 +113,7 @@ export function CanvasStage({
   onFitRequest?: (fit: () => void) => void;
   onCatalogDragOver?: (event: DragEvent<HTMLDivElement>) => void;
   onCatalogDrop?: (event: DragEvent<HTMLDivElement>, point: { x: number; y: number }) => void;
+  onFileDrop?: (files: FileList) => void;
   onContextMenu?: (clientX: number, clientY: number, point: { x: number; y: number }) => void;
   marqueeEnabled?: boolean;
   onMarqueePreview?: (gesture: CanvasMarqueeGesture | null) => void;
@@ -113,6 +124,7 @@ export function CanvasStage({
   const ref = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
   const [panning, setPanning] = useState(false);
+  const [fileDropActive, setFileDropActive] = useState(false);
   const spaceRef = useRef(false);
   const interactivePointerRef = useRef(false);
   const framedKeyRef = useRef<number | null>(null);
@@ -315,8 +327,33 @@ export function CanvasStage({
       tabIndex={0}
       aria-label="Diagram canvas"
       data-marquee-enabled={marqueeEnabled ? "true" : "false"}
-      onDragOver={onCatalogDragOver}
+      onDragEnter={(event) => {
+        if (!isFileDrag(event.dataTransfer)) return;
+        event.preventDefault();
+        setFileDropActive(true);
+      }}
+      onDragOver={(event) => {
+        if (isFileDrag(event.dataTransfer)) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+          setFileDropActive(true);
+          return;
+        }
+        onCatalogDragOver?.(event);
+      }}
+      onDragLeave={(event) => {
+        if (!fileDropActive) return;
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+        setFileDropActive(false);
+      }}
       onDrop={(event) => {
+        setFileDropActive(false);
+        if (isFileDrag(event.dataTransfer)) {
+          event.preventDefault();
+          onFileDrop?.(event.dataTransfer.files);
+          return;
+        }
         if (!onCatalogDrop) return;
         const rect = event.currentTarget.getBoundingClientRect();
         const current = viewportRef.current;
@@ -472,6 +509,15 @@ export function CanvasStage({
       >
         {children}
       </div>
+      {fileDropActive && (
+        <div className="canvas-file-drop-overlay" role="status" aria-live="polite">
+          <div className="canvas-file-drop-prompt">
+            <IconFolderOpen className="canvas-file-drop-icon" />
+            <strong>Drop .dgm files here to open them</strong>
+            <span>Each diagram opens in a new workspace tab.</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

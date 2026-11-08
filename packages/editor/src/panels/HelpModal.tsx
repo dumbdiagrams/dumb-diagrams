@@ -1,4 +1,5 @@
 import { Modal } from "../ui/Modal";
+import { CreditsNotice } from "./CreditsNotice";
 
 export function HelpModal({
   open,
@@ -13,7 +14,7 @@ export function HelpModal({
     <Modal
       open={open}
       title="DumbDiagrams Studio help"
-      subtitle="A visual editor for deterministic, agent-friendly diagrams."
+      subtitle="Workflow, shortcuts, and credits."
       onClose={onClose}
       className="help-modal"
       width={700}
@@ -22,27 +23,16 @@ export function HelpModal({
         <section>
           <h3>Source-first workflow</h3>
           <p>
-            The <code>.dgm</code> source is the portable source of truth. Edit it in the Source tool, open it from
-            anywhere on disk, or let an LLM update it and then reload the visual result.
-          </p>
-          <p>
-            Start Studio with <code>dumbdiagrams studio</code>, then use Open to choose any
-            <code>.dgm</code> file. Chromium-based desktop browsers are the primary supported browsers. They can save
-            directly to the selected file; other browsers use a download fallback and receive best-effort compatibility.
-          </p>
-          <p>
-            Keep one diagram per file. Diagram files may live anywhere and can be edited by agents, editors, or Studio
-            without registration.
+            A <code>.dgm</code> file is the source of truth. Open it from anywhere, edit it in Source or with an agent,
+            then return to the canvas.
           </p>
         </section>
         <section>
           <h3>Refine your draft</h3>
           <p>
-            Open an LLM-generated diagram and move items where you want them. Other items and connector paths stay in
-            place, while the arrows of a moved item redraw along the straightest clear path. Warnings help you spot
-            overlaps without changing your work.
+            Move items on the canvas. Warnings flag overlaps; Auto-fix repairs them, and Undo restores your previous
+            edit.
           </p>
-          <p>Auto-fix repairs overlaps and crossings in one step, and Undo restores the entire edit.</p>
         </section>
         <section>
           <h3>Keyboard shortcuts</h3>
@@ -63,8 +53,8 @@ export function HelpModal({
         </section>
         <section className="help-examples-callout">
           <div>
-            <h3>Need a starting point?</h3>
-            <p>Browse the bundled diagram examples and open one in a fresh tab.</p>
+            <h3>Try an example</h3>
+            <p>Open a bundled diagram in a fresh tab.</p>
           </div>
           <button type="button" className="text-button" onClick={onExamples}>
             Browse examples
@@ -72,15 +62,13 @@ export function HelpModal({
         </section>
         <section className="help-about">
           <h3>About</h3>
-          <p>Dumb Diagrams Studio · deterministic diagrams for people and LLMs.</p>
           <p>
-            Copyright © 2026 DumbDiagrams contributors. This program is free software under the GNU AGPL v3 and comes
-            without warranty. You may redistribute and modify it under that license.{" "}
+            © 2026 DumbDiagrams contributors. Licensed under AGPL-3.0-only, without warranty.{" "}
             <a href="./LICENSE" target="_blank" rel="noreferrer">
-              View license
+              Full license
             </a>
-            .
           </p>
+          <CreditsNotice />
         </section>
       </div>
     </Modal>

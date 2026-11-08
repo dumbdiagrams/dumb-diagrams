@@ -341,6 +341,51 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
   await expect(page.locator(".workspace-tab")).toContainText(["Untitled Diagram", "Async Docs", "Transfer Hub"]);
 });
 
+test("exports and reopens a manually created ungrouped diagram in a new tab", async ({ page }) => {
+  const manualSource = `dgm 1
+diagram untitled-diagram {
+  grammar aws
+  flow lr
+
+  aws.aws-activate aws-activate
+  cloud-agnostic.cache cache
+
+  aws-activate -> cache { kind flow from e offset 0.5 to w offset 0.25 }
+}
+
+view default {
+  place aws-activate { x 62 y 72 pin manual }
+  place cache { x 184 y 24 pin manual }
+}`;
+  await page.goto("/");
+  const fileInput = page.locator('input[type="file"]').first();
+  await fileInput.setInputFiles({ name: "test.dgm", mimeType: "text/plain", buffer: Buffer.from(manualSource) });
+  await expect(page.locator(".diagram-svg")).toContainText("Cache");
+  await expect(page.locator(".diagram-svg .edge")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "More export formats", exact: true }).click();
+  await page.getByRole("menu", { name: "Export as", exact: true })
+    .locator(".export-format-option").filter({ hasText: "DGM source" }).click();
+  const exportDialog = page.getByRole("dialog", { name: "Export DGM source" });
+  const downloadPromise = page.waitForEvent("download");
+  await exportDialog.getByRole("button", { name: "Export DGM source", exact: true }).click();
+  const download = await downloadPromise;
+  const savedPath = await download.path();
+  expect(savedPath).not.toBeNull();
+  const exportedSource = await readFile(savedPath!, "utf8");
+  expect(exportedSource).toContain("aws-activate -> cache");
+
+  await page.getByRole("button", { name: "New diagram", exact: true }).click();
+  await page.locator('input[type="file"]').first().setInputFiles({
+    name: download.suggestedFilename(),
+    mimeType: "text/plain",
+    buffer: Buffer.from(exportedSource),
+  });
+  await expect(page.locator(".diagram-svg")).toContainText("Cache");
+  await expect(page.locator(".diagram-svg .edge")).toHaveCount(1);
+  await expect(page.locator(".workspace-tab.is-active")).toContainText(/Untitled Diagram/i);
+});
+
 test("covers the empty canvas with progress feedback while importing a diagram", async ({ page }) => {
   await page.goto("/");
   await page.evaluate(() => {
@@ -564,6 +609,24 @@ test("imports a real-world SVG export that declares SVG namespaces", async ({ pa
   });
   await expect(page.getByText("Imported inkscape-icon.svg")).toBeVisible();
   await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(1);
+  await page.getByRole("dialog", { name: "Resources", exact: true }).getByRole("button", { name: "Close" }).click();
+  const inspector = page.getByRole("dialog", { name: "inkscape-icon", exact: true });
+  const mainTitle = inspector.getByRole("textbox", { name: "Main title", exact: true });
+  await expect(mainTitle).toHaveValue("inkscape-icon");
+  await mainTitle.fill("");
+  await mainTitle.press("Enter");
+  await expect(page.getByRole("dialog", { name: "Custom", exact: true })).toBeVisible();
+  await expect(page.locator(".diagram-svg")).toContainText("Custom");
+  await expect(page.locator(".diagram-svg")).not.toContainText("Server");
+  const customInspector = page.getByRole("dialog", { name: "Custom", exact: true });
+  const customTitle = customInspector.getByRole("textbox", { name: "Main title", exact: true });
+  await customTitle.fill("Company logo");
+  await customTitle.press("Enter");
+  await expect(page.getByRole("dialog", { name: "Company logo", exact: true })).toBeVisible();
+  await expect(page.locator(".diagram-svg")).toContainText("Company logo");
+  await expect(page.locator(".diagram-svg")).not.toContainText("Server");
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(0);
 });
 
 test("restores open tabs after a reload", async ({ page }) => {

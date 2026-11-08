@@ -3,6 +3,23 @@
 All notable changes to DumbDiagrams are documented here. The project follows
 the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
+## [0.2.1] - 2026-11-08
+
+### Added
+
+- Add a static hosted Studio build with browser onboarding, privacy details,
+  and an optional guided tour.
+- Add Studio documentation and license-credit links, plus drag-and-drop
+  `.dgm` import.
+- Recommend hosted Studio in the CLI while keeping the bundled local Studio.
+
+### Changed
+
+- Improve manual diagram recovery, custom item naming, provider grammar
+  feedback, and save, help, and recycle-bin interactions.
+- Remove URL-sharing export and keep diagram privacy commitments visible in
+  Studio and the website.
+
 ## [0.1.1] - 2026-11-06
 
 ### Fixed

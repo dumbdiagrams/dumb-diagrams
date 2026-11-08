@@ -1,5 +1,4 @@
-# Check only: auto-fixing here would not re-stage files, so the commit would still contain unfixed content.
-pnpm exec biome check --staged --no-errors-on-unmatched || {
-  echo "Biome failed. Run 'pnpm fix:style', re-stage, and commit again." >&2
-  exit 1
-}
+#!/usr/bin/env sh
+# Format staged content first, then check the same staged snapshot.
+node scripts/format-staged.mjs
+biome check --staged --no-errors-on-unmatched

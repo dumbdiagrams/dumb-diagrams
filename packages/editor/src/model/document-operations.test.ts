@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { importSvgAssetResult } from "./asset-import";
 import { addCustomResourceResult } from "./document-operations";
+import { deleteSelection } from "../editor-model";
 
 describe("pure document operations", () => {
   it("inserts a custom resource without mutating the input document", () => {
@@ -21,6 +22,8 @@ describe("pure document operations", () => {
     expect(result.value.doc.resources.at(-1)).toMatchObject({
       id: result.value.id,
       type: "cloud-agnostic.server",
+      parent: undefined,
+      label: { service: "Badge" },
       props: { iconAsset: imported.value.assetId },
     });
   });
@@ -37,5 +40,21 @@ describe("pure document operations", () => {
       y: 0,
     });
     expect(result.isErr() && result.error.code).toBe("parent-not-found");
+  });
+
+  it("deletes an ungrouped custom SVG resource by itself", () => {
+    const doc = createAsyncDocsFixture();
+    const imported = importSvgAssetResult(doc, '<svg viewBox="0 0 16 16"><rect width="16" height="16"/></svg>');
+    if (imported.isErr()) throw new Error(imported.error.message);
+    const inserted = addCustomResourceResult(imported.value.doc, imported.value.assetId, "Pasted image", undefined, {
+      x: 40,
+      y: 80,
+    });
+    if (inserted.isErr()) throw new Error(inserted.error.message);
+
+    const deleted = deleteSelection(inserted.value.doc, [{ kind: "resource", id: inserted.value.id }]);
+
+    expect(deleted.resources.some((resource) => resource.id === inserted.value.id)).toBe(false);
+    expect(deleted.groups).toEqual(inserted.value.doc.groups);
   });
 });

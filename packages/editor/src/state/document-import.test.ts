@@ -1,12 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 import { createEmptyDocument } from "@dumb-diagrams/runtime/core";
-import { printDgm } from "@dumb-diagrams/runtime/dsl";
+import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { importDocumentFiles, readDiagramFile } from "./document-import";
 
 const source = printDgm(createEmptyDocument("imported"));
 const file = (name: string, content = source) => new File([content], name);
 
 describe("document imports", () => {
+  it("imports a canonical file manually created from two catalog icons and a connector", async () => {
+    const manualSource = `dgm 1
+diagram untitled-diagram {
+  grammar aws
+  flow lr
+
+  aws.aws-activate aws-activate
+  cloud-agnostic.cache cache
+
+  aws-activate -> cache { kind flow from e offset 0.5 to w offset 0.25 }
+}
+
+view default {
+  place aws-activate { x 62 y 72 pin manual }
+  place cache { x 184 y 24 pin manual }
+}`;
+    const read = await readDiagramFile(file("test.dgm", manualSource));
+    expect(read.isOk()).toBe(true);
+    if (read.isErr()) throw read.error;
+    expect(parseDgmResult(read.value.source).isOk()).toBe(true);
+  });
+
   it("preserves partial success when one file is invalid or unreadable", async () => {
     const broken = file("broken.dgm");
     vi.spyOn(broken, "text").mockRejectedValue(new Error("read failed"));

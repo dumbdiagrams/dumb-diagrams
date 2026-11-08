@@ -24,6 +24,25 @@ export function insertionPoint(layout: LayoutResult, parent?: string): Point {
     : { x: Math.max(48, layout.width / 2 - 40), y: Math.max(48, layout.height / 2 - 40) };
 }
 
+function documentForCatalogEntry(doc: DiagramDocument, entry: CatalogEntry): DiagramDocument {
+  if (entry.provider === "cloud-agnostic") return doc;
+
+  const hasProviderSpecificItems =
+    doc.resources.some((resource) => {
+      const provider = getCatalogEntry(resource.type)?.provider;
+      return provider !== undefined && provider !== "cloud-agnostic";
+    }) ||
+    doc.groups.some((group) => {
+      const provider = group.type ? getCatalogEntry(group.type)?.provider : undefined;
+      return provider !== undefined && provider !== "cloud-agnostic";
+    });
+
+  // New documents default to AWS for backwards compatibility. Once no
+  // provider-specific items remain, the next provider-specific catalog item
+  // should establish the document grammar instead of inheriting that default.
+  return hasProviderSpecificItems || doc.grammar === entry.provider ? doc : { ...doc, grammar: entry.provider };
+}
+
 /** Resolve catalog placement and publish before selecting the inserted entity. */
 export function createCatalogActions({ context, commit, selectInserted, notify }: CatalogActionsOptions) {
   const insert = (entry: CatalogEntry, kind?: GroupKind, requested?: CatalogPlacement) => {
@@ -39,9 +58,10 @@ export function createCatalogActions({ context, commit, selectInserted, notify }
             : leftStagingInsertionPoint(context.doc, context.layout, kind ? 360 : 240),
           context.snapToGrid,
         );
+      const doc = documentForCatalogEntry(context.doc, entry);
       const result = kind
-        ? addGroupResult(context.doc, kind, entry.name, parent, at, entry.type)
-        : addResourceResult(context.doc, entry, parent, at);
+        ? addGroupResult(doc, kind, entry.name, parent, at, entry.type)
+        : addResourceResult(doc, entry, parent, at);
       if (result.isErr()) {
         notify(result.error.message);
         return;
