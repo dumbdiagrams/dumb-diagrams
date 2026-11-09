@@ -8,25 +8,31 @@ interface ParsedVersion {
   prerelease: readonly (bigint | string)[];
 }
 
-export async function findNewerCliVersion(installedVersion: string): Promise<string | undefined> {
+export type CliVersionStatus =
+  | { status: "latest" | "update-available" | "ahead"; latestVersion: string }
+  | { status: "unavailable" };
+
+export async function checkCliVersion(installedVersion: string): Promise<CliVersionStatus> {
   const installed = parseVersion(installedVersion);
-  if (!installed) return undefined;
+  if (!installed) return { status: "unavailable" };
 
   try {
     const response = await fetch(PACKAGE_METADATA_URL, {
       headers: { Accept: "application/vnd.npm.install-v1+json" },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
-    if (!response.ok) return undefined;
+    if (!response.ok) return { status: "unavailable" };
 
     const payload = (await response.json()) as { "dist-tags"?: { latest?: unknown } };
     const latestVersion = payload["dist-tags"]?.latest;
-    if (typeof latestVersion !== "string") return undefined;
+    if (typeof latestVersion !== "string") return { status: "unavailable" };
 
     const latest = parseVersion(latestVersion);
-    return latest && compareVersions(latest, installed) > 0 ? latestVersion : undefined;
+    if (!latest) return { status: "unavailable" };
+    const comparison = compareVersions(latest, installed);
+    return { status: comparison > 0 ? "update-available" : comparison < 0 ? "ahead" : "latest", latestVersion };
   } catch {
-    return undefined;
+    return { status: "unavailable" };
   }
 }
 

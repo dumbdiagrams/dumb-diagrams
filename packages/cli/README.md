@@ -29,11 +29,13 @@ stay as they are. With a blank name, or without a
 terminal, it uses a timestamped folder. `dgm` is a shorthand for
 `dumbdiagrams`.
 
-After a successful `init` or help command in an interactive terminal, the CLI
-checks npm for a newer release and prints an update command if one is available.
-The check times out after one second, fails silently when offline, and can be
-disabled with `NO_UPDATE_NOTIFIER=1`. It only requests the package's public npm
-version metadata; it does not send project data.
+Successful `init` and help commands end with the installed CLI version. In an
+interactive terminal, the footer also confirms when you are on npm's latest
+release or suggests an optional update command when a newer version is available.
+The check times out after one second; if it cannot reach npm, the footer says
+the latest version could not be checked. Set `NO_UPDATE_NOTIFIER=1` to skip the
+lookup. CI and redirected output show only the installed version. The lookup
+only requests public npm version metadata; it does not send project data.
 
 ## Commands
 
