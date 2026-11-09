@@ -119,8 +119,7 @@ ${ui.heading("Quick start")}
 ${ui.heading("Studio")}
 ${ui.info("hosted", `${ui.command(HOSTED_STUDIO_URL)} (recommended)`)}
 ${ui.info("local", `${ui.command("dumbdiagrams studio")} (bundled with the CLI)`)}
-${ui.info("privacy", "Whichever Studio you choose, your diagrams stay on your device.")}
-${ui.info("storage", "In browser storage or files you choose; we never upload or store their contents on our servers.")}
+${ui.info("privacy", "Whichever Studio you choose, your diagrams stay on your device. We never upload or store them on our servers.")}
 
 ${ui.muted("validate uses sibling requirements.json for diagram.dgm, or <stem>.requirements.json otherwise. Use --requirements <file> for a custom contract or stdin; --json prints a machine-readable report, and --strict fails on routing warnings.")}
 
@@ -166,11 +165,10 @@ function cmdStudio(args: ParsedArgs): ResultAsync<number, CliError> {
       console.log(ui.info("hosted", `${ui.command(HOSTED_STUDIO_URL)} (recommended)`));
       console.log(ui.info("local", ui.command(handle.url)));
       console.log(ui.info("file", "Use Open to choose any .dgm file on disk"));
-      console.log(ui.info("privacy", "Whichever Studio you choose, your diagrams stay on your device."));
       console.log(
         ui.info(
-          "storage",
-          "In browser storage or files you choose; we never upload or store their contents on our servers.",
+          "privacy",
+          "Whichever Studio you choose, your diagrams stay on your device. We never upload or store them on our servers.",
         ),
       );
       console.log(ui.info("stop", "Ctrl+C"));
@@ -769,7 +767,18 @@ function writeInitProject(
       console.log(ui.summary(created ? "Project ready" : "Project already prepared"));
       console.log(ui.info("step 1", ui.command(`cd ${relativeForLog(projectRoot)}`)));
       console.log(ui.info("step 2", "open it in your LLM-enabled IDE and tell the LLM what to draw"));
-      console.log(ui.info("step 3", ui.command("dumbdiagrams studio")));
+      console.log(
+        ui.info(
+          "step 3",
+          `open hosted Studio (recommended): ${ui.command(HOSTED_STUDIO_URL)} (or run local with ${ui.command("dumbdiagrams studio")})`,
+        ),
+      );
+      console.log(
+        ui.info(
+          "privacy",
+          "Whichever Studio you choose, your diagrams stay on your device. We never upload or store them on our servers.",
+        ),
+      );
       return 0;
     },
     (cause): CliError => ({ code: "init-failed", message: errorMessage(cause), cause }),
