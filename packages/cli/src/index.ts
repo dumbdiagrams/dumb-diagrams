@@ -42,7 +42,7 @@ import { renderInitTemplate, type InitTemplateError } from "./init-templates.js"
 import { resolveInitOptions, type ResolvedInitOptions } from "./init-options.js";
 import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
-import { findNewerCliVersion } from "./update-notice.js";
+import { checkCliVersion } from "./update-notice.js";
 import { readCliVersion } from "./version.js";
 
 const VERSION = readCliVersion();
@@ -58,7 +58,9 @@ export async function runCli(argv: string[], options: { stdin?: string } = {}): 
   const [command, ...rawArgs] = argv;
   const parsed = parseArgs(rawArgs, command);
 
-  return dispatchCommand(command, parsed, options.stdin).match((code) => code, reportCliError);
+  const code = await dispatchCommand(command, parsed, options.stdin).match((code) => code, reportCliError);
+  if (code === 0 && shouldShowVersionFooter(command, parsed)) await printVersionFooter();
+  return code;
 }
 
 function dispatchCommand(
@@ -994,14 +996,7 @@ const entrypoint = process.argv[1] ? realpathSync(process.argv[1]) : "";
 if (entrypoint === realpathSync(fileURLToPath(import.meta.url))) {
   const args = process.argv.slice(2);
   runCli(args)
-    .then(async (code) => {
-      if (shouldCheckForUpdates(args, code)) {
-        try {
-          await printUpdateNotice();
-        } catch {
-          // The optional update notice must never change the command result.
-        }
-      }
+    .then((code) => {
       if (code) process.exitCode = code;
     })
     .catch((error: unknown) => {
@@ -1010,26 +1005,35 @@ if (entrypoint === realpathSync(fileURLToPath(import.meta.url))) {
     });
 }
 
-function shouldCheckForUpdates(args: string[], exitCode: number): boolean {
-  if (exitCode !== 0 || !process.stdout.isTTY || process.env.CI || process.env.NO_UPDATE_NOTIFIER) return false;
-
-  const [command, ...commandArgs] = args;
-  if (commandArgs.includes("--version")) return false;
-
-  const helpShown =
-    command === undefined ||
-    command === "help" ||
-    command === "--help" ||
-    command === "-h" ||
-    commandArgs.includes("--help");
-  return helpShown || command === "init";
+function shouldShowVersionFooter(command: string | undefined, parsed: ParsedArgs): boolean {
+  if (parsed.flags.has("help")) return true;
+  if (parsed.flags.has("version") || command === "--version" || command === "-v") return false;
+  return command === undefined || command === "help" || command === "--help" || command === "-h" || command === "init";
 }
 
-async function printUpdateNotice(): Promise<void> {
-  const latestVersion = await findNewerCliVersion(VERSION);
-  if (!latestVersion) return;
-
+async function printVersionFooter(): Promise<void> {
   console.log("");
-  console.log(ui.warning(`A newer version is available: v${latestVersion} (you have v${VERSION})`));
-  console.log(`  When convenient, update with ${ui.command("npm install -g create-dumb-diagrams@latest")}`);
+  if (!process.stdout.isTTY || process.env.CI || process.env.NO_UPDATE_NOTIFIER) {
+    console.log(ui.info("version", `v${VERSION}`));
+    return;
+  }
+
+  const result = await checkCliVersion(VERSION).catch(() => ({ status: "unavailable" as const }));
+  switch (result.status) {
+    case "latest":
+      console.log(ui.info("version", `v${VERSION} · You're on the latest version`));
+      break;
+    case "update-available":
+      console.log(ui.info("version", `v${VERSION} · New version available: v${result.latestVersion}`));
+      console.log(
+        ui.info("update", `When convenient, run ${ui.command("npm install -g create-dumb-diagrams@latest")}`),
+      );
+      break;
+    case "ahead":
+      console.log(ui.info("version", `v${VERSION} · npm latest: v${result.latestVersion}`));
+      break;
+    case "unavailable":
+      console.log(ui.info("version", `v${VERSION} · Latest version couldn't be checked`));
+      break;
+  }
 }
