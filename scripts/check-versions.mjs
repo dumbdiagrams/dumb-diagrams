@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { releaseHasNotes } from "./lib/changelog.mjs";
+
 const root = new URL("../", import.meta.url);
 const rootPath = root.pathname;
 const packagesRoot = join(rootPath, "packages");
@@ -36,6 +38,8 @@ const changelogErrors = [];
 
 if (!changelog.includes(`## [${version}]`)) {
   changelogErrors.push(`CHANGELOG.md is missing a [${version}] section`);
+} else if (!releaseHasNotes(changelog, version)) {
+  changelogErrors.push(`CHANGELOG.md [${version}] section needs release notes, not just a heading`);
 }
 if (!releaseDoc.includes(tag)) {
   changelogErrors.push(`docs/RELEASE.md does not reference tag ${tag}`);

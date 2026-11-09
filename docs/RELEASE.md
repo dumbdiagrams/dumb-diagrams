@@ -2,7 +2,7 @@
 
 ## Package versions
 
-The current workspace version is `0.2.3` (release tag `v0.2.3`).
+The current workspace version is `0.2.4` (release tag `v0.2.4`).
 
 All workspace packages share one version, bumped together, so the parser,
 renderer, CLI, and editor are always one compatibility line. Only
@@ -49,9 +49,15 @@ the workflow's environment name alone does not require anyone's approval.
    `pnpm release:prepare <version>`, for example `pnpm release:prepare 0.2.2`.
    The command fast-forwards `main`, creates `chore/release-<version>`, updates
    all workspace package versions, the lockfile, release version line, and
-   changelog heading. Add release notes under the new heading, review the diff,
+   changelog section. Release notes are generated from commits since the previous
+   reachable stable version tag, grouped by Conventional Commit type, with commit
+   links. Release version-bump commits are omitted; nonconventional commits are
+   retained under Changed. Existing hand-written Unreleased notes are preserved
+   in the new release. Review the generated notes, edit any wording as needed,
    and open a PR to `main`. The command runs `pnpm check:versions` before and
-   after preparing the files.
+   after preparing the files. The version check also rejects an empty current
+   release section. Prefer squash merging PRs so their Conventional Commit
+   titles become the commit subjects used for release notes.
 2. Require the release PR checks to pass before merging. Running
    `pnpm check:release` locally is optional. The tag workflow verifies that
    the exact tagged commit is on the trusted default branch and has a successful

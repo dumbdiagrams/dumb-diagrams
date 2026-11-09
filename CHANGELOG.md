@@ -5,9 +5,26 @@ the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-11-09
+
+### Changed
+
+- **cli:** enhance version footer and update check logic for CLI (#19) ([abcf2f7](https://github.com/dumbdiagrams/dumb-diagrams/commit/abcf2f7f014e76fd8a4ea746ccd7bcec69526c0a))
+- Generate release notes automatically from commit history and reject empty release changelogs.
+
 ## [0.2.3] - 2026-11-09
 
+### Changed
+
+- **release:** enhance release workflow with coordination steps (#18) ([ad0242a](https://github.com/dumbdiagrams/dumb-diagrams/commit/ad0242a5dc0ad9db91da132e915134b6b33921a7))
+- **ci:** speed up CI and add CLI update notice (#16) ([539efd1](https://github.com/dumbdiagrams/dumb-diagrams/commit/539efd1cbf48a7f5b9ea95b3e8e8bcb53ddf952f))
+
 ## [0.2.2] - 2026-11-09
+
+### Changed
+
+- **release:** automate release flow (#14) ([9c47285](https://github.com/dumbdiagrams/dumb-diagrams/commit/9c472851033d655b3766a5101b627f0ac5a9bdd0))
+- **cli:** instruction-cli-minor-fix (#13) ([b7c5c97](https://github.com/dumbdiagrams/dumb-diagrams/commit/b7c5c97795dedb95a2830fa425d2c8251eb326aa))
 
 ## [0.2.1] - 2026-11-08
 

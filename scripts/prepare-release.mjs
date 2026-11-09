@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { generateReleaseNotes, prepareChangelog } from "./lib/changelog.mjs";
+
 const root = fileURLToPath(new URL("../", import.meta.url));
 const packagesRoot = join(root, "packages");
 const version = process.argv[2];
@@ -63,15 +65,9 @@ if (new RegExp(`^## \\[${version.replaceAll(".", "\\.")}\\]`, "m").test(changelo
 }
 
 const date = new Date().toISOString().slice(0, 10);
-const releaseHeading = `## [${version}] - ${date}`;
-if (/^## \[Unreleased\]$/m.test(changelog)) {
-  changelog = changelog.replace(/^## \[Unreleased\]$/m, `## [Unreleased]\n\n${releaseHeading}`);
-} else {
-  const firstReleaseHeading = changelog.search(/^## \[/m);
-  if (firstReleaseHeading < 0) fail("CHANGELOG.md needs a release heading before preparation.");
-  const intro = changelog.slice(0, firstReleaseHeading).replace(/\s*$/, "\n\n");
-  changelog = `${intro}## [Unreleased]\n\n${releaseHeading}\n\n${changelog.slice(firstReleaseHeading)}`;
-}
+const generated = generateReleaseNotes({ cwd: root, version });
+changelog = prepareChangelog(changelog, { version, date, notes: generated.notes });
+console.log(`Generated changelog from ${generated.from ?? "the start of repository history"} to HEAD.`);
 
 const releasePath = join(root, "docs/RELEASE.md");
 const releaseDocs = readFileSync(releasePath, "utf8");
@@ -105,6 +101,4 @@ const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 run(pnpm, ["install", "--lockfile-only", "--ignore-scripts"]);
 run(process.execPath, ["scripts/check-versions.mjs"]);
 
-console.log(
-  `Prepared ${version} on ${releaseBranch}. Add release notes under ${releaseHeading} before opening the PR.`,
-);
+console.log(`Prepared ${version} on ${releaseBranch}. Review the generated CHANGELOG.md notes before opening the PR.`);
