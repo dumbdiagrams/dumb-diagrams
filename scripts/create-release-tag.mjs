@@ -22,7 +22,7 @@ if (args.length > 1 || (args.length === 1 && args[0] !== "--push")) {
 const push = args[0] === "--push";
 
 const branch = git(["branch", "--show-current"]);
-if (branch !== "main") fail("Create release tags from main after its CI passes.");
+if (branch !== "main") fail("Create release tags from main; publishing starts after its CI succeeds.");
 if (git(["status", "--porcelain"])) fail("Commit or remove working tree changes before tagging a release.");
 
 git(["fetch", "origin", "--tags"], { stdio: "inherit" });
