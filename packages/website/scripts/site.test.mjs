@@ -9,7 +9,7 @@ import { checkRequirements, parseRequirements } from '@dumb-diagrams/runtime/req
 import { compileDiagram } from '@dumb-diagrams/runtime/render';
 import { createCliUi } from '../../cli/src/cli-ui.ts';
 import { stripVTControlCharacters } from 'node:util';
-import { approvedRun, loadExamples } from '../src/lib/examples.mjs';
+import { approvedRun, loadExamples, loadLandingExamples } from '../src/lib/examples.mjs';
 import { loadReviewedExamples } from '../src/lib/reviewed-examples.mjs';
 import { ansiToHtml } from '../src/lib/ansi.mjs';
 import { analyticsConfig } from '../src/lib/analytics-config.mjs';
@@ -147,12 +147,13 @@ test('complete documentation and homepage examples compile through the actual ru
       checked++;
     }
   }
-  const landingExamples = loadExamples();
+  const landingExamples = loadLandingExamples();
   assert.deepEqual(landingExamples.map(example => example.id), [
     'aws-easy-static-website-delivery',
     'aws-medium-factory-iot-telemetry',
-    'aws-medium-image-thumbnail-pipeline',
-  ], 'homepage examples follow the requested static, factory, thumbnail order');
+    'aws-data-transfer-hub',
+  ], 'homepage examples follow the requested static, factory, cross-account order');
+  assert.equal(landingExamples[1].title, 'Factory IoT telemetry on AWS');
   for (const example of landingExamples) {
     assert.ok(example.prompt.trim(), `${example.id}: natural prompt`);
     assert.ok(example.interpretation.trim(), `${example.id}: architecture interpretation`);

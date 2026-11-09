@@ -14,8 +14,13 @@ const site = new URL('../', import.meta.url);
 await rm(new URL('public/diagrams/', site), { recursive: true, force: true });
 await mkdir(new URL('public/diagrams/', site), { recursive: true });
 const examples = loadExamples();
+const preparedExampleIds = new Set(examples.map(({ id }) => id));
 for (const filename of await readdir(new URL('src/examples/', site))) {
-  if (filename.endsWith('.dgm')) examples.push({ id: filename.slice(0, -4), source: await readFile(new URL(`src/examples/${filename}`, site), 'utf8') });
+  const id = filename.slice(0, -4);
+  if (filename.endsWith('.dgm') && !preparedExampleIds.has(id)) {
+    examples.push({ id, source: await readFile(new URL(`src/examples/${filename}`, site), 'utf8') });
+    preparedExampleIds.add(id);
+  }
 }
 for (const { id, source, prompt, requirements } of examples) {
   const filename = `${id}.dgm`;

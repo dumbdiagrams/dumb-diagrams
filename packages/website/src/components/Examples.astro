@@ -2,13 +2,13 @@
 import { Code } from 'astro:components';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadExamples } from '../lib/examples.mjs';
+import { loadLandingExamples } from '../lib/examples.mjs';
 import { dgmLanguage } from '../lib/dgm-language.mjs';
 import { url } from '../lib/site';
 import WindowControls from './WindowControls.astro';
 import '../styles/terminal.css';
 import '../styles/examples.css';
-const examples = loadExamples().map(example => {
+const examples = loadLandingExamples().map(example => {
   const { id } = example;
   // Reserve the generated preview's actual aspect ratio before it loads.
   const preview = readFileSync(resolve('public/diagrams', `${id}-preview.svg`), 'utf8');
