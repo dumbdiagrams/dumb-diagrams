@@ -129,6 +129,9 @@ jobs:
       - name: Unit and integration tests with coverage
         run: pnpm ci:test
 
+      - name: Release coordination and registry verification tests
+        run: node --test scripts/coordinate-release.test.mjs scripts/verify-npm-release.test.mjs
+
   e2e:
     if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
     env:

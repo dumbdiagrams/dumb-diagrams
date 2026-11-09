@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main, master]
   workflow_dispatch:
     inputs:
       ref:
@@ -16,12 +20,56 @@ on:
 permissions:
   contents: read
 
+# Queue every event through registry verification, including the approval pause.
+# A second event then sees the published version and exits without publishing again.
+concurrency:
+  group: npm-production
+  cancel-in-progress: false
+  queue: max
+
 jobs:
-  prepare:
-    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' && (github.event_name == 'push' || startsWith(inputs.ref, 'v'))
+  coordinate:
+    if: >-
+      github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+       (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+        github.event.workflow_run.head_repository.id == github.event.repository.id &&
+        github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     permissions:
       actions: read
+      contents: read
+    outputs:
+      ready: ${{ steps.release.outputs.ready }}
+      release_ref: ${{ steps.release.outputs.ref }}
+      release_sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - name: Check out trusted release coordinator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up coordinator Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Resolve an eligible release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          INPUT_RELEASE_REF: ${{ inputs.ref }}
+        run: node scripts/coordinate-release.mjs
+
+  prepare:
+    needs: coordinate
+    if: needs.coordinate.outputs.ready == 'true'
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    permissions:
       contents: read
     outputs:
       release_version: ${{ steps.release-version.outputs.version }}
@@ -32,7 +80,7 @@ jobs:
       - name: Check out release ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: ${{ needs.coordinate.outputs.release_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -64,7 +112,7 @@ jobs:
       - name: Verify release tag and package version
         id: release-version
         env:
-          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+          RELEASE_REF: ${{ needs.coordinate.outputs.release_ref }}
         run: |
           node scripts/validate-release-ref.mjs
           version="$(node --input-type=module -e 'import { readFileSync } from "node:fs"; console.log(JSON.parse(readFileSync("packages/cli/package.json", "utf8")).version)')"
@@ -75,60 +123,6 @@ jobs:
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
           printf 'sha=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           printf 'artifact_name=npm-release-%s\n' "$version" >> "$GITHUB_OUTPUT"
-
-      - name: Require successful CI on the tagged commit
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_API_URL: ${{ github.api_url }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_SHA: ${{ steps.release-version.outputs.sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          node --input-type=module <<'NODE'
-          const { GITHUB_TOKEN, GITHUB_API_URL, GITHUB_REPOSITORY, RELEASE_SHA, DEFAULT_BRANCH } = process.env;
-          if (!GITHUB_TOKEN || !GITHUB_API_URL || !GITHUB_REPOSITORY || !RELEASE_SHA || !DEFAULT_BRANCH) {
-            throw new Error("Missing GitHub API context required to verify CI for the release commit");
-          }
-          const apiBase = GITHUB_API_URL.replace(/\/+$/, "");
-          const url = new URL(`repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs`, `${apiBase}/`);
-          url.search = new URLSearchParams({
-            branch: DEFAULT_BRANCH,
-            event: "push",
-            head_sha: RELEASE_SHA,
-            per_page: "100",
-          }).toString();
-
-          const response = await fetch(url, {
-            headers: {
-              Accept: "application/vnd.github+json",
-              Authorization: `Bearer ${GITHUB_TOKEN}`,
-              "X-GitHub-Api-Version": "2022-11-28",
-            },
-          });
-          if (!response.ok) {
-            throw new Error(`GitHub Actions API returned HTTP ${response.status}: ${await response.text()}`);
-          }
-
-          const { workflow_runs: runs } = await response.json();
-          const successfulRun = runs?.find(
-            (run) =>
-              run.head_sha === RELEASE_SHA &&
-              run.head_branch === DEFAULT_BRANCH &&
-              run.event === "push" &&
-              run.status === "completed" &&
-              run.conclusion === "success",
-          );
-          if (!successfulRun) {
-            const found = (runs ?? [])
-              .map((run) => `${run.head_sha} ${run.status}/${run.conclusion ?? "pending"}`)
-              .join(", ");
-            throw new Error(
-              `A successful CI push run on ${DEFAULT_BRANCH} for tagged commit ${RELEASE_SHA} is required before publishing. ` +
-                (found ? `Matching workflow runs: ${found}` : "No matching workflow run was found."),
-            );
-          }
-          console.log(`Confirmed successful CI run ${successfulRun.html_url} for ${RELEASE_SHA}`);
-          NODE
 
       - name: Test registry verification
         run: node --test scripts/verify-npm-release.test.mjs
@@ -183,12 +177,9 @@ jobs:
           retention-days: 30
 
   publish:
-    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' && (github.event_name == 'push' || startsWith(inputs.ref, 'v'))
-    needs: prepare
+    needs: [coordinate, prepare]
+    timeout-minutes: 30
     runs-on: ubuntu-24.04
-    concurrency:
-      group: npm-production
-      cancel-in-progress: false
     environment:
       name: npm-production
     permissions:
@@ -204,7 +195,7 @@ jobs:
 
       - name: Verify release tag is unchanged
         env:
-          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+          RELEASE_REF: ${{ needs.coordinate.outputs.release_ref }}
           EXPECTED_RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
         run: |
@@ -263,14 +254,43 @@ jobs:
           NODE
           printf 'path=%s\n' "$artifact" >> "$GITHUB_OUTPUT"
 
+      - name: Check whether this artifact is already published
+        id: existing
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from "node:fs";
+          const url = `https://registry.npmjs.org/create-dumb-diagrams/${process.env.RELEASE_VERSION}`;
+          const response = await fetch(url, {
+            headers: { "Cache-Control": "no-cache", Accept: "application/json" },
+            signal: AbortSignal.timeout(30_000),
+          });
+          if (response.status !== 404 && !response.ok) {
+            throw new Error(`Could not check existing npm version: HTTP ${response.status}`);
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT, `exists=${response.ok}\n`);
+          NODE
+
+      - name: Verify existing publication before skipping publish
+        if: steps.existing.outputs.exists == 'true'
+        env:
+          ARTIFACT: ${{ steps.artifact.outputs.path }}
+          PACKAGE_NAME: create-dumb-diagrams
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
+        timeout-minutes: 17
+        run: node scripts/verify-npm-release.mjs
+
       # npm trusted publishing supplies short-lived OIDC credentials and
       # automatically records provenance; no npm token is stored in Actions.
       - name: Publish release artifact
+        if: steps.existing.outputs.exists != 'true'
         env:
           ARTIFACT: ${{ steps.artifact.outputs.path }}
         run: npm publish "$ARTIFACT" --access public --provenance --registry=https://registry.npmjs.org/
 
       - name: Verify published package on npm
+        if: steps.existing.outputs.exists != 'true'
         env:
           ARTIFACT: ${{ steps.artifact.outputs.path }}
           PACKAGE_NAME: create-dumb-diagrams

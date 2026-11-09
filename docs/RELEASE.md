@@ -54,13 +54,13 @@ the workflow's environment name alone does not require anyone's approval.
    after preparing the files.
 2. Require the release PR checks to pass before merging. Running
    `pnpm check:release` locally is optional. The tag workflow verifies that
-   the exact tagged commit is on the trusted default branch and that its
-   `CI` push run succeeded before preparing a package.
+   the exact tagged commit is on the trusted default branch and has a successful
+   `CI` push run. It reuses that result without rerunning CI.
 3. If the package already exists, verify that its trusted publisher names the
    current repository, `publish-cli.yml`, and `npm-production` exactly, with
    direct `npm publish` permission enabled. For a first publish, use the
    one-time procedure below after the preparation job creates the artifact.
-4. After the release PR is merged and `main` CI is green, push the tag from a
+4. After the release PR is merged, push the tag from a
    clean `main` checkout:
 
    ```bash
@@ -72,8 +72,17 @@ the workflow's environment name alone does not require anyone's approval.
    metadata, fast-forwards `main` when possible, then creates and pushes the
    matching tag. It refuses a dirty or diverged checkout. Do not type the tag
    version separately.
-   If a tag's release attempt failed before the npm publish step, delete that
-   failed tag before recreating it on the corrected commit; never move a tag
+   The tag can arrive before or after `main` CI completes. If CI is still
+   running, the tag event finishes without preparing or publishing; successful
+   CI completion starts another eligibility check automatically. If CI fails,
+   publishing remains blocked; rerunning CI successfully resumes the release.
+   For manual recovery, launch `Publish CLI package` with `workflow_dispatch`
+   from `main`, passing the existing tag as `ref`. This uses the current
+   coordinator while preparing the artifact from the tagged commit. An older
+   tag created before this coordination workflow was installed can also be
+   recovered this way once its exact commit has successful main CI.
+   If the release commit itself needs correction before publication, delete
+   and recreate the unpublished tag on the corrected commit. Never move a tag
    that has already been published.
 
 The release-ref guard requires the tag to match the checked-out commit and
@@ -82,18 +91,35 @@ belong to the fetched remote default branch's history (`origin/HEAD`, with
 branch is available. Keep `fetch-depth: 0` in release checkouts. Restrict release
 tag creation in GitHub as well; source-level checks do not replace that rule.
 
-For a new version, the tag triggers the npm publishing workflow:
+The release workflow handles tag pushes, completed default-branch `CI` runs,
+and manual recovery:
 
-- `.github/workflows/publish-cli.yml` first runs an unprivileged preparation
-  job. It checks the tag and package version, verifies the exact release SHA
-  against the trusted default branch and successful `CI` push run, installs
-  with the pnpm cache, builds, packs, budget-checks, and smoke-tests one exact
-  tarball, then uploads that tarball and its checksum as the release handoff.
-- A separate publishing job downloads the handoff, verifies its checksum and
-  package version, and only then enters the protected `npm-production`
-  environment. That job alone has `id-token: write`; it publishes the exact
-  prepared file with npm trusted publishing and provenance, then polls npm
-  until the registry integrity matches. No npm token is stored in Actions.
+- A read-only coordinator executes from the trusted default branch. It accepts
+  only the configured publisher and successful same-repository push CI, never
+  PR or fork CI. It requires the canonical version tag, matching package
+  version, exact successful CI SHA, and default-branch ancestry. A tag without
+  green CI or a green commit without its matching tag produces an explicit
+  no-op. The later event checks both prerequisites again; no runner polls CI.
+- Eligible releases run preparation with read-only permissions: build, pack,
+  enforce budgets, and smoke-test one exact tarball. The tarball and checksum
+  become the release handoff. Preparation and publication each have a
+  30-minute job timeout; coordination has a five-minute timeout.
+- The publishing job waits for the protected `npm-production` approval. After
+  approval it checks the tag is unchanged, downloads the handoff, verifies
+  checksum and package identity, then publishes with npm trusted publishing
+  and provenance. This job alone has `id-token: write`. Registry verification
+  compares the exact artifact integrity; no npm token is stored in Actions.
+- The entire workflow, including the approval pause and registry verification,
+  is serialized in the `npm-production` concurrency group with `queue: max`.
+  Overlapping tag and CI events cannot publish concurrently. An automatic
+  event for a version already present on npm exits before preparation or
+  approval; this does not replace verification of a previously failed release.
+  Manual recovery prepares the artifact again and, if the version exists,
+  verifies its integrity instead of publishing it again. A mismatch fails.
+
+The workflow must be merged to the default branch before CI-completion events
+can invoke the coordinator. Normal PR CI and main push CI still run; the
+publisher adds artifact checks without launching another full test suite.
 
 Registry verification polls the public npm registry directly for up to 15 minutes,
 with bounded requests and no local npm metadata cache. It retries propagation
