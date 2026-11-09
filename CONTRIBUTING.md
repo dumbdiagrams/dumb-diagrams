@@ -59,9 +59,13 @@ For only the website's diagnostics, production build, and site tests, use
 
 After `pnpm install`, [Husky](https://typicode.github.io/husky/) installs the
 Git hooks from `.husky`: **pre-commit** runs `biome check --staged` (run
-`pnpm fix:style` to fix); **pre-push** runs `pnpm check:pr`. Set `HUSKY=0` to
-bypass them once. If your Git client (a GUI or IDE) cannot find `pnpm` or Node,
-put your version manager's setup in `~/.config/husky/init.sh`, for example
+`pnpm fix:style` to fix) and **pre-push** runs `pnpm check:pr`. CI checks the
+pull request title for the scoped Conventional Commit format used by squash
+merges. For example: `fix(studio): allow Azure items on an empty canvas` or
+`chore(docs): clarify local Studio setup`. Individual branch commits can use
+any message. Set `HUSKY=0` to bypass hooks once. If your Git client (a GUI or
+IDE) cannot find `pnpm` or Node, put your version manager's setup in
+`~/.config/husky/init.sh`, for example
 `eval "$(fnm env --shell bash)" && fnm use`.
 
 CI runs two chains that you can run locally too: `pnpm ci:verify` (style,
@@ -182,6 +186,16 @@ owner-authored PR exception explicitly. Invite trusted contributors through
 repository access settings and grant merge permission only to the owner and
 designated maintainers. These controls live in GitHub settings; workflow files
 cannot enforce them. The code owner must retain write access to the repository.
+
+For clean `main` history, allow **squash merging only** under Settings → General
+→ Pull Requests, and set the default squash message to the pull request title.
+Disable merge commits and rebase merging. Require pull requests and the
+`ci-required` and **Conventional PR title** checks on the default branch. The
+title check runs when a PR opens, changes title, reopens, or receives new
+commits. It ensures each squash commit on `main` has a scoped Conventional
+Commit subject; individual commits in the pull request are not checked.
+Existing commit messages remain unchanged; rewriting already-published `main`
+history requires a coordinated force-push and can disrupt tags and clones.
 
 ## Project communication
 
