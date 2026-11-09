@@ -58,6 +58,8 @@
     "smoke:package": "node scripts/smoke-cli-package.mjs",
     "publish:metadata": "node scripts/set-cli-publish-metadata.mjs",
     "preflight:publish": "node scripts/preflight-npm.mjs",
+    "release:prepare": "node scripts/prepare-release.mjs",
+    "release:tag": "node scripts/create-release-tag.mjs",
     "icons:check": "node scripts/icon-workflow.mjs check",
     "icons:update": "node scripts/icon-workflow.mjs update",
     "catalog:generate": "node scripts/generate-catalog.mjs",

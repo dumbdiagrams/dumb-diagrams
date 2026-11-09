@@ -45,43 +45,35 @@ Publish with npm 11.5.1 or newer for OIDC support. Before creating a release
 tag, configure repository protections and the `npm-production` environment;
 the workflow's environment name alone does not require anyone's approval.
 
-1. Bump every `packages/*/package.json` to the same version and update the
-   current version and release tag above.
-2. Move the `Unreleased` entries in `CHANGELOG.md` under the new version and
-   date.
-3. Run the full gate:
-
-   ```bash
-   pnpm install --frozen-lockfile
-   pnpm check:release
-   ```
-
-   This runs `ci:verify`, Playwright on Chromium (`ci:e2e`), and the website
-   checks. Optionally also run `pnpm test:e2e:compat` for WebKit.
-4. Build and smoke-test the exact artifact that will be published:
-
-   ```bash
-   export GITHUB_REPOSITORY=OWNER/REPO   # or let the script read remote.origin
-   pnpm publish:metadata
-   pnpm --filter create-dumb-diagrams run prepare:standalone
-   mkdir -p .artifacts/packages
-   pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
-   VERSION="$(node -p 'require("./packages/cli/package.json").version')"
-   ARTIFACT="$(pwd)/.artifacts/packages/create-dumb-diagrams-$VERSION.tgz"
-   DUMB_DIAGRAMS_ARTIFACT="$ARTIFACT" pnpm smoke:package
-   ```
-
-   None of this uploads anything.
-5. Complete the first-publish setup below if the package does not exist yet.
+1. Start from a clean `main` checkout and run
+   `pnpm release:prepare <version>`, for example `pnpm release:prepare 0.2.2`.
+   The command fast-forwards `main`, creates `chore/release-<version>`, updates
+   all workspace package versions, the lockfile, release version line, and
+   changelog heading. Add release notes under the new heading, review the diff,
+   and open a PR to `main`. The command runs `pnpm check:versions` before and
+   after preparing the files.
+2. Require the release PR checks to pass before merging. Running
+   `pnpm check:release` locally is optional; CI and the publish workflow run
+   the release gate.
+3. Complete the first-publish setup below if the package does not exist yet.
    Otherwise verify that its trusted publisher names the current repository,
    `publish-cli.yml`, and `npm-production` exactly, with direct `npm publish`
    permission enabled.
-6. Tag the approved default-branch commit and push once branch CI is green:
+4. After the release PR is merged and `main` CI is green, push the tag from a
+   clean `main` checkout:
 
    ```bash
-   git tag -a "v$VERSION" -m "Release v$VERSION"
-   git push origin "v$VERSION"
+   git switch main
+   pnpm release:tag --push
    ```
+
+   `pnpm release:tag --push` uses the CLI package version, checks all release
+   metadata, fast-forwards `main` when possible, then creates and pushes the
+   matching tag. It refuses a dirty or diverged checkout. Do not type the tag
+   version separately.
+   If a tag's release attempt failed before the npm publish step, delete that
+   failed tag before recreating it on the corrected commit; never move a tag
+   that has already been published.
 
 The release-ref guard requires the tag to match the checked-out commit and
 belong to the fetched remote default branch's history (`origin/HEAD`, with
