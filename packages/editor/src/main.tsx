@@ -1964,7 +1964,7 @@ function App() {
             <div className="studio-brand" role="img" aria-label="Dumb Diagrams">
               <img className="brand-logo" src="./logo_dumbdiagrams.png" alt="" width="128" height="77" />
               <span className="dd-wordmark" aria-hidden="true">
-                dumb<span className="dd-wordmark__light">diagrams</span>
+                dumb<span className="dd-wordmark__light">diagram</span>
                 <span className="dd-wordmark__dot">.</span>
               </span>
             </div>
