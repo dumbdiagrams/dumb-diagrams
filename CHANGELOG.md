@@ -5,6 +5,8 @@ the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-09
+
 ## [0.2.2] - 2026-11-09
 
 ## [0.2.1] - 2026-11-08
