@@ -8,6 +8,7 @@ Commands/checks run and results:
 
 ## Checklist
 
+- [ ] PR title follows Conventional Commits: `type(scope): summary`
 - [ ] `pnpm check:pr` passes
 - [ ] Tests added or updated for behavior changes
 - [ ] No telemetry, remote fetches, or new network dependencies (see CONTRIBUTING.md)
