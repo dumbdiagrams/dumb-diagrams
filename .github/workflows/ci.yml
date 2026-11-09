@@ -131,6 +131,12 @@ jobs:
 
   e2e:
     if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    env:
+      PLAYWRIGHT_USE_PREVIEW: "true"
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source
@@ -158,14 +164,60 @@ jobs:
           fi
           pnpm exec playwright install chromium --with-deps
 
-      - name: Build, run Playwright tests, and run the packed CLI Studio journey
-        run: pnpm ci:e2e
+      - name: Build packages for the production-preview E2E run
+        run: pnpm build
+
+      - name: Run Playwright shard ${{ matrix.shard }} of 3
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/3
 
       - name: Upload Playwright failure artifacts
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-failures
+          name: playwright-failures-shard-${{ matrix.shard }}
+          path: .artifacts/playwright/
+          if-no-files-found: ignore
+
+  e2e-packed:
+    if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        timeout-minutes: 10
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          pnpm exec playwright install chromium --with-deps
+
+      - name: Build packages for the packed CLI Studio journey
+        run: pnpm build
+
+      - name: Run packed CLI Studio journey
+        run: pnpm test:e2e:packed
+
+      - name: Upload packed Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-failures-packed
           path: .artifacts/playwright/
           if-no-files-found: ignore
 
@@ -209,7 +261,7 @@ jobs:
     # GitHub accepts skipped jobs as passing required checks. This gate must
     # run even when an upstream job is skipped, cancelled, or fails.
     if: always()
-    needs: [verify, test, e2e, website, hosted-studio, cli]
+    needs: [verify, test, e2e, e2e-packed, website, hosted-studio, cli]
     runs-on: ubuntu-24.04
     steps:
       - name: Require every CI job to succeed
@@ -218,7 +270,7 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           const results = JSON.parse(process.env.JOB_RESULTS);
-          const required = ['verify', 'test', 'e2e', 'website', 'hosted-studio', 'cli'];
+          const required = ['verify', 'test', 'e2e', 'e2e-packed', 'website', 'hosted-studio', 'cli'];
           const unsuccessful = required.filter((job) => results[job]?.result !== 'success');
           for (const job of required) console.log(`${job}: ${results[job]?.result ?? 'missing'}`);
           if (unsuccessful.length) {

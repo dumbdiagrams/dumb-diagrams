@@ -53,12 +53,13 @@ the workflow's environment name alone does not require anyone's approval.
    and open a PR to `main`. The command runs `pnpm check:versions` before and
    after preparing the files.
 2. Require the release PR checks to pass before merging. Running
-   `pnpm check:release` locally is optional; CI and the publish workflow run
-   the release gate.
-3. Complete the first-publish setup below if the package does not exist yet.
-   Otherwise verify that its trusted publisher names the current repository,
-   `publish-cli.yml`, and `npm-production` exactly, with direct `npm publish`
-   permission enabled.
+   `pnpm check:release` locally is optional. The tag workflow verifies that
+   the exact tagged commit is on the trusted default branch and that its
+   `CI` push run succeeded before preparing a package.
+3. If the package already exists, verify that its trusted publisher names the
+   current repository, `publish-cli.yml`, and `npm-production` exactly, with
+   direct `npm publish` permission enabled. For a first publish, use the
+   one-time procedure below after the preparation job creates the artifact.
 4. After the release PR is merged and `main` CI is green, push the tag from a
    clean `main` checkout:
 
@@ -83,12 +84,16 @@ tag creation in GitHub as well; source-level checks do not replace that rule.
 
 For a new version, the tag triggers the npm publishing workflow:
 
-- `.github/workflows/publish-cli.yml` checks that the tag matches
-  `packages/cli/package.json` and reruns `pnpm check:release`. It then packs
-  and smoke-tests one tarball, publishes that exact file with npm trusted
-  publishing and provenance, and polls npm until the registry integrity
-  matches. The job runs in the protected `npm-production` environment, and no
-  npm token is stored.
+- `.github/workflows/publish-cli.yml` first runs an unprivileged preparation
+  job. It checks the tag and package version, verifies the exact release SHA
+  against the trusted default branch and successful `CI` push run, installs
+  with the pnpm cache, builds, packs, budget-checks, and smoke-tests one exact
+  tarball, then uploads that tarball and its checksum as the release handoff.
+- A separate publishing job downloads the handoff, verifies its checksum and
+  package version, and only then enters the protected `npm-production`
+  environment. That job alone has `id-token: write`; it publishes the exact
+  prepared file with npm trusted publishing and provenance, then polls npm
+  until the registry integrity matches. No npm token is stored in Actions.
 
 Registry verification polls the public npm registry directly for up to 15 minutes,
 with bounded requests and no local npm metadata cache. It retries propagation
@@ -97,7 +102,8 @@ a different artifact integrity fails immediately.
 
 If npm accepts publication but verification exhausts that window, do not rerun
 publication or move the tag. Retry only verification from a checkout containing
-the verifier, using the expected SHA-512 integrity printed in the failed step:
+the verifier, using the expected SHA-512 integrity from the prepared artifact
+or the failed publish log:
 
 ```bash
 PACKAGE_NAME=create-dumb-diagrams RELEASE_VERSION=0.1.0 \
@@ -106,7 +112,8 @@ PACKAGE_NAME=create-dumb-diagrams RELEASE_VERSION=0.1.0 \
 ```
 
 This is read-only and does not publish anything. Use the integrity from the
-release artifact/log, not an independently rebuilt local tarball.
+exact uploaded release artifact or publish log, not an independently rebuilt
+local tarball.
 
 The public landing page and documentation are a separate static Astro build at
 `packages/website/dist`, hosted on Cloudflare Pages. Connect the repository to
@@ -131,12 +138,16 @@ Recheck availability immediately before publishing. If another account owns
 the name, stop and choose a name you control.
 
 Trusted publishing configuration needs an existing package. If this is a new
-package, complete the gate and artifact preparation above, inspect the tarball
-contents with `tar -tzf "$ARTIFACT"`, then publish that reviewed artifact
-interactively from your trusted machine:
+package, push the release tag as usual and wait for the unprivileged preparation
+job to finish. Download the `npm-release-<version>` artifact from that workflow
+run, cancel its waiting `publish` job, verify the checksum, and inspect the
+tarball contents before publishing it interactively from your trusted machine:
 
 ```bash
-npm publish "$ARTIFACT" --access public --registry=https://registry.npmjs.org/
+artifact=create-dumb-diagrams-0.3.0.tgz # use the version from the downloaded artifact
+sha256sum -c "$artifact.sha256"
+tar -tzf "$artifact"
+npm publish "$artifact" --access public --registry=https://registry.npmjs.org/
 ```
 
 This is a real public release and requires your npm authentication and 2FA.
