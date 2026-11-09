@@ -41,6 +41,16 @@ export function approvedRun() {
   return join(approvedRoot(), featured[0].name);
 }
 
+export function websiteExamplesRoot() {
+  const root = [
+    resolve(fileURLToPath(new URL('../../../../packages/website/src/examples/', import.meta.url))),
+    resolve('src/examples'),
+    resolve('packages/website/src/examples'),
+  ].find(existsSync);
+  if (!root) throw new Error('Could not locate the packages/website/src/examples directory');
+  return root;
+}
+
 export function loadExamples() {
   const runRoot = approvedRun();
   const approvedExamples = exampleIds.map(id => {
@@ -57,7 +67,7 @@ export function loadExamples() {
     return { id, title, description: descriptions[id], source, prompt, interpretation, requirements };
   });
 
-  const transferExampleDirectory = resolve(fileURLToPath(new URL('../examples/', import.meta.url)));
+  const transferExampleDirectory = websiteExamplesRoot();
   const id = 'aws-data-transfer-hub';
   const source = readFileSync(join(transferExampleDirectory, `${id}.dgm`), 'utf8');
   const title = parseDgmResult(source).map(doc => doc.title).unwrapOr(undefined);
