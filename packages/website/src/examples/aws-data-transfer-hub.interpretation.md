@@ -1,0 +1,1 @@
+Model the customer and AWS-managed accounts as separate boundaries. Show Cognito and OpenID Connect as alternative authentication peers, and keep the Step Functions workflow as a boundary around its Lambda and deployment components. The managed account supplies templates and container images to the customer account's transfer workloads.
