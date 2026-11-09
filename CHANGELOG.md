@@ -3,6 +3,10 @@
 All notable changes to DumbDiagrams are documented here. The project follows
 the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
+## [Unreleased]
+
+## [0.2.2] - 2026-11-09
+
 ## [0.2.1] - 2026-11-08
 
 ### Added
