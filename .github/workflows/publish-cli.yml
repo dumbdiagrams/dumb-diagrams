@@ -16,19 +16,18 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: npm-production
-  cancel-in-progress: false
-
 jobs:
-  publish:
+  prepare:
     if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' && (github.event_name == 'push' || startsWith(inputs.ref, 'v'))
     runs-on: ubuntu-24.04
-    environment:
-      name: npm-production
     permissions:
+      actions: read
       contents: read
-      id-token: write
+    outputs:
+      release_version: ${{ steps.release-version.outputs.version }}
+      release_sha: ${{ steps.release-version.outputs.sha }}
+      artifact_name: ${{ steps.release-version.outputs.artifact_name }}
+      artifact_filename: ${{ steps.artifact.outputs.filename }}
     steps:
       - name: Check out release ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,7 +43,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-          registry-url: https://registry.npmjs.org
+          cache: pnpm
 
       - name: Check npm trusted publishing support
         run: |
@@ -68,14 +67,68 @@ jobs:
           RELEASE_REF: ${{ inputs.ref || github.ref_name }}
         run: |
           node scripts/validate-release-ref.mjs
-          node --input-type=module <<'NODE'
-          import { readFileSync } from "node:fs";
+          version="$(node --input-type=module -e 'import { readFileSync } from "node:fs"; console.log(JSON.parse(readFileSync("packages/cli/package.json", "utf8")).version)')"
+          if [ "$version" != "${RELEASE_REF#v}" ]; then
+            echo "Tag $RELEASE_REF does not match CLI package version $version" >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          printf 'artifact_name=npm-release-%s\n' "$version" >> "$GITHUB_OUTPUT"
 
-          const ref = process.env.RELEASE_REF;
-          const version = JSON.parse(readFileSync("packages/cli/package.json", "utf8")).version;
-          if (version !== ref.slice(1)) throw new Error(`Tag ${ref} does not match CLI package version ${version}`);
+      - name: Require successful CI on the tagged commit
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ steps.release-version.outputs.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          node --input-type=module <<'NODE'
+          const { GITHUB_TOKEN, GITHUB_API_URL, GITHUB_REPOSITORY, RELEASE_SHA, DEFAULT_BRANCH } = process.env;
+          if (!GITHUB_TOKEN || !GITHUB_API_URL || !GITHUB_REPOSITORY || !RELEASE_SHA || !DEFAULT_BRANCH) {
+            throw new Error("Missing GitHub API context required to verify CI for the release commit");
+          }
+          const apiBase = GITHUB_API_URL.replace(/\/+$/, "");
+          const url = new URL(`repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs`, `${apiBase}/`);
+          url.search = new URLSearchParams({
+            branch: DEFAULT_BRANCH,
+            event: "push",
+            head_sha: RELEASE_SHA,
+            per_page: "100",
+          }).toString();
+
+          const response = await fetch(url, {
+            headers: {
+              Accept: "application/vnd.github+json",
+              Authorization: `Bearer ${GITHUB_TOKEN}`,
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          });
+          if (!response.ok) {
+            throw new Error(`GitHub Actions API returned HTTP ${response.status}: ${await response.text()}`);
+          }
+
+          const { workflow_runs: runs } = await response.json();
+          const successfulRun = runs?.find(
+            (run) =>
+              run.head_sha === RELEASE_SHA &&
+              run.head_branch === DEFAULT_BRANCH &&
+              run.event === "push" &&
+              run.status === "completed" &&
+              run.conclusion === "success",
+          );
+          if (!successfulRun) {
+            const found = (runs ?? [])
+              .map((run) => `${run.head_sha} ${run.status}/${run.conclusion ?? "pending"}`)
+              .join(", ");
+            throw new Error(
+              `A successful CI push run on ${DEFAULT_BRANCH} for tagged commit ${RELEASE_SHA} is required before publishing. ` +
+                (found ? `Matching workflow runs: ${found}` : "No matching workflow run was found."),
+            );
+          }
+          console.log(`Confirmed successful CI run ${successfulRun.html_url} for ${RELEASE_SHA}`);
           NODE
-          printf 'version=%s\n' "$(node -p "require('./packages/cli/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Test registry verification
         run: node --test scripts/verify-npm-release.test.mjs
@@ -83,37 +136,132 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run exact release gate
-        run: pnpm check:release
+      - name: Build release packages
+        run: pnpm build
 
       - name: Set npm metadata from repository identity
         run: pnpm publish:metadata
 
-      - name: Prepare standalone package
-        run: pnpm --filter create-dumb-diagrams run prepare:standalone
-
       - name: Pack release artifact
         run: pnpm --dir packages/cli pack --pack-destination ../../.artifacts/packages
 
-      - name: Select and verify release artifact
+      - name: Enforce prepared artifact budgets
+        run: pnpm check:assets
+
+      - name: Select, checksum, and verify release artifact
         id: artifact
         env:
           RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
         run: |
           artifact="$GITHUB_WORKSPACE/.artifacts/packages/create-dumb-diagrams-${RELEASE_VERSION}.tgz"
+          filename="$(basename "$artifact")"
           test -f "$artifact" || {
             echo "Expected exact release artifact at $artifact" >&2
             exit 2
           }
+          (
+            cd "$(dirname "$artifact")"
+            sha256sum "$filename" > "$filename.sha256"
+          )
           printf 'path=%s\n' "$artifact" >> "$GITHUB_OUTPUT"
-
-      - name: Enforce prepared artifact budgets
-        run: pnpm check:assets
+          printf 'filename=%s\n' "$filename" >> "$GITHUB_OUTPUT"
 
       - name: Smoke test metadata-bearing artifact
         env:
           DUMB_DIAGRAMS_ARTIFACT: ${{ steps.artifact.outputs.path }}
-        run: pnpm smoke:package && pnpm check:assets
+        run: pnpm smoke:package
+
+      - name: Upload verified release artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.release-version.outputs.artifact_name }}
+          path: |
+            .artifacts/packages/${{ steps.artifact.outputs.filename }}
+            .artifacts/packages/${{ steps.artifact.outputs.filename }}.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+  publish:
+    if: github.actor == 'AlexJohnSadowski' && github.triggering_actor == 'AlexJohnSadowski' && (github.event_name == 'push' || startsWith(inputs.ref, 'v'))
+    needs: prepare
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: npm-production
+      cancel-in-progress: false
+    environment:
+      name: npm-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the exact prepared commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.release_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify release tag is unchanged
+        env:
+          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+          EXPECTED_RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
+        run: |
+          head_sha="$(git rev-parse HEAD)"
+          tag_sha="$(git rev-parse "refs/tags/${RELEASE_REF}^{commit}")"
+          if [ "$head_sha" != "$EXPECTED_RELEASE_SHA" ] || [ "$tag_sha" != "$EXPECTED_RELEASE_SHA" ]; then
+            echo "Release tag changed after preparation; expected $EXPECTED_RELEASE_SHA, found HEAD=$head_sha tag=$tag_sha" >&2
+            exit 1
+          fi
+          version="$(node --input-type=module -e 'import { readFileSync } from "node:fs"; console.log(JSON.parse(readFileSync("packages/cli/package.json", "utf8")).version)')"
+          if [ "$version" != "$RELEASE_VERSION" ]; then
+            echo "Prepared version $RELEASE_VERSION does not match checked-out CLI version $version" >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+
+      - name: Download verified release artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.prepare.outputs.artifact_name }}
+          path: .artifacts/packages
+
+      - name: Verify artifact checksum and package identity
+        id: artifact
+        env:
+          ARTIFACT_FILENAME: ${{ needs.prepare.outputs.artifact_filename }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
+        run: |
+          artifact="$GITHUB_WORKSPACE/.artifacts/packages/$ARTIFACT_FILENAME"
+          test -f "$artifact" || {
+            echo "Downloaded release artifact is missing: $artifact" >&2
+            exit 2
+          }
+          (
+            cd "$(dirname "$artifact")"
+            sha256sum --check "$ARTIFACT_FILENAME.sha256"
+          )
+          ARTIFACT="$artifact" node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+
+          const manifest = JSON.parse(
+            execFileSync("tar", ["-xOzf", process.env.ARTIFACT, "package/package.json"], { encoding: "utf8" }),
+          );
+          if (manifest.name !== "create-dumb-diagrams" || manifest.version !== process.env.RELEASE_VERSION) {
+            throw new Error(
+              `Downloaded package identity mismatch: ${manifest.name}@${manifest.version}; ` +
+                `expected create-dumb-diagrams@${process.env.RELEASE_VERSION}`,
+            );
+          }
+          console.log(`Verified ${manifest.name}@${manifest.version} from the prepared tarball`);
+          NODE
+          printf 'path=%s\n' "$artifact" >> "$GITHUB_OUTPUT"
 
       # npm trusted publishing supplies short-lived OIDC credentials and
       # automatically records provenance; no npm token is stored in Actions.
@@ -126,6 +274,6 @@ jobs:
         env:
           ARTIFACT: ${{ steps.artifact.outputs.path }}
           PACKAGE_NAME: create-dumb-diagrams
-          RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
         timeout-minutes: 17
         run: node scripts/verify-npm-release.mjs

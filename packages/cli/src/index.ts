@@ -42,6 +42,7 @@ import { renderInitTemplate, type InitTemplateError } from "./init-templates.js"
 import { resolveInitOptions, type ResolvedInitOptions } from "./init-options.js";
 import { launchBrowser } from "./platform-launch.js";
 import { startStudioServer } from "./studio-server.js";
+import { findNewerCliVersion } from "./update-notice.js";
 import { readCliVersion } from "./version.js";
 
 const VERSION = readCliVersion();
@@ -991,12 +992,44 @@ function waitForShutdown(server: { close(callback?: (error?: Error) => void): vo
 
 const entrypoint = process.argv[1] ? realpathSync(process.argv[1]) : "";
 if (entrypoint === realpathSync(fileURLToPath(import.meta.url))) {
-  runCli(process.argv.slice(2))
-    .then((code) => {
+  const args = process.argv.slice(2);
+  runCli(args)
+    .then(async (code) => {
+      if (shouldCheckForUpdates(args, code)) {
+        try {
+          await printUpdateNotice();
+        } catch {
+          // The optional update notice must never change the command result.
+        }
+      }
       if (code) process.exitCode = code;
     })
     .catch((error: unknown) => {
       console.error(ui.error(error instanceof Error ? error.message : String(error)));
       process.exitCode = 1;
     });
+}
+
+function shouldCheckForUpdates(args: string[], exitCode: number): boolean {
+  if (exitCode !== 0 || !process.stdout.isTTY || process.env.CI || process.env.NO_UPDATE_NOTIFIER) return false;
+
+  const [command, ...commandArgs] = args;
+  if (commandArgs.includes("--version")) return false;
+
+  const helpShown =
+    command === undefined ||
+    command === "help" ||
+    command === "--help" ||
+    command === "-h" ||
+    commandArgs.includes("--help");
+  return helpShown || command === "init";
+}
+
+async function printUpdateNotice(): Promise<void> {
+  const latestVersion = await findNewerCliVersion(VERSION);
+  if (!latestVersion) return;
+
+  console.log("");
+  console.log(ui.warning(`A newer version is available: v${latestVersion} (you have v${VERSION})`));
+  console.log(`  When convenient, update with ${ui.command("npm install -g create-dumb-diagrams@latest")}`);
 }
