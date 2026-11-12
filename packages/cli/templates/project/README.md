@@ -9,7 +9,7 @@ Edit `preferences.json` to set the style every diagram in this project follows:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `numberedSteps` | `true` | Number the main flow arrows with step badges (1, 2, 3, ...). |
+| `numberedSteps` | `true` | Number main flow arrows with native `step N` badges; keep edge labels descriptive and unnumbered. |
 | `edgeLabels` | `true` | Give every arrow a short label. |
 | `resourceLabels` | `true` | Show names under icons. Set `false` to draw icons only. |
 

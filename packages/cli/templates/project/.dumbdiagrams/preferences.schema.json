@@ -11,7 +11,7 @@
     "numberedSteps": {
       "type": "boolean",
       "default": true,
-      "description": "Number the main flow arrows with step badges (1, 2, 3, ...)."
+      "description": "Number main flow arrows with native step badges. Put the sequence in the edge's step N field and keep label text descriptive, without a leading number."
     },
     "edgeLabels": {
       "type": "boolean",

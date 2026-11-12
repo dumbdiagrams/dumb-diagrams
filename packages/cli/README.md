@@ -29,6 +29,11 @@ stay as they are. With a blank name, or without a
 terminal, it uses a timestamped folder. `dgm` is a shorthand for
 `dumbdiagrams`.
 
+For numbered steps, put the sequence in each edge's native `step N` field and
+keep its label descriptive only: `label "Store input drawing" step 1`, not
+`label "1. Store input drawing"`. Validation reports labels with an obvious
+leading step prefix, including when numbered steps are disabled.
+
 Successful `init` and help commands end with the installed CLI version. In an
 interactive terminal, the footer also confirms when you are on npm's latest
 release or suggests an optional update command when a newer version is available.

@@ -15,8 +15,11 @@
 - Use stable, descriptive IDs for resources and boundaries, and give every
   edge an `id`. Preserve explicit labels and counts.
 - The format has no comments. Put notes in an `annotation` or the brief.
-- Express the primary flow with directed edges. Use concise edge labels and
-  `step` numbers as the project-root `preferences.json` directs. Use dashed edges for peer or
+- Express the primary flow with directed edges. Use concise, descriptive-only
+  edge labels and put each sequence number in the edge's `step N` field, as
+  the project-root `preferences.json` directs. Do not prefix labels with their
+  step number: `label "Store input drawing" step 1` is correct;
+  `label "1. Store input drawing"` is not. Use dashed edges for peer or
   supporting relationships. Add `from`/`to` face hints only when the intended
   attachment is unambiguous and automatic routing needs help.
 - Default every new diagram to horizontal left-to-right layout (`flow lr`);
@@ -64,7 +67,7 @@ view <id> { place <id> { ... }  route <edge-id> { ... }  annotation <id> { ... }
 | `diagram` | `grammar` `aws`/`azure`/`gcp`/`cloud-agnostic`; `flow` `lr`/`tb`; `title`; `hide-resource-labels` (icons only, per `resourceLabels`) |
 | `boundary` | `step`; `label-position` `top-left`/`top-right`; `hide-icon`; `style` `solid`/`dashed`; `color`; `fill` `subtle`/`none` |
 | `resource` | `service`; `label-position` `top`/`bottom`; `role` `primary`/`secondary`/`border`; `icon` |
-| `edge` | `id`; `label`; `step`; `style` `solid`/`dashed`; `kind` `flow`/`bidirectional`/`peer`/`fail`; `color`; `from`/`to` `n`/`s`/`e`/`w`, optionally `offset` 0-1 |
+| `edge` | `id`; `label` (description only); `step` (native numbered badge); `style` `solid`/`dashed`; `kind` `flow`/`bidirectional`/`peer`/`fail`; `color`; `from`/`to` `n`/`s`/`e`/`w`, optionally `offset` 0-1 |
 | `annotation` | `anchor`; `style` `text`/`paper`/`code`/`callout`/`checklist`; `font` `sans`/`serif`/`mono`; `size` 10 to 48; `align` `left`/`center`/`right` |
 | `asset` (inside `assets`) | `svg`; `w`; `h` |
 | `place` | `x`, `y`, `w`, `h`; `pin`; `manual`; `locked`; `visible` `true`/`false`; `z` |

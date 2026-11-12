@@ -102,14 +102,20 @@ meaning.
 ## Edges
 
 ```text
-api -> handler { id invoke label "process" step 2 from e to w }
+api -> handler { id invoke label "Store input drawing" step 2 from e to w }
 ```
+
+With `numberedSteps: true`, the native `step N` field creates the badge and
+the label contains only its description. For example,
+`label "Store input drawing" step 1` is correct; `label "1. Store input drawing"`
+is not a step badge. Validation reports an obvious leading sequence prefix in
+an edge label.
 
 | Option | Values |
 | --- | --- |
 | `id` | Stable edge ID. Saved routes refer to it, so always set one. |
-| `label` | A quoted string |
-| `step` | A number in the main flow |
+| `label` | A quoted, descriptive-only string; do not prefix it with the step number |
+| `step` | A number in the main flow, rendered as the native numbered badge |
 | `style` | `solid`, `dashed` |
 | `kind` | `flow`, `bidirectional`, `peer`, `fail` |
 | `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `coral`, `red`, `green` |
