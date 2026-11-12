@@ -157,8 +157,12 @@ test("undo restores a canvas edit after repairing invalid source", async ({ page
   await page.mouse.down();
   await page.mouse.move(apiCenter.x + 96, apiCenter.y + 48);
   await page.mouse.up();
+  // A production worker publishes the dropped geometry asynchronously.
+  await expect.poll(async () => {
+    const bounds = await entityBox(page, "resource", "apiA");
+    return Math.abs(bounds.x - apiBefore.x);
+  }).toBeGreaterThan(20);
   const apiMoved = await entityBox(page, "resource", "apiA");
-  expect(Math.abs(apiMoved.x - apiBefore.x)).toBeGreaterThan(20);
 
   const original = readFileSync(ASYNC_DOCS, "utf8");
   const repaired = original.replace("diagram async-docs", "diagram repaired-source");
