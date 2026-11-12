@@ -34,4 +34,14 @@ Select a boundary, resource, or connector to edit it on the right: line and fill
 
 In browsers with the File System Access API, **Save** writes back to the opened file and **Save As** picks a new one. Before writing, Studio checks whether another editor changed or deleted the file and asks you to reload or overwrite. Other browsers download the updated `.dgm` instead, without that check. Saved source is canonical, so diffs stay small.
 
+**File → Auto-save**, immediately below **Save**, is checked by default. Valid changes to a linked file save after a short pause, including canvas changes, source edits, Undo, and Redo. Each external file update accepted by Studio becomes one undoable change in the current session, so Undo can restore the previous diagram and autosave it back to the `.dgm`. Turn Auto-save off to save manually; the preference stays in this browser.
+
+Allow write access when the browser asks after opening a file. If you decline or the browser later revokes access, Studio keeps your edits and shows the failed save. Use **Save** to grant access and retry; background saving never repeatedly opens permission prompts.
+
+The file indicator distinguishes **Live** (up to date), **Saving…**, **Unsaved**, **File changed**, and **Save failed**. Studio preserves both versions when an external edit conflicts with unsaved Studio work; it does not silently overwrite the file. Read or write failures keep your Studio edits and remain visible until resolved. Closing while linked changes are still pending triggers the browser's exit warning. Waiting for **Live** confirms the file write has finished; saving during browser shutdown is only best effort.
+
+**Browser only** means the tab is a browser snapshot rather than a linked file. Use **Save As** to choose a writable file and enable file autosave. Recovered tabs retain their browser copy but need to be linked again after a browser restart. Undo history is kept for the current session.
+
+When you open a file through **File → Open** in Chrome or Edge, a **Live** indicator confirms that Studio is linked to the file. Edits from your coding agent or another editor refresh automatically after about 1.5 seconds without another observed write. Studio keeps the last valid diagram visible during partial or invalid writes. If you have unsaved Studio edits, **File changed** lets you review before replacing them. Click the indicator or choose **File → Reload from disk** to check immediately. Automatic refresh works the same in hosted and local Studio; files imported through a fallback upload picker remain snapshots.
+
 Workspace recovery is stored in browser storage. Clearing site data can remove browser-saved work, so save important `.dgm` files. Saving and exporting create files on your device. The host receives only the ordinary requests needed to deliver the application and bundled icons, including normal request metadata and requested icon paths.
