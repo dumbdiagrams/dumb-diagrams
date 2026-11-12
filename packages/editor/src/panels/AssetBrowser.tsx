@@ -75,18 +75,29 @@ function AssetGrid({
   onToggleFavorite: (type: string) => void;
   onNearEnd: () => void;
 }) {
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const end = endRef.current;
+    if (!end) return;
+    // Observe the end of the grid so pagination works whether the grid itself
+    // scrolls or a short-window drawer scrolls the controls and results together.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) onNearEnd();
+      },
+      { rootMargin: "280px" },
+    );
+    observer.observe(end);
+    return () => observer.disconnect();
+  }, [entries.length, onNearEnd]);
+
   if (!entries.length) {
     return <div className="palette-empty">No matching assets for this view.</div>;
   }
 
   return (
-    <div
-      className={`palette-grid asset-grid${variant === "group" ? " is-group-grid" : ""}`}
-      onScroll={(event) => {
-        const scroller = event.currentTarget;
-        if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <= 280) onNearEnd();
-      }}
-    >
+    <div className={`palette-grid asset-grid${variant === "group" ? " is-group-grid" : ""}`}>
       {entries.map((entry) => (
         <CatalogAssetCard
           key={entry.type}
@@ -98,6 +109,7 @@ function AssetGrid({
           onToggleFavorite={() => onToggleFavorite(entry.type)}
         />
       ))}
+      <div ref={endRef} className="asset-grid-end" aria-hidden="true" />
     </div>
   );
 }

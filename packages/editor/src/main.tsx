@@ -317,6 +317,26 @@ function App() {
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const toolbarRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current;
+    const app = toolbar?.closest<HTMLElement>(".app");
+    if (!toolbar || !app) return;
+    const measure = () => {
+      const bottom = Math.ceil(
+        toolbar.getBoundingClientRect().bottom - app.getBoundingClientRect().top + app.scrollTop,
+      );
+      app.style.setProperty("--studio-chrome-height", `${bottom}px`);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, []);
   const activeTabRef = useRef(activeTabId);
   activeTabRef.current = activeTabId;
   const fitRef = useRef<(() => void) | null>(null);
@@ -1928,7 +1948,7 @@ function App() {
             <span>{issues[0]?.message}</span>
           </div>
         )}
-        <header className="floating-topbar">
+        <header ref={toolbarRef} className="floating-topbar">
           <div className="topbar-left">
             <div className="document-name-field">
               <input

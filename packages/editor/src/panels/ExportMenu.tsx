@@ -28,7 +28,13 @@ export function ExportMenu({
 
   return (
     <div className="export-menu" ref={ref}>
-      <button type="button" className="primary-button export-primary" onClick={() => choose("svg")}>
+      <button
+        type="button"
+        className="primary-button export-primary"
+        aria-label={selectionCount > 0 ? "Export selection" : "Export"}
+        title={selectionCount > 0 ? "Export selection" : "Export"}
+        onClick={() => choose("svg")}
+      >
         <IconExport />
         <span>{selectionCount > 0 ? "Export selection" : "Export"}</span>
       </button>
