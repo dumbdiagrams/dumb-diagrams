@@ -5,6 +5,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -30,7 +31,7 @@ import {
 } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { renderPortableSvg } from "@dumb-diagrams/runtime/render";
+import { getAnnotationBounds, renderPortableSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import { serializeClipboardResult, duplicateSelectionResult } from "./model/clipboard";
@@ -43,6 +44,7 @@ import { useEditorSelection } from "./state/use-editor-selection";
 import { groupSelection, canGroupSelection, ungroup } from "./model/grouping";
 import { useFileActions, type FilePickerWindow } from "./state/use-file-actions";
 import { useStudioShortcuts } from "./interactions/use-studio-shortcuts";
+import { AnnotationInlineEditor } from "./canvas/AnnotationInlineEditor";
 import { Inspector } from "./panels/Inspector";
 import { NoteComposer, TextComposer } from "./panels/AnnotationControls";
 import { buildContextMenuItems } from "./panels/canvas-context-menu";
@@ -74,6 +76,7 @@ import {
   setSize,
   setTitle,
   setLocked,
+  setAnnotationPlace,
   setVisible,
   sendToFront,
   sendToBack,
@@ -178,8 +181,26 @@ function providersOnCanvas(doc: DiagramDocument): Array<keyof typeof PROVIDER_LA
   return (["aws", "azure", "gcp"] as const).filter((provider) => providers.has(provider));
 }
 
-const RenderedDiagram = memo(function RenderedDiagram({ svg }: { svg: string }) {
-  return <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
+const RenderedDiagram = memo(function RenderedDiagram({
+  svg,
+  editingAnnotationId,
+}: {
+  svg: string;
+  editingAnnotationId?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!editingAnnotationId) return;
+    const annotation = Array.from(ref.current?.querySelectorAll<SVGGElement>("g.annotation") ?? []).find(
+      (group) => group.id === `annotation-${editingAnnotationId}`,
+    );
+    const content = Array.from(annotation?.querySelectorAll<SVGTextElement>("[data-annotation-content]") ?? []);
+    for (const text of content) text.style.visibility = "hidden";
+    return () => {
+      for (const text of content) text.style.removeProperty("visibility");
+    };
+  }, [svg, editingAnnotationId]);
+  return <div ref={ref} className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
 });
 
 const SourceDrawer = lazy(() =>
@@ -283,6 +304,15 @@ function App() {
   const { selection, setSelection } = editorSelection;
   const [stageMarquee, setStageMarquee] = useState<CanvasMarqueeGesture | null>(null);
   const [textEditRequest, setTextEditRequest] = useState<SelectionItem | null>(null);
+  const [editingAnnotation, setEditingAnnotation] = useState<{
+    id: string;
+    initialText: string;
+    draft: string;
+    mode: "inline" | "sidebar";
+    tabId: string;
+  } | null>(null);
+  const editingAnnotationIdRef = useRef<string | null>(null);
+  const inlineAnnotationRef = useRef<HTMLTextAreaElement>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
@@ -924,17 +954,25 @@ function App() {
 
   const requestTextEdit = (item: SelectionItem) => {
     setSelection([item]);
-    setTextEditRequest(item);
+    if (item.kind === "annotation") {
+      const annotation = compiled.ok ? compiled.doc.annotations.find((candidate) => candidate.id === item.id) : null;
+      if (compiled.ok && annotation && !compiled.doc.views[0]?.annotations?.[item.id]?.locked) {
+        beginTransaction(activeTabId);
+        editingAnnotationIdRef.current = item.id;
+        setEditingAnnotation({
+          id: item.id,
+          initialText: annotation.text,
+          draft: annotation.text,
+          mode: "inline",
+          tabId: activeTabId,
+        });
+      }
+    } else setTextEditRequest(item);
   };
 
   useEffect(() => {
     if (!textEditRequest) return;
-    const fieldId =
-      textEditRequest.kind === "edge"
-        ? "edge-panel-label"
-        : textEditRequest.kind === "annotation"
-          ? "inspector-label"
-          : null;
+    const fieldId = textEditRequest.kind === "edge" ? "edge-panel-label" : null;
     if (!fieldId) return;
 
     const frame = window.requestAnimationFrame(() => {
@@ -947,6 +985,64 @@ function App() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [textEditRequest]);
+
+  useEffect(() => {
+    if (!editingAnnotation || editingAnnotation.mode !== "inline") return;
+    const frame = window.requestAnimationFrame(() => {
+      inlineAnnotationRef.current?.focus();
+      inlineAnnotationRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [editingAnnotation?.id, editingAnnotation?.mode]);
+
+  useEffect(() => {
+    if (!editingAnnotation || editingAnnotation.tabId === activeTabId) return;
+    endTransaction(editingAnnotation.tabId);
+    editingAnnotationIdRef.current = null;
+    setEditingAnnotation(null);
+  }, [activeTabId, editingAnnotation?.tabId, endTransaction]);
+
+  const finishAnnotationEdit = (text?: string) => {
+    if (!editingAnnotation || editingAnnotationIdRef.current !== editingAnnotation.id) return;
+    if (editingAnnotation.tabId !== activeTabId) {
+      endTransaction(editingAnnotation.tabId);
+      editingAnnotationIdRef.current = null;
+      setEditingAnnotation(null);
+      return;
+    }
+    const current =
+      text ??
+      (compiled.ok
+        ? (compiled.doc.annotations.find((candidate) => candidate.id === editingAnnotation.id)?.text ?? "")
+        : "");
+    const normalized = normalizeMultilineText(current);
+    if (normalized !== current) previewMutate((doc) => updateAnnotationText(doc, editingAnnotation.id, normalized));
+    endTransaction(editingAnnotation.tabId);
+    editingAnnotationIdRef.current = null;
+    setEditingAnnotation(null);
+  };
+
+  const cancelAnnotationEdit = (initialText = editingAnnotation?.initialText ?? "") => {
+    if (!editingAnnotation) return;
+    if (editingAnnotation.tabId === activeTabId) {
+      previewMutate((doc) => updateAnnotationText(doc, editingAnnotation.id, initialText));
+      cancelTransaction(editingAnnotation.tabId);
+    } else endTransaction(editingAnnotation.tabId);
+    editingAnnotationIdRef.current = null;
+    setEditingAnnotation(null);
+  };
+
+  const changeAnnotationText = (id: string, value: string) => {
+    if (
+      !compiled.ok ||
+      (editingAnnotation && editingAnnotation.tabId !== activeTabId) ||
+      compiled.doc.views[0]?.annotations?.[id]?.locked
+    )
+      return;
+    const text = value.slice(0, DIAGRAM_LIMITS.annotationCharacters);
+    setEditingAnnotation((current) => (current?.id === id ? { ...current, draft: text } : current));
+    previewMutate((doc) => updateAnnotationText(doc, id, text));
+  };
 
   const journalIssues = useMemo<StudioIssue[]>(() => {
     const persistenceIssues: StudioIssue[] = persistenceWarning
@@ -1722,7 +1818,10 @@ function App() {
                 height: displayCanvas?.h ?? displayCompiled.layout.height,
               }}
             >
-              <RenderedDiagram svg={displayCompiled.svg} />
+              <RenderedDiagram
+                svg={displayCompiled.svg}
+                editingAnnotationId={editingAnnotation?.mode === "inline" ? editingAnnotation.id : undefined}
+              />
               {compiled.ok && (
                 <InteractionOverlay
                   key={activeTabId}
@@ -1766,7 +1865,14 @@ function App() {
                     return previewMutate((doc) =>
                       kind === "group"
                         ? setGroupBounds(doc, id, bounds)
-                        : setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
+                        : kind === "annotation"
+                          ? setAnnotationPlace(
+                              setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
+                              id,
+                              bounds.x,
+                              bounds.y,
+                            )
+                          : setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
                     );
                   }}
                   onRoute={(edgeId, points) => previewMutate((doc) => setRoute(doc, edgeId, points))}
@@ -1786,6 +1892,27 @@ function App() {
                   }}
                 />
               )}
+              {compiled.ok &&
+                editingAnnotation?.mode === "inline" &&
+                (() => {
+                  const annotation = compiled.doc.annotations.find(
+                    (candidate) => candidate.id === editingAnnotation.id,
+                  );
+                  const bounds = getAnnotationBounds(compiled.doc, compiled.layout, editingAnnotation.id);
+                  if (!annotation || !bounds) return null;
+                  return (
+                    <AnnotationInlineEditor
+                      annotation={annotation}
+                      bounds={bounds}
+                      canvasOrigin={{ x: displayCanvas?.x ?? 0, y: displayCanvas?.y ?? 0 }}
+                      value={editingAnnotation.draft}
+                      inputRef={inlineAnnotationRef}
+                      onChange={(value) => changeAnnotationText(editingAnnotation.id, value)}
+                      onFinish={finishAnnotationEdit}
+                      onCancel={() => cancelAnnotationEdit()}
+                    />
+                  );
+                })()}
             </div>
           ) : (
             <div className="empty-canvas">No valid diagram to preview yet.</div>
@@ -2262,6 +2389,24 @@ function App() {
                 return doc;
               });
             }}
+            onTextChange={(label) => {
+              const annotation = selection.find((item) => item.kind === "annotation");
+              if (annotation) changeAnnotationText(annotation.id, label);
+            }}
+            onTextEditStart={(item, originalText) => {
+              if (item.kind !== "annotation" || editingAnnotationIdRef.current === item.id) return;
+              editingAnnotationIdRef.current = item.id;
+              beginTransaction(activeTabId);
+              setEditingAnnotation({
+                id: item.id,
+                initialText: originalText,
+                draft: originalText,
+                mode: "sidebar",
+                tabId: activeTabId,
+              });
+            }}
+            onTextEditFinish={(text) => finishAnnotationEdit(text)}
+            onTextEditCancel={(originalText) => cancelAnnotationEdit(originalText)}
             onLimitError={setToast}
             onAlign={(axis) => mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, axis))}
             onDistribute={(axis) => mutateCurrent((doc) => distributeSelection(doc, selection, compiled.layout!, axis))}
@@ -2292,12 +2437,12 @@ function App() {
             }}
             onSetAnnotationStyle={(style) => {
               const annotation = selection.find((item) => item.kind === "annotation");
-              if (!annotation) return;
+              if (!annotation || compiled.doc.views[0]?.annotations?.[annotation.id]?.locked) return;
               mutateCurrent((doc) => setAnnotationStyle(doc, annotation.id, style));
             }}
             onSetTextFormat={(format) => {
               const annotation = selection.find((item) => item.kind === "annotation");
-              if (!annotation) return;
+              if (!annotation || compiled.doc.views[0]?.annotations?.[annotation.id]?.locked) return;
               mutateCurrent((doc) => updateTextFormat(doc, annotation.id, format));
             }}
             onUpdateGroupStep={(step) => {

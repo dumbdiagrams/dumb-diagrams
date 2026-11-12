@@ -1,6 +1,31 @@
 import type { AnnotationStyle, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
+import type { CSSProperties } from "react";
 import { DIAGRAM_LIMITS, normalizeMultilineText } from "@dumb-diagrams/runtime/core";
 import { ANNOTATION_STYLES } from "../editor-model";
+import "../styles/annotation-controls.css";
+
+const TEXT_BACKGROUND_OPTIONS = [
+  { color: "#fff7d6", label: "Warm paper" },
+  { color: "#ffffff", label: "White" },
+  { color: "#e8f3ff", label: "Pale blue" },
+  { color: "#e8f7ed", label: "Pale green" },
+  { color: "#f2eaff", label: "Pale purple" },
+  { color: "#112d51", label: "Code navy" },
+  { color: "#fde3db", label: "Callout peach" },
+  { color: "#eff9f2", label: "Checklist green" },
+  { color: "#feefdd", label: "Note orange" },
+  { color: "#1f2937", label: "Dark" },
+] as const;
+
+const TEXT_COLOR_OPTIONS = [
+  { color: "#163964", label: "Navy" },
+  { color: "#1f2937", label: "Charcoal" },
+  { color: "#d1fae5", label: "Mint" },
+  { color: "#ffffff", label: "White" },
+  { color: "#8b2e2e", label: "Brick red" },
+  { color: "#237a57", label: "Forest green" },
+  { color: "#5b3b91", label: "Purple" },
+] as const;
 
 export function NoteComposer({
   style,
@@ -104,19 +129,25 @@ export function TextComposer({
   );
 }
 
-export function TextFormattingControls({
-  idPrefix,
-  font,
-  fontSize,
-  align,
-  onChange,
-}: {
+export function TextFormattingControls(props: {
   idPrefix: string;
   font: TextFontFamily;
   fontSize: number;
   align: TextAlign;
-  onChange: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
+  background?: string;
+  color?: string;
+  onChange: (format: {
+    font?: TextFontFamily;
+    fontSize?: number;
+    align?: TextAlign;
+    background?: string;
+    color?: string;
+  }) => void;
 }) {
+  const { idPrefix, font, fontSize, align, background, color, onChange } = props;
+  const showBackground = Object.prototype.hasOwnProperty.call(props, "background");
+  const showColor = Object.prototype.hasOwnProperty.call(props, "color");
+  const fontSizes = [...new Set([12, 14, 16, 20, 24, 32, fontSize])].sort((a, b) => a - b);
   return (
     <div className="property-section text-formatting">
       <div className="property-control-row">
@@ -138,7 +169,7 @@ export function TextFormattingControls({
           value={fontSize}
           onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
         >
-          {[12, 14, 16, 20, 24, 32].map((size) => (
+          {fontSizes.map((size) => (
             <option key={size} value={size}>
               {size}px
             </option>
@@ -160,6 +191,90 @@ export function TextFormattingControls({
             </button>
           ))}
         </div>
+      </div>
+      {showBackground && (
+        <TextColorSwatches
+          id={`${idPrefix}-text-background`}
+          label="Background"
+          value={background ?? ""}
+          options={TEXT_BACKGROUND_OPTIONS}
+          onChange={(next) => onChange({ background: next })}
+        />
+      )}
+      {showColor && (
+        <TextColorSwatches
+          id={`${idPrefix}-text-color`}
+          label="Text color"
+          value={color ?? ""}
+          options={TEXT_COLOR_OPTIONS}
+          onChange={(next) => onChange({ color: next })}
+        />
+      )}
+    </div>
+  );
+}
+
+function TextColorSwatches({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: readonly { color: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const hasPreset = options.some((option) => option.color.toLowerCase() === value.toLowerCase());
+
+  return (
+    <div className="annotation-color-control">
+      <span className="property-control-label" id={`${id}-label`}>
+        {label}
+      </span>
+      <div className="annotation-color-swatches" role="group" aria-labelledby={`${id}-label`}>
+        <button
+          type="button"
+          className={`annotation-color-swatch is-default${value === "" ? " is-active" : ""}`}
+          aria-label={`${label}: Style default`}
+          aria-pressed={value === ""}
+          title="Style default"
+          onClick={() => onChange("")}
+        >
+          <span aria-hidden="true" />
+        </button>
+        {value !== "" && !hasPreset && (
+          <button
+            type="button"
+            className="annotation-color-swatch is-active is-custom"
+            style={{ "--swatch-color": value } as CSSProperties}
+            aria-label={`${label}: Custom color ${value}`}
+            aria-pressed="true"
+            title={`Custom color ${value}`}
+            onClick={() => onChange(value)}
+          >
+            <span aria-hidden="true" />
+          </button>
+        )}
+        {options.map((option) => {
+          const selected = value.toLowerCase() === option.color.toLowerCase();
+          return (
+            <button
+              key={option.color}
+              type="button"
+              className={`annotation-color-swatch${selected ? " is-active" : ""}`}
+              style={{ "--swatch-color": option.color } as CSSProperties}
+              aria-label={`${label}: ${option.label}`}
+              aria-pressed={selected}
+              title={option.label}
+              onClick={() => onChange(option.color)}
+            >
+              <span aria-hidden="true" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

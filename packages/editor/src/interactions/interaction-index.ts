@@ -1,3 +1,4 @@
+import { resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import type { DiagramDocument, LayoutResult, Point } from "@dumb-diagrams/runtime/core";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
 
@@ -95,19 +96,10 @@ export function createInteractionIndex(
     }
     if (edge.labelRect) addRect("edges", edge, edge.labelRect, 0);
   }
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
   for (const annotation of doc.annotations) {
-    const place = view.annotations?.[annotation.id];
-    addRect(
-      "annotations",
-      annotation,
-      {
-        x: place?.x ?? 48,
-        y: place?.y ?? 48,
-        w: place?.w ?? 160,
-        h: place?.h ?? 48,
-      },
-      16,
-    );
+    if (view.annotations?.[annotation.id]?.visible === false) continue;
+    addRect("annotations", annotation, annotationBounds[annotation.id]!, 16);
   }
 
   return {

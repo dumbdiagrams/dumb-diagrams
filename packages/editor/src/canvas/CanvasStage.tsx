@@ -200,6 +200,7 @@ export function CanvasStage({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as Element)?.closest("input, textarea, select, [contenteditable=true]")) return;
       if (event.code === "Space" && !event.repeat) spaceRef.current = true;
     };
     const onKeyUp = (event: KeyboardEvent) => {
@@ -384,7 +385,11 @@ export function CanvasStage({
         // Keep this through the corresponding click. Some engines dispatch
         // click after zero-delay timers, and selection can replace its target.
         interactivePointerRef.current = Boolean((event.target as Element).closest("[data-interactive]"));
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        if (
+          !(event.target as Element).closest("input, textarea, select, [contenteditable=true]") &&
+          document.activeElement instanceof HTMLElement
+        )
+          document.activeElement.blur();
       }}
       onPointerDown={(e) => {
         const shouldPan = e.button === 1 || (e.button === 0 && spaceRef.current);

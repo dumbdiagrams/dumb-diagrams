@@ -414,7 +414,10 @@ function validAnnotation(value: unknown): boolean {
     (value.font === undefined || value.font === "sans" || value.font === "serif" || value.font === "mono") &&
     (value.fontSize === undefined ||
       (typeof value.fontSize === "number" && value.fontSize >= 10 && value.fontSize <= 48)) &&
-    (value.align === undefined || value.align === "left" || value.align === "center" || value.align === "right")
+    (value.align === undefined || value.align === "left" || value.align === "center" || value.align === "right") &&
+    [value.background, value.color].every(
+      (color) => color === undefined || (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color)),
+    )
   );
 }
 

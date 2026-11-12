@@ -443,7 +443,7 @@
   display: block;
 }
 
-:root[data-theme="dark"] .diagram-svg svg text:not(.edge-badge-text):not(.group-badge-text) {
+:root[data-theme="dark"] .diagram-svg svg text:not(.edge-badge-text):not(.group-badge-text):not(.annotation text) {
   fill: var(--diagram-ink);
 }
 
@@ -475,12 +475,8 @@
   fill: var(--diagram-fallback);
 }
 
-:root[data-theme="dark"] .diagram-svg svg g[id^="annotation-"] text {
+:root[data-theme="dark"] .diagram-svg svg g[data-annotation-style="text"]:not([data-custom-color]) text {
   fill: var(--annotation-ink);
-}
-
-:root[data-theme="dark"] .diagram-svg svg g[data-annotation-style="callout"] text {
-  fill: var(--brand-navy);
 }
 
 :root[data-theme="dark"] .diagram-svg {
@@ -1117,4 +1113,24 @@
   stroke: var(--highlight);
   stroke-width: 2.5;
   stroke-dasharray: 6 4;
+}
+
+
+.annotation-inline-editor,
+.annotation-inline-editor:focus-visible {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  resize: none;
+  overflow: auto;
+  cursor: text;
+  user-select: text;
+  touch-action: auto;
 }

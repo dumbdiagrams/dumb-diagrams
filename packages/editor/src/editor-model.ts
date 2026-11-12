@@ -19,6 +19,7 @@ import type {
   TextFontFamily,
 } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/runtime/core";
+import { resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
 import { isEmptyRootBoundary } from "@dumb-diagrams/runtime/layout";
@@ -40,7 +41,7 @@ export const ANNOTATION_STYLES: Array<{
 }> = [
   { id: "paper", label: "Paper", description: "Warm pinned note", w: 220, h: 96 },
   { id: "text", label: "Text", description: "Plain editable text", w: 240, h: 48 },
-  { id: "code", label: "Code snippet", description: "Monospace dark card", w: 300, h: 160 },
+  { id: "code", label: "Code snippet", description: "Monospace dark card", w: 420, h: 160 },
   { id: "callout", label: "Callout", description: "Focused explanation", w: 280, h: 104 },
   { id: "checklist", label: "Checklist", description: "Actionable items", w: 260, h: 152 },
 ];
@@ -176,7 +177,9 @@ export function setSize(
     return doc;
   }
   const view = getDefaultView(next);
-  const place = view.places[id] ?? {};
+  const isAnnotation = next.annotations.some((annotation) => annotation.id === id);
+  const places = isAnnotation ? (view.annotations ??= {}) : view.places;
+  const place = places[id] ?? {};
   if (place.locked) return doc;
 
   let nextW = Math.max(32, Math.round(w));
@@ -199,7 +202,7 @@ export function setSize(
     }
   }
 
-  view.places[id] = {
+  places[id] = {
     ...place,
     w: nextW,
     h: nextH,
@@ -295,6 +298,7 @@ export function moveSelection(
 ): DiagramDocument {
   const next = cloneDocument(doc);
   const view = getDefaultView(next);
+  const annotationBounds = layout ? resolveAnnotationBounds(doc, layout) : {};
   const selectedGroups = new Set(selection.filter((item) => item.kind === "group").map((item) => item.id));
   const moving = new Set<string>();
 
@@ -356,11 +360,13 @@ export function moveSelection(
       const place = view.annotations?.[id] ?? {};
       if (place.locked) continue;
       if (!view.annotations) view.annotations = {};
+      const bounds = annotationBounds[id];
       view.annotations[id] = {
         ...place,
-        x: Math.round((place.x ?? 0) + dx),
-        y: Math.round((place.y ?? 0) + dy),
+        x: Math.round((bounds?.x ?? place.x ?? 0) + dx),
+        y: Math.round((bounds?.y ?? place.y ?? 0) + dy),
         pin: true,
+        manual: true,
       };
     }
   }
@@ -804,6 +810,7 @@ export function setAnnotationPlace(doc: DiagramDocument, id: string, x: number, 
     x: Math.round(x),
     y: Math.round(y),
     pin: true,
+    manual: true,
   };
   return next;
 }
@@ -811,7 +818,7 @@ export function setAnnotationPlace(doc: DiagramDocument, id: string, x: number, 
 export function updateAnnotationText(doc: DiagramDocument, id: string, text: string): DiagramDocument {
   const next = cloneDocument(doc);
   const annotation = next.annotations.find((candidate) => candidate.id === id);
-  if (!annotation) return doc;
+  if (!annotation || getDefaultView(doc).annotations?.[id]?.locked || annotation.text === text) return doc;
   annotation.text = text;
   return next;
 }
@@ -819,17 +826,24 @@ export function updateAnnotationText(doc: DiagramDocument, id: string, text: str
 export function updateTextFormat(
   doc: DiagramDocument,
   id: string,
-  format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign },
+  format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign; background?: string; color?: string },
 ): DiagramDocument {
   const next = cloneDocument(doc);
   const annotation = next.annotations.find((candidate) => candidate.id === id);
-  if (!annotation || annotationStyle(annotation) !== "text") return doc;
+  if (!annotation || getDefaultView(doc).annotations?.[id]?.locked) return doc;
   if (format.font !== undefined) annotation.font = format.font;
   if (format.fontSize !== undefined) {
     if (!Number.isFinite(format.fontSize) || format.fontSize < 10 || format.fontSize > 48) return doc;
     annotation.fontSize = Math.round(format.fontSize);
   }
   if (format.align !== undefined) annotation.align = format.align;
+  for (const key of ["background", "color"] as const) {
+    if (format[key] === "") delete annotation[key];
+    else if (format[key] !== undefined) {
+      if (!/^#[0-9a-f]{6}$/i.test(format[key])) return doc;
+      annotation[key] = format[key];
+    }
+  }
   return next;
 }
 
@@ -1044,7 +1058,10 @@ export function alignSelection(
   layout: LayoutResult,
   axis: "left" | "center" | "right" | "top" | "middle" | "bottom",
 ): DiagramDocument {
-  const rects = selection.map((item) => boundsFor(item, layout, doc)).filter((rect): rect is Rect => Boolean(rect));
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
+  const rects = selection
+    .map((item) => boundsFor(item, layout, annotationBounds))
+    .filter((rect): rect is Rect => Boolean(rect));
   if (rects.length < 2) return doc;
   let next = doc;
   const minX = Math.min(...rects.map((rect) => rect.x));
@@ -1054,7 +1071,7 @@ export function alignSelection(
   const midX = (minX + maxX) / 2;
   const midY = (minY + maxY) / 2;
   for (const item of selection) {
-    const rect = boundsFor(item, layout, doc);
+    const rect = boundsFor(item, layout, annotationBounds);
     if (!rect) continue;
     let x = rect.x;
     let y = rect.y;
@@ -1071,6 +1088,8 @@ export function alignSelection(
       next = setGroupPlace(next, item.id, x, y, dx, dy);
     } else if (item.kind === "resource") {
       next = setPlace(next, item.id, x, y);
+    } else if (item.kind === "annotation") {
+      next = setAnnotationPlace(next, item.id, x, y);
     }
   }
   return next;
@@ -1082,8 +1101,9 @@ export function distributeSelection(
   layout: LayoutResult,
   axis: "horizontal" | "vertical",
 ): DiagramDocument {
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
   const items = selection
-    .map((item) => ({ item, rect: boundsFor(item, layout, doc) }))
+    .map((item) => ({ item, rect: boundsFor(item, layout, annotationBounds) }))
     .filter((entry): entry is { item: SelectionItem; rect: Rect } => Boolean(entry.rect));
   if (items.length < 3) return doc;
   items.sort((a, b) => (axis === "horizontal" ? a.rect.x - b.rect.x : a.rect.y - b.rect.y));
@@ -1104,13 +1124,15 @@ export function distributeSelection(
       next = setGroupPlace(next, entry.item.id, x, y, dx, dy);
     } else if (entry.item.kind === "resource") {
       next = setPlace(next, entry.item.id, x, y);
+    } else if (entry.item.kind === "annotation") {
+      next = setAnnotationPlace(next, entry.item.id, x, y);
     }
     cursor += (axis === "horizontal" ? entry.rect.w : entry.rect.h) + gap;
   }
   return next;
 }
 
-function boundsFor(item: SelectionItem, layout: LayoutResult, doc: DiagramDocument): Rect | null {
+function boundsFor(item: SelectionItem, layout: LayoutResult, annotationBounds: Record<string, Rect>): Rect | null {
   if (item.kind === "resource") {
     const node = layout.nodes.find((candidate) => candidate.id === item.id);
     return node?.obstacle ?? null;
@@ -1120,14 +1142,7 @@ function boundsFor(item: SelectionItem, layout: LayoutResult, doc: DiagramDocume
     return group?.bounds ?? null;
   }
   if (item.kind === "annotation") {
-    const place = getDefaultView(doc).annotations?.[item.id];
-    if (!place) return null;
-    return {
-      x: place.x ?? 0,
-      y: place.y ?? 0,
-      w: place.w ?? 160,
-      h: place.h ?? 48,
-    };
+    return annotationBounds[item.id] ?? null;
   }
   return null;
 }

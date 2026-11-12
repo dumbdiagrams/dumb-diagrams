@@ -1,0 +1,70 @@
+.annotation-color-control {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.annotation-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.annotation-color-swatch {
+  --swatch-color: transparent;
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--ink) 17%, transparent);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.annotation-color-swatch > span {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: var(--swatch-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.annotation-color-swatch.is-default > span {
+  background: linear-gradient(135deg, transparent 44%, #c24c4c 45% 55%, transparent 56%);
+}
+
+.annotation-color-swatch:hover {
+  transform: scale(1.08);
+}
+
+.annotation-color-swatch.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.annotation-color-swatch.is-active::after {
+  position: absolute;
+  inset: -0.23rem;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.annotation-color-swatch:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .annotation-color-swatch {
+    transition: none;
+  }
+}

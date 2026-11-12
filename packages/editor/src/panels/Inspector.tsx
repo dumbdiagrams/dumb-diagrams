@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   DiagramDocument,
   LayoutResult,
@@ -50,6 +50,10 @@ export function Inspector({
   layout,
   selection,
   onRename,
+  onTextChange,
+  onTextEditStart,
+  onTextEditFinish,
+  onTextEditCancel,
   onLimitError,
   onAlign,
   onDistribute,
@@ -71,6 +75,10 @@ export function Inspector({
   layout: LayoutResult;
   selection: Selection;
   onRename: (label: string) => void;
+  onTextChange: (label: string) => void;
+  onTextEditStart: (item: SelectionItem, originalText: string) => void;
+  onTextEditFinish: (text: string) => void;
+  onTextEditCancel: (originalText: string) => void;
   onLimitError: (message: string) => void;
   onAlign: (axis: "left" | "center" | "right" | "top" | "middle" | "bottom") => void;
   onDistribute: (axis: "horizontal" | "vertical") => void;
@@ -80,7 +88,13 @@ export function Inspector({
   onSetGroupIconHidden: (hidden: boolean) => void;
   onSetBoundaryAppearance: (patch: { style?: EdgeStyle; color?: EdgeColor; fill?: BoundaryFill }) => void;
   onSetAnnotationStyle: (style: AnnotationStyle) => void;
-  onSetTextFormat: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
+  onSetTextFormat: (format: {
+    font?: TextFontFamily;
+    fontSize?: number;
+    align?: TextAlign;
+    background?: string;
+    color?: string;
+  }) => void;
   onUpdateGroupStep: (step?: number) => void;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
   onPinRoute: () => void;
@@ -117,7 +131,18 @@ export function Inspector({
       : (resource.label.role ?? "")
     : title;
   const [labelDraft, setLabelDraft] = useState(editableLabel);
-  useEffect(() => setLabelDraft(editableLabel), [editableLabel]);
+  const annotationTextAtFocus = useRef(annotation?.text ?? "");
+  const labelTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const draftTarget = item ? `${item.kind}:${item.id}` : "";
+  const previousDraftTarget = useRef(draftTarget);
+  useEffect(() => {
+    const changedTarget = previousDraftTarget.current !== draftTarget;
+    previousDraftTarget.current = draftTarget;
+    // Worker results can lag behind the current keystroke. Keep the focused
+    // field's draft authoritative until the edit finishes or selection changes.
+    if (!changedTarget && annotation && document.activeElement === labelTextareaRef.current) return;
+    setLabelDraft(editableLabel);
+  }, [editableLabel, draftTarget, annotation?.id]);
   const authoredResourceLabelPosition: ResourceLabelPosition = resource?.label.position === "top" ? "top" : "bottom";
   const [resourceLabelPositionDraft, setResourceLabelPositionDraft] =
     useState<ResourceLabelPosition>(authoredResourceLabelPosition);
@@ -194,17 +219,35 @@ export function Inspector({
           </label>
           {annotation ? (
             <textarea
+              ref={labelTextareaRef}
               id="inspector-label"
               value={labelDraft}
               maxLength={DIAGRAM_LIMITS.annotationCharacters}
               rows={5}
-              onChange={(event) => setLabelDraft(event.target.value)}
+              onFocus={() => {
+                annotationTextAtFocus.current = annotation.text;
+                if (item) onTextEditStart(item, annotation.text);
+              }}
+              onChange={(event) => {
+                setLabelDraft(event.target.value);
+                onTextChange(event.target.value);
+              }}
               onPaste={(event) =>
                 rejectOversizedPaste(event, DIAGRAM_LIMITS.annotationCharacters, () =>
                   onLimitError(`Notes are limited to ${DIAGRAM_LIMITS.annotationCharacters} characters`),
                 )
               }
-              onBlur={() => onRename(labelDraft)}
+              onBlur={() => {
+                onTextEditFinish(labelDraft);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  onTextEditCancel(annotationTextAtFocus.current);
+                  setLabelDraft(annotationTextAtFocus.current);
+                  event.currentTarget.blur();
+                }
+              }}
               aria-describedby="inspector-label-limit"
             />
           ) : (
@@ -238,12 +281,17 @@ export function Inspector({
           <NoteStyleOptions selectedStyle={annotationStyle(annotation)} onStyleChange={onSetAnnotationStyle} />
         </div>
       )}
-      {annotation && annotationStyle(annotation) === "text" && (
+      {annotation && (
         <TextFormattingControls
           idPrefix="inspector"
-          font={annotation.font ?? "sans"}
-          fontSize={annotation.fontSize ?? 14}
+          font={annotation.font ?? (annotationStyle(annotation) === "code" ? "mono" : "sans")}
+          fontSize={
+            annotation.fontSize ??
+            (annotationStyle(annotation) === "text" ? 14 : annotationStyle(annotation) === "code" ? 13 : 12)
+          }
           align={annotation.align ?? "left"}
+          background={annotation.background}
+          color={annotation.color}
           onChange={onSetTextFormat}
         />
       )}

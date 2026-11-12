@@ -6,6 +6,7 @@ import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+import { getAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
 import { compileDiagramSource } from "./diagram-compiler.js";
@@ -59,6 +60,44 @@ import { canGroupSelection, groupSelection, reparentPreservingAbsolutePosition, 
 const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("editor commands", () => {
+  it("resizes annotation placements and preserves card formatting", () => {
+    const doc = createAsyncDocsFixture();
+    const added = addAnnotation(doc, "const job = await queue.receive();", { x: 80, y: 80 }, undefined, "code");
+    const resized = setSize(added.doc, added.id, 620, 320);
+    expect(getDefaultView(resized).annotations?.[added.id]).toMatchObject({ w: 620, h: 320 });
+    expect(getDefaultView(resized).places[added.id]).toBeUndefined();
+    const formatted = updateTextFormat(resized, added.id, {
+      font: "mono",
+      fontSize: 20,
+      background: "#112233",
+      color: "#ffffff",
+    });
+    expect(formatted.annotations.find((note) => note.id === added.id)).toMatchObject({
+      font: "mono",
+      fontSize: 20,
+      background: "#112233",
+      color: "#ffffff",
+    });
+    const roundtrip = parseDgm(printDgm(formatted));
+    expect(roundtrip.annotations).toEqual(formatted.annotations);
+    getDefaultView(resized).annotations![added.id]!.locked = true;
+    expect(setSize(resized, added.id, 900, 500)).toBe(resized);
+  });
+
+  it("moves generated annotations from their rendered position", () => {
+    const doc = createAsyncDocsFixture();
+    doc.annotations.push({ id: "generated", text: "Worker status", anchor: "client", style: "callout" });
+    const compiled = compileDiagramSource(printDgm(doc), false);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    const bounds = getAnnotationBounds(doc, compiled.layout, "generated")!;
+    const moved = moveSelection(doc, [{ kind: "annotation", id: "generated" }], 32, 24, compiled.layout);
+    expect(getDefaultView(moved).annotations?.generated).toMatchObject({
+      x: Math.round(bounds.x + 32),
+      y: Math.round(bounds.y + 24),
+    });
+  });
+
   it("keeps selection helpers and missing-target edits predictable", () => {
     const doc = createAsyncDocsFixture();
     const item = { kind: "resource" as const, id: "client" };
@@ -263,7 +302,7 @@ describe("editor commands", () => {
     const codeNote = code.annotations.find((annotation) => annotation.id === added.id);
 
     expect(codeNote?.style).toBe("code");
-    expect(getDefaultView(code).annotations?.[added.id]).toMatchObject({ w: 300, h: 160, zIndex: 13 });
+    expect(getDefaultView(code).annotations?.[added.id]).toMatchObject({ w: 420, h: 160, zIndex: 13 });
 
     const paper = setAnnotationStyle(code, added.id, "paper");
     expect(paper.annotations.find((annotation) => annotation.id === added.id)?.style).toBeUndefined();
