@@ -36,6 +36,23 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 
+.annotation-theme-swatch > span {
+  position: relative;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--swatch-ink, var(--ink)) 28%, transparent);
+}
+
+.annotation-theme-swatch > span::after {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 0.32rem;
+  height: 0.32rem;
+  border: 1px solid var(--surface-solid, #fff);
+  border-radius: 50%;
+  background: var(--swatch-ink, var(--ink));
+  content: "";
+}
+
 .annotation-color-swatch.is-default > span {
   background: linear-gradient(135deg, transparent 44%, #c24c4c 45% 55%, transparent 56%);
 }

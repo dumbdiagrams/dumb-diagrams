@@ -2,9 +2,10 @@ import { getCatalogEntry } from "../catalog/index.js";
 import type { AnnotationStyle, DiagramDocument, LayoutResult } from "../core/index.js";
 import { EDGE_COLOR_VALUES, getDefaultView, resolveEdgeColor } from "../core/index.js";
 import { GRAMMAR, GROUP_STYLES } from "../grammar-aws/index.js";
-import { darkContrastStrokeMarkup, needsDarkContrastAid } from "./contrast.js";
+import { darkContrastStrokeMarkup, deriveAnnotationAccent, needsDarkContrastAid } from "./contrast.js";
 import { resolveProviderGroupColors } from "./provider-group-colors.js";
 import { annotationTextLayout, resolveAnnotationBounds } from "./annotation-bounds.js";
+import { resolveAnnotationColors } from "./annotation-themes.js";
 import type { ResultAsync } from "neverthrow";
 import {
   embedAssetsInSvg,
@@ -272,66 +273,69 @@ function renderAnnotation(
   const align = annotation.align ?? "left";
   const alignedX = (left: number, right: number) =>
     align === "center" ? x + left + (w - left - right) / 2 : align === "right" ? x + w - right : x + left;
-  const groupStart = `<g id="annotation-${annotation.id}" data-annotation-style="${style}"${annotation.color ? ' data-custom-color="true"' : ""} class="annotation annotation-${style}">`;
+  const { background: bg, color: ink } = resolveAnnotationColors(annotation);
+  const accent = deriveAnnotationAccent(bg) ?? { stroke: "#d4c4b8", accent: "#a89588" };
+  const groupStart = `<g id="annotation-${annotation.id}" data-annotation-style="${style}"${annotation.background || annotation.color ? ' data-custom-color="true"' : ""} class="annotation annotation-${style}">`;
 
   if (style === "text") {
     const fontSize = annotation.fontSize ?? 14;
     const textX = align === "center" ? x + w / 2 : align === "right" ? x + w - 12 : x + 12;
     return `
-${groupStart}${annotation.background ? `\n  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${annotation.background}"/>` : ""}
-  ${renderAnnotationLines(textLayout.lines, textX, y + textLayout.top, textLayout.lineHeight, annotation.color ?? (annotation.background ? "#163964" : "var(--annotation-ink, #163964)"), customFont, fontSize, align)}
+${groupStart}${annotation.background ? `\n  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${bg}"/>` : ""}
+  ${renderAnnotationLines(textLayout.lines, textX, y + textLayout.top, textLayout.lineHeight, annotation.background ? ink : "var(--annotation-ink, #163964)", customFont, fontSize, align)}
 </g>`;
   }
 
   if (style === "code") {
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${annotation.background ?? "#112d51"}" stroke="#163964" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${bg}" stroke="#163964" stroke-width="1.5"/>
   <rect x="${x}" y="${y}" width="${w}" height="28" rx="10" fill="#163964"/>
   <rect x="${x}" y="${y + 18}" width="${w}" height="10" fill="#163964"/>
   <circle cx="${x + 14}" cy="${y + 14}" r="4" fill="#f0531e"/>
   <circle cx="${x + 28}" cy="${y + 14}" r="4" fill="#f7982c"/>
   <circle cx="${x + 42}" cy="${y + 14}" r="4" fill="#7BC4A0"/>
-  ${renderAnnotationLines(textLayout.lines, alignedX(14, 14), y + textLayout.top, textLayout.lineHeight, annotation.color ?? "#d1fae5", customFont, fontSize, align, true)}
+  ${renderAnnotationLines(textLayout.lines, alignedX(14, 14), y + textLayout.top, textLayout.lineHeight, ink, customFont, fontSize, align, true)}
 </g>`;
   }
 
   if (style === "callout") {
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${annotation.background ?? "#fde3db"}" stroke="#f8b29a" stroke-width="1.5"/>
-  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="#f0531e"/>
-  <circle cx="${x + 28}" cy="${y + Math.max(28, textLayout.top / 2)}" r="12" fill="#f0531e"/>
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${bg}" stroke="${accent.stroke}" stroke-width="1.5"/>
+  <rect x="${x}" y="${y}" width="6" height="${h}" rx="3" fill="${accent.accent}"/>
+  <circle cx="${x + 28}" cy="${y + Math.max(28, textLayout.top / 2)}" r="12" fill="${accent.accent}"/>
   <text x="${x + 28}" y="${y + Math.max(33, textLayout.top / 2 + 5)}" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF" style="fill:#FFFFFF">i</text>
-  ${renderAnnotationLines(textLayout.lines, alignedX(50, 14), y + textLayout.top, textLayout.lineHeight, annotation.color ?? "#163964", customFont, fontSize, align)}
+  ${renderAnnotationLines(textLayout.lines, alignedX(50, 14), y + textLayout.top, textLayout.lineHeight, ink, customFont, fontSize, align)}
 </g>`;
   }
 
   if (style === "checklist") {
+    const mark = accent.accent;
     const items = textLayout.lines
       .map((line, index) => {
         const itemY = y + textLayout.top + index * textLayout.rowHeight;
         const rowX = alignedX(40, 18);
         const rowAnchor = align === "center" ? "middle" : align === "right" ? "end" : "start";
         return `
-  <rect x="${x + 16}" y="${itemY - 12}" width="14" height="14" rx="3" fill="#ffffff" stroke="#4f9b69" stroke-width="1.4"/>
-  <path d="M ${x + 19} ${itemY - 5} l 3 3 l 6 -7" fill="none" stroke="#4f9b69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <text data-annotation-content="true" x="${rowX}" y="${itemY}" text-anchor="${rowAnchor}" font-size="${fontSize}" font-family="${escapeAttr(customFont)}" fill="${annotation.color ?? "#2F6E56"}" style="fill:${annotation.color ?? "#2F6E56"};font-family:${escapeAttr(customFont)};font-size:${fontSize}px">${escapeXml(line || " ")}</text>`;
+  <rect x="${x + 16}" y="${itemY - 12}" width="14" height="14" rx="3" fill="#ffffff" stroke="${mark}" stroke-width="1.4"/>
+  <path d="M ${x + 19} ${itemY - 5} l 3 3 l 6 -7" fill="none" stroke="${mark}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text data-annotation-content="true" x="${rowX}" y="${itemY}" text-anchor="${rowAnchor}" font-size="${fontSize}" font-family="${escapeAttr(customFont)}" fill="${ink}" style="fill:${ink};font-family:${escapeAttr(customFont)};font-size:${fontSize}px">${escapeXml(line || " ")}</text>`;
       })
       .join("");
     return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${annotation.background ?? "#eff9f2"}" stroke="#71a987" stroke-width="1.5"/>
-  <text x="${x + 16}" y="${y + 18}" font-size="10" font-weight="700" letter-spacing="1.2" fill="#4f7658">CHECKLIST</text>${items}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${bg}" stroke="${accent.stroke}" stroke-width="1.5"/>
+  <text x="${x + 16}" y="${y + 18}" font-size="10" font-weight="700" letter-spacing="1.2" fill="${ink}">CHECKLIST</text>${items}
 </g>`;
   }
 
   return `
 ${groupStart}
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${annotation.background ?? "#feefdd"}" stroke="#f7982c" stroke-width="1.5"/>
-  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="#fbc68b"/>
-  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="#f7982c" stroke-width="1"/>
-  ${renderAnnotationLines(textLayout.lines, alignedX(14, 14), y + textLayout.top, textLayout.lineHeight, annotation.color ?? "#163964", customFont, fontSize, align)}
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${bg}" stroke="${accent.stroke}" stroke-width="1.5"/>
+  <path d="M ${x + w - 28} ${y} H ${x + w} V ${y + 28} Z" fill="${accent.stroke}"/>
+  <path d="M ${x + w - 28} ${y} V ${y + 28} H ${x + w}" fill="none" stroke="${accent.stroke}" stroke-width="1"/>
+  ${renderAnnotationLines(textLayout.lines, alignedX(14, 14), y + textLayout.top, textLayout.lineHeight, ink, customFont, fontSize, align)}
 </g>`;
 }
 

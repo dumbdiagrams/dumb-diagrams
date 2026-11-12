@@ -69,14 +69,13 @@ describe("editor commands", () => {
     const formatted = updateTextFormat(resized, added.id, {
       font: "mono",
       fontSize: 20,
-      background: "#112233",
-      color: "#ffffff",
+      theme: "code",
     });
     expect(formatted.annotations.find((note) => note.id === added.id)).toMatchObject({
       font: "mono",
       fontSize: 20,
-      background: "#112233",
-      color: "#ffffff",
+      background: "#112d51",
+      color: "#d1fae5",
     });
     const roundtrip = parseDgm(printDgm(formatted));
     expect(roundtrip.annotations).toEqual(formatted.annotations);

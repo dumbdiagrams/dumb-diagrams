@@ -19,7 +19,7 @@ import type {
   TextFontFamily,
 } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/runtime/core";
-import { resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
+import { getAnnotationTheme, resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
 import { isEmptyRootBoundary } from "@dumb-diagrams/runtime/layout";
@@ -826,7 +826,7 @@ export function updateAnnotationText(doc: DiagramDocument, id: string, text: str
 export function updateTextFormat(
   doc: DiagramDocument,
   id: string,
-  format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign; background?: string; color?: string },
+  format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign; theme?: string },
 ): DiagramDocument {
   const next = cloneDocument(doc);
   const annotation = next.annotations.find((candidate) => candidate.id === id);
@@ -837,11 +837,15 @@ export function updateTextFormat(
     annotation.fontSize = Math.round(format.fontSize);
   }
   if (format.align !== undefined) annotation.align = format.align;
-  for (const key of ["background", "color"] as const) {
-    if (format[key] === "") delete annotation[key];
-    else if (format[key] !== undefined) {
-      if (!/^#[0-9a-f]{6}$/i.test(format[key])) return doc;
-      annotation[key] = format[key];
+  if (format.theme !== undefined) {
+    if (format.theme === "") {
+      delete annotation.background;
+      delete annotation.color;
+    } else {
+      const preset = getAnnotationTheme(format.theme);
+      if (!preset) return doc;
+      annotation.background = preset.background;
+      annotation.color = preset.color;
     }
   }
   return next;

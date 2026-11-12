@@ -63,7 +63,7 @@ export function annotationTextLayout(annotation: DiagramDocument["annotations"][
       : style === "callout"
         ? Math.max(30, fontSize + 16)
         : style === "checklist"
-          ? Math.max(32, fontSize + 16)
+          ? Math.max(44, fontSize + 30)
           : style === "paper"
             ? fontSize + 12
             : fontSize + 10;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contrastRatio, DARK_CANVAS, needsDarkContrastAid, parseRgb } from "./contrast.js";
+import { contrastRatio, DARK_CANVAS, deriveAnnotationAccent, needsDarkContrastAid, parseRgb } from "./contrast.js";
 
 describe("contrast", () => {
   it("parses hex and rgb colours", () => {
@@ -22,6 +22,17 @@ describe("contrast", () => {
     expect(needsDarkContrastAid("#ED7100", DARK_CANVAS)).toBe(false);
     expect(needsDarkContrastAid("#7AA116", DARK_CANVAS)).toBe(false);
     expect(needsDarkContrastAid("#00A4A6", DARK_CANVAS)).toBe(false);
+  });
+
+  it("derives matching callout border and accent colours from the background", () => {
+    const mint = deriveAnnotationAccent("#e0f4ed");
+    expect(mint).not.toBeNull();
+    expect(mint!.stroke).not.toBe("#f8b29a");
+    expect(mint!.accent).not.toBe("#f0531e");
+    expect(mint!.stroke).toMatch(/^#[0-9a-f]{6}$/i);
+
+    const peach = deriveAnnotationAccent("#fde3db");
+    expect(peach!.accent).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
   it("computes a higher ratio for light-on-dark than dark-on-dark", () => {

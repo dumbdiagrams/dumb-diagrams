@@ -73,6 +73,56 @@ function rgbToHsl({ r, g, b }: Rgb): Hsl {
   return { h, s, l };
 }
 
+function hslToRgb({ h, s, l }: Hsl): Rgb {
+  if (s === 0) {
+    const gray = l * 255;
+    return { r: gray, g: gray, b: gray };
+  }
+  const hue = h / 360;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const channelFrom = (t: number) => {
+    let x = t;
+    if (x < 0) x += 1;
+    if (x > 1) x -= 1;
+    if (x < 1 / 6) return p + (q - p) * 6 * x;
+    if (x < 1 / 2) return q;
+    if (x < 2 / 3) return p + (q - p) * (2 / 3 - x) * 6;
+    return p;
+  };
+  return {
+    r: channelFrom(hue + 1 / 3) * 255,
+    g: channelFrom(hue) * 255,
+    b: channelFrom(hue - 1 / 3) * 255,
+  };
+}
+
+function toHex({ r, g, b }: Rgb): string {
+  const clamp = (value: number) =>
+    Math.max(0, Math.min(255, Math.round(value)))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
+}
+
+/** Border and accent fills derived from a note background (callout rail / icon). */
+export function deriveAnnotationAccent(background: string): { stroke: string; accent: string } | null {
+  const rgb = parseRgb(background);
+  if (!rgb) return null;
+  const hsl = rgbToHsl(rgb);
+  const stroke = hslToRgb({
+    h: hsl.h,
+    s: Math.min(0.4, hsl.s * 0.55 + 0.08),
+    l: Math.max(0.5, Math.min(0.8, hsl.l - 0.05)),
+  });
+  const accent = hslToRgb({
+    h: hsl.h,
+    s: Math.min(0.48, hsl.s * 0.62 + 0.1),
+    l: Math.max(0.4, Math.min(0.62, hsl.l - 0.18)),
+  });
+  return { stroke: toHex(stroke), accent: toHex(accent) };
+}
+
 function hueDistance(a: number, b: number): number {
   const delta = Math.abs(a - b) % 360;
   return delta > 180 ? 360 - delta : delta;

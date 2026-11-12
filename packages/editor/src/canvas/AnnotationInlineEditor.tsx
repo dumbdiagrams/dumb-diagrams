@@ -1,7 +1,7 @@
 import type { Ref } from "react";
 import type { Annotation, Point, Rect } from "@dumb-diagrams/runtime/core";
 import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
-import { annotationTextLayout } from "@dumb-diagrams/runtime/render";
+import { annotationTextLayout, resolveAnnotationColors } from "@dumb-diagrams/runtime/render";
 
 /** A transparent text surface inside the existing SVG note, in artboard coordinates. */
 export function AnnotationInlineEditor({
@@ -26,6 +26,7 @@ export function AnnotationInlineEditor({
   const metrics = annotationTextLayout(annotation, bounds.w);
   const top = metrics.top - metrics.fontSize;
   const isText = annotation.style === "text";
+  const { color: ink } = resolveAnnotationColors(annotation);
   return (
     <textarea
       ref={inputRef}
@@ -40,15 +41,7 @@ export function AnnotationInlineEditor({
         top: bounds.y - canvasOrigin.y + top,
         width: bounds.w - metrics.left - metrics.right,
         height: Math.max(metrics.lineHeight, bounds.h - top - 10),
-        color:
-          annotation.color ??
-          (annotation.style === "code"
-            ? "#d1fae5"
-            : annotation.style === "checklist"
-              ? "#2F6E56"
-              : isText && !annotation.background
-                ? "var(--annotation-ink)"
-                : "#163964"),
+        color: isText && !annotation.background ? "var(--annotation-ink)" : ink,
         fontFamily: metrics.fontFamily,
         fontSize: metrics.fontSize,
         lineHeight: `${annotation.style === "checklist" ? metrics.rowHeight : metrics.lineHeight}px`,

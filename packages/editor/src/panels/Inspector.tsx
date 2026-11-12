@@ -88,13 +88,7 @@ export function Inspector({
   onSetGroupIconHidden: (hidden: boolean) => void;
   onSetBoundaryAppearance: (patch: { style?: EdgeStyle; color?: EdgeColor; fill?: BoundaryFill }) => void;
   onSetAnnotationStyle: (style: AnnotationStyle) => void;
-  onSetTextFormat: (format: {
-    font?: TextFontFamily;
-    fontSize?: number;
-    align?: TextAlign;
-    background?: string;
-    color?: string;
-  }) => void;
+  onSetTextFormat: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign; theme?: string }) => void;
   onUpdateGroupStep: (step?: number) => void;
   onUpdateEdge: (style: EdgeStyle, kind: EdgeKind) => void;
   onPinRoute: () => void;
@@ -290,8 +284,8 @@ export function Inspector({
             (annotationStyle(annotation) === "text" ? 14 : annotationStyle(annotation) === "code" ? 13 : 12)
           }
           align={annotation.align ?? "left"}
-          background={annotation.background}
-          color={annotation.color}
+          noteStyle={annotationStyle(annotation)}
+          themeSource={annotation}
           onChange={onSetTextFormat}
         />
       )}

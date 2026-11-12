@@ -157,19 +157,19 @@
 </g>
 
 <g id="annotation-note_callout" data-annotation-style="callout" class="annotation annotation-callout">
-  <rect x="423.4" y="249.33333333333331" width="280" height="104" rx="12" fill="#fde3db" stroke="#f8b29a" stroke-width="1.5"/>
-  <rect x="423.4" y="249.33333333333331" width="6" height="104" rx="3" fill="#f0531e"/>
-  <circle cx="451.4" cy="277.3333333333333" r="12" fill="#f0531e"/>
+  <rect x="423.4" y="249.33333333333331" width="280" height="104" rx="12" fill="#e0eef8" stroke="#b8cfe0" stroke-width="1.5"/>
+  <rect x="423.4" y="249.33333333333331" width="6" height="104" rx="3" fill="#70a6cd"/>
+  <circle cx="451.4" cy="277.3333333333333" r="12" fill="#70a6cd"/>
   <text x="451.4" y="282.3333333333333" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF" style="fill:#FFFFFF">i</text>
   <text data-annotation-content="true" x="689.4" y="281.3333333333333" text-anchor="end" font-size="16" font-family="Georgia, Cambria, Times New Roman, serif" xml:space="default" fill="#163964" style="fill:#163964;font-family:Georgia, Cambria, Times New Roman, serif;font-size:16px"><tspan x="689.4" dy="0">Callout</tspan></text>
 </g>
 
 <g id="annotation-note_checklist" data-annotation-style="checklist" class="annotation annotation-checklist">
-  <rect x="433.4" y="-334.66666666666663" width="260" height="152" rx="12" fill="#eff9f2" stroke="#71a987" stroke-width="1.5"/>
-  <text x="449.4" y="-316.66666666666663" font-size="10" font-weight="700" letter-spacing="1.2" fill="#4f7658">CHECKLIST</text>
-  <rect x="449.4" y="-314.66666666666663" width="14" height="14" rx="3" fill="#ffffff" stroke="#4f9b69" stroke-width="1.4"/>
-  <path d="M 452.4 -307.66666666666663 l 3 3 l 6 -7" fill="none" stroke="#4f9b69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <text data-annotation-content="true" x="473.4" y="-302.66666666666663" text-anchor="start" font-size="12" font-family="Amazon Ember, Helvetica Neue, Arial, sans-serif" fill="#2F6E56" style="fill:#2F6E56;font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;font-size:12px">Checklist</text>
+  <rect x="433.4" y="-334.66666666666663" width="260" height="152" rx="12" fill="#e0eef8" stroke="#b8cfe0" stroke-width="1.5"/>
+  <text x="449.4" y="-316.66666666666663" font-size="10" font-weight="700" letter-spacing="1.2" fill="#163964">CHECKLIST</text>
+  <rect x="449.4" y="-302.66666666666663" width="14" height="14" rx="3" fill="#ffffff" stroke="#70a6cd" stroke-width="1.4"/>
+  <path d="M 452.4 -295.66666666666663 l 3 3 l 6 -7" fill="none" stroke="#70a6cd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text data-annotation-content="true" x="473.4" y="-290.66666666666663" text-anchor="start" font-size="12" font-family="Amazon Ember, Helvetica Neue, Arial, sans-serif" fill="#163964" style="fill:#163964;font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;font-size:12px">Checklist</text>
 </g>
 
 <g id="res-customer">

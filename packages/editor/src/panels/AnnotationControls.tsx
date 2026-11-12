@@ -1,31 +1,9 @@
-import type { AnnotationStyle, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
+import type { Annotation, AnnotationStyle, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
 import type { CSSProperties } from "react";
 import { DIAGRAM_LIMITS, normalizeMultilineText } from "@dumb-diagrams/runtime/core";
+import { matchAnnotationTheme, themesForStyle } from "@dumb-diagrams/runtime/render";
 import { ANNOTATION_STYLES } from "../editor-model";
 import "../styles/annotation-controls.css";
-
-const TEXT_BACKGROUND_OPTIONS = [
-  { color: "#fff7d6", label: "Warm paper" },
-  { color: "#ffffff", label: "White" },
-  { color: "#e8f3ff", label: "Pale blue" },
-  { color: "#e8f7ed", label: "Pale green" },
-  { color: "#f2eaff", label: "Pale purple" },
-  { color: "#112d51", label: "Code navy" },
-  { color: "#fde3db", label: "Callout peach" },
-  { color: "#eff9f2", label: "Checklist green" },
-  { color: "#feefdd", label: "Note orange" },
-  { color: "#1f2937", label: "Dark" },
-] as const;
-
-const TEXT_COLOR_OPTIONS = [
-  { color: "#163964", label: "Navy" },
-  { color: "#1f2937", label: "Charcoal" },
-  { color: "#d1fae5", label: "Mint" },
-  { color: "#ffffff", label: "White" },
-  { color: "#8b2e2e", label: "Brick red" },
-  { color: "#237a57", label: "Forest green" },
-  { color: "#5b3b91", label: "Purple" },
-] as const;
 
 export function NoteComposer({
   style,
@@ -134,19 +112,12 @@ export function TextFormattingControls(props: {
   font: TextFontFamily;
   fontSize: number;
   align: TextAlign;
-  background?: string;
-  color?: string;
-  onChange: (format: {
-    font?: TextFontFamily;
-    fontSize?: number;
-    align?: TextAlign;
-    background?: string;
-    color?: string;
-  }) => void;
+  noteStyle?: AnnotationStyle;
+  themeSource?: Pick<Annotation, "background" | "color" | "style">;
+  onChange: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign; theme?: string }) => void;
 }) {
-  const { idPrefix, font, fontSize, align, background, color, onChange } = props;
-  const showBackground = Object.prototype.hasOwnProperty.call(props, "background");
-  const showColor = Object.prototype.hasOwnProperty.call(props, "color");
+  const { idPrefix, font, fontSize, align, noteStyle, themeSource, onChange } = props;
+  const activeTheme = themeSource ? matchAnnotationTheme(themeSource) : null;
   const fontSizes = [...new Set([12, 14, 16, 20, 24, 32, fontSize])].sort((a, b) => a - b);
   return (
     <div className="property-section text-formatting">
@@ -192,84 +163,65 @@ export function TextFormattingControls(props: {
           ))}
         </div>
       </div>
-      {showBackground && (
-        <TextColorSwatches
-          id={`${idPrefix}-text-background`}
-          label="Background"
-          value={background ?? ""}
-          options={TEXT_BACKGROUND_OPTIONS}
-          onChange={(next) => onChange({ background: next })}
-        />
-      )}
-      {showColor && (
-        <TextColorSwatches
-          id={`${idPrefix}-text-color`}
-          label="Text color"
-          value={color ?? ""}
-          options={TEXT_COLOR_OPTIONS}
-          onChange={(next) => onChange({ color: next })}
+      {noteStyle && themesForStyle(noteStyle).length > 0 && (
+        <AnnotationThemeSwatches
+          id={`${idPrefix}-theme`}
+          style={noteStyle}
+          activeThemeId={activeTheme?.id ?? ""}
+          onChange={(themeId) => onChange({ theme: themeId })}
         />
       )}
     </div>
   );
 }
 
-function TextColorSwatches({
+function AnnotationThemeSwatches({
   id,
-  label,
-  value,
-  options,
+  style,
+  activeThemeId,
   onChange,
 }: {
   id: string;
-  label: string;
-  value: string;
-  options: readonly { color: string; label: string }[];
-  onChange: (value: string) => void;
+  style: AnnotationStyle;
+  activeThemeId: string;
+  onChange: (themeId: string) => void;
 }) {
-  const hasPreset = options.some((option) => option.color.toLowerCase() === value.toLowerCase());
+  const options = themesForStyle(style);
+  const usingDefault = activeThemeId === "";
 
   return (
     <div className="annotation-color-control">
       <span className="property-control-label" id={`${id}-label`}>
-        {label}
+        Colour theme
       </span>
       <div className="annotation-color-swatches" role="group" aria-labelledby={`${id}-label`}>
         <button
           type="button"
-          className={`annotation-color-swatch is-default${value === "" ? " is-active" : ""}`}
-          aria-label={`${label}: Style default`}
-          aria-pressed={value === ""}
+          className={`annotation-color-swatch is-default${usingDefault ? " is-active" : ""}`}
+          aria-label="Colour theme: Style default"
+          aria-pressed={usingDefault}
           title="Style default"
           onClick={() => onChange("")}
         >
           <span aria-hidden="true" />
         </button>
-        {value !== "" && !hasPreset && (
-          <button
-            type="button"
-            className="annotation-color-swatch is-active is-custom"
-            style={{ "--swatch-color": value } as CSSProperties}
-            aria-label={`${label}: Custom color ${value}`}
-            aria-pressed="true"
-            title={`Custom color ${value}`}
-            onClick={() => onChange(value)}
-          >
-            <span aria-hidden="true" />
-          </button>
-        )}
-        {options.map((option) => {
-          const selected = value.toLowerCase() === option.color.toLowerCase();
+        {options.map((theme) => {
+          const selected = activeThemeId === theme.id;
           return (
             <button
-              key={option.color}
+              key={theme.id}
               type="button"
-              className={`annotation-color-swatch${selected ? " is-active" : ""}`}
-              style={{ "--swatch-color": option.color } as CSSProperties}
-              aria-label={`${label}: ${option.label}`}
+              className={`annotation-color-swatch annotation-theme-swatch${selected ? " is-active" : ""}`}
+              style={
+                {
+                  "--swatch-color": theme.background,
+                  "--swatch-ink": theme.color,
+                } as CSSProperties
+              }
+              aria-label={`Colour theme: ${theme.label}`}
               aria-pressed={selected}
-              title={option.label}
-              onClick={() => onChange(option.color)}
+              title={theme.label}
+              onClick={() => onChange(theme.id)}
             >
               <span aria-hidden="true" />
             </button>
