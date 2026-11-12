@@ -134,6 +134,10 @@ annotation note "Retries use exponential backoff" { anchor handler style callout
 | `font` | `sans`, `serif`, `mono` |
 | `size` | 10 to 48 |
 | `align` | `left`, `center`, `right` |
+| `background` | A quoted hex color, such as `"#feefdd"` |
+| `color` | A quoted text color, such as `"#163964"` |
+
+Notes grow to fit their complete text. Set `anchor` to the resource, boundary, or connection the note explains; notes without an authored position are placed nearby with space between them. Use view annotation placements only when you need a specific position or width. Font, size, alignment, and colors apply to every note style.
 
 ## Assets
 

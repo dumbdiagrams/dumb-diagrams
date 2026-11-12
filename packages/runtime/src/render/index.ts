@@ -1,4 +1,5 @@
 export * from "./svg.js";
+export * from "./annotation-bounds.js";
 export * from "./compile.js";
 export * from "./automatic-layout.js";
 export * from "./sanitize-svg.js";

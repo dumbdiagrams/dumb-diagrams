@@ -1,0 +1,7 @@
+dgm 1
+diagram annotation-colors {
+  grammar cloud-agnostic
+  flow lr
+
+  annotation note "Editable note" { style callout background "#e8f3ff" color "#163964" }
+}

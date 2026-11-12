@@ -151,6 +151,9 @@ export interface Annotation {
   font?: TextFontFamily;
   fontSize?: number;
   align?: TextAlign;
+  /** Optional custom background/text colors, authored as #rrggbb. */
+  background?: string;
+  color?: string;
 }
 
 export interface RouteOverride {

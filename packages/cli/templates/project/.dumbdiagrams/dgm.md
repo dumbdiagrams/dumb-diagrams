@@ -68,9 +68,11 @@ view <id> { place <id> { ... }  route <edge-id> { ... }  annotation <id> { ... }
 | `boundary` | `step`; `label-position` `top-left`/`top-right`; `hide-icon`; `style` `solid`/`dashed`; `color`; `fill` `subtle`/`none` |
 | `resource` | `service`; `label-position` `top`/`bottom`; `role` `primary`/`secondary`/`border`; `icon` |
 | `edge` | `id`; `label` (description only); `step` (native numbered badge); `style` `solid`/`dashed`; `kind` `flow`/`bidirectional`/`peer`/`fail`; `color`; `from`/`to` `n`/`s`/`e`/`w`, optionally `offset` 0-1 |
-| `annotation` | `anchor`; `style` `text`/`paper`/`code`/`callout`/`checklist`; `font` `sans`/`serif`/`mono`; `size` 10 to 48; `align` `left`/`center`/`right` |
+| `annotation` | `anchor`; `style` `text`/`paper`/`code`/`callout`/`checklist`; `font` `sans`/`serif`/`mono`; `size` 10 to 48; `align` `left`/`center`/`right`; `background`/`color` quoted hex colors (`"#feefdd"`) |
 | `asset` (inside `assets`) | `svg`; `w`; `h` |
 | `place` | `x`, `y`, `w`, `h`; `pin`; `manual`; `locked`; `visible` `true`/`false`; `z` |
 | `route` | `point <x> <y>`; `mode` `auto`/`manual`; `pin`; `badge`/`label` `<0-1>` `top`/`bottom` |
 
 Colors are `graphite`, `blue`, `teal`, `purple`, `amber`, `coral`, `red`, `green`.
+
+Notes grow to fit all their text. Give explanatory notes an `anchor` referencing the resource, boundary, or connection they describe. Omit view annotation coordinates to let Studio and exports place notes nearby without stacking. Author a view position or width only for intentional manual placement; never give multiple notes the same coordinates. Font, size, alignment, and colors apply to all note styles.
