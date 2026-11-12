@@ -1088,7 +1088,7 @@
 .file-name {
   min-width: 0;
   max-width: min(28vw, 320px);
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 
 .input-limit {
