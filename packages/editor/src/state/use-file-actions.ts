@@ -16,6 +16,7 @@ import type { WorkspaceTab } from "./workspace";
 export type FilePickerWindow = Window & {
   showOpenFilePicker?: (options?: {
     multiple?: boolean;
+    mode?: "read" | "readwrite";
     types?: Array<{ description?: string; accept: Record<string, string[]> }>;
   }) => Promise<FileSystemHandleLike[]>;
   showSaveFilePicker?: SaveFilePicker;

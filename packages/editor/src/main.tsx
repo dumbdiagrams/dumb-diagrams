@@ -807,6 +807,9 @@ function App() {
     try {
       const handles = await picker({
         multiple: true,
+        // Ask for write access in the picker itself (Chrome/Edge 122+); older
+        // builds ignore it and fall back to requestWritePermission below.
+        mode: "readwrite",
         types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
       });
       if (autoSaveEnabled) {
