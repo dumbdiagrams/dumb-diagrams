@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  adoptExternalSource,
   beginSourceDraft,
   beginTransaction,
   cancelTransaction,
@@ -16,6 +17,73 @@ import {
 } from "./document-history";
 
 describe("document history", () => {
+  it("makes consecutive external source versions undoable and redoable", () => {
+    const toB = adoptExternalSource(createHistory(), "A", "B");
+    const toC = adoptExternalSource(toB.history, "B", "C");
+
+    const undoC = undo(toC.history, "C");
+    expect(undoC.source).toBe("B");
+    const undoB = undo(undoC.history, "B");
+    expect(undoB.source).toBe("A");
+
+    const redoB = redo(undoB.history, "A");
+    expect(redoB.source).toBe("B");
+    const redoC = redo(redoB.history, "B");
+    expect(redoC.source).toBe("C");
+  });
+
+  it("keeps local edits between external versions in chronological order", () => {
+    const toB = adoptExternalSource(createHistory(), "A", "B");
+    const local = commitSourceDraft(beginSourceDraft(toB.history, "B"), "local");
+    const toD = adoptExternalSource(local.history, "local", "D");
+
+    expect(undo(toD.history, "D").source).toBe("local");
+    const undoLocal = undo(undo(toD.history, "D").history, "local");
+    expect(undoLocal.source).toBe("B");
+    const undoExternal = undo(undoLocal.history, "B");
+    expect(undoExternal.source).toBe("A");
+  });
+
+  it("does not add a snapshot or discard redo for an identical external source", () => {
+    const edited = adoptExternalSource(createHistory(), "A", "B");
+    const undone = undo(edited.history, "B");
+    const reloaded = adoptExternalSource(undone.history, "A", "A");
+
+    expect(reloaded.changed).toBe(false);
+    expect(reloaded.history).toEqual(undone.history);
+    expect(canRedo(reloaded.history, "A")).toBe(true);
+  });
+
+  it("clears redo when a new external version is accepted", () => {
+    const edited = adoptExternalSource(createHistory(), "A", "B");
+    const undone = undo(edited.history, "B");
+    expect(canRedo(undone.history, "A")).toBe(true);
+
+    const accepted = adoptExternalSource(undone.history, "A", "C");
+    expect(accepted.history.future).toEqual([]);
+    expect(canRedo(accepted.history, "C")).toBe(false);
+    expect(undo(accepted.history, "C").source).toBe("A");
+  });
+
+  it("settles an in-progress source draft before an external adoption", () => {
+    const drafting = beginSourceDraft(createHistory(), "A");
+    const adopted = adoptExternalSource(drafting, "local draft", "B");
+
+    expect(adopted.history.sourceDraftStart).toBeNull();
+    expect(adopted.history.past).toEqual(["A", "local draft"]);
+    expect(undo(adopted.history, "B").source).toBe("local draft");
+  });
+
+  it("settles an in-progress gesture before an external adoption, including empty source", () => {
+    const gesture = beginTransaction(createHistory(), "");
+    const adopted = adoptExternalSource(gesture, "gesture result", "external");
+
+    expect(adopted.history.transactionStart).toBeNull();
+    expect(adopted.history.past).toEqual(["", "gesture result"]);
+    expect(undo(adopted.history, "external").source).toBe("gesture result");
+    expect(undo(undo(adopted.history, "external").history, "gesture result").source).toBe("");
+  });
+
   it("commits an invalid source draft as one undoable transition", () => {
     const initial = createHistory();
     const drafting = beginSourceDraft(initial, "valid source");

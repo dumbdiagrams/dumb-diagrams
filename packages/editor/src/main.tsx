@@ -43,6 +43,8 @@ import { createCatalogActions, insertionPoint } from "./state/catalog-actions";
 import { useEditorSelection } from "./state/use-editor-selection";
 import { groupSelection, canGroupSelection, ungroup } from "./model/grouping";
 import { useFileActions, type FilePickerWindow } from "./state/use-file-actions";
+import { requestWritePermission } from "./state/file-save";
+import { FileSyncIndicator } from "./ui/FileSyncIndicator";
 import { useStudioShortcuts } from "./interactions/use-studio-shortcuts";
 import { AnnotationInlineEditor } from "./canvas/AnnotationInlineEditor";
 import { Inspector } from "./panels/Inspector";
@@ -266,7 +268,7 @@ function App() {
     editSourceDraft,
     commitSourceDraft,
     commitSource,
-    resetTab,
+    applyExternalSource,
     resetActive,
     beginTransaction,
     endTransaction,
@@ -312,6 +314,39 @@ function App() {
     tabId: string;
   } | null>(null);
   const editingAnnotationIdRef = useRef<string | null>(null);
+  const fileSyncPointerDownRef = useRef(false);
+  const fileSyncEditingElementRef = useRef<Element | null>(null);
+  useEffect(() => {
+    const start = () => {
+      fileSyncPointerDownRef.current = true;
+    };
+    const end = () => {
+      fileSyncPointerDownRef.current = false;
+    };
+    const editing = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".document-name-field, .inspector-sheet, .source-sheet")) {
+        fileSyncEditingElementRef.current = target;
+      }
+    };
+    const finishEditing = (event: FocusEvent) => {
+      if (event.target === fileSyncEditingElementRef.current) fileSyncEditingElementRef.current = null;
+    };
+    window.addEventListener("pointerdown", start, true);
+    window.addEventListener("pointerup", end, true);
+    window.addEventListener("pointercancel", end, true);
+    window.addEventListener("blur", end);
+    window.addEventListener("input", editing, true);
+    window.addEventListener("focusout", finishEditing, true);
+    return () => {
+      window.removeEventListener("pointerdown", start, true);
+      window.removeEventListener("pointerup", end, true);
+      window.removeEventListener("pointercancel", end, true);
+      window.removeEventListener("blur", end);
+      window.removeEventListener("input", editing, true);
+      window.removeEventListener("focusout", finishEditing, true);
+    };
+  }, []);
   const inlineAnnotationRef = useRef<HTMLTextAreaElement>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
@@ -428,17 +463,47 @@ function App() {
       : tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
   }, []);
 
-  const sourceIsValid = (candidate: string): boolean =>
-    validateImportedSource(candidate, { enforceCatalogRules: false }).isOk();
+  const sourceIsValid = useCallback(
+    (candidate: string): boolean => validateImportedSource(candidate, { enforceCatalogRules: false }).isOk(),
+    [],
+  );
 
-  const { saveTabSource, attachFileHandle } = useFileActions({
-    tabs,
-    tabLabel,
-    sourceIsValid,
-    onMessage: setToast,
-    onSaved: markTabSaved,
-    onConflict: setFileConflictRequest,
-  });
+  const { saveTabSource, attachFileHandle, fileSyncByTab, reloadTabFromDisk, autoSaveEnabled, setAutoSaveEnabled } =
+    useFileActions({
+      tabs,
+      tabLabel,
+      sourceIsValid,
+      onMessage: setToast,
+      onSaved: (tabId, savedSource, filename, options) => {
+        markTabSaved(tabId, savedSource, filename, { commitDraft: !options?.automatic });
+      },
+      onConflict: setFileConflictRequest,
+      canAutoSaveTab: (tabId) => tabId !== activeTabRef.current || !fileSyncPointerDownRef.current,
+      canAutoReloadTab: (tabId) => {
+        if (tabId !== activeTabRef.current) return true;
+        return (
+          !fileSyncPointerDownRef.current &&
+          !editingAnnotationIdRef.current &&
+          fileSyncEditingElementRef.current !== document.activeElement
+        );
+      },
+      onExternalReload: (tabId, nextSource, filename) => {
+        applyExternalSource(tabId, nextSource);
+        if (tabId === activeTabRef.current) {
+          clearDraftTimer();
+          editorSelection.resetSelection();
+          editingAnnotationIdRef.current = null;
+          fileSyncEditingElementRef.current = null;
+          setEditingAnnotation(null);
+          setTextEditRequest(null);
+          setPendingPort(null);
+          setContextMenu(null);
+          setTabContextMenu(null);
+        }
+        setToast(`Updated ${filename} from disk`);
+      },
+    });
+  const activeFileSync = fileSyncByTab[activeTab.id];
 
   saveAsActionRef.current = async (draft) => {
     const filename = normalizeSingleLineText(draft);
@@ -639,7 +704,7 @@ function App() {
     }
   };
 
-  const reloadConflictingFile = () => {
+  const reloadConflictingFile = async () => {
     const request = fileConflictRequest;
     if (!request) return;
     const tab = tabs.find((candidate) => candidate.id === request.tabId);
@@ -648,13 +713,11 @@ function App() {
       setToast("The conflicting diagram tab is no longer open.");
       return;
     }
+    // Read again: the external editor may have written another version while
+    // the conflict dialog was open. Invalid partial writes stay on disk only.
+    const reloaded = await reloadTabFromDisk(request.tabId, { discardStudioEdits: true });
+    if (!reloaded) return;
     setFileConflictRequest(null);
-    resetTab(request.tabId, request.diskSource, request.diskSource);
-    if (request.tabId === activeTabId) {
-      resetTransientState();
-      setDefaultFrameKey((current) => current + 1);
-    }
-    setToast(`Reloaded ${request.filename} from disk`);
     if (closeRequest === request.tabId) {
       setCloseRequest(null);
       beginTabClose(request.tabId, previewsForTabs([tab]));
@@ -746,6 +809,11 @@ function App() {
         multiple: true,
         types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
       });
+      if (autoSaveEnabled) {
+        // The picker restores user activation. Ask for write access here,
+        // before reading files, so later autosaves need no permission prompt.
+        await Promise.all(handles.map(requestWritePermission));
+      }
       const { entries, rejected } = await readFileHandles(handles);
       await openFileEntries(entries, rejected);
     } catch (error) {
@@ -1438,12 +1506,24 @@ function App() {
     { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
     { id: "open", label: "Open .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => void openFromDisk() },
     {
+      id: "reload-from-disk",
+      label: "Reload from disk",
+      disabled: !activeFileSync,
+      onSelect: () => void reloadTabFromDisk(activeTab.id),
+    },
+    {
       id: "recycle-bin",
       label: `Recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`,
       onSelect: () => setRecycleBinOpen(true),
     },
     { id: "file-divider-1", label: "", separator: true },
     { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !currentSourceValid, onSelect: saveActive },
+    {
+      id: "auto-save",
+      label: "Auto-save",
+      checked: autoSaveEnabled,
+      onSelect: () => setAutoSaveEnabled(!autoSaveEnabled),
+    },
     {
       id: "save-as",
       label: "Save As…",
@@ -1525,6 +1605,13 @@ function App() {
     },
     { id: "command-new", label: "New diagram", section: "File", shortcut: "⌘N", onSelect: handleNewTab },
     { id: "command-open", label: "Open .dgm", section: "File", shortcut: "⌘O", onSelect: () => void openFromDisk() },
+    {
+      id: "command-reload-from-disk",
+      label: "Reload from disk",
+      section: "File",
+      disabled: !activeFileSync,
+      onSelect: () => void reloadTabFromDisk(activeTab.id),
+    },
     {
       id: "command-save",
       label: "Save",
@@ -1991,6 +2078,14 @@ function App() {
               </button>
             </div>
             <span className="file-name">{activeTab.filename ?? ".dgm"}</span>
+            {(activeFileSync || activeTab.filename || isTabDirty(activeTab)) && (
+              <FileSyncIndicator
+                status={activeFileSync?.status ?? "browser-only"}
+                onReload={() => void reloadTabFromDisk(activeTab.id)}
+                onSave={saveActive}
+                onSaveAs={openSaveAs}
+              />
+            )}
           </div>
           <div className="topbar-center">
             <button
@@ -2693,7 +2788,7 @@ function App() {
               <button type="button" className="text-button" onClick={() => setFileConflictRequest(null)}>
                 Cancel
               </button>
-              <button type="button" className="text-button" onClick={reloadConflictingFile}>
+              <button type="button" className="text-button" onClick={() => void reloadConflictingFile()}>
                 Reload from disk
               </button>
               <button type="button" className="danger-button" onClick={() => void overwriteConflictingFile()}>

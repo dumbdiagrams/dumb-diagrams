@@ -4,6 +4,16 @@ import { expect, test } from "@playwright/test";
 
 import { ASYNC_DOCS, openSourceDrawer, waitForStudioReady } from "./support/helpers";
 
+async function disableAutoSave(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  const autoSave = page.getByRole("menuitemcheckbox", { name: "Auto-save", exact: true });
+  await expect(autoSave).toBeChecked();
+  await autoSave.click();
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await expect(autoSave).not.toBeChecked();
+  await page.keyboard.press("Escape");
+}
+
 test("prompts before overwriting a file changed on disk", async ({ page }) => {
   const original = readFileSync(ASYNC_DOCS, "utf8");
   const edited = original.replace("diagram async-docs", "diagram edited");
@@ -28,6 +38,7 @@ test("prompts before overwriting a file changed on disk", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Open .dgm", exact: true }).click();
   await waitForStudioReady(page);
   await expect(page.locator(".workspace-tab.is-active")).toContainText("Async Docs");
+  await disableAutoSave(page);
 
   const drawer = await openSourceDrawer(page);
   const editor = drawer.locator(".cm-content");
@@ -74,6 +85,7 @@ test("overwrites a file changed on disk when explicitly confirmed", async ({ pag
   await page.getByRole("button", { name: "File", exact: true }).click();
   await page.getByRole("menuitem", { name: "Open .dgm", exact: true }).click();
   await waitForStudioReady(page);
+  await disableAutoSave(page);
 
   const drawer = await openSourceDrawer(page);
   const editor = drawer.locator(".cm-content");

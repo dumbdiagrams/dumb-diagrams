@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { DIAGRAM_LIMITS } from "@dumb-diagrams/runtime/core";
 
-import { isAbortError, saveExistingFileHandle, saveWithPicker, type FileSystemHandleLike } from "./file-save";
+import {
+  hasWritePermission,
+  isAbortError,
+  requestWritePermission,
+  saveExistingFileHandle,
+  saveWithPicker,
+  type FileSystemHandleLike,
+} from "./file-save";
 
 function fakeHandle(
   diskSource: string,
@@ -24,6 +31,27 @@ function fakeHandle(
 }
 
 describe("existing file saves", () => {
+  it("requests write permission immediately for explicit actions", async () => {
+    const requestPermission = vi.fn(async () => "granted" as PermissionState);
+    const handle = { ...fakeHandle("baseline"), requestPermission };
+    const request = requestWritePermission(handle);
+    expect(requestPermission).toHaveBeenCalledOnce();
+    expect(requestPermission).toHaveBeenCalledWith({ mode: "readwrite" });
+    expect(await request).toBe(true);
+  });
+
+  it("queries background permission without prompting", async () => {
+    const requestPermission = vi.fn(async () => "granted" as PermissionState);
+    const handle = {
+      ...fakeHandle("baseline"),
+      queryPermission: vi.fn(async () => "denied" as PermissionState),
+      requestPermission,
+    };
+    expect(await hasWritePermission(handle)).toBe(false);
+    expect(handle.queryPermission).toHaveBeenCalledWith({ mode: "readwrite" });
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
   it("writes when disk still matches the saved source snapshot", async () => {
     const handle = fakeHandle("old source");
     const result = await saveExistingFileHandle(handle, "new source", "old source");
@@ -35,6 +63,13 @@ describe("existing file saves", () => {
     const handle = fakeHandle("external source");
     const result = await saveExistingFileHandle(handle, "new source", "old source");
     expect(result).toEqual({ status: "conflict", filename: "diagram.dgm", diskSource: "external source" });
+    expect(handle.createWritable).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges a disk file that already contains the desired source", async () => {
+    const handle = fakeHandle("same source");
+    const result = await saveExistingFileHandle(handle, "same source", "older baseline");
+    expect(result).toEqual({ status: "saved", filename: "diagram.dgm" });
     expect(handle.createWritable).not.toHaveBeenCalled();
   });
 
@@ -90,6 +125,52 @@ describe("existing file saves", () => {
     expect(handle.writable.write).not.toHaveBeenCalled();
     expect(handle.writable.abort).toHaveBeenCalledOnce();
     expect(handle.writable.close).not.toHaveBeenCalled();
+  });
+
+  it("aborts a write if the source becomes stale after write but before close", async () => {
+    const handle = fakeHandle("old source");
+    let checks = 0;
+    const result = await saveExistingFileHandle(handle, "new source", "old source", {
+      isCurrent: () => checks++ < 3,
+    });
+    expect(result).toMatchObject({ status: "error", code: "stale-source" });
+    expect(handle.writable.write).toHaveBeenCalledOnce();
+    expect(handle.writable.abort).toHaveBeenCalledOnce();
+    expect(handle.writable.close).not.toHaveBeenCalled();
+  });
+
+  it("checks for a conflicting disk edit again before closing the write", async () => {
+    let disk = "saved baseline";
+    const writable = {
+      write: vi.fn(async () => {
+        disk = "external edit";
+      }),
+      close: vi.fn(async () => undefined),
+      abort: vi.fn(async () => undefined),
+    };
+    const handle: FileSystemHandleLike & { writable: typeof writable } = {
+      kind: "file",
+      name: "diagram.dgm",
+      getFile: vi.fn(async () => new File([disk], "diagram.dgm", { type: "text/plain" })),
+      createWritable: vi.fn(async () => writable),
+      writable,
+    };
+    const result = await saveExistingFileHandle(handle, "desired source", "saved baseline");
+    expect(result).toEqual({ status: "conflict", filename: "diagram.dgm", diskSource: "external edit" });
+    expect(writable.abort).toHaveBeenCalledOnce();
+    expect(writable.close).not.toHaveBeenCalled();
+  });
+
+  it("returns stale after close while preserving that the captured source was committed", async () => {
+    const handle = fakeHandle("old source");
+    let current = true;
+    handle.writable.close.mockImplementation(async () => {
+      current = false;
+    });
+    const result = await saveExistingFileHandle(handle, "captured source", "old source", {
+      isCurrent: () => current,
+    });
+    expect(result).toMatchObject({ status: "error", code: "stale-source", committed: true });
   });
 
   it("distinguishes read and write failures and cancellation", async () => {

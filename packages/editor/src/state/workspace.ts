@@ -5,6 +5,7 @@ import { DIAGRAM_LIMITS, utf8ByteLength } from "@dumb-diagrams/runtime/core";
 import type { Viewport } from "../model/types";
 import {
   beginSourceDraft,
+  adoptExternalSource as adoptExternalSourceHistory,
   beginTransaction as beginHistoryTransaction,
   canRedo as canRedoHistory,
   canUndo as canUndoHistory,
@@ -383,6 +384,31 @@ export function useWorkspace(options: WorkspaceOptions) {
     [resetTab],
   );
 
+  const applyExternalSource = useCallback(
+    (tabId: string, source: string) => {
+      if (utf8ByteLength(source) > DIAGRAM_LIMITS.sourceBytes) return;
+      const tab = workspaceRef.current.tabs.find((candidate) => candidate.id === tabId);
+      if (!tab) return;
+
+      const transition = adoptExternalSourceHistory(ensureHistory(tabId), tab.source, source);
+      historiesRef.current.set(tabId, transition.history);
+      updateWorkspace((current) => ({
+        ...current,
+        tabs: current.tabs.map((candidate) =>
+          candidate.id === tabId
+            ? {
+                ...candidate,
+                ...(transition.source === undefined ? {} : { source: transition.source }),
+                savedSource: source,
+              }
+            : candidate,
+        ),
+      }));
+      if (transition.changed) touchHistory();
+    },
+    [ensureHistory, touchHistory, updateWorkspace],
+  );
+
   const beginTransaction = useCallback(
     (tabId?: string) => {
       const state = workspaceRef.current;
@@ -658,8 +684,8 @@ export function useWorkspace(options: WorkspaceOptions) {
   );
 
   const markTabSaved = useCallback(
-    (tabId: string, source: string, filename?: string) => {
-      if (workspaceRef.current.activeTabId === tabId) commitSourceDraft();
+    (tabId: string, source: string, filename?: string, options: { commitDraft?: boolean } = {}) => {
+      if ((options.commitDraft ?? true) && workspaceRef.current.activeTabId === tabId) commitSourceDraft();
       updateWorkspace((current) => ({
         ...current,
         tabs: current.tabs.map((tab) =>
@@ -696,6 +722,7 @@ export function useWorkspace(options: WorkspaceOptions) {
     editSourceDraft,
     commitSourceDraft,
     commitSource,
+    applyExternalSource,
     resetTab,
     resetActive,
     beginTransaction,

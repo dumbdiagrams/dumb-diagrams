@@ -226,10 +226,10 @@ test("copies and pastes nested groups with descendants and internal edges throug
   const edgesBefore = await page.locator('[data-entity-kind="edge"]').count();
 
   await page.keyboard.press(`${MOD}+C`);
-  await expect(page.getByRole("status")).toContainText("Copied selection internally");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Copied selection internally");
   await page.keyboard.press(`${MOD}+V`);
 
-  await expect(page.getByRole("status")).toContainText("Pasted selection from Studio clipboard");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Pasted selection from Studio clipboard");
   await expect.poll(() => page.locator('[data-entity-kind="group"]').count())
     .toBeGreaterThan(groupsBefore);
   await expect.poll(() => page.locator('[data-entity-kind="resource"]').count())

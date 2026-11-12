@@ -59,6 +59,41 @@ export function commitSource(history: DocumentHistory, currentSource: string, ne
   };
 }
 
+/**
+ * Adopt source text received from outside the editor as one undoable change.
+ * Pending editor drafts and gestures are settled first so local work remains
+ * in the timeline. A same-text adoption only settles pending work; it leaves a
+ * redo branch intact when there was no pending edit to commit.
+ */
+export function adoptExternalSource(
+  history: DocumentHistory,
+  currentSource: string,
+  nextSource: string,
+): HistoryTransition {
+  const draft = commitSourceDraft(history, currentSource);
+  const gesture =
+    draft.history.transactionStart === null
+      ? { history: draft.history, changed: false }
+      : endTransaction(draft.history, currentSource);
+  const settledChanged = draft.changed || gesture.changed;
+
+  if (currentSource === nextSource) {
+    return { history: gesture.history, changed: settledChanged };
+  }
+
+  return {
+    history: boundHistory({
+      ...gesture.history,
+      past: [...gesture.history.past, currentSource],
+      future: [],
+      transactionStart: null,
+      sourceDraftStart: null,
+    }),
+    changed: true,
+    source: nextSource,
+  };
+}
+
 /** Start a pointer gesture transaction at the current source. */
 export function beginTransaction(history: DocumentHistory, source: string): DocumentHistory {
   return boundHistory({ ...history, transactionStart: source });
@@ -68,7 +103,7 @@ export function beginTransaction(history: DocumentHistory, source: string): Docu
 export function endTransaction(history: DocumentHistory, source: string): HistoryTransition {
   const start = history.transactionStart;
   const nextHistory = boundHistory({ ...history, transactionStart: null });
-  if (!start || start === source) return { history: nextHistory, changed: false };
+  if (start === null || start === source) return { history: nextHistory, changed: false };
   return {
     history: boundHistory({
       ...nextHistory,

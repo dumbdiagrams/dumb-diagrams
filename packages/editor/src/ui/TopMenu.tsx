@@ -7,6 +7,7 @@ export interface TopMenuItem {
   label: string;
   shortcut?: string;
   disabled?: boolean;
+  checked?: boolean;
   danger?: boolean;
   separator?: boolean;
   onSelect?: () => void;
@@ -148,10 +149,11 @@ export function TopMenu({
                   refs[index] = element;
                 }}
                 type="button"
-                role="menuitem"
+                role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
                 className={`top-menu-item${item.danger ? " is-danger" : ""}`}
                 disabled={item.disabled}
                 aria-label={item.label}
+                aria-checked={item.checked}
                 aria-keyshortcuts={item.shortcut}
                 aria-haspopup={hasSubmenu ? "menu" : undefined}
                 onClick={() => {
@@ -162,6 +164,7 @@ export function TopMenu({
                 onKeyDown={(event) => handleItemKeyDown(event, item, index, refs, submenuFor)}
               >
                 <span>{item.label}</span>
+                {item.checked !== undefined && <span aria-hidden="true">{item.checked ? "✓" : ""}</span>}
                 {item.shortcut && <kbd>{item.shortcut}</kbd>}
                 {hasSubmenu && <IconCaret className="top-menu-caret" />}
               </button>
