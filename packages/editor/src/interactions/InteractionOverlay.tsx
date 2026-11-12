@@ -1212,7 +1212,7 @@ function InteractionOverlayComponent({
                   event.stopPropagation();
                   // Notes reflow their text while resizing: height follows the wrapped text.
                   const note = item.kind === "annotation" ? doc.annotations.find((a) => a.id === item.id) : undefined;
-                  const fit = (next: Rect): Rect => (note ? fitAnnotationRect(note, next, handle.name) : next);
+                  const fitNote = (next: Rect): Rect => (note ? fitAnnotationRect(note, next, handle.name) : next);
                   beginResize(
                     event,
                     zoom,
@@ -1223,10 +1223,15 @@ function InteractionOverlayComponent({
                       setResizePreview({
                         kind: item.kind,
                         id: item.id,
-                        bounds: fit(next),
+                        bounds: fitNote(next),
                       }),
                     (next) =>
-                      onResize(item.kind as "resource" | "group" | "annotation", item.id, fit(next), event.shiftKey),
+                      onResize(
+                        item.kind as "resource" | "group" | "annotation",
+                        item.id,
+                        fitNote(next),
+                        event.shiftKey,
+                      ),
                     () => setResizePreview(null),
                     startGesture,
                     onGestureBegin,
