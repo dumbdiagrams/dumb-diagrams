@@ -171,3 +171,78 @@ test("keeps a dirty local draft until reload from disk is reviewed and confirmed
   await expect(page.locator('[data-entity-kind="resource"][data-entity-id="latest_worker"]')).toHaveCount(1);
   await expect(page.locator('[data-entity-kind="resource"][data-entity-id="review_worker"]')).toHaveCount(0);
 });
+
+async function openWithSlowDisk(page: Page, delayMs: number, options: { failFirstRead?: boolean } = {}) {
+  await page.addInitScript(
+    ({ source, delay, failFirstRead }) => {
+      const w = window as Window & { __labels: string[]; __reads: number };
+      w.__labels = [];
+      w.__reads = 0;
+      const record = () => {
+        const label = document.querySelector(".file-sync-indicator")?.textContent?.trim() ?? "";
+        if (w.__labels[w.__labels.length - 1] !== label) w.__labels.push(label);
+      };
+      new MutationObserver(record).observe(document, { subtree: true, childList: true, characterData: true });
+      Object.assign(window, {
+        showOpenFilePicker: async () => [{
+          kind: "file",
+          name: "slow.dgm",
+          getFile: async () => {
+            w.__reads += 1;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            // Read 1 is the import read; read 2 is the first live-sync read.
+            if (failFirstRead && w.__reads === 2) throw new Error("first sync read failed");
+            return new File([source], "slow.dgm", { type: "text/plain", lastModified: 1 });
+          },
+          createWritable: async () => ({ write: async () => undefined, close: async () => undefined }),
+        }],
+      });
+    },
+    { source: initialSource, delay: delayMs, failFirstRead: options.failFirstRead ?? false },
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Open .dgm", exact: true }).click();
+}
+
+const recordedLabels = (page: Page) =>
+  page.evaluate(() => (window as Window & { __labels: string[] }).__labels);
+
+test("shows Connecting… instead of Browser only while the first read is slow, then Live", async ({ page }) => {
+  await openWithSlowDisk(page, 1200);
+  await expect(page.getByText("Connecting…", { exact: true })).toBeVisible();
+  await expect(page.getByText("Browser only", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  const labels = await recordedLabels(page);
+  expect(labels).not.toContain("Browser only");
+  expect(labels.indexOf("Connecting…")).toBeLessThan(labels.indexOf("Live"));
+});
+
+test("never flashes Browser only when a linked file opens with a fast disk", async ({ page }) => {
+  await openWithSlowDisk(page, 0);
+  await waitForStudioReady(page);
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  expect(await recordedLabels(page)).not.toContain("Browser only");
+});
+
+test("a failed first read ends in Disconnected and recovers to Live, never Browser only", async ({ page }) => {
+  await openWithSlowDisk(page, 50, { failFirstRead: true });
+  await expect.poll(() => recordedLabels(page)).toContain("Disconnected");
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  const labels = await recordedLabels(page);
+  expect(labels).not.toContain("Browser only");
+  expect(labels.indexOf("Disconnected")).toBeLessThan(labels.lastIndexOf("Live"));
+});
+
+test("the status stays Live across tab switches and a second linked file", async ({ page }) => {
+  await linkMockFile(page);
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Open .dgm", exact: true }).click();
+  await expect(page.getByRole("tab", { name: /live-sync\.dgm/ })).toHaveCount(2);
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: /live-sync\.dgm/ }).first().click();
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: /live-sync\.dgm/ }).last().click();
+  await expect(page.getByText("Live", { exact: true })).toBeVisible();
+});

@@ -4,6 +4,7 @@ import type { FileSystemHandleLike } from "./file-save";
 import type { WorkspaceTab } from "./workspace-model";
 
 export type FileSyncStatus =
+  | "connecting"
   | "watching"
   | "pending"
   | "conflict"
@@ -13,6 +14,26 @@ export type FileSyncStatus =
   | "unsaved"
   | "save-error";
 export type FileSyncByTab = Readonly<Record<string, { status: FileSyncStatus; filename: string }>>;
+
+/**
+ * A tab whose handle is attached but not yet observed by the controller (the
+ * tab renders after the handle is attached) is "connecting", never unlinked.
+ */
+export function withConnectingTabs(
+  base: FileSyncByTab,
+  tabIds: readonly string[],
+  getHandle: (tabId: string) => FileSystemHandleLike | undefined,
+): FileSyncByTab {
+  let result: Record<string, { status: FileSyncStatus; filename: string }> | null = null;
+  for (const id of tabIds) {
+    if (base[id]) continue;
+    const handle = getHandle(id);
+    if (!handle) continue;
+    result ??= { ...base };
+    result[id] = { status: "connecting", filename: handle.name };
+  }
+  return result ?? base;
+}
 
 type SyncTab = Pick<WorkspaceTab, "id" | "source" | "savedSource" | "filename">;
 
@@ -298,7 +319,7 @@ export class FileSyncController {
         candidate: null,
         quietSince: this.now(),
         valid: null,
-        status: "watching",
+        status: "connecting",
         inFlight: null,
       };
       this.entries.set(tabId, entry);

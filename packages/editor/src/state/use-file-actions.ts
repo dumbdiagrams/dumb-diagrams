@@ -10,7 +10,7 @@ import {
   type SaveFilePicker,
 } from "./file-save";
 import { downloadTextResult, filenameWithExtension } from "./export-actions";
-import { FileSyncController, type FileSyncByTab } from "./file-sync";
+import { FileSyncController, withConnectingTabs, type FileSyncByTab } from "./file-sync";
 import type { WorkspaceTab } from "./workspace";
 
 export type FilePickerWindow = Window & {
@@ -79,7 +79,8 @@ export function useFileActions({
     canAutoSaveTab,
   };
   const [autoSaveEnabled, setAutoSaveEnabledState] = useState(readAutoSavePreference);
-  const [fileSyncByTab, setFileSyncByTab] = useState<FileSyncByTab>({});
+  const [publishedSyncByTab, setFileSyncByTab] = useState<FileSyncByTab>({});
+  const [linkVersion, setLinkVersion] = useState(0);
   const syncStatusRef = useRef<FileSyncByTab>({});
   const autoStatusRef = useRef<Record<string, AutosaveStatus>>({});
   const writeQueues = useRef(new Map<FileSystemHandleLike, Promise<void>>());
@@ -169,6 +170,11 @@ export function useFileActions({
     );
   }
   syncRef.current.refreshTabs(tabs);
+  const fileSyncByTab = withConnectingTabs(
+    publishedSyncByTab,
+    tabs.map(({ id }) => id),
+    (id) => handles.current.get(id),
+  );
   useEffect(() => {
     try {
       localStorage.setItem(AUTOSAVE_PREFERENCE_KEY, String(autoSaveEnabled));
@@ -202,6 +208,10 @@ export function useFileActions({
   useEffect(() => {
     refreshAutosaveTabs();
   });
+  // Read a newly linked file right away instead of waiting for the next interval.
+  useEffect(() => {
+    if (linkVersion > 0) void syncRef.current?.poll();
+  }, [linkVersion]);
   useEffect(() => {
     const openIds = new Set(tabs.map(({ id }) => id));
     for (const id of handles.current.keys()) if (!openIds.has(id)) handles.current.delete(id);
@@ -363,6 +373,7 @@ export function useFileActions({
 
   const attachFileHandle = (tabId: string, handle: FileSystemHandleLike) => {
     handles.current.set(tabId, handle);
+    setLinkVersion((version) => version + 1);
     syncRef.current?.noteOwnWrite(tabId, tabsRef.current.find((tab) => tab.id === tabId)?.source ?? "", handle);
     refreshAutosaveTabs();
   };

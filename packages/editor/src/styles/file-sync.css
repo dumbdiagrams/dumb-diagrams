@@ -26,6 +26,7 @@
   background: var(--success);
 }
 
+.file-sync-indicator.is-connecting .file-sync-dot,
 .file-sync-indicator.is-pending .file-sync-dot,
 .file-sync-indicator.is-saving .file-sync-dot,
 .file-sync-indicator.is-unsaved .file-sync-dot,
@@ -42,4 +43,20 @@
 
 .file-sync-indicator:disabled {
   cursor: progress;
+}
+
+.file-sync-indicator.is-connecting .file-sync-dot {
+  animation: file-sync-pulse 1s ease-in-out infinite;
+}
+
+@keyframes file-sync-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-sync-indicator.is-connecting .file-sync-dot {
+    animation: none;
+  }
 }

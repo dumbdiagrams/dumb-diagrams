@@ -4,6 +4,10 @@ import type { FileSyncStatus } from "../state/file-sync";
 type IndicatorStatus = FileSyncStatus | "browser-only";
 
 const messages: Record<IndicatorStatus, { label: string; description: string }> = {
+  connecting: {
+    label: "Connecting…",
+    description: "Reading the linked file to start live sync.",
+  },
   watching: {
     label: "Live",
     description:
@@ -64,8 +68,8 @@ export function FileSyncIndicator({
       type="button"
       className={`file-sync-indicator is-${status}`}
       aria-label={browserOnly ? "Save As" : needsSave ? "Save" : "Reload from disk"}
-      disabled={status === "saving"}
-      aria-busy={status === "saving"}
+      disabled={status === "saving" || status === "connecting"}
+      aria-busy={status === "saving" || status === "connecting"}
       title={message.description}
       onClick={browserOnly ? onSaveAs : needsSave ? onSave : onReload}
     >
