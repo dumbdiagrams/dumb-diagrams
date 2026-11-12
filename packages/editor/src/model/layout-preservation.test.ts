@@ -320,11 +320,11 @@ describe("annotation layout preservation", () => {
     if (!compilation.ok) return;
     const preserved = preserveManualLayout(doc, compilation.layout);
     for (const annotation of doc.annotations) {
-      expect(getDefaultView(preserved).annotations?.[annotation.id]).toMatchObject({
-        ...getAnnotationBounds(doc, compilation.layout, annotation.id),
-        pin: true,
-        manual: true,
-      });
+      const bounds = getAnnotationBounds(doc, compilation.layout, annotation.id)!;
+      const place = getDefaultView(preserved).annotations?.[annotation.id];
+      // Only the position is frozen; the size keeps fitting the note's text.
+      expect(place).toEqual({ x: bounds.x, y: bounds.y, pin: true, manual: true });
+      expect(getAnnotationBounds(preserved, compilation.layout, annotation.id)).toEqual(bounds);
     }
     expect(getDefaultView(doc).annotations?.callout).toBeUndefined();
   });

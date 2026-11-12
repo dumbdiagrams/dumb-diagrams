@@ -1452,3 +1452,21 @@ describe("editor commands", () => {
     expect(doc.resources).toHaveLength(DIAGRAM_LIMITS.resources);
   });
 });
+
+describe("annotation resize keeps notes fitted", () => {
+  const long = "Reliability: request and result DLQs handle exhausted consumer retries, not business outcomes.";
+
+  it("drops the stored height when the note is no taller than its text, and keeps a taller one", () => {
+    const added = addAnnotation(createAsyncDocsFixture(), long, { x: 0, y: 0 }, undefined, "callout");
+    const fitted = setSize(added.doc, added.id, 200, 40);
+    expect(getDefaultView(fitted).annotations?.[added.id]).toMatchObject({ w: 200, pin: true });
+    expect(getDefaultView(fitted).annotations?.[added.id]).not.toHaveProperty("h");
+
+    const tall = setSize(added.doc, added.id, 200, 400);
+    expect(getDefaultView(tall).annotations?.[added.id]).toMatchObject({ w: 200, h: 400 });
+
+    const widened = getDefaultView(setSize(fitted, added.id, 500, 40)).annotations?.[added.id];
+    expect(widened).toMatchObject({ w: 500 });
+    expect(widened).not.toHaveProperty("h");
+  });
+});

@@ -75,7 +75,7 @@ export function annotationTextLayout(annotation: DiagramDocument["annotations"][
   return { lines: textLines, fontSize, fontFamily, lineHeight, chars, top, rowHeight, contentHeight, left, right };
 }
 
-function minimumWidth(annotation: DiagramDocument["annotations"][number]): number {
+export function annotationMinimumWidth(annotation: DiagramDocument["annotations"][number]): number {
   const style = annotation.style ?? "paper";
   const size = annotation.fontSize ?? (style === "text" ? 14 : style === "code" ? 13 : 12);
   const inset = style === "callout" ? 64 : style === "checklist" ? 58 : style === "code" ? 28 : 24;
@@ -85,6 +85,62 @@ function minimumWidth(annotation: DiagramDocument["annotations"][number]): numbe
 
 function minimum(annotation: DiagramDocument["annotations"][number], width: number): number {
   return annotationTextLayout(annotation, width).contentHeight;
+}
+
+/** Widest an auto-sized note grows before its text wraps. */
+const AUTO_MAX_WIDTH: Record<string, number> = { text: 360, paper: 300, code: 520, callout: 300, checklist: 300 };
+
+/** Dragging a note shorter than its text by up to this much snaps back to auto height. */
+export const ANNOTATION_AUTO_HEIGHT_SNAP = 12;
+
+/** Width that shows the longest line unwrapped, capped so long notes wrap into a compact block. */
+function fittedWidth(annotation: DiagramDocument["annotations"][number]): number {
+  const style = annotation.style ?? "paper";
+  const layout = annotationTextLayout(annotation, 100_000);
+  const mono = annotation.font === "mono" || (style === "code" && annotation.font === undefined);
+  const longest = Math.max(1, ...annotation.text.split(/\r?\n/).map((line) => line.length));
+  const natural = Math.ceil(layout.left + layout.right + longest * layout.fontSize * (mono ? 0.62 : 0.56));
+  return Math.max(120, annotationMinimumWidth(annotation), Math.min(natural, AUTO_MAX_WIDTH[style] ?? 300));
+}
+
+/**
+ * Notes without an authored size (or still at the untouched style default) fit
+ * their text. An authored width keeps auto height; an authored height is only a
+ * minimum.
+ */
+function resolveAnnotationSize(
+  annotation: DiagramDocument["annotations"][number],
+  place?: { w?: number; h?: number },
+): { w: number; h: number } {
+  const base = defaults[annotation.style ?? "paper"] ?? defaults.paper!;
+  const untouched = place?.w === base.w && place?.h === base.h;
+  const authoredW = untouched ? undefined : place?.w;
+  const authoredH = untouched ? undefined : place?.h;
+  const w = Math.max(80, annotationMinimumWidth(annotation), authoredW ?? fittedWidth(annotation));
+  return { w, h: Math.max(minimum(annotation, w), authoredH ?? 0) };
+}
+
+/**
+ * Resize result for a note being dragged: keeps the edge opposite the handle
+ * fixed, reflows the text for the new width, and reports whether the height is
+ * just the text height (so it can stay automatic).
+ */
+export function fitAnnotationRect(
+  annotation: DiagramDocument["annotations"][number],
+  rect: Rect,
+  handle: string,
+): Rect & { autoHeight: boolean } {
+  const w = Math.max(80, annotationMinimumWidth(annotation), rect.w);
+  const content = minimum(annotation, w);
+  const autoHeight = rect.h <= content + ANNOTATION_AUTO_HEIGHT_SNAP;
+  const h = autoHeight ? content : rect.h;
+  return {
+    x: handle.includes("w") ? rect.x + rect.w - w : rect.x,
+    y: handle.includes("n") ? rect.y + rect.h - h : rect.y,
+    w,
+    h,
+    autoHeight,
+  };
 }
 
 function annotationObstacles(layout: LayoutResult): Rect[] {
@@ -111,20 +167,14 @@ export function resolveAnnotationBounds(doc: DiagramDocument, layout: LayoutResu
     const place = view.annotations?.[annotation.id];
     const implicitDefault = place?.x === 48 && place?.y === 48 && !place.manual && !place.pin && !place.locked;
     if (place?.x !== undefined && place.y !== undefined && !implicitDefault) {
-      const base = defaults[annotation.style ?? "paper"] ?? defaults.paper!;
-      const w = Math.max(80, minimumWidth(annotation), place.w ?? base.w);
-      const h = Math.max(minimum(annotation, w), place.h ?? base.h);
-      const rect = { x: place.x, y: place.y, w, h };
+      const rect = { x: place.x, y: place.y, ...resolveAnnotationSize(annotation, place) };
       result[annotation.id] = rect;
       placed.push(rect);
     }
   }
   for (const annotation of doc.annotations) {
     const place = view.annotations?.[annotation.id];
-    const style = annotation.style ?? "paper";
-    const base = defaults[style] ?? defaults.paper!;
-    const w = Math.max(80, minimumWidth(annotation), place?.w ?? base.w);
-    const h = Math.max(minimum(annotation, w), place?.h ?? base.h);
+    const { w, h } = resolveAnnotationSize(annotation, place);
     const implicitDefault = place?.x === 48 && place?.y === 48 && !place.manual && !place.pin && !place.locked;
     const explicitlyPlaced = place?.x !== undefined && place?.y !== undefined && !implicitDefault;
     if (explicitlyPlaced) continue;
@@ -145,7 +195,15 @@ export function resolveAnnotationBounds(doc: DiagramDocument, layout: LayoutResu
       { x: point.x - w / 2, y: point.y + 28 },
       { x: point.x - w / 2, y: point.y - h - 28 },
     ];
-    const permittedGroups = node ? layout.groups.filter((g) => isGroupAncestor(doc, g.id, node.id)) : [];
+    // Notes may sit inside every boundary that contains what they describe.
+    const anchoredIds = node
+      ? [node.id]
+      : group
+        ? [group.id]
+        : edge
+          ? doc.edges.filter((e) => e.id === edge.id).flatMap((e) => [e.source, e.target])
+          : [];
+    const permittedGroups = layout.groups.filter((g) => anchoredIds.some((id) => isGroupAncestor(doc, g.id, id)));
     const occupied = [
       ...layout.nodes.map((n) => n.obstacle),
       ...layout.groups.filter((g) => !permittedGroups.some((permitted) => permitted.id === g.id)).map((g) => g.bounds),
@@ -166,8 +224,19 @@ export function resolveAnnotationBounds(doc: DiagramDocument, layout: LayoutResu
     }
     const scored = search.map((r) => {
       const collisions = area(occupied.filter((o) => overlap(r, o)));
+      // Sit fully inside or fully outside a boundary; never straddle its border.
+      const straddled = permittedGroups.filter(
+        (g) =>
+          overlap(r, g.bounds) &&
+          !(
+            r.x >= g.bounds.x &&
+            r.y >= g.bounds.y &&
+            r.x + r.w <= g.bounds.x + g.bounds.w &&
+            r.y + r.h <= g.bounds.y + g.bounds.h
+          ),
+      ).length;
       const distance = Math.hypot(r.x + r.w / 2 - point.x, r.y + r.h / 2 - point.y);
-      return { r, cost: collisions * 1000 + distance };
+      return { r, cost: collisions * 1000 + straddled * 600 + distance };
     });
     scored.sort((a, b) => a.cost - b.cost);
     let chosen: Rect | undefined = scored.find(({ r }) => !occupied.some((o) => overlap(r, o)))?.r;

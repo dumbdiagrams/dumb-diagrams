@@ -114,9 +114,11 @@ function snapshotLayout(doc: DiagramDocument, layout: LayoutResult, skipPinned: 
     const bounds = annotationBounds[annotation.id];
     if (!bounds) continue;
     view.annotations ??= {};
+    // Freeze position only: authored sizes stay, automatic sizes keep fitting their text.
     view.annotations[annotation.id] = {
       ...existing,
-      ...bounds,
+      x: bounds.x,
+      y: bounds.y,
       pin: true,
       manual: true,
     };

@@ -19,7 +19,12 @@ import type {
   TextFontFamily,
 } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/runtime/core";
-import { getAnnotationTheme, resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
+import {
+  ANNOTATION_AUTO_HEIGHT_SNAP,
+  annotationTextLayout,
+  getAnnotationTheme,
+  resolveAnnotationBounds,
+} from "@dumb-diagrams/runtime/render";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
 import { isEmptyRootBoundary } from "@dumb-diagrams/runtime/layout";
@@ -202,12 +207,18 @@ export function setSize(
     }
   }
 
+  const annotation = next.annotations.find((candidate) => candidate.id === id);
+  const autoHeight =
+    annotation !== undefined &&
+    nextH <= annotationTextLayout(annotation, nextW).contentHeight + ANNOTATION_AUTO_HEIGHT_SNAP;
   places[id] = {
     ...place,
     w: nextW,
     h: nextH,
     pin: true,
   };
+  // A note no taller than its text keeps fitting it as the width changes.
+  if (autoHeight) delete places[id]!.h;
   return next;
 }
 

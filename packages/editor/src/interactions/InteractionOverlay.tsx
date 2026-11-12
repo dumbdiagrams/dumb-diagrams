@@ -16,7 +16,7 @@ import {
   routeConnectionPreview,
   routeEdgePreview,
 } from "@dumb-diagrams/runtime/route";
-import { resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
+import { fitAnnotationRect, resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { isSelected } from "../editor-model";
@@ -1210,6 +1210,9 @@ function InteractionOverlayComponent({
                 onPointerDown={(event) => {
                   if (!isPrimaryPointerButton(event)) return;
                   event.stopPropagation();
+                  // Notes reflow their text while resizing: height follows the wrapped text.
+                  const note = item.kind === "annotation" ? doc.annotations.find((a) => a.id === item.id) : undefined;
+                  const fit = (next: Rect): Rect => (note ? fitAnnotationRect(note, next, handle.name) : next);
                   beginResize(
                     event,
                     zoom,
@@ -1220,9 +1223,10 @@ function InteractionOverlayComponent({
                       setResizePreview({
                         kind: item.kind,
                         id: item.id,
-                        bounds: next,
+                        bounds: fit(next),
                       }),
-                    (next) => onResize(item.kind as "resource" | "group" | "annotation", item.id, next, event.shiftKey),
+                    (next) =>
+                      onResize(item.kind as "resource" | "group" | "annotation", item.id, fit(next), event.shiftKey),
                     () => setResizePreview(null),
                     startGesture,
                     onGestureBegin,
