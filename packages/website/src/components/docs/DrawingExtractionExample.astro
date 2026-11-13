@@ -9,10 +9,10 @@ const asset = (file: string) => url(`worked-examples/engineering-drawing-extract
 ---
 <WorkedExample
   id="drawing-extraction"
-  title="Engineering drawing extraction"
-  heading="Async drawing extraction"
+  title="PDF data extraction with Amazon Bedrock LLMs"
+  heading="Async PDF data extraction with Bedrock LLMs"
   meta="AWS · Team X / Team Y · Reviewed in Studio"
-  description="AWS drawing extraction workflow with Team X, shared S3 and SQS infrastructure, Team Y, eleven sequence badges, and six explanatory callouts"
+  description="Asynchronous AWS workflow for extracting data from supplied PDF files with Amazon Bedrock LLMs, shared S3 and SQS infrastructure, and two teams"
   prompt={prompt} source={source} requirements={requirements}
   assets={{ preview: asset('diagram.svg'), svg: asset('diagram.svg'), source: asset('diagram.dgm'), requirements: asset('diagram.requirements.json') }}
   width={1701} height={1136}

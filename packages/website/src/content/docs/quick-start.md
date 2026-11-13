@@ -8,17 +8,19 @@ order: 1
 ---
 You need **Node.js 24 or newer**. Check your version with `node --version`. The install command below uses npm, which comes with Node.js.
 
-Install `create-dumb-diagrams` once. The main command is `dumbdiagrams`; `dgm` is a shorter alias for the same thing.
+Install `create-dumb-diagrams` once to add the `dumbdiagrams` command.
 
 ```bash
 npm install -g create-dumb-diagrams
 cd path/to/your-projects
 dumbdiagrams init
 cd <project-folder>
+# Open in your AI coding tool (e.g. `code .`, `cursor .`, Codex, or Claude Code)
 dumbdiagrams studio
+# In Studio, choose Open to visualize a .dgm file
 ```
 
-`init` asks for a project name and creates that folder in the current directory. Leave the name blank to use a timestamped folder. Then `studio` opens the local editor; choose **Open** to select any `.dgm` file on your machine. Keep the command running while you work and stop it with `Ctrl+C`.
+`init` asks for a project name and creates that folder in the current directory. Leave the name blank to use a timestamped folder. Open the new folder in your AI-enabled editor or coding agent, then give the agent your diagram prompt; the generated project instructions explain how to create the diagram. Once the agent creates a `.dgm` file, run `dumbdiagrams studio` to start the local visual editor, then choose **Open** to select the file. Opening Studio is a separate step from opening your AI editor. Keep Studio running while you work and stop it with `Ctrl+C`.
 
 ## What the project contains
 
@@ -84,4 +86,6 @@ In Chrome or Edge, use **File → Open** to link a `.dgm` file. Auto-save is on 
 | `dumbdiagrams render <file.dgm> -o diagram.svg` | Render a portable SVG. Omit `-o` to write it to standard output. |
 | `dumbdiagrams --help` | Show command help. Use `--version` to print the installed version. |
 
-Run normal validation and then `dumbdiagrams validate --strict <files…>`. If findings are fixable, make at most two focused repair passes and rerun both. The completeness check confirms only that the diagram matches the written contract; review the contract against your request. Every command also works with the `dgm` alias. Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).
+> **Note:** Every command in this reference also works with the `dgm` alias.
+
+Run normal validation and then `dumbdiagrams validate --strict <files…>`. If findings are fixable, make at most two focused repair passes and rerun both. The completeness check confirms only that the diagram matches the written contract; review the contract against your request. Next, [create a draft with an agent](../agent-workflow/) or [learn the source format](../source-format/).
