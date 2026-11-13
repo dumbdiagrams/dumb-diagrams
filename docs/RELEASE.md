@@ -2,7 +2,7 @@
 
 ## Package versions
 
-The current workspace version is `0.3.0` (release tag `v0.3.0`).
+The current workspace version is `0.3.1` (release tag `v0.3.1`).
 
 All workspace packages share one version, bumped together, so the parser,
 renderer, CLI, and editor are always one compatibility line. Only
