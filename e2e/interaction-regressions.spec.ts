@@ -37,9 +37,20 @@ test("moving a group moves its children and internal connectors by the same delt
   await openAsyncDocs(page);
 
   const group = await selectGroup(page, "queues");
-  const beforeGroup = await entityBox(page, "group", "queues");
-  const beforeChild = await entityBox(page, "resource", "jobs");
-  const beforeEdge = await renderedBox(page, "#edge-e6");
+  const selectors = [
+    '[data-entity-kind="group"][data-entity-id="queues"]',
+    '[data-entity-kind="resource"][data-entity-id="jobs"]',
+    '#edge-e6',
+  ];
+  const movementBoxes = () => page.evaluate((selectors) => selectors.map((selector) => {
+    const element = document.querySelector(selector);
+    if (!element) throw new Error(`${selector} should have a rendered box`);
+    const { x, y } = element.getBoundingClientRect();
+    return { x, y };
+  }), selectors);
+  const [beforeGroup, beforeChild, beforeEdge] = await movementBoxes();
+  const originalEdge = await page.locator("#edge-e6").elementHandle();
+  expect(originalEdge).not.toBeNull();
   const start = await group.evaluate((element) => {
     const box = element.getBoundingClientRect();
     for (const fraction of [0.75, 0.25, 0.5]) {
@@ -60,14 +71,21 @@ test("moving a group moves its children and internal connectors by the same delt
   await page.mouse.move(start!.x + 72, start!.y + 40, { steps: 8 });
   await page.mouse.up();
 
-  await expect.poll(async () => (await entityBox(page, "group", "queues")).x)
-    .not.toBe(beforeGroup.x);
-  const afterGroup = await entityBox(page, "group", "queues");
-  const afterChild = await entityBox(page, "resource", "jobs");
-  const afterEdge = await renderedBox(page, "#edge-e6");
+  // The optimistic drag transform moves the boxes before the worker compiles
+  // the drop. Wait for the old artwork to be replaced and the preview to be
+  // removed, then read all geometry in one browser turn. Separate snapshots
+  // can straddle the redraw and count both the new position and old transform.
+  await expect.poll(() => originalEdge!.evaluate((element) => element.isConnected))
+    .toBe(false);
+  await expect.poll(() => page.evaluate((selectors) => selectors.every((selector) => {
+    const element = document.querySelector(selector);
+    return element !== null && !element.hasAttribute("transform");
+  }), selectors)).toBe(true);
+  const [afterGroup, afterChild, afterEdge] = await movementBoxes();
   const dx = afterGroup.x - beforeGroup.x;
   const dy = afterGroup.y - beforeGroup.y;
 
+  expect(Math.hypot(dx, dy)).toBeGreaterThan(1);
   expect(afterChild.x - beforeChild.x).toBeCloseTo(dx, 0);
   expect(afterChild.y - beforeChild.y).toBeCloseTo(dy, 0);
   expect(afterEdge.x - beforeEdge.x).toBeCloseTo(dx, 0);
