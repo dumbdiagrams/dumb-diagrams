@@ -10,6 +10,18 @@ const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 const parseError = (source: string) => formatParseError(parseDgmResult(source)._unsafeUnwrapErr());
 
 describe("parseDgm / printDgm round-trip", () => {
+  it.each([6, 8, 8.5, 13.25, 64, 96])("round-trips custom annotation font size %s for every style", (fontSize) => {
+    for (const style of ["text", "paper", "code", "callout", "checklist"]) {
+      const doc = parseDgm(`diagram sizes { annotation n "Custom size" { style ${style} size ${fontSize} } }`);
+      expect(doc.annotations[0]?.fontSize).toBe(fontSize);
+      expect(parseDgm(printDgm(doc)).annotations[0]?.fontSize).toBe(fontSize);
+    }
+  });
+
+  it.each([0, 5.9, 96.1, 1_000])("rejects annotation font size %s outside the supported range", (fontSize) => {
+    expect(parseDgmResult(`diagram sizes { annotation n "Invalid size" { size ${fontSize} } }`).isErr()).toBe(true);
+  });
+
   it("returns typed results for valid and invalid source", () => {
     const valid = parseDgmResult("diagram safe {}");
     expect(valid.isOk()).toBe(true);
@@ -92,8 +104,8 @@ describe("parseDgm / printDgm round-trip", () => {
     ],
     [
       "annotation size",
-      'diagram d {\n  annotation n "N" { size 60 }\n}',
-      "2:27 Invalid annotation size 60; expected 10 to 48",
+      'diagram d {\n  annotation n "N" { size 97 }\n}',
+      "2:27 Invalid annotation size 97; expected 6 to 96",
     ],
     [
       "annotation font",

@@ -132,7 +132,7 @@ annotation note "Retries use exponential backoff" { anchor handler style callout
 | `anchor` | The ID of the item the note points at |
 | `style` | `text`, `paper`, `code`, `callout`, `checklist` |
 | `font` | `sans`, `serif`, `mono` |
-| `size` | 10 to 48 |
+| `size` | 6 to 96 px, including fractional values such as `8.5` |
 | `align` | `left`, `center`, `right` |
 | `background` | A quoted hex color, such as `"#feefdd"` |
 | `color` | A quoted text color, such as `"#163964"` |

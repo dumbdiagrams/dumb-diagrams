@@ -765,7 +765,8 @@ test("formats plain text from the composer and selection inspector", async ({ pa
   await expect(composer).toBeVisible();
   await composer.getByRole("textbox", { name: "Text content" }).fill("Architecture note");
   await composer.getByLabel("Font", { exact: true }).selectOption("serif");
-  await composer.getByLabel("Size", { exact: true }).selectOption("20");
+  await composer.getByLabel("Size", { exact: true }).fill("20");
+  await composer.getByLabel("Size", { exact: true }).press("Enter");
   await composer.getByRole("button", { name: "Center", exact: true }).click();
   await composer.getByRole("button", { name: "Place text", exact: true }).click();
 

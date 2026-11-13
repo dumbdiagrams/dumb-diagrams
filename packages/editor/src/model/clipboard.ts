@@ -8,6 +8,7 @@ import {
   validateDocument,
 } from "@dumb-diagrams/runtime/core";
 import { getCatalogMap } from "@dumb-diagrams/runtime/catalog";
+import { ANNOTATION_SIZE_RANGE } from "@dumb-diagrams/runtime/dsl";
 import { sanitizeSvgResult } from "@dumb-diagrams/runtime/render";
 import { err, ok, type Result } from "neverthrow";
 
@@ -413,7 +414,9 @@ function validAnnotation(value: unknown): boolean {
       value.style === "checklist") &&
     (value.font === undefined || value.font === "sans" || value.font === "serif" || value.font === "mono") &&
     (value.fontSize === undefined ||
-      (typeof value.fontSize === "number" && value.fontSize >= 10 && value.fontSize <= 48)) &&
+      (typeof value.fontSize === "number" &&
+        value.fontSize >= ANNOTATION_SIZE_RANGE.min &&
+        value.fontSize <= ANNOTATION_SIZE_RANGE.max)) &&
     (value.align === undefined || value.align === "left" || value.align === "center" || value.align === "right") &&
     [value.background, value.color].every(
       (color) => color === undefined || (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color)),

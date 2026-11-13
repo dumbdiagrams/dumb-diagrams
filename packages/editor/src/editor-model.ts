@@ -19,6 +19,7 @@ import type {
   TextFontFamily,
 } from "@dumb-diagrams/runtime/core";
 import { getDefaultView, normalizePortOffset } from "@dumb-diagrams/runtime/core";
+import { ANNOTATION_SIZE_RANGE } from "@dumb-diagrams/runtime/dsl";
 import {
   ANNOTATION_AUTO_HEIGHT_SNAP,
   annotationTextLayout,
@@ -844,8 +845,13 @@ export function updateTextFormat(
   if (!annotation || getDefaultView(doc).annotations?.[id]?.locked) return doc;
   if (format.font !== undefined) annotation.font = format.font;
   if (format.fontSize !== undefined) {
-    if (!Number.isFinite(format.fontSize) || format.fontSize < 10 || format.fontSize > 48) return doc;
-    annotation.fontSize = Math.round(format.fontSize);
+    if (
+      !Number.isFinite(format.fontSize) ||
+      format.fontSize < ANNOTATION_SIZE_RANGE.min ||
+      format.fontSize > ANNOTATION_SIZE_RANGE.max
+    )
+      return doc;
+    annotation.fontSize = format.fontSize;
   }
   if (format.align !== undefined) annotation.align = format.align;
   if (format.theme !== undefined) {

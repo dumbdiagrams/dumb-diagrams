@@ -59,7 +59,7 @@ export const DGM_VALUES = {
   routeLabelSide: ["top", "bottom"],
 } as const satisfies Record<string, readonly string[]>;
 
-export const ANNOTATION_SIZE_RANGE = { min: 10, max: 48 } as const;
+export const ANNOTATION_SIZE_RANGE = { min: 6, max: 96 } as const;
 
 type Position = { line: number; column: number };
 type Token = Position &

@@ -60,6 +60,30 @@ import { canGroupSelection, groupSelection, reparentPreservingAbsolutePosition, 
 const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("editor commands", () => {
+  it.each([6, 8.5, 13.25, 64, 96])(
+    "preserves custom font size %s through source and clipboard round-trips",
+    (fontSize) => {
+      const original = createAsyncDocsFixture();
+      const added = addAnnotation(original, "Custom size", { x: 80, y: 80 }, "code");
+      const formatted = updateTextFormat(added.doc, added.id, { fontSize });
+      expect(formatted.annotations.find((note) => note.id === added.id)?.fontSize).toBe(fontSize);
+      expect(parseDgm(printDgm(formatted)).annotations.find((note) => note.id === added.id)?.fontSize).toBe(fontSize);
+
+      const serialized = serializeClipboardResult(formatted, [{ kind: "annotation", id: added.id }])._unsafeUnwrap();
+      const pasted = pasteClipboardResult(original, serialized, { x: 400, y: 400 })._unsafeUnwrap();
+      const pastedId = pasted.selection.find((item) => item.kind === "annotation")?.id;
+      expect(pasted.doc.annotations.find((note) => note.id === pastedId)?.fontSize).toBe(fontSize);
+    },
+  );
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 0, 5.9, 96.1])(
+    "keeps the annotation unchanged for invalid font size %s",
+    (fontSize) => {
+      const added = addAnnotation(createAsyncDocsFixture(), "Keep this size", { x: 80, y: 80 }, "code");
+      expect(updateTextFormat(added.doc, added.id, { fontSize })).toBe(added.doc);
+    },
+  );
+
   it("resizes annotation placements and preserves card formatting", () => {
     const doc = createAsyncDocsFixture();
     const added = addAnnotation(doc, "const job = await queue.receive();", { x: 80, y: 80 }, undefined, "code");

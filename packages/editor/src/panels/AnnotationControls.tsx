@@ -1,6 +1,8 @@
 import type { Annotation, AnnotationStyle, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
 import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DIAGRAM_LIMITS, normalizeMultilineText } from "@dumb-diagrams/runtime/core";
+import { ANNOTATION_SIZE_RANGE } from "@dumb-diagrams/runtime/dsl";
 import { matchAnnotationTheme, themesForStyle } from "@dumb-diagrams/runtime/render";
 import { ANNOTATION_STYLES } from "../editor-model";
 import "../styles/annotation-controls.css";
@@ -118,7 +120,6 @@ export function TextFormattingControls(props: {
 }) {
   const { idPrefix, font, fontSize, align, noteStyle, themeSource, onChange } = props;
   const activeTheme = themeSource ? matchAnnotationTheme(themeSource) : null;
-  const fontSizes = [...new Set([12, 14, 16, 20, 24, 32, fontSize])].sort((a, b) => a - b);
   return (
     <div className="property-section text-formatting">
       <div className="property-control-row">
@@ -135,17 +136,11 @@ export function TextFormattingControls(props: {
       </div>
       <div className="property-control-row">
         <label htmlFor={`${idPrefix}-text-font-size`}>Size</label>
-        <select
+        <FontSizeField
           id={`${idPrefix}-text-font-size`}
           value={fontSize}
-          onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
-        >
-          {fontSizes.map((size) => (
-            <option key={size} value={size}>
-              {size}px
-            </option>
-          ))}
-        </select>
+          onChange={(size) => onChange({ fontSize: size })}
+        />
       </div>
       <div>
         <span className="property-control-label">Alignment</span>
@@ -171,6 +166,95 @@ export function TextFormattingControls(props: {
           onChange={(themeId) => onChange({ theme: themeId })}
         />
       )}
+    </div>
+  );
+}
+
+const FONT_SIZE_PRESETS = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 72, 96];
+
+function FontSizeField({ id, value, onChange }: { id: string; value: number; onChange: (value: number) => void }) {
+  const listId = `${id}-presets`;
+  const hintId = `${id}-hint`;
+  const [draft, setDraft] = useState(String(value));
+  const focused = useRef(false);
+  const lastValid = useRef(value);
+
+  useEffect(() => {
+    if (!focused.current) {
+      lastValid.current = value;
+      setDraft(String(value));
+    }
+  }, [value]);
+
+  const parse = (raw: string) => {
+    const normalized = raw.trim();
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) return null;
+    const size = Number(normalized);
+    return Number.isFinite(size) && size >= ANNOTATION_SIZE_RANGE.min && size <= ANNOTATION_SIZE_RANGE.max
+      ? size
+      : null;
+  };
+
+  const commit = (raw: string) => {
+    const size = parse(raw);
+    if (size !== null) {
+      lastValid.current = size;
+      onChange(size);
+      setDraft(String(size));
+    } else {
+      setDraft(String(lastValid.current));
+    }
+  };
+
+  return (
+    <div className="font-size-field">
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        list={listId}
+        value={draft}
+        aria-describedby={hintId}
+        onFocus={() => {
+          focused.current = true;
+        }}
+        onChange={(event) => {
+          const next = event.target.value;
+          setDraft(next);
+          const size = parse(next);
+          if (size !== null) {
+            lastValid.current = size;
+            onChange(size);
+          }
+        }}
+        onBlur={() => {
+          focused.current = false;
+          setDraft(String(lastValid.current));
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit(draft);
+            event.currentTarget.blur();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setDraft(String(lastValid.current));
+            event.currentTarget.blur();
+          }
+        }}
+      />
+      <span aria-hidden="true">px</span>
+      <datalist id={listId}>
+        {FONT_SIZE_PRESETS.filter((size) => size >= ANNOTATION_SIZE_RANGE.min && size <= ANNOTATION_SIZE_RANGE.max).map(
+          (size) => (
+            <option key={size} value={size} />
+          ),
+        )}
+      </datalist>
+      <span className="sr-only" id={hintId}>
+        Enter a size from {ANNOTATION_SIZE_RANGE.min} to {ANNOTATION_SIZE_RANGE.max} pixels. Preset sizes are available.
+      </span>
     </div>
   );
 }

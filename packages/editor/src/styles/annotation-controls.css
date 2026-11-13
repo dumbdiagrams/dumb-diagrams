@@ -4,6 +4,25 @@
   min-width: 0;
 }
 
+.font-size-field {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.font-size-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.font-size-field > span:not(.sr-only) {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .annotation-color-swatches {
   display: flex;
   flex-wrap: wrap;

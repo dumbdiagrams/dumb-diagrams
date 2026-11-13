@@ -68,7 +68,7 @@ view <id> { place <id> { ... }  route <edge-id> { ... }  annotation <id> { ... }
 | `boundary` | `step`; `label-position` `top-left`/`top-right`; `hide-icon`; `style` `solid`/`dashed`; `color`; `fill` `subtle`/`none` |
 | `resource` | `service`; `label-position` `top`/`bottom`; `role` `primary`/`secondary`/`border`; `icon` |
 | `edge` | `id`; `label` (description only); `step` (native numbered badge); `style` `solid`/`dashed`; `kind` `flow`/`bidirectional`/`peer`/`fail`; `color`; `from`/`to` `n`/`s`/`e`/`w`, optionally `offset` 0-1 |
-| `annotation` | `anchor`; `style` `text`/`paper`/`code`/`callout`/`checklist`; `font` `sans`/`serif`/`mono`; `size` 10 to 48; `align` `left`/`center`/`right`; `background`/`color` quoted hex colors (`"#feefdd"`) |
+| `annotation` | `anchor`; `style` `text`/`paper`/`code`/`callout`/`checklist`; `font` `sans`/`serif`/`mono`; `size` 6 to 96 px (fractional values allowed); `align` `left`/`center`/`right`; `background`/`color` quoted hex colors (`"#feefdd"`) |
 | `asset` (inside `assets`) | `svg`; `w`; `h` |
 | `place` | `x`, `y`, `w`, `h`; `pin`; `manual`; `locked`; `visible` `true`/`false`; `z` |
 | `route` | `point <x> <y>`; `mode` `auto`/`manual`; `pin`; `badge`/`label` `<0-1>` `top`/`bottom` |

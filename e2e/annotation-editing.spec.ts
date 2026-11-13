@@ -41,9 +41,9 @@ test("edits annotations live on the canvas and in the inspector", async ({ page 
   await textEditor.fill("plain text edit");
   await textEditor.press("Control+Enter");
   await page.locator("#inspector-text-font-family").selectOption("serif");
-  await page.locator("#inspector-text-font-size").selectOption("20");
-  await page.getByRole("button", { name: "Background: Pale blue" }).click();
-  await page.getByRole("button", { name: "Text color: Purple" }).click();
+  await page.locator("#inspector-text-font-size").fill("20");
+  await page.locator("#inspector-text-font-size").press("Enter");
+  await page.getByRole("button", { name: "Colour theme: Lavender" }).click();
   await page.getByRole("button", { name: "Center", exact: true }).click();
   await expect(text).toHaveAttribute("aria-label", "Text plain text edit");
 
@@ -51,9 +51,9 @@ test("edits annotations live on the canvas and in the inspector", async ({ page 
   await expect(renderedText).toHaveAttribute("text-anchor", "middle");
   const typography = await renderedText.evaluate((text) => ({ size: getComputedStyle(text).fontSize, color: getComputedStyle(text).fill, family: getComputedStyle(text).fontFamily }));
   expect(typography.size).toBe("20px");
-  expect(typography.color).toBe("rgb(91, 59, 145)");
+  expect(typography.color).toBe("rgb(61, 45, 92)");
   expect(typography.family).toContain("Georgia");
-  await expect(page.locator("#annotation-note_text rect")).toHaveAttribute("fill", "#e8f3ff");
+  await expect(page.locator("#annotation-note_text rect")).toHaveAttribute("fill", "#ebe6f5");
 
   const sourceDrawer = await openSourceDrawer(page);
   const sourceEditor = sourceDrawer.locator(".cm-content");
@@ -61,6 +61,6 @@ test("edits annotations live on the canvas and in the inspector", async ({ page 
   await expect(sourceEditor).toContainText("font serif");
   await expect(sourceEditor).toContainText("size 20");
   await expect(sourceEditor).toContainText("align center");
-  await expect(sourceEditor).toContainText('background "#e8f3ff"');
-  await expect(sourceEditor).toContainText('color "#5b3b91"');
+  await expect(sourceEditor).toContainText('background "#ebe6f5"');
+  await expect(sourceEditor).toContainText('color "#3d2d5c"');
 });
