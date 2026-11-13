@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@dumb-diagrams/runtime": "workspace:*",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.6",
     "typescript": "^5.7.3",
     "vitest": "^4.1.12"
   }
