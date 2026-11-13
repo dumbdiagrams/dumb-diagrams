@@ -26,6 +26,10 @@ export default defineConfig({
               origin: baseURL,
               localStorage: [
                 {
+                  name: "dumb-diagrams:browser-compatibility-notice-dismissed",
+                  value: "1",
+                },
+                {
                   name: "dumb-diagrams:hosted-preferences:v1",
                   value: JSON.stringify({ welcomeDismissed: true, tourDismissed: true }),
                 },

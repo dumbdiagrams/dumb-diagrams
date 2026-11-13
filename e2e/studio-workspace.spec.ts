@@ -45,6 +45,13 @@ test.describe("browser compatibility notice", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test("warns when the browser cannot be identified as Google Chrome", async ({ page }) => {
+    await page.addInitScript(() => {
+      // Hosted Studio gates the compatibility notice behind its privacy welcome.
+      localStorage.setItem(
+        "dumb-diagrams:hosted-preferences:v1",
+        JSON.stringify({ welcomeDismissed: true, tourDismissed: true }),
+      );
+    });
     await page.goto("/");
 
     const notice = page.getByRole("dialog", { name: "Google Chrome is recommended" });
