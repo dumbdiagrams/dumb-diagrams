@@ -2,6 +2,9 @@ const copyResets = new WeakMap<HTMLButtonElement, number>();
 const copyLabels = new WeakMap<HTMLButtonElement, string>();
 const MIN_DIAGRAM_ZOOM = 0.25;
 const MAX_DIAGRAM_ZOOM = 2.5;
+const hostedStudioUrl = "https://studio.dumbdiagrams.com";
+const localStudioPort = 49323;
+const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
 async function copyText(button: HTMLButtonElement, text: string) {
   const original = copyLabels.get(button) ?? button.innerHTML;
@@ -183,6 +186,17 @@ document.querySelectorAll<HTMLElement>("[data-diagram-preview]").forEach((previe
   update();
 });
 
+document.querySelectorAll<HTMLButtonElement>("[data-viewer-expand]").forEach((button) => {
+  const dialog = button.closest(".diagram-viewer")?.querySelector("dialog");
+  button.addEventListener("click", () => {
+    if (!dialog || dialog.open) return;
+    dialog.showModal();
+    dialog.dispatchEvent(new Event("preview:visible"));
+  });
+  dialog?.querySelector("[data-viewer-close]")?.addEventListener("click", () => dialog.close());
+  dialog?.addEventListener("close", () => button.focus({ preventScroll: true }));
+});
+
 const docsNavigation = document.querySelector<HTMLDetailsElement>(".docs-navigation");
 if (docsNavigation) {
   const mobile = window.matchMedia("(max-width: 680px)");
@@ -192,3 +206,6 @@ if (docsNavigation) {
   syncNavigation();
   mobile.addEventListener("change", syncNavigation);
 }
+
+const studioUrl = localHosts.has(window.location.hostname) ? `http://127.0.0.1:${localStudioPort}/` : hostedStudioUrl;
+for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-studio-link]")) link.href = studioUrl;

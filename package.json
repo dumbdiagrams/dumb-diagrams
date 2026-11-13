@@ -26,6 +26,7 @@
     "typecheck": "pnpm --filter @dumb-diagrams/editor typecheck",
     "check:pr": "pnpm check:versions && pnpm check:style && pnpm check:dependencies && pnpm check:results && pnpm typecheck",
     "check:website": "pnpm --filter @dumb-diagrams/website check && pnpm build:website && pnpm --filter @dumb-diagrams/website test",
+    "check:website:ci": "node scripts/check-website-ci.mjs",
     "fix:style": "biome check --write",
     "ci:all": "pnpm ci:verify && pnpm ci:e2e && pnpm check:website && pnpm --filter @dumb-diagrams/website test:e2e --project=chromium",
     "ci:verify": "pnpm ci:checks && pnpm ci:test",

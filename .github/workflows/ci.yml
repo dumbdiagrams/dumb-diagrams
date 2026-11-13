@@ -44,14 +44,7 @@ jobs:
       - name: Check documentation interactions in Chromium
         run: pnpm --filter @dumb-diagrams/website test:e2e --project=chromium
       - name: Check static subdirectory deployment with consent-gated GA4 and Partytown
-        run: pnpm build:website && pnpm --filter @dumb-diagrams/website test
-        env:
-          SITE_URL: https://website.test
-          BASE_PATH: /diagrams/
-          PUBLIC_GA_MEASUREMENT_ID: G-TEST12345
-          PUBLIC_SITE_OPERATOR: Website test operator
-          PUBLIC_PRIVACY_EMAIL: privacy@example.test
-          PUBLIC_ANALYTICS_RETENTION_MONTHS: "2"
+        run: pnpm check:website:ci
 
   hosted-studio:
     if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)

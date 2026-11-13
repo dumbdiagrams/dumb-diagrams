@@ -44,16 +44,3 @@ const { id, title, description, src, downloadSrc, width, height, loading = 'lazy
     </div>
   </dialog>
 </div>
-
-<script>
-  document.querySelectorAll<HTMLButtonElement>('[data-viewer-expand]').forEach(button => {
-    const dialog = button.closest('.diagram-viewer')?.querySelector('dialog');
-    button.addEventListener('click', () => {
-      if (!dialog || dialog.open) return;
-      dialog.showModal();
-      dialog.dispatchEvent(new Event('preview:visible'));
-    });
-    dialog?.querySelector('[data-viewer-close]')?.addEventListener('click', () => dialog.close());
-    dialog?.addEventListener('close', () => button.focus({ preventScroll: true }));
-  });
-</script>
