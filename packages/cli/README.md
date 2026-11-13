@@ -14,9 +14,10 @@ renders deterministic SVG. Requires Node.js 24 or newer.
 
 ```bash
 npm install -g create-dumb-diagrams
-dumbdiagrams init      # asks for a project name and creates that folder
+# dgm is shorthand for dumbdiagrams
+dgm init               # asks for a project name and creates that folder
 cd <project-folder>
-dumbdiagrams studio    # local editor; use Open to pick any .dgm file
+dgm studio             # local editor; use Open to pick any .dgm file
 ```
 
 `init` writes agent entrypoints (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`),
@@ -26,8 +27,7 @@ dumbdiagrams studio    # local editor; use Open to pick any .dgm file
 arrow), and `resourceLabels` (`false` draws icons only). Validation fails when a diagram ignores
 them. Edit `preferences.json`; the entrypoints and `.dumbdiagrams/` normally
 stay as they are. With a blank name, or without a
-terminal, it uses a timestamped folder. `dgm` is a shorthand for
-`dumbdiagrams`.
+terminal, it uses a timestamped folder.
 
 For numbered steps, put the sequence in each edge's native `step N` field and
 keep its label descriptive only: `label "Store input drawing" step 1`, not
@@ -64,14 +64,14 @@ only requests public npm version metadata; it does not send project data.
 ## Commands
 
 ```bash
-dumbdiagrams validate a.dgm b.dgm           # source/provider validity and required architecture
-dumbdiagrams validate --strict diagrams/*/*.dgm   # also fail on routing findings
-dumbdiagrams validate --json a.dgm          # separate validity, completeness, routing reports
-dumbdiagrams validate --requirements custom.json a.dgm
-dumbdiagrams format a.dgm                   # print canonical source
-dumbdiagrams format --check a.dgm           # exit 1 if not canonical
-dumbdiagrams format --write a.dgm           # rewrite in place
-dumbdiagrams render a.dgm -o a.svg          # deterministic, self-contained SVG
+dgm validate a.dgm b.dgm                # source/provider validity and required architecture
+dgm validate --strict diagrams/*/*.dgm   # also fail on routing findings
+dgm validate --json a.dgm               # separate validity, completeness, routing reports
+dgm validate --requirements custom.json a.dgm
+dgm format a.dgm                        # print canonical source
+dgm format --check a.dgm                # exit 1 if not canonical
+dgm format --write a.dgm                # rewrite in place
+dgm render a.dgm -o a.svg               # deterministic, self-contained SVG
 ```
 
 Validation requires `requirements.json` beside `diagram.dgm`, or
