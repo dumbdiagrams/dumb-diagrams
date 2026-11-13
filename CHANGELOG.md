@@ -5,6 +5,18 @@ the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-13
+
+### Added
+
+- **browser-compatibility:** add browser compatibility notice (#28) ([3fe1191](https://github.com/dumbdiagrams/dumb-diagrams/commit/3fe1191bd4213105b18c8acc1d865a6ff56d8f71))
+- **website:** svg-improvements-for-the-social-cards-and-articles (#25) ([e1df996](https://github.com/dumbdiagrams/dumb-diagrams/commit/e1df996303ef0da26e075a5f70d5d562bb10f462))
+
+### Changed
+
+- **deps-dev:** bump the development group with 13 updates (#26) ([83bd454](https://github.com/dumbdiagrams/dumb-diagrams/commit/83bd454654320a9dbf77eb47ba7383cc83367538))
+- **docs:** update DrawingExtractionExample and related documenta… (#24) ([0a34074](https://github.com/dumbdiagrams/dumb-diagrams/commit/0a34074eae218db4d4743d7af3e1018b35aae61f))
+
 ## [0.3.0] - 2026-11-13
 
 ### Added
