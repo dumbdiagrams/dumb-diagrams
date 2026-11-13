@@ -41,6 +41,35 @@ test("opens File actions and creates a fresh document tab", async ({ page }) => 
   await expect(page.locator(".workspace-tab.is-active")).toContainText(/Untitled diagram/i);
 });
 
+test.describe("browser compatibility notice", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("warns when the browser cannot be identified as Google Chrome", async ({ page }) => {
+    await page.goto("/");
+
+    const notice = page.getByRole("dialog", { name: "Google Chrome is recommended" });
+    const strictChrome = await page.evaluate(() => {
+      const browserNavigator = navigator as Navigator & {
+        brave?: unknown;
+        userAgentData?: { brands?: Array<{ brand: string }> };
+      };
+      return (
+        !browserNavigator.brave &&
+        browserNavigator.userAgentData?.brands?.some(({ brand }) => brand.trim().toLowerCase() === "google chrome") === true
+      );
+    });
+
+    if (strictChrome) {
+      await expect(notice).toHaveCount(0);
+    } else {
+      await expect(notice).toBeVisible();
+      await expect(notice).toContainText("Brave disables the File System Access API by default");
+      await notice.getByRole("button", { name: "Continue" }).click();
+      await expect(notice).toHaveCount(0);
+    }
+  });
+});
+
 test("protects the final untouched blank untitled draft", async ({ page }) => {
   await page.goto("/");
 
@@ -339,6 +368,49 @@ test("opens multiple .dgm files as separate tabs", async ({ page }) => {
 
   await expect(page.getByRole("tab")).toHaveCount(3);
   await expect(page.locator(".workspace-tab")).toContainText(["Untitled Diagram", "Async Docs", "Transfer Hub"]);
+});
+
+test("opening a project from a clean blank tab does not request write access", async ({ page }) => {
+  const source = await readFile(`${ROOT}/tests/fixtures/engine/async-docs.dgm`, "utf8");
+  await page.addInitScript(({ fileSource }) => {
+    const browserWindow = window as typeof window & {
+      __writeAccessRequests?: number;
+      showOpenFilePicker?: (options?: unknown) => Promise<unknown[]>;
+    };
+    browserWindow.__writeAccessRequests = 0;
+    browserWindow.showOpenFilePicker = async () => {
+      return [
+        {
+          kind: "file",
+          name: "async-docs.dgm",
+          getFile: async () => new File([fileSource], "async-docs.dgm", { type: "text/plain" }),
+          requestPermission: async () => {
+            browserWindow.__writeAccessRequests = (browserWindow.__writeAccessRequests ?? 0) + 1;
+            return "granted";
+          },
+          createWritable: async () => {
+            browserWindow.__writeAccessRequests = (browserWindow.__writeAccessRequests ?? 0) + 1;
+            return { write: async () => undefined, close: async () => undefined };
+          },
+        },
+      ];
+    };
+  }, { fileSource: source });
+
+  await page.goto("/");
+  await expect(page.locator(".workspace-tab.is-active")).toContainText("Untitled Diagram");
+  await expect(page.locator(".dirty-pill")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "File", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Open .dgm", exact: true }).click();
+
+  await expect(page.getByRole("tab")).toHaveCount(2);
+  await expect(page.getByRole("dialog", { name: "Unsaved changes" })).toHaveCount(0);
+  await expect(page.locator(".dirty-pill")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => {
+    const browserWindow = window as typeof window & { __writeAccessRequests?: number };
+    return browserWindow.__writeAccessRequests;
+  })).toBe(0);
 });
 
 test("exports and reopens a manually created ungrouped diagram in a new tab", async ({ page }) => {

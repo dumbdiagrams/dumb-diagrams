@@ -16,7 +16,6 @@ import type { WorkspaceTab } from "./workspace";
 export type FilePickerWindow = Window & {
   showOpenFilePicker?: (options?: {
     multiple?: boolean;
-    mode?: "read" | "readwrite";
     types?: Array<{ description?: string; accept: Record<string, string[]> }>;
   }) => Promise<FileSystemHandleLike[]>;
   showSaveFilePicker?: SaveFilePicker;
@@ -133,7 +132,9 @@ export function useFileActions({
             const latestTab = tabsRef.current.find((candidate) => candidate.id === tabId);
             if (!latestTab || handles.current.get(tabId) !== handle || latestTab.source !== source) return "stale";
             if ((callbacksRef.current.canAutoSaveTab?.(tabId) ?? true) === false) return "blocked";
-            if (!(await hasWritePermission(handle))) return "error";
+            // Background autosave must never trigger a browser permission
+            // prompt. Leave the tab unsaved until the user chooses Save.
+            if (!(await hasWritePermission(handle))) return "blocked";
             writingTabs.current.add(tabId);
             syncRef.current?.beginOwnWrite(tabId);
             try {

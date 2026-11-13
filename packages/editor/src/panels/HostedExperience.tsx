@@ -2,6 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { CreditsNotice } from "./CreditsNotice";
 import { Modal } from "../ui/Modal";
+import {
+  BrowserCompatibilityMessage,
+  BrowserCompatibilityNotice,
+  dismissBrowserCompatibilityNotice,
+  isCurrentBrowserStrictGoogleChrome,
+} from "./BrowserCompatibilityNotice";
 
 type PreferenceState = {
   welcomeDismissed: boolean;
@@ -89,16 +95,19 @@ export function HostedExperience({
   const [tourDontShow, setTourDontShow] = useState(false);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<{ left: number; top: number; width: number }>();
+  const [welcomeResolved, setWelcomeResolved] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const welcomePromptedRef = useRef(false);
   const tourContainerRef = useRef<HTMLDivElement>(null);
   const previousTourFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (workspaceReady && !preferences.welcomeDismissed && !welcomePromptedRef.current) {
+    if (!workspaceReady) return;
+    if (!preferences.welcomeDismissed && !welcomePromptedRef.current) {
       welcomePromptedRef.current = true;
       onWelcomeOpenChange(true);
     }
+    setWelcomeResolved(true);
   }, [workspaceReady, preferences.welcomeDismissed, onWelcomeOpenChange]);
 
   const updatePreferences = (next: Partial<PreferenceState>) => {
@@ -110,6 +119,7 @@ export function HostedExperience({
   };
 
   const startTour = () => {
+    if (!isCurrentBrowserStrictGoogleChrome()) dismissBrowserCompatibilityNotice();
     if (welcomeDontShow) updatePreferences({ welcomeDismissed: true });
     previousTourFocusRef.current = document.activeElement as HTMLElement | null;
     onWelcomeOpenChange(false);
@@ -164,6 +174,7 @@ export function HostedExperience({
   const currentTour = tourStep === null ? null : TOUR_STEPS[tourStep];
 
   const closeWelcome = () => {
+    if (!isCurrentBrowserStrictGoogleChrome()) dismissBrowserCompatibilityNotice();
     if (welcomeDontShow) updatePreferences({ welcomeDismissed: true });
     onWelcomeOpenChange(false);
   };
@@ -195,6 +206,12 @@ export function HostedExperience({
             For a project and agent workflow, install the CLI and run <code>dgm init</code>. You can still browse
             examples and open a local file here without setup.
           </p>
+          {!isCurrentBrowserStrictGoogleChrome() && (
+            <div className="hosted-setup-note browser-compatibility-inline" role="note">
+              <strong>Google Chrome is recommended.</strong>
+              <BrowserCompatibilityMessage />
+            </div>
+          )}
           <p className="hosted-links">
             <a href={DOCS_URL} target="_blank" rel="noreferrer">
               Read the setup guide
@@ -224,6 +241,8 @@ export function HostedExperience({
           </div>
         </div>
       </Modal>
+
+      {welcomeResolved && !welcomeOpen && <BrowserCompatibilityNotice />}
 
       <Modal
         open={privacyOpen}

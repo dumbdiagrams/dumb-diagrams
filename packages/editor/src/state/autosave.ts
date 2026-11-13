@@ -130,7 +130,9 @@ export class AutosaveController {
         if (result === "error") this.setStatus(id, entry, "save-error");
         else if (result === "conflict") this.setStatus(id, entry, "unsaved");
         else if (result === "blocked") {
-          entry.tab = { ...entry.tab, allowed: false };
+          // attemptedSource prevents repeated permission checks for the same
+          // edit. The user can retry with Save, or a later edit gets a new
+          // autosave attempt.
           this.setStatus(id, entry, "unsaved");
         } else if (result === "stale") {
           this.setStatus(id, entry, latest.source === latest.savedSource ? undefined : "unsaved");

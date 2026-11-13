@@ -24,6 +24,15 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL,
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: baseURL,
+          localStorage: [{ name: "dumb-diagrams:browser-compatibility-notice-dismissed", value: "1" }],
+        },
+      ],
+    },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

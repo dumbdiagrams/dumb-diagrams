@@ -43,7 +43,6 @@ import { createCatalogActions, insertionPoint } from "./state/catalog-actions";
 import { useEditorSelection } from "./state/use-editor-selection";
 import { groupSelection, canGroupSelection, ungroup } from "./model/grouping";
 import { useFileActions, type FilePickerWindow } from "./state/use-file-actions";
-import { requestWritePermission } from "./state/file-save";
 import { FileSyncIndicator } from "./ui/FileSyncIndicator";
 import { useStudioShortcuts } from "./interactions/use-studio-shortcuts";
 import { AnnotationInlineEditor } from "./canvas/AnnotationInlineEditor";
@@ -107,6 +106,7 @@ import { SaveAsDialog, type SaveAsDialogHandle } from "./panels/SaveAsDialog";
 import { ExportMenu } from "./panels/ExportMenu";
 import { HelpModal } from "./panels/HelpModal";
 import { HostedExperience, HostedPrivacyTrigger } from "./panels/HostedExperience";
+import { BrowserCompatibilityNotice } from "./panels/BrowserCompatibilityNotice";
 import { CommandPalette, type Command } from "./panels/CommandPalette";
 import type { DiagramExample } from "./examples";
 import { LayersPanel } from "./panels/LayersPanel";
@@ -807,16 +807,8 @@ function App() {
     try {
       const handles = await picker({
         multiple: true,
-        // Ask for write access in the picker itself (Chrome/Edge 122+); older
-        // builds ignore it and fall back to requestWritePermission below.
-        mode: "readwrite",
         types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
       });
-      if (autoSaveEnabled) {
-        // The picker restores user activation. Ask for write access here,
-        // before reading files, so later autosaves need no permission prompt.
-        await Promise.all(handles.map(requestWritePermission));
-      }
       const { entries, rejected } = await readFileHandles(handles);
       await openFileEntries(entries, rejected);
     } catch (error) {
@@ -2730,6 +2722,8 @@ function App() {
             onSettingsOpenChange={setHostedSettingsOpen}
           />
         )}
+
+        {!HOSTED_STUDIO && workspaceReady && <BrowserCompatibilityNotice />}
 
         <CommandPalette open={commandPaletteOpen} commands={commands} onClose={() => setCommandPaletteOpen(false)} />
 

@@ -22,6 +22,8 @@ dumbdiagrams studio
 
 `init` asks for a project name and creates that folder in the current directory. Leave the name blank to use a timestamped folder. Open the new folder in your AI-enabled editor or coding agent, then give the agent your diagram prompt; the generated project instructions explain how to create the diagram. Once the agent creates a `.dgm` file, run `dumbdiagrams studio` to start the local visual editor, then choose **Open** to select the file. Opening Studio is a separate step from opening your AI editor. Keep Studio running while you work and stop it with `Ctrl+C`.
 
+Google Chrome is recommended for the smoothest Studio file workflow.
+
 ## What the project contains
 
 The project contains your style preferences, agent instructions, `.dumbdiagrams/` knowledge, and a documented `diagrams/` workspace:

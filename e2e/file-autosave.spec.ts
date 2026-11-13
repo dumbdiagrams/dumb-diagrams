@@ -124,7 +124,7 @@ async function saveFromFileMenu(page: Page) {
 
 test("auto-saves linked edits by default, coalesces a burst, and remembers the manual-save setting", async ({ page }) => {
   await linkMockFile(page);
-  expect(await permissionModes(page)).toContain("readwrite");
+  expect(await permissionModes(page)).toEqual([]);
   await page.getByRole("button", { name: "File", exact: true }).click();
   const autoSave = page.getByRole("menuitemcheckbox", { name: "Auto-save", exact: true });
   await expect(autoSave).toBeChecked();
@@ -262,7 +262,7 @@ test("does not prompt for revoked write permission in the background, but explic
 
   const local = diagram("permission_retry", "permission_worker");
   const editor = await editSource(page, local);
-  await expect(page.getByText(/Save ?failed/i)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Unsaved", { exact: true }).first()).toBeVisible({ timeout: 10_000 });
   await expect(editor).toContainText("diagram permission_retry");
   expect(await diskSource(page)).toBe(initialSource);
   expect(await permissionRequests(page)).toBe(requestCountBeforeEdit);
