@@ -1,3 +1,9 @@
+@property --trace-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 @layer base {
   :root {
     --motion-ease: cubic-bezier(.22, 1, .36, 1);
@@ -7,15 +13,9 @@
 }
 
 @layer components {
-  @keyframes panel-enter { from { opacity: .55; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: no-preference) {
-    .example-panel:not([hidden]) > .example-description,
-    .example-panel:not([hidden]) > .example-workspace { animation: panel-enter 240ms var(--motion-ease); }
-    .prompt-pane:not([hidden]), .source-pane:not([hidden]) { animation: panel-enter 180ms var(--motion-ease); }
-  }
-
-  /* Composite a static gradient with opacity; never repaint its position. */
+  /* Default trace is a one-time accent; selected calls to action orbit below. */
   .trace-border { position: relative; isolation: isolate; }
+  .trace-orbit { display: none; }
   .trace-border::after {
     content: '';
     position: absolute;
@@ -36,6 +36,42 @@
     12% { opacity: .85; }
     80% { opacity: .85; }
     100% { opacity: 0; }
+  }
+
+  /* Keep a small highlight traveling around the two main calls to action. */
+  @media (prefers-reduced-motion: no-preference) {
+    .install.trace-border::after, .closing-cta.trace-border::after {
+      opacity: .9;
+      background: conic-gradient(from var(--trace-angle), transparent 0deg 305deg, var(--brand-navy) 318deg, var(--brand-coral) 330deg, var(--brand-orange) 338deg, transparent 355deg) border-box;
+      animation: border-orbit 8s linear infinite;
+    }
+    .provider-strip-list li::before { animation: provider-pulse 12s linear infinite; }
+    .provider-strip-list li:nth-child(2)::before { animation-delay: -9s; }
+    .provider-strip-list li:nth-child(3)::before { animation-delay: -6s; }
+    .provider-strip-list li:nth-child(4)::before { animation-delay: -3s; }
+  }
+  @keyframes border-orbit { to { --trace-angle: 360deg; } }
+  @supports (offset-path: rect(0 100% 100% 0)) {
+    @media (prefers-reduced-motion: no-preference) {
+      .install.trace-border::after, .closing-cta.trace-border::after { animation: none; opacity: 0; }
+      .trace-orbit {
+        display: block; position: absolute; inset: -1px; z-index: 1; border: 1px solid transparent;
+        border-radius: inherit; pointer-events: none;
+        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+      }
+      .trace-orbit__light {
+        position: absolute; top: 0; left: 0; width: 120px; height: 20px;
+        background: linear-gradient(90deg, transparent, var(--brand-navy) 29%, var(--brand-coral) 51%, var(--brand-orange) 62%, transparent);
+        offset-path: rect(0 100% 100% 0); offset-anchor: center; offset-rotate: auto;
+        animation: border-travel 6s linear infinite;
+      }
+    }
+  }
+  @keyframes border-travel { to { offset-distance: 100%; } }
+  @keyframes provider-pulse {
+    0%, 18%, 100% { border-color: var(--orange-dark); background: var(--orange-dark); }
+    25%, 93% { border-color: var(--muted); background: var(--paper); }
   }
 }
 

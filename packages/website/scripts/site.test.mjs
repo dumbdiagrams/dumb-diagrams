@@ -34,7 +34,9 @@ test('every internal page, anchor, and referenced asset resolves in the static b
     const pageUrl = new URL(base + pagePath, origin);
     assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, `${pagePath}: one main heading`);
     assert.match(html, /<meta name="description" content="[^"]+"/);
-    assert.doesNotMatch(html, /[—–]/, `${pagePath}: copy avoids long dashes`);
+    // Authored prompts and source files keep their original punctuation.
+    const copy = html.replace(/<pre\b[^>]*>[\s\S]*?<\/pre>/g, '');
+    assert.doesNotMatch(copy, /[—–]/, `${pagePath}: copy avoids long dashes`);
     assert.doesNotMatch(html, /__VITE_PRELOAD__/, 'dynamic import helpers must be resolved');
     const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
     assert.equal(new Set(ids).size, ids.length, `${pagePath}: unique IDs`);
@@ -172,6 +174,74 @@ test('complete documentation and homepage examples compile through the actual ru
   assert.ok(checked >= 5);
 });
 
+test('the introductory worked example preserves its reviewed export and editable notes', async () => {
+  const folder = 'engineering-drawing-extraction';
+  const authored = join(site, 'src/examples', folder);
+  const published = join(dist, 'worked-examples', folder);
+  for (const file of ['diagram.svg', 'diagram.dgm', 'diagram.requirements.json', 'prompt.txt']) {
+    assert.deepEqual(await readFile(join(published, file)), await readFile(join(authored, file)), `${file}: preserve the reviewed artifact`);
+  }
+  const svg = await readFile(join(published, 'diagram.svg'), 'utf8');
+  const source = await readFile(join(published, 'diagram.dgm'), 'utf8');
+  const prompt = await readFile(join(published, 'prompt.txt'), 'utf8');
+  assert.match(svg, /data:image\/svg\+xml/);
+  assert.doesNotMatch(svg, /(?:href="https?:|<script\b|\bonload=)/);
+  for (const text of [source, svg, prompt]) {
+    assert.doesNotMatch(text, /title blocks?|GD&amp;T|GD&T|dims,/i, 'the extraction details stay anonymized');
+    assert.match(text, /extract data steps/i);
+  }
+  const embedded = svg.match(/<metadata id="dumb-diagrams-source">([\s\S]*?)<\/metadata>/)?.[1];
+  assert.ok(embedded, 'SVG keeps its editable source');
+  const decoded = embedded.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&apos;', "'").replaceAll('&amp;', '&');
+  assert.equal(decoded.slice(decoded.indexOf('dgm 1')).trim(), source.trim(), 'downloadable source matches the reviewed SVG');
+  const parsed = parseDgmResult(source);
+  assert.equal(parsed.isOk(), true);
+  if (parsed.isErr()) return;
+  const requirements = parseRequirements(await readFile(join(published, 'diagram.requirements.json'), 'utf8'));
+  assert.equal(requirements.isOk(), true);
+  if (requirements.isOk()) assert.deepEqual(checkRequirements(parsed.value, requirements.value), []);
+  assert.equal(parsed.value.annotations.length, 6, 'all six stakeholder notes remain editable');
+  assert.deepEqual(parsed.value.edges.filter(edge => edge.step !== undefined).map(edge => edge.step), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  for (const edge of parsed.value.edges) assert.doesNotMatch(edge.label ?? '', /^\d+[.)]\s/, 'numbers belong in sequence badges');
+  assert.match(source, /route bedrock-extract \{[^\n]+mode manual pin badge[^\n]+label/, 'the human label adjustment is retained');
+
+  const page = await readFile(join(dist, 'docs', folder, 'index.html'), 'utf8');
+  const makeDiagrams = page.match(/<div class="nav-group"><h2>Make diagrams<\/h2>([\s\S]*?)<\/div>/)?.[1];
+  assert.ok(makeDiagrams, 'the examples belong to Make diagrams');
+  const links = [...makeDiagrams.matchAll(/href="([^"]+)"/g)].map(([, href]) => href);
+  const crossAccountIndex = links.indexOf(`${base}docs/aws-cross-account-data-transfer/`);
+  assert.ok(crossAccountIndex >= 0);
+  assert.equal(links[crossAccountIndex + 1], `${base}docs/${folder}/`, 'the notes example follows the cross-account example');
+  assert.equal(links.at(-1), `${base}docs/examples/`, 'Reviewed examples is last in the section');
+  assert.match(page, /final human adjustments/);
+  assert.ok(page.includes(prompt.trimEnd().split('\n')[0]), 'the prompt is visible on the page');
+  assert.ok(page.includes('data-copy-target="drawing-extraction-text-prompt"'), 'the prompt has a copy button');
+  assert.doesNotMatch(page, /href="[^"]*worked-examples\/engineering-drawing-extraction\/prompt\.txt"[^>]*download/, 'the prompt is not a download link');
+  assert.match(page, /href="[^"]*worked-examples\/engineering-drawing-extraction\/diagram\.dgm"[^>]*download/, 'the editable source remains downloadable');
+  assert.match(page, /href="[^"]*worked-examples\/engineering-drawing-extraction\/diagram\.requirements\.json"[^>]*download/, 'the requirements remain downloadable');
+  const quickStart = await readFile(join(dist, 'docs/quick-start/index.html'), 'utf8');
+  const studio = await readFile(join(dist, 'docs/studio/index.html'), 'utf8');
+  assert.match(quickStart, /studio\/#auto-save-and-live-file-updates/);
+  assert.match(studio, /id="auto-save-and-live-file-updates"/);
+});
+
+test('the cross-account walkthrough publishes one card wired to canonical AWS example assets', async () => {
+  const page = await readFile(join(dist, 'docs', 'aws-cross-account-data-transfer', 'index.html'), 'utf8');
+  assert.match(page, /class="worked-example"/);
+  assert.match(page, /Cross-account data transfer/);
+  assert.match(page, /aws-data-transfer-hub-tab-prompt/);
+  assert.match(page, /aws-data-transfer-hub-tab-source/);
+  assert.match(page, /aws-data-transfer-hub-tab-requirements/);
+  assert.ok(page.includes(`src="${base}diagrams/aws-data-transfer-hub-preview.svg"`));
+  assert.ok(page.includes(`href="${base}diagrams/aws-data-transfer-hub.svg" download`));
+  assert.ok(page.includes(`href="${base}diagrams/aws-data-transfer-hub.dgm" download`));
+  assert.ok(page.includes(`href="${base}diagrams/aws-data-transfer-hub.requirements.json" download`));
+  assert.match(page, /data-copy-target="aws-data-transfer-hub-text-prompt"/);
+  assert.doesNotMatch(page, /href="[^"]*aws-data-transfer-hub-prompt\.txt"[^>]*download/);
+  assert.equal((page.match(/class="worked-example"/g) || []).length, 1, 'the article contains one shared worked example card');
+  assert.match(page, /id="aws-data-transfer-hub-text-source"[^>]*class="worked-text/);
+});
+
 test('downloadable diagrams are portable and previews reserve their actual dimensions', async () => {
   const homepage = await readFile(join(dist, 'index.html'), 'utf8');
   const initialZooms = [...homepage.matchAll(/data-diagram-preview data-initial-zoom="([^"]+)"/g)].map(([, zoom]) => zoom);
@@ -189,9 +259,16 @@ test('downloadable diagrams are portable and previews reserve their actual dimen
       `${name}: requirements companion copied byte-for-byte`,
     );
   }
+  const landingExampleIds = new Set(loadLandingExamples().map(example => example.id));
   for (const example of loadExamples()) {
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}.dgm`), 'utf8'), example.source);
     assert.equal(await readFile(join(dist, 'diagrams', `${example.id}-prompt.txt`), 'utf8'), example.prompt);
+    if (landingExampleIds.has(example.id)) {
+      assert.ok(homepage.includes(`data-copy-target="prompt-text-${example.id}"`), `${example.id}: homepage prompt has a copy affordance`);
+      assert.ok(!homepage.includes(`href="${base}diagrams/${example.id}-prompt.txt" download`), `${example.id}: homepage prompt is not a download link`);
+      assert.ok(homepage.includes(`href="${base}diagrams/${example.id}.dgm" download`), `${example.id}: source remains downloadable`);
+      assert.ok(homepage.includes(`href="${base}diagrams/${example.id}.requirements.json" download`), `${example.id}: requirements remain downloadable`);
+    }
     assert.deepEqual(JSON.parse(await readFile(join(dist, 'diagrams', `${example.id}.requirements.json`), 'utf8')), JSON.parse(example.requirements));
     const svg = await readFile(join(dist, 'diagrams', `${example.id}.svg`), 'utf8');
     assert.match(svg, /data:image\/svg\+xml/);
@@ -226,7 +303,12 @@ test('approved examples are copied byte-for-byte and expose provenance in the do
     for (const key of Object.keys(example.files)) {
       const copied = await readFile(join(dist, 'reviewed-examples', example.files[key]));
       assert.deepEqual(copied, await readFile(example.paths[key]), `${example.id}: ${key} copied byte-for-byte`);
-      assert.ok(html.includes(`/reviewed-examples/${example.files[key]}`), `${example.id}: ${key} is linked from the gallery`);
+      if (key === 'prompt') {
+        assert.ok(html.includes(`data-copy-target="${example.id}-${example.run}-text-prompt"`), `${example.id}: prompt has a copy affordance`);
+        assert.ok(!html.includes(`href="${base}reviewed-examples/${example.files[key]}" download`), `${example.id}: prompt is not a download link`);
+      } else {
+        assert.ok(html.includes(`/reviewed-examples/${example.files[key]}`), `${example.id}: ${key} is linked from the gallery`);
+      }
     }
     const compactPreviewPath = `reviewed-examples/${example.run}/${example.id}-preview.svg`;
     const compactPreview = await readFile(join(dist, compactPreviewPath), 'utf8');
@@ -481,7 +563,7 @@ test('hero journey preserves the canonical CLI, agent prompt, and Studio result'
   assert.match(html, /Create project/);
   assert.match(html, /Open with agent/);
   assert.match(html, /Open in Studio/);
-  assert.match(html, /Creating project…/);
+  assert.match(html, /Open project with agent/);
   assert.ok(html.includes(escapedPrompt), 'agent stage contains the canonical prompt');
   assert.match(html, /data-terminal-final="true"/);
   assert.match(html, /aws-medium-image-thumbnail-pipeline-preview\.svg/);

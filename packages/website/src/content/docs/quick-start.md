@@ -65,9 +65,13 @@ By default, an agent creates `diagrams/<name>/diagram.requirements.json` before 
 
 Ask your coding agent to read `AGENTS.md` and the relevant `.dumbdiagrams/` guidance, then describe the architecture you want. [Work with an agent](../agent-workflow/) includes a prompt you can adapt. You can also write the source yourself or use Studio’s source editor.
 
+For a complete prompt and reviewed result, see [From notes to a diagram](../engineering-drawing-extraction/), including callouts for stakeholder discussions.
+
 Open the new diagram in Studio. Change a label in the source editor, move an item on the canvas, and save. Both kinds of change stay in the same portable `.dgm` file.
 
 [Using Studio](../studio/) shows the editor and explains its visual controls and save behavior.
+
+In Chrome or Edge, use **File → Open** to link a `.dgm` file. Auto-save is on by default, and edits from a coding agent or another editor refresh in Studio after about 1.5 seconds. Files opened through a fallback upload remain browser snapshots. See [auto-save and live file updates](../studio/#auto-save-and-live-file-updates) for details.
 
 ## Command reference
 

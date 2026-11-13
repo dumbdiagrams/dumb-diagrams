@@ -1,0 +1,19 @@
+Create a left-to-right AWS architecture diagram for an asynchronous engineering drawing extraction system involving Team X and Team Y.
+
+Team X owns the backend API, job orchestration, and job status database. Its backend stores engineering drawing PDFs in Amazon S3, creates a PENDING job record, and publishes a request containing the jobId and S3 references to an Amazon SQS request queue.
+
+Team Y owns the external extraction service. An ECS/Fargate worker consumes requests from SQS, reads the PDF from S3, and uses Amazon Bedrock to extract data from the drawing. Label that step "Extract data steps". The worker stores structured result.json in a separate S3 results bucket, then publishes a COMPLETED or FAILED event to an SQS result queue.
+
+A Team X result worker consumes the event, reads and validates result.json for successful jobs, handles failures, and updates the job database. A separate status API exposes job status from Team X's database. Include a dead-letter queue for each SQS queue and CloudWatch monitoring for Team Y.
+
+Organize the diagram into three clearly labeled groups: Team X (backend and status ownership), Shared AWS Infrastructure (S3 and SQS), and Team Y (ECS/Fargate workers and Amazon Bedrock). Use AWS icons, orthogonal connectors, numbered workflow steps, and a clean left-to-right layout.
+
+Add a separate Notes section with short, visible callouts on the diagram:
+- Ownership: Team X owns orchestration and authoritative job status; Team Y owns extraction processing.
+- Transport: S3 stores PDFs and result.json; SQS transports lightweight JSON events and S3 references, not files.
+- Ordering: Input PDF must be stored before publishing the request; result.json must be persisted before publishing COMPLETED.
+- Idempotency: jobId is the idempotency key; deterministic S3 result paths and duplicate completion events must be handled safely.
+- Reliability: Request and result DLQs handle exhausted consumer retries; a FAILED extraction event is a normal business outcome, not a DLQ message.
+- Status: PENDING → PROCESSING → COMPLETED / FAILED. Team X database remains the source of truth.
+
+Keep notes readable and visually separate from the main architecture. Avoid unnecessary infrastructure such as VPCs, NAT gateways, and subnets.

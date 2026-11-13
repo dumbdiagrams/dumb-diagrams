@@ -8,13 +8,18 @@ async function copyText(button: HTMLButtonElement, text: string) {
   copyLabels.set(button, original);
   window.clearTimeout(copyResets.get(button));
   const compact = button.classList.contains("copy-button");
+  const label = button.querySelector<HTMLElement>("[data-copy-label]");
+  const showFeedback = (message: string) => {
+    if (label) label.textContent = message;
+    else button.textContent = message;
+  };
   const status = button.closest("[data-install]")?.querySelector("[data-copy-status]");
   try {
     await navigator.clipboard.writeText(text);
-    button.textContent = compact ? "✓" : "Copied";
+    showFeedback(compact ? "✓" : "Copied");
     if (status) status.textContent = "Command copied to clipboard.";
   } catch {
-    button.textContent = compact ? "!" : "Select text";
+    showFeedback(compact ? "!" : "Select text");
     if (status) status.textContent = "Could not copy. Select the command to copy it manually.";
     const code = button.dataset.copyTarget
       ? document.getElementById(button.dataset.copyTarget)
@@ -63,8 +68,26 @@ document.querySelectorAll<HTMLElement>("[data-install]").forEach((install) => {
 
 document.querySelectorAll<HTMLElement>("[data-tabs]").forEach((tablist) => {
   const tabs = [...tablist.querySelectorAll<HTMLButtonElement>(':scope > [role="tab"]')];
+  const exampleTabs = tablist.classList.contains("example-tabs");
+  let exitingPanel: HTMLElement | null = null;
+  let exitTimer = 0;
   function select(tab: HTMLButtonElement) {
     if (tab.getAttribute("aria-selected") === "true") return;
+    const previousTab = tabs.find((button) => button.getAttribute("aria-selected") === "true");
+    const previousPanel = previousTab && document.getElementById(previousTab.getAttribute("aria-controls") || "");
+    window.clearTimeout(exitTimer);
+    exitingPanel?.removeAttribute("data-exiting");
+    exitingPanel = null;
+    // A fresh selection owns the only tab entry animation. Clearing the old
+    // marker before applying the new one keeps rapid switches from leaving a
+    // stale animation on a panel that is no longer active.
+    tabs.forEach((button) => {
+      const panel = document.getElementById(button.getAttribute("aria-controls") || "");
+      panel?.classList.remove("tab-transition-enter");
+      panel?.querySelectorAll<HTMLElement>(".tab-transition-enter").forEach((nestedPanel) => {
+        nestedPanel.classList.remove("tab-transition-enter");
+      });
+    });
     tabs.forEach((button) => {
       button.setAttribute("aria-selected", String(button === tab));
       button.tabIndex = button === tab ? 0 : -1;
@@ -78,6 +101,18 @@ document.querySelectorAll<HTMLElement>("[data-tabs]").forEach((tablist) => {
             .forEach((preview) => preview.dispatchEvent(new Event("preview:visible")));
       }
     });
+    const selectedPanel = document.getElementById(tab.getAttribute("aria-controls") || "");
+    selectedPanel?.classList.add("tab-transition-enter");
+    if (exampleTabs && previousPanel && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // The old panel is inert immediately, but remains visible briefly above
+      // the new one to avoid a flash as the diagram and prompt change.
+      exitingPanel = previousPanel;
+      exitingPanel.setAttribute("data-exiting", "");
+      exitTimer = window.setTimeout(() => {
+        exitingPanel?.removeAttribute("data-exiting");
+        exitingPanel = null;
+      }, 200);
+    }
     // Reveal an offscreen mobile tab without scrolling the whole page.
     const listBounds = tablist.getBoundingClientRect();
     const tabBounds = tab.getBoundingClientRect();

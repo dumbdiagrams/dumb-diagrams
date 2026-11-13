@@ -1,0 +1,94 @@
+dgm 1
+diagram engineering-drawing-extraction {
+  grammar aws
+  flow lr
+  title "Async Engineering Drawing Extraction (Team X / Team Y)"
+
+  aws.cloud aws-cloud "AWS" {
+    cloud-agnostic.boundary team-x "Team X — backend and status ownership" {
+      aws.api-gateway backend-api "Backend API"
+      aws.rds job-db "Job Status DB"
+      aws.api-gateway status-api "Status API"
+      aws.elastic-container-service-task result-worker "Result Worker"
+    }
+
+    cloud-agnostic.boundary shared-infra "Shared AWS Infrastructure — S3 and SQS" {
+      aws.simple-storage-service s3-pdfs "Drawing PDFs"
+      aws.simple-queue-service sqs-request "Request Queue"
+      aws.simple-storage-service s3-results "Results (result.json)"
+      aws.simple-queue-service sqs-result "Result Queue"
+      aws.simple-queue-service sqs-request-dlq "Request DLQ"
+      aws.simple-queue-service sqs-result-dlq "Result DLQ"
+    }
+
+    cloud-agnostic.boundary team-y "Team Y — ECS/Fargate and Bedrock" {
+      aws.elastic-container-service-task extraction-worker "Extraction Worker (Fargate)"
+      aws.bedrock bedrock "Amazon Bedrock"
+      aws.cloudwatch cloudwatch "CloudWatch"
+    }
+  }
+
+  annotation note-ownership "Ownership: Team X owns orchestration and authoritative job status; Team Y owns extraction processing." { anchor aws-cloud style callout size 11 align left background "#f5f7fa" }
+  annotation note-transport "Transport: S3 stores PDFs and result.json; SQS transports lightweight JSON events and S3 references, not files." { anchor shared-infra style callout size 11 align left background "#f5f7fa" }
+  annotation note-ordering "Ordering: Input PDF must be stored before publishing the request; result.json must be persisted before publishing COMPLETED." { anchor publish-request style callout size 11 align left background "#fff8e6" }
+  annotation note-idempotency "Idempotency: jobId is the idempotency key; deterministic S3 result paths and duplicate completion events must be handled safely." { anchor job-db style callout size 11 align left background "#f5f7fa" }
+  annotation note-reliability "Reliability: Request and result DLQs handle exhausted consumer retries; a FAILED extraction event is a normal business outcome, not a DLQ message." { anchor sqs-request-dlq style callout size 11 align left background "#ffecec" }
+  annotation note-status "Status: PENDING → PROCESSING → COMPLETED / FAILED. Team X database remains the source of truth." { anchor status-api style callout size 11 align left background "#eefaf3" }
+
+  backend-api -> s3-pdfs { id store-pdf label "Store drawing PDF" step 1 from n to n }
+  backend-api -> job-db { id create-pending label "Create PENDING job" step 2 from s to w }
+  backend-api -> sqs-request { id publish-request label "Publish jobId + S3 refs" step 3 from e to w }
+  sqs-request -> extraction-worker { id consume-request label "Consume request" step 4 }
+  extraction-worker -> s3-pdfs { id read-pdf label "Read PDF" step 5 }
+  extraction-worker -> bedrock { id bedrock-extract label "Extract data steps" step 6 }
+  extraction-worker -> s3-results { id write-result label "Persist result.json" step 7 }
+  extraction-worker -> sqs-result { id publish-result label "Publish COMPLETED / FAILED" step 8 }
+  sqs-result -> result-worker { id consume-result label "Consume result event" step 9 from n to n }
+  result-worker -> s3-results { id validate-result label "Read and validate result.json" step 10 from e to w }
+  result-worker -> job-db { id update-job-db label "Update job status / handle failure" step 11 }
+  status-api -> job-db { id read-status label "Expose job status" style dashed kind peer }
+  sqs-request -> sqs-request-dlq { id request-dlq label "After max receives" style dashed kind fail from n to s }
+  sqs-result -> sqs-result-dlq { id result-dlq label "After max receives" style dashed kind fail from n to s }
+  extraction-worker -> cloudwatch { id monitor-extraction label "Metrics and logs" style dashed kind peer from s to n }
+}
+
+view default {
+  place aws-cloud { x 32 y 32 w 1652.65 h 838 pin manual }
+  place team-x { x 64 y 352 w 614.5 h 200 pin manual }
+  place shared-infra { x 752 y 64 w 266.8 h 782 pin manual }
+  place team-y { x 1066 y 304 w 483.35 h 304 pin manual }
+  place backend-api { x 60 y 428 pin manual }
+  place job-db { x 268 y 428 pin manual }
+  place status-api { x 444 y 428 pin manual }
+  place result-worker { x 556 y 428 pin manual }
+  place s3-pdfs { x 844 y 92 pin manual }
+  place sqs-request { x 812 y 220 pin manual }
+  place s3-results { x 812 y 348 pin manual }
+  place sqs-result { x 812 y 468 pin manual }
+  place sqs-request-dlq { x 812 y 596 pin manual }
+  place sqs-result-dlq { x 812 y 724 pin manual }
+  place extraction-worker { x 1196 y 380 pin manual }
+  place bedrock { x 1588 y 380 pin manual }
+  place cloudwatch { x 1388 y 508 pin manual }
+  route store-pdf { point 92 428 point 92 408 point 40 408 point 40 116 point 864 116 mode manual pin badge 0.6531986531986532 top label 0.7138047138047138 top }
+  route create-pending { point 128 452 point 291 452 mode manual pin badge 0.5 top label 0.5 bottom }
+  route publish-request { point 104 428 point 104 408 point 456 408 point 456 244 point 862 244 mode manual pin badge 0.7845010615711253 top label 0.692144373673036 top }
+  route consume-request { point 910 244 point 976 244 point 976 392 point 1262 392 mode manual pin badge 0.714 top label 0.12 top }
+  route read-pdf { point 1286 380 point 1286 360 point 1120 360 point 1120 116 point 912 116 mode manual pin badge 0.8369905956112853 bottom label 0.768025078369906 top }
+  route bedrock-extract { point 1310 404 point 1596 404 mode manual pin badge 0.5047876761863911 bottom label 0.5404767817965715 top }
+  route write-result { point 1262 404 point 968 404 point 968 372 point 908 372 mode manual pin badge 0.8238341968911918 top label 0.844559585492228 bottom }
+  route publish-result { point 1262 416 point 976 416 point 976 492 point 910 492 mode manual pin badge 0.3341121495327103 bottom label 0.8162383177570094 bottom }
+  route consume-result { point 862 492 point 664 492 point 664 452 point 627 452 mode manual pin badge 0.36 top label 0.41818181818181815 bottom }
+  route validate-result { point 627 440 point 664 440 point 664 372 point 860 372 mode manual pin badge 0.6744186046511628 top label 0.6744186046511628 bottom }
+  route update-job-db { point 579 452 point 544 452 point 544 544 point 376 544 point 376 452 point 339 452 mode manual pin badge 0.5776415094339622 top label 0.5776415094339622 bottom }
+  route read-status { point 464 440 point 339 440 mode manual pin label 0.5 top }
+  route request-dlq { point 886 268 point 886 336 point 800 336 point 800 620 point 862 620 mode manual pin label 0.7868283567245434 bottom }
+  route result-dlq { point 910 504 point 976 504 point 976 712 point 886 712 point 886 724 mode manual pin label 0.9293587858040014 top }
+  route monitor-extraction { point 1310 416 point 1429 416 point 1429 508 mode manual pin label 0.8104265402843602 bottom }
+  annotation note-ownership { x 752 y -96 w 280 pin manual }
+  annotation note-transport { x 1153 y 168 pin manual }
+  annotation note-ordering { x 144 y 168 w 285 pin manual }
+  annotation note-idempotency { x 48 y 576 pin manual }
+  annotation note-reliability { x 738 y 888 pin manual }
+  annotation note-status { x 363 y 584 pin manual }
+}

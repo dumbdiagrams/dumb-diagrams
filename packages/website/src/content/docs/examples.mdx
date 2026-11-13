@@ -4,11 +4,14 @@ description: Browse approved model runs of the prompt bank, with each diagram's 
 seoTitle: Architecture Diagram Examples with Source Code
 seoDescription: Explore reviewed architecture diagrams alongside their prompts, .dgm source, and requirements.
 section: Make diagrams
-order: 5
+order: 15
 ---
 import ReviewedExamples from '../../components/docs/ReviewedExamples.astro';
 
-Each example is one agent's unedited, one-shot answer to a prompt from the repository's prompt bank, approved after review. It keeps the rendered SVG, the `.dgm` source, the prompt, and the `requirements.json` contract the agent wrote before authoring. Review notes flag routing findings that remain. Any of them could be refined further, by asking the agent for changes or by editing in Studio.
+For a complete workflow with stakeholder callouts and a final Studio review,
+start with [From notes to a diagram](../engineering-drawing-extraction/).
+
+Each example in the gallery below is one agent's unedited, one-shot answer to a prompt from the repository's prompt bank, approved after review. It keeps the rendered SVG, the `.dgm` source, the prompt, and the `requirements.json` contract the agent wrote before authoring. Review notes flag routing findings that remain. Any of them could be refined further, by asking the agent for changes or by editing in Studio.
 
 Prompts come in three difficulties. **Easy** and **medium** prompts describe everyday architectures, and their one-shot diagrams are ready to use as they are. **Hard** prompts are dense on purpose: they are the benchmark for many interlocking relationships across regions, zones, and failure paths, so some arrow crossings remain.
 

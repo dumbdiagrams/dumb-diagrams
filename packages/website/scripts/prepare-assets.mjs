@@ -7,6 +7,7 @@ import { loadCatalogSvg } from './catalog-loader.mjs';
 import { loadExamples } from '../src/lib/examples.mjs';
 import { cropSvgToLayout } from '../src/lib/preview-crop.mjs';
 import './prepare-reviewed-examples.mjs';
+import './prepare-worked-example.mjs';
 
 const root = new URL('../../../', import.meta.url);
 const site = new URL('../', import.meta.url);

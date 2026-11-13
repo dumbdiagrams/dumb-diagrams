@@ -25,11 +25,11 @@ const previewHeight = Number(dimensions[2]);
       <span class="journey-stage-number">01</span><span>Create project</span>
     </button>
     <span class="journey-stage-line" aria-hidden="true"></span>
-    <button id="journey-stage-tab-1" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-editor" data-stage-tab="1" disabled>
+    <button id="journey-stage-tab-1" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-editor" data-stage-tab="1">
       <span class="journey-stage-number">02</span><span>Open with agent</span>
     </button>
     <span class="journey-stage-line" aria-hidden="true"></span>
-    <button id="journey-stage-tab-2" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-studio" data-stage-tab="2" disabled>
+    <button id="journey-stage-tab-2" type="button" role="tab" aria-selected="false" aria-controls="journey-stage-studio" data-stage-tab="2">
       <span class="journey-stage-number">03</span><span>Open in Studio</span>
     </button>
   </div>
@@ -107,8 +107,8 @@ const previewHeight = Number(dimensions[2]);
   </div>
 
   <div class="journey-action-row">
-    <p class="journey-status" data-journey-status aria-live="polite">Running the CLI… the next step unlocks when the project is ready.</p>
-    <button type="button" class="journey-next" data-next-step disabled><span class="journey-next-step" data-next-step-number>STEP 01</span><span data-next-label>Creating project…</span><span class="journey-next-arrow" aria-hidden="true">→</span></button>
+    <p class="journey-status" data-journey-status aria-live="polite">Create a project, then open it with your coding agent to draft a .dgm file.</p>
+    <button type="button" class="journey-next" data-next-step><span class="journey-next-step" data-next-step-number>NEXT · 02</span><span data-next-label>Open project with agent</span><span class="journey-next-arrow" aria-hidden="true">→</span></button>
   </div>
   <noscript><p class="journey-noscript">Follow the complete workflow above: create a project folder, ask your coding agent to draft a portable .dgm file, then open it in Studio.</p></noscript>
 </div>

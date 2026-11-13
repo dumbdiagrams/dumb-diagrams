@@ -1,0 +1,70 @@
+---
+title: "AWS example: Cross-account data transfer platform"
+description: A real agent-assisted session from dumbdiagrams init to a reviewed cross-account AWS diagram.
+seoTitle: AWS Cross-Account Architecture Diagram Tutorial
+seoDescription: Follow an agent-assisted workflow for modeling cross-account AWS data transfer in a reviewable diagram.
+section: Make diagrams
+order: 12
+---
+import CrossAccountExample from '../../components/docs/CrossAccountExample.astro';
+
+This example follows a real session from an empty project to a reviewed
+diagram. It used Cursor, but any coding agent that reads local instructions
+and edits files works the same way.
+
+## Create the project
+
+```bash
+npm install -g create-dumb-diagrams
+dumbdiagrams init
+```
+
+`init` asks for a project name and creates the folder with `.dumbdiagrams/`
+guidance, a `diagrams/` workspace, and the agent entrypoint files.
+
+<figure>
+  <img src="./init-project.png" alt="A terminal running dumbdiagrams init and asking for a project name" loading="lazy" />
+  <figcaption>The project begins with a normal <code>dumbdiagrams init</code> run.</figcaption>
+</figure>
+
+## Ask in plain English
+
+Open the folder in your agent and ask it to read `AGENTS.md`. Then describe
+the architecture. This was the request:
+
+<CrossAccountExample />
+
+The request says what the diagram must communicate, not where shapes go. The
+agent first writes an `architecture-brief.md` that records its interpretation:
+the two accounts as separate boundaries, Cognito and OpenID Connect as
+alternative peers, and the Step Functions workflow shown as a boundary rather
+than an extra icon. Review the brief before the source: it is where a
+misunderstanding is cheapest to fix.
+
+<figure>
+  <img src="./agent-in-cursor.jpeg" alt="Cursor showing the initialized project, the generated diagram source, and the agent response" loading="lazy" />
+  <figcaption>The working session used for this example.</figcaption>
+</figure>
+
+## Review the source
+
+Use the card's **.dgm source** and **Requirements** tabs to inspect the files.
+Copy the prompt with its copy button, or download the source and requirements
+contract to open and validate the example locally.
+
+The numbered edges tell the main story: the user reaches the public UI, the UI
+calls AppSync, the API starts the deployment workflow, and the workflow
+launches transfer tasks. The managed account supplies templates and images
+without being merged into the customer account.
+
+## Refine it in Studio
+
+```bash
+dumbdiagrams validate --strict diagrams/*/*.dgm
+dumbdiagrams studio
+```
+
+Choose **Open** and check the account boundaries, the authentication
+alternatives, and the numbered flow. Anything you move or pin is saved in the
+same file.
+

@@ -1,0 +1,25 @@
+---
+interface Props {
+  target: string;
+  label: string;
+  dark?: boolean;
+  class?: string;
+}
+const { target, label, dark = false, class: className } = Astro.props;
+---
+<button class:list={['clipboard-copy', className]} type="button" data-copy-target={target} data-copy-tone={dark ? 'dark' : undefined} aria-label={label}>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+  <span data-copy-label aria-live="polite">Copy</span>
+</button>
+
+<style>
+  .clipboard-copy[data-copy-target] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; min-width: 82px; min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--brand-navy-soft); color: var(--ink); font: 600 12px/1.3 var(--font-brand); text-align: center; text-decoration: none; cursor: pointer; }
+  .clipboard-copy[data-copy-target]:hover { border-color: var(--brand-navy); }
+  .clipboard-copy[data-copy-target]:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: 2px; }
+  .clipboard-copy[data-copy-tone='dark'] { border-color: #ffffff35; background: #ffffff10; color: #e9eff8; }
+  .clipboard-copy[data-copy-tone='dark']:hover { border-color: #ffffff80; background: #ffffff20; }
+  .clipboard-copy svg { flex-shrink: 0; }
+</style>

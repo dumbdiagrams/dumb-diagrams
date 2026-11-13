@@ -15,19 +15,16 @@ journeys.forEach((journey) => {
   const nextStepNumberElement = nextStepNumber;
   const nextLabelElement = nextLabel;
   const statusElement = status;
-  const terminalElement = terminal;
   const promptElement = prompt;
 
   const fullPrompt = promptElement.textContent?.replace(/\s*$/, "") || "";
-  const terminalDone = terminalElement.dataset.terminalComplete === "true";
   let current = 0;
-  let unlocked = reduced.matches ? 2 : terminalDone ? 1 : 0;
   let promptDone = reduced.matches;
   let typingFrame = 0;
   let promptStarted = false;
 
   const messages = [
-    "The project is ready. Open it with your coding agent to draft a .dgm file.",
+    "Create a project, then open it with your coding agent to draft a .dgm file.",
     "Describe your architecture in your favorite code editor with an integrated LLM.",
     "Open the file in Studio and use its layout, routing, styling, and source tools to adjust the result.",
   ];
@@ -35,7 +32,6 @@ journeys.forEach((journey) => {
   function updateControls() {
     tabs.forEach((tab, index) => {
       const active = index === current;
-      tab.disabled = index > unlocked;
       tab.setAttribute("aria-selected", String(active));
       tab.id = `journey-stage-tab-${index}`;
     });
@@ -47,18 +43,14 @@ journeys.forEach((journey) => {
       else panel.removeAttribute("data-entering");
     });
     if (current === 0) {
-      nextButton.disabled = unlocked < 1;
-      nextStepNumberElement.textContent = unlocked < 1 ? "STEP 01" : "NEXT · 02";
-      nextLabelElement.textContent = unlocked < 1 ? "Creating project…" : "Open project with agent";
-      statusElement.textContent =
-        unlocked < 1 ? "Running the CLI… the next step unlocks when the project is ready." : messages[0];
+      nextStepNumberElement.textContent = "NEXT · 02";
+      nextLabelElement.textContent = "Open project with agent";
+      statusElement.textContent = messages[0];
     } else if (current === 1) {
-      nextButton.disabled = !promptDone;
       nextStepNumberElement.textContent = "NEXT · 03";
-      nextLabelElement.textContent = promptDone ? "Open the file in Studio" : "Agent is drafting…";
+      nextLabelElement.textContent = "Open the file in Studio";
       statusElement.textContent = messages[1];
     } else {
-      nextButton.disabled = false;
       nextStepNumberElement.textContent = "REPLAY · 01";
       nextLabelElement.textContent = "Replay journey";
       statusElement.textContent = messages[2];
@@ -70,7 +62,6 @@ journeys.forEach((journey) => {
     promptDone = true;
     promptElement.textContent = fullPrompt;
     promptElement.scrollTop = promptElement.scrollHeight;
-    unlocked = Math.max(unlocked, 2);
     updateControls();
     journey.dispatchEvent(new CustomEvent("hero-journey:prompt-complete", { bubbles: true }));
   }
@@ -96,7 +87,6 @@ journeys.forEach((journey) => {
 
   function setStage(stage: number) {
     const target = Math.max(0, Math.min(2, stage));
-    if (target > unlocked) return;
     current = target;
     if (current === 1) typePrompt();
     updateControls();
@@ -108,16 +98,15 @@ journeys.forEach((journey) => {
     tab.addEventListener("keydown", (event) => {
       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const available = tabs.filter((_, stage) => stage <= unlocked);
-      const position = available.indexOf(tab);
+      const position = tabs.indexOf(tab);
       const target =
         event.key === "Home"
-          ? available[0]
+          ? tabs[0]
           : event.key === "End"
-            ? available.at(-1)
+            ? tabs.at(-1)
             : event.key === "ArrowRight"
-              ? available[(position + 1) % available.length]
-              : available[(position - 1 + available.length) % available.length];
+              ? tabs[(position + 1) % tabs.length]
+              : tabs[(position - 1 + tabs.length) % tabs.length];
       target?.focus();
       target?.click();
     });
@@ -125,26 +114,20 @@ journeys.forEach((journey) => {
   nextButton.addEventListener("click", () => {
     if (current < 2) setStage(current + 1);
     else {
+      cancelAnimationFrame(typingFrame);
       promptStarted = false;
-      promptDone = false;
-      unlocked = reduced.matches ? 2 : 1;
+      promptDone = reduced.matches;
       promptElement.textContent = fullPrompt;
       setStage(0);
     }
   });
-  journey.addEventListener("terminal:complete", () => {
-    unlocked = Math.max(unlocked, 1);
-    updateControls();
-  });
   reduced.addEventListener("change", () => {
     if (reduced.matches) {
       cancelAnimationFrame(typingFrame);
-      unlocked = 2;
       finishPrompt();
       updateControls();
     }
   });
 
-  if (terminalElement.dataset.terminalComplete === "true") unlocked = Math.max(unlocked, 1);
   updateControls();
 });
