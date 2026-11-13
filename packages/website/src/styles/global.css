@@ -44,17 +44,20 @@
   .header-cta { border: 1px solid var(--ink); padding: 8px 15px; font-size: 12px; font-weight: 650; display: flex; align-items: center; gap: 30px; }
   .header-cta:hover { background: var(--brand-navy-soft); color: var(--ink); }
   .header-cta span { font-size: 17px; }
-  .github-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--ink); color: var(--ink); font-size: 12px; font-weight: 650; white-space: nowrap; }
+  .github-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 92px; height: 38px; border: 1px solid var(--ink); color: var(--ink); font-size: 12px; font-weight: 650; white-space: nowrap; }
   .github-link:hover, .github-link:focus-visible { background: var(--brand-navy-soft); color: var(--ink); }
   .github-link[aria-disabled='true'] { cursor: not-allowed; opacity: .58; }
   .github-link[aria-disabled='true']:hover { background: transparent; }
   .github-link__icon { width: 16px; height: 16px; fill: currentColor; }
+  .npm-link { display: inline-flex; align-items: center; justify-content: center; width: 92px; height: 38px; border: 1px solid var(--ink); color: var(--ink); font-size: 12px; font-weight: 650; white-space: nowrap; }
+  .npm-link:hover, .npm-link:focus-visible { background: var(--brand-navy-soft); color: var(--ink); }
+  .npm-link__icon { display: block; width: 31px; height: 12px; fill: currentColor; }
   .mobile-nav { display: none; }
   .install { width: 480px; max-width: 100%; border: 1px solid var(--line); background: #fcfbf7; }
   .install-tabs { display: flex; align-items: stretch; gap: 19px; padding: 0 17px; border-bottom: 1px solid var(--line); height: 36px; }
-  .install-tabs button { border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--muted); font-size: 11px; padding: 0; margin-bottom: -1px; }
+  .install-tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 11px; padding: 0 6px; margin: 0 -6px -1px; cursor: pointer; transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
+  .install-tabs button:hover, .install-tabs button:focus-visible { color: var(--ink); background: var(--brand-navy-soft); border-bottom-color: var(--orange); }
   .install-tabs button[aria-pressed="true"] { border-color: var(--orange); color: var(--ink); }
-  .install-tabs > span { margin-left: auto; color: var(--muted); font-size: 10px; align-self: center; letter-spacing: .04em; }
   .install-command { padding: 17px; display: flex; align-items: center; gap: 11px; }
   .install-command code { min-width: 0; flex: 1; white-space: nowrap; overflow-x: auto; scrollbar-width: none; font-size: 13px; letter-spacing: -.035em; }
   .install-command code::-webkit-scrollbar { display: none; }
@@ -64,6 +67,7 @@
   .install-caption { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; color: var(--muted); padding: 0 17px 12px; }
   .install-caption span span { padding: 0 5px; }
   .install-caption a { color: var(--ink); }
+  .install-caption a:hover, .install-caption a:focus-visible { color: var(--orange-dark); text-decoration: underline; }
   .site-footer { padding: 45px 0 72px; }
   .footer-top { display: flex; align-items: center; gap: 32px; padding-bottom: 34px; border-bottom: 1px solid var(--line); }
   .footer-top p { color: var(--muted); font-size: 12px; }
@@ -205,8 +209,9 @@
     .page-shell { padding: 0 20px; }
     .brand { --wordmark-size: 18px; }
     .brand > img { width: 38px; height: 23px; margin-right: 10px; }
-    .github-link { padding: 7px 9px; }
+    .github-link, .npm-link { width: 40px; height: 34px; }
     .github-link__label { display: none; }
+    .npm-link__icon { width: 26px; height: 10px; }
     .desktop-nav { display: none; }
     .mobile-nav { display: block; }
     .mobile-nav > summary { list-style: none; font-size: 20px; cursor: pointer; padding: 7px; }
@@ -220,7 +225,6 @@
     .text-link { font-size: 11px; gap: 16px; }
     .install-tabs { gap: 18px; padding: 0 12px; }
     .install-tabs button { font-size: 11px; }
-    .install-tabs > span { font-size: 10px; }
     .install-command { padding: 15px 12px; gap: 7px; }
     .install-command code, .hero .install-command code { font-size: 11.5px; }
     .install-caption { padding: 0 12px 12px; font-size: 10px; }
@@ -245,6 +249,11 @@
     .closing-cta { font-size: 12px; padding: 16px 18px; gap: 20px; width: 100%; }
     .footer-top > a:last-child { font-size: 10px; }
     .footer-bottom { font-size: 8px; }
+  }
+  @media (max-width: 380px) {
+    .site-header { gap: 6px; }
+    .brand { --wordmark-size: 15px; }
+    .brand > img { width: 32px; height: auto; margin-right: 5px; }
   }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 }

@@ -5,6 +5,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -30,7 +31,7 @@ import {
 } from "@dumb-diagrams/runtime/core";
 import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
-import { renderPortableSvg } from "@dumb-diagrams/runtime/render";
+import { getAnnotationBounds, renderPortableSvg } from "@dumb-diagrams/runtime/render";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
 
 import { serializeClipboardResult, duplicateSelectionResult } from "./model/clipboard";
@@ -42,7 +43,10 @@ import { createCatalogActions, insertionPoint } from "./state/catalog-actions";
 import { useEditorSelection } from "./state/use-editor-selection";
 import { groupSelection, canGroupSelection, ungroup } from "./model/grouping";
 import { useFileActions, type FilePickerWindow } from "./state/use-file-actions";
+import { requestWritePermission } from "./state/file-save";
+import { FileSyncIndicator } from "./ui/FileSyncIndicator";
 import { useStudioShortcuts } from "./interactions/use-studio-shortcuts";
+import { AnnotationInlineEditor } from "./canvas/AnnotationInlineEditor";
 import { Inspector } from "./panels/Inspector";
 import { NoteComposer, TextComposer } from "./panels/AnnotationControls";
 import { buildContextMenuItems } from "./panels/canvas-context-menu";
@@ -74,6 +78,7 @@ import {
   setSize,
   setTitle,
   setLocked,
+  setAnnotationPlace,
   setVisible,
   sendToFront,
   sendToBack,
@@ -178,8 +183,26 @@ function providersOnCanvas(doc: DiagramDocument): Array<keyof typeof PROVIDER_LA
   return (["aws", "azure", "gcp"] as const).filter((provider) => providers.has(provider));
 }
 
-const RenderedDiagram = memo(function RenderedDiagram({ svg }: { svg: string }) {
-  return <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
+const RenderedDiagram = memo(function RenderedDiagram({
+  svg,
+  editingAnnotationId,
+}: {
+  svg: string;
+  editingAnnotationId?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!editingAnnotationId) return;
+    const annotation = Array.from(ref.current?.querySelectorAll<SVGGElement>("g.annotation") ?? []).find(
+      (group) => group.id === `annotation-${editingAnnotationId}`,
+    );
+    const content = Array.from(annotation?.querySelectorAll<SVGTextElement>("[data-annotation-content]") ?? []);
+    for (const text of content) text.style.visibility = "hidden";
+    return () => {
+      for (const text of content) text.style.removeProperty("visibility");
+    };
+  }, [svg, editingAnnotationId]);
+  return <div ref={ref} className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />;
 });
 
 const SourceDrawer = lazy(() =>
@@ -245,7 +268,7 @@ function App() {
     editSourceDraft,
     commitSourceDraft,
     commitSource,
-    resetTab,
+    applyExternalSource,
     resetActive,
     beginTransaction,
     endTransaction,
@@ -283,10 +306,72 @@ function App() {
   const { selection, setSelection } = editorSelection;
   const [stageMarquee, setStageMarquee] = useState<CanvasMarqueeGesture | null>(null);
   const [textEditRequest, setTextEditRequest] = useState<SelectionItem | null>(null);
+  const [editingAnnotation, setEditingAnnotation] = useState<{
+    id: string;
+    initialText: string;
+    draft: string;
+    mode: "inline" | "sidebar";
+    tabId: string;
+  } | null>(null);
+  const editingAnnotationIdRef = useRef<string | null>(null);
+  const fileSyncPointerDownRef = useRef(false);
+  const fileSyncEditingElementRef = useRef<Element | null>(null);
+  useEffect(() => {
+    const start = () => {
+      fileSyncPointerDownRef.current = true;
+    };
+    const end = () => {
+      fileSyncPointerDownRef.current = false;
+    };
+    const editing = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".document-name-field, .inspector-sheet, .source-sheet")) {
+        fileSyncEditingElementRef.current = target;
+      }
+    };
+    const finishEditing = (event: FocusEvent) => {
+      if (event.target === fileSyncEditingElementRef.current) fileSyncEditingElementRef.current = null;
+    };
+    window.addEventListener("pointerdown", start, true);
+    window.addEventListener("pointerup", end, true);
+    window.addEventListener("pointercancel", end, true);
+    window.addEventListener("blur", end);
+    window.addEventListener("input", editing, true);
+    window.addEventListener("focusout", finishEditing, true);
+    return () => {
+      window.removeEventListener("pointerdown", start, true);
+      window.removeEventListener("pointerup", end, true);
+      window.removeEventListener("pointercancel", end, true);
+      window.removeEventListener("blur", end);
+      window.removeEventListener("input", editing, true);
+      window.removeEventListener("focusout", finishEditing, true);
+    };
+  }, []);
+  const inlineAnnotationRef = useRef<HTMLTextAreaElement>(null);
   const [pendingPort, setPendingPort] = useState<PendingPort>(null);
   const [defaultFrameKey, setDefaultFrameKey] = useState(0);
   const [snapToGrid, setSnapToGrid] = useState(true);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const toolbarRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current;
+    const app = toolbar?.closest<HTMLElement>(".app");
+    if (!toolbar || !app) return;
+    const measure = () => {
+      const bottom = Math.ceil(
+        toolbar.getBoundingClientRect().bottom - app.getBoundingClientRect().top + app.scrollTop,
+      );
+      app.style.setProperty("--studio-chrome-height", `${bottom}px`);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, []);
   const activeTabRef = useRef(activeTabId);
   activeTabRef.current = activeTabId;
   const fitRef = useRef<(() => void) | null>(null);
@@ -378,17 +463,47 @@ function App() {
       : tab.filename?.replace(/\.dgm$/i, "") || "Untitled diagram";
   }, []);
 
-  const sourceIsValid = (candidate: string): boolean =>
-    validateImportedSource(candidate, { enforceCatalogRules: false }).isOk();
+  const sourceIsValid = useCallback(
+    (candidate: string): boolean => validateImportedSource(candidate, { enforceCatalogRules: false }).isOk(),
+    [],
+  );
 
-  const { saveTabSource, attachFileHandle } = useFileActions({
-    tabs,
-    tabLabel,
-    sourceIsValid,
-    onMessage: setToast,
-    onSaved: markTabSaved,
-    onConflict: setFileConflictRequest,
-  });
+  const { saveTabSource, attachFileHandle, fileSyncByTab, reloadTabFromDisk, autoSaveEnabled, setAutoSaveEnabled } =
+    useFileActions({
+      tabs,
+      tabLabel,
+      sourceIsValid,
+      onMessage: setToast,
+      onSaved: (tabId, savedSource, filename, options) => {
+        markTabSaved(tabId, savedSource, filename, { commitDraft: !options?.automatic });
+      },
+      onConflict: setFileConflictRequest,
+      canAutoSaveTab: (tabId) => tabId !== activeTabRef.current || !fileSyncPointerDownRef.current,
+      canAutoReloadTab: (tabId) => {
+        if (tabId !== activeTabRef.current) return true;
+        return (
+          !fileSyncPointerDownRef.current &&
+          !editingAnnotationIdRef.current &&
+          fileSyncEditingElementRef.current !== document.activeElement
+        );
+      },
+      onExternalReload: (tabId, nextSource, filename) => {
+        applyExternalSource(tabId, nextSource);
+        if (tabId === activeTabRef.current) {
+          clearDraftTimer();
+          editorSelection.resetSelection();
+          editingAnnotationIdRef.current = null;
+          fileSyncEditingElementRef.current = null;
+          setEditingAnnotation(null);
+          setTextEditRequest(null);
+          setPendingPort(null);
+          setContextMenu(null);
+          setTabContextMenu(null);
+        }
+        setToast(`Updated ${filename} from disk`);
+      },
+    });
+  const activeFileSync = fileSyncByTab[activeTab.id];
 
   saveAsActionRef.current = async (draft) => {
     const filename = normalizeSingleLineText(draft);
@@ -589,7 +704,7 @@ function App() {
     }
   };
 
-  const reloadConflictingFile = () => {
+  const reloadConflictingFile = async () => {
     const request = fileConflictRequest;
     if (!request) return;
     const tab = tabs.find((candidate) => candidate.id === request.tabId);
@@ -598,13 +713,11 @@ function App() {
       setToast("The conflicting diagram tab is no longer open.");
       return;
     }
+    // Read again: the external editor may have written another version while
+    // the conflict dialog was open. Invalid partial writes stay on disk only.
+    const reloaded = await reloadTabFromDisk(request.tabId, { discardStudioEdits: true });
+    if (!reloaded) return;
     setFileConflictRequest(null);
-    resetTab(request.tabId, request.diskSource, request.diskSource);
-    if (request.tabId === activeTabId) {
-      resetTransientState();
-      setDefaultFrameKey((current) => current + 1);
-    }
-    setToast(`Reloaded ${request.filename} from disk`);
     if (closeRequest === request.tabId) {
       setCloseRequest(null);
       beginTabClose(request.tabId, previewsForTabs([tab]));
@@ -694,8 +807,16 @@ function App() {
     try {
       const handles = await picker({
         multiple: true,
+        // Ask for write access in the picker itself (Chrome/Edge 122+); older
+        // builds ignore it and fall back to requestWritePermission below.
+        mode: "readwrite",
         types: [{ description: "DumbDiagrams source", accept: { "text/plain": [".dgm"] } }],
       });
+      if (autoSaveEnabled) {
+        // The picker restores user activation. Ask for write access here,
+        // before reading files, so later autosaves need no permission prompt.
+        await Promise.all(handles.map(requestWritePermission));
+      }
       const { entries, rejected } = await readFileHandles(handles);
       await openFileEntries(entries, rejected);
     } catch (error) {
@@ -924,17 +1045,25 @@ function App() {
 
   const requestTextEdit = (item: SelectionItem) => {
     setSelection([item]);
-    setTextEditRequest(item);
+    if (item.kind === "annotation") {
+      const annotation = compiled.ok ? compiled.doc.annotations.find((candidate) => candidate.id === item.id) : null;
+      if (compiled.ok && annotation && !compiled.doc.views[0]?.annotations?.[item.id]?.locked) {
+        beginTransaction(activeTabId);
+        editingAnnotationIdRef.current = item.id;
+        setEditingAnnotation({
+          id: item.id,
+          initialText: annotation.text,
+          draft: annotation.text,
+          mode: "inline",
+          tabId: activeTabId,
+        });
+      }
+    } else setTextEditRequest(item);
   };
 
   useEffect(() => {
     if (!textEditRequest) return;
-    const fieldId =
-      textEditRequest.kind === "edge"
-        ? "edge-panel-label"
-        : textEditRequest.kind === "annotation"
-          ? "inspector-label"
-          : null;
+    const fieldId = textEditRequest.kind === "edge" ? "edge-panel-label" : null;
     if (!fieldId) return;
 
     const frame = window.requestAnimationFrame(() => {
@@ -947,6 +1076,64 @@ function App() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [textEditRequest]);
+
+  useEffect(() => {
+    if (!editingAnnotation || editingAnnotation.mode !== "inline") return;
+    const frame = window.requestAnimationFrame(() => {
+      inlineAnnotationRef.current?.focus();
+      inlineAnnotationRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [editingAnnotation?.id, editingAnnotation?.mode]);
+
+  useEffect(() => {
+    if (!editingAnnotation || editingAnnotation.tabId === activeTabId) return;
+    endTransaction(editingAnnotation.tabId);
+    editingAnnotationIdRef.current = null;
+    setEditingAnnotation(null);
+  }, [activeTabId, editingAnnotation?.tabId, endTransaction]);
+
+  const finishAnnotationEdit = (text?: string) => {
+    if (!editingAnnotation || editingAnnotationIdRef.current !== editingAnnotation.id) return;
+    if (editingAnnotation.tabId !== activeTabId) {
+      endTransaction(editingAnnotation.tabId);
+      editingAnnotationIdRef.current = null;
+      setEditingAnnotation(null);
+      return;
+    }
+    const current =
+      text ??
+      (compiled.ok
+        ? (compiled.doc.annotations.find((candidate) => candidate.id === editingAnnotation.id)?.text ?? "")
+        : "");
+    const normalized = normalizeMultilineText(current);
+    if (normalized !== current) previewMutate((doc) => updateAnnotationText(doc, editingAnnotation.id, normalized));
+    endTransaction(editingAnnotation.tabId);
+    editingAnnotationIdRef.current = null;
+    setEditingAnnotation(null);
+  };
+
+  const cancelAnnotationEdit = (initialText = editingAnnotation?.initialText ?? "") => {
+    if (!editingAnnotation) return;
+    if (editingAnnotation.tabId === activeTabId) {
+      previewMutate((doc) => updateAnnotationText(doc, editingAnnotation.id, initialText));
+      cancelTransaction(editingAnnotation.tabId);
+    } else endTransaction(editingAnnotation.tabId);
+    editingAnnotationIdRef.current = null;
+    setEditingAnnotation(null);
+  };
+
+  const changeAnnotationText = (id: string, value: string) => {
+    if (
+      !compiled.ok ||
+      (editingAnnotation && editingAnnotation.tabId !== activeTabId) ||
+      compiled.doc.views[0]?.annotations?.[id]?.locked
+    )
+      return;
+    const text = value.slice(0, DIAGRAM_LIMITS.annotationCharacters);
+    setEditingAnnotation((current) => (current?.id === id ? { ...current, draft: text } : current));
+    previewMutate((doc) => updateAnnotationText(doc, id, text));
+  };
 
   const journalIssues = useMemo<StudioIssue[]>(() => {
     const persistenceIssues: StudioIssue[] = persistenceWarning
@@ -1322,12 +1509,24 @@ function App() {
     { id: "new", label: "New diagram", shortcut: "⌘N / Ctrl+N", onSelect: handleNewTab },
     { id: "open", label: "Open .dgm", shortcut: "⌘O / Ctrl+O", onSelect: () => void openFromDisk() },
     {
+      id: "reload-from-disk",
+      label: "Reload from disk",
+      disabled: !activeFileSync,
+      onSelect: () => void reloadTabFromDisk(activeTab.id),
+    },
+    {
       id: "recycle-bin",
       label: `Recycle bin${recentlyClosed.length ? ` (${recentlyClosed.length})` : ""}`,
       onSelect: () => setRecycleBinOpen(true),
     },
     { id: "file-divider-1", label: "", separator: true },
     { id: "save", label: "Save", shortcut: "⌘S / Ctrl+S", disabled: !currentSourceValid, onSelect: saveActive },
+    {
+      id: "auto-save",
+      label: "Auto-save",
+      checked: autoSaveEnabled,
+      onSelect: () => setAutoSaveEnabled(!autoSaveEnabled),
+    },
     {
       id: "save-as",
       label: "Save As…",
@@ -1409,6 +1608,13 @@ function App() {
     },
     { id: "command-new", label: "New diagram", section: "File", shortcut: "⌘N", onSelect: handleNewTab },
     { id: "command-open", label: "Open .dgm", section: "File", shortcut: "⌘O", onSelect: () => void openFromDisk() },
+    {
+      id: "command-reload-from-disk",
+      label: "Reload from disk",
+      section: "File",
+      disabled: !activeFileSync,
+      onSelect: () => void reloadTabFromDisk(activeTab.id),
+    },
     {
       id: "command-save",
       label: "Save",
@@ -1722,7 +1928,10 @@ function App() {
                 height: displayCanvas?.h ?? displayCompiled.layout.height,
               }}
             >
-              <RenderedDiagram svg={displayCompiled.svg} />
+              <RenderedDiagram
+                svg={displayCompiled.svg}
+                editingAnnotationId={editingAnnotation?.mode === "inline" ? editingAnnotation.id : undefined}
+              />
               {compiled.ok && (
                 <InteractionOverlay
                   key={activeTabId}
@@ -1766,7 +1975,14 @@ function App() {
                     return previewMutate((doc) =>
                       kind === "group"
                         ? setGroupBounds(doc, id, bounds)
-                        : setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
+                        : kind === "annotation"
+                          ? setAnnotationPlace(
+                              setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
+                              id,
+                              bounds.x,
+                              bounds.y,
+                            )
+                          : setSize(doc, id, bounds.w, bounds.h, { unlockAspect }),
                     );
                   }}
                   onRoute={(edgeId, points) => previewMutate((doc) => setRoute(doc, edgeId, points))}
@@ -1786,6 +2002,27 @@ function App() {
                   }}
                 />
               )}
+              {compiled.ok &&
+                editingAnnotation?.mode === "inline" &&
+                (() => {
+                  const annotation = compiled.doc.annotations.find(
+                    (candidate) => candidate.id === editingAnnotation.id,
+                  );
+                  const bounds = getAnnotationBounds(compiled.doc, compiled.layout, editingAnnotation.id);
+                  if (!annotation || !bounds) return null;
+                  return (
+                    <AnnotationInlineEditor
+                      annotation={annotation}
+                      bounds={bounds}
+                      canvasOrigin={{ x: displayCanvas?.x ?? 0, y: displayCanvas?.y ?? 0 }}
+                      value={editingAnnotation.draft}
+                      inputRef={inlineAnnotationRef}
+                      onChange={(value) => changeAnnotationText(editingAnnotation.id, value)}
+                      onFinish={finishAnnotationEdit}
+                      onCancel={() => cancelAnnotationEdit()}
+                    />
+                  );
+                })()}
             </div>
           ) : (
             <div className="empty-canvas">No valid diagram to preview yet.</div>
@@ -1801,7 +2038,7 @@ function App() {
             <span>{issues[0]?.message}</span>
           </div>
         )}
-        <header className="floating-topbar">
+        <header ref={toolbarRef} className="floating-topbar">
           <div className="topbar-left">
             <div className="document-name-field">
               <input
@@ -1844,6 +2081,14 @@ function App() {
               </button>
             </div>
             <span className="file-name">{activeTab.filename ?? ".dgm"}</span>
+            {(activeFileSync || activeTab.filename || isTabDirty(activeTab)) && (
+              <FileSyncIndicator
+                status={activeFileSync?.status ?? "browser-only"}
+                onReload={() => void reloadTabFromDisk(activeTab.id)}
+                onSave={saveActive}
+                onSaveAs={openSaveAs}
+              />
+            )}
           </div>
           <div className="topbar-center">
             <button
@@ -2262,6 +2507,24 @@ function App() {
                 return doc;
               });
             }}
+            onTextChange={(label) => {
+              const annotation = selection.find((item) => item.kind === "annotation");
+              if (annotation) changeAnnotationText(annotation.id, label);
+            }}
+            onTextEditStart={(item, originalText) => {
+              if (item.kind !== "annotation" || editingAnnotationIdRef.current === item.id) return;
+              editingAnnotationIdRef.current = item.id;
+              beginTransaction(activeTabId);
+              setEditingAnnotation({
+                id: item.id,
+                initialText: originalText,
+                draft: originalText,
+                mode: "sidebar",
+                tabId: activeTabId,
+              });
+            }}
+            onTextEditFinish={(text) => finishAnnotationEdit(text)}
+            onTextEditCancel={(originalText) => cancelAnnotationEdit(originalText)}
             onLimitError={setToast}
             onAlign={(axis) => mutateCurrent((doc) => alignSelection(doc, selection, compiled.layout!, axis))}
             onDistribute={(axis) => mutateCurrent((doc) => distributeSelection(doc, selection, compiled.layout!, axis))}
@@ -2292,12 +2555,12 @@ function App() {
             }}
             onSetAnnotationStyle={(style) => {
               const annotation = selection.find((item) => item.kind === "annotation");
-              if (!annotation) return;
+              if (!annotation || compiled.doc.views[0]?.annotations?.[annotation.id]?.locked) return;
               mutateCurrent((doc) => setAnnotationStyle(doc, annotation.id, style));
             }}
             onSetTextFormat={(format) => {
               const annotation = selection.find((item) => item.kind === "annotation");
-              if (!annotation) return;
+              if (!annotation || compiled.doc.views[0]?.annotations?.[annotation.id]?.locked) return;
               mutateCurrent((doc) => updateTextFormat(doc, annotation.id, format));
             }}
             onUpdateGroupStep={(step) => {
@@ -2528,7 +2791,7 @@ function App() {
               <button type="button" className="text-button" onClick={() => setFileConflictRequest(null)}>
                 Cancel
               </button>
-              <button type="button" className="text-button" onClick={reloadConflictingFile}>
+              <button type="button" className="text-button" onClick={() => void reloadConflictingFile()}>
                 Reload from disk
               </button>
               <button type="button" className="danger-button" onClick={() => void overwriteConflictingFile()}>

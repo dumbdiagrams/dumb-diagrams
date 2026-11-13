@@ -51,11 +51,13 @@ The project contains your style preferences, agent instructions, `.dumbdiagrams/
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `numberedSteps` | `true` | Number the main flow arrows with step badges (1, 2, 3, ...). Dashed and failure arrows stay unnumbered. |
+| `numberedSteps` | `true` | Number main flow arrows with native `step N` badges. Keep edge labels descriptive and unnumbered. Dashed and failure arrows stay unnumbered. |
 | `edgeLabels` | `true` | Give every arrow a short label. |
 | `resourceLabels` | `true` | Show names under icons. Set `false` to draw icons only. |
 
 `dumbdiagrams validate` fails when a diagram ignores a preference, so the agent corrects it before finishing. To change one diagram only, ask the agent; it records the exception in that diagram's `requirements.json` under `preferences` and leaves the project file alone.
+
+For example, write `label "Store input drawing" step 1`. A label such as `"1. Store input drawing"` does not create a step badge; the number belongs in the edge's `step` field.
 
 By default, an agent creates `diagrams/<name>/diagram.requirements.json` before `diagram.dgm`, beside an `architecture-brief.md` that records the goal and important decisions. The requirements file lists stable component and relationship IDs, required counts, and containment. Keep it alongside the diagram through layout edits. Studio can open the `.dgm` wherever you decide to keep it.
 
@@ -63,9 +65,13 @@ By default, an agent creates `diagrams/<name>/diagram.requirements.json` before 
 
 Ask your coding agent to read `AGENTS.md` and the relevant `.dumbdiagrams/` guidance, then describe the architecture you want. [Work with an agent](../agent-workflow/) includes a prompt you can adapt. You can also write the source yourself or use Studio’s source editor.
 
+For a complete prompt and reviewed result, see [From notes to a diagram](../engineering-drawing-extraction/), including callouts for stakeholder discussions.
+
 Open the new diagram in Studio. Change a label in the source editor, move an item on the canvas, and save. Both kinds of change stay in the same portable `.dgm` file.
 
 [Using Studio](../studio/) shows the editor and explains its visual controls and save behavior.
+
+In Chrome or Edge, use **File → Open** to link a `.dgm` file. Auto-save is on by default, and edits from a coding agent or another editor refresh in Studio after about 1.5 seconds. Files opened through a fallback upload remain browser snapshots. See [auto-save and live file updates](../studio/#auto-save-and-live-file-updates) for details.
 
 ## Command reference
 

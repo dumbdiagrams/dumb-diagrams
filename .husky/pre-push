@@ -1,1 +1,8 @@
-pnpm check:pr
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ] && [ "$local_ref" != "(delete)" ]; then
+    pnpm check:pr
+    pnpm test:e2e
+    pnpm check:website:ci
+    break
+  fi
+done

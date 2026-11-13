@@ -366,14 +366,14 @@ describe("diagram compilation canvas bounds", () => {
     const view = getDefaultView(doc);
     view.annotations = {
       ...view.annotations,
-      "far-note": { x: 2_400, y: 1_500, w: 220, h: 96, pin: true },
+      "far-note": { x: 2_400, y: 1_500, w: 240, h: 100, pin: true },
     };
 
     const result = compileDiagramSource(printDgm(doc), false);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.layout.width).toBeGreaterThanOrEqual(2_400 + 220 + 128);
-    expect(result.layout.height).toBeGreaterThanOrEqual(1_500 + 96 + 128);
+    expect(result.layout.width).toBeGreaterThanOrEqual(2_400 + 240 + 128);
+    expect(result.layout.height).toBeGreaterThanOrEqual(1_500 + 100 + 128);
   });
 
   it("grows the artboard above and to the left of the initial layout", () => {

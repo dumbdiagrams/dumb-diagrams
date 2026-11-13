@@ -1,4 +1,5 @@
 import type { DiagramDocument, LayoutResult, PlaceOverride, Point, RouteOverride } from "@dumb-diagrams/runtime/core";
+import { resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { getDefaultView } from "@dumb-diagrams/runtime/core";
 
 import { cloneDocument } from "./document-structure";
@@ -104,6 +105,23 @@ function snapshotLayout(doc: DiagramDocument, layout: LayoutResult, skipPinned: 
       manual: true,
     };
     view.places[node.id] = place;
+  }
+
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
+  for (const annotation of doc.annotations) {
+    const existing = view.annotations?.[annotation.id];
+    if (skipPinned && existing?.pin) continue;
+    const bounds = annotationBounds[annotation.id];
+    if (!bounds) continue;
+    view.annotations ??= {};
+    // Freeze position only: authored sizes stay, automatic sizes keep fitting their text.
+    view.annotations[annotation.id] = {
+      ...existing,
+      x: bounds.x,
+      y: bounds.y,
+      pin: true,
+      manual: true,
+    };
   }
 
   return next;

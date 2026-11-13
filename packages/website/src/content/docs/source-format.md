@@ -102,14 +102,20 @@ meaning.
 ## Edges
 
 ```text
-api -> handler { id invoke label "process" step 2 from e to w }
+api -> handler { id invoke label "Store input drawing" step 2 from e to w }
 ```
+
+With `numberedSteps: true`, the native `step N` field creates the badge and
+the label contains only its description. For example,
+`label "Store input drawing" step 1` is correct; `label "1. Store input drawing"`
+is not a step badge. Validation reports an obvious leading sequence prefix in
+an edge label.
 
 | Option | Values |
 | --- | --- |
 | `id` | Stable edge ID. Saved routes refer to it, so always set one. |
-| `label` | A quoted string |
-| `step` | A number in the main flow |
+| `label` | A quoted, descriptive-only string; do not prefix it with the step number |
+| `step` | A number in the main flow, rendered as the native numbered badge |
 | `style` | `solid`, `dashed` |
 | `kind` | `flow`, `bidirectional`, `peer`, `fail` |
 | `color` | `graphite`, `blue`, `teal`, `purple`, `amber`, `coral`, `red`, `green` |
@@ -126,8 +132,12 @@ annotation note "Retries use exponential backoff" { anchor handler style callout
 | `anchor` | The ID of the item the note points at |
 | `style` | `text`, `paper`, `code`, `callout`, `checklist` |
 | `font` | `sans`, `serif`, `mono` |
-| `size` | 10 to 48 |
+| `size` | 6 to 96 px, including fractional values such as `8.5` |
 | `align` | `left`, `center`, `right` |
+| `background` | A quoted hex color, such as `"#feefdd"` |
+| `color` | A quoted text color, such as `"#163964"` |
+
+Notes grow to fit their complete text. Set `anchor` to the resource, boundary, or connection the note explains; notes without an authored position are placed nearby with space between them. A note about an area, such as a team or shared layer, anchors to that boundary and lands beside it; don't gather notes into a "Notes" boundary. Resizing a note in Studio keeps its height fitted to its text. Use view annotation placements only when you need a specific position or width. Font, size, alignment, and colors apply to every note style.
 
 ## Assets
 

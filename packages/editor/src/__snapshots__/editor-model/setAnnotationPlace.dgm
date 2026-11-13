@@ -37,5 +37,5 @@ diagram image-thumbnail-pipeline {
 }
 
 view default {
-  annotation note { x 640 y 96 pin }
+  annotation note { x 640 y 96 pin manual }
 }

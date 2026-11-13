@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -388,6 +388,48 @@ describe("runCli", () => {
         ]),
       );
       expect(report.files[0].routing.status).toBe("pass");
+    } finally {
+      output.mockRestore();
+      rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports numbered edge labels when project preferences enable native step badges", async () => {
+    const workRoot = mkdtempSync(join(tmpdir(), "dumbdiagrams-step-labels-"));
+    const projectRoot = join(workRoot, "project");
+    const diagram = join(projectRoot, "diagrams", "diagram.dgm");
+    let source = `diagram steps { grammar cloud-agnostic flow lr
+      cloud-agnostic.client client "Client"
+      cloud-agnostic.server store "Store"
+      client -> store { id request label "1. Store input drawing" }
+    }`;
+    mkdirSync(join(projectRoot, ".dumbdiagrams"), { recursive: true });
+    mkdirSync(dirname(diagram), { recursive: true });
+    writeFileSync(join(projectRoot, "preferences.json"), JSON.stringify({ numberedSteps: true }));
+    writeFileSync(diagram, source);
+    writeRequirementsForDiagram(diagram, source);
+    const output = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      expect(await runCli(["validate", "--json", diagram])).toBe(1);
+      const report = JSON.parse(String(output.mock.calls.at(-1)?.[0]));
+      expect(report.files[0].preferences.status).toBe("fail");
+      expect(report.files[0].preferences.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ code: "preference-step-label-numbered", elementIds: ["request"] }),
+          expect.objectContaining({ code: "preference-step-missing", elementIds: ["request"] }),
+        ]),
+      );
+      expect(
+        report.files[0].preferences.issues.find((entry: { code: string }) => entry.code === "preference-step-missing")
+          .message,
+      ).toContain("a number in its label is not sufficient");
+
+      source = source.replace('label "1. Store input drawing" }', 'label "Store input drawing" step 1 }');
+      writeFileSync(diagram, source);
+      output.mockClear();
+      expect(await runCli(["validate", "--json", diagram])).toBe(0);
+      const correctedReport = JSON.parse(String(output.mock.calls.at(-1)?.[0]));
+      expect(correctedReport.files[0].preferences).toMatchObject({ status: "pass", issues: [] });
     } finally {
       output.mockRestore();
       rmSync(workRoot, { recursive: true, force: true });

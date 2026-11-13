@@ -1,0 +1,74 @@
+---
+title: "Example: From notes to a diagram"
+description: Turn loose architecture notes into an AWS diagram with visible callouts for a stakeholder review.
+seoTitle: AWS Architecture Diagram Example with Notes and Callouts
+seoDescription: Follow a real prompt-to-diagram example with AWS services, ownership groups, numbered steps, and readable stakeholder notes.
+section: Make diagrams
+order: 13
+---
+import DrawingExtractionExample from '../../components/docs/DrawingExtractionExample.astro';
+
+This example started as loose notes about an asynchronous drawing extraction
+system shared by two teams. A model helped turn those notes into the prompt
+below, then a coding agent used it to create the diagram. A few arrow labels
+received small position adjustments in Studio, taking about five seconds.
+The export here includes those final human adjustments.
+
+Notes can be part of the diagram itself. Ownership, ordering, retries, and
+status are visible alongside the workflow, ready for a stakeholder meeting.
+
+## The reviewed diagram
+
+After [creating a project](../quick-start/), ask your agent to read `AGENTS.md`
+and use the **Prompt** below. Switch tabs to inspect or download the editable
+source and its requirements contract. The team names and extraction wording
+have been anonymized; the Bedrock step is labeled **Extract data steps**.
+
+<DrawingExtractionExample />
+
+Zoom in to read the notes, or expand the diagram for more room. Keep the
+requirements file beside the `.dgm` if you validate the downloaded example
+with the CLI.
+
+The main arrows use native sequence badges, with descriptive labels kept
+separate from the numbers. Dashed arrows show status reads, monitoring, and
+dead-letter handling. The source also preserves the reviewed positions of
+the resources, notes, and arrow labels.
+
+The prompt describes ownership and behavior before asking for a layout.
+It also gives the agent the text of each note, so important context survives
+the move from meeting notes into the drawing.
+
+## Guide the notes to the right place
+
+Put the notes directly in your prompt, including what each one describes.
+Naming a nearby resource or group gives the agent a clearer placement target.
+For example, add this to a follow-up request:
+
+```text
+Keep the Ownership note above the Team X group.
+Place Transport beside Shared AWS Infrastructure.
+Place Ordering near the request queue and its publish arrow.
+Keep Idempotency and Status beside Team X's job database and status API.
+Place Reliability below the two dead-letter queues.
+Leave space around the callouts so they do not cover connectors or labels.
+```
+
+In this example, callouts sit in open space around the architecture. You can
+instead ask for a separate notes area, or use notes for assumptions, open
+questions, and decisions you want to discuss with stakeholders. Review their
+placement along with the rest of the diagram.
+
+## Give the result a quick review
+
+Open the downloaded `.dgm` in [Studio](../studio/). Check that the ownership
+groups and sequence match your system, then adjust any arrow label or note
+that needs more breathing room. This example needed only a brief label
+placement pass; other prompts may need more refinement.
+
+You can double-click a note to edit it, or use its sidebar controls for text,
+theme, and font size. Save the file to keep the layout decisions with the
+architecture. With a linked file in Chrome or Edge, **Auto-save is on by
+default**, and valid changes from your agent appear automatically. See
+[Auto-save and live file updates](../studio/#auto-save-and-live-file-updates)
+for file linking and conflict handling.

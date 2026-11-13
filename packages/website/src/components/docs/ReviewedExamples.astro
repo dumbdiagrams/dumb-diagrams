@@ -1,4 +1,5 @@
 ---
+import CopyButton from '../CopyButton.astro';
 import { readFileSync } from 'node:fs';
 import { loadReviewedExamples } from '../../lib/reviewed-examples.mjs';
 import { url } from '../../lib/site';
@@ -67,9 +68,9 @@ const cards = [...new Set(examples.map(example => example.id))].map(id => exampl
                   {tabs.map((tab, tabIndex) => <button id={`${prefix}-tab-${tab.key}`} type="button" role="tab" aria-selected={tabIndex === 0 ? 'true' : 'false'} aria-controls={`${prefix}-panel-${tab.key}`} tabindex={tabIndex === 0 ? 0 : -1}>{tab.label}</button>)}
                 </div>
                 {tabs.map((tab, tabIndex) => <section id={`${prefix}-panel-${tab.key}`} role="tabpanel" aria-labelledby={`${prefix}-tab-${tab.key}`} hidden={tabIndex !== 0} inert={tabIndex !== 0}>
-                  <div class="reviewed-file-actions"><span>{tab.label}</span><button type="button" data-copy-target={`${prefix}-text-${tab.key}`} aria-label={`Copy ${example.title} ${tab.label}`}>Copy ⧉</button></div>
+                  <div class="reviewed-file-actions"><span>{tab.label}</span><CopyButton target={`${prefix}-text-${tab.key}`} label={`Copy ${example.title} ${tab.label}`} /></div>
                   <pre id={`${prefix}-text-${tab.key}`} class:list={[tab.key === 'prompt' && 'reviewed-prompt']} tabindex="0" aria-label={`${example.title} ${tab.label}`}>{tab.content}</pre>
-                  <a class="reviewed-download" href={asset(tab.file)} download>Download {tab.label} ↓</a>
+                  {tab.key !== 'prompt' && <a class="reviewed-download" href={asset(tab.file)} download>Download {tab.label} ↓</a>}
                 </section>)}
               </div>
             </div>
@@ -138,7 +139,6 @@ const cards = [...new Set(examples.map(example => example.id))].map(id => exampl
   .reviewed-file-tabs button:focus-visible, .reviewed-zoom button:focus-visible, .reviewed-expand:focus-visible, .reviewed-download-svg:focus-visible, .reviewed-file-actions button:focus-visible, .dialog-toolbar button:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: -2px; }
   .reviewed-detail section { padding: 14px 16px 16px; }
   .reviewed-file-actions { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; color: var(--muted); font: 9px var(--mono); }
-  .reviewed-file-actions button { border: 0; padding: 4px; background: transparent; color: var(--orange-dark); font: 11px var(--font-brand); text-decoration: underline; cursor: pointer; }
   .reviewed-detail pre { max-height: 360px; overflow: auto; margin: 0 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); font: 12px/1.65 var(--mono); }
   .reviewed-detail pre.reviewed-prompt { font: 13px/1.7 var(--font-brand); }
   .reviewed-download { color: var(--orange-dark); font-size: 12px; text-decoration: underline; text-decoration-color: #f0531e66; }

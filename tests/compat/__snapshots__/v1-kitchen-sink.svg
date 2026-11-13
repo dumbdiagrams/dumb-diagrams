@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="665" viewBox="0 -65 800 665">
 <rect width="100%" height="100%" fill="#FFFFFF"/>
 <defs>
 <symbol id="asset-logo" viewBox="0 0 16 16"><rect width="16" height="16"/></symbol>
@@ -143,33 +143,33 @@
 </g>
 
 <g id="annotation-note_text" data-annotation-style="text" class="annotation annotation-text">
-  <text x="302" y="95" text-anchor="start" font-size="12" fill="#163964" font-family="Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif"><tspan x="302" dy="0">Text</tspan></text>
+  <text data-annotation-content="true" x="312" y="102" text-anchor="start" font-size="12" font-family="Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif" xml:space="default" fill="var(--annotation-ink, #163964)" style="fill:var(--annotation-ink, #163964);font-family:Inter, Noto Sans, ui-sans-serif, system-ui, sans-serif;font-size:12px"><tspan x="312" dy="0">Text</tspan></text>
 </g>
 
 <g id="annotation-note_code" data-annotation-style="code" class="annotation annotation-code">
-  <rect x="48" y="48" width="160" height="48" rx="10" fill="#112d51" stroke="#163964" stroke-width="1.5"/>
-  <rect x="48" y="48" width="160" height="28" rx="10" fill="#163964"/>
-  <rect x="48" y="66" width="160" height="10" fill="#163964"/>
-  <circle cx="62" cy="62" r="4" fill="#f0531e"/>
-  <circle cx="76" cy="62" r="4" fill="#f7982c"/>
-  <circle cx="90" cy="62" r="4" fill="#7BC4A0"/>
-  <text x="62" y="98" text-anchor="start" font-size="12" fill="#d1fae5" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"><tspan x="62" dy="0">Code</tspan></text>
+  <rect x="503.4" y="-65" width="120" height="85" rx="10" fill="#112d51" stroke="#163964" stroke-width="1.5"/>
+  <rect x="503.4" y="-65" width="120" height="28" rx="10" fill="#163964"/>
+  <rect x="503.4" y="-47" width="120" height="10" fill="#163964"/>
+  <circle cx="517.4" cy="-51" r="4" fill="#f0531e"/>
+  <circle cx="531.4" cy="-51" r="4" fill="#f7982c"/>
+  <circle cx="545.4" cy="-51" r="4" fill="#7BC4A0"/>
+  <text data-annotation-content="true" x="563.4" y="-11" text-anchor="middle" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" xml:space="preserve" fill="#d1fae5" style="fill:#d1fae5;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;font-size:14px"><tspan x="563.4" dy="0">Code</tspan></text>
 </g>
 
 <g id="annotation-note_callout" data-annotation-style="callout" class="annotation annotation-callout">
-  <rect x="48" y="48" width="160" height="48" rx="12" fill="#fde3db" stroke="#f8b29a" stroke-width="1.5"/>
-  <rect x="48" y="48" width="6" height="48" rx="3" fill="#f0531e"/>
-  <circle cx="76" cy="76" r="12" fill="#f0531e"/>
-  <text x="76" y="81" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">i</text>
-  <text x="98" y="75" text-anchor="start" font-size="12" fill="#163964"><tspan x="98" dy="0">Callout</tspan></text>
+  <rect x="499.9" y="76" width="127" height="65" rx="12" fill="#e0eef8" stroke="#b8cfe0" stroke-width="1.5"/>
+  <rect x="499.9" y="76" width="6" height="65" rx="3" fill="#70a6cd"/>
+  <circle cx="527.9" cy="104" r="12" fill="#70a6cd"/>
+  <text x="527.9" y="109" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF" style="fill:#FFFFFF">i</text>
+  <text data-annotation-content="true" x="612.9" y="108" text-anchor="end" font-size="16" font-family="Georgia, Cambria, Times New Roman, serif" xml:space="default" fill="#163964" style="fill:#163964;font-family:Georgia, Cambria, Times New Roman, serif;font-size:16px"><tspan x="612.9" dy="0">Callout</tspan></text>
 </g>
 
 <g id="annotation-note_checklist" data-annotation-style="checklist" class="annotation annotation-checklist">
-  <rect x="48" y="48" width="160" height="48" rx="12" fill="#eff9f2" stroke="#71a987" stroke-width="1.5"/>
-  <text x="64" y="66" font-size="10" font-weight="700" letter-spacing="1.2" fill="#4f7658">CHECKLIST</text>
-  <rect x="64" y="64" width="14" height="14" rx="3" fill="#ffffff" stroke="#4f9b69" stroke-width="1.4"/>
-  <path d="M 67 71 l 3 3 l 6 -7" fill="none" stroke="#4f9b69" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="88" y="76" font-size="12" fill="#2F6E56">Checklist</text>
+  <rect x="640.7333333333333" y="8" width="120" height="80" rx="12" fill="#e0eef8" stroke="#b8cfe0" stroke-width="1.5"/>
+  <text x="656.7333333333333" y="26" font-size="10" font-weight="700" letter-spacing="1.2" fill="#163964">CHECKLIST</text>
+  <rect x="656.7333333333333" y="40" width="14" height="14" rx="3" fill="#ffffff" stroke="#70a6cd" stroke-width="1.4"/>
+  <path d="M 659.7333333333333 47 l 3 3 l 6 -7" fill="none" stroke="#70a6cd" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text data-annotation-content="true" x="680.7333333333333" y="52" text-anchor="start" font-size="12" font-family="Amazon Ember, Helvetica Neue, Arial, sans-serif" fill="#163964" style="fill:#163964;font-family:Amazon Ember, Helvetica Neue, Arial, sans-serif;font-size:12px">Checklist</text>
 </g>
 
 <g id="res-customer">

@@ -44,14 +44,7 @@ jobs:
       - name: Check documentation interactions in Chromium
         run: pnpm --filter @dumb-diagrams/website test:e2e --project=chromium
       - name: Check static subdirectory deployment with consent-gated GA4 and Partytown
-        run: pnpm build:website && pnpm --filter @dumb-diagrams/website test
-        env:
-          SITE_URL: https://website.test
-          BASE_PATH: /diagrams/
-          PUBLIC_GA_MEASUREMENT_ID: G-TEST12345
-          PUBLIC_SITE_OPERATOR: Website test operator
-          PUBLIC_PRIVACY_EMAIL: privacy@example.test
-          PUBLIC_ANALYTICS_RETENTION_MONTHS: "2"
+        run: pnpm check:website:ci
 
   hosted-studio:
     if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)
@@ -75,8 +68,15 @@ jobs:
       - name: Install hosted Studio test browser
         timeout-minutes: 10
         run: pnpm exec playwright install chromium --with-deps
-      - name: Exercise hosted Studio onboarding
+      - name: Run shared editor regressions and hosted Studio onboarding
         run: pnpm test:e2e:hosted
+      - name: Upload hosted Studio failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-failures-hosted
+          path: .artifacts/playwright/hosted-test-results/
+          if-no-files-found: ignore
 
   verify:
     if: contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.actor) && contains(fromJSON(vars.CI_ALLOWED_ACTORS || '["AlexJohnSadowski", "dependabot[bot]"]'), github.triggering_actor)

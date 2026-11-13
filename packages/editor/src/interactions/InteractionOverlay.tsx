@@ -16,6 +16,7 @@ import {
   routeConnectionPreview,
   routeEdgePreview,
 } from "@dumb-diagrams/runtime/route";
+import { fitAnnotationRect, resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { isSelected } from "../editor-model";
@@ -131,6 +132,7 @@ function InteractionOverlayComponent({
   onContextMenu: (clientX: number, clientY: number, item: SelectionItem | null) => void;
 }) {
   const view = useMemo(() => getDefaultView(doc), [doc]);
+  const annotationBounds = useMemo(() => resolveAnnotationBounds(doc, layout), [doc, layout]);
   const canvas = layout.canvasBounds ?? {
     x: 0,
     y: 0,
@@ -247,7 +249,7 @@ function InteractionOverlayComponent({
     svg = document.querySelector<SVGSVGElement>('[data-testid="canvas-interaction-overlay"]'),
   ): SelectionItem | null => {
     const point = pointFromClient(svg, clientX, clientY, zoom);
-    return closestInteractiveTarget(point, layout, doc, view, interactionIndex.at(point));
+    return closestInteractiveTarget(point, layout, doc, view, interactionIndex.at(point), annotationBounds);
   };
 
   const resolveHoverTarget = (pending: NonNullable<typeof pendingHoverRef.current>): SelectionItem | null => {
@@ -804,7 +806,14 @@ function InteractionOverlayComponent({
               // whichever widened SVG stroke happens to be on top. This keeps
               // adjacent routes selectable independently.
               const point = pointFromClient(event.currentTarget.ownerSVGElement, event.clientX, event.clientY, zoom);
-              const overlapTarget = closestInteractiveTarget(point, layout, doc, view, interactionIndex.at(point));
+              const overlapTarget = closestInteractiveTarget(
+                point,
+                layout,
+                doc,
+                view,
+                interactionIndex.at(point),
+                annotationBounds,
+              );
               const target =
                 overlapTarget?.kind === "group"
                   ? overlapTarget
@@ -934,12 +943,7 @@ function InteractionOverlayComponent({
         const place = view.annotations?.[annotation.id];
         if (place?.visible === false) return null;
         const isText = annotation.style === "text";
-        const rect = {
-          x: place?.x ?? 48,
-          y: place?.y ?? 48,
-          w: place?.w ?? 160,
-          h: place?.h ?? 48,
-        };
+        const rect = annotationBounds[annotation.id]!;
         return (
           <rect
             key={annotation.id}
@@ -990,6 +994,7 @@ function InteractionOverlayComponent({
             onDoubleClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
+              if (place?.locked) return;
               onSelect({ kind: "annotation", id: annotation.id }, "replace");
               onEditText({ kind: "annotation", id: annotation.id });
             }}
@@ -1112,7 +1117,7 @@ function InteractionOverlayComponent({
       {hoveredItem &&
         hoveredItem.kind !== "edge" &&
         (() => {
-          const bounds = boundsFor(hoveredItem, layout, doc);
+          const bounds = boundsFor(hoveredItem, layout, doc, annotationBounds);
           if (!bounds) return null;
           return (
             <rect
@@ -1132,7 +1137,7 @@ function InteractionOverlayComponent({
         const bounds =
           resizePreview?.kind === item.kind && resizePreview.id === item.id
             ? resizePreview.bounds
-            : boundsFor(item, layout, doc);
+            : boundsFor(item, layout, doc, annotationBounds);
         if (!bounds || !isEntityVisible(doc, view, item.id)) return null;
         // Keep a selected group's authored boundary visible. Drawing the
         // selection stroke on the same pixels concealed live color changes.
@@ -1181,16 +1186,16 @@ function InteractionOverlayComponent({
         const bounds =
           resizePreview?.kind === item.kind && resizePreview.id === item.id
             ? resizePreview.bounds
-            : boundsFor(item, layout, doc);
+            : boundsFor(item, layout, doc, annotationBounds);
         const place = item.kind === "annotation" ? view.annotations?.[item.id] : view.places[item.id];
         if (!bounds || item.kind === "edge" || item.kind === "resource" || place?.locked) return null;
         // Keep group handles comfortably targetable in screen space when the
         // canvas is zoomed out. Non-group handles retain their established
         // geometry and behavior.
-        const handleSize = item.kind === "group" ? Math.max(12, 12 / Math.max(zoom, 0.01)) : 8;
+        const handleSize = Math.max(12, 12 / Math.max(zoom, 0.01));
         return (
           <g key={`resize-${item.kind}-${item.id}`} data-drag-overlay-kind={item.kind} data-drag-overlay-id={item.id}>
-            {resizeHandles(bounds, item.kind === "group").map((handle) => (
+            {resizeHandles(bounds, true).map((handle) => (
               <rect
                 key={handle.name}
                 data-interactive
@@ -1205,6 +1210,9 @@ function InteractionOverlayComponent({
                 onPointerDown={(event) => {
                   if (!isPrimaryPointerButton(event)) return;
                   event.stopPropagation();
+                  // Notes reflow their text while resizing: height follows the wrapped text.
+                  const note = item.kind === "annotation" ? doc.annotations.find((a) => a.id === item.id) : undefined;
+                  const fitNote = (next: Rect): Rect => (note ? fitAnnotationRect(note, next, handle.name) : next);
                   beginResize(
                     event,
                     zoom,
@@ -1215,9 +1223,15 @@ function InteractionOverlayComponent({
                       setResizePreview({
                         kind: item.kind,
                         id: item.id,
-                        bounds: next,
+                        bounds: fitNote(next),
                       }),
-                    (next) => onResize(item.kind as "resource" | "group" | "annotation", item.id, next, event.shiftKey),
+                    (next) =>
+                      onResize(
+                        item.kind as "resource" | "group" | "annotation",
+                        item.id,
+                        fitNote(next),
+                        event.shiftKey,
+                      ),
                     () => setResizePreview(null),
                     startGesture,
                     onGestureBegin,
@@ -1597,6 +1611,7 @@ export function closestInteractiveTarget(
     groups: layout.groups,
     annotations: doc.annotations,
   },
+  annotationBounds: Record<string, Rect> = resolveAnnotationBounds(doc, layout),
 ): SelectionItem | null {
   const candidates: Array<{
     item: SelectionItem;
@@ -1629,13 +1644,7 @@ export function closestInteractiveTarget(
   }
 
   for (const annotation of pool.annotations) {
-    const place = view.annotations?.[annotation.id];
-    const bounds = {
-      x: place?.x ?? 48,
-      y: place?.y ?? 48,
-      w: place?.w ?? 160,
-      h: place?.h ?? 48,
-    };
+    const bounds = annotationBounds[annotation.id]!;
     if (!isEntityVisible(doc, view, annotation.id)) continue;
     if (pointInRect(point, bounds)) return { kind: "annotation", id: annotation.id };
   }
@@ -1658,12 +1667,7 @@ export function closestInteractiveTarget(
   for (const annotation of pool.annotations) {
     const place = view.annotations?.[annotation.id];
     if (place?.visible === false) continue;
-    const rect = {
-      x: place?.x ?? 48,
-      y: place?.y ?? 48,
-      w: place?.w ?? 160,
-      h: place?.h ?? 48,
-    };
+    const rect = annotationBounds[annotation.id]!;
     const distance = distanceToRect(point, rect);
     if (distance <= 16) {
       candidates.push({
@@ -1757,6 +1761,7 @@ function boundsFor(
   item: SelectionItem,
   layout: LayoutResult,
   doc: DiagramDocument,
+  annotationBounds: Record<string, Rect>,
 ): { x: number; y: number; w: number; h: number } | null {
   if (item.kind === "resource") {
     const node = layout.nodes.find((candidate) => candidate.id === item.id);
@@ -1768,13 +1773,7 @@ function boundsFor(
   }
   if (item.kind === "annotation") {
     if (!doc.annotations.some((candidate) => candidate.id === item.id)) return null;
-    const place = getDefaultView(doc).annotations?.[item.id];
-    return {
-      x: place?.x ?? 48,
-      y: place?.y ?? 48,
-      w: place?.w ?? 160,
-      h: place?.h ?? 48,
-    };
+    return annotationBounds[item.id] ?? null;
   }
   if (item.kind === "edge") {
     return layout.edges.find((candidate) => candidate.id === item.id)?.labelRect ?? null;
@@ -1789,6 +1788,7 @@ function alignmentTargets(
   doc: DiagramDocument,
   moving: Selection,
 ): Array<{ x: number; y: number; w: number; h: number }> {
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
   const excluded = new Set(moving.map((item) => item.id));
   const excludeChildren = (groupId: string) => {
     const group = doc.groups.find((candidate) => candidate.id === groupId);
@@ -1815,14 +1815,7 @@ function alignmentTargets(
       if (excluded.has(annotation.id)) return [];
       const place = view.annotations?.[annotation.id];
       if (place?.visible === false) return [];
-      return [
-        {
-          x: place?.x ?? 48,
-          y: place?.y ?? 48,
-          w: place?.w ?? 160,
-          h: place?.h ?? 48,
-        },
-      ];
+      return [annotationBounds[annotation.id]!];
     }),
   ];
 }

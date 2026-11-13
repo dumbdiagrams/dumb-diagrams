@@ -19,6 +19,10 @@ describe("source manifest", () => {
       "examples/prompts/aws-easy-static-website-delivery.md",
       "tests/fixtures/engine/transfer-hub.dgm",
       "packages/runtime/test-fixtures.ts",
+      "playwright.config.ts",
+      "playwright.shared.ts",
+      "playwright.hosted.config.ts",
+      "packages/website/playwright.config.ts",
     ]));
     expect(files).not.toContain("packages/runtime/src/core/fixtures.ts");
     expect(files.filter((file) => file === "dist" || file.startsWith("dist/") || file.includes("/dist/") || file.includes("/node_modules/") || file.startsWith("node_modules/"))).toEqual([]);

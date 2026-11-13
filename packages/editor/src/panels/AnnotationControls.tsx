@@ -1,6 +1,11 @@
-import type { AnnotationStyle, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
+import type { Annotation, AnnotationStyle, TextFontFamily, TextAlign } from "@dumb-diagrams/runtime/core";
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DIAGRAM_LIMITS, normalizeMultilineText } from "@dumb-diagrams/runtime/core";
+import { ANNOTATION_SIZE_RANGE } from "@dumb-diagrams/runtime/dsl";
+import { matchAnnotationTheme, themesForStyle } from "@dumb-diagrams/runtime/render";
 import { ANNOTATION_STYLES } from "../editor-model";
+import "../styles/annotation-controls.css";
 
 export function NoteComposer({
   style,
@@ -104,19 +109,17 @@ export function TextComposer({
   );
 }
 
-export function TextFormattingControls({
-  idPrefix,
-  font,
-  fontSize,
-  align,
-  onChange,
-}: {
+export function TextFormattingControls(props: {
   idPrefix: string;
   font: TextFontFamily;
   fontSize: number;
   align: TextAlign;
-  onChange: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign }) => void;
+  noteStyle?: AnnotationStyle;
+  themeSource?: Pick<Annotation, "background" | "color" | "style">;
+  onChange: (format: { font?: TextFontFamily; fontSize?: number; align?: TextAlign; theme?: string }) => void;
 }) {
+  const { idPrefix, font, fontSize, align, noteStyle, themeSource, onChange } = props;
+  const activeTheme = themeSource ? matchAnnotationTheme(themeSource) : null;
   return (
     <div className="property-section text-formatting">
       <div className="property-control-row">
@@ -133,17 +136,11 @@ export function TextFormattingControls({
       </div>
       <div className="property-control-row">
         <label htmlFor={`${idPrefix}-text-font-size`}>Size</label>
-        <select
+        <FontSizeField
           id={`${idPrefix}-text-font-size`}
           value={fontSize}
-          onChange={(event) => onChange({ fontSize: Number(event.target.value) })}
-        >
-          {[12, 14, 16, 20, 24, 32].map((size) => (
-            <option key={size} value={size}>
-              {size}px
-            </option>
-          ))}
-        </select>
+          onChange={(size) => onChange({ fontSize: size })}
+        />
       </div>
       <div>
         <span className="property-control-label">Alignment</span>
@@ -160,6 +157,160 @@ export function TextFormattingControls({
             </button>
           ))}
         </div>
+      </div>
+      {noteStyle && themesForStyle(noteStyle).length > 0 && (
+        <AnnotationThemeSwatches
+          id={`${idPrefix}-theme`}
+          style={noteStyle}
+          activeThemeId={activeTheme?.id ?? ""}
+          onChange={(themeId) => onChange({ theme: themeId })}
+        />
+      )}
+    </div>
+  );
+}
+
+const FONT_SIZE_PRESETS = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 72, 96];
+
+function FontSizeField({ id, value, onChange }: { id: string; value: number; onChange: (value: number) => void }) {
+  const listId = `${id}-presets`;
+  const hintId = `${id}-hint`;
+  const [draft, setDraft] = useState(String(value));
+  const focused = useRef(false);
+  const lastValid = useRef(value);
+
+  useEffect(() => {
+    if (!focused.current) {
+      lastValid.current = value;
+      setDraft(String(value));
+    }
+  }, [value]);
+
+  const parse = (raw: string) => {
+    const normalized = raw.trim();
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) return null;
+    const size = Number(normalized);
+    return Number.isFinite(size) && size >= ANNOTATION_SIZE_RANGE.min && size <= ANNOTATION_SIZE_RANGE.max
+      ? size
+      : null;
+  };
+
+  const commit = (raw: string) => {
+    const size = parse(raw);
+    if (size !== null) {
+      lastValid.current = size;
+      onChange(size);
+      setDraft(String(size));
+    } else {
+      setDraft(String(lastValid.current));
+    }
+  };
+
+  return (
+    <div className="font-size-field">
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        list={listId}
+        value={draft}
+        aria-describedby={hintId}
+        onFocus={() => {
+          focused.current = true;
+        }}
+        onChange={(event) => {
+          const next = event.target.value;
+          setDraft(next);
+          const size = parse(next);
+          if (size !== null) {
+            lastValid.current = size;
+            onChange(size);
+          }
+        }}
+        onBlur={() => {
+          focused.current = false;
+          setDraft(String(lastValid.current));
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit(draft);
+            event.currentTarget.blur();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setDraft(String(lastValid.current));
+            event.currentTarget.blur();
+          }
+        }}
+      />
+      <span aria-hidden="true">px</span>
+      <datalist id={listId}>
+        {FONT_SIZE_PRESETS.filter((size) => size >= ANNOTATION_SIZE_RANGE.min && size <= ANNOTATION_SIZE_RANGE.max).map(
+          (size) => (
+            <option key={size} value={size} />
+          ),
+        )}
+      </datalist>
+      <span className="sr-only" id={hintId}>
+        Enter a size from {ANNOTATION_SIZE_RANGE.min} to {ANNOTATION_SIZE_RANGE.max} pixels. Preset sizes are available.
+      </span>
+    </div>
+  );
+}
+
+function AnnotationThemeSwatches({
+  id,
+  style,
+  activeThemeId,
+  onChange,
+}: {
+  id: string;
+  style: AnnotationStyle;
+  activeThemeId: string;
+  onChange: (themeId: string) => void;
+}) {
+  const options = themesForStyle(style);
+  const usingDefault = activeThemeId === "";
+
+  return (
+    <div className="annotation-color-control">
+      <span className="property-control-label" id={`${id}-label`}>
+        Colour theme
+      </span>
+      <div className="annotation-color-swatches" role="group" aria-labelledby={`${id}-label`}>
+        <button
+          type="button"
+          className={`annotation-color-swatch is-default${usingDefault ? " is-active" : ""}`}
+          aria-label="Colour theme: Style default"
+          aria-pressed={usingDefault}
+          title="Style default"
+          onClick={() => onChange("")}
+        >
+          <span aria-hidden="true" />
+        </button>
+        {options.map((theme) => {
+          const selected = activeThemeId === theme.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              className={`annotation-color-swatch annotation-theme-swatch${selected ? " is-active" : ""}`}
+              style={
+                {
+                  "--swatch-color": theme.background,
+                  "--swatch-ink": theme.color,
+                } as CSSProperties
+              }
+              aria-label={`Colour theme: ${theme.label}`}
+              aria-pressed={selected}
+              title={theme.label}
+              onClick={() => onChange(theme.id)}
+            >
+              <span aria-hidden="true" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

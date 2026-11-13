@@ -213,3 +213,20 @@ describe("document validation modes", () => {
     );
   });
 });
+
+it("validates annotation colors before rendering programmatic documents", () => {
+  const doc = createEmptyDocument("annotation-colors");
+  doc.annotations = [{ id: "note", text: "Note", background: "#112233", color: "#ABCDEF" }];
+  expect(validateDocument(doc, new Map())).toEqual([]);
+  doc.annotations[0]!.background = '" onload="alert(1)';
+  doc.annotations[0]!.color = "red";
+  expect(validateDocument(doc, new Map()).filter(({ code }) => code === "invalid-annotation-color")).toHaveLength(2);
+});
+
+it("allows an annotation to be cleared during live editing while still rejecting control characters", () => {
+  const doc = createEmptyDocument("empty-annotation");
+  doc.annotations = [{ id: "note", text: "", style: "text" }];
+  expect(validateDocument(doc, new Map())).toEqual([]);
+  doc.annotations[0]!.text = "\u0000";
+  expect(validateDocument(doc, new Map()).some(({ code }) => code === "text-limit")).toBe(true);
+});

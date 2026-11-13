@@ -150,6 +150,17 @@ export function validateDocumentConstraints(doc: DiagramDocument): ValidationIss
     checkOptionalNumber(issues, edge.targetPortOffset, "target port offset", edge.id, 0, 1);
   }
   for (const annotation of doc.annotations) {
+    for (const key of ["background", "color"] as const) {
+      const color = annotation[key];
+      if (color !== undefined && (typeof color !== "string" || !/^#[0-9a-f]{6}$/i.test(color))) {
+        issues.push({
+          level: "error",
+          code: "invalid-annotation-color",
+          message: `Annotation ${key} must be a hex color (#rrggbb)`,
+          id: annotation.id,
+        });
+      }
+    }
     checkText(issues, "annotation id", annotation.id, DIAGRAM_LIMITS.idCharacters, annotation.id, "invalid-id");
     checkText(
       issues,
@@ -250,14 +261,18 @@ function checkText(
   const invalidLineBreak = !multilineOnly && typeof value === "string" && /[\r\n\t]/.test(value);
   if (
     typeof value !== "string" ||
-    !value ||
+    (!value && !multilineOnly) ||
     characterLength(value) > limit ||
     invalidId ||
     invalidLineBreak ||
     /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/.test(value)
   ) {
     issues.push(
-      limitIssue(code, `${name} must be non-empty, free of control characters, and at most ${limit} characters`, id),
+      limitIssue(
+        code,
+        `${name} must be ${multilineOnly ? "" : "non-empty, "}free of control characters, and at most ${limit} characters`,
+        id,
+      ),
     );
   }
 }

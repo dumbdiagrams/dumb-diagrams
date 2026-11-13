@@ -1,4 +1,6 @@
+export * from "./annotation-themes.js";
 export * from "./svg.js";
+export * from "./annotation-bounds.js";
 export * from "./automatic-layout.js";
 export * from "./sanitize-svg.js";
 export * from "./assets.js";

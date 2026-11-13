@@ -386,13 +386,23 @@ export function checkPreferences(doc: DiagramDocument, preferences: DiagramPrefe
   const steps = new Set<number>();
   for (const edge of doc.edges) {
     const primary = isPrimaryFlowEdge(edge);
+    if (edge.label && hasLeadingStepLabelPrefix(edge.label))
+      edgeIssue(
+        "preference-step-label-numbered",
+        `Edge ${edge.id} label starts with a step number; put the number in the edge's step N field and keep the label descriptive only`,
+        edge.id,
+      );
     if (preferences.edgeLabels && !edge.label?.trim())
       edgeIssue("preference-label-missing", `Edge ${edge.id} has no label`, edge.id);
     if (!preferences.numberedSteps) {
       if (edge.step !== undefined)
         edgeIssue("preference-step-unwanted", `Edge ${edge.id} is numbered but numberedSteps is false`, edge.id);
     } else if (primary && edge.step === undefined)
-      edgeIssue("preference-step-missing", `Flow edge ${edge.id} has no step`, edge.id);
+      edgeIssue(
+        "preference-step-missing",
+        `Flow edge ${edge.id} has no native step badge; add step N to the edge (a number in its label is not sufficient)`,
+        edge.id,
+      );
     else if (!primary && edge.step !== undefined)
       edgeIssue(
         "preference-step-secondary",
@@ -413,6 +423,11 @@ export function checkPreferences(doc: DiagramDocument, preferences: DiagramPrefe
     issues.push(...checkStepOrder(doc));
   }
   return issues;
+}
+
+/** Match only obvious leading sequence markers, not numbers embedded in prose. */
+function hasLeadingStepLabelPrefix(label: string): boolean {
+  return /^(?:step\s+\d+:|\d+[.)])\s+/i.test(label.trimStart());
 }
 
 /**
@@ -740,7 +755,8 @@ export const preferencesSchema = {
     numberedSteps: {
       type: "boolean",
       default: DEFAULT_PREFERENCES.numberedSteps,
-      description: "Number the main flow arrows with step badges (1, 2, 3, ...).",
+      description:
+        "Number main flow arrows with native step badges. Put the sequence in the edge's step N field and keep label text descriptive, without a leading number.",
     },
     edgeLabels: {
       type: "boolean",

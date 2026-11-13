@@ -28,7 +28,7 @@ export const DGM_KEYWORDS = {
   diagram: ["grammar", "flow", "title", "hide-resource-labels", "annotation"],
   group: ["step", "label-position", "hide-icon", "style", "color", "fill"],
   resource: ["service", "label-position", "role", "icon"],
-  annotation: ["anchor", "style", "font", "size", "align"],
+  annotation: ["anchor", "style", "font", "size", "align", "background", "color"],
   edge: ["id", "label", "step", "style", "kind", "color", "from", "to"],
   port: ["offset"],
   assets: ["asset"],
@@ -59,7 +59,7 @@ export const DGM_VALUES = {
   routeLabelSide: ["top", "bottom"],
 } as const satisfies Record<string, readonly string[]>;
 
-export const ANNOTATION_SIZE_RANGE = { min: 10, max: 48 } as const;
+export const ANNOTATION_SIZE_RANGE = { min: 6, max: 96 } as const;
 
 type Position = { line: number; column: number };
 type Token = Position &
@@ -373,6 +373,8 @@ class Parser {
         font?: TextFontFamily;
         fontSize?: number;
         align?: TextAlign;
+        background?: string;
+        color?: string;
       } = {
         id: idTok.value,
         text,
@@ -387,7 +389,12 @@ class Parser {
               annotation.font = yield* parser.oneOf("annotation font", DGM_VALUES.annotationFont);
             else if (key === "align")
               annotation.align = yield* parser.oneOf("annotation align", DGM_VALUES.annotationAlign);
-            else {
+            else if (key === "background" || key === "color") {
+              const value = yield* parser.expect("string");
+              if (!/^#[0-9a-f]{6}$/i.test(value.value))
+                return err(parseError(value, `Invalid annotation ${key}; expected #rrggbb`));
+              annotation[key] = value.value;
+            } else {
               const size = yield* parser.expect("number");
               if (size.value < ANNOTATION_SIZE_RANGE.min || size.value > ANNOTATION_SIZE_RANGE.max) {
                 return err(
@@ -744,6 +751,8 @@ function printAnnotation(annotation: DiagramDocument["annotations"][number]): st
   if (annotation.font) options.push(`font ${annotation.font}`);
   if (annotation.fontSize) options.push(`size ${annotation.fontSize}`);
   if (annotation.align) options.push(`align ${annotation.align}`);
+  if (annotation.background) options.push(`background "${escapeString(annotation.background)}"`);
+  if (annotation.color) options.push(`color "${escapeString(annotation.color)}"`);
   return `  annotation ${annotation.id} "${escapeString(annotation.text)}"${inlineOptions(options)}`;
 }
 

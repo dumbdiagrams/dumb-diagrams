@@ -1,0 +1,62 @@
+.file-sync-indicator {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-solid);
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.file-sync-indicator:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.file-sync-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.file-sync-indicator.is-connecting .file-sync-dot,
+.file-sync-indicator.is-pending .file-sync-dot,
+.file-sync-indicator.is-saving .file-sync-dot,
+.file-sync-indicator.is-unsaved .file-sync-dot,
+.file-sync-indicator.is-browser-only .file-sync-dot,
+.file-sync-indicator.is-invalid .file-sync-dot,
+.file-sync-indicator.is-conflict .file-sync-dot {
+  background: var(--accent-warm);
+}
+
+.file-sync-indicator.is-unavailable .file-sync-dot,
+.file-sync-indicator.is-save-error .file-sync-dot {
+  background: var(--danger);
+}
+
+.file-sync-indicator:disabled {
+  cursor: progress;
+}
+
+.file-sync-indicator.is-connecting .file-sync-dot {
+  animation: file-sync-pulse 1s ease-in-out infinite;
+}
+
+@keyframes file-sync-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-sync-indicator.is-connecting .file-sync-dot {
+    animation: none;
+  }
+}

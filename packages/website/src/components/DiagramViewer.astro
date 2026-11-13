@@ -1,0 +1,46 @@
+---
+import '../styles/diagram-viewer.css';
+
+interface Props {
+  id: string;
+  title: string;
+  description: string;
+  src: string;
+  downloadSrc: string;
+  width: number;
+  height: number;
+  loading?: 'eager' | 'lazy';
+  caption?: string;
+}
+const { id, title, description, src, downloadSrc, width, height, loading = 'lazy', caption = 'Rendered from the Studio source.' } = Astro.props;
+---
+<div class="example-output diagram-viewer" data-diagram-preview data-initial-zoom="1">
+  <div class="output-bar">
+    <span class="mono">RESULT</span>
+    <div class="preview-controls" aria-label={`${title} preview controls`}>
+      <button type="button" data-zoom="out" aria-label={`Zoom out ${title}`}>−</button>
+      <button type="button" data-zoom="fit" aria-label={`Fit ${title} to preview`}>100%</button>
+      <button type="button" data-zoom="in" aria-label={`Zoom in ${title}`}>+</button>
+    </div>
+    <button type="button" class="viewer-expand" data-viewer-expand aria-haspopup="dialog" aria-controls={`viewer-${id}`}>Expand diagram</button>
+    <a href={src} target="_blank" rel="noopener" aria-label={`Open ${title} full size`}>Full size ↗</a>
+  </div>
+  <div class="diagram-viewport" tabindex="0" aria-label={`${title} diagram; scroll to pan when zoomed`}>
+    <img src={src} alt={description} width={width} height={height} loading={loading} />
+  </div>
+  <div class="output-footer"><span>{caption}</span><a href={downloadSrc} download>Download SVG ↓</a></div>
+  <dialog id={`viewer-${id}`} class="diagram-viewer-dialog" aria-label={`${title} expanded diagram`} data-diagram-preview data-initial-zoom="1">
+    <div class="output-bar">
+      <span class="viewer-title">{title}</span>
+      <div class="preview-controls" aria-label={`${title} expanded preview controls`}>
+        <button type="button" data-zoom="out" aria-label={`Zoom out expanded ${title}`}>−</button>
+        <button type="button" data-zoom="fit" aria-label={`Fit expanded ${title} to view`}>100%</button>
+        <button type="button" data-zoom="in" aria-label={`Zoom in expanded ${title}`}>+</button>
+      </div>
+      <button type="button" class="viewer-close" data-viewer-close>Close</button>
+    </div>
+    <div class="diagram-viewport" tabindex="0" aria-label={`${title} expanded diagram; scroll to pan when zoomed`}>
+      <img src={src} alt={description} width={width} height={height} loading="lazy" />
+    </div>
+  </dialog>
+</div>

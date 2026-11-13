@@ -41,7 +41,7 @@ export function FloatingPanel({
     >
       <header className="floating-panel-header">
         <div>
-          <h2>{title}</h2>
+          <h2 title={title}>{title}</h2>
           {subtitle && <p>{subtitle}</p>}
         </div>
         {onClose && (

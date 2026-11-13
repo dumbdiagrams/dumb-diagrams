@@ -349,6 +349,51 @@ describe("project preferences", () => {
     expect(labels(true)).toContain("preference-resource-labels");
   });
 
+  it("requires native step badges and keeps sequence numbers out of labels", () => {
+    const diagram = (edges: string) =>
+      parseDgmResult(`diagram labels { grammar cloud-agnostic flow lr
+        cloud-agnostic.server a cloud-agnostic.server b cloud-agnostic.server c
+        ${edges}
+      }`)._unsafeUnwrap();
+    const check = (source: string, numberedSteps = true) =>
+      checkPreferences(diagram(source), { ...DEFAULT_PREFERENCES, numberedSteps });
+
+    const missing = check('a -> b { id ab label "1. Store input drawing" }');
+    expect(missing.map((entry) => entry.code)).toEqual(["preference-step-label-numbered", "preference-step-missing"]);
+    expect(missing.find((entry) => entry.code === "preference-step-missing")?.message).toContain(
+      "a number in its label is not sufficient",
+    );
+
+    for (const [index, prefix] of [
+      "1. Store input drawing",
+      "2) Send request event",
+      "Step 3: Send request event",
+    ].entries()) {
+      const duplicate = check(`a -> b { id ab${index} label "${prefix}" step 1 }`);
+      expect(duplicate.map((entry) => entry.code)).toEqual(["preference-step-label-numbered"]);
+    }
+    expect(check('a -> b { id ab label "Store input drawing" step 1 }')).toEqual([]);
+
+    const numericLabels = [
+      "S3",
+      "HTTP 2",
+      "3.5 ms",
+      "10.0.0.0/8",
+      "v2.1 API",
+      "443: HTTPS",
+      "80: HTTP",
+      "2026: archive",
+    ];
+    const numericEdges = numericLabels
+      .map((label, index) => `a -> b { id numeric${index} label "${label}" step ${index + 1} }`)
+      .join("\n");
+    expect(check(numericEdges).map((entry) => entry.code)).not.toContain("preference-step-label-numbered");
+
+    expect(check('a -> b { id ab label "1. Store input drawing" }', false).map((entry) => entry.code)).toEqual([
+      "preference-step-label-numbered",
+    ]);
+  });
+
   it("requires steps to follow the arrows, allowing replies, starters, and shared hubs", () => {
     const order = (edges: string) =>
       checkPreferences(

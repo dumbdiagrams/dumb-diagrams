@@ -6,6 +6,7 @@ import { getCatalogEntry } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, printDgm } from "@dumb-diagrams/runtime/dsl";
 import { layoutDocument } from "@dumb-diagrams/runtime/layout";
 import { normalizeOrthogonalRoute } from "@dumb-diagrams/runtime/route";
+import { getAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { GROUP_STYLES } from "@dumb-diagrams/runtime/grammar-aws";
 
 import { compileDiagramSource } from "./diagram-compiler.js";
@@ -59,6 +60,67 @@ import { canGroupSelection, groupSelection, reparentPreservingAbsolutePosition, 
 const parseDgm = (source: string) => parseDgmResult(source)._unsafeUnwrap();
 
 describe("editor commands", () => {
+  it.each([6, 8.5, 13.25, 64, 96])(
+    "preserves custom font size %s through source and clipboard round-trips",
+    (fontSize) => {
+      const original = createAsyncDocsFixture();
+      const added = addAnnotation(original, "Custom size", { x: 80, y: 80 }, "code");
+      const formatted = updateTextFormat(added.doc, added.id, { fontSize });
+      expect(formatted.annotations.find((note) => note.id === added.id)?.fontSize).toBe(fontSize);
+      expect(parseDgm(printDgm(formatted)).annotations.find((note) => note.id === added.id)?.fontSize).toBe(fontSize);
+
+      const serialized = serializeClipboardResult(formatted, [{ kind: "annotation", id: added.id }])._unsafeUnwrap();
+      const pasted = pasteClipboardResult(original, serialized, { x: 400, y: 400 })._unsafeUnwrap();
+      const pastedId = pasted.selection.find((item) => item.kind === "annotation")?.id;
+      expect(pasted.doc.annotations.find((note) => note.id === pastedId)?.fontSize).toBe(fontSize);
+    },
+  );
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 0, 5.9, 96.1])(
+    "keeps the annotation unchanged for invalid font size %s",
+    (fontSize) => {
+      const added = addAnnotation(createAsyncDocsFixture(), "Keep this size", { x: 80, y: 80 }, "code");
+      expect(updateTextFormat(added.doc, added.id, { fontSize })).toBe(added.doc);
+    },
+  );
+
+  it("resizes annotation placements and preserves card formatting", () => {
+    const doc = createAsyncDocsFixture();
+    const added = addAnnotation(doc, "const job = await queue.receive();", { x: 80, y: 80 }, undefined, "code");
+    const resized = setSize(added.doc, added.id, 620, 320);
+    expect(getDefaultView(resized).annotations?.[added.id]).toMatchObject({ w: 620, h: 320 });
+    expect(getDefaultView(resized).places[added.id]).toBeUndefined();
+    const formatted = updateTextFormat(resized, added.id, {
+      font: "mono",
+      fontSize: 20,
+      theme: "code",
+    });
+    expect(formatted.annotations.find((note) => note.id === added.id)).toMatchObject({
+      font: "mono",
+      fontSize: 20,
+      background: "#112d51",
+      color: "#d1fae5",
+    });
+    const roundtrip = parseDgm(printDgm(formatted));
+    expect(roundtrip.annotations).toEqual(formatted.annotations);
+    getDefaultView(resized).annotations![added.id]!.locked = true;
+    expect(setSize(resized, added.id, 900, 500)).toBe(resized);
+  });
+
+  it("moves generated annotations from their rendered position", () => {
+    const doc = createAsyncDocsFixture();
+    doc.annotations.push({ id: "generated", text: "Worker status", anchor: "client", style: "callout" });
+    const compiled = compileDiagramSource(printDgm(doc), false);
+    expect(compiled.ok).toBe(true);
+    if (!compiled.ok) return;
+    const bounds = getAnnotationBounds(doc, compiled.layout, "generated")!;
+    const moved = moveSelection(doc, [{ kind: "annotation", id: "generated" }], 32, 24, compiled.layout);
+    expect(getDefaultView(moved).annotations?.generated).toMatchObject({
+      x: Math.round(bounds.x + 32),
+      y: Math.round(bounds.y + 24),
+    });
+  });
+
   it("keeps selection helpers and missing-target edits predictable", () => {
     const doc = createAsyncDocsFixture();
     const item = { kind: "resource" as const, id: "client" };
@@ -263,7 +325,7 @@ describe("editor commands", () => {
     const codeNote = code.annotations.find((annotation) => annotation.id === added.id);
 
     expect(codeNote?.style).toBe("code");
-    expect(getDefaultView(code).annotations?.[added.id]).toMatchObject({ w: 300, h: 160, zIndex: 13 });
+    expect(getDefaultView(code).annotations?.[added.id]).toMatchObject({ w: 420, h: 160, zIndex: 13 });
 
     const paper = setAnnotationStyle(code, added.id, "paper");
     expect(paper.annotations.find((annotation) => annotation.id === added.id)?.style).toBeUndefined();
@@ -1412,5 +1474,23 @@ describe("editor commands", () => {
     const pasted = pasteClipboardResult(doc, serialized.value, { x: 0, y: 0 });
     expect(pasted.isErr() && pasted.error.code).toBe("clipboard-document-invalid");
     expect(doc.resources).toHaveLength(DIAGRAM_LIMITS.resources);
+  });
+});
+
+describe("annotation resize keeps notes fitted", () => {
+  const long = "Reliability: request and result DLQs handle exhausted consumer retries, not business outcomes.";
+
+  it("drops the stored height when the note is no taller than its text, and keeps a taller one", () => {
+    const added = addAnnotation(createAsyncDocsFixture(), long, { x: 0, y: 0 }, undefined, "callout");
+    const fitted = setSize(added.doc, added.id, 200, 40);
+    expect(getDefaultView(fitted).annotations?.[added.id]).toMatchObject({ w: 200, pin: true });
+    expect(getDefaultView(fitted).annotations?.[added.id]).not.toHaveProperty("h");
+
+    const tall = setSize(added.doc, added.id, 200, 400);
+    expect(getDefaultView(tall).annotations?.[added.id]).toMatchObject({ w: 200, h: 400 });
+
+    const widened = getDefaultView(setSize(fitted, added.id, 500, 40)).annotations?.[added.id];
+    expect(widened).toMatchObject({ w: 500 });
+    expect(widened).not.toHaveProperty("h");
   });
 });

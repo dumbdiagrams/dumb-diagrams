@@ -6,6 +6,7 @@ import {
   type LayoutResult,
 } from "@dumb-diagrams/runtime/core";
 
+import { getAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import { compileDocument } from "../diagram-compiler";
 import { preserveManualLayout, preserveUnplacedManualLayout, reconcileManualRouteMoves } from "./layout-preservation";
 
@@ -303,5 +304,28 @@ describe("manual layout preservation", () => {
     const movedMain = edgeLayout(compiled, "main");
     expect(movedMain.points).toEqual(baselineMainRoute.points.map((point) => ({ x: point.x + 48, y: point.y + 24 })));
     expect(movedMain.points.length).toBeGreaterThan(2);
+  });
+});
+
+describe("annotation layout preservation", () => {
+  it("keeps automatic notes at their displayed position through manual edits", () => {
+    const doc = createEmptyDocument("notes");
+    doc.resources = [{ id: "worker", type: "cloud-agnostic.server", label: {}, role: "primary", props: {} }];
+    doc.annotations = [
+      { id: "callout", text: "Processes a queued job", anchor: "worker", style: "callout" },
+      { id: "code", text: "const result = await process(job);", anchor: "worker", style: "code" },
+    ];
+    const compilation = compileDocument(doc, false);
+    expect(compilation.ok).toBe(true);
+    if (!compilation.ok) return;
+    const preserved = preserveManualLayout(doc, compilation.layout);
+    for (const annotation of doc.annotations) {
+      const bounds = getAnnotationBounds(doc, compilation.layout, annotation.id)!;
+      const place = getDefaultView(preserved).annotations?.[annotation.id];
+      // Only the position is frozen; the size keeps fitting the note's text.
+      expect(place).toEqual({ x: bounds.x, y: bounds.y, pin: true, manual: true });
+      expect(getAnnotationBounds(preserved, compilation.layout, annotation.id)).toEqual(bounds);
+    }
+    expect(getDefaultView(doc).annotations?.callout).toBeUndefined();
   });
 });

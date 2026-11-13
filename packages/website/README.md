@@ -69,6 +69,20 @@ checks before publishing the Studio link. Merges to `main` then deploy the
 website and hosted Studio independently; no npm release or version bump is
 required.
 
+### Shared Studio regression tests
+
+The local and hosted Studio use the same editor implementation. `pnpm test:e2e`
+runs the editor specs in `e2e/` against the local build; `pnpm test:e2e:hosted`
+runs those exact same specs against the hosted production build with its security
+headers. New editor specs are automatically included in both runs. Shared execution
+settings live in `playwright.shared.ts`.
+
+The hosted regression project dismisses onboarding through browser preferences.
+A separate `hosted-shell` project runs `e2e-hosted/` with fresh preferences to
+check onboarding, privacy, and hosted settings. Both projects run in the required
+hosted CI job and in `pnpm ci:e2e`. This checks the build intended for deployment;
+it does not inspect the live production hostname.
+
 ## Analytics
 
 Analytics is off unless `PUBLIC_GA_MEASUREMENT_ID` (`G-…`) is set at build

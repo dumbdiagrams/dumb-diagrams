@@ -1,0 +1,20 @@
+---
+import WorkedExample from './WorkedExample.astro';
+import prompt from '../../examples/engineering-drawing-extraction/prompt.txt?raw';
+import source from '../../examples/engineering-drawing-extraction/diagram.dgm?raw';
+import requirements from '../../examples/engineering-drawing-extraction/diagram.requirements.json?raw';
+import { url } from '../../lib/site';
+
+const asset = (file: string) => url(`worked-examples/engineering-drawing-extraction/${file}`);
+---
+<WorkedExample
+  id="drawing-extraction"
+  title="Engineering drawing extraction"
+  heading="Async drawing extraction"
+  meta="AWS · Team X / Team Y · Reviewed in Studio"
+  description="AWS drawing extraction workflow with Team X, shared S3 and SQS infrastructure, Team Y, eleven sequence badges, and six explanatory callouts"
+  prompt={prompt} source={source} requirements={requirements}
+  assets={{ preview: asset('diagram.svg'), svg: asset('diagram.svg'), source: asset('diagram.dgm'), requirements: asset('diagram.requirements.json') }}
+  width={1701} height={1136}
+  caption="Reviewed in Studio, including the notes and label positions."
+/>

@@ -1,0 +1,486 @@
+{
+  "version": 1,
+  "grammar": "aws",
+  "components": [
+    {
+      "id": "aws-cloud",
+      "kind": "group",
+      "type": "aws.cloud",
+      "basis": {
+        "kind": "inferred",
+        "text": "AWS represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "team-x",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Team X \u2014 backend and status ownership represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "backend-api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "inferred",
+        "text": "Backend API represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "job-db",
+      "kind": "resource",
+      "type": "aws.rds",
+      "basis": {
+        "kind": "inferred",
+        "text": "Job Status DB represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "status-api",
+      "kind": "resource",
+      "type": "aws.api-gateway",
+      "basis": {
+        "kind": "inferred",
+        "text": "Status API represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "result-worker",
+      "kind": "resource",
+      "type": "aws.elastic-container-service-task",
+      "basis": {
+        "kind": "inferred",
+        "text": "Result Worker represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "shared-infra",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Shared AWS Infrastructure \u2014 S3 and SQS represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "s3-pdfs",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Drawing PDFs represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "sqs-request",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Request Queue represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "s3-results",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Results (result.json) represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "sqs-result",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Result Queue represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "sqs-request-dlq",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Request DLQ represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "sqs-result-dlq",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "basis": {
+        "kind": "explicit",
+        "text": "Result DLQ represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "team-y",
+      "kind": "group",
+      "type": "cloud-agnostic.boundary",
+      "basis": {
+        "kind": "explicit",
+        "text": "Team Y \u2014 ECS/Fargate and Bedrock represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "extraction-worker",
+      "kind": "resource",
+      "type": "aws.elastic-container-service-task",
+      "basis": {
+        "kind": "inferred",
+        "text": "Extraction Worker (Fargate) represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "bedrock",
+      "kind": "resource",
+      "type": "aws.bedrock",
+      "basis": {
+        "kind": "explicit",
+        "text": "Amazon Bedrock represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    },
+    {
+      "id": "cloudwatch",
+      "kind": "resource",
+      "type": "aws.cloudwatch",
+      "basis": {
+        "kind": "explicit",
+        "text": "CloudWatch represents this role in the example. Specific icon choices are modeling decisions."
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "store-pdf",
+      "source": "backend-api",
+      "target": "s3-pdfs",
+      "basis": {
+        "kind": "explicit",
+        "text": "Store drawing PDF"
+      }
+    },
+    {
+      "id": "create-pending",
+      "source": "backend-api",
+      "target": "job-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "Create PENDING job"
+      }
+    },
+    {
+      "id": "publish-request",
+      "source": "backend-api",
+      "target": "sqs-request",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish jobId + S3 refs"
+      }
+    },
+    {
+      "id": "consume-request",
+      "source": "sqs-request",
+      "target": "extraction-worker",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume request"
+      }
+    },
+    {
+      "id": "read-pdf",
+      "source": "extraction-worker",
+      "target": "s3-pdfs",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read PDF"
+      }
+    },
+    {
+      "id": "bedrock-extract",
+      "source": "extraction-worker",
+      "target": "bedrock",
+      "basis": {
+        "kind": "explicit",
+        "text": "Extract data steps"
+      }
+    },
+    {
+      "id": "write-result",
+      "source": "extraction-worker",
+      "target": "s3-results",
+      "basis": {
+        "kind": "explicit",
+        "text": "Persist result.json"
+      }
+    },
+    {
+      "id": "publish-result",
+      "source": "extraction-worker",
+      "target": "sqs-result",
+      "basis": {
+        "kind": "explicit",
+        "text": "Publish COMPLETED / FAILED"
+      }
+    },
+    {
+      "id": "consume-result",
+      "source": "sqs-result",
+      "target": "result-worker",
+      "basis": {
+        "kind": "explicit",
+        "text": "Consume result event"
+      }
+    },
+    {
+      "id": "validate-result",
+      "source": "result-worker",
+      "target": "s3-results",
+      "basis": {
+        "kind": "explicit",
+        "text": "Read and validate result.json"
+      }
+    },
+    {
+      "id": "update-job-db",
+      "source": "result-worker",
+      "target": "job-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "Update job status / handle failure"
+      }
+    },
+    {
+      "id": "read-status",
+      "source": "status-api",
+      "target": "job-db",
+      "basis": {
+        "kind": "explicit",
+        "text": "Expose job status"
+      },
+      "kind": "peer"
+    },
+    {
+      "id": "request-dlq",
+      "source": "sqs-request",
+      "target": "sqs-request-dlq",
+      "basis": {
+        "kind": "explicit",
+        "text": "After max receives"
+      },
+      "kind": "fail"
+    },
+    {
+      "id": "result-dlq",
+      "source": "sqs-result",
+      "target": "sqs-result-dlq",
+      "basis": {
+        "kind": "explicit",
+        "text": "After max receives"
+      },
+      "kind": "fail"
+    },
+    {
+      "id": "monitor-extraction",
+      "source": "extraction-worker",
+      "target": "cloudwatch",
+      "basis": {
+        "kind": "explicit",
+        "text": "Metrics and logs"
+      },
+      "kind": "peer"
+    }
+  ],
+  "placement": [
+    {
+      "id": "team-x-ownership",
+      "component": "team-x",
+      "relation": "parent",
+      "group": "aws-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "shared-infra-ownership",
+      "component": "shared-infra",
+      "relation": "parent",
+      "group": "aws-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "team-y-ownership",
+      "component": "team-y",
+      "relation": "parent",
+      "group": "aws-cloud",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "backend-api-ownership",
+      "component": "backend-api",
+      "relation": "parent",
+      "group": "team-x",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "job-db-ownership",
+      "component": "job-db",
+      "relation": "parent",
+      "group": "team-x",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "status-api-ownership",
+      "component": "status-api",
+      "relation": "parent",
+      "group": "team-x",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "result-worker-ownership",
+      "component": "result-worker",
+      "relation": "parent",
+      "group": "team-x",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "s3-pdfs-ownership",
+      "component": "s3-pdfs",
+      "relation": "parent",
+      "group": "shared-infra",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "sqs-request-ownership",
+      "component": "sqs-request",
+      "relation": "parent",
+      "group": "shared-infra",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "s3-results-ownership",
+      "component": "s3-results",
+      "relation": "parent",
+      "group": "shared-infra",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "sqs-result-ownership",
+      "component": "sqs-result",
+      "relation": "parent",
+      "group": "shared-infra",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "sqs-request-dlq-ownership",
+      "component": "sqs-request-dlq",
+      "relation": "parent",
+      "group": "shared-infra",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "sqs-result-dlq-ownership",
+      "component": "sqs-result-dlq",
+      "relation": "parent",
+      "group": "shared-infra",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "extraction-worker-ownership",
+      "component": "extraction-worker",
+      "relation": "parent",
+      "group": "team-y",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "bedrock-ownership",
+      "component": "bedrock",
+      "relation": "parent",
+      "group": "team-y",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    },
+    {
+      "id": "cloudwatch-ownership",
+      "component": "cloudwatch",
+      "relation": "parent",
+      "group": "team-y",
+      "basis": {
+        "kind": "explicit",
+        "text": "The prompt assigns this component to this ownership group."
+      }
+    }
+  ],
+  "counts": [
+    {
+      "id": "s3-buckets",
+      "kind": "resource",
+      "type": "aws.simple-storage-service",
+      "min": 2,
+      "max": 2,
+      "basis": {
+        "kind": "explicit",
+        "text": "Separate input PDF and result buckets."
+      }
+    },
+    {
+      "id": "sqs-queues",
+      "kind": "resource",
+      "type": "aws.simple-queue-service",
+      "min": 4,
+      "max": 4,
+      "basis": {
+        "kind": "explicit",
+        "text": "Request and result queues, each with its own dead-letter queue."
+      }
+    }
+  ]
+}

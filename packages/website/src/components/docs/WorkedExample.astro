@@ -1,0 +1,65 @@
+---
+import CopyButton from '../CopyButton.astro';
+import DiagramViewer from '../DiagramViewer.astro';
+
+interface Props {
+  id: string;
+  title: string;
+  heading: string;
+  meta: string;
+  description: string;
+  prompt: string;
+  source: string;
+  requirements: string;
+  assets: { preview: string; svg: string; source: string; requirements: string };
+  width: number;
+  height: number;
+  caption: string;
+}
+const { id, title, heading, meta, description, prompt, source, requirements, assets, width, height, caption } = Astro.props;
+const tabs = [
+  { key: 'prompt', label: 'Prompt', text: prompt, href: undefined },
+  { key: 'source', label: '.dgm source', text: source, href: assets.source },
+  { key: 'requirements', label: 'Requirements', text: requirements, href: assets.requirements },
+];
+---
+
+<section class="worked-example" aria-label={`${title} example`}>
+  <header class="worked-heading">
+    <strong>{heading}</strong>
+    <span>{meta}</span>
+  </header>
+  <DiagramViewer id={id} title={title} description={description} src={assets.preview} downloadSrc={assets.svg} width={width} height={height} caption={caption} />
+  <div class="worked-tabs" role="tablist" aria-label={`${title} files`} data-tabs>
+    {tabs.map((tab, index) => <button id={`${id}-tab-${tab.key}`} type="button" role="tab" aria-selected={index === 0 ? 'true' : 'false'} aria-controls={`${id}-panel-${tab.key}`} tabindex={index === 0 ? 0 : -1}>{tab.label}</button>)}
+  </div>
+  {tabs.map((tab, index) => <section id={`${id}-panel-${tab.key}`} class="worked-panel" role="tabpanel" aria-labelledby={`${id}-tab-${tab.key}`} hidden={index !== 0} inert={index !== 0}>
+    <div class="worked-actions">
+      <span>{tab.label}</span>
+      <CopyButton target={`${id}-text-${tab.key}`} label={`Copy ${title} ${tab.label}`} />
+    </div>
+    <pre id={`${id}-text-${tab.key}`} class:list={['worked-text', tab.key === 'prompt' && 'worked-prompt']} tabindex="0" aria-label={`${title} ${tab.label}`}>{tab.text.trimEnd()}</pre>
+    {tab.key !== 'prompt' && <a class="worked-download" href={tab.href} download>Download {tab.label} ↓</a>}
+  </section>)}
+</section>
+
+<style>
+  .worked-example { min-width: 0; margin: 0 0 24px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--white); color: var(--ink); }
+  .worked-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 16px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .worked-heading strong { font-size: 14px; }
+  .worked-heading span { font: 10px/1.6 var(--mono); color: var(--muted); }
+  .worked-example :global(.diagram-viewer) { border: 0; border-radius: 0; }
+  .worked-tabs { display: flex; overflow-x: auto; border-block: 1px solid var(--line); }
+  .worked-tabs button { flex: 0 0 auto; padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font: 11px var(--mono); cursor: pointer; }
+  .worked-tabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--orange); }
+  .worked-tabs button:focus-visible, .worked-actions button:focus-visible, .worked-download:focus-visible, .worked-text:focus-visible { outline: 2px solid var(--orange-dark); outline-offset: -2px; }
+  .worked-panel { padding: 14px 16px 16px; }
+  .worked-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--muted); font: 10px var(--mono); }
+  .worked-example .worked-text { max-height: 420px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); color: var(--ink); font: 12px/1.7 var(--mono); }
+  .worked-example .worked-prompt { font: 14px/1.85 var(--font-brand); }
+  .worked-download { color: var(--orange-dark); font-size: 12px; text-decoration: underline; }
+  @media (max-width: 520px) {
+    .worked-heading, .worked-panel { padding: 12px; }
+    .worked-example .worked-text { padding: 10px; }
+  }
+</style>

@@ -4,6 +4,7 @@ import { catalogIconUrl, getCatalogMap } from "@dumb-diagrams/runtime/catalog";
 import { parseDgmResult, type DgmParseError } from "@dumb-diagrams/runtime/dsl";
 import {
   compileAutomaticLayout,
+  resolveAnnotationBounds,
   INVARIANT_DIAGNOSTICS_TRUNCATED_CODE,
   qualityFindings,
   qualityHardRegressionReason,
@@ -345,10 +346,11 @@ function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): Layo
     if (edge.labelRect) include(edge.labelRect.x, edge.labelRect.y, edge.labelRect.w, edge.labelRect.h);
   }
 
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
   for (const annotation of doc.annotations) {
-    const place = view.annotations?.[annotation.id];
-    const dimensions = annotationDimensions(annotation.style);
-    include(place?.x ?? 48, place?.y ?? 48, place?.w ?? dimensions.w, place?.h ?? dimensions.h);
+    if (view.annotations?.[annotation.id]?.visible === false) continue;
+    const bounds = annotationBounds[annotation.id]!;
+    include(bounds.x, bounds.y, bounds.w, bounds.h);
   }
 
   if (right > originalWidth) layout.width = Math.ceil(right + STUDIO_CANVAS_PADDING);
@@ -364,19 +366,4 @@ function expandLayoutToContent(doc: DiagramDocument, layout: LayoutResult): Layo
     h: Math.max(1, canvasBottom - canvasTop),
   };
   return layout;
-}
-
-function annotationDimensions(style: string | undefined): { w: number; h: number } {
-  switch (style) {
-    case "text":
-      return { w: 240, h: 48 };
-    case "code":
-      return { w: 300, h: 160 };
-    case "callout":
-      return { w: 280, h: 104 };
-    case "checklist":
-      return { w: 260, h: 152 };
-    default:
-      return { w: 220, h: 96 };
-  }
 }

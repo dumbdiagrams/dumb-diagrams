@@ -443,7 +443,7 @@ test("opens the board menu anywhere and pastes a clipboard image", async ({ page
   await expect(menu).toBeVisible();
   await menu.getByRole("menuitem", { name: "Paste image or selection" }).click();
 
-  await expect(page.getByRole("status")).toHaveText("Pasted image");
+  await expect(page.locator('.toast[role="status"]')).toHaveText("Pasted image");
   await expect(page.locator('.diagram-svg g[id^="res-custom"] use[href^="#asset-"]')).toHaveCount(1);
 });
 
@@ -1209,33 +1209,33 @@ test("supports copy, paste, cut, and keyboard deletion for canvas selections", a
   await expect(client).toHaveAttribute("aria-selected", "true");
 
   await page.keyboard.press(`${MOD}+c`);
-  const status = page.getByRole("status");
+  const status = page.locator('.toast[role="status"]');
   await expect(status).toContainText("Copied selection");
   await expect(status).toHaveCSS("animation-name", "toast-in-out");
   await page.keyboard.press(`${MOD}+v`);
-  await expect(page.getByRole("status")).toContainText("Pasted selection");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Pasted selection");
   await expect(resources).toHaveCount(beforeCount + 1);
   await expect(page.locator('[role="alert"]')).toHaveCount(0);
 
   await page.keyboard.press("Backspace");
-  await expect(page.getByRole("status")).toContainText("Deleted selection");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Deleted selection");
   await expect(resources).toHaveCount(beforeCount);
 
   await expect(client).toHaveCount(1);
   await client.click();
   await expect(client).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press(`${MOD}+x`);
-  await expect(page.getByRole("status")).toContainText("Cut selection");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Cut selection");
   await expect(page.locator('[data-entity-kind="resource"][data-entity-id="client"]')).toHaveCount(0);
 
   await page.keyboard.press(`${MOD}+v`);
-  await expect(page.getByRole("status")).toContainText("Pasted selection");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Pasted selection");
   await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(beforeCount);
 
   const pasted = page.locator('[data-entity-kind="resource"][aria-selected="true"]');
   await expect(pasted).toHaveCount(1);
   await page.keyboard.press("Delete");
-  await expect(page.getByRole("status")).toContainText("Deleted selection");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Deleted selection");
   await expect(page.locator('[data-entity-kind="resource"]')).toHaveCount(beforeCount - 1);
 });
 

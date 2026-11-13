@@ -77,9 +77,13 @@ overrides any value: record that override in the diagram's requirements
 contract as `preferences` (for example `{ "numberedSteps": false }`), never by
 editing `preferences.json` for one diagram.
 
-- `numberedSteps` (default `true`): give every solid flow arrow a `step`
-  number in the order the request or data moves, so the diagram shows numbered
-  badges. Steps run from 1 without gaps; parallel branches may share a number.
+- `numberedSteps` (default `true`): give every solid flow arrow a native
+  `step N` badge in the order the request or data moves. Keep the edge label
+  descriptive only; never put the step number in the label. Steps run from 1
+  without gaps; parallel branches may share a number. For example, author
+  `client -> store { id save label "Store input drawing" step 1 }`, not
+  `client -> store { id save label "1. Store input drawing" }` or
+  `client -> store { id save label "1. Store input drawing" step 1 }`.
   Validation rejects a service (other than the flow's starter) that sends a
   step before every numbered arrow into it.
   Leave dashed, peer, and failure connectors unnumbered. When `false`, number

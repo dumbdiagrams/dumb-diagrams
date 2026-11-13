@@ -1,0 +1,26 @@
+---
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import WorkedExample from './WorkedExample.astro';
+import { loadExamples } from '../../lib/examples.mjs';
+import { url } from '../../lib/site';
+
+const id = 'aws-data-transfer-hub';
+const example = loadExamples().find(candidate => candidate.id === id);
+if (!example) throw new Error(`Missing example: ${id}`);
+const preview = readFileSync(resolve('public/diagrams', `${id}-preview.svg`), 'utf8');
+const dimensions = preview.match(/<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"/);
+if (!dimensions) throw new Error(`Missing preview dimensions: ${id}`);
+const asset = (extension: string) => url(`diagrams/${id}${extension}`);
+---
+<WorkedExample
+  id={id}
+  title="Cross-account data transfer"
+  heading="Cross-account data transfer platform"
+  meta="AWS · Customer and managed accounts · Reviewed example"
+  description={example.description}
+  prompt={example.prompt} source={example.source} requirements={example.requirements}
+  assets={{ preview: asset('-preview.svg'), svg: asset('.svg'), source: asset('.dgm'), requirements: asset('.requirements.json') }}
+  width={Number(dimensions[1])} height={Number(dimensions[2])}
+  caption="Rendered from the reviewed source."
+/>

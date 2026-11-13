@@ -30,8 +30,14 @@ For a keyboard-friendly overview of the diagram, open **Canvas items**. It lists
 
 Select a boundary, resource, or connector to edit it on the right: line and fill, label position, icon size, step numbers, connector meaning, and route. The defaults work without changes, so these are optional refinements. Clicking a warning in the validation panel selects the item it refers to.
 
-## Save and work with other editors
+For notes, code snippets, and plain text, choose a preset in **Size** or type a custom pixel value. Sizes from 6 to 96 px are supported, including fractional values such as 8.5 px. Valid changes preview immediately and keep their exact size in the `.dgm` file and when copied or pasted.
 
-In browsers with the File System Access API, **Save** writes back to the opened file and **Save As** picks a new one. Before writing, Studio checks whether another editor changed or deleted the file and asks you to reload or overwrite. Other browsers download the updated `.dgm` instead, without that check. Saved source is canonical, so diffs stay small.
+## Auto-save and live file updates
 
-Workspace recovery is stored in browser storage. Clearing site data can remove browser-saved work, so save important `.dgm` files. Saving and exporting create files on your device. The host receives only the ordinary requests needed to deliver the application and bundled icons, including normal request metadata and requested icon paths.
+In Chrome or Edge, **File → Open** links Studio to your `.dgm` file. Allow write access when asked. **File → Auto-save** is on by default: valid edits, including Undo and Redo, save after a short pause. Turn it off to save manually, or use **Save As** to choose a new file.
+
+Changes from your agent or another editor appear automatically after about 1.5 seconds without another write. Studio keeps the last valid diagram during incomplete edits and asks you to review conflicts through **File changed**. Accepted external updates are undoable in the current session. Choose **File → Reload from disk** to check immediately. This works in hosted and local Studio.
+
+Wait for **Live** before closing. If you see **Save failed**, your edits are kept; use **Save** to grant access and retry.
+
+**Browser only** means the tab is a snapshot. Use **Save As** to link a writable file; browsers without file linking download changes instead. Recovered tabs need linking again after a browser restart. Browser recovery can be lost when site data is cleared, so keep important work in `.dgm` files.

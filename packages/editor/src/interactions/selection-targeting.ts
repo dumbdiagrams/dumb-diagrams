@@ -1,3 +1,4 @@
+import { resolveAnnotationBounds } from "@dumb-diagrams/runtime/render";
 import type { DiagramDocument, LayoutResult, NodeGeom, Point, Rect, View } from "@dumb-diagrams/runtime/core";
 
 import type { Selection, SelectionItem } from "../model/types.js";
@@ -73,15 +74,10 @@ export function marqueeSelectionCandidates(
     }
   }
 
+  const annotationBounds = resolveAnnotationBounds(doc, layout);
   for (const annotation of doc.annotations) {
     if (!isEntityVisibleForSelection(doc, view, annotation.id)) continue;
-    const place = view.annotations?.[annotation.id];
-    const bounds = {
-      x: place?.x ?? 48,
-      y: place?.y ?? 48,
-      w: place?.w ?? 160,
-      h: place?.h ?? 48,
-    };
+    const bounds = annotationBounds[annotation.id]!;
     if (rectsIntersect(bounds, marquee)) {
       hits.push({ kind: "annotation", id: annotation.id });
     }

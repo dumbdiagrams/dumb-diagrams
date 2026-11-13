@@ -1,5 +1,14 @@
 /* Responsive and reduced motion rules */
 
+/* Only drawers and editors scroll. Hidden overflow still permits focus-driven
+ * scrolling in WebKit, which can move the entire canvas shell on resize. */
+html,
+body,
+#root,
+.app {
+  overflow: clip;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -38,7 +47,8 @@
 }
 
 @media (max-width: 900px) {
-  .floating-panel.drawer-sheet,
+  .floating-panel.drawer-sheet:not(.edge-sheet),
+  .floating-panel.drawer-sheet.edge-sheet,
   .floating-panel.inspector-sheet,
   .floating-panel.edge-sheet {
     right: 0;
@@ -64,15 +74,6 @@
   .floating-panel.inspector-sheet {
     right: 0;
   }
-}
-
-@media (max-width: 900px) {
-  html,
-  body,
-  #root {
-    min-width: 900px;
-  }
-
 }
 
 @media (max-width: 900px) {
@@ -266,5 +267,274 @@
   .tool-dock {
     top: auto;
     bottom: 52px;
+  }
+}
+
+/* Responsive studio shell. The compact toolbar uses two rows, so every panel
+ * and the tool rail follow its measured 132px footprint instead of the desktop
+ * 96px value. */
+@media (max-width: 1119px) {
+  :root {
+    --studio-chrome-height: 132px;
+  }
+
+  .floating-topbar {
+    height: auto;
+    min-height: 88px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    grid-template-areas:
+      "left right"
+      "center center";
+    gap: 4px 8px;
+    align-content: center;
+    padding: 4px 8px;
+  }
+
+  .topbar-left {
+    grid-area: left;
+  }
+
+  .topbar-center {
+    grid-area: center;
+    justify-content: center;
+  }
+
+  .topbar-right {
+    grid-area: right;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-content: center;
+  }
+
+  .topbar-group {
+    gap: 4px;
+    padding-inline: 0;
+  }
+
+  .document-name-field {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .floating-panel.drawer-sheet,
+  .floating-panel.inspector-sheet {
+    top: var(--studio-chrome-height);
+  }
+
+  .floating-panel.drawer-sheet:not(.edge-sheet) {
+    height: calc(100% - var(--studio-chrome-height));
+  }
+
+  .floating-panel.inspector-sheet,
+  .floating-panel.drawer-sheet.edge-sheet {
+    bottom: calc(56px + clamp(30px, 4vw, 50px));
+    height: auto;
+  }
+
+  .floating-panel.edge-sheet {
+    top: var(--studio-chrome-height);
+    max-height: calc(100% - var(--studio-chrome-height));
+    bottom: calc(56px + clamp(30px, 4vw, 50px));
+  }
+
+  .tool-dock {
+    top: var(--studio-chrome-height);
+    bottom: 0;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 900px) {
+  .floating-panel.drawer-sheet:not(.edge-sheet),
+  .floating-panel.drawer-sheet.edge-sheet,
+  .floating-panel.inspector-sheet,
+  .floating-panel.edge-sheet {
+    width: min(420px, 62vw) !important;
+    max-width: min(420px, 62vw);
+  }
+
+  .floating-panel.drawer-sheet:not(.edge-sheet) {
+    left: var(--tool-rail-width);
+    right: auto;
+  }
+
+  .floating-panel.drawer-sheet.edge-sheet,
+  .floating-panel.inspector-sheet,
+  .floating-panel.edge-sheet:not(.drawer-sheet) {
+    right: 0;
+    left: auto;
+  }
+
+  .tool-dock {
+    width: var(--tool-rail-width);
+    height: calc(100% - var(--studio-chrome-height));
+  }
+}
+
+@media (max-width: 700px) {
+  :root {
+    --studio-chrome-height: 124px;
+  }
+
+  .floating-topbar {
+    height: auto;
+    min-height: 80px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "left center"
+      "right right";
+    gap: 4px 8px;
+    align-content: center;
+    padding: 4px 8px;
+  }
+
+  .topbar-left {
+    grid-area: left;
+  }
+
+  .topbar-center {
+    grid-area: center;
+    justify-content: flex-end;
+  }
+
+  .topbar-right {
+    grid-area: right;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .export-primary span {
+    display: none;
+  }
+
+  .entity-navigator-popover,
+  .issue-journal-popover {
+    position: fixed;
+    top: var(--studio-chrome-height);
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* Panel names can contain user-authored source text. Keep the sticky header
+ * compact and preserve the full title as a native tooltip and accessible text. */
+.floating-panel-header > div {
+  min-width: 0;
+}
+
+.floating-panel.drawer-sheet,
+.floating-panel.inspector-sheet,
+.floating-panel.edge-sheet {
+  top: var(--studio-chrome-height);
+}
+
+.floating-panel-header h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.floating-panel-header p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.floating-panel-header {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.floating-panel.inspector-sheet .floating-panel-body,
+.floating-panel.drawer-sheet.edge-sheet .floating-panel-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Keep rail targets usable in short split-screen windows. The rail scrolls
+ * independently instead of squeezing seven buttons into the available height. */
+.tool-dock {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.tool-dock::-webkit-scrollbar {
+  display: none;
+}
+
+.tool-dock button {
+  flex: 0 0 40px;
+  width: 100%;
+}
+
+.drawer-search-input,
+.layers-search {
+  min-width: 0;
+}
+
+.asset-grid-end {
+  grid-column: 1 / -1;
+  height: 280px;
+  margin-top: -280px;
+  pointer-events: none;
+  /* rootMargin does not expand clipping ancestors. Observe the last 280px
+   * of content to prefetch before either catalog scroller reaches its end. */
+}
+
+.floating-panel.drawer-sheet:not(.edge-sheet) .code-actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .asset-browser-toolbar:not(.groups-toolbar) {
+    flex-wrap: wrap;
+  }
+
+  .asset-browser-toolbar:not(.groups-toolbar) .drawer-search-input {
+    flex: 1 1 150px;
+  }
+
+  .provider-tabs {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  }
+}
+
+/* Two 420px drawers plus the 48px rail need 888px. Keep the selection,
+ * but yield the inspector while a left drawer is being used below that width. */
+@media (max-width: 887px) {
+  .app:has(.drawer-sheet:not(.edge-sheet):not(.is-closing)) .inspector-sheet,
+  .app:has(.drawer-sheet:not(.edge-sheet):not(.is-closing)) .edge-sheet {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* On short windows, let the catalog controls scroll with their results so a
+ * wrapped provider row cannot consume the entire results region. */
+@media (max-height: 600px) {
+  .floating-panel.drawer-sheet:not(.edge-sheet) .floating-panel-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .floating-panel.asset-sheet .asset-browser {
+    flex: 0 0 auto;
+  }
+
+  .asset-browser-body,
+  .asset-grid {
+    flex: 0 0 auto;
+    overflow: visible;
   }
 }

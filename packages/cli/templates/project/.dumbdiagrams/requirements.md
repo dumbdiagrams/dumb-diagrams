@@ -31,7 +31,7 @@ secrets, unrelated conversation, or hidden reasoning.
 | `counts` | `{id, kind, type, min?, max?, within?, basis}`; at least one bound; `within` names an ancestor group |
 | `placement` | `{id, component, relation, group?, basis}`; `relation` is `inside`, `parent`, `outside`, or `root` |
 | `allowAdditionalResources` | Defaults to `true`; use `false` for an explicit "no other services" requirement |
-| `preferences` | Optional `{numberedSteps?, edgeLabels?, resourceLabels?}`; record it only when the user explicitly overrides the project-root `preferences.json` for this diagram |
+| `preferences` | Optional `{numberedSteps?, edgeLabels?, resourceLabels?}`; record it only when the user explicitly overrides the project-root `preferences.json` for this diagram. With `numberedSteps: true`, put sequence numbers in native edge `step N` fields and keep labels descriptive only. |
 | `generatedBy` | Optional `{model, reasoning?}`: your model name and selected reasoning or thinking level, exactly as known. Omit unknown values; never guess. Debugging only |
 
 All four lists are required; lists other than `components` may be empty.
