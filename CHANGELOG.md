@@ -5,6 +5,45 @@ the versioning policy in [docs/RELEASE.md](./docs/RELEASE.md).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-13
+
+### Added
+
+- **manifest:** update source manifest to include new Playwright configurations and test paths ([3474044](https://github.com/dumbdiagrams/dumb-diagrams/commit/34740444ac4214945750883b319d090cb6c6e00e))
+- **ci:** add CI checks for website and update pre-push hooks to include website tests ([dcc9a33](https://github.com/dumbdiagrams/dumb-diagrams/commit/dcc9a33494c8f73de5a16c2af9f72204915ac555))
+- **website:** improve examples and interactive experience ([bdc13a2](https://github.com/dumbdiagrams/dumb-diagrams/commit/bdc13a2af538d174b7c7b0d3920295d25d4373a5))
+- **studio:** expand annotation font size controls ([bad52d7](https://github.com/dumbdiagrams/dumb-diagrams/commit/bad52d79fb026d193fbf332dc904420fa813b944))
+- **studio:** size notes to their text and place them beside what they describe ([a2dae1e](https://github.com/dumbdiagrams/dumb-diagrams/commit/a2dae1e597ad14b7b1de1244f9ef929ed5e17511))
+- **studio:** preset pastel note themes with sky default and rose option ([df5ad24](https://github.com/dumbdiagrams/dumb-diagrams/commit/df5ad2482e10e3205314181e6093738beda65ffd))
+- **studio:** live-sync and autosave linked diagram files ([5861f25](https://github.com/dumbdiagrams/dumb-diagrams/commit/5861f251b78998c499f61a2c62582ca2bf0351c8))
+- **studio:** adapt chrome and side panels for narrow viewports ([2515e1c](https://github.com/dumbdiagrams/dumb-diagrams/commit/2515e1c94091be1f9d43e9e8213744525316f4a2))
+
+### Changed
+
+- **annotation-themes:** replace assertThemeContrast with inline contrast checks for annotation themes ([72dcde6](https://github.com/dumbdiagrams/dumb-diagrams/commit/72dcde604569b37081ecbe127fd6c2c575e56cd6))
+- **studio:** rename resize fit helper ([13a1b02](https://github.com/dumbdiagrams/dumb-diagrams/commit/13a1b02b864091edcae7d5fdcc73c326a81acaa6))
+- **examples:** update example loading logic and enhance landing page examples (#21) ([d0311c4](https://github.com/dumbdiagrams/dumb-diagrams/commit/d0311c4175731d5f639cc1c65e64d481d02e85ee))
+
+### Fixed
+
+- **contributing:** clarify pre-push checks to run only on main branch and update documentation ([7e277df](https://github.com/dumbdiagrams/dumb-diagrams/commit/7e277df0bfda003ef3e04d06b6923d037be2a110))
+- **studio:** show connecting state instead of Browser only while linking a file ([0972318](https://github.com/dumbdiagrams/dumb-diagrams/commit/097231877293d2acf39f310f7171eb6a04a23408))
+- **studio:** place file sync badge next to the filename ([5328a02](https://github.com/dumbdiagrams/dumb-diagrams/commit/5328a02501973aeca71a2605e5207ef6e8e0ab5c))
+- **studio:** request read-write access when opening linked files ([4dbb9fb](https://github.com/dumbdiagrams/dumb-diagrams/commit/4dbb9fb638f8aebed84a2904ddea06a044555c0d))
+- **studio:** edit and resize annotations directly on canvas ([67a42d9](https://github.com/dumbdiagrams/dumb-diagrams/commit/67a42d9597e8076f2ccfd094ef1d002590ebf4f9))
+- **runtime:** fit and place styled annotations without clipping ([2764572](https://github.com/dumbdiagrams/dumb-diagrams/commit/2764572bfa9f9b57e9298ab71c76f0335a290758))
+- **cli:** require native sequence badges for numbered flows ([63a808e](https://github.com/dumbdiagrams/dumb-diagrams/commit/63a808eee902ee0faf685af38adbce9307a5b506))
+
+### Documentation
+
+- **cli:** document the dgm command shorthand ([906ff7f](https://github.com/dumbdiagrams/dumb-diagrams/commit/906ff7f907b3eda1b6a4f8141b68c9e14c438da4))
+- **website:** describe Studio file linking and sync in guide ([29d424c](https://github.com/dumbdiagrams/dumb-diagrams/commit/29d424c6ddd23019b1f7f575ea09790deead6397))
+- **cli:** document linked file live sync and autosave ([5944437](https://github.com/dumbdiagrams/dumb-diagrams/commit/5944437422af308aa68fe28cc9f471206c0b7407))
+
+### Tests
+
+- **studio:** share regressions across local and hosted builds ([b44f4b5](https://github.com/dumbdiagrams/dumb-diagrams/commit/b44f4b52d00ff27ad4668af9f7d5ab428387b4a8))
+
 ## [0.2.4] - 2026-11-09
 
 ### Changed
