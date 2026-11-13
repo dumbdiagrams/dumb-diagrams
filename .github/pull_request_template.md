@@ -2,10 +2,6 @@
 
 Issue: <!-- Link the issue acknowledged by a maintainer before implementation. -->
 
-## Verification
-
-Commands/checks run and results:
-
 ## Checklist
 
 - [ ] PR title follows Conventional Commits: `type(scope): summary`

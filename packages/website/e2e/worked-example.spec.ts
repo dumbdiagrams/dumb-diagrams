@@ -1,5 +1,7 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+const pdfExampleTitle = "PDF data extraction with Amazon Bedrock LLMs";
+
 test("the notes walkthrough is readable and exposes the reviewed artifacts", async ({ page }, testInfo) => {
   await page.goto("/docs/engineering-drawing-extraction/");
   await expect(page.getByRole("heading", { level: 1, name: "Example: From notes to a diagram" })).toBeVisible();
@@ -13,12 +15,12 @@ test("the notes walkthrough is readable and exposes the reviewed artifacts", asy
   await image.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("notes-example-desktop.png") });
 
-  await checkViewer(viewer, "Engineering drawing extraction");
+  await checkViewer(viewer, pdfExampleTitle);
   const promptText = page.locator('.worked-prompt');
   expect(await promptText.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
 
   const opened = page.waitForEvent("popup");
-  await page.getByRole("link", { name: "Open Engineering drawing extraction full size" }).click();
+  await page.getByRole("link", { name: `Open ${pdfExampleTitle} full size` }).click();
   const fullSize = await opened;
   await fullSize.waitForLoadState();
   await expect(fullSize.locator("svg")).toBeVisible();
@@ -28,7 +30,7 @@ test("the notes walkthrough is readable and exposes the reviewed artifacts", asy
   await page.setViewportSize({ width: 390, height: 844 });
   await image.scrollIntoViewIfNeeded();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  await checkViewer(viewer, "Engineering drawing extraction");
+  await checkViewer(viewer, pdfExampleTitle);
   expect(await promptText.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   await page.locator('.worked-panel:not([hidden])').screenshot({ path: testInfo.outputPath("notes-prompt-mobile.png") });
   await page.screenshot({ path: testInfo.outputPath("notes-example-mobile.png") });
@@ -61,12 +63,12 @@ async function checkExampleFiles(example: Locator) {
     configurable: true,
     value: { writeText: async (value: string) => { document.documentElement.dataset.copiedExample = value; } },
   }));
-  await prompt.getByRole("button", { name: "Copy Engineering drawing extraction Prompt", exact: true }).click();
+  await prompt.getByRole("button", { name: `Copy ${pdfExampleTitle} Prompt`, exact: true }).click();
   const generatedPrompt = await example.page().request.get("/worked-examples/engineering-drawing-extraction/prompt.txt");
   expect(generatedPrompt.ok()).toBe(true);
   expect(await example.page().evaluate(() => document.documentElement.dataset.copiedExample)).toBe((await generatedPrompt.text()).trimEnd());
   await expect(prompt.getByRole("link", { name: "Download Prompt ↓", exact: true })).toHaveCount(0);
-  const copyButton = prompt.getByRole("button", { name: "Copy Engineering drawing extraction Prompt", exact: true });
+  const copyButton = prompt.getByRole("button", { name: `Copy ${pdfExampleTitle} Prompt`, exact: true });
   await expect(copyButton.locator("svg")).toBeVisible();
 
   await promptTab.focus();
