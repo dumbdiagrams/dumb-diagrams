@@ -60,9 +60,10 @@ analytics-enabled subdirectory build used in CI.
 
 After `pnpm install`, [Husky](https://typicode.github.io/husky/) installs the
 Git hooks from `.husky`: **pre-commit** runs `biome check --staged` (run
-`pnpm fix:style` to fix) and **pre-push** runs `pnpm check:pr`, the Chromium
-Studio browser suite, and `pnpm check:website:ci`. Install Chromium first with
-`pnpm exec playwright install chromium`. CI checks the
+`pnpm fix:style` to fix). **Pre-push** runs `pnpm check:pr`, the Chromium
+Studio browser suite, and `pnpm check:website:ci` only when pushing to `main`;
+feature branch and tag pushes do not run these checks. To run the browser suite,
+install Chromium first with `pnpm exec playwright install chromium`. CI checks the
 pull request title for the scoped Conventional Commit format used by squash
 merges. For example: `fix(studio): allow Azure items on an empty canvas` or
 `chore(docs): clarify local Studio setup`. Individual branch commits can use
