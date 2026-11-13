@@ -20,6 +20,13 @@ Asset preparation builds the runtime and CLI, renders `src/examples/*.dgm`
 and the curated examples, and captures a real `dumbdiagrams init` log for the
 homepage terminal.
 
+The social card is composed by `scripts/generate-social-card.mjs` from the SVG
+template and the generated factory IoT example. It inlines the SVG icons and
+outlines lettering with the bundled Manrope and IBM Plex Mono fonts, so the
+standalone SVG needs no installed fonts or linked images. The PNG is rendered
+directly at 2400 × 1260 for social previews. This card's typography is separate
+from the downloadable diagrams; their source and runtime rendering are unchanged.
+
 ## Content
 
 - `src/content/docs/*.md(x)`: articles. Each needs `title`, `description`,

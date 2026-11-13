@@ -108,8 +108,8 @@ test('indexable pages expose unique SEO metadata, valid schema, canonicals, and 
       assert.ok(imagePath === dist || imagePath.startsWith(dist + '/'));
       assert.ok((await stat(imagePath)).isFile(), `${pagePath}: Open Graph image resolves`);
       assert.match(html, /<meta property="og:image:type" content="image\/png"/);
-      assert.match(html, /<meta property="og:image:width" content="1200"/);
-      assert.match(html, /<meta property="og:image:height" content="630"/);
+      assert.match(html, /<meta property="og:image:width" content="2400"/);
+      assert.match(html, /<meta property="og:image:height" content="1260"/);
       assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
       assert.ok(html.includes(`<meta name="twitter:image" content="${image}">`));
     }

@@ -31,7 +31,10 @@
     "@astrojs/mdx": "^8.1.2",
     "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
+    "fontkit": "2.0.4",
     "pagefind": "1.5.2",
-    "typescript": "^5.7.3"
+    "sax": "1.6.1",
+    "typescript": "^5.7.3",
+    "wawoff2": "2.0.1"
   }
 }
