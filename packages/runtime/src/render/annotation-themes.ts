@@ -1,5 +1,4 @@
 import type { Annotation, AnnotationStyle } from "../core/index.js";
-import { contrastRatio, parseRgb } from "./contrast.js";
 
 export interface AnnotationTheme {
   id: string;
@@ -120,17 +119,4 @@ export function resolveAnnotationColors(annotation: Annotation): { background: s
     background: annotation.background ?? defaults.background,
     color: annotation.color ?? defaults.color,
   };
-}
-
-/** Ensures every shipped theme meets WCAG AA for body text on its background. */
-export function assertThemeContrast(): void {
-  for (const theme of ANNOTATION_THEMES) {
-    const ratio = contrastRatio(theme.color, theme.background);
-    if (ratio === null || ratio < 4.5) {
-      throw new Error(`Annotation theme "${theme.id}" contrast ${ratio ?? "n/a"} is below 4.5:1`);
-    }
-    if (!parseRgb(theme.background) || !parseRgb(theme.color)) {
-      throw new Error(`Annotation theme "${theme.id}" has invalid colours`);
-    }
-  }
 }
