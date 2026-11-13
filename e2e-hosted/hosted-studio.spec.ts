@@ -11,6 +11,23 @@ const SOURCE = fixture
   .replaceAll("simple-serverless-web-application", "hosted_canary")
   .replaceAll("Simple serverless web application", CANARY);
 
+async function browserNeedsCompatibilityNotice(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const browserNavigator = navigator as Navigator & {
+      brave?: unknown;
+      userAgentData?: { brands?: Array<{ brand: string }> };
+    };
+    if (browserNavigator.brave) return true;
+    if (browserNavigator.userAgentData?.brands) {
+      const brands = browserNavigator.userAgentData.brands.map(({ brand }) => brand.trim().toLowerCase());
+      const alternative = ["brave", "microsoft edge", "opera", "vivaldi", "samsung internet", "yandex", "arc", "whale", "duckduckgo"];
+      return !brands.includes("google chrome") || brands.some((brand) => alternative.includes(brand));
+    }
+    // A legacy Chrome token cannot distinguish Google's browser from Chromium.
+    return true;
+  });
+}
+
 async function dismissWelcome(page: Page, persist = false) {
   const welcome = page.getByRole("dialog", { name: "Studio runs locally" });
   await expect(welcome).toBeVisible();
@@ -35,14 +52,43 @@ test("shows the hosted privacy welcome and keeps its preferences local", async (
   const welcome = page.getByRole("dialog", { name: "Studio runs locally" });
   await expect(welcome).toBeVisible();
   await expect(welcome).toContainText("never upload, collect, store, or process");
+  if (await browserNeedsCompatibilityNotice(page)) {
+    await expect(welcome).toContainText("Google Chrome is recommended");
+    await expect(welcome).toContainText("brave://flags/#file-system-access-api");
+  } else {
+    await expect(welcome).not.toContainText("Google Chrome is recommended");
+  }
   await welcome.getByLabel("Don’t show this welcome again").check();
   await welcome.getByRole("button", { name: "Continue to Studio" }).click();
   await expect(welcome).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Google Chrome is recommended" })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("dialog", { name: "Studio runs locally" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Local-only" }).click();
   await expect(page.getByRole("dialog", { name: "Local-only Studio" })).toBeVisible();
+});
+
+test("shows browser compatibility guidance when the welcome was already dismissed", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "dumb-diagrams:hosted-preferences:v1",
+      JSON.stringify({ welcomeDismissed: true, tourDismissed: false }),
+    );
+  });
+  await page.reload();
+
+  const notice = page.getByRole("dialog", { name: "Google Chrome is recommended" });
+  if (await browserNeedsCompatibilityNotice(page)) {
+    await expect(notice).toBeVisible();
+    await expect(notice).toContainText("File System Access API");
+    await expect(notice).toContainText("brave://flags/#file-system-access-api");
+    await notice.getByRole("button", { name: "Continue" }).click();
+    await expect(notice).toHaveCount(0);
+  } else {
+    await expect(notice).toHaveCount(0);
+  }
 });
 
 test("keeps hosted settings available from Help", async ({ page }) => {

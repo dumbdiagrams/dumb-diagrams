@@ -24,7 +24,19 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
   ],
-  use: { ...studioRegressions.use, baseURL },
+  use: {
+    ...studioRegressions.use,
+    baseURL,
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: baseURL,
+          localStorage: [{ name: "dumb-diagrams:browser-compatibility-notice-dismissed", value: "1" }],
+        },
+      ],
+    },
+  },
   webServer: {
     command: serverCommand,
     url: `${baseURL}/`,

@@ -12,9 +12,17 @@ You can [open the hosted Studio](https://studio.dumbdiagrams.com) in your browse
 
 The hosted editor does not replace the project workflow. Install the CLI and run `dgm init` when you want the project files, agent instructions, requirements, and Git-based workflow. Examples and existing `.dgm` files can still be opened in the browser without setting up a project.
 
-Chromium-based desktop browsers are the first-class Studio target. WebKit and
-Firefox are best-effort compatibility targets, and native Safari is not a
-release target.
+Google Chrome is the recommended browser. Chromium-based desktop browsers are
+the first-class Studio target. WebKit and Firefox are best-effort compatibility
+targets, and native Safari is not a release target.
+
+Brave disables the File System Access API by default. You can enable
+`brave://flags/#file-system-access-api` and relaunch Brave, but this is an
+experimental browser-wide flag; Studio may still need a site-specific file
+grant. If the API is unavailable, Studio works in browser-only mode but cannot
+live-sync changes to the local `.dgm` project file, so updates to Git-tracked
+files are unavailable from Studio. You can still import and export `.dgm`
+files.
 
 ## Open and edit a file
 
@@ -34,10 +42,10 @@ For notes, code snippets, and plain text, choose a preset in **Size** or type a 
 
 ## Auto-save and live file updates
 
-In Chrome or Edge, **File → Open** links Studio to your `.dgm` file. Allow write access when asked. **File → Auto-save** is on by default: valid edits, including Undo and Redo, save after a short pause. Turn it off to save manually, or use **Save As** to choose a new file.
+In Chrome or Edge, **File → Open** links Studio to your `.dgm` file. **File → Auto-save** is on by default: valid edits, including Undo and Redo, save after a short pause once write access is granted. The first **Save** or **Auto-save** action may ask for write access; opening a file does not. Until access is granted, edits remain unsaved. Turn auto-save off to save manually, or use **Save As** to choose a new file.
 
 Changes from your agent or another editor appear automatically after about 1.5 seconds without another write. Studio keeps the last valid diagram during incomplete edits and asks you to review conflicts through **File changed**. Accepted external updates are undoable in the current session. Choose **File → Reload from disk** to check immediately. This works in hosted and local Studio.
 
-Wait for **Live** before closing. If you see **Save failed**, your edits are kept; use **Save** to grant access and retry.
+Wait for **Live** before closing. If the status stays **Unsaved**, use **Save** to grant access and write pending changes.
 
 **Browser only** means the tab is a snapshot. Use **Save As** to link a writable file; browsers without file linking download changes instead. Recovered tabs need linking again after a browser restart. Browser recovery can be lost when site data is cleared, so keep important work in `.dgm` files.
