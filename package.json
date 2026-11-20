@@ -69,16 +69,16 @@
     "preinstall": "node scripts/ensure-registry.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.6",
-    "@ninoseki/eslint-plugin-neverthrow": "0.3.2",
-    "@playwright/test": "^1.65.0",
-    "@typescript-eslint/parser": "8.72.2",
+    "@biomejs/biome": "2.6.8",
+    "@ninoseki/eslint-plugin-neverthrow": "0.4.0",
+    "@playwright/test": "^1.65.1",
+    "@typescript-eslint/parser": "8.73.0",
     "@vitest/coverage-v8": "^4.1.12",
     "esbuild": "^0.28.2",
-    "eslint": "10.14.0",
+    "eslint": "10.15.0",
     "husky": "9.1.7",
     "typescript": "^5.7.3",
-    "vite": "^8.3.7",
+    "vite": "^8.3.8",
     "vitest": "^4.1.12"
   },
   "packageManager": "pnpm@11.23.0",
